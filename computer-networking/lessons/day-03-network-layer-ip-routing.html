@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — 네트워크 계층 : IP와 라우팅</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 920px; margin: 0 auto; padding: 48px 24px 72px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.68; color: #202124; background: #fff; }
+    h1 { margin: 0 0 24px; font-size: 2rem; line-height: 1.25; }
+    h2 { margin-top: 40px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+    h3 { margin-top: 28px; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.95rem; }
+    th, td { border: 1px solid #d8dee4; padding: 8px 10px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 16px; background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 4px; }
+    blockquote { margin: 18px 0; padding: 2px 18px; border-left: 4px solid #d8dee4; color: #57606a; background: #f6f8fa; }
+    details { margin: 18px 0; padding: 12px 16px; border: 1px solid #d8dee4; border-radius: 6px; }
+    summary { cursor: pointer; font-weight: 600; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+    .back { margin-bottom: 28px; font-size: 0.95rem; }
+    .quiz-section { margin-top: 48px; padding: 28px; background: #f0f7ff; border: 1px solid #c2d9f5; border-radius: 10px; }
+    .quiz-section h2 { border-top: none; margin-top: 0; padding-top: 0; }
+    .question { margin: 20px 0; }
+    .question p { font-weight: 600; margin-bottom: 10px; }
+    .options label { display: block; margin: 6px 0; cursor: pointer; padding: 6px 10px; border-radius: 6px; border: 1px solid #d8dee4; background: #fff; transition: background 0.15s; }
+    .options label:hover { background: #e8f0fe; }
+    .options input[type="radio"] { margin-right: 8px; }
+    .check-btn { margin-top: 14px; padding: 8px 22px; background: #0b57d0; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+    .check-btn:hover { background: #0943a8; }
+    .result { margin-top: 10px; font-weight: 600; min-height: 1.4em; }
+    .correct { color: #188038; }
+    .wrong { color: #c62828; }
+    .subnet-calc { margin-top: 24px; background: #fff; padding: 20px; border: 1px solid #d8dee4; border-radius: 8px; }
+    .subnet-calc input { padding: 6px 10px; border: 1px solid #d8dee4; border-radius: 6px; font-size: 0.95rem; width: 220px; }
+    .subnet-calc button { margin-left: 10px; padding: 7px 18px; background: #0b57d0; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; }
+    .subnet-calc button:hover { background: #0943a8; }
+    .subnet-result { margin-top: 14px; font-size: 0.95rem; line-height: 1.8; }
+    .tip { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 2px 18px; margin: 18px 0; }
+    .nav-links { margin-top: 48px; display: flex; gap: 16px; flex-wrap: wrap; }
+    .nav-links a { padding: 8px 20px; border: 1px solid #d8dee4; border-radius: 6px; text-decoration: none; font-size: 0.95rem; }
+    .nav-links a:hover { background: #f6f8fa; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+  <h1>Day 3 — 네트워크 계층 : IP와 라우팅</h1>
+
+  <blockquote>
+    <p><strong>학습 목표</strong></p>
+    <p>- IPv4 주소 구조와 클래스를 설명할 수 있다.</p>
+    <p>- 서브넷 마스크와 CIDR 표기법으로 네트워크/호스트 범위를 계산할 수 있다.</p>
+    <p>- 라우팅 테이블의 구조와 Longest Prefix Match 규칙을 이해한다.</p>
+    <p>- IPv6가 필요한 이유와 기본 표기법을 안다.</p>
+  </blockquote>
+
+  <hr>
+
+  <h2>1. 네트워크 계층이란?</h2>
+
+  <p><a href="./day-02-tcpip-datalink.html">Day 2</a>에서 다룬 데이터링크 계층은 <strong>같은 네트워크(LAN) 안</strong>에서 인접 장치끼리 프레임을 전달하는 역할을 했다. 하지만 서울 PC가 뉴욕 서버에 데이터를 보내려면 수십 개의 서로 다른 네트워크를 통과해야 한다.</p>
+
+  <p><strong>네트워크 계층(Network Layer)</strong>은 이 역할을 담당한다. OSI 3계층 / TCP/IP 인터넷 계층에 해당하며, 핵심 프로토콜은 <strong>IP(Internet Protocol)</strong>다.</p>
+
+  <table>
+    <thead><tr><th>역할</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td>논리 주소 부여</td><td>각 장치에 전 세계적으로 고유한 IP 주소 할당</td></tr>
+      <tr><td>패킷 라우팅</td><td>출발지 → 목적지까지 최적 경로 결정</td></tr>
+      <tr><td>단편화(Fragmentation)</td><td>MTU를 초과하는 패킷을 분할하여 전송</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip">
+    <p><strong>MAC vs IP 주소</strong> — MAC 주소는 <em>물리적</em> 위치를 나타내며 같은 LAN 안에서만 유효하다. IP 주소는 <em>논리적</em> 위치를 나타내며 인터넷 전체에서 패킷을 라우팅하는 데 사용된다. 라우터는 IP 헤더를 보고 다음 홉(hop)을 결정한다.</p>
+  </div>
+
+  <hr>
+
+  <h2>2. IPv4 주소 구조</h2>
+
+  <p>IPv4 주소는 <strong>32비트</strong>로 이루어지며, 8비트씩 점(.)으로 구분한 <em>점-표기법(dotted-decimal)</em>으로 표현한다.</p>
+
+  <pre><code>192    .  168   .   1   .   1
+11000000.10101000.00000001.00000001  (이진수)</code></pre>
+
+  <h3>네트워크 파트 vs 호스트 파트</h3>
+
+  <p>IP 주소는 두 부분으로 나뉜다.</p>
+
+  <pre><code>┌────────────────────────┬───────────────────────────┐
+│   네트워크 파트        │     호스트 파트            │
+│ (어느 네트워크인가?)   │ (그 네트워크 안 어느 장치?) │
+└────────────────────────┴───────────────────────────┘</code></pre>
+
+  <p>어디서 잘리느냐는 <strong>서브넷 마스크</strong>가 결정한다.</p>
+
+  <h3>클래스형 주소 (역사적 배경)</h3>
+
+  <table>
+    <thead><tr><th>클래스</th><th>첫 옥텟 범위</th><th>네트워크 비트</th><th>호스트 수</th><th>용도</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>1 – 126</td><td>8</td><td>약 1,677만</td><td>대규모 기관</td></tr>
+      <tr><td>B</td><td>128 – 191</td><td>16</td><td>약 65,534</td><td>중규모 기관</td></tr>
+      <tr><td>C</td><td>192 – 223</td><td>24</td><td>254</td><td>소규모 네트워크</td></tr>
+      <tr><td>D</td><td>224 – 239</td><td>—</td><td>—</td><td>멀티캐스트</td></tr>
+      <tr><td>E</td><td>240 – 255</td><td>—</td><td>—</td><td>연구/예비용</td></tr>
+    </tbody>
+  </table>
+
+  <p>클래스형 방식은 주소 낭비가 심해 현재는 <strong>CIDR</strong>로 대체되었지만, 사설 주소 대역은 여전히 자주 사용된다.</p>
+
+  <h3>사설(Private) IP 주소 대역</h3>
+
+  <table>
+    <thead><tr><th>대역</th><th>CIDR</th><th>주소 수</th></tr></thead>
+    <tbody>
+      <tr><td>10.0.0.0 – 10.255.255.255</td><td>10.0.0.0/8</td><td>약 1,677만</td></tr>
+      <tr><td>172.16.0.0 – 172.31.255.255</td><td>172.16.0.0/12</td><td>약 104만</td></tr>
+      <tr><td>192.168.0.0 – 192.168.255.255</td><td>192.168.0.0/16</td><td>65,536</td></tr>
+    </tbody>
+  </table>
+
+  <blockquote><p>사설 IP는 인터넷 라우터가 전달하지 않는다. 내부 LAN 전용이며, 인터넷에 나갈 때는 <strong>NAT(Network Address Translation)</strong>로 공인 IP로 변환된다.</p></blockquote>
+
+  <hr>
+
+  <h2>3. 서브넷 마스크와 CIDR</h2>
+
+  <h3>서브넷 마스크</h3>
+
+  <p>서브넷 마스크는 IP 주소와 AND 연산을 통해 <strong>네트워크 주소</strong>를 구한다.</p>
+
+  <pre><code>IP 주소     :  192.168.1.100  →  11000000.10101000.00000001.01100100
+서브넷 마스크:  255.255.255.0  →  11111111.11111111.11111111.00000000
+                                   ─────────────────────────── ───────
+AND 결과     :  192.168.1.0    →  네트워크 주소           호스트 부분</code></pre>
+
+  <h3>CIDR (Classless Inter-Domain Routing)</h3>
+
+  <p>서브넷 마스크의 1 비트 수를 슬래시(/) 뒤에 표기한다.</p>
+
+  <pre><code>192.168.1.0/24
+              └─ 앞 24비트가 네트워크 파트 (= 마스크 255.255.255.0)
+
+사용 가능한 호스트 수 = 2^(32-24) - 2 = 2^8 - 2 = 254개
+  (전체 256개 중 네트워크 주소 192.168.1.0, 브로드캐스트 192.168.1.255 제외)</code></pre>
+
+  <h3>CIDR 계산 요령</h3>
+
+  <table>
+    <thead><tr><th>CIDR</th><th>마스크</th><th>호스트 수</th><th>전형적 용도</th></tr></thead>
+    <tbody>
+      <tr><td>/8</td><td>255.0.0.0</td><td>약 1,677만</td><td>클래스 A 대역</td></tr>
+      <tr><td>/16</td><td>255.255.0.0</td><td>65,534</td><td>대기업 내부망</td></tr>
+      <tr><td>/24</td><td>255.255.255.0</td><td>254</td><td>일반 가정/사무실</td></tr>
+      <tr><td>/25</td><td>255.255.255.128</td><td>126</td><td>/24 반분할</td></tr>
+      <tr><td>/30</td><td>255.255.255.252</td><td>2</td><td>라우터 간 점대점 링크</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip">
+    <p><strong>공식</strong> — 호스트 비트 수를 <em>h</em>라 하면, 사용 가능한 호스트 수 = <code>2^h − 2</code>. 뺄 두 개는 <em>네트워크 주소</em>(모두 0)와 <em>브로드캐스트 주소</em>(모두 1)다.</p>
+  </div>
+
+  <h3>서브넷 계산기 (직접 해보기)</h3>
+
+  <div class="subnet-calc">
+    <p><strong>CIDR 표기 입력:</strong> (예: <code>192.168.10.0/26</code>)</p>
+    <input type="text" id="cidr-input" placeholder="예: 192.168.10.0/26">
+    <button onclick="calcSubnet()">계산</button>
+    <div class="subnet-result" id="subnet-result"></div>
+  </div>
+
+  <hr>
+
+  <h2>4. IPv4 헤더 구조</h2>
+
+  <p>IP 패킷은 <strong>헤더 + 데이터(페이로드)</strong>로 구성된다. 헤더의 주요 필드를 알아두면 Wireshark 분석 시 매우 유용하다.</p>
+
+  <pre><code>0        8        16       24       32 (bit)
+├────────┼────────┼────────┼────────┤
+│Version │  IHL   │DSCP/ECN│  Total Length  │
+├────────┴────────┼────────┴────────────────┤
+│  Identification │ Flags │ Fragment Offset │
+├─────────────────┼────────┬────────────────┤
+│   TTL           │Protocol│ Header Checksum│
+├─────────────────┴────────┴────────────────┤
+│              Source IP Address            │
+├───────────────────────────────────────────┤
+│           Destination IP Address          │
+└───────────────────────────────────────────┘</code></pre>
+
+  <table>
+    <thead><tr><th>필드</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Version</strong></td><td>4 (IPv4) 또는 6 (IPv6)</td></tr>
+      <tr><td><strong>TTL (Time to Live)</strong></td><td>라우터를 거칠 때마다 1 감소. 0이 되면 폐기 → 루프 방지</td></tr>
+      <tr><td><strong>Protocol</strong></td><td>페이로드 프로토콜: 6=TCP, 17=UDP, 1=ICMP</td></tr>
+      <tr><td><strong>Source / Dest IP</strong></td><td>각각 4바이트(32비트) 출발지·목적지 주소</td></tr>
+      <tr><td><strong>Fragment Offset</strong></td><td>단편화된 패킷 재조합 순서</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>5. 라우팅과 라우팅 테이블</h2>
+
+  <h3>라우터의 역할</h3>
+
+  <p>라우터는 <strong>서로 다른 네트워크를 연결</strong>하는 장비다. 패킷이 도착하면 IP 헤더의 목적지 주소를 보고 <em>라우팅 테이블</em>을 참조하여 다음 홉(Next Hop)으로 전달한다.</p>
+
+  <pre><code>인터넷
+   │
+[라우터 A] ── 192.168.1.0/24 ── [PC 그룹 1]
+   │
+   └─── 10.0.0.0/8 ────────── [PC 그룹 2]</code></pre>
+
+  <h3>라우팅 테이블 예시</h3>
+
+  <pre><code># Linux: ip route show
+default via 192.168.1.1 dev eth0
+10.0.0.0/8      via 10.0.0.1   dev eth1
+192.168.1.0/24  dev eth0       proto kernel scope link src 192.168.1.100</code></pre>
+
+  <table>
+    <thead><tr><th>항목</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><strong>목적지 네트워크 (Destination)</strong></td><td>패킷이 향하는 네트워크 대역 (CIDR)</td></tr>
+      <tr><td><strong>Next Hop (게이트웨이)</strong></td><td>패킷을 전달할 다음 라우터의 IP</td></tr>
+      <tr><td><strong>인터페이스 (Interface)</strong></td><td>패킷을 내보낼 로컬 네트워크 카드</td></tr>
+      <tr><td><strong>메트릭 (Metric)</strong></td><td>경로 비용. 낮을수록 우선</td></tr>
+      <tr><td><strong>기본 경로 (default / 0.0.0.0/0)</strong></td><td>어떤 항목도 매칭되지 않을 때 사용하는 경로</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Longest Prefix Match (LPM)</h3>
+
+  <p>라우터는 목적지 IP와 가장 길게 일치하는(= 가장 구체적인) 항목을 우선 선택한다.</p>
+
+  <pre><code>라우팅 테이블:
+  10.0.0.0/8      via GW-A
+  10.1.0.0/16     via GW-B
+  10.1.2.0/24     via GW-C
+  default         via GW-D
+
+목적지: 10.1.2.50
+  → /8  일치 (○)
+  → /16 일치 (○)
+  → /24 일치 (○)  ← 가장 길게 일치 → GW-C 선택</code></pre>
+
+  <h3>라우팅 종류</h3>
+
+  <table>
+    <thead><tr><th>종류</th><th>설명</th><th>프로토콜 예시</th></tr></thead>
+    <tbody>
+      <tr><td><strong>정적 라우팅</strong></td><td>관리자가 직접 경로 입력</td><td><code>ip route add</code></td></tr>
+      <tr><td><strong>동적 라우팅</strong></td><td>라우터끼리 자동으로 경로 정보 교환</td><td>OSPF, BGP, RIP</td></tr>
+      <tr><td><strong>기본 경로</strong></td><td>어디로 갈지 모를 때 단일 출구로 보냄</td><td>0.0.0.0/0</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>6. IPv6 개요</h2>
+
+  <p>IPv4 주소는 약 43억 개(2³²)로 2011년에 고갈되었다. <strong>IPv6</strong>는 이를 해결하기 위해 설계된 차세대 프로토콜이다.</p>
+
+  <table>
+    <thead><tr><th>항목</th><th>IPv4</th><th>IPv6</th></tr></thead>
+    <tbody>
+      <tr><td>주소 길이</td><td>32비트</td><td>128비트</td></tr>
+      <tr><td>주소 수</td><td>약 43억</td><td>약 3.4 × 10³⁸</td></tr>
+      <tr><td>표기법</td><td>점-십진수 (192.168.1.1)</td><td>콜론-16진수 (2001:db8::1)</td></tr>
+      <tr><td>브로드캐스트</td><td>있음</td><td>없음 (멀티캐스트/애니캐스트로 대체)</td></tr>
+      <tr><td>헤더 단순화</td><td>복잡</td><td>고정 40바이트로 단순화</td></tr>
+      <tr><td>보안</td><td>선택 (IPsec)</td><td>기본 포함 (IPsec 권장)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>IPv6 주소 표기</h3>
+
+  <pre><code>전체:  2001:0db8:0000:0000:0000:ff00:0042:8329
+단축1: 2001:db8:0:0:0:ff00:42:8329   (앞쪽 0 생략)
+단축2: 2001:db8::ff00:42:8329        (연속된 0 그룹을 :: 하나로 생략)
+                                       ↑ ::는 주소 전체에서 한 번만 사용 가능</code></pre>
+
+  <h3>주요 IPv6 주소</h3>
+
+  <table>
+    <thead><tr><th>주소</th><th>의미</th></tr></thead>
+    <tbody>
+      <tr><td><code>::1</code></td><td>루프백 (IPv4의 127.0.0.1)</td></tr>
+      <tr><td><code>fe80::/10</code></td><td>링크-로컬 주소 (같은 링크 내 자동 설정)</td></tr>
+      <tr><td><code>2001:db8::/32</code></td><td>문서/예제용 예약 대역</td></tr>
+      <tr><td><code>ff00::/8</code></td><td>멀티캐스트</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>7. ICMP — 네트워크의 진단 도구</h2>
+
+  <p><strong>ICMP(Internet Control Message Protocol)</strong>는 IP와 쌍을 이루는 제어 프로토콜이다. 데이터 전송보다 네트워크 상태 진단에 쓰인다.</p>
+
+  <table>
+    <thead><tr><th>ICMP 메시지</th><th>설명</th><th>관련 도구</th></tr></thead>
+    <tbody>
+      <tr><td>Echo Request / Reply</td><td>상대방이 살아있는지 확인</td><td><code>ping</code></td></tr>
+      <tr><td>Time Exceeded</td><td>TTL=0 → 패킷 폐기 알림</td><td><code>traceroute</code></td></tr>
+      <tr><td>Destination Unreachable</td><td>목적지에 도달 불가</td><td>포트 닫힘 알림 등</td></tr>
+    </tbody>
+  </table>
+
+  <pre><code># ping: 왕복 시간 측정
+$ ping 8.8.8.8
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=117 time=12.4 ms
+
+# traceroute: 경로상 홉 추적
+$ traceroute 8.8.8.8
+ 1  192.168.1.1   1.2 ms    (홈 라우터)
+ 2  10.0.0.1      5.8 ms    (ISP 첫 홉)
+ 3  ...
+ 9  8.8.8.8       12.4 ms</code></pre>
+
+  <hr>
+
+  <!-- 퀴즈 섹션 -->
+  <div class="quiz-section">
+    <h2>확인 퀴즈</h2>
+    <p>배운 내용을 확인해보자. 선택 후 <em>정답 확인</em>을 눌러라.</p>
+
+    <!-- Q1 -->
+    <div class="question" id="q1">
+      <p>1. <code>192.168.5.0/27</code> 네트워크에서 사용 가능한 호스트 수는?</p>
+      <div class="options">
+        <label><input type="radio" name="q1" value="a"> 32개</label>
+        <label><input type="radio" name="q1" value="b"> 30개</label>
+        <label><input type="radio" name="q1" value="c"> 28개</label>
+        <label><input type="radio" name="q1" value="d"> 14개</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer('q1','b')">정답 확인</button>
+      <p class="result" id="q1-result"></p>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question" id="q2">
+      <p>2. 라우터가 목적지 IP와 여러 라우팅 항목이 모두 일치할 때 사용하는 규칙은?</p>
+      <div class="options">
+        <label><input type="radio" name="q2" value="a"> 가장 짧게 일치하는 항목 선택</label>
+        <label><input type="radio" name="q2" value="b"> 라우팅 테이블에 먼저 등록된 항목 선택</label>
+        <label><input type="radio" name="q2" value="c"> 가장 길게 일치하는 항목 선택 (LPM)</label>
+        <label><input type="radio" name="q2" value="d"> 메트릭이 가장 높은 항목 선택</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer('q2','c')">정답 확인</button>
+      <p class="result" id="q2-result"></p>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question" id="q3">
+      <p>3. IPv6 주소 <code>2001:0db8:0000:0000:0000:0000:0042:0001</code>의 올바른 단축 표기는?</p>
+      <div class="options">
+        <label><input type="radio" name="q3" value="a"> <code>2001:db8:0:0:0:0:42:1</code></label>
+        <label><input type="radio" name="q3" value="b"> <code>2001:db8::42:1</code></label>
+        <label><input type="radio" name="q3" value="c"> <code>2001::db8::42:1</code></label>
+        <label><input type="radio" name="q3" value="d"> <code>2001:db8:42:1</code></label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer('q3','b')">정답 확인</button>
+      <p class="result" id="q3-result"></p>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question" id="q4">
+      <p>4. TTL(Time to Live) 필드의 목적으로 가장 올바른 것은?</p>
+      <div class="options">
+        <label><input type="radio" name="q4" value="a"> 패킷의 암호화 여부를 나타낸다</label>
+        <label><input type="radio" name="q4" value="b"> 패킷이 네트워크를 무한 순환하는 것을 방지한다</label>
+        <label><input type="radio" name="q4" value="c"> 패킷의 단편화 순서를 나타낸다</label>
+        <label><input type="radio" name="q4" value="d"> 전송 계층 프로토콜 종류를 나타낸다</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer('q4','b')">정답 확인</button>
+      <p class="result" id="q4-result"></p>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question" id="q5">
+      <p>5. 다음 중 사설(Private) IP 주소 대역에 해당하지 않는 것은?</p>
+      <div class="options">
+        <label><input type="radio" name="q5" value="a"> 10.0.0.1</label>
+        <label><input type="radio" name="q5" value="b"> 172.20.0.1</label>
+        <label><input type="radio" name="q5" value="c"> 192.168.100.1</label>
+        <label><input type="radio" name="q5" value="d"> 8.8.8.8</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer('q5','d')">정답 확인</button>
+      <p class="result" id="q5-result"></p>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2>8. 오늘의 핵심 정리</h2>
+
+  <table>
+    <thead><tr><th>개념</th><th>한 줄 요약</th></tr></thead>
+    <tbody>
+      <tr><td>IPv4</td><td>32비트 논리 주소. 점-십진수 표기. 약 43억 개.</td></tr>
+      <tr><td>서브넷 마스크 / CIDR</td><td>네트워크 파트 길이 지정. /24 = 마스크 255.255.255.0.</td></tr>
+      <tr><td>라우팅 테이블</td><td>목적지 네트워크 → 다음 홉 매핑. LPM으로 선택.</td></tr>
+      <tr><td>기본 경로</td><td>0.0.0.0/0 — 어디로 갈지 모를 때의 출구.</td></tr>
+      <tr><td>TTL</td><td>라우터 거칠 때마다 −1. 0이 되면 폐기 → 루프 방지.</td></tr>
+      <tr><td>IPv6</td><td>128비트. 주소 고갈 해결. 콜론-16진수 + :: 단축 표기.</td></tr>
+      <tr><td>ICMP</td><td>ping, traceroute 등 진단 도구의 기반 프로토콜.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>추천 학습 자료</h2>
+
+  <ul>
+    <li><strong>교재</strong> — <em>Computer Networking: A Top-Down Approach</em>, Kurose &amp; Ross, Chapter 4 (The Network Layer: Data Plane)</li>
+    <li><strong>동영상</strong> — <a href="https://www.youtube.com/watch?v=A1g9SokDJSU" rel="noopener noreferrer" target="_blank">Subnetting Mastery</a> — Professor Messer (무료, 영어 자막)</li>
+    <li><strong>실습</strong> — <a href="https://www.subnet.com" rel="noopener noreferrer" target="_blank">subnet.com</a> 서브넷 계산 연습, Wireshark IP 필터 실습</li>
+  </ul>
+
+  <blockquote>
+    <p><strong>다음 단계</strong> — Day 4에서는 <a href="./day-04-transport-tcp-udp.html">전송 계층</a>으로 이동해 TCP 3-way handshake와 UDP를 다룬다.</p>
+    <p>이해가 안 가거나 궁금한 점이 있으면 언제든지 Claude에게 질문하라.</p>
+  </blockquote>
+
+  <div class="nav-links">
+    <a href="./day-02-tcpip-datalink.html">← Day 2 — TCP/IP·데이터링크</a>
+    <a href="./index.html">목록으로</a>
+  </div>
+
+  <script>
+    const EXPLANATIONS = {
+      q1: { correct: 'b', text: '/27 → 호스트 비트 = 32−27 = 5 → 2⁵−2 = <strong>30개</strong>' },
+      q2: { correct: 'c', text: '<strong>Longest Prefix Match (LPM)</strong> — 가장 구체적인(긴) 항목이 우선이다.' },
+      q3: { correct: 'b', text: '연속된 0 그룹 4개를 <code>::</code> 하나로 대체하면 <code>2001:db8::42:1</code>이 된다.' },
+      q4: { correct: 'b', text: 'TTL이 라우터를 지날 때마다 1 감소하다 0이 되면 폐기되어 <strong>패킷 루프를 방지</strong>한다.' },
+      q5: { correct: 'd', text: '<code>8.8.8.8</code>은 Google의 <strong>공인 IP</strong>다. 나머지 셋은 모두 사설 대역이다.' }
+    };
+
+    function checkAnswer(qid, correct) {
+      const selected = document.querySelector(`input[name="${qid}"]:checked`);
+      const resultEl = document.getElementById(`${qid}-result`);
+      if (!selected) { resultEl.textContent = '선택지를 고르세요.'; resultEl.className = 'result'; return; }
+      const exp = EXPLANATIONS[qid];
+      if (selected.value === exp.correct) {
+        resultEl.innerHTML = '✓ 정답! ' + exp.text;
+        resultEl.className = 'result correct';
+      } else {
+        resultEl.innerHTML = '✗ 오답. ' + exp.text;
+        resultEl.className = 'result wrong';
+      }
+    }
+
+    function calcSubnet() {
+      const input = document.getElementById('cidr-input').value.trim();
+      const resultEl = document.getElementById('subnet-result');
+      const match = input.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/);
+      if (!match) { resultEl.textContent = '올바른 CIDR 형식으로 입력하세요. (예: 192.168.10.0/26)'; return; }
+      const [, a, b, c, d, bits] = match.map(Number);
+      if ([a,b,c,d].some(o => o > 255) || bits > 32) { resultEl.textContent = '유효하지 않은 주소입니다.'; return; }
+
+      const ipInt = ((a<<24)|(b<<16)|(c<<8)|d) >>> 0;
+      const maskInt = bits === 0 ? 0 : (0xffffffff << (32 - bits)) >>> 0;
+      const netInt = (ipInt & maskInt) >>> 0;
+      const bcastInt = (netInt | (~maskInt >>> 0)) >>> 0;
+      const hostBits = 32 - bits;
+      const hostCount = hostBits <= 1 ? 0 : Math.pow(2, hostBits) - 2;
+
+      function intToIP(n) {
+        return [(n>>>24)&255, (n>>>16)&255, (n>>>8)&255, n&255].join('.');
+      }
+
+      const firstHost = hostBits > 1 ? intToIP(netInt + 1) : '—';
+      const lastHost  = hostBits > 1 ? intToIP(bcastInt - 1) : '—';
+
+      resultEl.innerHTML = `
+        <strong>네트워크 주소:</strong> ${intToIP(netInt)}<br>
+        <strong>브로드캐스트:</strong> ${intToIP(bcastInt)}<br>
+        <strong>서브넷 마스크:</strong> ${intToIP(maskInt)}<br>
+        <strong>첫 번째 호스트:</strong> ${firstHost}<br>
+        <strong>마지막 호스트:</strong> ${lastHost}<br>
+        <strong>사용 가능한 호스트 수:</strong> ${hostCount.toLocaleString()}개
+      `;
+    }
+  </script>
+</body>
+</html>
