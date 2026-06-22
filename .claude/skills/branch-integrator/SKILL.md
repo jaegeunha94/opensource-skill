@@ -1,0 +1,189 @@
+---
+name: branch-integrator
+description: Use this skill whenever the user wants to merge multiple learning/work branches into main, integrate scheduled study branches, clean up merged branches, delete remote branches after merge, or repair branch drift after parallel runs. Trigger for Korean or English requests such as "브랜치들을 main에 머지해줘", "5개 브랜치 통합", "study 브랜치 정리", "main 기준으로 머지하고 브랜치 삭제", "merge study branches into main", or "delete merged branches".
+disable-model-invocation: true
+argument-hint: "Which branches should be merged into main?"
+---
+
+The user wants a repeatable Git integration workflow: take one or more topic branches, merge them into `main`, push `main`, then delete branches that were successfully merged.
+
+This skill is intentionally conservative. Losing work is worse than leaving an extra branch behind.
+
+## Core workflow
+
+Use this order:
+
+1. Inspect the repository state.
+2. Confirm the candidate branches.
+3. Update local `main` from `origin/main`.
+4. Merge branches one at a time.
+5. Verify the result.
+6. Push `main`.
+7. Delete only branches that were merged and pushed successfully.
+8. Report what happened.
+
+Do not skip verification. Do not delete a branch before its changes are confirmed on `origin/main`.
+
+## Preflight checks
+
+Before merging:
+
+1. Run:
+
+   ```bash
+   git status -sb
+   git branch --show-current
+   git branch -r
+   git log --oneline --decorate --graph --all -n 30
+   ```
+
+2. If the working tree is dirty, stop and ask whether to commit, stash, or leave the changes alone. Do not overwrite local work.
+3. If not on `main`, switch to `main` only after confirming there are no local changes that would be affected.
+4. Fetch and prune remote refs:
+
+   ```bash
+   git fetch --prune origin
+   ```
+
+5. Update local `main`:
+
+   ```bash
+   git switch main
+   git merge --ff-only origin/main
+   ```
+
+If `main` cannot fast-forward to `origin/main`, stop and explain the divergence.
+
+## Branch selection
+
+If the user names branches, use only those branches.
+
+If the user gives a count, such as "5개의 브랜치", list candidate branches and ask for confirmation unless the intended set is obvious from branch names and recent context.
+
+Default candidate patterns for scheduled study work:
+
+```text
+origin/study/*
+origin/claude/*
+```
+
+Treat both patterns the same way: inspect them against `main`, merge only branches with commits ahead of `main`, and skip branches whose commits are already contained in `main`.
+
+`origin/claude/*` branches commonly appear when an automated Claude run creates a branch such as `claude/cool-hypatia-ma60hf` or `claude/peaceful-cerf-djbpq3`. These should still be merged sequentially, never in parallel.
+
+For each candidate branch, inspect:
+
+```bash
+git log --oneline main..origin/{branch}
+git diff --stat main...origin/{branch}
+```
+
+Skip a branch if it has no commits ahead of `main`.
+
+## Merge strategy
+
+Merge branches sequentially, not in parallel.
+
+For each branch:
+
+1. Start from clean `main`.
+2. Run:
+
+   ```bash
+   git merge --no-ff --no-edit origin/{branch}
+   ```
+
+3. If the merge succeeds, record it as merged.
+4. If the merge conflicts:
+   - stop immediately
+   - run `git status --short`
+   - list conflicted files
+   - do not delete any branch
+   - ask the user how to resolve, unless the resolution is clearly mechanical and safe
+
+Do not use `git reset --hard` to escape a conflict unless the user explicitly asks for it.
+
+Why `--no-ff`: when several scheduled branches were created from the same `main`, merge commits preserve which branch contributed which subject update. This makes later cleanup and audit easier.
+
+## Verification
+
+After all selected branches merge:
+
+1. Check status:
+
+   ```bash
+   git status -sb
+   ```
+
+2. Search for conflict markers in changed text files:
+
+   ```bash
+   rg -n '<<<<<<<|=======|>>>>>>>' .
+   ```
+
+3. Review recent history:
+
+   ```bash
+   git log --oneline --decorate --graph -n 20
+   ```
+
+4. If the repository has tests or validation commands relevant to the changed files, run them.
+
+If verification fails, do not push or delete branches.
+
+## Push main
+
+Push only after successful merge verification:
+
+```bash
+git push origin main
+```
+
+If push is rejected because `origin/main` moved:
+
+1. Fetch again.
+2. Merge or fast-forward from `origin/main`.
+3. Re-run verification.
+4. Push again.
+
+Do not force push `main`.
+
+## Delete merged branches
+
+Delete only branches that satisfy all of these:
+
+- they were selected for this integration
+- they merged successfully
+- `origin/main` now contains their changes
+- push to `origin main` succeeded
+
+For each merged branch:
+
+```bash
+git branch -d {branch}        # only if a local branch exists
+git push origin --delete {branch}
+```
+
+If local branch deletion fails because no local branch exists, ignore it and continue with remote deletion.
+
+If remote deletion fails, report it. Do not retry destructively.
+
+## Reporting format
+
+Respond in the user's language. For Korean requests, use Korean.
+
+Use this concise report:
+
+```text
+통합 완료
+- 기준 브랜치: main
+- 병합한 브랜치: ...
+- 건너뛴 브랜치: ...
+- 삭제한 브랜치: ...
+- origin/main: {final commit}
+
+주의:
+- {conflicts, skipped branches, failed deletions, or "없음"}
+```
+
+If blocked, lead with the blocker and the exact next decision needed from the user.

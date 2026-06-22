@@ -166,7 +166,19 @@ When asked to save, commit, or push progress:
    docs: update computer architecture day 2 progress
    ```
 
-6. After commit, push to `origin main` unless the user explicitly specifies another remote or branch.
+6. For parallel scheduled runs, do not push directly to `main`. Push to a subject branch named `study/{subject-slug}` unless the user explicitly specifies another remote or branch. Examples:
+
+   ```text
+   study/computer-networking
+   study/operating-systems
+   study/database-systems
+   ```
+
+   Create the branch from the latest `origin/main` when possible, commit the subject changes there, and push with:
+
+   ```text
+   git push origin study/{subject-slug}
+   ```
 
 Do not run destructive git commands. Do not rewrite unrelated history. If unrelated files are dirty, leave them alone and mention them separately.
 
