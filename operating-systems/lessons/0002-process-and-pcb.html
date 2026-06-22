@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 2 — 프로세스와 PCB</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 2</span>
+  <strong>프로세스와 PCB — 상태 전이, Process Control Block, 컨텍스트 스위치</strong>
+  <span class="lesson-date">· 2026-06-22</span>
+</div>
+
+<h1>프로세스와 PCB</h1>
+
+<div class="progress-section">
+  <h3>학습 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 7%"></div>
+  </div>
+  <span class="progress-label">전체 커리큘럼의 약 7% 완료 · Day 2 / 30</span>
+</div>
+
+<h2>오늘 배울 것</h2>
+<ul>
+  <li>프로세스(Process)와 프로그램(Program)의 차이를 설명할 수 있다</li>
+  <li>프로세스의 5가지 상태와 전이 조건을 다이어그램으로 그릴 수 있다</li>
+  <li>PCB(Process Control Block)가 저장하는 정보를 열거할 수 있다</li>
+  <li>컨텍스트 스위치(Context Switch)의 동작 과정과 오버헤드를 설명할 수 있다</li>
+</ul>
+
+<!-- ============================================================
+     섹션 1: 프로세스란?
+     ============================================================ -->
+<h2>1. 프로세스란 무엇인가?</h2>
+
+<p>
+  <strong>프로그램(Program)</strong>은 디스크에 저장된 수동적인 명령어 묶음입니다.
+  <strong>프로세스(Process)</strong>는 그 프로그램이 메모리에 적재되어 <em>실행 중인 상태</em>입니다.
+  같은 프로그램을 두 번 실행하면 두 개의 별도 프로세스가 생성됩니다.
+</p>
+
+<div class="callout">
+  <div class="callout-title">핵심 정의</div>
+  프로세스 = 실행 중인 프로그램 + 그 프로그램이 사용하는 자원 (메모리, 파일 핸들, CPU 레지스터 상태 등)
+</div>
+
+<h3>프로세스의 메모리 구조</h3>
+
+<div class="diagram">
+┌───────────────────────────────────┐  높은 주소 (High Address)
+│            Stack                  │  ← 함수 호출 프레임, 지역 변수
+│          (↓ grows down)           │
+├ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┤
+│                                   │  ← 빈 공간 (Stack ↔ Heap 사이)
+├ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┤
+│            Heap                   │  ← 동적 메모리 (malloc / new)
+│          (↑ grows up)             │
+├───────────────────────────────────┤
+│            BSS                    │  ← 초기화되지 않은 전역/정적 변수
+├───────────────────────────────────┤
+│            Data                   │  ← 초기화된 전역/정적 변수
+├───────────────────────────────────┤
+│            Text (Code)            │  ← 실행 가능한 명령어 (읽기 전용)
+└───────────────────────────────────┘  낮은 주소 (Low Address)
+</div>
+<p class="diagram-caption">그림 1: 프로세스의 가상 주소 공간 레이아웃</p>
+
+<!-- ============================================================
+     섹션 2: 프로세스 상태 전이
+     ============================================================ -->
+<h2>2. 프로세스 상태(Process State)와 전이</h2>
+
+<p>OS는 각 프로세스를 항상 다섯 가지 상태 중 하나로 분류합니다.</p>
+
+<div class="diagram">
+                   fork()
+                     │
+                     ▼
+             ┌──────────────┐
+             │     New      │  생성됨, 초기화 중
+             └──────┬───────┘
+                    │  admitted (OS가 메모리 할당)
+                    ▼
+             ┌──────────────┐    스케줄러 선택
+             │    Ready     │ ◄──────────────────────┐
+             └──────┬───────┘                        │
+                    │  scheduler dispatch             │
+                    ▼                                 │
+             ┌──────────────┐  I/O 또는 이벤트 요청   │
+             │   Running    │ ──────────────────► ┌──┴───────┐
+             └──────┬───────┘                     │ Waiting  │
+                    │  I/O 완료 ◄─────────────────└──────────┘
+                    │  (interrupt)
+                    │  exit() / return
+                    ▼
+             ┌──────────────┐
+             │  Terminated  │  자원 해제, 부모 프로세스가 수거
+             └──────────────┘
+</div>
+<p class="diagram-caption">그림 2: 프로세스 상태 전이 다이어그램</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>상태</th>
+      <th>설명</th>
+      <th>전이 조건</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>New</strong></td>
+      <td>프로세스가 생성 중. OS가 PCB를 초기화하고 자원을 할당</td>
+      <td>→ Ready: OS가 승인(admit)</td>
+    </tr>
+    <tr>
+      <td><strong>Ready</strong></td>
+      <td>CPU를 할당받기를 기다리는 상태. Ready Queue에 대기</td>
+      <td>→ Running: 스케줄러가 선택</td>
+    </tr>
+    <tr>
+      <td><strong>Running</strong></td>
+      <td>현재 CPU에서 명령어를 실행 중. 단일 CPU 시스템에서 한 번에 하나만 가능</td>
+      <td>→ Waiting: I/O 요청<br>→ Ready: 타임아웃(선점)<br>→ Terminated: 종료</td>
+    </tr>
+    <tr>
+      <td><strong>Waiting</strong> (Blocked)</td>
+      <td>I/O 완료, 이벤트 신호 등 외부 조건을 기다리는 상태. CPU를 소비하지 않음</td>
+      <td>→ Ready: I/O 완료 또는 이벤트 발생</td>
+    </tr>
+    <tr>
+      <td><strong>Terminated</strong></td>
+      <td>실행 완료 또는 강제 종료. OS가 자원 회수. 부모가 <code>wait()</code>으로 수거 전까지 Zombie로 잔존</td>
+      <td>종단 상태 (전이 없음)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">Zombie vs Orphan 프로세스</div>
+  <strong>Zombie</strong>: 종료했지만 부모가 <code>wait()</code>을 호출하지 않아 PCB가 아직 커널에 남아 있는 상태.<br>
+  <strong>Orphan</strong>: 부모 프로세스가 먼저 종료되어 고아가 된 프로세스. Linux에서는 <code>init</code>(PID 1)이 입양하여 수거합니다.
+</div>
+
+<!-- ============================================================
+     섹션 3: PCB
+     ============================================================ -->
+<h2>3. PCB (Process Control Block)</h2>
+
+<p>
+  OS가 프로세스 하나를 관리하기 위해 커널 메모리에 유지하는 자료구조입니다.
+  컨텍스트 스위치, 스케줄링, 자원 추적에 필요한 <strong>모든 정보</strong>가 담겨 있습니다.
+</p>
+
+<div class="diagram">
+┌─────────────────────────────────┐
+│          PCB (per process)      │
+├─────────────────────────────────┤
+│  Process ID (PID)               │  ← 고유 식별자
+│  Process State                  │  ← New / Ready / Running / …
+│  Program Counter (PC)           │  ← 다음 실행할 명령어 주소
+│  CPU Registers                  │  ← AX, BX, SP, BP … 일체
+│  Memory Management Info         │  ← 페이지 테이블 포인터, 베이스/리밋
+│  Scheduling Info                │  ← 우선순위, CPU 사용 시간, 대기 시간
+│  I/O Status                     │  ← 열린 파일 목록, 장치 목록
+│  Accounting Info                │  ← 사용자 ID, 그룹 ID, 누적 CPU 시간
+│  Parent PID (PPID)              │  ← fork() 한 부모 프로세스 PID
+└─────────────────────────────────┘
+</div>
+<p class="diagram-caption">그림 3: PCB에 저장되는 주요 필드</p>
+
+<p>
+  Linux에서 PCB는 <code>task_struct</code>라는 구조체로 구현되어 있습니다.
+  커널 소스 <code>include/linux/sched.h</code>에서 수백 개의 필드를 확인할 수 있습니다.
+  프로세스 목록은 이중 연결 리스트로 연결되며, 스케줄러가 이를 탐색하여 다음 실행할 프로세스를 결정합니다.
+</p>
+
+<!-- ============================================================
+     섹션 4: 컨텍스트 스위치
+     ============================================================ -->
+<h2>4. 컨텍스트 스위치 (Context Switch)</h2>
+
+<p>
+  CPU가 실행 중인 프로세스를 바꿀 때, 현재 프로세스의 상태를 PCB에 저장하고
+  다음 프로세스의 상태를 PCB에서 복원하는 과정입니다.
+</p>
+
+<div class="diagram">
+  프로세스 A (Running)          OS 커널              프로세스 B (Ready)
+         │                        │                        │
+         │  타임아웃 or 시스콜     │                        │
+         │ ──────────────────────►│                        │
+         │                        │ A의 CPU 상태를 PCB-A에 저장
+         │                        │ (PC, 레지스터, 스택 포인터)
+         │                        │                        │
+         │                        │ PCB-B에서 B의 상태 복원│
+         │                        │ ──────────────────────►│
+         │                        │                        │ (Running)
+</div>
+<p class="diagram-caption">그림 4: 컨텍스트 스위치 흐름</p>
+
+<h3>컨텍스트 스위치 오버헤드</h3>
+<p>
+  스위치 중에는 <strong>유용한 작업이 전혀 수행되지 않습니다</strong> — 순수한 오버헤드입니다.
+  일반적으로 수 마이크로초(μs) 수준이지만, 캐시(TLB, L1/L2) 무효화까지 포함하면
+  실질적인 성능 손실이 수십~수백 μs에 달할 수 있습니다.
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>원인</th>
+      <th>설명</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>타임슬라이스 만료</td>
+      <td>스케줄러가 할당한 CPU 시간이 끝남 (타이머 인터럽트)</td>
+    </tr>
+    <tr>
+      <td>I/O 시스템 콜</td>
+      <td>프로세스가 느린 작업을 요청 → Waiting 상태로 전환</td>
+    </tr>
+    <tr>
+      <td>더 높은 우선순위 프로세스 도착</td>
+      <td>선점형(preemptive) 스케줄러가 강제로 교체</td>
+    </tr>
+    <tr>
+      <td><code>yield()</code> 호출</td>
+      <td>프로세스가 자발적으로 CPU를 양보</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ============================================================
+     섹션 5: 프로세스 생성과 종료
+     ============================================================ -->
+<h2>5. 프로세스 생성과 종료</h2>
+
+<h3>fork() / exec() 패턴</h3>
+<pre>
+/* Unix/Linux 프로세스 생성 */
+pid_t pid = fork();   // 현재 프로세스를 복제 → 자식 프로세스 생성
+
+if (pid == 0) {
+    // 자식 프로세스
+    execv("/bin/ls", args);  // 새 프로그램으로 교체 (PCB 재사용)
+} else {
+    // 부모 프로세스
+    wait(NULL);  // 자식 종료까지 대기 (Zombie 방지)
+}
+</pre>
+
+<p>
+  <strong>fork()</strong>: 부모 프로세스의 주소 공간, PCB, 열린 파일 등을 복사하여 자식 프로세스를 생성합니다.
+  실제 메모리 복사는 <em>Copy-on-Write(CoW)</em>로 지연됩니다 — 쓰기가 발생할 때만 복사합니다.<br>
+  <strong>exec()</strong>: 현재 프로세스의 주소 공간을 새 프로그램으로 덮어씁니다. PID는 유지됩니다.
+</p>
+
+<!-- ============================================================
+     퀴즈
+     ============================================================ -->
+<h2>확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. 프로세스가 디스크 I/O를 요청했을 때 전이하는 상태는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> New</label></li>
+    <li><label><input type="radio" name="q1" value="1"> Ready</label></li>
+    <li><label><input type="radio" name="q1" value="2"> Waiting (Blocked)</label></li>
+    <li><label><input type="radio" name="q1" value="3"> Terminated</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. 컨텍스트 스위치 시 현재 프로세스의 CPU 상태(레지스터, PC 등)가 저장되는 곳은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> 프로세스의 Stack 영역</label></li>
+    <li><label><input type="radio" name="q2" value="1"> PCB (Process Control Block)</label></li>
+    <li><label><input type="radio" name="q2" value="2"> 디스크의 스왑 파일</label></li>
+    <li><label><input type="radio" name="q2" value="3"> 다음에 실행될 프로세스의 Heap</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. 부모 프로세스가 <code>wait()</code>를 호출하지 않아 종료 후에도 PCB가 커널에 남아 있는 프로세스를 무엇이라 부르나요?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> Orphan 프로세스</label></li>
+    <li><label><input type="radio" name="q3" value="1"> Daemon 프로세스</label></li>
+    <li><label><input type="radio" name="q3" value="2"> Zombie 프로세스</label></li>
+    <li><label><input type="radio" name="q3" value="3"> Blocked 프로세스</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. fork()에서 자식 프로세스를 새 프로그램으로 교체할 때 사용하는 시스템 콜은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> clone()</label></li>
+    <li><label><input type="radio" name="q4" value="1"> exec()</label></li>
+    <li><label><input type="radio" name="q4" value="2"> spawn()</label></li>
+    <li><label><input type="radio" name="q4" value="3"> create()</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================
+     1차 자료 추천
+     ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">오늘의 추천 1차 자료</div>
+  <strong>OSTEP Chapter 4 — The Abstraction: The Process</strong><br>
+  <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-intro.pdf" target="_blank">pages.cs.wisc.edu/~remzi/OSTEP/cpu-intro.pdf</a><br>
+  <small>프로세스 추상화의 핵심인 "시간 공유(Time Sharing)"와 "공간 공유(Space Sharing)"를 직관적으로 설명합니다.
+  PCB의 실제 Linux 구현(<code>task_struct</code>)도 함께 살펴보세요: <code>include/linux/sched.h</code></small>
+</div>
+
+<!-- ============================================================
+     다음 레슨 예고
+     ============================================================ -->
+<h2>다음 레슨 예고</h2>
+<p>
+  <strong>Day 3 — 스레드(Thread)</strong>: 프로세스 안의 가벼운 실행 단위인 스레드가 왜 필요한지,
+  프로세스와 무엇을 공유하고 무엇이 독립적인지, 커널 레벨 스레드 vs 사용자 레벨 스레드의 차이를 배웁니다.
+</p>
+
+<div class="ask-teacher">
+  <strong>질문이 있으신가요?</strong> 상태 전이 조건, PCB 필드 의미, 컨텍스트 스위치 비용 측정 방법 등
+  궁금한 점이 있다면 언제든지 Claude에게 물어보세요.
+</div>
+
+<!-- ============================================================
+     Footer
+     ============================================================ -->
+<div class="lesson-footer">
+  운영체제 학습 워크스페이스 · <a href="../PROGRESS.md">학습 현황</a> · <a href="../RESOURCES.md">참고 자료</a>
+  <div class="lesson-nav">
+    <a href="0001-what-is-an-operating-system.html">← Day 1: 운영체제란 무엇인가?</a>
+    <a href="0003-threads.html">다음 → Day 3: 스레드</a>
+  </div>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 2, 'I/O 요청은 CPU가 필요 없는 대기 상태이므로 Waiting(Blocked)으로 전이됩니다. I/O가 완료되면 Ready 상태로 돌아와 다시 CPU 할당을 기다립니다.');
+  initQuiz('q2', 1, 'PCB(Process Control Block)는 OS가 프로세스 하나를 표현하는 커널 내 자료구조입니다. 컨텍스트 스위치 시 CPU 레지스터 값 전체가 여기 저장됩니다.');
+  initQuiz('q3', 2, 'Zombie 프로세스입니다. 실행은 끝났지만 부모의 wait() 호출을 기다리며 PCB가 커널 메모리를 점유합니다. 장시간 방치하면 PID 자원이 고갈됩니다.');
+  initQuiz('q4', 1, 'exec() 계열 시스템 콜(execv, execl 등)은 현재 프로세스의 주소 공간을 새 프로그램으로 덮어씁니다. PID는 그대로 유지됩니다.');
+</script>
+
+</body>
+</html>
