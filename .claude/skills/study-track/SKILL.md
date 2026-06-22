@@ -106,8 +106,9 @@ When the subject folder already exists:
 3. Check `lessons/` and `learning-records/` numbering to choose the next sequential file number.
 4. Create exactly one next lesson unless the user explicitly asks for more.
 5. Reuse existing `assets/` before creating new assets.
-6. Update `PROGRESS.md` immediately after completing the lesson.
-7. Add or update learning records only for demonstrated understanding, corrected misconceptions, prior knowledge, or mission changes.
+6. Update `lessons/index.html` so GitHub Pages can show the lesson list for the folder URL.
+7. Update `PROGRESS.md` immediately after completing the lesson.
+8. Add or update learning records only for demonstrated understanding, corrected misconceptions, prior knowledge, or mission changes.
 
 If the user asks for a specific topic:
 
@@ -125,6 +126,7 @@ Run this checklist before writing any new lesson:
 - Would this topic repeat a completed concept rather than deepen it?
 - Is the next lesson number one greater than the highest existing lesson number?
 - Will `PROGRESS.md` be updated in the same change as the lesson?
+- Will `lessons/index.html` be created or updated in the same change as the lesson?
 
 If any answer indicates duplication, do not create a duplicate lesson. Resume from the next unfinished topic or ask the user to confirm that they want a review lesson.
 
@@ -143,6 +145,48 @@ After creating a lesson, update `PROGRESS.md` in the same turn:
 4. Mark newly acquired concepts in `## 습득한 핵심 개념`.
 
 Use the current local date from the execution environment. If the user mentions "today", "tomorrow", or "yesterday", resolve it to an absolute date before writing.
+
+## Lesson index for GitHub Pages
+
+GitHub Pages does not automatically show a directory listing for `lessons/`. Every subject workspace must maintain:
+
+```text
+{subject-slug}/lessons/index.html
+```
+
+When creating the first lesson, create `lessons/index.html`. When adding any later lesson, update that same index in the same change.
+
+The index should contain a simple Korean HTML page with:
+
+- a UTF-8 charset
+- a title such as `{Subject} 학습 목록`
+- an `<h1>` with the same subject list title
+- one `<li><a href="./{lesson-file}">...</a></li>` per lesson, in Day order
+
+Example:
+
+```html
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>컴퓨터 구조 학습 목록</title>
+</head>
+<body>
+  <h1>컴퓨터 구조 학습 목록</h1>
+  <ul>
+    <li><a href="./0001-what-is-computer-architecture.html">Day 1 — 컴퓨터 구조란 무엇인가?</a></li>
+  </ul>
+</body>
+</html>
+```
+
+The folder URL will then work, for example:
+
+```text
+https://jaegeunha94.github.io/opensource-skill/computer-architecture/lessons/
+```
 
 ## Git update workflow
 
