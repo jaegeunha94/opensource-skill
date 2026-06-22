@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 1 — 컴퓨터 구조란 무엇인가?</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 1</span>
+  <strong>컴퓨터 구조란 무엇인가? &amp; 폰 노이만 아키텍처</strong>
+  <span class="lesson-date">· 2026-06-22</span>
+</div>
+
+<h1>컴퓨터 구조란 무엇인가?</h1>
+
+<div class="progress-section">
+  <h3>학습 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 3%"></div>
+  </div>
+  <span class="progress-label">전체 커리큘럼의 약 3% 완료 · Day 1 / 30</span>
+</div>
+
+<h2>오늘 배울 것</h2>
+<ul>
+  <li>"컴퓨터 구조"가 정확히 무엇을 다루는 학문인지 이해한다</li>
+  <li>폰 노이만 아키텍처의 핵심 구성 요소를 설명할 수 있다</li>
+  <li>저장 프로그램 개념(stored-program concept)이 왜 혁신적이었는지 이해한다</li>
+</ul>
+
+<!-- ============================================================
+     섹션 1: 세 개의 층위
+     ============================================================ -->
+<h2>1. 컴퓨터를 보는 세 가지 관점</h2>
+
+<p>
+  컴퓨터 시스템은 보통 세 층위로 나뉘어 논의됩니다.
+  어느 층위에서 보느냐에 따라 "컴퓨터 구조"의 의미가 달라집니다.
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>층위</th>
+      <th>다루는 것</th>
+      <th>대표 질문</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>컴퓨터 구조<br>(Architecture)</strong></td>
+      <td>프로그래머에게 보이는 기계의 속성 — ISA, 레지스터, 메모리 모델</td>
+      <td>"이 명령어로 무엇을 할 수 있는가?"</td>
+    </tr>
+    <tr>
+      <td><strong>마이크로아키텍처<br>(Micro-architecture)</strong></td>
+      <td>ISA를 구현하는 구체적 설계 — 파이프라인, 캐시 크기, 분기 예측기</td>
+      <td>"이 명령어가 어떻게 실행되는가?"</td>
+    </tr>
+    <tr>
+      <td><strong>디지털 로직<br>(Logic Design)</strong></td>
+      <td>게이트, 플립플롭, 트랜지스터 수준</td>
+      <td>"비트 0/1이 물리적으로 어떻게 표현되는가?"</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">핵심 인사이트</div>
+  같은 ISA(예: x86-64)를 구현하더라도 마이크로아키텍처는 제조사마다 다릅니다.
+  Intel Core i9과 AMD Ryzen 9은 같은 프로그램을 실행하지만, 내부 파이프라인 설계는 전혀 다릅니다.
+  이 과정에서는 주로 <strong>컴퓨터 구조</strong>와 <strong>마이크로아키텍처</strong> 층위를 함께 다룹니다.
+</div>
+
+<!-- ============================================================
+     섹션 2: 폰 노이만 아키텍처
+     ============================================================ -->
+<h2>2. 폰 노이만 아키텍처</h2>
+
+<p>
+  현대 컴퓨터의 대부분은 1945년 존 폰 노이만(John von Neumann)이 제안한
+  <strong>저장 프로그램 컴퓨터(stored-program computer)</strong> 모델을 따릅니다.
+  핵심 아이디어는 간단합니다:
+</p>
+
+<blockquote style="border-left: 4px solid #aaa; padding: 0.5rem 1rem; color: #444; font-style: italic; margin: 1rem 0;">
+  데이터와 명령어(프로그램)를 같은 메모리에 저장한다.
+</blockquote>
+
+<p>이 아이디어 이전에는 프로그램을 바꾸려면 기계 배선 자체를 다시 연결해야 했습니다 (에니악, ENIAC).</p>
+
+<h3>구성 요소</h3>
+
+<div class="diagram">
+┌─────────────────────────────────────────────────────┐
+│                    컴퓨터 시스템                        │
+│                                                     │
+│  ┌──────────────────────┐    ┌────────────────────┐ │
+│  │  CPU (중앙처리장치)    │    │  메모리 (Memory)    │ │
+│  │                      │◄──►│                    │ │
+│  │  ┌────────┐           │    │  프로그램 코드      │ │
+│  │  │  ALU   │ 계산      │    │  + 데이터          │ │
+│  │  └────────┘           │    │  (같은 공간!)      │ │
+│  │  ┌────────┐           │    └────────────────────┘ │
+│  │  │ 제어장치│ 순서 제어  │                          │
+│  │  └────────┘           │    ┌────────────────────┐ │
+│  │  ┌────────┐           │    │  입출력 장치 (I/O)  │ │
+│  │  │레지스터│ 임시 저장  │◄──►│  키보드, 모니터,    │ │
+│  │  └────────┘           │    │  디스크 등          │ │
+│  └──────────────────────┘    └────────────────────┘ │
+└─────────────────────────────────────────────────────┘
+</div>
+<p class="diagram-caption">그림 1 — 폰 노이만 아키텍처의 핵심 구성 요소</p>
+
+<h3>각 구성 요소의 역할</h3>
+
+<table>
+  <thead>
+    <tr><th>구성 요소</th><th>역할</th><th>비유</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>ALU</strong><br>(산술논리장치)</td>
+      <td>덧셈, 뺄셈, AND, OR 등 실제 계산 수행</td>
+      <td>계산기의 + − × ÷ 버튼</td>
+    </tr>
+    <tr>
+      <td><strong>제어장치</strong><br>(Control Unit)</td>
+      <td>명령어를 읽고 해석해서 각 부품에 신호 전달</td>
+      <td>오케스트라 지휘자</td>
+    </tr>
+    <tr>
+      <td><strong>레지스터</strong><br>(Register)</td>
+      <td>CPU 내부의 초고속 임시 저장소. 보통 수십 개</td>
+      <td>요리사의 양손 (지금 당장 쓸 재료)</td>
+    </tr>
+    <tr>
+      <td><strong>메모리</strong><br>(RAM)</td>
+      <td>프로그램 코드와 데이터를 저장. 레지스터보다 느리지만 훨씬 큼</td>
+      <td>주방의 조리대</td>
+    </tr>
+    <tr>
+      <td><strong>입출력</strong><br>(I/O)</td>
+      <td>외부 세계(사용자, 디스크, 네트워크)와 통신</td>
+      <td>주방의 출입문</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ============================================================
+     섹션 3: 명령어 사이클
+     ============================================================ -->
+<h2>3. 명령어 사이클 (Instruction Cycle)</h2>
+
+<p>
+  CPU는 전원이 켜진 순간부터 꺼질 때까지 다음 사이클을 반복합니다.
+  이것이 컴퓨터가 "동작"하는 원리입니다.
+</p>
+
+<div class="diagram">
+  ①  Fetch   (인출)  →  메모리에서 다음 명령어를 가져온다
+        ↓
+  ②  Decode  (해독)  →  명령어가 무엇을 뜻하는지 해석한다
+        ↓
+  ③  Execute (실행)  →  ALU나 메모리 접근 등 실제 작업을 한다
+        ↓
+  ④ (Write-back)     →  결과를 레지스터나 메모리에 저장한다
+        ↓
+        ↑___________다시 ①로 반복___________↑
+</div>
+<p class="diagram-caption">그림 2 — 명령어 사이클 (Fetch–Decode–Execute)</p>
+
+<div class="callout">
+  <div class="callout-title">왜 중요한가</div>
+  파이프라이닝(Pipelining), 분기 예측(Branch Prediction), 비순서 실행(Out-of-Order Execution) 등
+  현대 CPU의 거의 모든 최적화 기법은 이 <strong>명령어 사이클</strong>을 더 빠르게 만들기 위한 것입니다.
+  Day 1의 이 개념이 이후 모든 수업의 토대가 됩니다.
+</div>
+
+<!-- ============================================================
+     섹션 4: 폰 노이만 병목
+     ============================================================ -->
+<h2>4. 폰 노이만 병목 (Von Neumann Bottleneck)</h2>
+
+<p>
+  폰 노이만 아키텍처에는 유명한 단점이 있습니다.
+  CPU와 메모리가 <strong>하나의 버스(Bus)</strong>로만 연결되기 때문에,
+  명령어를 가져오는 것과 데이터를 읽는 것이 동시에 일어날 수 없습니다.
+</p>
+
+<div class="diagram">
+  CPU  ←────── 단일 버스 ──────→  메모리
+         (명령어 OR 데이터, 동시 불가)
+</div>
+
+<p>
+  이 병목을 완화하기 위한 기법이 바로 <strong>캐시 메모리</strong>와 <strong>하버드 아키텍처</strong>입니다.
+  (이후 레슨에서 자세히 다룹니다.)
+</p>
+
+<!-- ============================================================
+     퀴즈
+     ============================================================ -->
+<h2>이해 확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. 폰 노이만 아키텍처의 가장 핵심적인 혁신은 무엇입니까?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> 트랜지스터를 최초로 사용한 것</label></li>
+    <li><label><input type="radio" name="q1" value="1"> 프로그램 코드와 데이터를 같은 메모리에 저장하는 것</label></li>
+    <li><label><input type="radio" name="q1" value="2"> ALU와 제어장치를 하나의 칩에 통합한 것</label></li>
+    <li><label><input type="radio" name="q1" value="3"> 입출력 장치와 CPU를 직접 연결한 것</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. 명령어 사이클(Instruction Cycle)의 올바른 순서는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> Decode → Fetch → Execute → Write-back</label></li>
+    <li><label><input type="radio" name="q2" value="1"> Execute → Decode → Fetch → Write-back</label></li>
+    <li><label><input type="radio" name="q2" value="2"> Fetch → Decode → Execute → Write-back</label></li>
+    <li><label><input type="radio" name="q2" value="3"> Fetch → Execute → Decode → Write-back</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. "폰 노이만 병목(Von Neumann Bottleneck)"이 발생하는 원인은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> CPU의 클럭 속도가 메모리 속도보다 느리기 때문</label></li>
+    <li><label><input type="radio" name="q3" value="1"> CPU와 메모리가 단일 버스로 연결되어 명령어·데이터를 동시에 전송 못 하기 때문</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 레지스터 수가 부족해서 임시 저장 공간이 모자라기 때문</label></li>
+    <li><label><input type="radio" name="q3" value="3"> ALU가 한 번에 하나의 연산만 처리할 수 있기 때문</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================
+     Primary Source
+     ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">오늘의 추천 자료</div>
+  <strong>nand2tetris — 프로젝트 0 소개 및 강의 1</strong><br>
+  <a href="https://www.nand2tetris.org/course" target="_blank">https://www.nand2tetris.org/course</a><br>
+  <br>
+  NAND 게이트부터 컴퓨터 전체를 직접 만들어보는 강의입니다. 오늘 배운 추상적인 개념들이
+  실제 회로로 어떻게 구현되는지 확인할 수 있습니다. 강의 1의 슬라이드를 읽어보세요.
+</div>
+
+<!-- ============================================================
+     오늘의 핵심 요약
+     ============================================================ -->
+<h2>오늘의 핵심 요약</h2>
+
+<ul>
+  <li><strong>컴퓨터 구조</strong>는 Architecture / Micro-architecture / Logic Design 세 층위로 이해한다</li>
+  <li><strong>폰 노이만 아키텍처</strong>: 프로그램 코드 + 데이터를 같은 메모리에 저장 → 유연한 범용 컴퓨터 실현</li>
+  <li>핵심 구성 요소: ALU, 제어장치, 레지스터, 메모리, I/O</li>
+  <li><strong>명령어 사이클</strong>: Fetch → Decode → Execute → Write-back의 반복</li>
+  <li><strong>폰 노이만 병목</strong>: 단일 버스로 인해 CPU ↔ 메모리 전송이 직렬화됨</li>
+</ul>
+
+<!-- ============================================================
+     다음 수업 예고
+     ============================================================ -->
+<div class="callout">
+  <div class="callout-title">다음 수업 (Day 2)</div>
+  <strong>수의 표현 — 이진수, 보수, 정수 / 부동소수점</strong><br>
+  CPU가 실제로 숫자를 어떻게 저장하고 계산하는지, 오버플로우는 왜 발생하는지 배웁니다.
+</div>
+
+<!-- ============================================================
+     선생님께 질문
+     ============================================================ -->
+<div class="ask-teacher">
+  <strong>궁금한 점이 있으신가요?</strong><br>
+  이해가 안 되는 부분, 더 깊이 알고 싶은 내용, 또는 실무와 어떻게 연결되는지
+  Claude에게 바로 질문하세요. 선생님은 항상 여기 있습니다.
+</div>
+
+<div class="lesson-footer">
+  <div class="lesson-nav">
+    <span style="color:#aaa">← (이전 수업 없음)</span>
+    <a href="0002-number-representation.html">Day 2: 수의 표현 →</a>
+  </div>
+  컴퓨터 구조 데일리 학습 · <a href="../reference/">참고 자료</a> · <a href="../RESOURCES.md">추천 자료 목록</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1, '폰 노이만 이전에는 프로그램을 바꾸려면 기계 배선 자체를 다시 연결해야 했습니다.');
+  initQuiz('q2', 2, 'Fetch(인출) → Decode(해독) → Execute(실행) → Write-back 순서입니다.');
+  initQuiz('q3', 1, 'CPU와 메모리가 단일 버스를 공유하므로 명령어 인출과 데이터 접근이 동시에 일어날 수 없습니다. 이를 완화하기 위해 캐시 메모리가 등장했습니다.');
+</script>
+</body>
+</html>
