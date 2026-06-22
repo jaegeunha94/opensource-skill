@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — 데이터베이스 개요 및 관계형 모델</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 920px; margin: 0 auto; padding: 48px 24px 72px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.68; color: #202124; background: #fff; }
+    h1 { margin: 0 0 24px; font-size: 2rem; line-height: 1.25; }
+    h2 { margin-top: 40px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+    h3 { margin-top: 28px; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.95rem; }
+    th, td { border: 1px solid #d8dee4; padding: 8px 10px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 16px; background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 4px; }
+    blockquote { margin: 18px 0; padding: 2px 18px; border-left: 4px solid #d8dee4; color: #57606a; background: #f6f8fa; }
+    details { margin: 18px 0; padding: 12px 16px; border: 1px solid #d8dee4; border-radius: 6px; }
+    summary { cursor: pointer; font-weight: 600; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+    .back { margin-bottom: 28px; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 데이터베이스 학습 목록</a></nav>
+<h1>Day 1 — 데이터베이스 개요 및 관계형 모델</h1>
+<p><strong>날짜</strong>: 2026-06-22</p>
+<p><strong>소요 시간</strong>: 약 50분</p>
+<p><strong>선행 조건</strong>: 없음</p>
+<hr>
+<h2>학습 목표</h2>
+<p>이 레슨을 마치면 다음을 할 수 있다:</p>
+<ol>
+<li>데이터베이스와 DBMS, 파일 시스템의 차이를 설명할 수 있다</li>
+<li>관계형 모델의 핵심 용어(릴레이션, 튜플, 속성, 도메인)를 정확히 사용할 수 있다</li>
+<li>슈퍼키 · 후보키 · 기본키 · 외래키를 구분하고 예시를 들 수 있다</li>
+<li>관계 대수의 기본 연산(선택, 투영, 조인, 합집합)을 개념 수준에서 설명할 수 있다</li>
+<li>ERD의 구성 요소와 카디널리티 표기를 읽을 수 있다</li>
+</ol>
+<hr>
+<h2>1. 왜 데이터베이스가 필요한가?</h2>
+<h3>파일 시스템의 한계</h3>
+<p>파일 기반 데이터 관리에는 구조적인 문제가 있다.</p>
+<table>
+<thead><tr><th>문제</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td>데이터 중복</td><td>같은 정보가 여러 파일에 저장되어 불일치 발생</td></tr>
+<tr><td>데이터 종속성</td><td>파일 구조 변경 시 모든 프로그램 수정 필요</td></tr>
+<tr><td>동시 접근 불가</td><td>여러 프로그램이 동시에 파일을 안전하게 수정하기 어려움</td></tr>
+<tr><td>무결성 보장 없음</td><td>"나이는 양수여야 한다" 같은 규칙을 코드마다 따로 구현해야 함</td></tr>
+<tr><td>보안 제어 어려움</td><td>파일 수준 권한만 가능, 레코드·컬럼 단위 제어 불가</td></tr>
+</tbody>
+</table>
+<h3>데이터베이스 시스템의 해결책</h3>
+<ul>
+<li><strong>DBMS(Database Management System)</strong>: 데이터를 체계적으로 저장·관리·검색하는 소프트웨어 계층</li>
+<li><strong>데이터 독립성</strong>: 물리적 저장 방식이 바뀌어도 애플리케이션 코드 불변</li>
+<li><strong>동시성 제어</strong>: 여러 사용자가 동시에 접근해도 일관성 유지</li>
+<li><strong>무결성 제약</strong>: DB 수준에서 규칙을 강제</li>
+<li><strong>백업 &amp; 복구</strong>: 장애 발생 시 일관된 상태로 복원</li>
+</ul>
+<blockquote>
+<p><strong>핵심 구분</strong>: 데이터베이스(DB) = 데이터 집합 자체 / DBMS = 그것을 관리하는 소프트웨어 (PostgreSQL, MySQL, SQLite 등)</p>
+</blockquote>
+<hr>
+<h2>2. 관계형 모델 (Relational Model)</h2>
+<p>1970년 Edgar Codd가 제안. 현재도 가장 널리 쓰이는 DB 모델.</p>
+<h3>핵심 용어</h3>
+<pre><code>릴레이션(Relation) = 테이블
+    ├── 속성(Attribute)  = 열(Column)  — 예: 이름, 나이, 학번
+    ├── 튜플(Tuple)      = 행(Row)     — 예: ('홍길동', 20, '2024001')
+    └── 도메인(Domain)   = 속성이 취할 수 있는 값의 집합
+                          예: 나이 도메인 = 0 이상의 정수</code></pre>
+<h3>실제 예시</h3>
+<p><strong>학생(Student) 릴레이션</strong></p>
+<table>
+<thead><tr><th>학번 (PK)</th><th>이름</th><th>나이</th><th>전공</th></tr></thead>
+<tbody>
+<tr><td>2024001</td><td>홍길동</td><td>20</td><td>컴퓨터공학</td></tr>
+<tr><td>2024002</td><td>김철수</td><td>22</td><td>경영학</td></tr>
+<tr><td>2024003</td><td>이영희</td><td>21</td><td>컴퓨터공학</td></tr>
+</tbody>
+</table>
+<ul>
+<li><strong>릴레이션 스키마</strong>: <code>Student(학번, 이름, 나이, 전공)</code> — 구조 정의</li>
+<li><strong>릴레이션 인스턴스</strong>: 현재 저장된 튜플의 집합 — 위 표의 3개 행</li>
+</ul>
+<h3>릴레이션의 수학적 성질</h3>
+<ol>
+<li>튜플의 순서는 무의미하다 (집합이므로)</li>
+<li>속성의 순서도 무의미하다</li>
+<li>튜플은 중복될 수 없다 (기본키 제약이 이를 보장)</li>
+<li>각 속성값은 원자적(Atomic)이어야 한다 — 1NF의 기초</li>
+</ol>
+<hr>
+<h2>3. 키(Key)의 종류</h2>
+<p>데이터를 식별하고 관계를 맺는 핵심 개념.</p>
+<h3>슈퍼키 (Superkey)</h3>
+<p>튜플을 <strong>유일하게 식별</strong>할 수 있는 속성 집합 (단독 또는 복합).</p>
+<p>예: <code>{학번}</code>, <code>{학번, 이름}</code>, <code>{학번, 이름, 나이}</code> 모두 슈퍼키</p>
+<h3>후보키 (Candidate Key)</h3>
+<p>슈퍼키 중 <strong>최소성</strong>을 만족하는 것 — 어떤 속성도 제거하면 식별력이 깨짐.</p>
+<p>예: <code>{학번}</code> 은 후보키 / <code>{학번, 이름}</code> 은 후보키가 아님 (이름 제거해도 학번만으로 식별 가능)</p>
+<h3>기본키 (Primary Key, PK)</h3>
+<p>후보키 중 <strong>선택된 하나</strong>. 절대 NULL 불허, 변경 최소화.</p>
+<h3>외래키 (Foreign Key, FK)</h3>
+<p>다른 릴레이션의 기본키를 참조하는 속성. 두 테이블 사이의 <strong>참조 무결성</strong> 보장.</p>
+<pre><code>수강(학번 FK→Student.학번, 과목코드 FK→Course.과목코드, 성적)</code></pre>
+<hr>
+<h2>4. 관계 대수 (Relational Algebra) 기초</h2>
+<p>SQL의 수학적 토대. 릴레이션을 입력받아 릴레이션을 반환하는 연산들.</p>
+<h3>단항 연산</h3>
+<table>
+<thead><tr><th>연산</th><th>기호</th><th>의미</th><th>SQL 대응</th></tr></thead>
+<tbody>
+<tr><td>선택(Selection)</td><td>σ</td><td>조건에 맞는 <strong>행</strong> 반환</td><td><code>WHERE</code></td></tr>
+<tr><td>투영(Projection)</td><td>π</td><td>지정한 <strong>열</strong>만 반환</td><td><code>SELECT col1, col2</code></td></tr>
+<tr><td>이름변경(Rename)</td><td>ρ</td><td>릴레이션/속성 이름 변경</td><td><code>AS</code></td></tr>
+</tbody>
+</table>
+<p><strong>예시</strong>:</p>
+<ul>
+<li>σ 전공='컴퓨터공학'(Student) → 전공이 컴퓨터공학인 행들</li>
+<li>π 이름,나이(Student) → 이름과 나이 열만 추출</li>
+</ul>
+<h3>이항 연산</h3>
+<table>
+<thead><tr><th>연산</th><th>기호</th><th>의미</th><th>SQL 대응</th></tr></thead>
+<tbody>
+<tr><td>합집합(Union)</td><td>∪</td><td>두 릴레이션의 합</td><td><code>UNION</code></td></tr>
+<tr><td>교집합(Intersection)</td><td>∩</td><td>공통 튜플</td><td><code>INTERSECT</code></td></tr>
+<tr><td>차집합(Difference)</td><td>−</td><td>한쪽에만 있는 튜플</td><td><code>EXCEPT</code></td></tr>
+<tr><td>카티션 곱(Cartesian Product)</td><td>×</td><td>모든 조합</td><td><code>CROSS JOIN</code></td></tr>
+<tr><td>자연 조인(Natural Join)</td><td>⋈</td><td>공통 속성 기준 결합</td><td><code>JOIN ... ON</code></td></tr>
+</tbody>
+</table>
+<hr>
+<h2>5. ERD (Entity-Relationship Diagram)</h2>
+<p>DB 설계 단계에서 개념적 구조를 시각화하는 도구.</p>
+<h3>구성 요소</h3>
+<pre><code>엔티티(Entity)     □ — 관리할 대상 (학생, 강좌, 교수)
+속성(Attribute)    ○ — 엔티티의 특성 (이름, 나이)
+관계(Relationship) ◇ — 엔티티 간의 연관 (수강하다, 담당하다)</code></pre>
+<h3>카디널리티 (Cardinality)</h3>
+<p>관계에 참여하는 개체 수의 비율.</p>
+<table>
+<thead><tr><th>표기</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td>1:1</td><td>한 교수가 한 학과를 담당</td></tr>
+<tr><td>1:N</td><td>한 학과에 여러 학생 소속</td></tr>
+<tr><td>M:N</td><td>한 학생이 여러 강좌 수강, 한 강좌에 여러 학생</td></tr>
+</tbody>
+</table>
+<h3>ERD → 릴레이션 변환 규칙</h3>
+<ol>
+<li><strong>엔티티</strong> → 테이블</li>
+<li><strong>단순 속성</strong> → 컬럼</li>
+<li><strong>1:N 관계</strong> → N 쪽 테이블에 FK 추가</li>
+<li><strong>M:N 관계</strong> → 별도 <strong>교차 테이블</strong> 생성 (학생-수강-강좌)</li>
+</ol>
+<hr>
+<h2>6. 실습 과제</h2>
+<p>다음 시나리오를 보고 아래 질문에 답해 보세요.</p>
+<p><strong>시나리오</strong>: 온라인 서점 시스템</p>
+<ul>
+<li>고객(고객ID, 이름, 이메일)</li>
+<li>도서(ISBN, 제목, 저자, 가격)</li>
+<li>주문(주문번호, 주문일, 고객ID)</li>
+<li>주문상세(주문번호, ISBN, 수량)</li>
+</ul>
+<p><strong>질문</strong></p>
+<ol>
+<li>각 테이블의 기본키는 무엇인가?</li>
+<li>외래키 관계를 모두 나열하라.</li>
+<li>고객과 도서의 관계는 1:1, 1:N, M:N 중 무엇인가? 왜?</li>
+<li><code>σ 가격&gt;20000(도서)</code> 를 SQL로 표현하면?</li>
+<li><code>π 이름,이메일(고객)</code> 를 SQL로 표현하면?</li>
+</ol>
+<details>
+<summary>정답 보기</summary>
+<ol>
+<li>기본키: 고객(고객ID), 도서(ISBN), 주문(주문번호), 주문상세(주문번호+ISBN 복합키)</li>
+<li>외래키: 주문.고객ID → 고객.고객ID / 주문상세.주문번호 → 주문.주문번호 / 주문상세.ISBN → 도서.ISBN</li>
+<li>M:N — 한 고객이 여러 도서 주문 가능, 한 도서를 여러 고객이 주문 가능</li>
+<li><code>SELECT * FROM 도서 WHERE 가격 &gt; 20000;</code></li>
+<li><code>SELECT 이름, 이메일 FROM 고객;</code></li>
+</ol>
+</details>
+<hr>
+<h2>7. 핵심 요약</h2>
+<pre><code>데이터베이스 시스템
+├── 파일 시스템 한계 해결: 중복·종속성·동시성·무결성·보안
+├── 관계형 모델: 릴레이션(테이블) = 튜플(행) + 속성(열) + 도메인
+├── 키: 슈퍼키 ⊃ 후보키 → 기본키 선택 / 외래키로 참조 무결성
+├── 관계 대수: σ(선택) π(투영) ⋈(조인) — SQL의 수학적 기반
+└── ERD: 개념적 설계 도구, 엔티티·속성·관계·카디널리티</code></pre>
+<hr>
+<h2>8. 다음 레슨 예고</h2>
+<p><strong>Day 2 — SQL 기초: DDL</strong></p>
+<ul>
+<li><code>CREATE TABLE</code>, <code>ALTER TABLE</code>, <code>DROP TABLE</code></li>
+<li>제약조건: <code>PRIMARY KEY</code>, <code>FOREIGN KEY</code>, <code>UNIQUE</code>, <code>NOT NULL</code>, <code>CHECK</code></li>
+<li>데이터 타입: <code>INTEGER</code>, <code>VARCHAR</code>, <code>DATE</code>, <code>BOOLEAN</code>, <code>NUMERIC</code></li>
+</ul>
+<hr>
+<h2>참고 자료</h2>
+<ul>
+<li><em>Database System Concepts</em> 7판 Ch.1–2 (Silberschatz) — 관계형 모델 원전</li>
+<li>CMU 15-445 Lecture 1: Relational Model &amp; Algebra — <a href="https://15445.courses.cs.cmu.edu/">강의 슬라이드</a></li>
+<li>SQLBolt Lesson 1–4 — 기초 SELECT 실습으로 워밍업</li>
+</ul>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — 네트워크 기초 &amp; OSI 모델</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 920px; margin: 0 auto; padding: 48px 24px 72px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.68; color: #202124; background: #fff; }
+    h1 { margin: 0 0 24px; font-size: 2rem; line-height: 1.25; }
+    h2 { margin-top: 40px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+    h3 { margin-top: 28px; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.95rem; }
+    th, td { border: 1px solid #d8dee4; padding: 8px 10px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 16px; background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 4px; }
+    blockquote { margin: 18px 0; padding: 2px 18px; border-left: 4px solid #d8dee4; color: #57606a; background: #f6f8fa; }
+    details { margin: 18px 0; padding: 12px 16px; border: 1px solid #d8dee4; border-radius: 6px; }
+    summary { cursor: pointer; font-weight: 600; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+    .back { margin-bottom: 28px; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+<h1>Day 1 — 네트워크 기초 &amp; OSI 모델</h1>
+<blockquote>
+<p><strong>학습 목표</strong></p>
+<p>- 네트워크가 무엇인지, 왜 필요한지 설명할 수 있다.</p>
+<p>- OSI 7계층 각각의 역할과 데이터 단위(PDU)를 말할 수 있다.</p>
+<p>- 캡슐화(Encapsulation)와 역캡슐화(Decapsulation) 과정을 그림으로 설명할 수 있다.</p>
+</blockquote>
+<hr>
+<h2>1. 네트워크란 무엇인가?</h2>
+<p><strong>네트워크(Network)</strong> 는 두 대 이상의 장치(device)가 데이터를 주고받을 수 있도록 연결된 시스템이다.</p>
+<pre><code>[PC A] ──── [스위치] ──── [라우터] ──── 인터넷
+              │
+           [PC B]</code></pre>
+<h3>핵심 용어</h3>
+<table>
+<thead><tr><th>용어</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><strong>호스트(Host)</strong></td><td>네트워크에 연결된 장치. 데이터를 보내거나 받는 주체.</td></tr>
+<tr><td><strong>노드(Node)</strong></td><td>네트워크 상의 모든 장치 (호스트 + 스위치/라우터 등 중간 장비 포함).</td></tr>
+<tr><td><strong>대역폭(Bandwidth)</strong></td><td>단위 시간당 전송할 수 있는 최대 데이터 양 (단위: bps).</td></tr>
+<tr><td><strong>지연(Latency)</strong></td><td>데이터가 출발지에서 목적지까지 걸리는 시간.</td></tr>
+<tr><td><strong>패킷(Packet)</strong></td><td>네트워크에서 전송되는 데이터의 기본 단위.</td></tr>
+</tbody>
+</table>
+<h3>네트워크 분류</h3>
+<table>
+<thead><tr><th>종류</th><th>범위</th><th>예시</th></tr></thead>
+<tbody>
+<tr><td><strong>LAN</strong> (Local Area Network)</td><td>건물 / 캠퍼스 내부</td><td>사무실 Wi-Fi, 이더넷</td></tr>
+<tr><td><strong>WAN</strong> (Wide Area Network)</td><td>도시 / 국가 / 대륙</td><td>인터넷, 전용선</td></tr>
+<tr><td><strong>MAN</strong> (Metropolitan Area Network)</td><td>도시 규모</td><td>도시 단위 케이블 망</td></tr>
+<tr><td><strong>PAN</strong> (Personal Area Network)</td><td>수 미터 이내</td><td>블루투스, USB</td></tr>
+</tbody>
+</table>
+<hr>
+<h2>2. 프로토콜(Protocol)이란?</h2>
+<p>네트워크 통신에서 <strong>프로토콜</strong>은 두 장치가 데이터를 주고받기 위해 약속한 규칙의 집합이다.</p>
+<p>프로토콜이 정의하는 것:</p>
+<ul>
+<li><strong>구문(Syntax)</strong>: 데이터의 형식과 인코딩 방식</li>
+<li><strong>의미(Semantics)</strong>: 각 비트·필드가 의미하는 것</li>
+<li><strong>타이밍(Timing)</strong>: 언제 데이터를 보내고, 얼마나 빨리 보낼지</li>
+</ul>
+<blockquote>
+<p>인간의 언어에 비유하면, 프로토콜은 "문법 + 어휘 + 대화 순서"다.</p>
+</blockquote>
+<hr>
+<h2>3. OSI 7계층 모델</h2>
+<p><strong>OSI(Open Systems Interconnection) 모델</strong>은 ISO가 1984년에 제정한 네트워크 통신 표준 참조 모델이다. 복잡한 네트워크 통신 과정을 <strong>7개의 계층</strong>으로 추상화한다.</p>
+<pre><code>┌─────────────────────────────────────┐
+│  7. 응용 계층 (Application)          │  ← 사용자·앱과 직접 상호작용
+├─────────────────────────────────────┤
+│  6. 표현 계층 (Presentation)         │  ← 데이터 형식 변환·암호화
+├─────────────────────────────────────┤
+│  5. 세션 계층 (Session)              │  ← 세션 수립·유지·종료
+├─────────────────────────────────────┤
+│  4. 전송 계층 (Transport)            │  ← 종단 간 신뢰성·흐름 제어
+├─────────────────────────────────────┤
+│  3. 네트워크 계층 (Network)           │  ← 논리 주소(IP), 라우팅
+├─────────────────────────────────────┤
+│  2. 데이터링크 계층 (Data Link)       │  ← 물리 주소(MAC), 오류 감지
+├─────────────────────────────────────┤
+│  1. 물리 계층 (Physical)             │  ← 비트 전송, 전기·광 신호
+└─────────────────────────────────────┘</code></pre>
+<h3>암기법</h3>
+<blockquote>
+<p><strong>"All People Seem To Need Data Processing"</strong>  </p>
+<p>Application / Presentation / Session / Transport / Network / Data Link / Physical</p>
+</blockquote>
+<p>또는 아래에서 위로:  </p>
+<blockquote>
+<p><strong>"Please Do Not Throw Sausage Pizza Away"</strong></p>
+</blockquote>
+<hr>
+<h2>4. 각 계층 상세 설명</h2>
+<h3>계층 1 — 물리 계층 (Physical Layer)</h3>
+<ul>
+<li><strong>역할</strong>: 비트(0과 1)를 전기 신호, 광 신호, 무선 전파로 변환해 전송.</li>
+<li><strong>PDU</strong>: 비트(Bit)</li>
+<li><strong>장비</strong>: 케이블, 허브(Hub), 리피터(Repeater), NIC(랜카드)</li>
+<li><strong>대표 기술</strong>: 이더넷 케이블(Cat5e/Cat6), 광섬유, 802.11 Wi-Fi 무선</li>
+</ul>
+<pre><code>[PC] ──Cat6 케이블──&gt; [허브] ──&gt; 전기 신호로 비트 전달</code></pre>
+<hr>
+<h3>계층 2 — 데이터링크 계층 (Data Link Layer)</h3>
+<ul>
+<li><strong>역할</strong>: 같은 네트워크 내 장치 간 신뢰성 있는 데이터 전송. <strong>MAC 주소</strong>로 장치를 식별.</li>
+<li><strong>PDU</strong>: 프레임(Frame)</li>
+<li><strong>장비</strong>: 스위치(Switch), 브리지(Bridge)</li>
+<li><strong>주요 기능</strong>:</li>
+</ul>
+<p>  - <strong>프레이밍</strong>: 비트 스트림을 프레임 단위로 묶음</p>
+<p>  - <strong>오류 감지</strong>: CRC(Cyclic Redundancy Check)로 전송 오류 탐지</p>
+<p>  - <strong>MAC 주소</strong>: 48비트 물리 주소 (예: <code>00:1A:2B:3C:4D:5E</code>)</p>
+<pre><code>프레임 구조: [목적지 MAC | 출발지 MAC | 타입 | 데이터 페이로드 | FCS]</code></pre>
+<hr>
+<h3>계층 3 — 네트워크 계층 (Network Layer)</h3>
+<ul>
+<li><strong>역할</strong>: 서로 다른 네트워크 간 데이터 전달. <strong>IP 주소</strong>로 경로(Route) 결정.</li>
+<li><strong>PDU</strong>: 패킷(Packet)</li>
+<li><strong>장비</strong>: 라우터(Router)</li>
+<li><strong>대표 프로토콜</strong>: IP, ICMP, ARP (일부 모델 기준)</li>
+</ul>
+<pre><code>[192.168.1.10] ──라우터──&gt; [10.0.0.5]
+                  ↑
+           IP 주소 기반 경로 결정</code></pre>
+<hr>
+<h3>계층 4 — 전송 계층 (Transport Layer)</h3>
+<ul>
+<li><strong>역할</strong>: 출발지에서 목적지 프로세스 간 <strong>종단 간(End-to-End)</strong> 통신 보장.</li>
+<li><strong>PDU</strong>: 세그먼트(Segment, TCP) / 데이터그램(Datagram, UDP)</li>
+<li><strong>대표 프로토콜</strong>: TCP, UDP</li>
+<li><strong>포트(Port) 번호</strong>로 프로세스 구분 (예: HTTP=80, HTTPS=443, DNS=53)</li>
+</ul>
+<table>
+<thead><tr><th>TCP</th><th>UDP</th></tr></thead>
+<tbody>
+<tr><td>연결 지향 (3-way handshake)</td><td>비연결 지향</td></tr>
+<tr><td>신뢰성 보장 (재전송)</td><td>빠르고 경량</td></tr>
+<tr><td>순서 보장</td><td>순서 보장 없음</td></tr>
+<tr><td>파일 전송, 웹</td><td>스트리밍, DNS</td></tr>
+</tbody>
+</table>
+<hr>
+<h3>계층 5 — 세션 계층 (Session Layer)</h3>
+<ul>
+<li><strong>역할</strong>: 두 애플리케이션 간 <strong>세션(Session)</strong> 수립, 유지, 종료 관리.</li>
+<li>동기화(Synchronization) 포인트로 중단 후 재개 가능.</li>
+<li><strong>대표 프로토콜</strong>: NetBIOS, RPC, PPTP</li>
+</ul>
+<blockquote>
+<p>실무에서는 TCP/IP 모델에서 세션·표현·응용 계층을 합쳐 <strong>응용 계층</strong>으로 처리한다.</p>
+</blockquote>
+<hr>
+<h3>계층 6 — 표현 계층 (Presentation Layer)</h3>
+<ul>
+<li><strong>역할</strong>: 데이터의 <strong>형식 변환, 압축, 암호화/복호화</strong>.</li>
+<li>송신측: 애플리케이션 데이터 → 네트워크 표준 형식으로 변환</li>
+<li>수신측: 네트워크 형식 → 애플리케이션이 이해할 수 있는 형식으로 변환</li>
+<li><strong>대표 예</strong>: JPEG, MP3, TLS 암호화, ASCII/UTF-8 변환</li>
+</ul>
+<hr>
+<h3>계층 7 — 응용 계층 (Application Layer)</h3>
+<ul>
+<li><strong>역할</strong>: 사용자나 애플리케이션이 <strong>직접 사용하는 서비스 제공</strong>.</li>
+<li><strong>PDU</strong>: 데이터(Data) / 메시지(Message)</li>
+<li><strong>대표 프로토콜</strong>: HTTP, HTTPS, FTP, SMTP, DNS, DHCP, SSH</li>
+</ul>
+<pre><code>사용자가 브라우저에 URL 입력
+       ↓
+응용 계층: HTTP 요청 생성
+       ↓
+... 아래 계층들이 순서대로 처리 ...
+       ↓
+상대방 서버에 도달</code></pre>
+<hr>
+<h2>5. 캡슐화(Encapsulation)와 역캡슐화(Decapsulation)</h2>
+<p>데이터가 송신측에서 수신측으로 이동할 때, 각 계층이 <strong>헤더(Header)</strong> 를 붙이는 과정이 <strong>캡슐화</strong>다.</p>
+<h3>캡슐화 — 송신 방향 (위 → 아래)</h3>
+<pre><code>[응용 계층]     데이터 (Data)
+     ↓ + HTTP 헤더
+[전송 계층]     세그먼트 [TCP Header | Data]
+     ↓ + TCP 헤더
+[네트워크 계층]  패킷    [IP Header | TCP Header | Data]
+     ↓ + IP 헤더
+[데이터링크]     프레임  [ETH Header | IP Header | TCP Header | Data | FCS]
+     ↓ 비트로 변환
+[물리 계층]     비트 스트림 ──────────────────────────────&gt; 전선</code></pre>
+<h3>역캡슐화 — 수신 방향 (아래 → 위)</h3>
+<p>수신측은 반대로 각 계층에서 헤더를 제거(벗겨내기)하며 상위 계층으로 데이터를 전달한다.</p>
+<pre><code>[물리 계층]     비트 수신
+     ↑ ETH 헤더 제거
+[데이터링크]     프레임 확인 → MAC 주소 검증
+     ↑ IP 헤더 제거
+[네트워크 계층]  패킷 확인 → IP 주소 검증
+     ↑ TCP 헤더 제거
+[전송 계층]     세그먼트 재조합 → 포트 번호로 프로세스 전달
+     ↑
+[응용 계층]     최종 데이터 사용자에게 전달</code></pre>
+<blockquote>
+<p><strong>핵심 포인트</strong>: 각 계층은 자신의 계층 헤더만 보고 처리한다. 하위 계층은 상위 계층의 내용을 알 필요 없다(계층 독립성).</p>
+</blockquote>
+<hr>
+<h2>6. PDU(Protocol Data Unit) 정리</h2>
+<table>
+<thead><tr><th>계층</th><th>PDU 이름</th></tr></thead>
+<tbody>
+<tr><td>7 — 응용</td><td>데이터/메시지 (Data/Message)</td></tr>
+<tr><td>6 — 표현</td><td>데이터 (Data)</td></tr>
+<tr><td>5 — 세션</td><td>데이터 (Data)</td></tr>
+<tr><td>4 — 전송</td><td>세그먼트 / 데이터그램 (Segment/Datagram)</td></tr>
+<tr><td>3 — 네트워크</td><td>패킷 (Packet)</td></tr>
+<tr><td>2 — 데이터링크</td><td>프레임 (Frame)</td></tr>
+<tr><td>1 — 물리</td><td>비트 (Bit)</td></tr>
+</tbody>
+</table>
+<hr>
+<h2>7. OSI vs TCP/IP 모델 비교</h2>
+<p>실무에서는 OSI 7계층보다 <strong>TCP/IP 4계층</strong> 모델이 더 많이 쓰인다.</p>
+<pre><code>OSI 7계층                   TCP/IP 4계층
+─────────────────────────   ─────────────────
+7. 응용 계층   ┐
+6. 표현 계층   ├──────────&gt; 4. 응용 계층 (Application)
+5. 세션 계층   ┘
+4. 전송 계층  ──────────&gt;   3. 전송 계층 (Transport)
+3. 네트워크 계층 ────────&gt;  2. 인터넷 계층 (Internet)
+2. 데이터링크 ┐
+1. 물리 계층  ├──────────&gt;  1. 네트워크 액세스 계층 (Network Access)
+              ┘</code></pre>
+<blockquote>
+<p>OSI는 <strong>이론적 참조 모델</strong>, TCP/IP는 <strong>실제 인터넷에서 구현된 모델</strong>이다.</p>
+</blockquote>
+<hr>
+<h2>8. 실습 확인 (Self-Check)</h2>
+<p>다음 질문에 답해보자 (책/자료 없이):</p>
+<ol>
+<li>OSI 7계층을 1계층부터 7계층까지 이름과 PDU를 함께 말해보라.</li>
+<li>내 컴퓨터에서 구글 서버로 HTTP 요청이 갈 때, 어떤 헤더들이 순서대로 붙는가?</li>
+<li>스위치는 몇 계층 장비인가? 라우터는? 허브는?</li>
+<li>MAC 주소와 IP 주소의 차이는 무엇인가?</li>
+<li>TCP와 UDP 중 DNS는 왜 기본적으로 UDP를 사용하는가?</li>
+</ol>
+<hr>
+<h2>9. 핵심 요약</h2>
+<ul>
+<li>네트워크는 데이터를 주고받기 위한 장치들의 연결이며, <strong>프로토콜</strong>로 규칙을 정한다.</li>
+<li><strong>OSI 7계층</strong>은 물리 → 응용 방향으로 역할이 분리된 참조 모델이다.</li>
+<li>각 계층은 <strong>PDU</strong>라는 데이터 단위를 가지며, 송신 시 헤더를 추가(캡슐화), 수신 시 헤더를 제거(역캡슐화)한다.</li>
+<li>실무 인터넷은 TCP/IP 4계층 모델로 동작한다.</li>
+</ul>
+<hr>
+<h2>10. 다음 레슨 예고</h2>
+<p><strong>Day 2 — TCP/IP 모델과 물리·데이터링크 계층</strong></p>
+<ul>
+<li>TCP/IP 4계층 모델 심화</li>
+<li>이더넷(Ethernet) 동작 원리</li>
+<li>MAC 주소와 ARP(Address Resolution Protocol)</li>
+<li>스위치의 MAC 주소 테이블 학습 과정</li>
+</ul>
+<hr>
+<p><em>레슨 완료 후 <code>PROGRESS.md</code>를 업데이트하고 <code>learning-records/</code> 에 오늘 배운 내용을 자신의 말로 정리해보자.</em></p>
+</body>
+</html>

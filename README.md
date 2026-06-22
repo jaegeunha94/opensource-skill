@@ -13,7 +13,7 @@
 - merge commit을 만들지 말고 cherry-pick 방식으로 main에 선형 반영해줘.
 - 각 브랜치는 main보다 앞선 커밋이 있는 경우에만 통합해줘.
 - 충돌이 나면 즉시 멈추고 conflicted 파일과 현재 상태를 알려줘.
-- 새로 추가된 각 과목의 `lessons/` 아래 `.html` 또는 `.md` 레슨 URL을 GitHub Pages 경로로 한 번에 출력해줘.
+- 새로 추가된 각 과목의 `lessons/` 아래 `.html` 레슨 URL을 GitHub Pages 경로로 한 번에 출력해줘.
 - 검증 후 `git push origin main` 해줘.
 - main에 성공적으로 반영된 원격 브랜치만 삭제해줘.
 ```

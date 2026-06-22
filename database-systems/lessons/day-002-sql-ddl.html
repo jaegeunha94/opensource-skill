@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — SQL 기초: DDL (Data Definition Language)</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 920px; margin: 0 auto; padding: 48px 24px 72px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.68; color: #202124; background: #fff; }
+    h1 { margin: 0 0 24px; font-size: 2rem; line-height: 1.25; }
+    h2 { margin-top: 40px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+    h3 { margin-top: 28px; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.95rem; }
+    th, td { border: 1px solid #d8dee4; padding: 8px 10px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 16px; background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 4px; }
+    blockquote { margin: 18px 0; padding: 2px 18px; border-left: 4px solid #d8dee4; color: #57606a; background: #f6f8fa; }
+    details { margin: 18px 0; padding: 12px 16px; border: 1px solid #d8dee4; border-radius: 6px; }
+    summary { cursor: pointer; font-weight: 600; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+    .back { margin-bottom: 28px; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 데이터베이스 학습 목록</a></nav>
+<h1>Day 2 — SQL 기초: DDL (Data Definition Language)</h1>
+<p><strong>날짜</strong>: 2026-06-22</p>
+<p><strong>소요 시간</strong>: 약 60분</p>
+<p><strong>선행 조건</strong>: Day 1 — 데이터베이스 개요 및 관계형 모델</p>
+<hr>
+<h2>학습 목표</h2>
+<p>이 레슨을 마치면 다음을 할 수 있다:</p>
+<ol>
+<li>DDL과 DML의 차이를 설명할 수 있다</li>
+<li><code>CREATE TABLE</code>로 테이블을 정의하고 데이터 타입을 선택할 수 있다</li>
+<li><code>PRIMARY KEY</code>, <code>FOREIGN KEY</code>, <code>UNIQUE</code>, <code>NOT NULL</code>, <code>CHECK</code> 제약조건을 올바르게 적용할 수 있다</li>
+<li><code>ALTER TABLE</code>로 테이블 구조를 변경할 수 있다</li>
+<li><code>DROP TABLE</code>과 <code>TRUNCATE TABLE</code>의 차이를 알 수 있다</li>
+</ol>
+<hr>
+<h2>1. SQL 분류 개요</h2>
+<p>SQL은 목적에 따라 세 가지 하위 언어로 나뉜다.</p>
+<table>
+<thead><tr><th>분류</th><th>의미</th><th>주요 명령어</th></tr></thead>
+<tbody>
+<tr><td><strong>DDL</strong> (Data Definition Language)</td><td>구조 정의</td><td><code>CREATE</code>, <code>ALTER</code>, <code>DROP</code>, <code>TRUNCATE</code></td></tr>
+<tr><td><strong>DML</strong> (Data Manipulation Language)</td><td>데이터 조작</td><td><code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code></td></tr>
+<tr><td><strong>DCL</strong> (Data Control Language)</td><td>권한 제어</td><td><code>GRANT</code>, <code>REVOKE</code></td></tr>
+</tbody>
+</table>
+<blockquote>
+<p>이 레슨은 <strong>DDL</strong>에 집중한다.</p>
+</blockquote>
+<hr>
+<h2>2. 데이터 타입</h2>
+<p>테이블을 만들기 전에 각 컬럼에 알맞은 타입을 골라야 한다.</p>
+<h3>숫자형</h3>
+<table>
+<thead><tr><th>타입</th><th>범위 / 특징</th><th>사용 예</th></tr></thead>
+<tbody>
+<tr><td><code>INTEGER</code> / <code>INT</code></td><td>정수 (4바이트, ±21억)</td><td>나이, 수량</td></tr>
+<tr><td><code>BIGINT</code></td><td>정수 (8바이트, ±922경)</td><td>고유 ID, 타임스탬프</td></tr>
+<tr><td><code>NUMERIC(p, s)</code></td><td>정밀 소수 (p자리, 소수점 s자리)</td><td>금액, 환율</td></tr>
+<tr><td><code>REAL</code> / <code>FLOAT</code></td><td>부동소수점 (정밀도 손실 가능)</td><td>과학 계산</td></tr>
+</tbody>
+</table>
+<pre><code class="language-sql">-- 금액은 NUMERIC 사용 (FLOAT은 반올림 오류 발생 가능)
+price NUMERIC(10, 2)  -- 최대 10자리, 소수점 2자리</code></pre>
+<h3>문자형</h3>
+<table>
+<thead><tr><th>타입</th><th>특징</th><th>사용 예</th></tr></thead>
+<tbody>
+<tr><td><code>CHAR(n)</code></td><td>고정 길이 (공백 패딩)</td><td>국가 코드 'KR', 우편번호</td></tr>
+<tr><td><code>VARCHAR(n)</code></td><td>가변 길이 (최대 n)</td><td>이름, 이메일</td></tr>
+<tr><td><code>TEXT</code></td><td>길이 제한 없음</td><td>게시글 본문, 설명</td></tr>
+</tbody>
+</table>
+<pre><code class="language-sql">country_code CHAR(2)      -- 항상 2자리 → CHAR
+email        VARCHAR(255)  -- 최대 255자 → VARCHAR
+description  TEXT          -- 무제한 → TEXT</code></pre>
+<h3>날짜·시간형</h3>
+<table>
+<thead><tr><th>타입</th><th>저장 내용</th><th>예시</th></tr></thead>
+<tbody>
+<tr><td><code>DATE</code></td><td>날짜만</td><td><code>'2026-06-22'</code></td></tr>
+<tr><td><code>TIME</code></td><td>시간만</td><td><code>'14:30:00'</code></td></tr>
+<tr><td><code>TIMESTAMP</code></td><td>날짜+시간</td><td><code>'2026-06-22 14:30:00'</code></td></tr>
+<tr><td><code>TIMESTAMPTZ</code></td><td>날짜+시간+시간대</td><td><code>'2026-06-22 14:30:00+09'</code></td></tr>
+</tbody>
+</table>
+<h3>기타</h3>
+<table>
+<thead><tr><th>타입</th><th>특징</th></tr></thead>
+<tbody>
+<tr><td><code>BOOLEAN</code></td><td><code>TRUE</code> / <code>FALSE</code> / <code>NULL</code></td></tr>
+<tr><td><code>UUID</code></td><td>범용 고유 식별자 (36자)</td></tr>
+<tr><td><code>JSON</code> / <code>JSONB</code></td><td>JSON 저장 (JSONB는 PostgreSQL 바이너리 색인 가능)</td></tr>
+</tbody>
+</table>
+<hr>
+<h2>3. CREATE TABLE</h2>
+<p>기본 구문:</p>
+<pre><code class="language-sql">CREATE TABLE 테이블명 (
+    컬럼명 데이터타입 [제약조건],
+    ...
+    [테이블 수준 제약조건]
+);</code></pre>
+<h3>예시: 학생 테이블</h3>
+<pre><code class="language-sql">CREATE TABLE student (
+    student_id  BIGINT       NOT NULL,
+    name        VARCHAR(50)  NOT NULL,
+    email       VARCHAR(255) NOT NULL,
+    age         INTEGER      CHECK (age &gt;= 0 AND age &lt;= 150),
+    major       VARCHAR(100),
+    created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (student_id),
+    UNIQUE (email)
+);</code></pre>
+<h3>예시: 강좌와 수강 테이블 (FK 포함)</h3>
+<pre><code class="language-sql">CREATE TABLE course (
+    course_id   CHAR(8)      NOT NULL,
+    title       VARCHAR(100) NOT NULL,
+    credits     INTEGER      NOT NULL CHECK (credits BETWEEN 1 AND 6),
+
+    PRIMARY KEY (course_id)
+);
+
+CREATE TABLE enrollment (
+    student_id  BIGINT  NOT NULL,
+    course_id   CHAR(8) NOT NULL,
+    grade       CHAR(2),
+    enrolled_at DATE    NOT NULL DEFAULT CURRENT_DATE,
+
+    PRIMARY KEY (student_id, course_id),           -- 복합 기본키
+    FOREIGN KEY (student_id) REFERENCES student(student_id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id)  REFERENCES course(course_id)   ON DELETE RESTRICT
+);</code></pre>
+<hr>
+<h2>4. 제약조건 (Constraints)</h2>
+<h3>PRIMARY KEY</h3>
+<ul>
+<li>행을 유일하게 식별 (NULL 불허 + UNIQUE 자동 적용)</li>
+<li>단일 컬럼 또는 복합 컬럼으로 지정 가능</li>
+</ul>
+<pre><code class="language-sql">-- 단일
+PRIMARY KEY (student_id)
+
+-- 복합
+PRIMARY KEY (student_id, course_id)</code></pre>
+<h3>FOREIGN KEY</h3>
+<p>참조 무결성 보장. 참조된 행이 삭제될 때의 동작을 <code>ON DELETE</code>로 지정한다.</p>
+<table>
+<thead><tr><th>옵션</th><th>동작</th></tr></thead>
+<tbody>
+<tr><td><code>RESTRICT</code> (기본값)</td><td>참조되는 행이 있으면 삭제 거부</td></tr>
+<tr><td><code>CASCADE</code></td><td>참조하는 행도 함께 삭제</td></tr>
+<tr><td><code>SET NULL</code></td><td>외래키 컬럼을 NULL로 변경</td></tr>
+<tr><td><code>SET DEFAULT</code></td><td>외래키 컬럼을 기본값으로 변경</td></tr>
+</tbody>
+</table>
+<pre><code class="language-sql">FOREIGN KEY (student_id) REFERENCES student(student_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE</code></pre>
+<h3>NOT NULL</h3>
+<p>해당 컬럼에 NULL 저장 불허.</p>
+<pre><code class="language-sql">name VARCHAR(50) NOT NULL</code></pre>
+<h3>UNIQUE</h3>
+<p>같은 값이 중복으로 들어올 수 없다. NULL은 여러 개 허용(DBMS마다 다를 수 있음).</p>
+<pre><code class="language-sql">email VARCHAR(255) UNIQUE
+-- 또는 테이블 수준
+UNIQUE (email)</code></pre>
+<h3>CHECK</h3>
+<p>지정한 조건을 위반하는 값은 거부된다.</p>
+<pre><code class="language-sql">age     INTEGER CHECK (age &gt;= 0)
+credits INTEGER CHECK (credits BETWEEN 1 AND 6)
+status  VARCHAR(10) CHECK (status IN ('active', 'inactive', 'suspended'))</code></pre>
+<h3>DEFAULT</h3>
+<p>값이 명시되지 않을 때 사용할 기본값.</p>
+<pre><code class="language-sql">created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+is_active  BOOLEAN   DEFAULT TRUE</code></pre>
+<hr>
+<h2>5. ALTER TABLE</h2>
+<p>기존 테이블의 구조를 변경한다.</p>
+<pre><code class="language-sql">-- 컬럼 추가
+ALTER TABLE student ADD COLUMN phone VARCHAR(20);
+
+-- 컬럼 삭제
+ALTER TABLE student DROP COLUMN phone;
+
+-- 컬럼 타입 변경 (PostgreSQL 문법)
+ALTER TABLE student ALTER COLUMN name TYPE VARCHAR(100);
+
+-- 컬럼 이름 변경
+ALTER TABLE student RENAME COLUMN major TO department;
+
+-- NOT NULL 추가
+ALTER TABLE student ALTER COLUMN phone SET NOT NULL;
+
+-- NOT NULL 제거
+ALTER TABLE student ALTER COLUMN phone DROP NOT NULL;
+
+-- 제약조건 추가
+ALTER TABLE student ADD CONSTRAINT chk_age CHECK (age &gt;= 0);
+
+-- 제약조건 삭제
+ALTER TABLE student DROP CONSTRAINT chk_age;
+
+-- 테이블 이름 변경
+ALTER TABLE student RENAME TO students;</code></pre>
+<blockquote>
+<p><strong>주의</strong>: 프로덕션 DB에서 <code>ALTER TABLE</code>은 테이블 잠금(lock)이 발생할 수 있다. 대용량 테이블은 무중단 마이그레이션 전략(pt-online-schema-change 등)이 필요하다.</p>
+</blockquote>
+<hr>
+<h2>6. DROP TABLE vs TRUNCATE TABLE</h2>
+<h3>DROP TABLE</h3>
+<p>테이블 <strong>구조까지</strong> 완전히 삭제한다.</p>
+<pre><code class="language-sql">DROP TABLE enrollment;
+
+-- 참조하는 테이블이 있어도 강제로 삭제 (PostgreSQL)
+DROP TABLE student CASCADE;
+
+-- 테이블이 없어도 에러 없음
+DROP TABLE IF EXISTS temp_data;</code></pre>
+<h3>TRUNCATE TABLE</h3>
+<p>테이블 <strong>구조는 유지</strong>하고 모든 데이터만 빠르게 삭제한다.</p>
+<pre><code class="language-sql">TRUNCATE TABLE enrollment;
+
+-- 연쇄 삭제
+TRUNCATE TABLE student CASCADE;</code></pre>
+<h3>비교</h3>
+<table>
+<thead><tr><th></th><th><code>DELETE</code> (DML)</th><th><code>TRUNCATE</code></th><th><code>DROP</code></th></tr></thead>
+<tbody>
+<tr><td>구조 유지</td><td>✅</td><td>✅</td><td>❌</td></tr>
+<tr><td>WHERE 조건</td><td>✅</td><td>❌</td><td>❌</td></tr>
+<tr><td>트리거 발동</td><td>✅</td><td>❌ (DBMS별 다름)</td><td>❌</td></tr>
+<tr><td>롤백 가능</td><td>✅</td><td>✅ (트랜잭션 내)</td><td>✅ (트랜잭션 내)</td></tr>
+<tr><td>속도</td><td>느림</td><td>빠름</td><td>빠름</td></tr>
+</tbody>
+</table>
+<hr>
+<h2>7. IF NOT EXISTS / IF EXISTS 패턴</h2>
+<p>스크립트를 멱등(idempotent)하게 작성하는 패턴.</p>
+<pre><code class="language-sql">-- 이미 존재하면 에러 없이 스킵
+CREATE TABLE IF NOT EXISTS student ( ... );
+
+-- 없어도 에러 없이 스킵
+DROP TABLE IF EXISTS temp_results;</code></pre>
+<hr>
+<h2>8. 실습 과제</h2>
+<p>아래 요구사항을 SQL DDL로 작성해 보세요.</p>
+<p><strong>시나리오</strong>: 도서관 시스템</p>
+<pre><code>도서관은 다음 정보를 관리한다:
+- 회원: 회원번호(PK), 이름(NOT NULL), 이메일(UNIQUE, NOT NULL), 가입일(DEFAULT 오늘)
+- 도서: ISBN(PK, CHAR 13자리), 제목(NOT NULL), 저자(NOT NULL), 출판년도(1000~2100 사이)
+- 대출: 대출번호(PK), 회원번호(FK), ISBN(FK), 대출일(NOT NULL), 반납기한(NOT NULL), 반납일(NULL 허용)
+- 회원이 삭제되면 대출 기록도 함께 삭제되어야 한다
+- 도서가 대출 중이면 도서를 삭제할 수 없어야 한다</code></pre>
+<details>
+<summary>정답 보기</summary>
+<pre><code class="language-sql">CREATE TABLE member (
+    member_id   BIGINT       NOT NULL,
+    name        VARCHAR(50)  NOT NULL,
+    email       VARCHAR(255) NOT NULL,
+    joined_at   DATE         NOT NULL DEFAULT CURRENT_DATE,
+
+    PRIMARY KEY (member_id),
+    UNIQUE (email)
+);
+
+CREATE TABLE book (
+    isbn        CHAR(13)     NOT NULL,
+    title       VARCHAR(200) NOT NULL,
+    author      VARCHAR(100) NOT NULL,
+    pub_year    INTEGER      CHECK (pub_year BETWEEN 1000 AND 2100),
+
+    PRIMARY KEY (isbn)
+);
+
+CREATE TABLE loan (
+    loan_id     BIGINT   NOT NULL,
+    member_id   BIGINT   NOT NULL,
+    isbn        CHAR(13) NOT NULL,
+    loan_date   DATE     NOT NULL,
+    due_date    DATE     NOT NULL,
+    return_date DATE,
+
+    PRIMARY KEY (loan_id),
+    FOREIGN KEY (member_id) REFERENCES member(member_id) ON DELETE CASCADE,
+    FOREIGN KEY (isbn)      REFERENCES book(isbn)        ON DELETE RESTRICT
+);</code></pre>
+</details>
+<hr>
+<h2>9. 핵심 요약</h2>
+<pre><code>DDL 핵심
+├── CREATE TABLE: 컬럼명 + 타입 + 제약조건 정의
+├── 데이터 타입 선택
+│   ├── 정수 → INTEGER / BIGINT
+│   ├── 금액 → NUMERIC(p, s)  (FLOAT 사용 금지)
+│   ├── 짧은 문자 → CHAR / VARCHAR, 긴 문자 → TEXT
+│   └── 날짜 → DATE / TIMESTAMP / TIMESTAMPTZ
+├── 제약조건
+│   ├── PRIMARY KEY: 유일 식별, NULL 불허
+│   ├── FOREIGN KEY: 참조 무결성 (ON DELETE 옵션 주의)
+│   ├── NOT NULL: NULL 차단
+│   ├── UNIQUE: 중복 차단 (NULL은 허용)
+│   └── CHECK: 도메인 규칙 강제
+├── ALTER TABLE: 컬럼 추가/삭제/변경, 제약조건 추가/삭제
+└── DROP vs TRUNCATE: 구조까지 삭제 vs 데이터만 삭제</code></pre>
+<hr>
+<h2>10. 다음 레슨 예고</h2>
+<p><strong>Day 3 — SQL 기초: DML</strong></p>
+<ul>
+<li><code>INSERT INTO</code>, <code>UPDATE</code>, <code>DELETE</code></li>
+<li><code>SELECT</code> 기초: <code>WHERE</code>, <code>ORDER BY</code>, <code>LIMIT</code>, <code>DISTINCT</code></li>
+<li>비교 연산자와 논리 연산자 (<code>=</code>, <code>&lt;&gt;</code>, <code>LIKE</code>, <code>IN</code>, <code>BETWEEN</code>, <code>IS NULL</code>)</li>
+</ul>
+<hr>
+<h2>참고 자료</h2>
+<ul>
+<li><em>Database System Concepts</em> 7판 Ch.3 (Silberschatz) — SQL DDL 원전</li>
+<li>PostgreSQL 공식 문서 — <a href="https://www.postgresql.org/docs/current/sql-createtable.html">CREATE TABLE</a></li>
+<li>CMU 15-445 Lecture 2: SQL — <a href="https://15445.courses.cs.cmu.edu/">강의 슬라이드</a></li>
+<li>SQLBolt Lesson 13–16 — DDL 실습</li>
+</ul>
+</body>
+</html>

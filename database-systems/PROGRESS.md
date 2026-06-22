@@ -4,8 +4,8 @@
 
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
-| 1 | 2026-06-22 | 데이터베이스 개요 및 관계형 모델 | [day-001-relational-model.md](lessons/day-001-relational-model.md) |
-| 2 | 2026-06-22 | SQL 기초 — DDL | [day-002-sql-ddl.md](lessons/day-002-sql-ddl.md) |
+| 1 | 2026-06-22 | 데이터베이스 개요 및 관계형 모델 | [day-001-relational-model.html](lessons/day-001-relational-model.html) |
+| 2 | 2026-06-22 | SQL 기초 — DDL | [day-002-sql-ddl.html](lessons/day-002-sql-ddl.html) |
 
 ## 다음 예정 학습
 

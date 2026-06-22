@@ -104,7 +104,7 @@ When the subject folder already exists:
 1. Read `PROGRESS.md` and identify the highest completed Day.
 2. Read the planned learning path and find the next uncompleted Day.
 3. Check `lessons/` and `learning-records/` numbering to choose the next sequential file number.
-4. Create exactly one next lesson unless the user explicitly asks for more.
+4. Create exactly one next lesson unless the user explicitly asks for more. Lesson files must be self-contained `.html` files under `lessons/`; do not create Markdown lesson files in `lessons/`, even if older lessons used `.md`.
 5. Reuse existing `assets/` before creating new assets.
 6. Update `lessons/index.html` so GitHub Pages can show the lesson list for the folder URL.
 7. Update `PROGRESS.md` immediately after completing the lesson.
@@ -125,6 +125,7 @@ Run this checklist before writing any new lesson:
 - Is the requested topic already covered by a lesson title or learning record?
 - Would this topic repeat a completed concept rather than deepen it?
 - Is the next lesson number one greater than the highest existing lesson number?
+- Is the new lesson filename ending in `.html`, not `.md`?
 - Will `PROGRESS.md` be updated in the same change as the lesson?
 - Will `lessons/index.html` be created or updated in the same change as the lesson?
 
@@ -162,6 +163,8 @@ The index should contain a simple Korean HTML page with:
 - a title such as `{Subject} 학습 목록`
 - an `<h1>` with the same subject list title
 - one `<li><a href="./{lesson-file}">...</a></li>` per lesson, in Day order
+
+Every lesson link in the index must point to an `.html` file. If a previous lesson exists as Markdown, convert it to HTML before adding more lessons so future runs do not copy the Markdown pattern.
 
 Example:
 

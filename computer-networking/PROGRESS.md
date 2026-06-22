@@ -4,8 +4,8 @@
 
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
-| 1 | 2026-06-22 | 네트워크 기초 & OSI 모델 | `lessons/day-01-network-basics-osi.md` |
-| 2 | 2026-06-22 | TCP/IP 모델과 물리·데이터링크 계층 | [day-02-tcpip-datalink.md](lessons/day-02-tcpip-datalink.md) |
+| 1 | 2026-06-22 | 네트워크 기초 & OSI 모델 | [day-01-network-basics-osi.html](lessons/day-01-network-basics-osi.html) |
+| 2 | 2026-06-22 | TCP/IP 모델과 물리·데이터링크 계층 | [day-02-tcpip-datalink.html](lessons/day-02-tcpip-datalink.html) |
 
 ## 다음 예정 학습
 

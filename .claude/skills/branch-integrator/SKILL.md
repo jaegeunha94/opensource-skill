@@ -154,7 +154,7 @@ Include files that satisfy all of these:
 - status is added (`A`)
 - path matches `{subject-slug}/lessons/*`
 - filename is not `index.html`
-- extension is `.html` or `.md`
+- extension is `.html`
 
 For each matching path, output the GitHub Pages URL:
 
