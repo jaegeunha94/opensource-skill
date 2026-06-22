@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-22 | 네트워크 기초 & OSI 모델 | `lessons/day-01-network-basics-osi.md` |
+| 2 | 2026-06-22 | TCP/IP 모델과 물리·데이터링크 계층 | [day-02-tcpip-datalink.md](lessons/day-02-tcpip-datalink.md) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | TCP/IP 모델과 물리·데이터링크 계층 | TCP/IP 4계층, 이더넷, MAC 주소, ARP |
 | 3 | 네트워크 계층 — IP와 라우팅 | IPv4, IPv6, 서브넷 마스크, CIDR, 라우팅 테이블 |
 | 4 | 전송 계층 — TCP vs UDP | TCP 3-way handshake, 흐름 제어, 혼잡 제어, UDP |
 | 5 | 응용 계층 — DNS와 DHCP | DNS 계층 구조, 재귀 쿼리, DHCP 임대 과정 |
@@ -22,12 +22,15 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — 다음: Day 2 (TCP/IP 모델과 물리·데이터링크 계층).
+**Day 2 완료** — 다음: Day 3 (네트워크 계층 — IP와 라우팅).
 
 ## 습득한 핵심 개념
 
 - [x] OSI 7계층 역할 (Day 1 완료)
-- [ ] TCP/IP 4계층 구조 (예정 Day 2)
+- [x] TCP/IP 4계층 구조 (Day 2 완료)
+- [x] 이더넷 프레임 구조 및 MAC 주소 (Day 2 완료)
+- [x] ARP 동작 원리 (Day 2 완료)
+- [x] 스위치 MAC 테이블 학습 과정 (Day 2 완료)
 - [ ] IP 주소와 서브넷 계산 (예정 Day 3)
 - [ ] TCP 3-way handshake (예정 Day 4)
 - [ ] DNS 재귀 쿼리 과정 (예정 Day 5)
