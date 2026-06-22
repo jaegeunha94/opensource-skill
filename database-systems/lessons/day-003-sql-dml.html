@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — SQL 기초: DML (Data Manipulation Language)</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 920px; margin: 0 auto; padding: 48px 24px 72px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.68; color: #202124; background: #fff; }
+    h1 { margin: 0 0 24px; font-size: 2rem; line-height: 1.25; }
+    h2 { margin-top: 40px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+    h3 { margin-top: 28px; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.95rem; }
+    th, td { border: 1px solid #d8dee4; padding: 8px 10px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 16px; background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 4px; }
+    blockquote { margin: 18px 0; padding: 2px 18px; border-left: 4px solid #d8dee4; color: #57606a; background: #f6f8fa; }
+    details { margin: 18px 0; padding: 12px 16px; border: 1px solid #d8dee4; border-radius: 6px; }
+    summary { cursor: pointer; font-weight: 600; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+    .back { margin-bottom: 28px; font-size: 0.95rem; }
+    .tip { background: #e8f0fe; border-left: 4px solid #0b57d0; padding: 2px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; }
+    .warn { background: #fef7e0; border-left: 4px solid #e37400; padding: 2px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 데이터베이스 학습 목록</a></nav>
+<h1>Day 3 — SQL 기초: DML (Data Manipulation Language)</h1>
+<p><strong>날짜</strong>: 2026-06-22</p>
+<p><strong>소요 시간</strong>: 약 60분</p>
+<p><strong>선행 조건</strong>: Day 2 — SQL 기초: DDL (Data Definition Language)</p>
+<hr>
+
+<h2>학습 목표</h2>
+<p>이 레슨을 마치면 다음을 할 수 있다:</p>
+<ol>
+  <li><code>SELECT</code>로 테이블 데이터를 조회하고 원하는 컬럼만 뽑을 수 있다</li>
+  <li><code>WHERE</code> 절로 조건 필터링을 적용할 수 있다</li>
+  <li><code>ORDER BY</code>와 <code>LIMIT</code>으로 결과를 정렬하고 개수를 제한할 수 있다</li>
+  <li><code>INSERT</code>로 새 행을 삽입할 수 있다</li>
+  <li><code>UPDATE</code>로 기존 행을 수정할 수 있다</li>
+  <li><code>DELETE</code>로 행을 삭제하고, <code>WHERE</code> 없이 쓸 때의 위험을 알 수 있다</li>
+</ol>
+<hr>
+
+<h2>1. DML이란?</h2>
+<p>DML(Data Manipulation Language)은 테이블 <em>구조</em>가 아닌 <em>데이터</em>를 다루는 SQL 명령 집합이다.</p>
+
+<table>
+  <thead><tr><th>명령어</th><th>역할</th><th>트랜잭션 대상</th></tr></thead>
+  <tbody>
+    <tr><td><code>SELECT</code></td><td>데이터 조회</td><td>읽기 전용 (변경 없음)</td></tr>
+    <tr><td><code>INSERT</code></td><td>새 행 삽입</td><td>O</td></tr>
+    <tr><td><code>UPDATE</code></td><td>기존 행 수정</td><td>O</td></tr>
+    <tr><td><code>DELETE</code></td><td>행 삭제</td><td>O</td></tr>
+  </tbody>
+</table>
+
+<blockquote>
+  <p>DDL(<code>CREATE</code>/<code>DROP</code> 등)은 대부분의 DBMS에서 자동 커밋(Auto-commit)된다. 반면 DML은 트랜잭션 제어(<code>COMMIT</code>/<code>ROLLBACK</code>)가 가능하다.</p>
+</blockquote>
+<hr>
+
+<h2>2. 실습용 스키마</h2>
+<p>이 레슨 전체에서 아래 두 테이블을 사용한다. Day 2에서 배운 DDL로 만든 것과 같은 구조다.</p>
+
+<pre><code>CREATE TABLE departments (
+  dept_id   INT          PRIMARY KEY,
+  dept_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE employees (
+  emp_id    INT          PRIMARY KEY,
+  name      VARCHAR(100) NOT NULL,
+  dept_id   INT          REFERENCES departments(dept_id),
+  salary    NUMERIC(10,2),
+  hire_date DATE
+);</code></pre>
+
+<p>샘플 데이터:</p>
+<pre><code>-- departments
+INSERT INTO departments VALUES (1, '개발팀');
+INSERT INTO departments VALUES (2, '마케팅팀');
+INSERT INTO departments VALUES (3, '인사팀');
+
+-- employees
+INSERT INTO employees VALUES (101, '김철수', 1, 6000000, '2022-03-15');
+INSERT INTO employees VALUES (102, '이영희', 1, 7500000, '2021-07-01');
+INSERT INTO employees VALUES (103, '박민준', 2, 5500000, '2023-01-10');
+INSERT INTO employees VALUES (104, '최수진', 3, 6200000, '2020-09-20');
+INSERT INTO employees VALUES (105, '정도윤', 2, 5000000, '2024-02-28');</code></pre>
+<hr>
+
+<h2>3. SELECT — 데이터 조회</h2>
+
+<h3>3-1. 기본 문법</h3>
+<pre><code>SELECT 컬럼1, 컬럼2, ...
+FROM   테이블명;</code></pre>
+
+<p>모든 컬럼을 조회하려면 <code>*</code>를 사용한다:</p>
+<pre><code>SELECT * FROM employees;</code></pre>
+
+<table>
+  <thead><tr><th>emp_id</th><th>name</th><th>dept_id</th><th>salary</th><th>hire_date</th></tr></thead>
+  <tbody>
+    <tr><td>101</td><td>김철수</td><td>1</td><td>6000000</td><td>2022-03-15</td></tr>
+    <tr><td>102</td><td>이영희</td><td>1</td><td>7500000</td><td>2021-07-01</td></tr>
+    <tr><td>103</td><td>박민준</td><td>2</td><td>5500000</td><td>2023-01-10</td></tr>
+    <tr><td>104</td><td>최수진</td><td>3</td><td>6200000</td><td>2020-09-20</td></tr>
+    <tr><td>105</td><td>정도윤</td><td>2</td><td>5000000</td><td>2024-02-28</td></tr>
+  </tbody>
+</table>
+
+<p>특정 컬럼만 선택:</p>
+<pre><code>SELECT name, salary FROM employees;</code></pre>
+
+<h3>3-2. 컬럼 별칭 (Alias)</h3>
+<pre><code>SELECT name AS 이름, salary AS 연봉 FROM employees;</code></pre>
+
+<h3>3-3. DISTINCT — 중복 제거</h3>
+<pre><code>SELECT DISTINCT dept_id FROM employees;
+-- 결과: 1, 2, 3</code></pre>
+<hr>
+
+<h2>4. WHERE — 조건 필터링</h2>
+
+<h3>4-1. 비교 연산자</h3>
+<table>
+  <thead><tr><th>연산자</th><th>의미</th><th>예시</th></tr></thead>
+  <tbody>
+    <tr><td><code>=</code></td><td>같다</td><td><code>dept_id = 1</code></td></tr>
+    <tr><td><code>&lt;&gt;</code> 또는 <code>!=</code></td><td>다르다</td><td><code>dept_id &lt;&gt; 2</code></td></tr>
+    <tr><td><code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code></td><td>크기 비교</td><td><code>salary &gt;= 6000000</code></td></tr>
+    <tr><td><code>BETWEEN a AND b</code></td><td>범위 포함</td><td><code>salary BETWEEN 5000000 AND 6500000</code></td></tr>
+    <tr><td><code>IS NULL</code> / <code>IS NOT NULL</code></td><td>NULL 검사</td><td><code>dept_id IS NULL</code></td></tr>
+    <tr><td><code>LIKE</code></td><td>패턴 매칭</td><td><code>name LIKE '김%'</code></td></tr>
+    <tr><td><code>IN (...)</code></td><td>목록 포함</td><td><code>dept_id IN (1, 3)</code></td></tr>
+  </tbody>
+</table>
+
+<h3>4-2. 논리 연산자</h3>
+<pre><code>-- AND: 두 조건 모두 참
+SELECT * FROM employees
+WHERE  dept_id = 1 AND salary >= 7000000;
+
+-- OR: 하나 이상 참
+SELECT * FROM employees
+WHERE  dept_id = 2 OR dept_id = 3;
+
+-- NOT: 조건 반전
+SELECT * FROM employees
+WHERE  NOT dept_id = 1;</code></pre>
+
+<h3>4-3. LIKE 패턴</h3>
+<table>
+  <thead><tr><th>패턴</th><th>의미</th><th>예시 결과</th></tr></thead>
+  <tbody>
+    <tr><td><code>'김%'</code></td><td>'김'으로 시작</td><td>김철수, 김OOO</td></tr>
+    <tr><td><code>'%준'</code></td><td>'준'으로 끝남</td><td>박민준, OO준</td></tr>
+    <tr><td><code>'%수%'</code></td><td>'수' 포함</td><td>김철수, 최수진</td></tr>
+    <tr><td><code>'_수_'</code></td><td>정확히 3글자, 가운데 '수'</td><td>김수진 형태</td></tr>
+  </tbody>
+</table>
+
+<pre><code>SELECT * FROM employees WHERE name LIKE '김%';
+-- 결과: 김철수</code></pre>
+<hr>
+
+<h2>5. ORDER BY — 정렬</h2>
+
+<h3>5-1. 기본 문법</h3>
+<pre><code>SELECT 컬럼1, 컬럼2
+FROM   테이블
+ORDER BY 정렬기준컬럼 [ASC | DESC];</code></pre>
+
+<ul>
+  <li><code>ASC</code>(기본값): 오름차순 (작은 값 → 큰 값)</li>
+  <li><code>DESC</code>: 내림차순 (큰 값 → 작은 값)</li>
+</ul>
+
+<pre><code>-- 급여 높은 순
+SELECT name, salary FROM employees ORDER BY salary DESC;
+
+-- 이름 가나다 순
+SELECT name FROM employees ORDER BY name ASC;</code></pre>
+
+<h3>5-2. 다중 정렬 기준</h3>
+<pre><code>-- dept_id 오름차순, 같은 부서 내 salary 내림차순
+SELECT name, dept_id, salary
+FROM   employees
+ORDER BY dept_id ASC, salary DESC;</code></pre>
+<hr>
+
+<h2>6. LIMIT — 결과 개수 제한</h2>
+
+<pre><code>-- 급여 상위 3명
+SELECT name, salary
+FROM   employees
+ORDER BY salary DESC
+LIMIT 3;</code></pre>
+
+<p>페이지네이션: <code>OFFSET</code>을 함께 쓴다.</p>
+<pre><code>-- 2번째 페이지 (페이지당 2건)
+SELECT name, salary
+FROM   employees
+ORDER BY emp_id
+LIMIT 2 OFFSET 2;   -- 3번째 행부터 2건</code></pre>
+
+<blockquote>
+  <p>Oracle은 <code>LIMIT</code> 대신 <code>ROWNUM</code>이나 <code>FETCH FIRST n ROWS ONLY</code>를 사용한다. SQL Server는 <code>TOP n</code>을 사용한다.</p>
+</blockquote>
+<hr>
+
+<h2>7. INSERT — 데이터 삽입</h2>
+
+<h3>7-1. 단일 행 삽입</h3>
+<pre><code>-- 컬럼 명시 방식 (권장)
+INSERT INTO employees (emp_id, name, dept_id, salary, hire_date)
+VALUES (106, '한지민', 1, 6800000, '2025-01-05');
+
+-- 컬럼 생략 (모든 컬럼 순서대로 값 입력)
+INSERT INTO employees
+VALUES (107, '오태양', 3, 5800000, '2025-06-01');</code></pre>
+
+<div class="tip">
+  <p><strong>팁</strong>: 컬럼 이름을 명시하는 방식이 안전하다. 나중에 테이블에 컬럼이 추가되어도 INSERT문이 깨지지 않는다.</p>
+</div>
+
+<h3>7-2. NULL 삽입</h3>
+<pre><code>-- dept_id를 아직 모르는 직원 추가
+INSERT INTO employees (emp_id, name, dept_id, salary, hire_date)
+VALUES (108, '신입사원', NULL, NULL, '2026-06-22');</code></pre>
+
+<h3>7-3. 다중 행 삽입</h3>
+<pre><code>INSERT INTO departments (dept_id, dept_name)
+VALUES (4, '기획팀'),
+       (5, '법무팀'),
+       (6, '재무팀');</code></pre>
+<hr>
+
+<h2>8. UPDATE — 데이터 수정</h2>
+
+<h3>8-1. 기본 문법</h3>
+<pre><code>UPDATE 테이블명
+SET    컬럼1 = 값1, 컬럼2 = 값2, ...
+WHERE  조건;</code></pre>
+
+<pre><code>-- 김철수의 급여를 6,500,000으로 인상
+UPDATE employees
+SET    salary = 6500000
+WHERE  emp_id = 101;
+
+-- 개발팀(dept_id=1) 전원 급여 10% 인상
+UPDATE employees
+SET    salary = salary * 1.10
+WHERE  dept_id = 1;</code></pre>
+
+<div class="warn">
+  <p><strong>주의</strong>: <code>WHERE</code>을 생략하면 테이블의 <em>모든 행</em>이 수정된다.</p>
+  <pre style="margin:8px 0"><code>-- 위험! 모든 직원의 급여가 0이 됨
+UPDATE employees SET salary = 0;</code></pre>
+  <p>실행 전 <code>SELECT</code>로 대상 행을 먼저 확인하는 습관을 들이자.</p>
+</div>
+<hr>
+
+<h2>9. DELETE — 데이터 삭제</h2>
+
+<h3>9-1. 기본 문법</h3>
+<pre><code>DELETE FROM 테이블명
+WHERE  조건;</code></pre>
+
+<pre><code>-- emp_id가 108인 직원 삭제
+DELETE FROM employees WHERE emp_id = 108;
+
+-- 2024년 이후 입사자 삭제
+DELETE FROM employees WHERE hire_date >= '2024-01-01';</code></pre>
+
+<div class="warn">
+  <p><strong>주의</strong>: <code>WHERE</code> 없이 사용하면 테이블의 <em>모든 행</em>이 삭제된다.</p>
+  <pre style="margin:8px 0"><code>-- 위험! 모든 직원 데이터 삭제
+DELETE FROM employees;</code></pre>
+</div>
+
+<h3>9-2. DELETE vs TRUNCATE 비교</h3>
+<table>
+  <thead><tr><th>항목</th><th>DELETE</th><th>TRUNCATE</th></tr></thead>
+  <tbody>
+    <tr><td>분류</td><td>DML</td><td>DDL</td></tr>
+    <tr><td>WHERE 조건</td><td>가능</td><td>불가 (전체 삭제)</td></tr>
+    <tr><td>ROLLBACK</td><td>가능</td><td>대부분 불가 (DBMS마다 다름)</td></tr>
+    <tr><td>속도</td><td>느림 (행별 로깅)</td><td>빠름 (페이지 단위)</td></tr>
+    <tr><td>트리거</td><td>실행됨</td><td>실행 안 됨</td></tr>
+  </tbody>
+</table>
+<hr>
+
+<h2>10. SELECT 완전한 실행 순서</h2>
+<p>SELECT 문의 각 절은 작성 순서와 <em>실행 순서</em>가 다르다.</p>
+
+<table>
+  <thead><tr><th>실행 순서</th><th>절</th><th>역할</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><code>FROM</code></td><td>대상 테이블 결정</td></tr>
+    <tr><td>2</td><td><code>WHERE</code></td><td>행 필터링</td></tr>
+    <tr><td>3</td><td><code>GROUP BY</code></td><td>그룹화 (Day 4에서 학습)</td></tr>
+    <tr><td>4</td><td><code>HAVING</code></td><td>그룹 필터링 (Day 4에서 학습)</td></tr>
+    <tr><td>5</td><td><code>SELECT</code></td><td>컬럼 선택 및 계산</td></tr>
+    <tr><td>6</td><td><code>ORDER BY</code></td><td>결과 정렬</td></tr>
+    <tr><td>7</td><td><code>LIMIT</code></td><td>결과 개수 제한</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <p><strong>핵심 포인트</strong>: <code>WHERE</code>에서는 <code>SELECT</code>에서 정의한 별칭(alias)을 사용할 수 없다. 실행 순서상 <code>WHERE</code>가 <code>SELECT</code>보다 먼저 실행되기 때문이다.</p>
+  <pre style="margin:8px 0"><code>-- 오류: WHERE에서 alias 사용 불가
+SELECT salary * 12 AS annual_salary
+FROM   employees
+WHERE  annual_salary > 80000000;   -- 오류
+
+-- 올바른 방법
+SELECT salary * 12 AS annual_salary
+FROM   employees
+WHERE  salary * 12 > 80000000;</code></pre>
+</div>
+<hr>
+
+<h2>11. 종합 실습</h2>
+
+<h3>문제 1</h3>
+<p>급여가 600만 원 이상이고 개발팀(dept_id=1)에 속한 직원의 이름과 급여를 급여 내림차순으로 조회하라.</p>
+<details>
+  <summary>정답 보기</summary>
+  <pre><code>SELECT name, salary
+FROM   employees
+WHERE  salary >= 6000000 AND dept_id = 1
+ORDER BY salary DESC;</code></pre>
+</details>
+
+<h3>문제 2</h3>
+<p>2023년 이후 입사자 중 급여 상위 2명의 이름, 급여, 입사일을 조회하라.</p>
+<details>
+  <summary>정답 보기</summary>
+  <pre><code>SELECT name, salary, hire_date
+FROM   employees
+WHERE  hire_date >= '2023-01-01'
+ORDER BY salary DESC
+LIMIT 2;</code></pre>
+</details>
+
+<h3>문제 3</h3>
+<p>박민준의 부서를 인사팀(dept_id=3)으로 이동하고 급여를 580만 원으로 조정하라.</p>
+<details>
+  <summary>정답 보기</summary>
+  <pre><code>UPDATE employees
+SET    dept_id = 3, salary = 5800000
+WHERE  name = '박민준';
+
+-- 확인
+SELECT * FROM employees WHERE name = '박민준';</code></pre>
+</details>
+
+<h3>문제 4</h3>
+<p>'이름'에 '수'가 포함된 직원을 모두 조회하라.</p>
+<details>
+  <summary>정답 보기</summary>
+  <pre><code>SELECT * FROM employees WHERE name LIKE '%수%';
+-- 결과: 김철수, 최수진</code></pre>
+</details>
+<hr>
+
+<h2>12. 핵심 요약</h2>
+<table>
+  <thead><tr><th>명령어</th><th>핵심 포인트</th></tr></thead>
+  <tbody>
+    <tr><td><code>SELECT</code></td><td>원하는 컬럼만 선택, <code>*</code>은 전체, <code>DISTINCT</code>로 중복 제거</td></tr>
+    <tr><td><code>WHERE</code></td><td>비교·논리·LIKE·IN·BETWEEN·IS NULL 연산자 조합</td></tr>
+    <tr><td><code>ORDER BY</code></td><td>기본값 ASC, 다중 기준 가능, 실행 순서 6번째</td></tr>
+    <tr><td><code>LIMIT</code></td><td>결과 개수 제한, <code>OFFSET</code>과 조합해 페이지네이션</td></tr>
+    <tr><td><code>INSERT</code></td><td>컬럼 명시 권장, 다중 행 삽입 가능</td></tr>
+    <tr><td><code>UPDATE</code></td><td>반드시 WHERE 확인 — 없으면 전체 수정</td></tr>
+    <tr><td><code>DELETE</code></td><td>반드시 WHERE 확인 — 없으면 전체 삭제, TRUNCATE와 차이 인지</td></tr>
+  </tbody>
+</table>
+<hr>
+
+<h2>다음 레슨 예고</h2>
+<p><strong>Day 4 — SQL 중급: JOIN &amp; 집계</strong></p>
+<ul>
+  <li><code>INNER JOIN</code>, <code>LEFT JOIN</code>, <code>RIGHT JOIN</code>, <code>FULL OUTER JOIN</code></li>
+  <li><code>GROUP BY</code>, <code>HAVING</code></li>
+  <li>집계 함수: <code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MAX</code>, <code>MIN</code></li>
+</ul>
+
+<hr>
+<p style="font-size:0.88rem; color:#6e7781;">데이터베이스 학습 워크스페이스 — Day 3 / 10</p>
+</body>
+</html>

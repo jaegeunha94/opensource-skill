@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-06-22 | 데이터베이스 개요 및 관계형 모델 | [day-001-relational-model.html](lessons/day-001-relational-model.html) |
 | 2 | 2026-06-22 | SQL 기초 — DDL | [day-002-sql-ddl.html](lessons/day-002-sql-ddl.html) |
+| 3 | 2026-06-22 | SQL 기초 — DML | [day-003-sql-dml.html](lessons/day-003-sql-dml.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | SQL 기초 — DML | INSERT, UPDATE, DELETE, SELECT, WHERE, ORDER BY, LIMIT |
 | 4 | SQL 중급 — JOIN & 집계 | INNER/LEFT/RIGHT JOIN, GROUP BY, HAVING, 집계함수(COUNT·SUM·AVG·MAX·MIN) |
 | 5 | SQL 고급 — 서브쿼리·뷰·인덱스 | 상관 서브쿼리, EXISTS, CREATE VIEW, CREATE INDEX |
 | 6 | 정규화 | 함수적 종속, 1NF·2NF·3NF·BCNF, 역정규화 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — Day 3 (SQL 기초 — DML)부터 시작.
+**Day 3 완료** — Day 4 (SQL 중급 — JOIN & 집계)부터 시작.
 
 ## 습득한 핵심 개념
 
@@ -33,7 +33,10 @@
 - [x] ERD 구성 요소: 엔티티·속성·관계·카디널리티 (Day 1)
 - [x] DDL: CREATE TABLE, ALTER TABLE, DROP (Day 2)
 - [x] 무결성 제약조건: PK·FK·UNIQUE·NOT NULL·CHECK (Day 2)
-- [ ] DML: SELECT, INSERT, UPDATE, DELETE (예정 Day 3)
+- [x] DML: SELECT, INSERT, UPDATE, DELETE (Day 3)
+- [x] WHERE 조건 필터링: 비교·논리·LIKE·IN·BETWEEN·IS NULL (Day 3)
+- [x] ORDER BY 정렬, LIMIT/OFFSET 페이지네이션 (Day 3)
+- [x] SELECT 실행 순서: FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT (Day 3)
 - [ ] JOIN 종류와 동작 원리 (예정 Day 4)
 - [ ] 정규화 1NF·2NF·3NF·BCNF (예정 Day 6)
 - [ ] ACID & 트랜잭션 (예정 Day 7)
