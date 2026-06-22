@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 2 — 순차 파일 구조</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <h1>Day 2: 순차 파일 구조</h1>
+  <div class="meta">
+    <span>📅 2026-06-22</span>
+    <span>⏱ 약 30분</span>
+    <span>📚 파일구조 과목</span>
+    <span>🔢 Lesson 2 / 10</span>
+  </div>
+
+  <!-- Learning Objectives -->
+  <div class="callout">
+    <strong>학습 목표</strong>
+    이 레슨을 마치면: (1) 순차 파일과 직렬 파일의 차이를 설명할 수 있다. (2) 고정/가변 길이 레코드에서 순차 파일이 어떻게 저장되는지 그릴 수 있다. (3) 순차 파일의 삽입·삭제 연산 비용을 분석할 수 있다. (4) 순차 파일이 적합한 상황과 부적합한 상황을 판단할 수 있다.
+  </div>
+
+  <!-- Section 1 -->
+  <h2>1. 순차 파일이란?</h2>
+
+  <p>
+    <strong>순차 파일(Sequential File)</strong>은 레코드를 <strong>특정 키(Key) 순서대로</strong> 저장하는 파일 조직 방법이다.
+    새로운 레코드는 키 순서를 유지하는 위치에만 삽입된다.
+  </p>
+
+  <p>
+    이와 유사한 개념으로 <strong>직렬 파일(Serial File)</strong>이 있는데, 둘의 차이는 다음과 같다.
+  </p>
+
+  <table class="comparison-table">
+    <thead>
+      <tr><th>구분</th><th>직렬 파일 (Serial File)</th><th>순차 파일 (Sequential File)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>저장 순서</strong></td>
+        <td>입력된 순서대로 저장 (정렬 없음)</td>
+        <td>키(Key) 값 기준으로 정렬하여 저장</td>
+      </tr>
+      <tr>
+        <td><strong>검색</strong></td>
+        <td>처음부터 끝까지 선형 탐색</td>
+        <td>이진 탐색 가능 (블록 단위)</td>
+      </tr>
+      <tr>
+        <td><strong>삽입</strong></td>
+        <td><span class="badge good">빠름</span> — 파일 끝에 추가</td>
+        <td><span class="badge bad">느림</span> — 정렬 위치 찾아 삽입</td>
+      </tr>
+      <tr>
+        <td><strong>활용 예시</strong></td>
+        <td>로그 파일, 임시 데이터</td>
+        <td>급여 파일, 학적 파일</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <strong>혼동 주의</strong>
+    "순차"라는 말 때문에 직렬 파일과 혼동하기 쉽다.
+    순차 파일의 핵심은 <strong>정렬된 순서 유지</strong>다.
+    정렬 없이 순서대로만 저장하면 직렬 파일이다.
+  </div>
+
+  <!-- Section 2 -->
+  <h2>2. 순차 파일의 물리적 구조</h2>
+
+  <p>
+    순차 파일은 디스크에서 블록(Block) 단위로 저장된다.
+    각 블록은 여러 개의 레코드를 담는다.
+  </p>
+
+  <h3>고정 길이 레코드 순차 파일</h3>
+
+  <div class="diagram">블록 1 (512 bytes)          블록 2 (512 bytes)
+┌──────────────────────┐   ┌──────────────────────┐
+│ REC#01 | key=1003    │   │ REC#06 | key=2010    │
+│ REC#02 | key=1027    │   │ REC#07 | key=2055    │
+│ REC#03 | key=1089    │   │ REC#08 | key=2099    │
+│ REC#04 | key=1145    │   │ REC#09 | key=2150    │
+│ REC#05 | key=1902    │   │ REC#10 | key=2200    │
+└──────────────────────┘   └──────────────────────┘
+         ↓ 오름차순 정렬 유지 ↓</div>
+
+  <p>
+    고정 길이 레코드에서 <strong>n번째 레코드의 위치</strong>는 수식으로 바로 계산할 수 있다:
+  </p>
+
+  <pre><code>위치(바이트) = (레코드번호 - 1) × 레코드크기</code></pre>
+
+  <p>단, 실제 접근 단위는 블록이므로:</p>
+
+  <pre><code>블록번호 = ⌊(레코드번호 - 1) × 레코드크기 / 블록크기⌋</code></pre>
+
+  <h3>가변 길이 레코드 순차 파일</h3>
+
+  <p>
+    레코드 크기가 다를 때는 위치를 공식으로 계산할 수 없다.
+    대신 두 가지 방식 중 하나를 사용한다.
+  </p>
+
+  <div class="diagram">방법 1 — 구분자(Delimiter) 방식
+┌─────────────────────────────────────────────────────┐
+│ 김철수|23|010-1111-2222 § 이영희|25|010-3333-4444 § … │
+└─────────────────────────────────────────────────────┘
+          ↑ § : 레코드 구분자
+
+방법 2 — 길이 필드(Length Field) 방식
+┌────────────────────────────────────────────────────┐
+│ [18] 김철수|23|010 [20] 이영희|25|010-333 [17] … │
+└────────────────────────────────────────────────────┘
+     ↑ 앞에 길이(bytes)를 먼저 기록</div>
+
+  <div class="callout tip">
+    <strong>길이 필드 방식의 장점</strong>
+    구분자 방식은 데이터 안에 구분자 문자가 포함되면 오류가 발생한다.
+    길이 필드 방식은 이 문제가 없어 실제 파일 시스템에서 더 많이 쓰인다.
+  </div>
+
+  <!-- Section 3 -->
+  <h2>3. 순차 파일의 연산</h2>
+
+  <h3>3-1. 검색 (Search)</h3>
+
+  <p>순차 파일은 <strong>정렬</strong>되어 있으므로 이진 탐색(Binary Search)을 적용할 수 있다.</p>
+
+  <table class="comparison-table">
+    <thead>
+      <tr><th>탐색 방법</th><th>비교 횟수</th><th>적용 조건</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>선형 탐색</strong></td>
+        <td>평균 n/2, 최대 n</td>
+        <td>정렬 불필요 (직렬 파일도 가능)</td>
+      </tr>
+      <tr>
+        <td><strong>이진 탐색</strong></td>
+        <td>최대 ⌈log₂ n⌉</td>
+        <td><span class="badge good">정렬된 파일 필수</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>단, <strong>디스크에서의 이진 탐색</strong>은 메모리 이진 탐색과 다르다. 레코드 단위가 아니라 <strong>블록 단위</strong>로 접근하므로 실제 탐색 비용은 블록 수 기준으로 계산한다.</p>
+
+  <div class="callout">
+    <strong>블록 수 기준 이진 탐색 비용</strong>
+    총 레코드 수 = n, 블록당 레코드 수 = b 이면:<br>
+    총 블록 수 B = ⌈n / b⌉<br>
+    이진 탐색 블록 접근 횟수 ≈ ⌈log₂ B⌉
+  </div>
+
+  <h3>3-2. 삽입 (Insert)</h3>
+
+  <p>
+    순차 파일에 새 레코드를 삽입하려면 <strong>정렬 순서를 유지</strong>해야 한다.
+    삽입 위치를 찾은 뒤, 그 이후의 레코드를 모두 한 칸씩 뒤로 밀어야 한다.
+  </p>
+
+  <div class="diagram">삽입 전: key = 1003, 1027, 1089, 1145
+                                     ↑ 여기에 key=1060 삽입
+삽입 후: key = 1003, 1027, 1060, 1089, 1145
+                              ↑ 새 레코드
+                                   ↑↑ 이 레코드들이 한 칸씩 뒤로 이동</div>
+
+  <p>
+    최악의 경우 파일 전체 레코드를 이동해야 하므로 삽입 비용은 <strong>O(n)</strong>이다.
+    이 때문에 빈번한 삽입이 있는 환경에서는 순차 파일이 부적합하다.
+  </p>
+
+  <h3>3-3. 삭제 (Delete)</h3>
+
+  <p>삭제에는 두 가지 전략이 있다.</p>
+
+  <ul>
+    <li>
+      <strong>즉시 삭제</strong>: 레코드를 삭제하고 이후 레코드를 앞으로 이동.
+      역시 O(n) 비용. 파일이 항상 빈틈 없이 유지된다.
+    </li>
+    <li>
+      <strong>논리적 삭제 (Deletion Mark)</strong>: 삭제 플래그만 세우고 나중에 일괄 정리.
+      삭제 자체는 O(1)이지만, 파일에 "죽은" 레코드가 남아 낭비가 발생한다.
+      주기적인 <strong>파일 재구성(Reorganization)</strong>이 필요하다.
+    </li>
+  </ul>
+
+  <div class="diagram">논리적 삭제 예시 (✗ = 삭제 마크)
+
+┌──────┬──────┬──────┬──────┬──────┐
+│ 1003 │ 1027✗│ 1060 │ 1089 │ 1145 │
+└──────┴──────┴──────┴──────┴──────┘
+                 ↑ 삭제 마크만 있고 공간은 그대로
+
+파일 재구성 후:
+┌──────┬──────┬──────┬──────┐
+│ 1003 │ 1060 │ 1089 │ 1145 │
+└──────┴──────┴──────┴──────┘</div>
+
+  <h3>3-4. 수정 (Update)</h3>
+
+  <p>
+    키가 아닌 일반 필드의 수정은 해당 레코드를 찾아 내용을 바꾸면 된다.
+    고정 길이 레코드라면 같은 위치에 덮어쓸 수 있다.
+    그러나 <strong>키 값을 수정</strong>하면 정렬 순서가 깨지므로,
+    기존 레코드를 삭제하고 새 키로 다시 삽입하는 두 단계를 거쳐야 한다.
+  </p>
+
+  <!-- Section 4 -->
+  <h2>4. 일괄 처리와 오버플로우 영역</h2>
+
+  <h3>순차 파일의 최적 활용: 일괄 처리 (Batch Processing)</h3>
+
+  <p>
+    순차 파일은 전체 파일을 처음부터 끝까지 읽는 <strong>일괄 처리</strong>에 매우 효율적이다.
+    예: 월급 계산, 청구서 발행, 백업.
+  </p>
+
+  <p>
+    일괄 처리 시 트랜잭션 파일(변경 사항)을 마스터 파일(원본)과 합치는
+    <strong>파일 합병(File Merging)</strong> 기법을 사용한다.
+    두 파일이 같은 키로 정렬되어 있으면 한 번의 순차 읽기로 처리할 수 있다.
+  </p>
+
+  <h3>오버플로우 영역 (Overflow Area)</h3>
+
+  <p>
+    삽입마다 레코드를 이동하는 비용을 줄이기 위해 <strong>오버플로우 영역</strong>을 예약하는 방법이 있다.
+    새 레코드는 일단 오버플로우 영역에 저장하고, 나중에 일괄 재구성한다.
+  </p>
+
+  <div class="diagram">기본 영역 (정렬된 레코드)     오버플로우 영역
+┌────┬────┬────┬────┐        ┌────┬────┐
+│1003│1060│1089│1145│  ←링크→ │1027│1075│
+└────┴────┴────┴────┘        └────┴────┘
+오버플로우가 쌓이면 재구성 필요</div>
+
+  <div class="primary-source">
+    <strong>📖 Primary Source</strong>
+    Folk, Zoellick &amp; Riccardi, <em>File Structures</em> — Chapter 3: Secondary Storage and System Software.
+    블록 I/O와 버퍼링, 그리고 순차 파일이 디스크에서 어떻게 배치되는지 설명한다.
+    특히 &ldquo;buffering strategies&rdquo; 절을 중점적으로 읽어라.
+  </div>
+
+  <!-- Section 5 -->
+  <h2>5. 순차 파일 성능 요약</h2>
+
+  <table class="comparison-table">
+    <thead>
+      <tr><th>연산</th><th>비용 (레코드 수 n 기준)</th><th>비고</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>순차 읽기 (전체)</strong></td>
+        <td><span class="badge good">O(n)</span></td>
+        <td>일괄 처리에 최적</td>
+      </tr>
+      <tr>
+        <td><strong>이진 탐색 (단건)</strong></td>
+        <td><span class="badge mid">O(log n)</span></td>
+        <td>정렬된 경우에만 가능</td>
+      </tr>
+      <tr>
+        <td><strong>삽입</strong></td>
+        <td><span class="badge bad">O(n)</span></td>
+        <td>정렬 위치 이후 레코드 이동</td>
+      </tr>
+      <tr>
+        <td><strong>삭제 (즉시)</strong></td>
+        <td><span class="badge bad">O(n)</span></td>
+        <td>이후 레코드 앞으로 이동</td>
+      </tr>
+      <tr>
+        <td><strong>삭제 (논리적)</strong></td>
+        <td><span class="badge good">O(log n)</span></td>
+        <td>탐색 후 플래그만 설정</td>
+      </tr>
+      <tr>
+        <td><strong>수정 (비키 필드)</strong></td>
+        <td><span class="badge mid">O(log n)</span></td>
+        <td>탐색 후 덮어쓰기</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>순차 파일이 적합한 경우</strong>
+    <ul style="margin:0.5rem 0 0;">
+      <li>전체 레코드를 주기적으로 처리하는 일괄 업무 (급여, 청구서)</li>
+      <li>순서대로 생성·소비되는 로그 데이터</li>
+      <li>삽입/삭제가 드물고 순차 읽기가 대부분인 경우</li>
+    </ul>
+  </div>
+
+  <div class="callout warn">
+    <strong>순차 파일이 부적합한 경우</strong>
+    <ul style="margin:0.5rem 0 0;">
+      <li>특정 레코드를 즉시 찾아야 하는 온라인 트랜잭션 처리 (OLTP)</li>
+      <li>삽입·삭제가 빈번한 동적 데이터</li>
+      <li>임의 접근(Random Access)이 주된 접근 패턴인 경우</li>
+    </ul>
+  </div>
+
+  <!-- Section 6: Quiz -->
+  <h2>6. 확인 퀴즈</h2>
+
+  <div class="quiz" id="quiz1">
+    <h3>Quiz 1</h3>
+    <div class="quiz-question">
+      순차 파일(Sequential File)과 직렬 파일(Serial File)의 핵심 차이는?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz1')">직렬 파일은 이진 탐색을 지원하지 않는다</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz1')">순차 파일은 키 기준으로 정렬되어 저장된다</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz1')">순차 파일은 가변 길이 레코드를 지원하지 않는다</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz1')">직렬 파일은 블록 단위로 접근하지 않는다</div>
+    </div>
+    <div class="quiz-feedback" id="quiz1-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz1')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz2">
+    <h3>Quiz 2</h3>
+    <div class="quiz-question">
+      순차 파일에 레코드를 삽입할 때의 최악 시간 복잡도는?<br>
+      <small>(정렬 순서 유지 필요, 즉시 삽입 방식)</small>
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz2')">O(1)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz2')">O(log n)</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz2')">O(n)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz2')">O(n log n)</div>
+    </div>
+    <div class="quiz-feedback" id="quiz2-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz2')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz3">
+    <h3>Quiz 3</h3>
+    <div class="quiz-question">
+      레코드 수 1,000개, 블록당 레코드 수 10개인 순차 파일에서<br>
+      이진 탐색으로 특정 키를 찾을 때 최대 몇 번의 블록 접근이 필요한가?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz3')">약 10번 (블록당 레코드 수)</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz3')">약 7번 (⌈log₂ 100⌉ = 7)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz3')">약 500번 (선형 탐색 평균)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz3')">약 1000번 (레코드 수)</div>
+    </div>
+    <div class="quiz-feedback" id="quiz3-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz3')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz4">
+    <h3>Quiz 4</h3>
+    <div class="quiz-question">
+      월별 급여 계산처럼 모든 직원 레코드를 처음부터 끝까지 처리하는 업무에<br>
+      순차 파일이 적합한 가장 큰 이유는?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz4')">임의 접근 속도가 해시 파일보다 빠르기 때문</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz4')">삽입·삭제 비용이 O(1)이기 때문</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz4')">전체 순차 읽기가 O(n)으로 최소 블록 접근만 필요하기 때문</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz4')">정렬 없이도 이진 탐색이 가능하기 때문</div>
+    </div>
+    <div class="quiz-feedback" id="quiz4-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz4')">다시 풀기</button>
+  </div>
+
+  <!-- Ask Prompt -->
+  <div class="ask-prompt">
+    <strong>궁금한 점이 있으면 언제든지 물어보세요!</strong>
+    "오버플로우 영역은 얼마나 확보해야 하나요?", "가변 길이 레코드에서 이진 탐색이 가능한가요?",
+    "파일 재구성은 언제 하나요?" — 선생님(Claude)이 바로 답해드립니다.
+  </div>
+
+  <!-- Navigation -->
+  <div class="lesson-nav">
+    <span>← <a href="0001-introduction-to-file-structures.html">Day 1 — 파일구조 개요</a></span>
+    <span>다음: <a href="0003-index-structures.html">Day 3 — 인덱스 구조 기초 →</a></span>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    correct: '✅ 정답입니다!',
+    wrong:   '❌ 틀렸습니다. 정답을 확인하고 다시 생각해보세요.'
+  };
+
+  function answer(el, quizId) {
+    const quiz = document.getElementById(quizId);
+    const opts = quiz.querySelectorAll('.quiz-option');
+    const fb   = document.getElementById(quizId + '-feedback');
+
+    if ([...opts].some(o => o.classList.contains('correct') || o.classList.contains('wrong'))) return;
+
+    const isCorrect = el.dataset.correct === 'true';
+    el.classList.add(isCorrect ? 'correct' : 'wrong');
+
+    if (!isCorrect) {
+      opts.forEach(o => { if (o.dataset.correct === 'true') o.classList.add('correct'); });
+    }
+
+    fb.textContent = isCorrect ? FEEDBACK.correct : FEEDBACK.wrong;
+    fb.className   = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'wrong');
+  }
+
+  function resetQuiz(quizId) {
+    const quiz = document.getElementById(quizId);
+    quiz.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('correct', 'wrong'));
+    const fb = document.getElementById(quizId + '-feedback');
+    fb.textContent = '';
+    fb.className = 'quiz-feedback';
+  }
+</script>
+</body>
+</html>
