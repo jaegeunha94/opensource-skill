@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 2 — 수의 표현</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 2</span>
+  <strong>수의 표현 (Number Representation)</strong>
+  <span class="lesson-date">· 2026-06-22</span>
+</div>
+
+<h1>컴퓨터는 숫자를 어떻게 저장하는가?</h1>
+
+<div class="progress-section">
+  <h3>학습 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 7%"></div>
+  </div>
+  <span class="progress-label">전체 커리큘럼의 약 7% 완료 · Day 2 / 30</span>
+</div>
+
+<h2>오늘 배울 것</h2>
+<ul>
+  <li>2진수·8진수·16진수 표현 방법과 상호 변환을 익힌다</li>
+  <li>2의 보수(Two's Complement)로 음수를 표현하는 원리를 이해한다</li>
+  <li>IEEE 754 부동소수점 표준의 구조와 정밀도 한계를 파악한다</li>
+  <li>오버플로우·언더플로우가 왜 발생하는지 설명할 수 있다</li>
+</ul>
+
+<!-- ============================================================
+     섹션 1: 진법 체계
+     ============================================================ -->
+<h2>1. 진법 체계 (Positional Number Systems)</h2>
+
+<p>
+  컴퓨터의 모든 데이터는 결국 <strong>0과 1의 나열</strong>로 저장됩니다.
+  사람은 10진수에 익숙하지만, 하드웨어는 전압의 높고 낮음(on/off)으로 값을 표현하므로
+  2진수가 가장 자연스럽습니다.
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>진법</th>
+      <th>기저(Base)</th>
+      <th>사용 숫자</th>
+      <th>주요 쓰임새</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>2진수 (Binary)</strong></td>
+      <td>2</td>
+      <td>0, 1</td>
+      <td>CPU 내부 연산·메모리 저장</td>
+    </tr>
+    <tr>
+      <td><strong>8진수 (Octal)</strong></td>
+      <td>8</td>
+      <td>0–7</td>
+      <td>Unix 파일 권한(chmod 755)</td>
+    </tr>
+    <tr>
+      <td><strong>16진수 (Hexadecimal)</strong></td>
+      <td>16</td>
+      <td>0–9, A–F</td>
+      <td>메모리 주소·색상값·기계어 덤프</td>
+    </tr>
+    <tr>
+      <td><strong>10진수 (Decimal)</strong></td>
+      <td>10</td>
+      <td>0–9</td>
+      <td>사람이 읽는 숫자</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>1-1. 위치값(Positional Value) 원리</h3>
+
+<p>어떤 진법이든 자릿수 위치에 따라 기저의 거듭제곱을 곱합니다.</p>
+
+<div class="diagram">
+10진수  →  1 3 7  =  1×10² + 3×10¹ + 7×10⁰  =  100 + 30 + 7  =  137
+
+2진수   →  1 0 1 1  =  1×2³ + 0×2² + 1×2¹ + 1×2⁰
+                     =    8  +   0  +   2  +   1  =  11 (10진수)
+
+16진수  →  0x1F  =  1×16¹ + 15×16⁰  =  16 + 15  =  31 (10진수)
+</div>
+
+<h3>1-2. 진법 변환 요령</h3>
+
+<table>
+  <thead>
+    <tr><th>변환 방향</th><th>방법</th><th>예시</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>10진수 → 2진수</td>
+      <td>2로 반복 나눗셈, 나머지를 역순 기록</td>
+      <td>25 → 11001₂</td>
+    </tr>
+    <tr>
+      <td>2진수 → 16진수</td>
+      <td>오른쪽부터 4비트씩 묶어 16진 자리로 변환</td>
+      <td>1010 1111₂ → AF₁₆</td>
+    </tr>
+    <tr>
+      <td>16진수 → 2진수</td>
+      <td>각 16진 자리를 4비트 이진수로 전개</td>
+      <td>3C₁₆ → 0011 1100₂</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">실무 팁</div>
+  2진수 ↔ 16진수 변환은 4비트 묶음 덕분에 매우 쉽습니다.
+  메모리 덤프·기계어 출력 도구가 모두 16진수를 사용하는 이유입니다.
+  <code>0x</code> 접두사는 "이 숫자는 16진수"를 의미하는 C/C++ 표기법입니다.
+</div>
+
+<!-- ============================================================
+     섹션 2: 부호 없는 정수
+     ============================================================ -->
+<h2>2. 부호 없는 정수 (Unsigned Integer)</h2>
+
+<p>
+  n비트 부호 없는 정수는 0부터 2ⁿ−1까지 표현합니다.
+</p>
+
+<div class="diagram">
+  8비트 (1바이트) → 0 ~ 255 (2⁸−1)
+  16비트           → 0 ~ 65,535
+  32비트           → 0 ~ 4,294,967,295 (약 42억)
+  64비트           → 0 ~ 18,446,744,073,709,551,615 (약 1.8×10¹⁹)
+</div>
+
+<h3>오버플로우 (Overflow)</h3>
+
+<p>
+  최대값에서 1을 더하면 모든 비트가 0으로 돌아갑니다.
+  이것이 <strong>오버플로우</strong>입니다.
+</p>
+
+<div class="diagram">
+  8비트 예:  1111 1111  (255)
+           + 0000 0001  (+1)
+           ──────────
+           1 0000 0000  → 최상위 비트 캐리 버림 → 0000 0000 (0)
+</div>
+
+<!-- ============================================================
+     섹션 3: 부호 있는 정수 — 2의 보수
+     ============================================================ -->
+<h2>3. 2의 보수 (Two's Complement)</h2>
+
+<p>
+  음수를 표현하는 방법은 여러 가지가 있지만, 현대 컴퓨터는 거의 예외 없이
+  <strong>2의 보수</strong>를 사용합니다.
+</p>
+
+<h3>왜 2의 보수인가?</h3>
+
+<table>
+  <thead>
+    <tr><th>방식</th><th>장점</th><th>단점</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>부호 크기(Sign-Magnitude)</td>
+      <td>직관적</td>
+      <td>+0, −0 두 가지 존재; 덧셈 회로 별도 필요</td>
+    </tr>
+    <tr>
+      <td>1의 보수(One's Complement)</td>
+      <td>비트 반전으로 간단</td>
+      <td>역시 +0, −0 두 가지 존재</td>
+    </tr>
+    <tr>
+      <td><strong>2의 보수(Two's Complement)</strong></td>
+      <td>0이 하나; 덧셈·뺄셈 회로 공유</td>
+      <td>양수보다 음수 표현 범위가 1 더 넓음</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>2의 보수 계산 방법</h3>
+
+<div class="diagram">
+방법: 비트를 전부 반전(NOT) 한 뒤 1을 더한다.
+
+예) 8비트에서 −5 구하기
+
+  5  →  0000 0101
+  반전 →  1111 1010
+  +1  →  1111 1011   ← 이것이 −5의 2의 보수 표현
+</div>
+
+<h3>8비트 부호 있는 정수 범위</h3>
+
+<div class="diagram">
+  최솟값: 1000 0000 = −128
+  최댓값: 0111 1111 = +127
+  범위: −2^(n−1) ~ 2^(n−1)−1  →  −128 ~ 127 (8비트)
+</div>
+
+<div class="callout">
+  <div class="callout-title">왜 덧셈 회로 하나로 충분한가</div>
+  2의 보수 체계에서 <strong>뺄셈은 음수의 덧셈</strong>입니다.
+  예: 7 − 5 = 7 + (−5) = 0000 0111 + 1111 1011 = 1 0000 0010 → 캐리 버림 → 0000 0010 = 2 ✓<br>
+  덧셈 회로 하나(ALU의 가산기)만으로 부호 있는 덧셈과 뺄셈 모두 처리할 수 있어
+  하드웨어가 단순해집니다.
+</div>
+
+<h3>부호 확장 (Sign Extension)</h3>
+
+<p>
+  8비트 값을 16비트 레지스터로 옮길 때 최상위 비트(부호 비트)를 복사해서 채웁니다.
+  이를 <strong>부호 확장(sign extension)</strong>이라 합니다.
+</p>
+
+<div class="diagram">
+  8비트  −5  →  1111 1011
+  16비트 −5  →  1111 1111  1111 1011  (앞을 1로 채움)
+
+  8비트  +5  →  0000 0101
+  16비트 +5  →  0000 0000  0000 0101  (앞을 0으로 채움)
+</div>
+
+<!-- ============================================================
+     섹션 4: IEEE 754 부동소수점
+     ============================================================ -->
+<h2>4. IEEE 754 부동소수점 (Floating-Point)</h2>
+
+<p>
+  정수만으로는 3.14나 0.001 같은 소수를 표현할 수 없습니다.
+  <strong>IEEE 754</strong>는 부동소수점 수를 저장하는 국제 표준입니다.
+</p>
+
+<h3>형식: 부호 · 지수 · 가수</h3>
+
+<div class="diagram">
+32비트 단정밀도(Single Precision) float:
+
+ ┌─┬──────────┬───────────────────────┐
+ │S│  Exponent│       Mantissa        │
+ │1│    8 bit │         23 bit        │
+ └─┴──────────┴───────────────────────┘
+
+S       = 부호 비트 (0: 양수, 1: 음수)
+Exponent= 지수 (bias=127로 이동)
+Mantissa= 가수 (소수점 아래, 암묵적 선행 1)
+
+값 = (−1)^S × 1.Mantissa × 2^(Exponent−127)
+</div>
+
+<table>
+  <thead>
+    <tr><th>타입</th><th>총 비트</th><th>부호</th><th>지수</th><th>가수</th><th>대략 정밀도</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>float (단정밀도)</td>
+      <td>32</td>
+      <td>1</td>
+      <td>8</td>
+      <td>23</td>
+      <td>유효 숫자 약 7자리</td>
+    </tr>
+    <tr>
+      <td>double (배정밀도)</td>
+      <td>64</td>
+      <td>1</td>
+      <td>11</td>
+      <td>52</td>
+      <td>유효 숫자 약 15~16자리</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>0.1 + 0.2 ≠ 0.3 이유</h3>
+
+<p>
+  10진수 0.1은 2진 부동소수점으로 정확히 표현할 수 없습니다.
+  무한 반복 소수(0.000110011001100…₂)이기 때문에 23비트에서 반올림·잘림이 발생합니다.
+  이것이 Python에서 <code>0.1 + 0.2 == 0.30000000000000004</code>가 나오는 이유입니다.
+</p>
+
+<div class="diagram">
+  0.1  (10진)  →  0.0001100110011001100110011… (2진, 무한반복)
+  23비트에서 잘리면 → 미세한 오차 발생
+  두 오차를 더하면 → 눈에 보이는 오차
+</div>
+
+<div class="callout">
+  <div class="callout-title">실무 시사점</div>
+  금융·회계 계산에는 부동소수점 대신 <strong>고정소수점</strong>이나
+  <strong>decimal 타입</strong>(Python의 <code>decimal.Decimal</code>,
+  Java의 <code>BigDecimal</code>)을 사용하세요.
+  비교할 때는 <code>abs(a − b) &lt; ε</code> 방식으로 허용 오차를 두어야 합니다.
+</div>
+
+<h3>특수값</h3>
+
+<table>
+  <thead>
+    <tr><th>패턴</th><th>의미</th><th>발생 예</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>지수 모두 0, 가수 모두 0</td><td>±0</td><td>0.0 초기화</td></tr>
+    <tr><td>지수 모두 1, 가수 모두 0</td><td>±∞ (Infinity)</td><td>1.0 / 0.0</td></tr>
+    <tr><td>지수 모두 1, 가수 ≠ 0</td><td>NaN (Not a Number)</td><td>0.0 / 0.0, sqrt(−1)</td></tr>
+    <tr><td>지수 모두 0, 가수 ≠ 0</td><td>비정규화수 (Subnormal)</td><td>0에 매우 가까운 값</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================
+     퀴즈
+     ============================================================ -->
+<h2>이해 확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. 8비트 2의 보수 표현에서 −1은 어떤 비트 패턴입니까?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> 1000 0001</label></li>
+    <li><label><input type="radio" name="q1" value="1"> 1111 1111</label></li>
+    <li><label><input type="radio" name="q1" value="2"> 0111 1111</label></li>
+    <li><label><input type="radio" name="q1" value="3"> 1000 0000</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. 16진수 0xFF를 10진수로 변환하면?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> 128</label></li>
+    <li><label><input type="radio" name="q2" value="1"> 240</label></li>
+    <li><label><input type="radio" name="q2" value="2"> 255</label></li>
+    <li><label><input type="radio" name="q2" value="3"> 256</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. Python에서 <code>0.1 + 0.2 == 0.3</code>이 False인 근본 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> Python 버그</label></li>
+    <li><label><input type="radio" name="q3" value="1"> 0.1이 2진 부동소수점으로 정확히 표현되지 않아 반올림 오차가 누적되기 때문</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 부동소수점이 덧셈을 지원하지 않기 때문</label></li>
+    <li><label><input type="radio" name="q3" value="3"> IEEE 754가 소수를 지원하지 않기 때문</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. 8비트 부호 있는 정수(2의 보수)의 표현 범위는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> 0 ~ 255</label></li>
+    <li><label><input type="radio" name="q4" value="1"> −127 ~ 127</label></li>
+    <li><label><input type="radio" name="q4" value="2"> −128 ~ 127</label></li>
+    <li><label><input type="radio" name="q4" value="3"> −128 ~ 128</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================
+     Primary Source
+     ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">오늘의 추천 자료</div>
+  <strong>CS:APP (Computer Systems: A Programmer's Perspective) — Chapter 2</strong><br>
+  Randal E. Bryant &amp; David R. O'Hallaron 저. 정수 표현·부동소수점을 가장 엄밀하게 설명하는 교재입니다.<br>
+  <br>
+  <strong>IEEE 754 Visualizer</strong><br>
+  <a href="https://bartaz.github.io/ieee754-visualization/" target="_blank">https://bartaz.github.io/ieee754-visualization/</a><br>
+  임의의 실수를 입력하면 32비트/64비트 IEEE 754 비트 구조를 시각적으로 보여줍니다.
+</div>
+
+<!-- ============================================================
+     핵심 요약
+     ============================================================ -->
+<h2>오늘의 핵심 요약</h2>
+
+<ul>
+  <li><strong>2진수</strong>: 컴퓨터 내부 표현. 4비트 묶음 = 16진수 한 자리</li>
+  <li><strong>부호 없는 정수</strong>: n비트 → 0 ~ 2ⁿ−1. 최대값 초과 시 오버플로우로 0으로 감김</li>
+  <li><strong>2의 보수</strong>: NOT 후 +1. 뺄셈을 덧셈으로 통일 → ALU 단순화. 8비트 범위 −128 ~ 127</li>
+  <li><strong>IEEE 754</strong>: 부호(1) + 지수(8) + 가수(23) = 32비트. 0.1은 정확히 표현 불가</li>
+  <li><strong>NaN / ±Infinity</strong>: 특수 비트 패턴으로 예외 상황 처리</li>
+</ul>
+
+<!-- ============================================================
+     다음 수업 예고
+     ============================================================ -->
+<div class="callout">
+  <div class="callout-title">다음 수업 (Day 3)</div>
+  <strong>디지털 논리 기초 — AND/OR/NOT 게이트, 불 대수, 조합 논리 회로</strong><br>
+  오늘 배운 비트 연산이 실제 트랜지스터 게이트로 어떻게 구현되는지, 그리고 어떻게 조합해서
+  덧셈 회로를 만드는지 알아봅니다.
+</div>
+
+<!-- ============================================================
+     선생님께 질문
+     ============================================================ -->
+<div class="ask-teacher">
+  <strong>궁금한 점이 있으신가요?</strong><br>
+  이해가 안 되는 부분, 더 깊이 알고 싶은 내용, 또는 실무와 어떻게 연결되는지
+  Claude에게 바로 질문하세요. 선생님은 항상 여기 있습니다.
+</div>
+
+<div class="lesson-footer">
+  <div class="lesson-nav">
+    <a href="0001-what-is-computer-architecture.html">← Day 1: 컴퓨터 구조란?</a>
+    <a href="0003-digital-logic.html">Day 3: 디지털 논리 →</a>
+  </div>
+  컴퓨터 구조 데일리 학습 · <a href="../reference/">참고 자료</a> · <a href="../RESOURCES.md">추천 자료 목록</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1, '1을 NOT하면 1111 1110, 거기에 +1 = 1111 1111. 또는 −1 = 256−1 = 255 = 0xFF = 1111 1111.');
+  initQuiz('q2', 2, '0xFF = 15×16¹ + 15×16⁰ = 240 + 15 = 255.');
+  initQuiz('q3', 1, '0.1은 2진수로 0.0001100110011…₂의 무한 반복 소수라 23비트 가수부에서 잘려 오차가 생깁니다.');
+  initQuiz('q4', 2, '8비트 2의 보수 범위는 −2⁷ ~ 2⁷−1 = −128 ~ 127. 1000 0000이 −128, 0111 1111이 127입니다.');
+</script>
+</body>
+</html>

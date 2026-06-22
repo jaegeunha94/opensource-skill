@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-22 | 컴퓨터 구조란 무엇인가? & 폰 노이만 아키텍처 | [0001-what-is-computer-architecture.html](lessons/0001-what-is-computer-architecture.html) |
+| 2 | 2026-06-22 | 수의 표현 (Number Representation) | [0002-number-representation.html](lessons/0002-number-representation.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | 수의 표현 (Number Representation) | 2진수, 8진수, 16진수, 2의 보수, IEEE 754 부동소수점 |
 | 3 | 디지털 논리 기초 (Digital Logic) | AND/OR/NOT 게이트, 불 대수, 조합 논리 회로 |
 | 4 | 산술 회로 (Arithmetic Circuits) | 반가산기, 전가산기, 리플 캐리 가산기 |
 | 5 | 순서 논리 회로 (Sequential Logic) | 플립플롭, 레지스터, 카운터 |
@@ -32,14 +32,14 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — 기초 개념 확립. 내일 수의 표현부터 시작.
+**Day 2 완료** — 수의 표현(2진수·2의 보수·IEEE 754) 학습 완료. 다음은 디지털 논리 기초.
 
 ## 습득한 핵심 개념
 
 - [ ] 폰 노이만 아키텍처 (✓ Day 1)
 - [ ] 명령어 사이클 Fetch-Decode-Execute (✓ Day 1)
 - [ ] 컴퓨터 구조의 3층위 (✓ Day 1)
-- [ ] 수의 표현 (예정 Day 2)
+- [x] 수의 표현 (✓ Day 2)
 - [ ] 디지털 논리 기초 (예정 Day 3)
 - [ ] 캐시 메모리 (예정 Day 6-8)
 - [ ] ISA 개념 (예정 Day 9)
