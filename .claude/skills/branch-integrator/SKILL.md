@@ -5,7 +5,7 @@ disable-model-invocation: true
 argument-hint: "Which branches should be merged into main?"
 ---
 
-The user wants a repeatable Git integration workflow: take one or more topic branches, merge them into `main`, push `main`, then delete branches that were successfully merged.
+The user wants a repeatable Git integration workflow: take one or more topic branches, apply them onto `main` without merge commits, push `main`, then delete branches that were successfully integrated.
 
 This skill is intentionally conservative. Losing work is worse than leaving an extra branch behind.
 
@@ -16,10 +16,10 @@ Use this order:
 1. Inspect the repository state.
 2. Confirm the candidate branches.
 3. Update local `main` from `origin/main`.
-4. Merge branches one at a time.
+4. Integrate branches one at a time without merge commits.
 5. Verify the result.
 6. Push `main`.
-7. Delete only branches that were merged and pushed successfully.
+7. Delete only branches that were integrated and pushed successfully.
 8. Report what happened.
 
 Do not skip verification. Do not delete a branch before its changes are confirmed on `origin/main`.
@@ -80,30 +80,37 @@ git diff --stat main...origin/{branch}
 
 Skip a branch if it has no commits ahead of `main`.
 
-## Merge strategy
+## Integration strategy
 
-Merge branches sequentially, not in parallel.
+Integrate branches sequentially, not in parallel. Keep `main` linear: do not create merge commits for scheduled study branches.
 
 For each branch:
 
 1. Start from clean `main`.
-2. Run:
+2. List commits from oldest to newest:
 
    ```bash
-   git merge --no-ff --no-edit origin/{branch}
+   git rev-list --reverse main..origin/{branch}
    ```
 
-3. If the merge succeeds, record it as merged.
-4. If the merge conflicts:
+3. Cherry-pick each commit in that order:
+
+   ```bash
+   git cherry-pick {commit}
+   ```
+
+4. If every cherry-pick succeeds, record the branch as integrated.
+5. If a cherry-pick conflicts:
    - stop immediately
    - run `git status --short`
    - list conflicted files
    - do not delete any branch
+   - do not continue to the next branch
    - ask the user how to resolve, unless the resolution is clearly mechanical and safe
 
 Do not use `git reset --hard` to escape a conflict unless the user explicitly asks for it.
 
-Why `--no-ff`: when several scheduled branches were created from the same `main`, merge commits preserve which branch contributed which subject update. This makes later cleanup and audit easier.
+Why cherry-pick: several scheduled branches can be created from the same `main`. Cherry-picking applies each branch's actual commits onto current `main` while avoiding noisy merge commits. The branch name is still available in the final report and remote branch deletion audit.
 
 ## Verification
 
@@ -118,13 +125,14 @@ After all selected branches merge:
 2. Search for conflict markers in changed text files:
 
    ```bash
-   rg -n '<<<<<<<|=======|>>>>>>>' .
+   rg -n '^(<<<<<<<|=======|>>>>>>>)' .
    ```
 
-3. Review recent history:
+3. Review recent history and confirm there are no new merge commits from this integration:
 
    ```bash
    git log --oneline --decorate --graph -n 20
+   git log --merges --oneline origin/main..main
    ```
 
 4. If the repository has tests or validation commands relevant to the changed files, run them.
@@ -142,7 +150,7 @@ git push origin main
 If push is rejected because `origin/main` moved:
 
 1. Fetch again.
-2. Merge or fast-forward from `origin/main`.
+2. Fast-forward from `origin/main` if possible. If not possible, stop and explain the divergence.
 3. Re-run verification.
 4. Push again.
 
@@ -153,7 +161,7 @@ Do not force push `main`.
 Delete only branches that satisfy all of these:
 
 - they were selected for this integration
-- they merged successfully
+- they were integrated successfully
 - `origin/main` now contains their changes
 - push to `origin main` succeeded
 
