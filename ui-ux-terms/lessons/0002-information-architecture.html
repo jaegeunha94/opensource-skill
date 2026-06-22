@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 2 — 정보 구조(IA): 네비게이션·사이트맵·카드 소팅</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+  <div class="lesson-container">
+
+    <header class="lesson-header">
+      <span class="lesson-tag">UI/UX 용어 · Day 2</span>
+      <h1>정보 구조(IA) — 네비게이션·사이트맵·카드 소팅</h1>
+      <p class="lesson-meta">2026-06-22 &nbsp;·&nbsp; 예상 소요 시간 20분</p>
+    </header>
+
+    <!-- Learning objectives -->
+    <h2>이 레슨에서 배울 것</h2>
+    <ul style="padding-left:1.5rem; margin-bottom:1rem; font-size:0.9rem;">
+      <li>정보 구조(IA)가 무엇이며 왜 UX에서 중요한지 설명할 수 있다</li>
+      <li>사이트맵, 카드 소팅, 네비게이션 패턴의 차이를 구분할 수 있다</li>
+      <li>디자인 회의에서 IA 관련 용어를 정확히 사용할 수 있다</li>
+    </ul>
+
+    <!-- === SECTION 1: IA란 무엇인가 === -->
+    <h2>1. 정보 구조(IA)란 무엇인가?</h2>
+
+    <p>
+      <strong>정보 구조(Information Architecture, IA)</strong>는 디지털 제품 안의 콘텐츠와 기능을
+      사용자가 쉽게 찾고 이해할 수 있도록 조직화하고 레이블을 붙이는 설계 학문이다.
+      쉽게 말해 <em>"무엇을 어디에 두고 어떻게 부를 것인가"</em>에 대한 청사진이다.
+    </p>
+
+    <div class="callout">
+      <strong>비유:</strong> IA는 도서관의 책 분류 체계와 같다. 책이 아무리 많아도
+      십진법 분류(DDC)가 있으면 원하는 책을 찾을 수 있다. 앱도 마찬가지다 —
+      콘텐츠가 아무리 많아도 IA가 잘 설계되면 사용자는 길을 잃지 않는다.
+    </div>
+
+    <p>
+      IA는 크게 네 가지 구성 요소로 이루어진다.
+    </p>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Organization Systems</div>
+        <div class="term-ko">조직화 체계</div>
+        <div class="term-def">
+          콘텐츠를 그룹으로 묶는 방식. 주제별, 작업별, 대상별, 시간순 등 다양한 분류 기준을 사용한다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Labeling Systems</div>
+        <div class="term-ko">레이블링 체계</div>
+        <div class="term-def">
+          각 항목과 카테고리에 이름을 붙이는 방식. "설정" vs "환경설정" vs "옵션" 중 무엇이 사용자에게 더 직관적인가를 결정한다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Navigation Systems</div>
+        <div class="term-ko">네비게이션 체계</div>
+        <div class="term-def">
+          사용자가 콘텐츠 간에 이동하는 방법. 글로벌 네비게이션, 로컬 네비게이션, 컨텍스추얼 네비게이션이 있다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Search Systems</div>
+        <div class="term-ko">검색 체계</div>
+        <div class="term-def">
+          사용자가 원하는 정보를 직접 검색으로 찾을 수 있게 하는 방법. 검색 범위, 필터, 자동완성 등을 포함한다.
+        </div>
+      </div>
+    </div>
+
+    <!-- === SECTION 2: 사이트맵 === -->
+    <h2>2. 사이트맵(Sitemap)</h2>
+
+    <p>
+      <strong>사이트맵(Sitemap)</strong>은 웹사이트나 앱의 전체 페이지 구조를 시각적으로 표현한 다이어그램이다.
+      IA를 문서화하는 가장 기본적인 산출물로, 개발 전 팀 전체가 구조에 합의할 때 사용한다.
+    </p>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Flat Sitemap</div>
+        <div class="term-ko">평면형 사이트맵</div>
+        <div class="term-def">
+          모든 페이지가 1~2단계 깊이로 배치된 단순한 구조. 소규모 사이트나 단일 목적 앱에 적합하다.
+          <br /><br />
+          <em>예: 랜딩 페이지, 포트폴리오 사이트</em>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Deep Sitemap</div>
+        <div class="term-ko">계층형 사이트맵</div>
+        <div class="term-def">
+          여러 단계의 계층 구조를 가진 복잡한 구조. 콘텐츠가 많을수록 필요하지만, 깊이가 깊어질수록 사용자가 길을 잃기 쉽다.
+          <br /><br />
+          <em>예: 이커머스 사이트, 기업 포털</em>
+        </div>
+      </div>
+    </div>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>사이트맵(Sitemap)</th>
+          <th>와이어프레임(Wireframe)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>표현 대상</strong></td>
+          <td>전체 페이지 구조와 연결 관계</td>
+          <td>개별 페이지의 레이아웃과 요소 배치</td>
+        </tr>
+        <tr>
+          <td><strong>단위</strong></td>
+          <td>페이지/섹션 수준</td>
+          <td>화면 수준</td>
+        </tr>
+        <tr>
+          <td><strong>목적</strong></td>
+          <td>구조 합의, 범위 파악</td>
+          <td>레이아웃 검토, 정보 우선순위 확인</td>
+        </tr>
+        <tr>
+          <td><strong>작성 시점</strong></td>
+          <td>와이어프레임 이전</td>
+          <td>사이트맵 이후</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>실무 팁:</strong> 사이트맵 없이 와이어프레임부터 만들면 나중에 페이지 수가 폭발적으로 늘어나거나
+      중복 페이지가 생기는 경우가 많다. 사이트맵을 먼저 그리는 습관을 들이자.
+    </div>
+
+    <!-- === SECTION 3: 카드 소팅 === -->
+    <h2>3. 카드 소팅(Card Sorting)</h2>
+
+    <p>
+      <strong>카드 소팅(Card Sorting)</strong>은 IA를 설계하거나 검증할 때 사용하는 사용자 리서치 기법이다.
+      참여자들에게 각 콘텐츠 항목이 적힌 카드를 나눠 주고, 자신이 생각하는 방식대로 그룹을 만들고 이름을 붙이게 한다.
+      사용자의 멘탈 모델(mental model)을 파악하는 데 가장 효과적인 방법이다.
+    </p>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Open Card Sorting</div>
+        <div class="term-ko">개방형 카드 소팅</div>
+        <div class="term-def">
+          참여자가 직접 그룹 이름도 만든다. 사용자가 어떤 카테고리를 자연스럽게 떠올리는지 파악할 때 사용한다.
+          <br /><br />
+          <strong>쓰임:</strong> 초기 IA 설계 단계
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Closed Card Sorting</div>
+        <div class="term-ko">폐쇄형 카드 소팅</div>
+        <div class="term-def">
+          그룹 이름은 미리 정해져 있고, 참여자는 카드를 해당 그룹에 배치하기만 한다. 기존 IA가 사용자에게 직관적인지 검증할 때 사용한다.
+          <br /><br />
+          <strong>쓰임:</strong> 기존 구조 검증 단계
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Mental Model</div>
+        <div class="term-ko">멘탈 모델</div>
+        <div class="term-def">
+          사용자가 시스템이나 제품이 어떻게 작동하는지에 대해 머릿속에 가진 인식 체계. IA는 사용자의 멘탈 모델에 맞춰야 마찰이 줄어든다.
+        </div>
+      </div>
+    </div>
+
+    <!-- === SECTION 4: 네비게이션 패턴 === -->
+    <h2>4. 네비게이션 패턴(Navigation Patterns)</h2>
+
+    <p>
+      네비게이션 패턴은 사용자가 앱이나 사이트 내에서 이동하는 방법을 구조화한 UI 패턴이다.
+      올바른 패턴 선택이 IA의 가독성을 좌우한다.
+    </p>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Global Navigation</div>
+        <div class="term-ko">글로벌 네비게이션</div>
+        <div class="term-def">
+          모든 페이지에서 항상 접근 가능한 최상위 메뉴. 헤더 바, 하단 탭 바 등이 해당한다.
+          <br /><br />
+          <em>예: 인스타그램 하단 탭 바</em>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Local Navigation</div>
+        <div class="term-ko">로컬 네비게이션</div>
+        <div class="term-def">
+          현재 섹션 안에서만 표시되는 서브 메뉴. 글로벌 네비게이션의 하위 레벨이다.
+          <br /><br />
+          <em>예: 설정 화면의 카테고리 목록</em>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Breadcrumb</div>
+        <div class="term-ko">브레드크럼</div>
+        <div class="term-def">
+          사용자가 현재 어디에 있는지 계층 경로를 보여 주는 보조 네비게이션.
+          홈 &gt; 카테고리 &gt; 현재 페이지 형태로 표시한다.
+          <br /><br />
+          <em>예: 이커머스 상품 상세 페이지 상단</em>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Hamburger Menu</div>
+        <div class="term-ko">햄버거 메뉴</div>
+        <div class="term-def">
+          세 줄 아이콘(☰)을 눌러 숨겨진 네비게이션을 여는 패턴. 화면 공간을 절약하지만
+          메뉴 항목의 발견 가능성(discoverability)이 떨어진다는 비판도 있다.
+        </div>
+      </div>
+    </div>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>패턴</th>
+          <th>특징</th>
+          <th>주로 쓰이는 곳</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>탭 바 (Tab Bar)</strong></td>
+          <td>항상 노출, 최대 5개 항목</td>
+          <td>모바일 앱 (iOS/Android)</td>
+        </tr>
+        <tr>
+          <td><strong>사이드바 (Sidebar)</strong></td>
+          <td>계층 표현에 유리, 공간 차지</td>
+          <td>데스크톱 앱, 대시보드</td>
+        </tr>
+        <tr>
+          <td><strong>햄버거 메뉴</strong></td>
+          <td>공간 절약, 발견 어려움</td>
+          <td>모바일 웹, 보조 메뉴</td>
+        </tr>
+        <tr>
+          <td><strong>브레드크럼</strong></td>
+          <td>현재 위치 파악, 뒤로 이동</td>
+          <td>깊은 계층 구조를 가진 사이트</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>실무 팁:</strong> 네비게이션 패턴은 콘텐츠 양과 계층 깊이에 따라 달라진다.
+      모바일 앱에서 최상위 섹션이 5개 이하라면 탭 바가 가장 발견 가능성이 높다.
+      항목이 많아지면 사이드바나 햄버거 메뉴를 검토하되, 발견 가능성 저하를 테스트로 확인하자.
+    </div>
+
+    <!-- === Primary source === -->
+    <div class="primary-source">
+      <div class="label">추천 1차 출처</div>
+      <a href="https://www.nngroup.com/articles/ia-vs-navigation/" target="_blank" rel="noopener">
+        IA vs. Navigation — Nielsen Norman Group
+      </a>
+      <p style="margin-top:0.4rem; color:var(--color-text-muted);">
+        NN/g의 IA와 네비게이션 차이를 다룬 아티클. 카드 소팅 방법론은
+        <a href="https://www.nngroup.com/articles/card-sorting-definition/" target="_blank" rel="noopener">Card Sorting: Uncover Users' Mental Models</a>를
+        함께 읽으면 이해가 깊어진다.
+      </p>
+    </div>
+
+    <!-- === QUIZ === -->
+    <h2>5. 확인 퀴즈</h2>
+    <p style="font-size:0.9rem; color:var(--color-text-muted); margin-bottom:1.5rem;">
+      답을 보기 전에 먼저 스스로 생각해 보자.
+    </p>
+
+    <!-- Q1 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q1. IA(정보 구조)를 "무엇을 어디에 두고 어떻게 부를 것인가"라는 관점에서 볼 때, 다음 중 IA의 직접적인 산출물이 <em>아닌</em> 것은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. 사이트맵</button></li>
+        <li><button onclick="answer(this, false)">B. 네비게이션 구조 다이어그램</button></li>
+        <li><button onclick="answer(this, false)">C. 레이블링 가이드</button></li>
+        <li><button onclick="answer(this, true)">D. 버튼 색상 스타일 가이드</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q1"></p>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q2. 팀이 새 앱의 카테고리 이름을 어떻게 짓는 것이 사용자에게 자연스러운지 파악하고 싶다. 어떤 리서치 기법이 가장 적합한가?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, true)">A. 개방형 카드 소팅(Open Card Sorting)</button></li>
+        <li><button onclick="answer(this, false)">B. 폐쇄형 카드 소팅(Closed Card Sorting)</button></li>
+        <li><button onclick="answer(this, false)">C. A/B 테스트</button></li>
+        <li><button onclick="answer(this, false)">D. 히트맵 분석</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q2"></p>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q3. 모바일 앱의 최상위 메뉴 항목이 4개다. 발견 가능성(discoverability)이 가장 높은 네비게이션 패턴은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. 햄버거 메뉴</button></li>
+        <li><button onclick="answer(this, true)">B. 하단 탭 바(Tab Bar)</button></li>
+        <li><button onclick="answer(this, false)">C. 브레드크럼</button></li>
+        <li><button onclick="answer(this, false)">D. 사이드바</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q3"></p>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q4. 사이트맵과 와이어프레임의 관계로 올바른 것은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. 와이어프레임을 먼저 만들고 나서 사이트맵을 도출한다</button></li>
+        <li><button onclick="answer(this, true)">B. 사이트맵으로 전체 구조를 합의한 뒤 와이어프레임으로 개별 화면을 설계한다</button></li>
+        <li><button onclick="answer(this, false)">C. 사이트맵과 와이어프레임은 동일한 산출물이다</button></li>
+        <li><button onclick="answer(this, false)">D. 소규모 프로젝트에서는 둘 다 생략해도 된다</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q4"></p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="lesson-nav">
+      <a href="0001-ui-ux-fundamentals.html">← Day 1 — UI vs UX</a>
+      <a href="0003-component-systems.html">Day 3 — 컴포넌트 시스템 →</a>
+    </nav>
+
+    <!-- Ask teacher nudge -->
+    <div class="ask-teacher">
+      궁금한 점이 생겼나요? 에이전트에게 바로 물어보세요. 이 워크스페이스의 맥락을 유지한 채로 이어서 설명해 드립니다.
+    </div>
+
+  </div>
+
+  <script>
+    let answered = {};
+
+    function answer(btn, isCorrect) {
+      const li = btn.closest('li');
+      const options = li.closest('.quiz-options');
+      const section = li.closest('.quiz-section');
+      const feedbackId = section.querySelector('.quiz-feedback').id;
+
+      if (answered[feedbackId]) return;
+      answered[feedbackId] = true;
+
+      options.querySelectorAll('button').forEach(b => b.disabled = true);
+
+      const fb = document.getElementById(feedbackId);
+      if (isCorrect) {
+        btn.classList.add('correct');
+        fb.textContent = '정답입니다! ✓';
+        fb.className = 'quiz-feedback correct';
+      } else {
+        btn.classList.add('wrong');
+        fb.textContent = '오답입니다. 위 내용을 다시 읽고 정답을 찾아보세요.';
+        fb.className = 'quiz-feedback wrong';
+      }
+    }
+  </script>
+</body>
+</html>
