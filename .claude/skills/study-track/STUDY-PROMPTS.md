@@ -15,7 +15,7 @@
 - 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들어줘.
 - 폴더가 있으면 `PROGRESS.md`를 읽고 완료한 내용은 중복하지 말고 다음 미완료 주제부터 이어가줘.
 - 이번에는 폴더/진행 구조만 만들고 레슨 생성은 하지 마.
-- git commit/push는 하지 말고 변경사항만 요약해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `origin main`에 push해줘.
 ```
 
 ## 운영체제
@@ -31,7 +31,7 @@
 - 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들어줘.
 - 폴더가 있으면 `PROGRESS.md`를 읽고 완료한 내용은 중복하지 말고 다음 미완료 주제부터 이어가줘.
 - 이번에는 폴더/진행 구조만 만들고 레슨 생성은 하지 마.
-- git commit/push는 하지 말고 변경사항만 요약해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `origin main`에 push해줘.
 ```
 
 ## 데이터베이스
@@ -47,7 +47,7 @@
 - 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들어줘.
 - 폴더가 있으면 `PROGRESS.md`를 읽고 완료한 내용은 중복하지 말고 다음 미완료 주제부터 이어가줘.
 - 이번에는 폴더/진행 구조만 만들고 레슨 생성은 하지 마.
-- git commit/push는 하지 말고 변경사항만 요약해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `origin main`에 push해줘.
 ```
 
 ## 컴퓨터 구조
@@ -64,7 +64,7 @@
 - `PROGRESS.md`를 먼저 읽고 완료한 Day/주제는 중복하지 마.
 - 현재 완료 상태와 다음 미완료 주제를 요약해줘.
 - 이번에는 레슨 생성은 하지 마.
-- git commit/push는 하지 말고 변경사항만 요약해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `origin main`에 push해줘.
 ```
 
 ## 파일구조
@@ -80,7 +80,7 @@
 - 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들어줘.
 - 폴더가 있으면 `PROGRESS.md`를 읽고 완료한 내용은 중복하지 말고 다음 미완료 주제부터 이어가줘.
 - 이번에는 폴더/진행 구조만 만들고 레슨 생성은 하지 마.
-- git commit/push는 하지 말고 변경사항만 요약해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `origin main`에 push해줘.
 ```
 
 ## 자료구조
@@ -96,7 +96,7 @@
 - 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들어줘.
 - 폴더가 있으면 `PROGRESS.md`를 읽고 완료한 내용은 중복하지 말고 다음 미완료 주제부터 이어가줘.
 - 이번에는 폴더/진행 구조만 만들고 레슨 생성은 하지 마.
-- git commit/push는 하지 말고 변경사항만 요약해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `origin main`에 push해줘.
 ```
 
 ## UI/UX 용어
@@ -112,5 +112,5 @@
 - 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들어줘.
 - 폴더가 있으면 `PROGRESS.md`를 읽고 완료한 내용은 중복하지 말고 다음 미완료 주제부터 이어가줘.
 - 이번에는 폴더/진행 구조만 만들고 레슨 생성은 하지 마.
-- git commit/push는 하지 말고 변경사항만 요약해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `origin main`에 push해줘.
 ```

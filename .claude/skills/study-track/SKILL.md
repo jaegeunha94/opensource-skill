@@ -166,7 +166,7 @@ When asked to save, commit, or push progress:
    docs: update computer architecture day 2 progress
    ```
 
-6. After commit, push only the current branch unless the user specifies another remote or branch.
+6. After commit, push to `origin main` unless the user explicitly specifies another remote or branch.
 
 Do not run destructive git commands. Do not rewrite unrelated history. If unrelated files are dirty, leave them alone and mention them separately.
 
