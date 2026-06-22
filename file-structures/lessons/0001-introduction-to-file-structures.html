@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 1 — 파일구조 개요 및 기본 개념</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <h1>Day 1: 파일구조 개요 및 기본 개념</h1>
+  <div class="meta">
+    <span>📅 2026-06-22</span>
+    <span>⏱ 약 25분</span>
+    <span>📚 파일구조 과목</span>
+    <span>🔢 Lesson 1 / 10</span>
+  </div>
+
+  <!-- Learning Objectives -->
+  <div class="callout">
+    <strong>학습 목표</strong>
+    이 레슨을 마치면: (1) 파일구조 과목이 다루는 범위를 설명할 수 있다. (2) 필드·레코드·파일의 계층 구조를 구분할 수 있다. (3) 주기억장치와 보조기억장치의 차이가 왜 파일구조를 필요로 하는지 설명할 수 있다. (4) 세 가지 기본 파일 조직 방법의 이름과 특징을 말할 수 있다.
+  </div>
+
+  <!-- Section 1 -->
+  <h2>1. 왜 파일구조를 배우는가?</h2>
+
+  <p>
+    프로그램이 처리하는 데이터는 대부분 <strong>메인 메모리(RAM)</strong>에 올라와 있다.
+    그러나 메인 메모리는 전원을 끄면 사라지고, 용량에 한계가 있다.
+    수십억 건의 고객 정보나 수년치 거래 기록은 메모리에 모두 올릴 수 없다.
+  </p>
+
+  <p>
+    이 때 등장하는 것이 <strong>보조기억장치(Secondary Storage)</strong> — 하드디스크(HDD), SSD —다.
+    보조기억장치는 전원이 꺼져도 데이터가 남고, 용량이 훨씬 크지만,
+    메모리에 비해 접근 속도가 수천~수만 배 느리다.
+  </p>
+
+  <table class="comparison-table">
+    <thead>
+      <tr><th>구분</th><th>주기억장치 (RAM)</th><th>보조기억장치 (HDD/SSD)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>속도</strong></td>
+        <td><span class="badge good">나노초(ns)</span> 단위</td>
+        <td><span class="badge bad">밀리초(ms)</span> 단위 (HDD 기준)</td>
+      </tr>
+      <tr>
+        <td><strong>영속성</strong></td>
+        <td><span class="badge bad">휘발성</span> — 전원 OFF 시 소멸</td>
+        <td><span class="badge good">비휘발성</span> — 전원 OFF 후 보존</td>
+      </tr>
+      <tr>
+        <td><strong>용량 (일반 PC)</strong></td>
+        <td>8 GB ~ 64 GB</td>
+        <td>수 TB 이상</td>
+      </tr>
+      <tr>
+        <td><strong>비용 (GB당)</strong></td>
+        <td><span class="badge bad">높음</span></td>
+        <td><span class="badge good">낮음</span></td>
+      </tr>
+      <tr>
+        <td><strong>접근 방식</strong></td>
+        <td>임의 접근 (byte 단위)</td>
+        <td>블록 단위 I/O</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <strong>핵심 통찰</strong>
+    보조기억장치는 <strong>블록(Block) 단위</strong>로 읽고 쓴다.
+    필요한 데이터 1 바이트를 얻으려 해도 4 KB ~ 512 KB 크기의 블록 전체를 읽어야 한다.
+    따라서 얼마나 적은 블록 I/O로 원하는 데이터를 찾느냐가 파일구조 설계의 핵심 목표다.
+  </div>
+
+  <p>
+    <strong>파일구조(File Structures)</strong>는 보조기억장치에 데이터를 어떻게 배치하고,
+    어떻게 효율적으로 검색·삽입·삭제하는지를 다루는 학문이다.
+    잘 설계된 파일구조는 디스크 접근 횟수를 최소화하여 성능을 수백 배 높일 수 있다.
+  </p>
+
+  <div class="primary-source">
+    <strong>📖 Primary Source</strong>
+    Folk, Zoellick & Riccardi, <em>File Structures: An Object-Oriented Approach with C++</em> — Chapter 1: Introduction.
+    이 교재가 파일구조 과목의 표준 텍스트다. Chapter 1을 읽어 저자들이 정의하는 "파일구조"의 범위를 확인하라.
+  </div>
+
+  <!-- Section 2 -->
+  <h2>2. 데이터의 계층 구조</h2>
+
+  <p>파일구조에서 데이터는 다음과 같은 4단계 계층으로 표현된다.</p>
+
+  <div class="diagram">┌─────────────────────────────────────────────────────┐
+│  데이터베이스 (Database)                              │
+│  ┌─────────────────────────────────────────────┐    │
+│  │  파일 (File) — 관련 레코드의 집합            │    │
+│  │  ┌───────────────────────────────────────┐  │    │
+│  │  │  레코드 (Record) — 관련 필드의 집합   │  │    │
+│  │  │  ┌──────┐  ┌──────┐  ┌──────────┐   │  │    │
+│  │  │  │ 필드 │  │ 필드 │  │   필드   │   │  │    │
+│  │  │  │(이름)│  │(나이)│  │(전화번호)│   │  │    │
+│  │  │  └──────┘  └──────┘  └──────────┘   │  │    │
+│  │  └───────────────────────────────────────┘  │    │
+│  └─────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────┘</div>
+
+  <h3>각 단계의 정의</h3>
+
+  <ul>
+    <li>
+      <strong>필드 (Field)</strong>: 데이터의 가장 작은 논리적 단위.
+      하나의 속성을 표현한다. 예: <code>이름</code>, <code>학번</code>, <code>생년월일</code>
+    </li>
+    <li>
+      <strong>레코드 (Record)</strong>: 하나의 개체(Entity)에 대한 관련 필드들의 집합.
+      예: 한 학생의 {학번, 이름, 학과, 학년} 묶음
+    </li>
+    <li>
+      <strong>파일 (File)</strong>: 같은 유형의 레코드들의 집합.
+      예: 전체 학생 레코드를 담은 <code>students.dat</code>
+    </li>
+    <li>
+      <strong>데이터베이스 (Database)</strong>: 서로 관련된 여러 파일들의 집합.
+      예: 학생, 수강, 강의 파일을 통합한 학사관리 DB
+    </li>
+  </ul>
+
+  <h3>키 (Key)</h3>
+  <p>
+    레코드 중에서 <strong>키(Key)</strong>는 특별한 역할을 한다.
+    키는 각 레코드를 유일하게 식별하는 필드(또는 필드 조합)다.
+  </p>
+  <ul>
+    <li><strong>기본 키 (Primary Key)</strong>: 레코드를 유일하게 식별. 예: 학번, 주민등록번호</li>
+    <li><strong>보조 키 (Secondary Key)</strong>: 검색에 사용되나 유일성 보장 안 함. 예: 이름, 학과</li>
+  </ul>
+
+  <div class="callout tip">
+    <strong>암기 팁</strong>
+    필드 → 레코드 → 파일 → 데이터베이스: "필레파데"로 기억하라.
+    각각 속성 하나 → 개체 하나 → 같은 유형 모음 → 관련 파일 전체.
+  </div>
+
+  <!-- Section 3 -->
+  <h2>3. 레코드의 종류</h2>
+
+  <h3>고정 길이 레코드 (Fixed-Length Record)</h3>
+  <p>
+    모든 레코드가 동일한 크기를 가진다.
+    <code>이름(20B) + 나이(4B) + 전화(15B) = 39B</code> 처럼 항상 39바이트.
+  </p>
+  <ul>
+    <li><span class="badge good">장점</span> 레코드 번호로 위치 계산 쉬움: <code>위치 = 레코드번호 × 레코드크기</code></li>
+    <li><span class="badge bad">단점</span> 가변 길이 데이터(이름, 설명 등)에서 공간 낭비</li>
+  </ul>
+
+  <h3>가변 길이 레코드 (Variable-Length Record)</h3>
+  <p>
+    레코드마다 크기가 다르다. 구분자(Delimiter)나 길이 필드를 사용하여 경계를 표시한다.
+  </p>
+  <ul>
+    <li><span class="badge good">장점</span> 공간 효율적 — 실제 데이터 크기만큼만 사용</li>
+    <li><span class="badge bad">단점</span> 특정 레코드 위치 계산이 복잡함 (순차 탐색 필요)</li>
+  </ul>
+
+  <!-- Section 4 -->
+  <h2>4. 세 가지 기본 파일 조직 방법</h2>
+
+  <p>
+    파일 안에서 레코드를 어떻게 배치하고 검색하느냐에 따라 크게 세 가지 방식으로 나뉜다.
+    이것이 파일구조 과목의 핵심 축이다.
+  </p>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>방식</th>
+        <th>원리</th>
+        <th>검색 성능</th>
+        <th>삽입 성능</th>
+        <th>주요 활용</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>순차 파일</strong><br><small>(Sequential)</small></td>
+        <td>레코드를 순서대로 저장</td>
+        <td><span class="badge mid">O(n)</span> 선형 탐색</td>
+        <td><span class="badge bad">느림</span> (정렬 유지 시)</td>
+        <td>일괄 처리(Batch)</td>
+      </tr>
+      <tr>
+        <td><strong>인덱스 파일</strong><br><small>(Indexed)</small></td>
+        <td>별도 인덱스로 위치 저장</td>
+        <td><span class="badge good">빠름</span> 인덱스 탐색 후 직접 접근</td>
+        <td><span class="badge mid">중간</span></td>
+        <td>범위 검색, DB 인덱스</td>
+      </tr>
+      <tr>
+        <td><strong>직접 파일</strong><br><small>(Direct/Hash)</small></td>
+        <td>키로 저장 위치 계산(해시)</td>
+        <td><span class="badge good">O(1)</span> 평균</td>
+        <td><span class="badge good">빠름</span></td>
+        <td>키 기반 단건 검색</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>이 과목의 학습 로드맵</strong>
+    Day 2: 순차 파일 → Day 3: 인덱스 구조 → Day 4: 직접 파일(해싱) → Day 5-6: B-트리/B+-트리 (인덱스의 발전형) → Day 7: 고급 인덱싱 → Day 8: 파일 시스템 → Day 9: 외부 정렬 → Day 10: 종합 정리
+  </div>
+
+  <!-- Section 5: Quiz -->
+  <h2>5. 확인 퀴즈</h2>
+
+  <div class="quiz" id="quiz1">
+    <h3>Quiz 1</h3>
+    <div class="quiz-question">
+      레코드를 유일하게 식별하는 필드를 무엇이라 하는가?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz1')">보조 키 (Secondary Key)</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz1')">기본 키 (Primary Key)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz1')">인덱스 키 (Index Key)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz1')">외래 키 (Foreign Key)</div>
+    </div>
+    <div class="quiz-feedback" id="quiz1-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz1')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz2">
+    <h3>Quiz 2</h3>
+    <div class="quiz-question">
+      고정 길이 레코드에서 레코드 번호가 7번(0-based)인 레코드의 시작 위치를 계산하는 공식으로 옳은 것은?<br>
+      <small>(레코드 크기 = 100 bytes, 파일 헤더 없음)</small>
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz2')">700 - 100 = 600 bytes</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz2')">7 × 100 = 700 bytes</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz2')">7 + 100 = 107 bytes</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz2')">순차 탐색 없이 계산 불가</div>
+    </div>
+    <div class="quiz-feedback" id="quiz2-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz2')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz3">
+    <h3>Quiz 3</h3>
+    <div class="quiz-question">
+      대용량 데이터에서 특정 키를 평균 O(1)에 검색해야 할 때 가장 적합한 파일 조직 방법은?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz3')">순차 파일 (Sequential File)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz3')">인덱스 파일 (Indexed File)</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz3')">직접 파일 (Direct / Hash File)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz3')">B-트리 파일 (B-Tree File)</div>
+    </div>
+    <div class="quiz-feedback" id="quiz3-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz3')">다시 풀기</button>
+  </div>
+
+  <!-- Ask Prompt -->
+  <div class="ask-prompt">
+    <strong>궁금한 점이 있으면 언제든지 물어보세요!</strong>
+    "블록 I/O가 정확히 어떻게 작동하나요?", "고정 길이와 가변 길이 중 언제 무엇을 쓰나요?",
+    "B-트리는 왜 나중에 배우나요?" — 선생님(Claude)이 바로 답해드립니다.
+  </div>
+
+  <!-- Navigation -->
+  <div class="lesson-nav">
+    <span>← (이전 레슨 없음)</span>
+    <span>다음: <a href="0002-sequential-files.html">Day 2 — 순차 파일 구조 →</a></span>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    correct: '✅ 정답입니다!',
+    wrong:   '❌ 틀렸습니다. 정답을 확인하고 다시 생각해보세요.'
+  };
+
+  function answer(el, quizId) {
+    const quiz = document.getElementById(quizId);
+    const opts = quiz.querySelectorAll('.quiz-option');
+    const fb   = document.getElementById(quizId + '-feedback');
+
+    // already answered
+    if ([...opts].some(o => o.classList.contains('correct') || o.classList.contains('wrong'))) return;
+
+    const isCorrect = el.dataset.correct === 'true';
+    el.classList.add(isCorrect ? 'correct' : 'wrong');
+
+    if (!isCorrect) {
+      opts.forEach(o => { if (o.dataset.correct === 'true') o.classList.add('correct'); });
+    }
+
+    fb.textContent = isCorrect ? FEEDBACK.correct : FEEDBACK.wrong;
+    fb.className   = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'wrong');
+  }
+
+  function resetQuiz(quizId) {
+    const quiz = document.getElementById(quizId);
+    quiz.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('correct', 'wrong'));
+    const fb = document.getElementById(quizId + '-feedback');
+    fb.textContent = '';
+    fb.className = 'quiz-feedback';
+  }
+</script>
+</body>
+</html>

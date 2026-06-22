@@ -1,0 +1,228 @@
+/* File Structures Learning Workspace — Shared Stylesheet */
+
+:root {
+  --text: #1a1a1a;
+  --muted: #555;
+  --accent: #2563eb;
+  --accent-light: #dbeafe;
+  --border: #e2e8f0;
+  --bg: #ffffff;
+  --code-bg: #f8fafc;
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --quiz-correct: #dcfce7;
+  --quiz-wrong: #fee2e2;
+  --max-width: 720px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'Georgia', 'Nanum Myeongjo', serif;
+  font-size: 18px;
+  line-height: 1.75;
+  color: var(--text);
+  background: var(--bg);
+  margin: 0;
+  padding: 2rem 1rem 4rem;
+}
+
+.page {
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+/* ── Typography ── */
+h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 0.25rem; color: #0f172a; }
+h2 { font-size: 1.4rem; margin: 2.5rem 0 0.75rem; border-bottom: 2px solid var(--border); padding-bottom: 0.25rem; }
+h3 { font-size: 1.15rem; margin: 1.75rem 0 0.5rem; color: #1e3a5f; }
+p  { margin: 0 0 1rem; }
+ul, ol { padding-left: 1.5rem; margin: 0 0 1rem; }
+li { margin-bottom: 0.4rem; }
+
+/* ── Metadata bar ── */
+.meta {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+.meta span { display: flex; align-items: center; gap: 0.3rem; }
+.meta a { color: var(--accent); text-decoration: none; }
+.meta a:hover { text-decoration: underline; }
+
+/* ── Callout boxes ── */
+.callout {
+  border-left: 4px solid var(--accent);
+  background: var(--accent-light);
+  border-radius: 0 6px 6px 0;
+  padding: 0.75rem 1rem;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+}
+.callout.tip  { border-color: var(--success); background: #f0fdf4; }
+.callout.warn { border-color: var(--warning); background: #fffbeb; }
+.callout strong { display: block; margin-bottom: 0.25rem; font-family: sans-serif; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+
+/* ── Code ── */
+code {
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 0.88em;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+}
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+pre code { background: none; border: none; padding: 0; }
+
+/* ── Comparison table ── */
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: sans-serif;
+  font-size: 0.9rem;
+  margin: 1rem 0 1.5rem;
+}
+.comparison-table th {
+  background: #1e3a5f;
+  color: #fff;
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+}
+.comparison-table td {
+  padding: 0.55rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.comparison-table tr:nth-child(even) td { background: #f8fafc; }
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 0.15em 0.5em;
+  border-radius: 3px;
+  font-family: sans-serif;
+}
+.badge.good { background: #dcfce7; color: #166534; }
+.badge.bad  { background: #fee2e2; color: #991b1b; }
+.badge.mid  { background: #fef9c3; color: #854d0e; }
+
+/* ── Diagram ── */
+.diagram {
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 0.85rem;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  line-height: 1.5;
+  white-space: pre;
+  margin: 1rem 0;
+}
+
+/* ── Quiz ── */
+.quiz {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin: 2rem 0;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+.quiz h3 { margin-top: 0; font-size: 1rem; color: #0f172a; }
+.quiz-question { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
+.quiz-options { display: flex; flex-direction: column; gap: 0.5rem; }
+.quiz-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-size: 0.95rem;
+}
+.quiz-option:hover { border-color: var(--accent); background: var(--accent-light); }
+.quiz-option.correct { border-color: var(--success); background: var(--quiz-correct); }
+.quiz-option.wrong   { border-color: var(--danger);  background: var(--quiz-wrong); }
+.quiz-feedback {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  display: none;
+}
+.quiz-feedback.show { display: block; }
+.quiz-feedback.correct { background: var(--quiz-correct); color: #166534; }
+.quiz-feedback.wrong   { background: var(--quiz-wrong);   color: #991b1b; }
+.quiz-reset {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--accent);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* ── Navigation ── */
+.lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  font-family: sans-serif;
+  font-size: 0.9rem;
+}
+.lesson-nav a { color: var(--accent); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+
+/* ── Ask prompt ── */
+.ask-prompt {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-top: 2.5rem;
+  font-family: sans-serif;
+  font-size: 0.9rem;
+  color: #1e40af;
+}
+.ask-prompt strong { display: block; margin-bottom: 0.25rem; }
+
+/* ── Source reference ── */
+.primary-source {
+  background: #f0fdf4;
+  border-left: 4px solid var(--success);
+  border-radius: 0 6px 6px 0;
+  padding: 0.75rem 1rem;
+  margin: 1.5rem 0;
+  font-family: sans-serif;
+  font-size: 0.9rem;
+}
+.primary-source strong { display: block; margin-bottom: 0.25rem; color: var(--success); font-size: 0.8rem; text-transform: uppercase; }
+
+@media (max-width: 600px) {
+  body { font-size: 16px; padding: 1rem 0.75rem 3rem; }
+  h1 { font-size: 1.6rem; }
+  .lesson-nav { flex-direction: column; gap: 0.5rem; }
+}
