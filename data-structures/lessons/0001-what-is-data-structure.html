@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — 자료구조란 무엇인가?</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>자료구조란 무엇인가?</h1>
+<div class="lesson-meta">
+  <span class="day-badge">Day 1</span>
+  <span class="lesson-date">2026-06-22</span>
+  &nbsp;·&nbsp; 자료구조 개요 &amp; 추상 자료형(ADT)
+</div>
+
+<!-- ─── 학습 목표 ─── -->
+<h2>학습 목표</h2>
+<p>이 레슨을 마치면 다음을 할 수 있다:</p>
+<ul>
+  <li>자료구조가 왜 필요한지 실제 예시로 설명할 수 있다.</li>
+  <li>선형·비선형 자료구조를 구분할 수 있다.</li>
+  <li>추상 자료형(ADT)과 구체적 구현의 차이를 설명할 수 있다.</li>
+  <li>Big O 표기법의 직관적 의미를 파악한다.</li>
+</ul>
+
+<!-- ─── 1. 자료구조란 ─── -->
+<h2>1. 자료구조란?</h2>
+<p>
+  <strong>자료구조(Data Structure)</strong>는 데이터를 효율적으로 <em>저장하고, 탐색하고, 수정하고, 삭제</em>하기 위한 체계적인 방식이다.
+  같은 데이터라도 어떻게 구성하느냐에 따라 프로그램 속도가 수백 배 차이날 수 있다.
+</p>
+
+<div class="callout">
+  <div class="callout-title">비유</div>
+  도서관을 생각해 보자. 책이 아무렇게나 쌓여 있으면 원하는 책을 찾는 데 한참 걸린다.
+  하지만 <em>분류 번호 순</em>으로 꽂아 두면 즉시 찾을 수 있다.
+  자료구조는 바로 이 <strong>책 배치 방식</strong>에 해당한다.
+</div>
+
+<h3>자료구조를 배우는 이유</h3>
+<ul>
+  <li><strong>성능 최적화</strong>: 올바른 자료구조 선택만으로 O(n²) 코드가 O(n log n)이 된다.</li>
+  <li><strong>코딩 테스트</strong>: 대부분의 알고리즘 문제는 특정 자료구조를 알면 바로 풀린다.</li>
+  <li><strong>실무 설계</strong>: 캐시, 데이터베이스 인덱스, 네트워크 라우팅 — 모두 자료구조가 핵심이다.</li>
+</ul>
+
+<!-- ─── 2. 분류 ─── -->
+<h2>2. 자료구조 분류</h2>
+
+<div class="diagram">
+자료구조
+├── 선형(Linear)
+│   ├── 배열 (Array)
+│   ├── 연결 리스트 (Linked List)
+│   ├── 스택 (Stack)
+│   └── 큐 (Queue)
+└── 비선형(Non-Linear)
+    ├── 트리 (Tree)
+    │   ├── 이진 탐색 트리 (BST)
+    │   ├── 힙 (Heap)
+    │   └── 트라이 (Trie)
+    └── 그래프 (Graph)
+
+* 해시 테이블은 별도 범주 (선형 저장 + 해시 함수 매핑)
+</div>
+<p class="diagram-caption">자료구조 전체 지도 — 이 커리큘럼에서 모두 다룬다</p>
+
+<table>
+  <thead>
+    <tr><th>구분</th><th>특징</th><th>대표 예</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>선형</td><td>데이터가 한 줄로 나열됨</td><td>배열, 스택, 큐</td></tr>
+    <tr><td>비선형</td><td>데이터가 계층·그물 구조</td><td>트리, 그래프</td></tr>
+  </tbody>
+</table>
+
+<!-- ─── 3. ADT ─── -->
+<h2>3. 추상 자료형 (ADT)</h2>
+<p>
+  <strong>추상 자료형(Abstract Data Type, ADT)</strong>은 자료구조를 <em>무엇을 할 수 있는가</em>
+  (인터페이스) 관점에서만 정의하고, <em>어떻게 구현하는가</em>는 숨긴 개념이다.
+</p>
+
+<div class="callout">
+  <div class="callout-title">핵심 구분</div>
+  <strong>ADT</strong> = "뭘 할 수 있냐" (계약)<br>
+  <strong>자료구조</strong> = "어떻게 구현하냐" (구체적 메모리 구조)
+</div>
+
+<h3>예시: 스택 ADT</h3>
+<pre>
+스택 ADT 정의:
+  push(item)   → 맨 위에 데이터 추가
+  pop()        → 맨 위 데이터 제거 후 반환
+  peek()       → 맨 위 데이터 확인 (제거 안 함)
+  is_empty()   → 비어 있으면 True
+
+구현 방법은 여러 가지:
+  1. 배열(Array)로 구현
+  2. 연결 리스트(Linked List)로 구현
+  → 인터페이스는 동일, 내부 구조만 다름
+</pre>
+
+<p>
+  ADT를 먼저 이해하면 "어떤 연산이 필요한가"를 설계하고,
+  그 다음 "가장 효율적인 구현"을 선택하는 사고 흐름이 생긴다.
+</p>
+
+<!-- ─── 4. Big O ─── -->
+<h2>4. Big O 표기법 — 성능 언어</h2>
+<p>
+  자료구조를 비교하려면 공통 언어가 필요하다. <strong>Big O 표기법</strong>은
+  입력 크기 <code>n</code>이 커질 때 연산 횟수가 어떻게 늘어나는지를 나타낸다.
+  상수 계수는 무시하고 <em>지배적인 항</em>만 남긴다.
+</p>
+
+<table>
+  <thead>
+    <tr><th>표기</th><th>이름</th><th>예시 연산</th><th>n=1,000일 때 연산 수</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>O(1)</code></td><td>상수</td><td>배열 인덱스 접근</td><td>1</td></tr>
+    <tr><td><code>O(log n)</code></td><td>로그</td><td>이진 탐색</td><td>~10</td></tr>
+    <tr><td><code>O(n)</code></td><td>선형</td><td>선형 탐색</td><td>1,000</td></tr>
+    <tr><td><code>O(n log n)</code></td><td>선형로그</td><td>병합 정렬</td><td>~10,000</td></tr>
+    <tr><td><code>O(n²)</code></td><td>이차</td><td>버블 정렬</td><td>1,000,000</td></tr>
+    <tr><td><code>O(2ⁿ)</code></td><td>지수</td><td>브루트포스 부분집합</td><td>10³⁰⁰ (불가)</td></tr>
+  </tbody>
+</table>
+
+<div class="callout warning">
+  <div class="callout-title">주의</div>
+  Big O는 <em>최악의 경우(worst case)</em>를 나타낼 때가 많다.
+  평균(average)·최선(best) 케이스와 구분해야 할 때도 있다 — 이는 각 자료구조 레슨에서 다룬다.
+</div>
+
+<h3>직관: 전화번호부에서 이름 찾기</h3>
+<ul>
+  <li><strong>선형 탐색</strong>: 처음부터 한 장씩 넘김 → <code>O(n)</code></li>
+  <li><strong>이진 탐색</strong>: 중간을 펴서 반씩 좁힘 → <code>O(log n)</code></li>
+</ul>
+<p>
+  1,000페이지 전화번호부라면: 선형은 최대 1,000번, 이진은 최대 10번 비교면 충분하다.
+</p>
+
+<!-- ─── 5. 퀴즈 ─── -->
+<h2>5. 확인 퀴즈</h2>
+
+<div id="q1" class="quiz">
+  <p class="quiz-question">Q1. 추상 자료형(ADT)이 정의하는 것은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> 메모리 레이아웃과 포인터 구조</label></li>
+    <li><label><input type="radio" name="q1" value="1"> 데이터에 허용된 연산의 인터페이스</label></li>
+    <li><label><input type="radio" name="q1" value="2"> 프로그래밍 언어 문법</label></li>
+    <li><label><input type="radio" name="q1" value="3"> 시간복잡도 분석 방법</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="initQuiz('q1', 1, 'ADT는 구현 방법이 아닌, 데이터에 가능한 연산(인터페이스)을 정의합니다.')">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div id="q2" class="quiz">
+  <p class="quiz-question">Q2. 해시 테이블에서 원소 탐색의 평균 시간복잡도는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> O(n)</label></li>
+    <li><label><input type="radio" name="q2" value="1"> O(log n)</label></li>
+    <li><label><input type="radio" name="q2" value="2"> O(1)</label></li>
+    <li><label><input type="radio" name="q2" value="3"> O(n²)</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="initQuiz('q2', 2, '해시 테이블은 해시 함수로 위치를 직접 계산하므로, 충돌이 없을 때 O(1) 탐색이 가능합니다.')">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div id="q3" class="quiz">
+  <p class="quiz-question">Q3. 다음 중 비선형(Non-Linear) 자료구조는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> 배열 (Array)</label></li>
+    <li><label><input type="radio" name="q3" value="1"> 스택 (Stack)</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 그래프 (Graph)</label></li>
+    <li><label><input type="radio" name="q3" value="3"> 큐 (Queue)</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="initQuiz('q3', 2, '그래프는 노드와 에지로 이루어진 비선형 자료구조입니다. 배열·스택·큐는 모두 선형입니다.')">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ─── 일차 소스 ─── -->
+<div class="primary-source">
+  <div class="ps-label">추천 1차 자료</div>
+  <p>
+    <strong>Grokking Algorithms, Chapter 1 &amp; 2</strong> — Aditya Bhargava<br>
+    이진 탐색과 Big O를 그림으로 쉽게 설명한다. 이 레슨의 핵심 개념을 30분 안에 시각적으로 보강할 수 있다.
+  </p>
+  <p>
+    <strong>Visualgo.net</strong> — <a href="https://visualgo.net/ko" target="_blank">https://visualgo.net/ko</a><br>
+    자료구조 동작을 애니메이션으로 확인. 지금 당장 "Array" 와 "Linked List" 시각화를 눌러 보자.
+  </p>
+</div>
+
+<!-- ─── 복습 프롬프트 ─── -->
+<div class="ask-teacher">
+  <strong>선생님께 물어보세요.</strong> 이 레슨에서 이해하기 어려운 부분이 있으면 바로 질문하세요.
+  예를 들어: "Big O에서 O(n log n)이 왜 O(n²)보다 빠른지 그래프로 설명해 줘",
+  "ADT와 인터페이스의 차이를 Java 예시로 보여줘" 같은 질문도 환영합니다.
+</div>
+
+<!-- ─── 다음 레슨 ─── -->
+<div class="progress-section">
+  <h3>다음 학습</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 5%"></div>
+  </div>
+  <p class="progress-label">Day 1 / 20 완료 (5%)</p>
+</div>
+
+<!-- ─── 푸터 ─── -->
+<div class="lesson-footer">
+  <strong>자료구조</strong> 학습 워크스페이스
+  <div class="lesson-nav">
+    <a href="./index.html">← 목록으로</a>
+    <a href="../reference/glossary.html">용어집</a>
+  </div>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

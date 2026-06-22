@@ -1,4 +1,4 @@
-/* Reusable quiz widget for Data Structures lessons */
+/* Reusable quiz widget for Computer Architecture lessons */
 
 function initQuiz(containerId, correctIndex, explanation) {
   const container = document.getElementById(containerId);
