@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 1 — 자료구조란 무엇인가?</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 1</span>
+  <strong>자료구조란 무엇인가? — ADT, 시간복잡도 기초, Big-O</strong>
+  <span class="lesson-date">· 2026-06-22</span>
+</div>
+
+<h1>자료구조란 무엇인가?</h1>
+
+<div class="progress-section">
+  <h3>학습 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 5%"></div>
+  </div>
+  <span class="progress-label">전체 커리큘럼의 약 5% 완료 · Day 1 / 20</span>
+</div>
+
+<h2>오늘 배울 것</h2>
+<ul>
+  <li>"자료구조"가 왜 필요한지, 무엇을 선택해야 하는지 판단 기준을 이해한다</li>
+  <li>추상 자료형(ADT)과 구체적 구현의 차이를 설명할 수 있다</li>
+  <li>Big-O 표기법으로 알고리즘의 효율을 비교할 수 있다</li>
+</ul>
+
+<!-- ============================================================
+     섹션 1: 자료구조란?
+     ============================================================ -->
+<h2>1. 자료구조란 무엇인가?</h2>
+
+<p>
+  <strong>자료구조(Data Structure)</strong>는 데이터를 효율적으로 저장하고 접근하기 위한
+  <em>조직화 방법</em>입니다. 같은 데이터라도 어떻게 구성하느냐에 따라 작업 속도가 수백만 배 차이날 수 있습니다.
+</p>
+
+<div class="callout">
+  <div class="callout-title">핵심 직관</div>
+  10만 개의 이름이 담긴 전화번호부가 있다고 하자. <strong>무작위로 나열되어 있으면</strong>
+  특정 이름을 찾으려면 평균 5만 번 확인해야 한다. <strong>알파벳 순으로 정렬되어 있으면</strong>
+  이진 탐색으로 17번 이하의 비교로 찾을 수 있다. <em>자료구조의 선택이 성능을 결정한다.</em>
+</div>
+
+<h3>자료구조를 선택할 때 묻는 질문</h3>
+
+<table>
+  <thead>
+    <tr><th>질문</th><th>이유</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>탐색이 자주 일어나는가?</td>
+      <td>해시 테이블, 이진 탐색 트리 고려</td>
+    </tr>
+    <tr>
+      <td>삽입/삭제가 자주 일어나는가?</td>
+      <td>연결 리스트, 힙 고려</td>
+    </tr>
+    <tr>
+      <td>순서가 중요한가?</td>
+      <td>배열, 정렬된 트리 고려</td>
+    </tr>
+    <tr>
+      <td>메모리가 제한적인가?</td>
+      <td>공간복잡도를 함께 고려</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ============================================================
+     섹션 2: 추상 자료형 (ADT)
+     ============================================================ -->
+<h2>2. 추상 자료형 (Abstract Data Type, ADT)</h2>
+
+<p>
+  ADT는 자료구조의 <strong>"무엇"</strong>을 정의하는 계약서입니다 — 어떤 연산이 가능하고, 각 연산의 의미가 무엇인지.
+  <em>어떻게 구현하는지</em>는 ADT에 속하지 않습니다.
+</p>
+
+<div class="diagram">
+  ADT: 리스트(List)
+  ─────────────────────────────────────────
+  연산:
+    insert(index, value)   — index 위치에 값 삽입
+    remove(index)          — index 위치의 값 삭제
+    get(index)             — index 위치의 값 반환
+    size()                 — 원소 개수 반환
+
+  ↓ 구현 1: 배열(Array)
+  ↓ 구현 2: 연결 리스트(Linked List)
+  ↓ 구현 3: 동적 배열(ArrayList / Python list)
+
+  같은 ADT, 다른 성능 트레이드오프
+</div>
+<p class="diagram-caption">그림 1 — ADT vs 구현체: ADT는 "무엇"을, 구현체는 "어떻게"를 결정한다</p>
+
+<div class="callout warning">
+  <div class="callout-title">흔한 오해</div>
+  "스택(Stack)"은 ADT입니다. LIFO(Last In, First Out) 동작을 정의하지만, 배열로 구현할 수도 있고 연결 리스트로 구현할 수도 있습니다.
+  자료구조 공부에서 ADT와 구현을 구분하는 것이 매우 중요합니다.
+</div>
+
+<!-- ============================================================
+     섹션 3: Big-O 표기법
+     ============================================================ -->
+<h2>3. Big-O 표기법 — 효율을 비교하는 언어</h2>
+
+<p>
+  알고리즘의 실행 시간은 입력 크기(<em>n</em>)에 따라 달라집니다.
+  Big-O 표기법은 <strong>최악의 경우</strong> 입력 크기에 따른 성능 증가율을 표현합니다.
+  상수 계수와 하위 항은 무시하고, 가장 빠르게 증가하는 항만 남깁니다.
+</p>
+
+<h3>자주 만나는 복잡도 클래스</h3>
+
+<table>
+  <thead>
+    <tr><th>표기</th><th>이름</th><th>n=1000일 때 연산 수</th><th>예시</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="complexity-badge fast">O(1)</span></td>
+      <td>상수</td>
+      <td>1</td>
+      <td>배열 인덱스 접근, 해시 테이블 평균 탐색</td>
+    </tr>
+    <tr>
+      <td><span class="complexity-badge fast">O(log n)</span></td>
+      <td>로그</td>
+      <td>~10</td>
+      <td>이진 탐색, 균형 트리 탐색</td>
+    </tr>
+    <tr>
+      <td><span class="complexity-badge">O(n)</span></td>
+      <td>선형</td>
+      <td>1,000</td>
+      <td>순차 탐색, 배열 순회</td>
+    </tr>
+    <tr>
+      <td><span class="complexity-badge">O(n log n)</span></td>
+      <td>선형 로그</td>
+      <td>~10,000</td>
+      <td>병합 정렬, 퀵 정렬 평균</td>
+    </tr>
+    <tr>
+      <td><span class="complexity-badge slow">O(n²)</span></td>
+      <td>이차</td>
+      <td>1,000,000</td>
+      <td>버블 정렬, 중첩 반복문</td>
+    </tr>
+    <tr>
+      <td><span class="complexity-badge slow">O(2ⁿ)</span></td>
+      <td>지수</td>
+      <td>∞ (사실상 불가)</td>
+      <td>피보나치 순수 재귀, 부분집합 열거</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Big-O 구하는 방법</h3>
+
+<p>코드를 보고 복잡도를 추정하는 패턴을 익혀두면 빠르게 판단할 수 있습니다:</p>
+
+<pre>
+# 예제 1 — O(1): 입력 크기와 무관한 고정 연산
+def get_first(arr):
+    return arr[0]          # 항상 1번 연산
+
+# 예제 2 — O(n): 루프 1개가 n번 반복
+def linear_search(arr, target):
+    for item in arr:       # n번 반복
+        if item == target:
+            return True
+    return False
+
+# 예제 3 — O(n²): 중첩 루프
+def bubble_sort(arr):
+    for i in range(len(arr)):        # n번
+        for j in range(len(arr)-1):  # 각 i마다 n번
+            if arr[j] > arr[j+1]:
+                arr[j], arr[j+1] = arr[j+1], arr[j]
+    # 총 n × n = n² 비교
+</pre>
+
+<div class="callout">
+  <div class="callout-title">시간복잡도 vs 공간복잡도</div>
+  <strong>시간복잡도</strong>: 연산 횟수가 n에 따라 어떻게 증가하는가<br>
+  <strong>공간복잡도</strong>: 메모리 사용량이 n에 따라 어떻게 증가하는가<br><br>
+  두 가지 사이에는 트레이드오프가 존재합니다. 캐싱(memoization)은 공간을 더 써서 시간을 줄이는 대표적 예입니다.
+</div>
+
+<!-- ============================================================
+     섹션 4: 자료구조 전체 지도
+     ============================================================ -->
+<h2>4. 자료구조 전체 지도</h2>
+
+<p>이 과정에서 다룰 자료구조의 전체 맥락을 미리 파악해 둡니다.</p>
+
+<div class="diagram">
+자료구조
+├── 선형(Linear) — 데이터가 순서를 가짐
+│   ├── 배열 (Array)                  → Day 2
+│   ├── 연결 리스트 (Linked List)     → Day 3-4
+│   ├── 스택 (Stack)                  → Day 5
+│   └── 큐 (Queue)                    → Day 6
+│
+└── 비선형(Non-linear) — 데이터가 계층/네트워크 구조
+    ├── 트리 (Tree)                   → Day 8-10
+    │   ├── 이진 탐색 트리 (BST)
+    │   ├── 균형 트리 (AVL, RB-Tree)
+    │   ├── 힙 (Heap)                 → Day 11
+    │   └── 트라이 (Trie)             → Day 17
+    └── 그래프 (Graph)               → Day 14-16
+
++ 해시 테이블 (Hash Table)           → Day 12-13
+  (선형/비선형 어느 쪽에도 속하지 않는 독립적 구조)
+</div>
+<p class="diagram-caption">그림 2 — 이 과정에서 다룰 자료구조 전체 맵</p>
+
+<!-- ============================================================
+     퀴즈
+     ============================================================ -->
+<h2>이해 확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. 다음 중 ADT(추상 자료형)에 대한 설명으로 가장 정확한 것은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> ADT는 메모리에서 데이터가 물리적으로 배치되는 방식을 정의한다</label></li>
+    <li><label><input type="radio" name="q1" value="1"> ADT는 어떤 연산이 가능하고 그 연산의 의미가 무엇인지 정의하지만, 구현 방법은 명시하지 않는다</label></li>
+    <li><label><input type="radio" name="q1" value="2"> ADT는 항상 단 하나의 구현체(implementation)를 가진다</label></li>
+    <li><label><input type="radio" name="q1" value="3"> ADT는 시간복잡도와 공간복잡도를 보장한다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. 크기 n인 정렬된 배열에서 이진 탐색의 시간복잡도는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> O(1) — 항상 한 번에 찾는다</label></li>
+    <li><label><input type="radio" name="q2" value="1"> O(log n) — 탐색할 때마다 범위가 절반으로 줄어든다</label></li>
+    <li><label><input type="radio" name="q2" value="2"> O(n) — 배열 전체를 순회할 수 있다</label></li>
+    <li><label><input type="radio" name="q2" value="3"> O(n²) — 정렬과 탐색을 모두 포함한다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. 다음 코드의 시간복잡도는?<br><code>for i in range(n): for j in range(n): print(i, j)</code></p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> O(1)</label></li>
+    <li><label><input type="radio" name="q3" value="1"> O(n)</label></li>
+    <li><label><input type="radio" name="q3" value="2"> O(n²)</label></li>
+    <li><label><input type="radio" name="q3" value="3"> O(2ⁿ)</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. 삽입/삭제가 매우 빈번하고 탐색은 드문 시나리오에서 가장 적합한 자료구조는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> 정렬된 배열 — 이진 탐색으로 O(log n) 탐색</label></li>
+    <li><label><input type="radio" name="q4" value="1"> 연결 리스트 — 삽입/삭제가 O(1), 탐색은 O(n)</label></li>
+    <li><label><input type="radio" name="q4" value="2"> 해시 테이블 — 모든 연산 평균 O(1)</label></li>
+    <li><label><input type="radio" name="q4" value="3"> 힙 — 항상 최솟값/최댓값을 빠르게 꺼낼 수 있음</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================
+     Primary Source
+     ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">오늘의 추천 자료</div>
+  <strong>MIT 6.006 Lecture 1 — Introduction and Peak Finding</strong><br>
+  <a href="https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/pages/lecture-notes/" target="_blank">https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/</a><br>
+  <br>
+  MIT 알고리즘 강의의 첫 번째 강의. 알고리즘 효율을 어떻게 분석하는지, 왜 자료구조 선택이 중요한지
+  Peak Finding 예제를 통해 O(n)과 O(log n)의 차이를 직접 유도합니다.
+  강의 노트 PDF를 읽어보세요 (30분 내외).
+</div>
+
+<!-- ============================================================
+     오늘의 핵심 요약
+     ============================================================ -->
+<h2>오늘의 핵심 요약</h2>
+
+<ul>
+  <li><strong>자료구조</strong>는 데이터를 효율적으로 조직화하는 방법이며, 선택이 성능을 결정한다</li>
+  <li><strong>ADT</strong>는 "무엇"(연산과 의미)을 정의하고, 구현은 "어떻게"를 결정한다. 같은 ADT에 여러 구현이 존재한다</li>
+  <li><strong>Big-O</strong>는 입력 크기 n에 따른 최악 성능 증가율을 표현한다. 상수 계수는 무시한다</li>
+  <li>복잡도 클래스 순서: O(1) &lt; O(log n) &lt; O(n) &lt; O(n log n) &lt; O(n²) &lt; O(2ⁿ)</li>
+  <li>자료구조 선택 시 <strong>탐색/삽입/삭제 빈도</strong>와 <strong>메모리 제약</strong>을 함께 고려한다</li>
+</ul>
+
+<!-- ============================================================
+     다음 수업 예고
+     ============================================================ -->
+<div class="callout">
+  <div class="callout-title">다음 수업 (Day 2)</div>
+  <strong>배열 (Array) — 가장 기본이 되는 자료구조</strong><br>
+  정적 배열과 동적 배열의 차이, 인덱스 접근 O(1)이 왜 가능한지,
+  삽입/삭제가 O(n)인 이유를 메모리 레이아웃으로 설명합니다.
+</div>
+
+<!-- ============================================================
+     선생님께 질문
+     ============================================================ -->
+<div class="ask-teacher">
+  <strong>궁금한 점이 있으신가요?</strong><br>
+  Big-O 계산이 헷갈리거나, ADT 개념이 아직 모호하거나, 특정 자료구조가 왜 유용한지 궁금하다면
+  Claude에게 바로 질문하세요. 예시 코드나 시각화로 함께 확인할 수 있습니다.
+</div>
+
+<div class="lesson-footer">
+  <div class="lesson-nav">
+    <span style="color:#aaa">← (이전 수업 없음)</span>
+    <a href="0002-arrays.html">Day 2: 배열 →</a>
+  </div>
+  자료구조 데일리 학습 · <a href="../reference/glossary.html">용어집</a> · <a href="../RESOURCES.md">추천 자료 목록</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1, 'ADT는 인터페이스(계약)를 정의합니다. 구현 방법은 ADT의 일부가 아닙니다. 스택 ADT는 push/pop/peek 연산을 정의하지만, 배열로 구현할 수도 있고 연결 리스트로 구현할 수도 있습니다.');
+  initQuiz('q2', 1, '이진 탐색은 매 단계마다 탐색 범위를 절반으로 줄입니다. n → n/2 → n/4 → ... → 1이 되는 데 log₂n 단계가 필요합니다.');
+  initQuiz('q3', 2, '바깥 루프가 n번, 안쪽 루프가 각각 n번 실행되므로 총 n × n = n² 번 print가 호출됩니다. O(n²)입니다.');
+  initQuiz('q4', 1, '삽입/삭제가 빈번한 경우 연결 리스트가 유리합니다. 포인터 조작만으로 O(1)에 삽입/삭제할 수 있습니다. 단, 탐색은 처음부터 순회해야 하므로 O(n)입니다.');
+</script>
+</body>
+</html>
