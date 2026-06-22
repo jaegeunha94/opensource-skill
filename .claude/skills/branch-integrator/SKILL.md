@@ -139,6 +139,31 @@ After all selected branches merge:
 
 If verification fails, do not push or delete branches.
 
+## New lesson URL collection
+
+After successful integration and before the final report, collect newly added lesson files from the integrated commits. These are the user's backlog study items.
+
+Use the range from the previous `origin/main` tip to current `main`:
+
+```bash
+git diff --name-status origin/main..main
+```
+
+Include files that satisfy all of these:
+
+- status is added (`A`)
+- path matches `{subject-slug}/lessons/*`
+- filename is not `index.html`
+- extension is `.html` or `.md`
+
+For each matching path, output the GitHub Pages URL:
+
+```text
+https://jaegeunha94.github.io/opensource-skill/{subject-slug}/lessons/{filename}
+```
+
+Group URLs by subject folder. Keep these URLs in the final report so the user can open all newly added lessons at once.
+
 ## Push main
 
 Push only after successful merge verification:
@@ -189,6 +214,9 @@ Use this concise report:
 - 건너뛴 브랜치: ...
 - 삭제한 브랜치: ...
 - origin/main: {final commit}
+
+새로 추가된 학습 URL:
+- {subject}: {url}
 
 주의:
 - {conflicts, skipped branches, failed deletions, or "없음"}
