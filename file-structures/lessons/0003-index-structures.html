@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 3 — 인덱스 구조 기초</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <h1>Day 3: 인덱스 구조 기초</h1>
+  <div class="meta">
+    <span>📅 2026-06-23</span>
+    <span>⏱ 약 35분</span>
+    <span>📚 파일구조 과목</span>
+    <span>🔢 Lesson 3 / 10</span>
+  </div>
+
+  <!-- Learning Objectives -->
+  <div class="callout">
+    <strong>학습 목표</strong>
+    이 레슨을 마치면: (1) 인덱스가 왜 필요한지, 순차 파일의 한계와 연결하여 설명할 수 있다. (2) 기본 인덱스(Primary Index)와 보조 인덱스(Secondary Index)의 차이를 구분할 수 있다. (3) 덴스(Dense) 인덱스와 스파스(Sparse) 인덱스의 구조와 트레이드오프를 설명할 수 있다. (4) 클러스터링 인덱스(Clustering Index)의 개념과 효과를 이해한다.
+  </div>
+
+  <!-- Section 1 -->
+  <h2>1. 인덱스란 무엇인가?</h2>
+
+  <p>
+    <strong>인덱스(Index)</strong>는 파일에서 레코드를 빠르게 찾기 위한 <strong>보조 데이터 구조</strong>다.
+    책의 색인(索引)과 동일한 원리다 — 책 전체를 읽지 않고 색인 페이지에서 키워드를 찾아 해당 페이지로 바로 이동하는 것처럼,
+    인덱스를 통해 전체 파일을 순차 탐색하지 않고 원하는 레코드 위치로 바로 접근할 수 있다.
+  </p>
+
+  <div class="diagram">파일 (10,000 레코드)            인덱스 (작은 보조 파일)
+┌──────────────────────┐        ┌──────────────────────────┐
+│ REC#0001 | key=1003  │        │ key=1003 → 블록 1, 오프셋 0 │
+│ REC#0002 | key=1027  │        │ key=2055 → 블록 3, 오프셋 2 │
+│    ...               │◄───────│ key=5100 → 블록 8, 오프셋 4 │
+│ REC#9999 | key=9998  │        │    ...                   │
+└──────────────────────┘        └──────────────────────────┘
+                                         ↓ 인덱스는 작고 정렬됨
+                                    이진 탐색으로 빠르게 찾기!</div>
+
+  <p>
+    인덱스는 항상 <strong>&lt;키값, 포인터&gt; 쌍</strong>으로 구성된다.
+    포인터는 레코드가 저장된 블록 번호나 파일 내 오프셋을 가리킨다.
+    인덱스 파일 자체는 원본 파일보다 훨씬 작기 때문에, 메모리에 올려두거나 빠르게 이진 탐색할 수 있다.
+  </p>
+
+  <div class="callout tip">
+    <strong>왜 인덱스가 필요한가?</strong>
+    Day 2에서 배운 순차 파일은 이진 탐색으로 O(log B) 블록 접근이 가능하지만,
+    <em>정렬 키 이외의 필드</em>로 검색하면 전체 파일을 순차 읽기(O(B))해야 한다.
+    인덱스는 이 문제를 해결하여 <strong>어떤 필드에 대해서도 빠른 검색</strong>을 가능하게 한다.
+  </div>
+
+  <!-- Section 2 -->
+  <h2>2. 기본 인덱스 vs 보조 인덱스</h2>
+
+  <p>
+    인덱스는 파일의 정렬 키와 일치하는지에 따라 두 종류로 나뉜다.
+  </p>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>구분</th>
+        <th>기본 인덱스 (Primary Index)</th>
+        <th>보조 인덱스 (Secondary Index)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>인덱스 키</strong></td>
+        <td>파일의 정렬 키(Ordering Key)와 동일</td>
+        <td>파일의 정렬 키가 아닌 필드</td>
+      </tr>
+      <tr>
+        <td><strong>파일 정렬</strong></td>
+        <td>인덱스 키 기준으로 정렬된 파일 필요</td>
+        <td>파일 정렬 상태와 무관</td>
+      </tr>
+      <tr>
+        <td><strong>인덱스 수</strong></td>
+        <td>파일당 최대 1개</td>
+        <td>파일당 여러 개 가능</td>
+      </tr>
+      <tr>
+        <td><strong>포인터 대상</strong></td>
+        <td>각 블록의 첫 레코드 (스파스 방식 일반적)</td>
+        <td>각 레코드 또는 레코드 집합</td>
+      </tr>
+      <tr>
+        <td><strong>활용 예시</strong></td>
+        <td>학번으로 정렬된 학생 파일 → 학번 인덱스</td>
+        <td>이름, 학과명 등 추가 검색 필드</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>2-1. 기본 인덱스의 구조</h3>
+
+  <p>
+    기본 인덱스는 파일이 이미 정렬되어 있으므로, 모든 레코드마다 인덱스 항목을 만들 필요가 없다.
+    보통 <strong>각 블록의 첫 번째 레코드(앵커 레코드, Anchor Record)</strong>에 대해서만 인덱스 항목을 만든다.
+  </p>
+
+  <div class="diagram">데이터 파일 (블록 단위)
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│블록 1        │  │블록 2        │  │블록 3        │
+│ key=1003 ←┐ │  │ key=2010 ←┐ │  │ key=3001 ←┐ │
+│ key=1027   │ │  │ key=2055   │ │  │ key=3045   │ │
+│ key=1089   │ │  │ key=2099   │ │  │ key=3088   │ │
+└─────────────┘  └─────────────┘  └─────────────┘
+      ↑                 ↑                 ↑
+      │                 │                 │
+기본 인덱스 파일 (앵커 레코드만)
+┌─────────────────────┐
+│ key=1003 → 블록 1   │  ← 항목 1
+│ key=2010 → 블록 2   │  ← 항목 2
+│ key=3001 → 블록 3   │  ← 항목 3
+└─────────────────────┘</div>
+
+  <p>
+    인덱스 파일의 크기 = <strong>블록 수</strong>만큼의 항목. 원본 파일보다 훨씬 작다.
+    이진 탐색으로 인덱스를 탐색한 뒤 해당 블록만 읽으면 된다.
+  </p>
+
+  <h3>2-2. 보조 인덱스의 구조</h3>
+
+  <p>
+    보조 인덱스는 정렬되지 않은 필드에 대해 만든다.
+    예를 들어 학번(기본 키) 순으로 정렬된 파일에서 <strong>학과명</strong>으로 검색하려면 보조 인덱스가 필요하다.
+  </p>
+
+  <div class="diagram">데이터 파일 (학번 기준 정렬)
+┌──────────────────────────┐
+│ 학번=20001 | 학과=컴퓨터  │ ← 블록 1
+│ 학번=20002 | 학과=수학    │
+│ 학번=20003 | 학과=컴퓨터  │
+├──────────────────────────┤
+│ 학번=20004 | 학과=물리    │ ← 블록 2
+│ 학번=20005 | 학과=컴퓨터  │
+└──────────────────────────┘
+
+보조 인덱스 (학과명 기준, 정렬됨)
+┌────────────────────────────────────────────┐
+│ 학과=물리    → [블록2, 오프셋3]              │
+│ 학과=수학    → [블록1, 오프셋1]              │
+│ 학과=컴퓨터  → [블록1, 오프셋0], [블록1, 오프셋2], [블록2, 오프셋4] │
+└────────────────────────────────────────────┘</div>
+
+  <div class="callout warn">
+    <strong>보조 인덱스의 비용</strong>
+    보조 인덱스는 같은 키값을 가진 레코드가 여러 곳에 흩어져 있어,
+    검색 시 여러 블록을 비순차적으로 접근해야 할 수 있다.
+    레코드가 n개라면 최대 n번의 블록 접근이 필요할 수 있다 (임의 접근).
+  </div>
+
+  <!-- Section 3 -->
+  <h2>3. 덴스 인덱스 vs 스파스 인덱스</h2>
+
+  <p>
+    인덱스 항목 수가 레코드 수와 같으냐, 블록 수와 같으냐에 따라 두 가지로 나뉜다.
+  </p>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>구분</th>
+        <th>덴스 인덱스 (Dense Index)</th>
+        <th>스파스 인덱스 (Sparse Index)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>항목 수</strong></td>
+        <td>모든 레코드마다 1개 (레코드 수 = 인덱스 항목 수)</td>
+        <td>각 블록마다 1개 (블록 수 = 인덱스 항목 수)</td>
+      </tr>
+      <tr>
+        <td><strong>인덱스 크기</strong></td>
+        <td><span class="badge bad">큼</span> — 레코드 수에 비례</td>
+        <td><span class="badge good">작음</span> — 블록 수에 비례</td>
+      </tr>
+      <tr>
+        <td><strong>검색 속도</strong></td>
+        <td><span class="badge good">빠름</span> — 정확한 위치로 바로 이동</td>
+        <td><span class="badge mid">약간 느림</span> — 블록 안에서 추가 탐색 필요</td>
+      </tr>
+      <tr>
+        <td><strong>파일 정렬 필요</strong></td>
+        <td>불필요 (비정렬 파일도 가능)</td>
+        <td><span class="badge bad">필수</span> — 정렬된 파일에서만 의미 있음</td>
+      </tr>
+      <tr>
+        <td><strong>적용 사례</strong></td>
+        <td>보조 인덱스, 소규모 파일</td>
+        <td>기본 인덱스, 대규모 정렬 파일</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>덴스 인덱스 구조</h3>
+
+  <div class="diagram">데이터 파일                 덴스 인덱스
+┌──────────────────┐        ┌──────────────────────┐
+│블록 1             │        │ key=1003 → 블록1, 0번 │
+│ [0] key=1003     │◄───────│ key=1027 → 블록1, 1번 │
+│ [1] key=1027     │◄───────│ key=1089 → 블록1, 2번 │
+│ [2] key=1089     │◄───────│ key=2010 → 블록2, 0번 │
+├──────────────────┤        │ key=2055 → 블록2, 1번 │
+│블록 2             │        │    ...               │
+│ [0] key=2010     │◄───────└──────────────────────┘
+│ [1] key=2055     │◄───────  레코드 수 = 인덱스 항목 수
+└──────────────────┘</div>
+
+  <h3>스파스 인덱스 구조</h3>
+
+  <div class="diagram">데이터 파일                 스파스 인덱스
+┌──────────────────┐        ┌──────────────────────┐
+│블록 1             │        │ key=1003 → 블록 1     │
+│ [0] key=1003     │◄───────│ key=2010 → 블록 2     │
+│ [1] key=1027     │        │ key=3001 → 블록 3     │
+│ [2] key=1089     │        └──────────────────────┘
+├──────────────────┤          블록 수 = 인덱스 항목 수
+│블록 2             │
+│ [0] key=2010     │◄─── 블록 첫 항목(앵커)만 인덱스에 있음
+│ [1] key=2055     │     찾는 key가 블록 안 어디에 있는지는
+│ [2] key=2099     │     블록 읽은 후 순차 탐색으로 확인
+├──────────────────┤
+│블록 3             │
+│ [0] key=3001     │◄───
+│    ...           │
+└──────────────────┘</div>
+
+  <div class="callout">
+    <strong>스파스 인덱스 검색 절차</strong>
+    <ol style="margin:0.5rem 0 0;">
+      <li>인덱스에서 이진 탐색: 찾는 key보다 크지 않은 가장 큰 앵커 키를 찾는다.</li>
+      <li>그 앵커가 가리키는 블록을 디스크에서 읽는다.</li>
+      <li>블록 안에서 순차 탐색으로 원하는 레코드를 찾는다.</li>
+    </ol>
+  </div>
+
+  <!-- Section 4 -->
+  <h2>4. 클러스터링 인덱스</h2>
+
+  <p>
+    <strong>클러스터링 인덱스(Clustering Index)</strong>는 파일의 레코드가 특정 필드(클러스터링 필드) 기준으로
+    물리적으로 묶여(클러스터) 저장되어 있을 때 만드는 인덱스다.
+  </p>
+
+  <p>
+    기본 인덱스가 <em>유일한(Unique) 정렬 키</em>에 대한 인덱스라면,
+    클러스터링 인덱스는 <strong>중복 값을 허용하는 정렬 필드</strong>에 대한 인덱스다.
+  </p>
+
+  <div class="diagram">데이터 파일 (학과별로 클러스터링)
+┌─────────────────────────────────────┐
+│블록 1 — 컴퓨터과                     │
+│  학번=20001 | 학과=컴퓨터 | 이름=김A  │
+│  학번=20003 | 학과=컴퓨터 | 이름=이B  │
+│  학번=20005 | 학과=컴퓨터 | 이름=박C  │
+├─────────────────────────────────────┤
+│블록 2 — 수학과                       │
+│  학번=20002 | 학과=수학   | 이름=최D  │
+│  학번=20007 | 학과=수학   | 이름=정E  │
+├─────────────────────────────────────┤
+│블록 3 — 물리과                       │
+│  학번=20004 | 학과=물리   | 이름=강F  │
+│  학번=20006 | 학과=물리   | 이름=조G  │
+└─────────────────────────────────────┘
+
+클러스터링 인덱스 (학과 기준)
+┌──────────────────────┐
+│ 학과=물리   → 블록 3  │
+│ 학과=수학   → 블록 2  │
+│ 학과=컴퓨터 → 블록 1  │
+└──────────────────────┘</div>
+
+  <p>
+    같은 학과 레코드들이 <strong>물리적으로 같은 블록에 모여 있으므로</strong>,
+    "컴퓨터과 학생 전체 조회" 같은 범위 쿼리에서 블록 접근을 최소화할 수 있다.
+  </p>
+
+  <div class="callout">
+    <strong>클러스터링 인덱스의 장점</strong>
+    <ul style="margin:0.5rem 0 0;">
+      <li>같은 값을 가진 레코드가 같은 블록(혹은 인접 블록)에 있어 범위 검색이 매우 효율적</li>
+      <li>한 번의 블록 접근으로 여러 레코드를 동시에 가져올 수 있음</li>
+    </ul>
+  </div>
+
+  <div class="callout warn">
+    <strong>클러스터링 인덱스의 제약</strong>
+    <ul style="margin:0.5rem 0 0;">
+      <li>파일은 클러스터링 필드 기준으로 <em>물리적으로 정렬</em>되어 있어야 한다</li>
+      <li>한 파일에 클러스터링 인덱스는 하나만 가능 (물리 순서가 하나이므로)</li>
+      <li>클러스터링 필드로 정렬하면 다른 필드 기준 순차 접근 성능은 떨어짐</li>
+    </ul>
+  </div>
+
+  <!-- Section 5 -->
+  <h2>5. 인덱스 유형 총정리</h2>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>인덱스 유형</th>
+        <th>파일 정렬 조건</th>
+        <th>항목 수</th>
+        <th>주요 특징</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>기본 인덱스<br>(Primary)</strong></td>
+        <td>정렬 키와 동일</td>
+        <td>블록 수 (스파스)</td>
+        <td>파일당 1개, 앵커 레코드 기반</td>
+      </tr>
+      <tr>
+        <td><strong>보조 인덱스<br>(Secondary)</strong></td>
+        <td>무관 (비정렬 가능)</td>
+        <td>레코드 수 (덴스)</td>
+        <td>파일당 여러 개, 임의 접근 발생</td>
+      </tr>
+      <tr>
+        <td><strong>클러스터링<br>(Clustering)</strong></td>
+        <td>중복 허용 정렬 필드</td>
+        <td>고유 값 수 (스파스)</td>
+        <td>범위 검색에 최적, 파일당 1개</td>
+      </tr>
+      <tr>
+        <td><strong>덴스<br>(Dense)</strong></td>
+        <td>무관</td>
+        <td>레코드 수</td>
+        <td>빠르지만 인덱스 크기가 큼</td>
+      </tr>
+      <tr>
+        <td><strong>스파스<br>(Sparse)</strong></td>
+        <td>정렬 필수</td>
+        <td>블록 수</td>
+        <td>작지만 추가 블록 내 탐색 필요</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="primary-source">
+    <strong>📖 Primary Source</strong>
+    Folk, Zoellick &amp; Riccardi, <em>File Structures</em> — Chapter 8: Indexing.
+    기본 인덱스, 보조 인덱스, 클러스터링 인덱스를 예제 파일과 함께 상세히 설명한다.
+    특히 &ldquo;dense vs sparse&rdquo; 비교 표와 &ldquo;secondary index pointer chains&rdquo; 절을 집중적으로 읽어라.
+  </div>
+
+  <!-- Section 6: Quiz -->
+  <h2>6. 확인 퀴즈</h2>
+
+  <div class="quiz" id="quiz1">
+    <h3>Quiz 1</h3>
+    <div class="quiz-question">
+      학번(기본 키) 기준으로 정렬된 학생 파일에서 "이름" 필드로 빠른 검색을 하려면 어떤 인덱스가 필요한가?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz1')">기본 인덱스 (Primary Index)</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz1')">보조 인덱스 (Secondary Index)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz1')">스파스 인덱스 (Sparse Index)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz1')">클러스터링 인덱스 (Clustering Index)</div>
+    </div>
+    <div class="quiz-feedback" id="quiz1-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz1')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz2">
+    <h3>Quiz 2</h3>
+    <div class="quiz-question">
+      블록당 레코드 수가 100개이고 총 레코드 수가 1,000,000개인 정렬 파일에서<br>
+      스파스 기본 인덱스의 항목 수는 얼마인가?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz2')">1,000,000개 (레코드 수와 동일)</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz2')">10,000개 (블록 수 = 1,000,000 / 100)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz2')">100개 (블록당 레코드 수)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz2')">20개 (log₂ 블록 수)</div>
+    </div>
+    <div class="quiz-feedback" id="quiz2-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz2')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz3">
+    <h3>Quiz 3</h3>
+    <div class="quiz-question">
+      덴스 인덱스(Dense Index)가 스파스 인덱스(Sparse Index)보다 유리한 상황은?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz3')">파일 크기가 매우 크고 메모리가 부족할 때</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz3')">기본 키 기준으로 정렬된 파일에 기본 인덱스를 만들 때</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz3')">정렬되지 않은 필드(보조 인덱스)에 인덱스를 만들 때</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz3')">인덱스 크기를 최소화해야 할 때</div>
+    </div>
+    <div class="quiz-feedback" id="quiz3-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz3')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz4">
+    <h3>Quiz 4</h3>
+    <div class="quiz-question">
+      클러스터링 인덱스(Clustering Index)가 범위 검색(예: 특정 학과 학생 전체 조회)에<br>
+      특히 효과적인 이유는?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz4')">인덱스 파일 자체가 원본 레코드를 포함하고 있기 때문</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz4')">모든 레코드에 인덱스 항목이 있어 검색이 빠르기 때문</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz4')">같은 값의 레코드가 물리적으로 인접한 블록에 모여 있어 블록 접근 횟수를 최소화하기 때문</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz4')">클러스터링 인덱스는 여러 개 만들 수 있어 다양한 범위 검색을 동시에 지원하기 때문</div>
+    </div>
+    <div class="quiz-feedback" id="quiz4-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz4')">다시 풀기</button>
+  </div>
+
+  <!-- Ask Prompt -->
+  <div class="ask-prompt">
+    <strong>궁금한 점이 있으면 언제든지 물어보세요!</strong>
+    "덴스 인덱스와 스파스 인덱스를 언제 선택해야 하나요?", "보조 인덱스가 많으면 어떤 문제가 생기나요?",
+    "클러스터링 인덱스는 실제 DB에서 어떻게 쓰이나요?" — 선생님(Claude)이 바로 답해드립니다.
+  </div>
+
+  <!-- Navigation -->
+  <div class="lesson-nav">
+    <span>← <a href="0002-sequential-files.html">Day 2 — 순차 파일 구조</a></span>
+    <span>다음: <a href="0004-hashing.html">Day 4 — 직접 파일 / 해싱 →</a></span>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    correct: '✅ 정답입니다!',
+    wrong:   '❌ 틀렸습니다. 정답을 확인하고 다시 생각해보세요.'
+  };
+
+  function answer(el, quizId) {
+    const quiz = document.getElementById(quizId);
+    const opts = quiz.querySelectorAll('.quiz-option');
+    const fb   = document.getElementById(quizId + '-feedback');
+
+    if ([...opts].some(o => o.classList.contains('correct') || o.classList.contains('wrong'))) return;
+
+    const isCorrect = el.dataset.correct === 'true';
+    el.classList.add(isCorrect ? 'correct' : 'wrong');
+
+    if (!isCorrect) {
+      opts.forEach(o => { if (o.dataset.correct === 'true') o.classList.add('correct'); });
+    }
+
+    fb.textContent = isCorrect ? FEEDBACK.correct : FEEDBACK.wrong;
+    fb.className   = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'wrong');
+  }
+
+  function resetQuiz(quizId) {
+    const quiz = document.getElementById(quizId);
+    quiz.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('correct', 'wrong'));
+    const fb = document.getElementById(quizId + '-feedback');
+    fb.textContent = '';
+    fb.className = 'quiz-feedback';
+  }
+</script>
+</body>
+</html>
