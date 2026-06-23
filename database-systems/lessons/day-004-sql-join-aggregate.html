@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — SQL 중급: JOIN &amp; 집계</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 920px; margin: 0 auto; padding: 48px 24px 72px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.68; color: #202124; background: #fff; }
+    h1 { margin: 0 0 24px; font-size: 2rem; line-height: 1.25; }
+    h2 { margin-top: 40px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+    h3 { margin-top: 28px; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.95rem; }
+    th, td { border: 1px solid #d8dee4; padding: 8px 10px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 16px; background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 4px; }
+    blockquote { margin: 18px 0; padding: 2px 18px; border-left: 4px solid #d8dee4; color: #57606a; background: #f6f8fa; }
+    details { margin: 18px 0; padding: 12px 16px; border: 1px solid #d8dee4; border-radius: 6px; }
+    summary { cursor: pointer; font-weight: 600; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+    .back { margin-bottom: 28px; font-size: 0.95rem; }
+    .tip { background: #e8f0fe; border-left: 4px solid #0b57d0; padding: 2px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; }
+    .warn { background: #fef7e0; border-left: 4px solid #e37400; padding: 2px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; }
+    .diagram { background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; padding: 20px; margin: 18px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.88em; line-height: 1.5; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 데이터베이스 학습 목록</a></nav>
+<h1>Day 4 — SQL 중급: JOIN &amp; 집계</h1>
+<p><strong>날짜</strong>: 2026-06-23</p>
+<p><strong>소요 시간</strong>: 약 70분</p>
+<p><strong>선행 조건</strong>: <a href="./day-003-sql-dml.html">Day 3 — SQL 기초: DML</a></p>
+<hr>
+
+<h2>학습 목표</h2>
+<p>이 레슨을 마치면 다음을 할 수 있다:</p>
+<ol>
+  <li>INNER JOIN / LEFT JOIN / RIGHT JOIN / FULL OUTER JOIN의 차이를 설명하고 사용할 수 있다</li>
+  <li><code>GROUP BY</code>와 <code>HAVING</code>으로 그룹별 집계를 수행할 수 있다</li>
+  <li>집계 함수(<code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MAX</code>, <code>MIN</code>)를 올바르게 활용할 수 있다</li>
+  <li>JOIN + 집계를 결합한 복합 쿼리를 작성할 수 있다</li>
+</ol>
+<hr>
+
+<h2>1. 실습용 스키마</h2>
+<p>Day 2~3에서 사용한 두 테이블을 계속 사용한다. 부서가 없는 직원과 직원이 없는 부서를 포함하도록 데이터를 보강한다.</p>
+
+<pre><code>-- departments (부서 4개)
+INSERT INTO departments VALUES (1, '개발팀');
+INSERT INTO departments VALUES (2, '마케팅팀');
+INSERT INTO departments VALUES (3, '인사팀');
+INSERT INTO departments VALUES (4, '기획팀');   -- 직원 없음
+
+-- employees (직원 6명, dept_id NULL 1명)
+INSERT INTO employees VALUES (101, '김철수', 1, 6000000, '2022-03-15');
+INSERT INTO employees VALUES (102, '이영희', 1, 7500000, '2021-07-01');
+INSERT INTO employees VALUES (103, '박민준', 2, 5500000, '2023-01-10');
+INSERT INTO employees VALUES (104, '최수진', 3, 6200000, '2020-09-20');
+INSERT INTO employees VALUES (105, '정도윤', 2, 5000000, '2024-02-28');
+INSERT INTO employees VALUES (106, '한지민', NULL, 6800000, '2025-01-05'); -- 부서 미배정</code></pre>
+<hr>
+
+<h2>2. JOIN이란?</h2>
+<p>JOIN은 두 개 이상의 테이블을 <strong>공통 컬럼(주로 FK)</strong>으로 연결해 하나의 결과 집합으로 만드는 연산이다.</p>
+
+<div class="diagram">
+departments           employees
+┌──────────┬──────────┐   ┌────────┬──────────┬─────────┐
+│ dept_id  │ dept_name│   │ emp_id │ name     │ dept_id │
+├──────────┼──────────┤   ├────────┼──────────┼─────────┤
+│    1     │ 개발팀   │──┐│  101   │ 김철수   │    1    │
+│    2     │ 마케팅팀 │  └│  102   │ 이영희   │    1    │
+│    3     │ 인사팀   │──┐│  103   │ 박민준   │    2    │
+│    4     │ 기획팀   │  ││  104   │ 최수진   │    3    │
+└──────────┴──────────┘  ││  105   │ 정도윤   │    2    │
+                         │└─────────────────────────────┘
+                   연결 키: employees.dept_id = departments.dept_id
+</div>
+
+<h2>3. JOIN 종류</h2>
+
+<table>
+  <thead><tr><th>JOIN 종류</th><th>결과</th><th>NULL 포함 여부</th></tr></thead>
+  <tbody>
+    <tr><td><code>INNER JOIN</code></td><td>두 테이블에서 <strong>매칭되는 행만</strong></td><td>매칭 안 되면 제외</td></tr>
+    <tr><td><code>LEFT JOIN</code></td><td>왼쪽 테이블 전체 + 오른쪽 매칭</td><td>오른쪽 없으면 NULL</td></tr>
+    <tr><td><code>RIGHT JOIN</code></td><td>오른쪽 테이블 전체 + 왼쪽 매칭</td><td>왼쪽 없으면 NULL</td></tr>
+    <tr><td><code>FULL OUTER JOIN</code></td><td>양쪽 전체 (합집합)</td><td>양쪽 모두 NULL 가능</td></tr>
+  </tbody>
+</table>
+
+<h3>3-1. INNER JOIN</h3>
+<p>두 테이블 모두에 존재하는 행만 반환한다. 부서가 없는 직원(한지민)과 직원이 없는 부서(기획팀)는 결과에서 제외된다.</p>
+
+<pre><code>SELECT e.name, e.salary, d.dept_name
+FROM   employees e
+INNER JOIN departments d ON e.dept_id = d.dept_id;</code></pre>
+
+<table>
+  <thead><tr><th>name</th><th>salary</th><th>dept_name</th></tr></thead>
+  <tbody>
+    <tr><td>김철수</td><td>6000000</td><td>개발팀</td></tr>
+    <tr><td>이영희</td><td>7500000</td><td>개발팀</td></tr>
+    <tr><td>박민준</td><td>5500000</td><td>마케팅팀</td></tr>
+    <tr><td>최수진</td><td>6200000</td><td>인사팀</td></tr>
+    <tr><td>정도윤</td><td>5000000</td><td>마케팅팀</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <p><strong>테이블 별칭(alias)</strong>: <code>employees e</code>처럼 테이블에 짧은 이름을 붙이면 <code>e.name</code>처럼 쓸 수 있어 쿼리가 간결해진다. 같은 컬럼명이 두 테이블에 있을 때 <strong>반드시</strong> 테이블 별칭으로 구분해야 한다.</p>
+</div>
+
+<h3>3-2. LEFT JOIN</h3>
+<p>왼쪽 테이블(<code>employees</code>)의 모든 행을 반환한다. 오른쪽 테이블(<code>departments</code>)에 매칭이 없으면 NULL로 채운다.</p>
+
+<pre><code>SELECT e.name, e.salary, d.dept_name
+FROM   employees e
+LEFT JOIN departments d ON e.dept_id = d.dept_id;</code></pre>
+
+<table>
+  <thead><tr><th>name</th><th>salary</th><th>dept_name</th></tr></thead>
+  <tbody>
+    <tr><td>김철수</td><td>6000000</td><td>개발팀</td></tr>
+    <tr><td>이영희</td><td>7500000</td><td>개발팀</td></tr>
+    <tr><td>박민준</td><td>5500000</td><td>마케팅팀</td></tr>
+    <tr><td>최수진</td><td>6200000</td><td>인사팀</td></tr>
+    <tr><td>정도윤</td><td>5000000</td><td>마케팅팀</td></tr>
+    <tr><td>한지민</td><td>6800000</td><td><em>NULL</em></td></tr>
+  </tbody>
+</table>
+
+<p>부서 미배정 직원(한지민)이 포함되고 <code>dept_name</code>은 NULL이다.</p>
+
+<h3>3-3. RIGHT JOIN</h3>
+<p>오른쪽 테이블(<code>departments</code>)의 모든 행을 반환한다. 왼쪽 테이블에 매칭이 없으면 NULL로 채운다.</p>
+
+<pre><code>SELECT e.name, e.salary, d.dept_name
+FROM   employees e
+RIGHT JOIN departments d ON e.dept_id = d.dept_id;</code></pre>
+
+<table>
+  <thead><tr><th>name</th><th>salary</th><th>dept_name</th></tr></thead>
+  <tbody>
+    <tr><td>김철수</td><td>6000000</td><td>개발팀</td></tr>
+    <tr><td>이영희</td><td>7500000</td><td>개발팀</td></tr>
+    <tr><td>박민준</td><td>5500000</td><td>마케팅팀</td></tr>
+    <tr><td>정도윤</td><td>5000000</td><td>마케팅팀</td></tr>
+    <tr><td>최수진</td><td>6200000</td><td>인사팀</td></tr>
+    <tr><td><em>NULL</em></td><td><em>NULL</em></td><td>기획팀</td></tr>
+  </tbody>
+</table>
+
+<p>직원이 없는 기획팀이 포함되고 <code>name</code>, <code>salary</code>는 NULL이다.</p>
+
+<h3>3-4. FULL OUTER JOIN</h3>
+<p>두 테이블의 모든 행을 반환한다. 매칭되지 않는 쪽은 NULL로 채운다.</p>
+
+<pre><code>SELECT e.name, e.salary, d.dept_name
+FROM   employees e
+FULL OUTER JOIN departments d ON e.dept_id = d.dept_id;</code></pre>
+
+<table>
+  <thead><tr><th>name</th><th>salary</th><th>dept_name</th></tr></thead>
+  <tbody>
+    <tr><td>김철수</td><td>6000000</td><td>개발팀</td></tr>
+    <tr><td>이영희</td><td>7500000</td><td>개발팀</td></tr>
+    <tr><td>박민준</td><td>5500000</td><td>마케팅팀</td></tr>
+    <tr><td>최수진</td><td>6200000</td><td>인사팀</td></tr>
+    <tr><td>정도윤</td><td>5000000</td><td>마케팅팀</td></tr>
+    <tr><td>한지민</td><td>6800000</td><td><em>NULL</em></td></tr>
+    <tr><td><em>NULL</em></td><td><em>NULL</em></td><td>기획팀</td></tr>
+  </tbody>
+</table>
+
+<blockquote>
+  <p>MySQL은 <code>FULL OUTER JOIN</code>을 지원하지 않는다. <code>LEFT JOIN</code>과 <code>RIGHT JOIN</code>을 <code>UNION</code>으로 결합해 같은 결과를 얻을 수 있다.</p>
+</blockquote>
+
+<h3>3-5. 벤 다이어그램으로 이해하기</h3>
+<div class="diagram">
+  A (employees)   B (departments)
+
+  INNER JOIN        LEFT JOIN         RIGHT JOIN      FULL OUTER JOIN
+  ┌──┬──┐           ┌──┬──┐           ┌──┬──┐         ┌──┬──┐
+  │  │██│           │██│██│           │  │██│         │██│██│
+  │  │██│           │██│██│           │  │██│         │██│██│
+  └──┴──┘           └──┴──┘           └──┴──┘         └──┴──┘
+  (교집합)          (A 전체)          (B 전체)        (합집합)
+</div>
+<hr>
+
+<h2>4. 집계 함수</h2>
+<p>집계 함수(Aggregate Function)는 여러 행을 하나의 값으로 요약한다.</p>
+
+<table>
+  <thead><tr><th>함수</th><th>역할</th><th>NULL 처리</th></tr></thead>
+  <tbody>
+    <tr><td><code>COUNT(*)</code></td><td>전체 행 수</td><td>NULL 포함</td></tr>
+    <tr><td><code>COUNT(컬럼)</code></td><td>NULL이 아닌 값의 수</td><td>NULL 제외</td></tr>
+    <tr><td><code>SUM(컬럼)</code></td><td>합계</td><td>NULL 제외</td></tr>
+    <tr><td><code>AVG(컬럼)</code></td><td>평균</td><td>NULL 제외</td></tr>
+    <tr><td><code>MAX(컬럼)</code></td><td>최댓값</td><td>NULL 제외</td></tr>
+    <tr><td><code>MIN(컬럼)</code></td><td>최솟값</td><td>NULL 제외</td></tr>
+  </tbody>
+</table>
+
+<pre><code>-- 전체 직원 수
+SELECT COUNT(*) AS 직원수 FROM employees;          -- 6
+
+-- 부서가 배정된 직원 수 (NULL 제외)
+SELECT COUNT(dept_id) AS 부서배정직원수 FROM employees;  -- 5
+
+-- 전체 급여 합계 / 평균 / 최고 / 최저
+SELECT
+  SUM(salary)  AS 총급여,
+  AVG(salary)  AS 평균급여,
+  MAX(salary)  AS 최고급여,
+  MIN(salary)  AS 최저급여
+FROM employees;</code></pre>
+
+<div class="tip">
+  <p><strong>COUNT(*) vs COUNT(컬럼)</strong>: <code>COUNT(*)</code>는 NULL을 포함한 모든 행을 세고, <code>COUNT(컬럼)</code>은 해당 컬럼이 NULL이 아닌 행만 센다. 두 값이 다르다면 해당 컬럼에 NULL이 존재한다는 의미다.</p>
+</div>
+<hr>
+
+<h2>5. GROUP BY — 그룹별 집계</h2>
+<p><code>GROUP BY</code>는 지정한 컬럼의 값이 같은 행들을 하나의 그룹으로 묶어 집계를 수행한다.</p>
+
+<h3>5-1. 기본 문법</h3>
+<pre><code>SELECT   그룹기준컬럼, 집계함수(...)
+FROM     테이블
+[WHERE   행필터조건]
+GROUP BY 그룹기준컬럼
+[HAVING  그룹필터조건]
+[ORDER BY ...];</code></pre>
+
+<h3>5-2. 부서별 직원 수와 평균 급여</h3>
+<pre><code>SELECT   dept_id,
+         COUNT(*)        AS 직원수,
+         AVG(salary)     AS 평균급여,
+         MAX(salary)     AS 최고급여
+FROM     employees
+GROUP BY dept_id
+ORDER BY dept_id;</code></pre>
+
+<table>
+  <thead><tr><th>dept_id</th><th>직원수</th><th>평균급여</th><th>최고급여</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>2</td><td>6750000</td><td>7500000</td></tr>
+    <tr><td>2</td><td>2</td><td>5250000</td><td>5500000</td></tr>
+    <tr><td>3</td><td>1</td><td>6200000</td><td>6200000</td></tr>
+    <tr><td>NULL</td><td>1</td><td>6800000</td><td>6800000</td></tr>
+  </tbody>
+</table>
+
+<h3>5-3. JOIN + GROUP BY 조합</h3>
+<p>부서 이름을 함께 보여주려면 JOIN을 먼저 수행하고 집계한다.</p>
+
+<pre><code>SELECT   d.dept_name,
+         COUNT(e.emp_id) AS 직원수,
+         ROUND(AVG(e.salary), 0) AS 평균급여
+FROM     departments d
+LEFT JOIN employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_id, d.dept_name
+ORDER BY 평균급여 DESC NULLS LAST;</code></pre>
+
+<table>
+  <thead><tr><th>dept_name</th><th>직원수</th><th>평균급여</th></tr></thead>
+  <tbody>
+    <tr><td>개발팀</td><td>2</td><td>6750000</td></tr>
+    <tr><td>인사팀</td><td>1</td><td>6200000</td></tr>
+    <tr><td>마케팅팀</td><td>2</td><td>5250000</td></tr>
+    <tr><td>기획팀</td><td>0</td><td>NULL</td></tr>
+  </tbody>
+</table>
+
+<blockquote>
+  <p><code>LEFT JOIN</code>을 사용했기 때문에 직원이 없는 기획팀도 결과에 포함된다. <code>INNER JOIN</code>을 쓰면 기획팀이 사라진다.</p>
+</blockquote>
+<hr>
+
+<h2>6. HAVING — 그룹 필터링</h2>
+<p><code>HAVING</code>은 <code>GROUP BY</code>로 만들어진 그룹에 조건을 적용한다. <code>WHERE</code>이 개별 행을 필터링한다면, <code>HAVING</code>은 그룹 결과를 필터링한다.</p>
+
+<h3>6-1. WHERE vs HAVING 비교</h3>
+<table>
+  <thead><tr><th>항목</th><th>WHERE</th><th>HAVING</th></tr></thead>
+  <tbody>
+    <tr><td>적용 대상</td><td>개별 행</td><td>GROUP BY 결과 그룹</td></tr>
+    <tr><td>실행 순서</td><td>GROUP BY 이전</td><td>GROUP BY 이후</td></tr>
+    <tr><td>집계 함수 사용</td><td>불가</td><td>가능</td></tr>
+  </tbody>
+</table>
+
+<h3>6-2. 직원 수 2명 이상인 부서만 조회</h3>
+<pre><code>SELECT   d.dept_name,
+         COUNT(e.emp_id) AS 직원수,
+         AVG(e.salary)   AS 평균급여
+FROM     departments d
+LEFT JOIN employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_id, d.dept_name
+HAVING   COUNT(e.emp_id) >= 2
+ORDER BY 직원수 DESC;</code></pre>
+
+<table>
+  <thead><tr><th>dept_name</th><th>직원수</th><th>평균급여</th></tr></thead>
+  <tbody>
+    <tr><td>개발팀</td><td>2</td><td>6750000</td></tr>
+    <tr><td>마케팅팀</td><td>2</td><td>5250000</td></tr>
+  </tbody>
+</table>
+
+<h3>6-3. WHERE와 HAVING 동시 사용</h3>
+<pre><code>-- 급여 600만 원 이상 직원들(WHERE) 중
+-- 부서 평균 급여가 650만 원 이상인 부서만(HAVING) 조회
+SELECT   d.dept_name,
+         COUNT(e.emp_id) AS 고액연봉자수,
+         AVG(e.salary)   AS 평균급여
+FROM     departments d
+INNER JOIN employees e ON d.dept_id = e.dept_id
+WHERE    e.salary >= 6000000          -- 개별 행 필터 (GROUP BY 전)
+GROUP BY d.dept_id, d.dept_name
+HAVING   AVG(e.salary) >= 6500000    -- 그룹 필터 (GROUP BY 후)
+ORDER BY 평균급여 DESC;</code></pre>
+
+<div class="tip">
+  <p><strong>핵심 구분</strong>: "WHERE는 행을 거르고, HAVING은 그룹을 거른다." — 집계 함수(<code>COUNT</code>, <code>AVG</code> 등)를 조건에 쓰고 싶다면 반드시 <code>HAVING</code>을 사용해야 한다.</p>
+</div>
+<hr>
+
+<h2>7. SELECT 완전한 실행 순서 (갱신)</h2>
+<p>Day 3에서 배운 실행 순서에 GROUP BY / HAVING이 어떻게 끼어드는지 확인한다.</p>
+
+<table>
+  <thead><tr><th>실행 순서</th><th>절</th><th>역할</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><code>FROM</code> / <code>JOIN</code></td><td>대상 테이블 결정 및 결합</td></tr>
+    <tr><td>2</td><td><code>WHERE</code></td><td>개별 <strong>행</strong> 필터링</td></tr>
+    <tr><td>3</td><td><code>GROUP BY</code></td><td>그룹화</td></tr>
+    <tr><td>4</td><td><code>HAVING</code></td><td><strong>그룹</strong> 필터링 (집계 함수 사용 가능)</td></tr>
+    <tr><td>5</td><td><code>SELECT</code></td><td>컬럼 선택 및 별칭 정의</td></tr>
+    <tr><td>6</td><td><code>ORDER BY</code></td><td>결과 정렬</td></tr>
+    <tr><td>7</td><td><code>LIMIT</code></td><td>결과 개수 제한</td></tr>
+  </tbody>
+</table>
+<hr>
+
+<h2>8. 종합 실습</h2>
+
+<h3>문제 1</h3>
+<p>모든 직원의 이름과 소속 부서명을 조회하라. 부서가 미배정된 직원도 포함하고, 그 경우 부서명은 <code>'미배정'</code>으로 표시하라.</p>
+<details>
+  <summary>정답 보기</summary>
+  <pre><code>SELECT e.name,
+       COALESCE(d.dept_name, '미배정') AS dept_name
+FROM   employees e
+LEFT JOIN departments d ON e.dept_id = d.dept_id
+ORDER BY e.name;</code></pre>
+  <p><code>COALESCE(값, 대체값)</code>: 첫 번째 인자가 NULL이면 두 번째 인자를 반환한다.</p>
+</details>
+
+<h3>문제 2</h3>
+<p>각 부서의 직원 수, 평균 급여, 최고 급여를 조회하라. 부서 이름도 함께 표시하고, 직원이 없는 부서도 포함하라. 평균 급여 내림차순으로 정렬하라.</p>
+<details>
+  <summary>정답 보기</summary>
+  <pre><code>SELECT   d.dept_name,
+         COUNT(e.emp_id)        AS 직원수,
+         ROUND(AVG(e.salary), 0) AS 평균급여,
+         MAX(e.salary)           AS 최고급여
+FROM     departments d
+LEFT JOIN employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_id, d.dept_name
+ORDER BY 평균급여 DESC NULLS LAST;</code></pre>
+</details>
+
+<h3>문제 3</h3>
+<p>평균 급여가 600만 원 이상인 부서와 그 평균 급여를 조회하라.</p>
+<details>
+  <summary>정답 보기</summary>
+  <pre><code>SELECT   d.dept_name,
+         AVG(e.salary) AS 평균급여
+FROM     departments d
+INNER JOIN employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_id, d.dept_name
+HAVING   AVG(e.salary) >= 6000000
+ORDER BY 평균급여 DESC;</code></pre>
+</details>
+
+<h3>문제 4</h3>
+<p>각 부서에서 가장 최근에 입사한 직원의 이름, 부서명, 입사일을 조회하라. (힌트: GROUP BY + MAX 후 JOIN)</p>
+<details>
+  <summary>정답 보기</summary>
+  <pre><code>-- 방법 1: 서브쿼리 활용 (Day 5에서 자세히 다룸)
+SELECT e.name, d.dept_name, e.hire_date
+FROM   employees e
+INNER JOIN departments d ON e.dept_id = d.dept_id
+WHERE  e.hire_date = (
+  SELECT MAX(e2.hire_date)
+  FROM   employees e2
+  WHERE  e2.dept_id = e.dept_id
+)
+ORDER BY d.dept_name;
+
+-- 방법 2: 최신 입사일만 먼저 구하기
+SELECT e.name, d.dept_name, e.hire_date
+FROM   employees e
+INNER JOIN departments d ON e.dept_id = d.dept_id
+INNER JOIN (
+  SELECT dept_id, MAX(hire_date) AS latest
+  FROM   employees
+  GROUP BY dept_id
+) latest ON e.dept_id = latest.dept_id AND e.hire_date = latest.latest
+ORDER BY d.dept_name;</code></pre>
+</details>
+<hr>
+
+<h2>9. 핵심 요약</h2>
+<table>
+  <thead><tr><th>개념</th><th>핵심 포인트</th></tr></thead>
+  <tbody>
+    <tr><td><code>INNER JOIN</code></td><td>두 테이블 모두 매칭되는 행만 — 매칭 안 되면 제외</td></tr>
+    <tr><td><code>LEFT JOIN</code></td><td>왼쪽 전체 보존 — 오른쪽 없으면 NULL</td></tr>
+    <tr><td><code>RIGHT JOIN</code></td><td>오른쪽 전체 보존 — 왼쪽 없으면 NULL</td></tr>
+    <tr><td><code>FULL OUTER JOIN</code></td><td>양쪽 모두 보존 (MySQL 미지원)</td></tr>
+    <tr><td><code>GROUP BY</code></td><td>같은 값 행을 묶어 집계 — SELECT에는 GROUP BY 기준 컬럼 또는 집계 함수만 쓸 수 있다</td></tr>
+    <tr><td><code>HAVING</code></td><td>그룹 필터링 — 집계 함수 조건은 WHERE가 아닌 HAVING에</td></tr>
+    <tr><td>집계 함수</td><td>COUNT(*) vs COUNT(컬럼): NULL 포함 여부 차이</td></tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <p><strong>자주 하는 실수</strong>: GROUP BY 없이 집계 함수와 일반 컬럼을 함께 SELECT하면 오류가 발생한다.</p>
+  <pre style="margin:8px 0"><code>-- 오류: dept_id가 GROUP BY에 없음
+SELECT dept_id, name, COUNT(*) FROM employees;
+
+-- 올바름
+SELECT dept_id, COUNT(*) FROM employees GROUP BY dept_id;</code></pre>
+</div>
+
+<h2>참고 자료</h2>
+<ul>
+  <li><a href="https://use-the-index-luke.com/sql/join" target="_blank">Use The Index, Luke — SQL Join</a> — JOIN 동작 원리를 인덱스 관점에서 설명</li>
+  <li><a href="https://mode.com/sql-tutorial/sql-joins/" target="_blank">Mode Analytics SQL Tutorial — JOINs</a> — 시각적 설명과 실습 환경 제공</li>
+</ul>
+
+<hr>
+<h2>다음 레슨 예고</h2>
+<p><strong>Day 5 — SQL 고급: 서브쿼리·뷰·인덱스</strong></p>
+<ul>
+  <li>단순 서브쿼리, 상관 서브쿼리(Correlated Subquery)</li>
+  <li><code>EXISTS</code> / <code>NOT EXISTS</code></li>
+  <li><code>CREATE VIEW</code>로 재사용 가능한 쿼리 만들기</li>
+  <li><code>CREATE INDEX</code>와 인덱스 동작 원리 소개</li>
+</ul>
+<p style="margin-top:12px; font-size:0.9rem;">궁금한 점이 생기면 언제든 질문해줘. 함께 개념을 정리할 수 있어.</p>
+
+<hr>
+<p style="font-size:0.88rem; color:#6e7781;">데이터베이스 학습 워크스페이스 — Day 4 / 10</p>
+</body>
+</html>

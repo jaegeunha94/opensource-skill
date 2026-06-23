@@ -7,12 +7,12 @@
 | 1 | 2026-06-22 | 데이터베이스 개요 및 관계형 모델 | [day-001-relational-model.html](lessons/day-001-relational-model.html) |
 | 2 | 2026-06-22 | SQL 기초 — DDL | [day-002-sql-ddl.html](lessons/day-002-sql-ddl.html) |
 | 3 | 2026-06-22 | SQL 기초 — DML | [day-003-sql-dml.html](lessons/day-003-sql-dml.html) |
+| 4 | 2026-06-23 | SQL 중급 — JOIN & 집계 | [day-004-sql-join-aggregate.html](lessons/day-004-sql-join-aggregate.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | SQL 중급 — JOIN & 집계 | INNER/LEFT/RIGHT JOIN, GROUP BY, HAVING, 집계함수(COUNT·SUM·AVG·MAX·MIN) |
 | 5 | SQL 고급 — 서브쿼리·뷰·인덱스 | 상관 서브쿼리, EXISTS, CREATE VIEW, CREATE INDEX |
 | 6 | 정규화 | 함수적 종속, 1NF·2NF·3NF·BCNF, 역정규화 |
 | 7 | 트랜잭션과 동시성 제어 | ACID, Commit/Rollback, 격리 수준, Dirty Read·Phantom Read |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — Day 4 (SQL 중급 — JOIN & 집계)부터 시작.
+**Day 4 완료** — Day 5 (SQL 고급 — 서브쿼리·뷰·인덱스)부터 시작.
 
 ## 습득한 핵심 개념
 
@@ -37,7 +37,11 @@
 - [x] WHERE 조건 필터링: 비교·논리·LIKE·IN·BETWEEN·IS NULL (Day 3)
 - [x] ORDER BY 정렬, LIMIT/OFFSET 페이지네이션 (Day 3)
 - [x] SELECT 실행 순서: FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT (Day 3)
-- [ ] JOIN 종류와 동작 원리 (예정 Day 4)
+- [x] JOIN 종류와 동작 원리: INNER/LEFT/RIGHT/FULL OUTER JOIN (Day 4)
+- [x] 집계 함수: COUNT·SUM·AVG·MAX·MIN 및 NULL 처리 (Day 4)
+- [x] GROUP BY: 그룹별 집계 수행 (Day 4)
+- [x] HAVING: 집계 결과에 대한 그룹 필터링 (Day 4)
+- [ ] 서브쿼리·상관 서브쿼리·EXISTS (예정 Day 5)
 - [ ] 정규화 1NF·2NF·3NF·BCNF (예정 Day 6)
 - [ ] ACID & 트랜잭션 (예정 Day 7)
 - [ ] 인덱스 구조 및 쿼리 최적화 (예정 Day 8)
