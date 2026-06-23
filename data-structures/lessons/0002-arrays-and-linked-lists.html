@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — 배열과 연결 리스트</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>배열과 연결 리스트</h1>
+<div class="lesson-meta">
+  <span class="day-badge">Day 2</span>
+  <span class="lesson-date">2026-06-23</span>
+  &nbsp;·&nbsp; Arrays &amp; Linked Lists
+</div>
+
+<!-- ─── 학습 목표 ─── -->
+<h2>학습 목표</h2>
+<p>이 레슨을 마치면 다음을 할 수 있다:</p>
+<ul>
+  <li>정적 배열과 동적 배열의 차이를 설명하고, 각각의 메모리 구조를 그릴 수 있다.</li>
+  <li>단일 연결 리스트와 이중 연결 리스트를 코드로 구현하고 순회할 수 있다.</li>
+  <li>배열 vs 연결 리스트의 연산별 시간복잡도를 표로 비교하고, 상황에 맞게 선택할 수 있다.</li>
+  <li>"어디에 삽입·삭제하느냐"에 따라 시간복잡도가 어떻게 달라지는지 설명할 수 있다.</li>
+</ul>
+
+<!-- ─── 1. 배열 ─── -->
+<h2>1. 배열 (Array)</h2>
+<p>
+  <strong>배열</strong>은 같은 타입의 데이터를 <em>연속된 메모리 공간</em>에 나란히 저장하는 가장 기본적인 자료구조다.
+  인덱스(index)를 알면 임의 원소에 <code>O(1)</code>로 접근할 수 있다.
+</p>
+
+<div class="diagram">
+인덱스:  0     1     2     3     4
+         ┌─────┬─────┬─────┬─────┬─────┐
+값:      │  7  │  3  │  9  │  1  │  5  │
+         └─────┴─────┴─────┴─────┴─────┘
+주소:   1000  1004  1008  1012  1016   (int, 4바이트씩)
+
+arr[2] 접근 → 주소 = 1000 + 2×4 = 1008  → O(1)
+</div>
+<p class="diagram-caption">정적 배열의 메모리 레이아웃 — 주소 계산으로 인덱스 접근이 즉각적이다</p>
+
+<h3>1-1. 정적 배열 vs 동적 배열</h3>
+<table>
+  <thead>
+    <tr><th>구분</th><th>정적 배열</th><th>동적 배열 (예: Python list, Java ArrayList)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>크기</td><td>선언 시 고정</td><td>런타임에 자동 확장</td></tr>
+    <tr><td>메모리</td><td>스택 또는 정적 영역</td><td>힙(heap)에 할당·재할당</td></tr>
+    <tr><td>확장 비용</td><td>불가 (직접 새 배열 생성)</td><td>크기 초과 시 2배 확장 → <em>Amortized O(1)</em> 추가</td></tr>
+    <tr><td>대표 언어</td><td>C <code>int arr[5]</code></td><td>Python <code>list</code>, JavaScript <code>Array</code></td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">동적 배열의 확장 전략</div>
+  <p>
+    동적 배열은 용량(capacity)이 꽉 차면 보통 <strong>2배</strong>짜리 새 배열을 할당하고
+    기존 원소를 복사한다. 복사 비용은 <code>O(n)</code>이지만,
+    n번 <code>append</code>를 합산하면 평균 <code>O(1)</code>이 된다 — 이를 <em>상각 분석(amortized analysis)</em>이라 한다.
+  </p>
+</div>
+
+<h3>1-2. 배열의 삽입·삭제</h3>
+<p>
+  배열 중간에 원소를 삽입하거나 삭제하면, 그 뒤 원소를 전부 한 칸씩 밀거나 당겨야 한다.
+</p>
+<pre>
+# 인덱스 2에 삽입 전:  [7, 3, 9, 1, 5]
+# 인덱스 2에 42 삽입 후: [7, 3, 42, 9, 1, 5]
+#                              ↑ 9, 1, 5를 오른쪽으로 이동 → O(n)
+
+# 인덱스 2 삭제 후:    [7, 3, 1, 5]
+#                           ↑ 1, 5를 왼쪽으로 이동 → O(n)
+</pre>
+
+<!-- ─── 2. 연결 리스트 ─── -->
+<h2>2. 연결 리스트 (Linked List)</h2>
+<p>
+  <strong>연결 리스트</strong>는 각 원소(노드)가 <em>다음 노드를 가리키는 포인터</em>를 함께 저장한다.
+  메모리가 연속적이지 않아도 되며, 삽입·삭제가 빠른 대신 임의 접근이 느리다.
+</p>
+
+<h3>2-1. 단일 연결 리스트 (Singly Linked List)</h3>
+<div class="diagram">
+head
+ │
+ ▼
+┌────┬──┐   ┌────┬──┐   ┌────┬──┐   ┌────┬──┐
+│  7 │ ─┼──▶│  3 │ ─┼──▶│  9 │ ─┼──▶│  1 │ ✕│
+└────┴──┘   └────┴──┘   └────┴──┘   └────┴──┘
+  data next    data next    data next    data None
+</div>
+<p class="diagram-caption">단일 연결 리스트 — 각 노드는 (data, next) 쌍</p>
+
+<pre>
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.next = None   # 다음 노드 포인터
+
+class SinglyLinkedList:
+    def __init__(self):
+        self.head = None
+
+    def append(self, data):
+        new_node = Node(data)
+        if self.head is None:
+            self.head = new_node
+            return
+        cur = self.head
+        while cur.next:        # 꼬리(tail)까지 순회 O(n)
+            cur = cur.next
+        cur.next = new_node
+
+    def prepend(self, data):   # 맨 앞 삽입 O(1)
+        new_node = Node(data)
+        new_node.next = self.head
+        self.head = new_node
+
+    def delete(self, data):    # 탐색 O(n), 삭제 포인터 조작 O(1)
+        if self.head is None:
+            return
+        if self.head.data == data:
+            self.head = self.head.next
+            return
+        cur = self.head
+        while cur.next and cur.next.data != data:
+            cur = cur.next
+        if cur.next:
+            cur.next = cur.next.next   # 노드 건너뛰기
+</pre>
+
+<h3>2-2. 이중 연결 리스트 (Doubly Linked List)</h3>
+<div class="diagram">
+head                                              tail
+ │                                                 │
+ ▼                                                 ▼
+┌──┬────┬──┐   ┌──┬────┬──┐   ┌──┬────┬──┐   ┌──┬────┬──┐
+│✕ │  7 │ ─┼──▶│ ◀│  3 │ ─┼──▶│ ◀│  9 │ ─┼──▶│ ◀│  1 │✕ │
+└──┴────┴──┘   └──┴────┴──┘   └──┴────┴──┘   └──┴────┴──┘
+prev data next   prev data next   prev data next   prev data next
+</div>
+<p class="diagram-caption">이중 연결 리스트 — (prev, data, next) 세 필드. 양방향 순회 가능</p>
+
+<div class="callout">
+  <div class="callout-title">이중 연결 리스트가 유리한 상황</div>
+  <ul>
+    <li>꼬리에서 앞으로 역방향 탐색이 필요할 때</li>
+    <li><strong>노드 참조(reference)를 이미 알고 있을 때</strong> 삭제가 <code>O(1)</code> — 앞 노드를 따로 찾지 않아도 된다.</li>
+    <li>LRU(Least Recently Used) 캐시 구현 — 가장 오래된 노드를 <code>O(1)</code>로 제거</li>
+  </ul>
+</div>
+
+<!-- ─── 3. 시간복잡도 비교 ─── -->
+<h2>3. 시간복잡도 비교</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>연산</th>
+      <th>정적/동적 배열</th>
+      <th>단일 연결 리스트</th>
+      <th>이중 연결 리스트</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>임의 접근 (인덱스)</td>
+      <td><code>O(1)</code></td>
+      <td><code>O(n)</code></td>
+      <td><code>O(n)</code></td>
+    </tr>
+    <tr>
+      <td>맨 앞 삽입</td>
+      <td><code>O(n)</code></td>
+      <td><code>O(1)</code></td>
+      <td><code>O(1)</code></td>
+    </tr>
+    <tr>
+      <td>맨 끝 삽입</td>
+      <td><code>O(1)</code>*</td>
+      <td><code>O(n)</code> / tail 유지 시 <code>O(1)</code></td>
+      <td><code>O(1)</code> (tail 포인터)</td>
+    </tr>
+    <tr>
+      <td>중간 삽입 (위치 알 때)</td>
+      <td><code>O(n)</code></td>
+      <td><code>O(1)</code></td>
+      <td><code>O(1)</code></td>
+    </tr>
+    <tr>
+      <td>탐색</td>
+      <td><code>O(n)</code></td>
+      <td><code>O(n)</code></td>
+      <td><code>O(n)</code></td>
+    </tr>
+    <tr>
+      <td>이진 탐색 가능?</td>
+      <td>가능 <code>O(log n)</code></td>
+      <td>불가 (연속 메모리 아님)</td>
+      <td>불가</td>
+    </tr>
+    <tr>
+      <td>메모리 오버헤드</td>
+      <td>낮음 (데이터만)</td>
+      <td>중간 (next 포인터 1개)</td>
+      <td>높음 (prev + next 포인터 2개)</td>
+    </tr>
+  </tbody>
+</table>
+<p style="font-size:0.82em;color:#666;">* 동적 배열 맨 끝 삽입은 Amortized O(1)</p>
+
+<h3>선택 기준 요약</h3>
+<div class="diagram">
+임의 인덱스 접근이 잦다      → 배열
+앞/중간 삽입·삭제가 잦다     → 연결 리스트
+메모리가 제한적이다          → 배열 (포인터 오버헤드 없음)
+캐시 지역성(cache locality)  → 배열 (연속 메모리)
+순서 유지 + 빠른 삽입 삭제   → 이중 연결 리스트
+</div>
+
+<div class="callout warning">
+  <div class="callout-title">캐시 지역성(Cache Locality)</div>
+  배열은 연속 메모리라 CPU 캐시에 올라갈 때 주변 원소도 함께 로드된다.
+  연결 리스트는 노드가 메모리 곳곳에 흩어져 캐시 미스(cache miss)가 잦다.
+  실제 벤치마크에서는 이론적 Big O 차이보다 이 효과가 크게 나타날 때가 있다.
+</div>
+
+<!-- ─── 4. 실전 패턴 ─── -->
+<h2>4. 실전 패턴 — 두 포인터 (Two Pointers)</h2>
+<p>
+  연결 리스트 문제에서 <strong>두 포인터(slow / fast)</strong> 기법은 핵심 패턴이다.
+</p>
+
+<pre>
+# 연결 리스트 중간 노드 찾기 (Floyd's 알고리즘)
+def find_middle(head):
+    slow = head
+    fast = head
+    while fast and fast.next:
+        slow = slow.next        # 한 칸씩
+        fast = fast.next.next   # 두 칸씩
+    return slow  # fast가 끝에 도달하면 slow가 중간
+
+# 사이클 감지 (Floyd's Cycle Detection)
+def has_cycle(head):
+    slow = fast = head
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+        if slow is fast:   # 같은 노드에서 만남 → 사이클
+            return True
+    return False
+</pre>
+
+<div class="callout success">
+  <div class="callout-title">두 포인터가 작동하는 이유</div>
+  사이클이 있으면 fast가 slow를 추월해 결국 같은 위치에서 만난다 (원형 트랙에서 빠른 선수가 느린 선수를 따라잡는 것과 같다).
+  사이클이 없으면 fast가 먼저 <code>None</code>에 도달한다.
+</div>
+
+<!-- ─── 5. 퀴즈 ─── -->
+<h2>5. 확인 퀴즈</h2>
+
+<div id="q1" class="quiz">
+  <p class="quiz-question">Q1. 크기가 n인 배열에서 인덱스 k의 원소를 읽는 시간복잡도는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> O(n)</label></li>
+    <li><label><input type="radio" name="q1" value="1"> O(log n)</label></li>
+    <li><label><input type="radio" name="q1" value="2"> O(1)</label></li>
+    <li><label><input type="radio" name="q1" value="3"> O(k)</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="initQuiz('q1', 2, '배열은 base_address + k × element_size로 주소를 즉시 계산하므로 O(1)입니다.')">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div id="q2" class="quiz">
+  <p class="quiz-question">Q2. 단일 연결 리스트의 맨 앞(head)에 노드를 삽입하는 시간복잡도는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> O(n)</label></li>
+    <li><label><input type="radio" name="q2" value="1"> O(1)</label></li>
+    <li><label><input type="radio" name="q2" value="2"> O(log n)</label></li>
+    <li><label><input type="radio" name="q2" value="3"> O(n²)</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="initQuiz('q2', 1, 'head 포인터만 새 노드로 교체하면 되므로, 기존 노드를 이동할 필요 없이 O(1)입니다.')">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div id="q3" class="quiz">
+  <p class="quiz-question">Q3. 다음 중 이중 연결 리스트가 단일 연결 리스트보다 명확히 유리한 경우는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> 메모리를 최소화해야 할 때</label></li>
+    <li><label><input type="radio" name="q3" value="1"> 이미 참조를 가진 노드를 O(1)로 삭제해야 할 때</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 이진 탐색을 수행해야 할 때</label></li>
+    <li><label><input type="radio" name="q3" value="3"> 인덱스 접근이 빈번할 때</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="initQuiz('q3', 1, '이중 연결 리스트는 prev 포인터로 앞 노드를 알 수 있어, 해당 노드 삭제 시 전임 노드를 탐색할 필요가 없습니다.')">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div id="q4" class="quiz">
+  <p class="quiz-question">Q4. 동적 배열에서 원소를 n번 append할 때의 <em>전체</em> 시간복잡도는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> O(n²)</label></li>
+    <li><label><input type="radio" name="q4" value="1"> O(n log n)</label></li>
+    <li><label><input type="radio" name="q4" value="2"> O(n)</label></li>
+    <li><label><input type="radio" name="q4" value="3"> O(1)</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="initQuiz('q4', 2, '2배 확장 전략으로 복사 비용 총합이 2n을 넘지 않아, n번 append의 전체 비용은 O(n)입니다. 각 연산당 상각(amortized) O(1).')">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ─── 일차 소스 ─── -->
+<div class="primary-source">
+  <div class="ps-label">추천 1차 자료</div>
+  <p>
+    <strong>Grokking Algorithms, Chapter 2 &amp; 3</strong> — Aditya Bhargava<br>
+    배열과 연결 리스트를 그림으로 비교하고, 선택 정렬(배열 활용)을 함께 설명한다.
+  </p>
+  <p>
+    <strong>Visualgo.net — Linked List</strong><br>
+    <a href="https://visualgo.net/ko/list" target="_blank">https://visualgo.net/ko/list</a> —
+    삽입·삭제·탐색 애니메이션으로 포인터 변경을 단계별로 확인할 수 있다.
+  </p>
+  <p>
+    <strong>CS50x (Harvard, edX) Week 5 — Memory &amp; Data Structures</strong><br>
+    정적 배열의 메모리 레이아웃과 연결 리스트 포인터를 C 언어로 시각화. 언어 무관하게 개념이 명확해진다.
+  </p>
+</div>
+
+<!-- ─── 복습 프롬프트 ─── -->
+<div class="ask-teacher">
+  <strong>선생님께 물어보세요.</strong> 이해가 어려운 부분이 있으면 바로 질문하세요.<br>
+  예: "Python list의 내부 구조를 C 코드로 보여줘",
+  "LRU 캐시를 이중 연결 리스트 + 해시맵으로 어떻게 구현해?",
+  "Floyd 사이클 감지 알고리즘이 왜 항상 만나는지 수학적으로 증명해줘"
+</div>
+
+<!-- ─── 다음 레슨 ─── -->
+<div class="progress-section">
+  <h3>다음 학습</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 10%"></div>
+  </div>
+  <p class="progress-label">Day 2 / 20 완료 (10%) &nbsp;·&nbsp; 다음: Day 3 — 스택 (Stack)</p>
+</div>
+
+<!-- ─── 푸터 ─── -->
+<div class="lesson-footer">
+  <strong>자료구조</strong> 학습 워크스페이스
+  <div class="lesson-nav">
+    <a href="./index.html">← 목록으로</a>
+    <a href="./0001-what-is-data-structure.html">← Day 1</a>
+    <a href="../reference/glossary.html">용어집</a>
+  </div>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
