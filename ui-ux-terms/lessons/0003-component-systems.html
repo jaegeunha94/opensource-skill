@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 3 — 컴포넌트 시스템: 디자인 시스템·원자 디자인·토큰</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+  <div class="lesson-container">
+
+    <header class="lesson-header">
+      <span class="lesson-tag">UI/UX 용어 · Day 3</span>
+      <h1>컴포넌트 시스템 — 디자인 시스템·원자 디자인·토큰</h1>
+      <p class="lesson-meta">2026-06-23 &nbsp;·&nbsp; 예상 소요 시간 25분</p>
+    </header>
+
+    <!-- Learning objectives -->
+    <h2>이 레슨에서 배울 것</h2>
+    <ul style="padding-left:1.5rem; margin-bottom:1rem; font-size:0.9rem;">
+      <li>디자인 시스템이 무엇이며 왜 팀 전체의 생산성에 영향을 주는지 설명할 수 있다</li>
+      <li>원자 디자인(Atomic Design)의 5단계 계층을 구체적인 예시로 설명할 수 있다</li>
+      <li>디자인 토큰의 역할을 이해하고 컴포넌트 라이브러리와의 관계를 파악할 수 있다</li>
+    </ul>
+
+    <!-- === SECTION 1: 디자인 시스템 === -->
+    <h2>1. 디자인 시스템(Design System)</h2>
+
+    <p>
+      <strong>디자인 시스템(Design System)</strong>은 제품 전반에 걸쳐 일관된 사용자 경험을 제공하기 위해
+      디자인 원칙, 재사용 가능한 컴포넌트, 가이드라인, 코드를 하나의 공유 언어로 묶어 놓은 시스템이다.
+      단순한 스타일 가이드나 UI 키트와 달리 <em>살아 있는 문서(living document)</em>로 지속적으로 유지·관리된다.
+    </p>
+
+    <div class="callout">
+      <strong>비유:</strong> 디자인 시스템은 레고 블록 세트와 같다. 블록 하나하나가 정해진 규격(토큰)을 가지고,
+      이 블록들을 조합해 다양한 구조물(화면)을 빠르게 만들 수 있다. 규격이 통일되어 있기 때문에
+      디자이너와 개발자가 같은 언어로 소통할 수 있다.
+    </div>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Design Principles</div>
+        <div class="term-ko">디자인 원칙</div>
+        <div class="term-def">
+          제품의 모든 설계 결정을 이끄는 방향성. 예: "명확성 우선", "사용자의 실수를 용인하는 설계".
+          원칙이 명문화되면 새 팀원도 일관된 판단을 내릴 수 있다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Component Library</div>
+        <div class="term-ko">컴포넌트 라이브러리</div>
+        <div class="term-def">
+          버튼, 입력 필드, 모달 등 재사용 가능한 UI 요소들의 집합. 디자인 도구(Figma)와
+          코드(React, Vue 등) 양쪽에서 동일한 컴포넌트를 참조하도록 유지한다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Style Guide</div>
+        <div class="term-ko">스타일 가이드</div>
+        <div class="term-def">
+          색상, 타이포그래피, 여백 등 시각적 규칙을 문서화한 것. 디자인 시스템의 일부이지만,
+          스타일 가이드 단독으로는 컴포넌트 재사용이나 코드 연동이 보장되지 않는다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Documentation</div>
+        <div class="term-ko">문서화</div>
+        <div class="term-def">
+          각 컴포넌트의 사용 방법, 금지 사항(Do/Don't), 접근성 고려사항을 기록한 가이드.
+          좋은 문서가 없으면 컴포넌트 라이브러리도 "어디서 뭘 써야 하는지 모르는" 상태가 된다.
+        </div>
+      </div>
+    </div>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>종류</th>
+          <th>포함 내용</th>
+          <th>대표 사례</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>스타일 가이드</strong></td>
+          <td>색상, 폰트, 여백 규칙</td>
+          <td>Airbnb 색상 팔레트 문서</td>
+        </tr>
+        <tr>
+          <td><strong>UI 키트</strong></td>
+          <td>Figma/Sketch 컴포넌트 파일</td>
+          <td>Material Design Figma Kit</td>
+        </tr>
+        <tr>
+          <td><strong>컴포넌트 라이브러리</strong></td>
+          <td>코드로 구현된 UI 컴포넌트</td>
+          <td>MUI, Ant Design, shadcn/ui</td>
+        </tr>
+        <tr>
+          <td><strong>디자인 시스템</strong></td>
+          <td>원칙 + 토큰 + 컴포넌트 + 문서 전체</td>
+          <td>Material Design, Apple HIG, Carbon</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- === SECTION 2: 원자 디자인 === -->
+    <h2>2. 원자 디자인(Atomic Design)</h2>
+
+    <p>
+      <strong>원자 디자인(Atomic Design)</strong>은 Brad Frost가 2013년에 제안한 UI 컴포넌트 설계 방법론이다.
+      화학의 원자→분자→유기체 개념을 UI에 적용해 5단계 계층으로 컴포넌트를 구성한다.
+      "작은 것에서 큰 것으로" 조립하는 방식으로 일관성과 재사용성을 높인다.
+    </p>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Atoms (원자)</div>
+        <div class="term-ko">더 이상 나눌 수 없는 가장 작은 UI 요소</div>
+        <div class="term-def">
+          버튼, 입력 필드, 레이블, 아이콘, 색상 샘플, 폰트 스타일 등.<br /><br />
+          <em>예: &lt;Button&gt;, &lt;Input&gt;, &lt;Label&gt;, &lt;Icon&gt;</em>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Molecules (분자)</div>
+        <div class="term-ko">원자 2개 이상이 결합된 간단한 UI 그룹</div>
+        <div class="term-def">
+          레이블 + 입력 필드 + 버튼 = 검색 폼.<br /><br />
+          <em>예: SearchBar, FormField, NavItem</em>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Organisms (유기체)</div>
+        <div class="term-ko">여러 분자/원자가 결합된 복잡한 UI 섹션</div>
+        <div class="term-def">
+          로고 + 네비게이션 + 검색 폼 = 헤더.<br /><br />
+          <em>예: Header, ProductCard, Footer</em>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Templates (템플릿)</div>
+        <div class="term-ko">실제 콘텐츠 없이 레이아웃 구조만 있는 페이지 틀</div>
+        <div class="term-def">
+          헤더 + 사이드바 + 콘텐츠 영역 + 푸터가 배치된 그리드.<br /><br />
+          <em>예: ArticleTemplate, DashboardTemplate</em>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Pages (페이지)</div>
+        <div class="term-ko">실제 콘텐츠가 채워진 완성된 화면</div>
+        <div class="term-def">
+          템플릿에 실제 텍스트·이미지·데이터가 들어간 최종 결과물.<br /><br />
+          <em>예: 특정 기사 상세 페이지, 사용자 프로필 페이지</em>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>주의:</strong> 원자 디자인은 엄격한 규칙이 아니라 사고 방식(mental model)이다.
+      팀마다 "어디까지가 원자이고 어디서부터 분자인가"에 대한 기준이 다를 수 있다.
+      중요한 것은 <em>일관된 계층 기준을 팀 내에서 합의</em>하는 것이다.
+    </div>
+
+    <!-- === SECTION 3: 디자인 토큰 === -->
+    <h2>3. 디자인 토큰(Design Token)</h2>
+
+    <p>
+      <strong>디자인 토큰(Design Token)</strong>은 색상, 간격, 타이포그래피, 그림자 등 시각적 속성을
+      이름이 있는 변수로 저장한 값이다. 하드코딩된 값 대신 토큰을 사용하면 디자인과 코드 양쪽에서
+      하나의 변경만으로 전체 제품의 스타일을 일관되게 바꿀 수 있다.
+    </p>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Global Token</div>
+        <div class="term-ko">글로벌 토큰</div>
+        <div class="term-def">
+          원시 값을 담는 토큰. 색상 팔레트나 폰트 크기 스케일의 원본 값이다.<br /><br />
+          <code style="font-size:0.8rem; background:#f3f4f6; padding:0.1em 0.4em; border-radius:4px;">
+            color-blue-500: #3b82f6
+          </code>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Alias Token</div>
+        <div class="term-ko">의미론적 토큰 (시멘틱 토큰)</div>
+        <div class="term-def">
+          용도(role)를 이름으로 표현하는 토큰. 글로벌 토큰을 참조한다.<br /><br />
+          <code style="font-size:0.8rem; background:#f3f4f6; padding:0.1em 0.4em; border-radius:4px;">
+            color-action-primary: {color-blue-500}
+          </code>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Component Token</div>
+        <div class="term-ko">컴포넌트 토큰</div>
+        <div class="term-def">
+          특정 컴포넌트에만 적용되는 토큰. 의미론적 토큰을 참조한다.<br /><br />
+          <code style="font-size:0.8rem; background:#f3f4f6; padding:0.1em 0.4em; border-radius:4px;">
+            button-primary-bg: {color-action-primary}
+          </code>
+        </div>
+      </div>
+    </div>
+
+    <p>
+      토큰을 3단계로 나누는 이유는 <strong>테마 전환(다크 모드, 브랜드 변경)</strong>을 쉽게 하기 위해서다.
+      의미론적 토큰의 참조만 바꾸면 컴포넌트 코드를 건드리지 않고도 전체 제품의 색상이 바뀐다.
+    </p>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>토큰 레벨</th>
+          <th>이름 예시</th>
+          <th>값 예시</th>
+          <th>역할</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>글로벌</strong></td>
+          <td>color-blue-500</td>
+          <td>#3b82f6</td>
+          <td>원시 팔레트 값 저장</td>
+        </tr>
+        <tr>
+          <td><strong>시멘틱</strong></td>
+          <td>color-action-primary</td>
+          <td>{color-blue-500}</td>
+          <td>용도·의미 표현</td>
+        </tr>
+        <tr>
+          <td><strong>컴포넌트</strong></td>
+          <td>button-primary-bg</td>
+          <td>{color-action-primary}</td>
+          <td>컴포넌트별 세부 바인딩</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>실무 팁:</strong> Figma Variables(2023+)는 디자인 토큰을 Figma 안에서 직접 정의하고
+      코드와 동기화할 수 있게 해 준다. W3C의 Design Token Community Group은
+      디자인 토큰의 표준 JSON 포맷(DTCG)을 정의하고 있으며, Style Dictionary·Token Transformer 같은
+      도구로 플랫폼별 변수 파일로 자동 변환할 수 있다.
+    </div>
+
+    <!-- === SECTION 4: 컴포넌트 라이브러리 실무 === -->
+    <h2>4. 컴포넌트 라이브러리 실무 용어</h2>
+
+    <p>
+      디자인 시스템 논의에서 자주 등장하는 실무 용어들을 정리한다.
+    </p>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Variant</div>
+        <div class="term-ko">배리언트</div>
+        <div class="term-def">
+          하나의 컴포넌트가 가질 수 있는 시각적·기능적 변형. Figma에서는 컴포넌트 속성(Property)으로 관리한다.<br /><br />
+          <em>예: Button의 variant — primary, secondary, ghost, destructive</em>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">State</div>
+        <div class="term-ko">상태</div>
+        <div class="term-def">
+          컴포넌트가 사용자 인터랙션에 따라 취하는 시각적 상태.<br /><br />
+          <em>예: default, hover, focus, active, disabled, loading, error</em>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Slot / Children</div>
+        <div class="term-ko">슬롯 / 자식 요소</div>
+        <div class="term-def">
+          컴포넌트 내부에 외부에서 콘텐츠를 주입할 수 있는 자리. 컴포넌트의 유연성을 높이면서도
+          구조 일관성을 유지하게 해 준다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Prop / Property</div>
+        <div class="term-ko">프롭 / 속성</div>
+        <div class="term-def">
+          컴포넌트의 외부 인터페이스. 코드에서는 React props, Figma에서는 컴포넌트 Properties 패널에서 제어한다.<br /><br />
+          <em>예: &lt;Button size="sm" variant="primary" disabled /&gt;</em>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Storybook</div>
+        <div class="term-ko">스토리북</div>
+        <div class="term-def">
+          UI 컴포넌트를 독립적으로 개발·문서화·테스트하는 오픈소스 도구. 컴포넌트 라이브러리의
+          "카탈로그" 역할을 하며 배리언트와 상태를 인터랙티브하게 확인할 수 있다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Theming</div>
+        <div class="term-ko">테마 적용</div>
+        <div class="term-def">
+          디자인 토큰 값을 교체해 동일한 컴포넌트에 다른 시각적 스타일(다크 모드, 화이트라벨 등)을
+          적용하는 메커니즘. CSS custom properties나 JS theme 객체로 구현한다.
+        </div>
+      </div>
+    </div>
+
+    <!-- === Primary source === -->
+    <div class="primary-source">
+      <div class="label">추천 1차 출처</div>
+      <a href="https://bradfrost.com/blog/post/atomic-web-design/" target="_blank" rel="noopener">
+        Atomic Web Design — Brad Frost
+      </a>
+      <p style="margin-top:0.4rem; color:var(--color-text-muted);">
+        원자 디자인 방법론의 원저자 블로그 글. 디자인 시스템 전반은
+        <a href="https://www.designsystems.com/" target="_blank" rel="noopener">designsystems.com</a>과
+        <a href="https://www.nngroup.com/articles/design-systems-101/" target="_blank" rel="noopener">NN/g — Design Systems 101</a>을
+        함께 읽으면 좋다. 디자인 토큰 표준은
+        <a href="https://tr.designtokens.org/format/" target="_blank" rel="noopener">W3C DTCG Spec</a>을 참고하자.
+      </p>
+    </div>
+
+    <!-- === QUIZ === -->
+    <h2>5. 확인 퀴즈</h2>
+    <p style="font-size:0.9rem; color:var(--color-text-muted); margin-bottom:1.5rem;">
+      답을 보기 전에 먼저 스스로 생각해 보자.
+    </p>
+
+    <!-- Q1 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q1. 다음 중 원자 디자인(Atomic Design)의 5단계를 올바른 순서로 나열한 것은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. 원자 → 유기체 → 분자 → 템플릿 → 페이지</button></li>
+        <li><button onclick="answer(this, true)">B. 원자 → 분자 → 유기체 → 템플릿 → 페이지</button></li>
+        <li><button onclick="answer(this, false)">C. 분자 → 원자 → 유기체 → 페이지 → 템플릿</button></li>
+        <li><button onclick="answer(this, false)">D. 원자 → 분자 → 템플릿 → 유기체 → 페이지</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q1"></p>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q2. 디자인 토큰을 3단계(글로벌 → 시멘틱 → 컴포넌트)로 분리하는 가장 큰 이유는?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. 파일 크기를 줄이기 위해</button></li>
+        <li><button onclick="answer(this, false)">B. Figma와 코드를 별개로 관리하기 위해</button></li>
+        <li><button onclick="answer(this, true)">C. 테마 전환(다크 모드, 브랜드 변경)을 컴포넌트 코드 수정 없이 가능하게 하기 위해</button></li>
+        <li><button onclick="answer(this, false)">D. 디자이너와 개발자의 역할을 분리하기 위해</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q2"></p>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q3. 원자 디자인에서 "로고 + 글로벌 네비게이션 + 검색 바"로 구성된 헤더 컴포넌트는 어느 레벨에 해당하는가?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. 원자 (Atom)</button></li>
+        <li><button onclick="answer(this, false)">B. 분자 (Molecule)</button></li>
+        <li><button onclick="answer(this, true)">C. 유기체 (Organism)</button></li>
+        <li><button onclick="answer(this, false)">D. 템플릿 (Template)</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q3"></p>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q4. 스타일 가이드(Style Guide)와 디자인 시스템(Design System)의 차이를 가장 잘 설명한 것은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. 스타일 가이드는 디자인 시스템보다 더 포괄적인 개념이다</button></li>
+        <li><button onclick="answer(this, false)">B. 디자인 시스템은 Figma에서만 사용하고 스타일 가이드는 코드에서만 사용한다</button></li>
+        <li><button onclick="answer(this, true)">C. 스타일 가이드는 시각적 규칙 문서이고, 디자인 시스템은 원칙·토큰·컴포넌트·문서를 포함하는 더 포괄적인 체계다</button></li>
+        <li><button onclick="answer(this, false)">D. 두 용어는 동의어로 혼용해도 된다</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q4"></p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="lesson-nav">
+      <a href="0002-information-architecture.html">← Day 2 — 정보 구조(IA)</a>
+      <a href="0004-interaction-patterns.html">Day 4 — 인터랙션 패턴 →</a>
+    </nav>
+
+    <!-- Ask teacher nudge -->
+    <div class="ask-teacher">
+      궁금한 점이 생겼나요? 에이전트에게 바로 물어보세요. 이 워크스페이스의 맥락을 유지한 채로 이어서 설명해 드립니다.
+    </div>
+
+  </div>
+
+  <script>
+    let answered = {};
+
+    function answer(btn, isCorrect) {
+      const li = btn.closest('li');
+      const options = li.closest('.quiz-options');
+      const section = li.closest('.quiz-section');
+      const feedbackId = section.querySelector('.quiz-feedback').id;
+
+      if (answered[feedbackId]) return;
+      answered[feedbackId] = true;
+
+      options.querySelectorAll('button').forEach(b => b.disabled = true);
+
+      const fb = document.getElementById(feedbackId);
+      if (isCorrect) {
+        btn.classList.add('correct');
+        fb.textContent = '정답입니다! ✓';
+        fb.className = 'quiz-feedback correct';
+      } else {
+        btn.classList.add('wrong');
+        fb.textContent = '오답입니다. 위 내용을 다시 읽고 정답을 찾아보세요.';
+        fb.className = 'quiz-feedback wrong';
+      }
+    }
+  </script>
+</body>
+</html>
