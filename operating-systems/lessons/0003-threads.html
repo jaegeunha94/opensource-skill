@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 3 — 스레드(Thread)</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 3</span>
+  <strong>스레드(Thread) — 스레드 vs 프로세스, 멀티스레딩, 커널 vs 사용자 레벨 스레드</strong>
+  <span class="lesson-date">· 2026-06-23</span>
+</div>
+
+<h1>스레드(Thread)</h1>
+
+<div class="progress-section">
+  <h3>학습 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 10%"></div>
+  </div>
+  <span class="progress-label">전체 커리큘럼의 약 10% 완료 · Day 3 / 30</span>
+</div>
+
+<h2>오늘 배울 것</h2>
+<ul>
+  <li>스레드(Thread)의 정의와 프로세스와의 차이를 설명할 수 있다</li>
+  <li>스레드가 공유하는 자원과 독립적으로 소유하는 자원을 구분할 수 있다</li>
+  <li>멀티스레딩의 이점과 위험을 설명할 수 있다</li>
+  <li>커널 레벨 스레드와 사용자 레벨 스레드의 차이를 비교할 수 있다</li>
+  <li>1:1, N:1, M:N 스레딩 모델을 구분할 수 있다</li>
+</ul>
+
+<!-- ============================================================
+     섹션 1: 스레드란?
+     ============================================================ -->
+<h2>1. 스레드란 무엇인가?</h2>
+
+<p>
+  <strong>스레드(Thread)</strong>는 프로세스 안에서 실제로 실행되는 흐름의 단위입니다.
+  하나의 프로세스는 반드시 하나 이상의 스레드를 포함합니다.
+  프로세스가 "작업의 컨테이너"라면, 스레드는 그 컨테이너 안에서 실제로 일을 하는 "작업자"입니다.
+</p>
+
+<div class="callout">
+  <div class="callout-title">핵심 정의</div>
+  스레드 = CPU 실행의 기본 단위 = 프로세스 내부의 독립적인 제어 흐름 (독립적인 PC, 스택, 레지스터 세트를 가짐)
+</div>
+
+<h3>단일 스레드 vs 멀티 스레드 프로세스</h3>
+
+<div class="diagram">
+  단일 스레드 프로세스                     멀티 스레드 프로세스
+  ┌──────────────────────┐                ┌──────────────────────┐
+  │  Code                │                │  Code  (공유)        │
+  │  Data / Heap (공유)  │                │  Data / Heap (공유)  │
+  ├──────────────────────┤                ├──────────┬───────────┤
+  │  Stack               │                │  Stack 1 │  Stack 2  │  ← 각 스레드 독립
+  │  Registers           │                │  Regs 1  │  Regs 2   │
+  │  PC                  │                │  PC 1    │  PC 2     │
+  └──────────────────────┘                └──────────┴───────────┘
+         스레드 1개                            스레드 2개
+</div>
+<p class="diagram-caption">그림 1: 단일 스레드 프로세스와 멀티 스레드 프로세스의 메모리 구조</p>
+
+<!-- ============================================================
+     섹션 2: 공유 vs 독립
+     ============================================================ -->
+<h2>2. 스레드가 공유하는 것 vs 독립적으로 소유하는 것</h2>
+
+<p>같은 프로세스 내 스레드들은 프로세스의 자원을 <strong>공유</strong>합니다. 하지만 각 스레드마다 <strong>독립적</strong>으로 가지는 자원도 있습니다.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>구분</th>
+      <th>항목</th>
+      <th>이유</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>공유 (Shared)</strong></td>
+      <td>코드 영역 (Text)</td>
+      <td>모든 스레드가 같은 프로그램 코드를 실행</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>데이터 영역 (전역·정적 변수)</td>
+      <td>프로세스 전역으로 할당된 메모리</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>힙 (Heap)</td>
+      <td>동적으로 할당된 메모리는 모든 스레드가 접근 가능</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>열린 파일 디스크립터</td>
+      <td>프로세스 단위로 관리</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>시그널 핸들러</td>
+      <td>프로세스 전체에 적용</td>
+    </tr>
+    <tr>
+      <td><strong>독립 (Private)</strong></td>
+      <td>스택 (Stack)</td>
+      <td>각 스레드의 함수 호출 프레임·지역 변수가 다름</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>프로그램 카운터 (PC)</td>
+      <td>각 스레드가 다른 코드 지점을 실행 중일 수 있음</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>CPU 레지스터 세트</td>
+      <td>컨텍스트 스위치 시 각 스레드의 레지스터를 따로 저장·복원</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>스레드 ID (TID)</td>
+      <td>OS가 스레드를 개별 식별하기 위해 부여</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout warning">
+  <div class="callout-title">주의 — 공유가 양날의 검</div>
+  힙과 전역 변수를 공유하므로 스레드 간 데이터 교환이 빠르지만,
+  여러 스레드가 동시에 같은 데이터를 수정하면 <strong>경쟁 조건(Race Condition)</strong>이 발생합니다.
+  동기화 없이 공유 데이터에 접근하는 것은 위험합니다. (Day 5에서 자세히 다룹니다.)
+</div>
+
+<!-- ============================================================
+     섹션 3: 멀티스레딩 장단점
+     ============================================================ -->
+<h2>3. 멀티스레딩(Multithreading)의 이점과 위험</h2>
+
+<h3>이점</h3>
+<ul>
+  <li><strong>응답성(Responsiveness)</strong>: UI 스레드와 작업 스레드를 분리하면 긴 작업 중에도 화면이 멈추지 않습니다.</li>
+  <li><strong>자원 공유(Resource Sharing)</strong>: 새 프로세스를 생성하지 않고 스레드를 추가하면 메모리·파일 핸들 등을 재사용합니다.</li>
+  <li><strong>경제성(Economy)</strong>: 스레드 생성·컨텍스트 스위치 비용이 프로세스보다 훨씬 저렴합니다. (Linux 기준 <code>clone()</code> vs <code>fork()</code>)</li>
+  <li><strong>확장성(Scalability)</strong>: 멀티코어 CPU에서 여러 스레드를 병렬 실행하면 처리량이 증가합니다.</li>
+</ul>
+
+<h3>위험</h3>
+<ul>
+  <li><strong>경쟁 조건(Race Condition)</strong>: 공유 데이터를 보호하지 않으면 예측 불가능한 결과가 발생합니다.</li>
+  <li><strong>교착 상태(Deadlock)</strong>: 스레드들이 서로의 잠금을 기다리며 영원히 멈출 수 있습니다.</li>
+  <li><strong>디버깅 어려움</strong>: 스레드 스케줄링은 비결정적이어서 재현이 어려운 버그가 생깁니다.</li>
+</ul>
+
+<!-- ============================================================
+     섹션 4: 커널 레벨 vs 사용자 레벨 스레드
+     ============================================================ -->
+<h2>4. 커널 레벨 스레드 vs 사용자 레벨 스레드</h2>
+
+<p>스레드를 <em>누가</em> 관리하느냐에 따라 두 종류로 나뉩니다.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>항목</th>
+      <th>커널 레벨 스레드 (KLT)</th>
+      <th>사용자 레벨 스레드 (ULT)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>관리 주체</td>
+      <td>OS 커널</td>
+      <td>사용자 공간 라이브러리</td>
+    </tr>
+    <tr>
+      <td>OS 인식</td>
+      <td>OS가 각 스레드를 개별 스케줄 단위로 인식</td>
+      <td>OS는 프로세스만 보고, 스레드 존재를 모름</td>
+    </tr>
+    <tr>
+      <td>블로킹 시스콜</td>
+      <td>한 스레드가 블로킹되어도 다른 스레드 실행 가능</td>
+      <td>한 스레드가 블로킹되면 프로세스 전체가 블로킹</td>
+    </tr>
+    <tr>
+      <td>멀티코어 활용</td>
+      <td>가능 (여러 코어에서 병렬 실행)</td>
+      <td>불가 (단일 프로세스는 하나의 코어만 사용)</td>
+    </tr>
+    <tr>
+      <td>스위치 비용</td>
+      <td>높음 (커널 모드 전환 필요)</td>
+      <td>낮음 (사용자 공간 내 컨텍스트 스위치)</td>
+    </tr>
+    <tr>
+      <td>예시</td>
+      <td>Linux <code>pthreads</code>, Windows Threads</td>
+      <td>초기 Java Green Threads, GNU Portable Threads</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="diagram">
+  커널 레벨 스레드 (1:1 모델)          사용자 레벨 스레드 (N:1 모델)
+
+  사용자     T1  T2  T3              사용자     T1  T2  T3
+  공간       │   │   │               공간       └───┴───┘
+             │   │   │                               │
+  ---------kernel boundary--------  --------kernel boundary--------
+  커널       │   │   │               커널            │
+  공간      KT1 KT2 KT3                             KT1
+
+  (각 ULT가 KLT에 1:1 매핑)          (모든 ULT가 단일 KLT에 N:1 매핑)
+</div>
+<p class="diagram-caption">그림 2: 커널 레벨 스레드(1:1) vs 사용자 레벨 스레드(N:1) 구조</p>
+
+<!-- ============================================================
+     섹션 5: 스레딩 모델
+     ============================================================ -->
+<h2>5. 스레딩 모델 — 1:1, N:1, M:N</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>모델</th>
+      <th>매핑</th>
+      <th>특징</th>
+      <th>사용 예</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>1:1</strong></td>
+      <td>ULT 1개 → KLT 1개</td>
+      <td>멀티코어 활용 가능, 블로킹 안전. 스레드 수만큼 커널 자원 소모</td>
+      <td>Linux pthreads, Windows</td>
+    </tr>
+    <tr>
+      <td><strong>N:1</strong></td>
+      <td>ULT N개 → KLT 1개</td>
+      <td>전환 비용 낮음. 블로킹 시 전체 프로세스 멈춤. 멀티코어 미활용</td>
+      <td>초기 Solaris, Green Threads</td>
+    </tr>
+    <tr>
+      <td><strong>M:N</strong></td>
+      <td>ULT M개 → KLT N개 (M≥N)</td>
+      <td>유연성 최대. 구현이 매우 복잡. 일부 언어 런타임(Go 고루틴)이 채택</td>
+      <td>Go 런타임, 초기 Solaris, Windows UMS</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">현대 OS의 선택</div>
+  Linux와 Windows는 모두 <strong>1:1 모델</strong>을 채택합니다.
+  커널이 강력해져 오버헤드가 줄었고, 멀티코어 활용이 중요해졌기 때문입니다.
+  Go 언어는 자체 런타임에서 M:N 모델을 구현하여 수백만 고루틴을 소수의 OS 스레드에 스케줄합니다.
+</div>
+
+<!-- ============================================================
+     섹션 6: 실전 — POSIX Threads
+     ============================================================ -->
+<h2>6. 실전 예시 — POSIX Threads (pthreads)</h2>
+
+<pre>
+#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+
+void *worker(void *arg) {
+    int id = *(int *)arg;
+    printf("스레드 %d 실행 중\n", id);
+    return NULL;
+}
+
+int main(void) {
+    pthread_t t1, t2;
+    int id1 = 1, id2 = 2;
+
+    pthread_create(&amp;t1, NULL, worker, &amp;id1);  // 스레드 생성
+    pthread_create(&amp;t2, NULL, worker, &amp;id2);
+
+    pthread_join(t1, NULL);  // 스레드 종료 대기 (프로세스의 wait()와 유사)
+    pthread_join(t2, NULL);
+
+    printf("모든 스레드 완료\n");
+    return 0;
+}
+</pre>
+
+<p>
+  <strong>pthread_create()</strong>: 새 스레드를 생성하고 지정한 함수를 실행합니다. Linux에서는 내부적으로 <code>clone()</code> 시스템 콜을 사용합니다.<br>
+  <strong>pthread_join()</strong>: 대상 스레드가 종료될 때까지 현재 스레드를 블로킹합니다. 프로세스의 <code>wait()</code>와 동일한 역할입니다.
+</p>
+
+<div class="callout">
+  <div class="callout-title">프로세스 생성 vs 스레드 생성 비용 비교</div>
+  Linux 기준 <code>fork()</code>(프로세스 생성)는 <code>pthread_create()</code>(스레드 생성)보다
+  수십~수백 배 더 느립니다. 스레드는 코드·데이터·힙을 새로 복사하지 않기 때문입니다.
+  단, <code>fork()</code>도 CoW(Copy-on-Write) 덕분에 실제 메모리 복사는 지연됩니다.
+</div>
+
+<!-- ============================================================
+     퀴즈
+     ============================================================ -->
+<h2>확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. 같은 프로세스 내 두 스레드가 <em>공유하지 않는</em> 것은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> 힙(Heap) 메모리</label></li>
+    <li><label><input type="radio" name="q1" value="1"> 코드(Text) 영역</label></li>
+    <li><label><input type="radio" name="q1" value="2"> 스택(Stack)</label></li>
+    <li><label><input type="radio" name="q1" value="3"> 열린 파일 디스크립터</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. 사용자 레벨 스레드(ULT)의 가장 큰 단점은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> 스레드 생성 비용이 너무 높다</label></li>
+    <li><label><input type="radio" name="q2" value="1"> 하나의 스레드가 블로킹 시스콜을 하면 프로세스 전체가 블로킹된다</label></li>
+    <li><label><input type="radio" name="q2" value="2"> 커널 레벨 스레드보다 컨텍스트 스위치 비용이 더 높다</label></li>
+    <li><label><input type="radio" name="q2" value="3"> 멀티코어 CPU를 과도하게 사용해 다른 프로세스가 굶는다</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. 현대 Linux와 Windows가 채택하는 스레딩 모델은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> N:1 모델</label></li>
+    <li><label><input type="radio" name="q3" value="1"> M:N 모델</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 1:1 모델</label></li>
+    <li><label><input type="radio" name="q3" value="3"> 스레드를 사용하지 않음</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. <code>pthread_join()</code>의 역할로 올바른 것은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> 새 스레드를 생성한다</label></li>
+    <li><label><input type="radio" name="q4" value="1"> 스레드의 스택 크기를 늘린다</label></li>
+    <li><label><input type="radio" name="q4" value="2"> 현재 스레드를 종료한다</label></li>
+    <li><label><input type="radio" name="q4" value="3"> 대상 스레드가 종료될 때까지 현재 스레드를 블로킹한다</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================
+     1차 자료 추천
+     ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">오늘의 추천 1차 자료</div>
+  <strong>OSTEP Chapter 26 — Concurrency: An Introduction</strong><br>
+  <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/threads-intro.pdf" target="_blank">pages.cs.wisc.edu/~remzi/OSTEP/threads-intro.pdf</a><br>
+  <small>스레드가 왜 필요한지, 프로세스와 무엇이 다른지, 경쟁 조건의 예시를 직접 실행해 볼 수 있게 설명합니다.
+  pthreads 레퍼런스는 <code>man pthread_create</code> 또는 POSIX 표준 문서를 참고하세요.</small>
+</div>
+
+<!-- ============================================================
+     다음 레슨 예고
+     ============================================================ -->
+<h2>다음 레슨 예고</h2>
+<p>
+  <strong>Day 4 — CPU 스케줄링</strong>: OS가 여러 프로세스/스레드 중 누구에게 CPU를 줄지 결정하는 알고리즘을 배웁니다.
+  FCFS, SJF, Round-Robin, 우선순위 스케줄링의 동작 방식과 성능 지표(대기 시간, 반환 시간)를 계산합니다.
+</p>
+
+<div class="ask-teacher">
+  <strong>질문이 있으신가요?</strong> 스레드 vs 프로세스 선택 기준, 경쟁 조건 예방 방법, Go 고루틴 동작 방식 등
+  궁금한 점이 있다면 언제든지 Claude에게 물어보세요.
+</div>
+
+<!-- ============================================================
+     Footer
+     ============================================================ -->
+<div class="lesson-footer">
+  운영체제 학습 워크스페이스 · <a href="../PROGRESS.md">학습 현황</a> · <a href="../RESOURCES.md">참고 자료</a>
+  <div class="lesson-nav">
+    <a href="0002-process-and-pcb.html">← Day 2: 프로세스와 PCB</a>
+    <a href="0004-cpu-scheduling.html">다음 → Day 4: CPU 스케줄링</a>
+  </div>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 2, '스택은 각 스레드가 독립적으로 소유합니다. 함수 호출 프레임과 지역 변수가 서로 달라야 하기 때문입니다. 힙, 코드 영역, 파일 디스크립터는 같은 프로세스 내 모든 스레드가 공유합니다.');
+  initQuiz('q2', 1, 'ULT는 OS가 스레드를 인식하지 못하므로, 한 스레드가 블로킹 시스템 콜을 호출하면 OS는 해당 프로세스 전체를 블로킹합니다. 이것이 N:1 모델의 가장 큰 한계입니다.');
+  initQuiz('q3', 2, '현대 Linux와 Windows는 1:1 모델을 채택합니다. 사용자 스레드 하나가 커널 스레드 하나와 1:1로 매핑되어 멀티코어 활용과 블로킹 안전성을 모두 제공합니다.');
+  initQuiz('q4', 3, 'pthread_join()은 프로세스에서 wait()가 하는 역할과 같습니다. 대상 스레드가 종료될 때까지 호출한 스레드를 블로킹하여, 스레드 종료 후 자원을 정리합니다.');
+</script>
+
+</body>
+</html>
