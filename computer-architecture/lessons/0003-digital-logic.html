@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 3 — 디지털 논리 기초</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 3</span>
+  <strong>디지털 논리 기초 (Digital Logic)</strong>
+  <span class="lesson-date">· 2026-06-23</span>
+</div>
+
+<h1>비트 연산이 실리콘 위에서 일어나는 방법</h1>
+
+<div class="progress-section">
+  <h3>학습 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 10%"></div>
+  </div>
+  <span class="progress-label">전체 커리큘럼의 약 10% 완료 · Day 3 / 30</span>
+</div>
+
+<h2>오늘 배울 것</h2>
+<ul>
+  <li>불 대수(Boolean Algebra)의 기본 법칙을 이해한다</li>
+  <li>AND, OR, NOT, NAND, NOR, XOR 게이트의 기능과 진리표를 익힌다</li>
+  <li>게이트를 조합해 조합 논리 회로를 만드는 방법을 배운다</li>
+  <li>반가산기(Half Adder)와 전가산기(Full Adder)가 어떻게 동작하는지 이해한다</li>
+</ul>
+
+<!-- ============================================================
+     섹션 1: 불 대수
+     ============================================================ -->
+<h2>1. 불 대수 (Boolean Algebra)</h2>
+
+<p>
+  조지 불(George Boole)이 1854년에 고안한 수학 체계로, 값이 <strong>True(1)</strong>와
+  <strong>False(0)</strong> 두 가지뿐인 논리 연산을 다룹니다.
+  현대 디지털 회로는 전압 high(1)와 low(0)로 이 두 값을 표현합니다.
+</p>
+
+<h3>기본 연산 세 가지</h3>
+
+<table>
+  <thead>
+    <tr><th>연산</th><th>기호</th><th>설명</th><th>예시</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>AND (논리곱)</strong></td>
+      <td>A · B 또는 A ∧ B</td>
+      <td>둘 다 1일 때만 1</td>
+      <td>1 · 1 = 1 / 1 · 0 = 0</td>
+    </tr>
+    <tr>
+      <td><strong>OR (논리합)</strong></td>
+      <td>A + B 또는 A ∨ B</td>
+      <td>하나라도 1이면 1</td>
+      <td>0 + 1 = 1 / 0 + 0 = 0</td>
+    </tr>
+    <tr>
+      <td><strong>NOT (부정)</strong></td>
+      <td>Ā 또는 ¬A</td>
+      <td>0 ↔ 1 반전</td>
+      <td>NOT 1 = 0 / NOT 0 = 1</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>1-1. 불 대수의 주요 법칙</h3>
+
+<div class="diagram">
+항등 법칙    A + 0 = A       A · 1 = A
+영 법칙      A + 1 = 1       A · 0 = 0
+멱등 법칙    A + A = A       A · A = A
+보수 법칙    A + Ā = 1       A · Ā = 0
+이중 부정    ¬(¬A) = A
+교환 법칙    A + B = B + A   A · B = B · A
+결합 법칙    (A+B)+C = A+(B+C)
+분배 법칙    A·(B+C) = A·B + A·C
+드모르간     ¬(A·B) = Ā + B̄   ¬(A+B) = Ā · B̄
+</div>
+
+<div class="callout">
+  <div class="callout-title">드모르간 법칙이 중요한 이유</div>
+  실제 반도체 공정에서는 NAND 게이트가 NOR보다 작고 빠릅니다.
+  드모르간 법칙 덕분에 <strong>모든 논리 회로를 NAND만으로</strong> 구현할 수 있어,
+  하드웨어 설계에서 NAND가 "만능 게이트(Universal Gate)"로 불립니다.
+</div>
+
+<!-- ============================================================
+     섹션 2: 논리 게이트
+     ============================================================ -->
+<h2>2. 논리 게이트 (Logic Gates)</h2>
+
+<p>
+  논리 게이트는 트랜지스터를 묶어 만든 기본 회로 소자입니다.
+  게이트 하나가 불 대수 연산 하나를 수행합니다.
+</p>
+
+<h3>2-1. 기본 게이트 진리표</h3>
+
+<table>
+  <thead>
+    <tr><th>A</th><th>B</th><th>AND</th><th>OR</th><th>NOT A</th><th>NAND</th><th>NOR</th><th>XOR</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>1</td><td>1</td><td>0</td></tr>
+    <tr><td>0</td><td>1</td><td>0</td><td>1</td><td>1</td><td>1</td><td>0</td><td>1</td></tr>
+    <tr><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td></tr>
+    <tr><td>1</td><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+  </tbody>
+</table>
+
+<h3>2-2. 각 게이트 정의</h3>
+
+<div class="diagram">
+AND  : A · B          — 두 입력이 모두 1일 때만 1
+OR   : A + B          — 하나 이상이 1이면 1
+NOT  : Ā              — 입력을 반전
+NAND : ¬(A · B)       — AND의 반전. CMOS 공정에서 가장 효율적
+NOR  : ¬(A + B)       — OR의 반전. NOR도 만능 게이트
+XOR  : A ⊕ B          — 두 입력이 다를 때만 1 (배타적 논리합)
+XNOR : ¬(A ⊕ B)       — 두 입력이 같을 때만 1
+</div>
+
+<div class="callout">
+  <div class="callout-title">XOR의 쓰임새</div>
+  XOR은 "두 값이 다른지" 판별하는 데 탁월합니다.
+  <ul>
+    <li><strong>가산기</strong>: 올림 없는 1비트 덧셈 결과</li>
+    <li><strong>패리티 비트</strong>: 짝수/홀수 1 개수 체크</li>
+    <li><strong>암호화</strong>: A ⊕ key ⊕ key = A (XOR 암호의 기초)</li>
+    <li><strong>비트 스왑</strong>: 임시 변수 없이 두 값 교환 가능</li>
+  </ul>
+</div>
+
+<!-- ============================================================
+     섹션 3: 조합 논리 회로
+     ============================================================ -->
+<h2>3. 조합 논리 회로 (Combinational Logic)</h2>
+
+<p>
+  <strong>조합 논리 회로</strong>는 현재 입력만으로 출력이 결정되는 회로입니다.
+  이전 상태(기억)를 갖지 않습니다. (기억을 가진 회로는 Day 5에서 다룰 순서 논리 회로입니다.)
+</p>
+
+<h3>3-1. 회로 설계 절차</h3>
+
+<div class="diagram">
+1. 진리표 작성  — 모든 입력 조합에 대해 원하는 출력 정의
+2. 불 식 도출  — 출력이 1인 행을 선택, 각 행을 AND로 묶어 OR로 합산
+                  (표준합, Sum of Products / SOP)
+3. 불 식 간소화 — 불 대수 법칙·카르노 맵으로 게이트 수 최소화
+4. 게이트 구현  — 간소화된 식을 물리 게이트로 배치
+</div>
+
+<h3>3-2. 예: 다수결 회로 (Majority Gate)</h3>
+
+<p>입력 A, B, C 중 두 개 이상이 1이면 출력 1인 회로를 설계합니다.</p>
+
+<table>
+  <thead>
+    <tr><th>A</th><th>B</th><th>C</th><th>출력 Y</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+    <tr><td>0</td><td>0</td><td>1</td><td>0</td></tr>
+    <tr><td>0</td><td>1</td><td>0</td><td>0</td></tr>
+    <tr><td>0</td><td>1</td><td>1</td><td>1</td></tr>
+    <tr><td>1</td><td>0</td><td>0</td><td>0</td></tr>
+    <tr><td>1</td><td>0</td><td>1</td><td>1</td></tr>
+    <tr><td>1</td><td>1</td><td>0</td><td>1</td></tr>
+    <tr><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+  </tbody>
+</table>
+
+<div class="diagram">
+SOP 식 (간소화 전):
+  Y = (Ā·B·C) + (A·B̄·C) + (A·B·C̄) + (A·B·C)
+
+불 대수로 간소화:
+  Y = A·B + B·C + A·C
+
+해석: 세 쌍(AB, BC, AC) 중 하나라도 둘 다 1이면 출력 1
+→ AND 게이트 3개 + OR 게이트 1개로 구현 가능
+</div>
+
+<!-- ============================================================
+     섹션 4: 반가산기와 전가산기
+     ============================================================ -->
+<h2>4. 가산기 회로 (Adder)</h2>
+
+<p>
+  Day 2에서 배운 이진 덧셈을 실제 게이트로 구현합니다.
+  이것이 CPU 내부 ALU(Arithmetic Logic Unit)의 핵심입니다.
+</p>
+
+<h3>4-1. 반가산기 (Half Adder)</h3>
+
+<p>1비트 두 수를 더해 합(Sum)과 올림(Carry)을 출력합니다.</p>
+
+<div class="diagram">
+입력: A, B
+출력: Sum(합), Carry(올림)
+
+진리표:
+  A  B │ Carry  Sum
+  ─────┼──────────
+  0  0 │   0     0
+  0  1 │   0     1
+  1  0 │   0     1
+  1  1 │   1     0
+
+논리식:
+  Sum   = A ⊕ B   (XOR)
+  Carry = A · B   (AND)
+
+게이트: XOR 1개 + AND 1개
+</div>
+
+<div class="callout">
+  <div class="callout-title">왜 '반(Half)'인가?</div>
+  반가산기는 이전 자리의 올림(Carry-in)을 받을 수 없습니다.
+  1비트 덧셈에는 충분하지만, 여러 비트를 이어 붙이려면 Carry-in을 처리하는
+  <strong>전가산기(Full Adder)</strong>가 필요합니다.
+</div>
+
+<h3>4-2. 전가산기 (Full Adder)</h3>
+
+<p>입력이 A, B에 이전 자리 Carry-in(Cin)까지 세 개입니다.</p>
+
+<div class="diagram">
+입력: A, B, Cin
+출력: Sum, Cout(올림)
+
+진리표:
+  A  B  Cin │ Cout  Sum
+  ──────────┼──────────
+  0  0   0  │  0     0
+  0  0   1  │  0     1
+  0  1   0  │  0     1
+  0  1   1  │  1     0
+  1  0   0  │  0     1
+  1  0   1  │  1     0
+  1  1   0  │  1     0
+  1  1   1  │  1     1
+
+논리식:
+  Sum  = A ⊕ B ⊕ Cin
+  Cout = (A · B) + (Cin · (A ⊕ B))
+
+구현: 반가산기 2개 + OR 게이트 1개
+</div>
+
+<h3>4-3. 리플 캐리 가산기 (Ripple Carry Adder)</h3>
+
+<p>
+  전가산기를 n개 체인으로 연결하면 n비트 가산기가 됩니다.
+  앞 자리의 Cout이 다음 자리의 Cin으로 <strong>리플(파급)</strong>됩니다.
+</p>
+
+<div class="diagram">
+4비트 리플 캐리 가산기:
+
+  A₃B₃   A₂B₂   A₁B₁   A₀B₀
+   │ │     │ │    │ │    │ │
+  [FA]←Cout[FA]←Cout[FA]←Cout[FA]← Cin=0
+   │         │         │         │
+  S₃        S₂        S₁        S₀
+
+결과: S₃S₂S₁S₀ + 최종 Cout (오버플로우 감지용)
+
+단점: Carry가 LSB(최하위 비트)→MSB(최상위 비트)까지
+      전파될 때까지 기다려야 하므로 비트 수가 많을수록 느림
+→ 실제 CPU는 올림 예측 가산기(Carry-Lookahead Adder)를 사용
+</div>
+
+<!-- ============================================================
+     섹션 5: 트랜지스터와 게이트의 연결
+     ============================================================ -->
+<h2>5. 트랜지스터에서 게이트까지</h2>
+
+<p>
+  실리콘 웨이퍼 위에 수십억 개의 MOSFET 트랜지스터가 집적됩니다.
+  NMOS(전압 high → 도통)와 PMOS(전압 low → 도통) 트랜지스터를 상보적으로 결합한
+  <strong>CMOS(Complementary MOS)</strong> 회로가 현대 CPU의 기본 소자입니다.
+</p>
+
+<div class="diagram">
+CMOS NAND 게이트 (트랜지스터 4개):
+
+  VDD (전원)
+   │
+  [PMOS_A]─┬─[PMOS_B]   ← A, B 중 하나가 0이면 경로 열림 → 출력 1
+            │
+  [NMOS_A] 직렬             ← A, B 모두 1일 때만 GND 경로 연결 → 출력 0
+  [NMOS_B]
+   │
+  GND
+
+출력 Y = ¬(A · B)   →   NAND
+</div>
+
+<div class="callout">
+  <div class="callout-title">CMOS가 NAND를 선호하는 이유</div>
+  PMOS 트랜지스터는 NMOS보다 느립니다. NAND는 PMOS를 병렬, NMOS를 직렬로 배치해
+  NOR(PMOS 직렬)보다 구동 전류가 크고 빠릅니다. 같은 면적에서 NAND가 더 빠르기 때문에
+  표준 셀 라이브러리 대부분이 NAND 중심으로 설계됩니다.
+</div>
+
+<!-- ============================================================
+     퀴즈
+     ============================================================ -->
+<h2>이해 확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. A=1, B=0일 때 XOR의 출력은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> 0</label></li>
+    <li><label><input type="radio" name="q1" value="1"> 1</label></li>
+    <li><label><input type="radio" name="q1" value="2"> A와 B 모두</label></li>
+    <li><label><input type="radio" name="q1" value="3"> 정의되지 않음</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. 반가산기(Half Adder)의 Sum 출력을 구현하는 게이트는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> AND</label></li>
+    <li><label><input type="radio" name="q2" value="1"> OR</label></li>
+    <li><label><input type="radio" name="q2" value="2"> XOR</label></li>
+    <li><label><input type="radio" name="q2" value="3"> NAND</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. 드모르간 법칙에 따라 ¬(A · B)와 동일한 표현은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> Ā · B̄</label></li>
+    <li><label><input type="radio" name="q3" value="1"> Ā + B̄</label></li>
+    <li><label><input type="radio" name="q3" value="2"> A + B</label></li>
+    <li><label><input type="radio" name="q3" value="3"> ¬A · ¬B + A · B</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. NAND 게이트가 "만능 게이트(Universal Gate)"인 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> 가장 많은 입력 단자를 가져서</label></li>
+    <li><label><input type="radio" name="q4" value="1"> NAND만으로 AND, OR, NOT 등 모든 논리 게이트를 구현할 수 있어서</label></li>
+    <li><label><input type="radio" name="q4" value="2"> 전력 소비가 가장 적어서</label></li>
+    <li><label><input type="radio" name="q4" value="3"> 트랜지스터가 가장 적게 필요해서</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================
+     Primary Source
+     ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">오늘의 추천 자료</div>
+  <strong>Nand2Tetris (nand2tetris.org)</strong><br>
+  NAND 게이트 하나에서 시작해 컴퓨터 전체를 직접 만드는 무료 강의·프로젝트.
+  게이트 설계부터 CPU, 운영체제까지 모두 직접 구현합니다.<br>
+  <br>
+  <strong>Digital Design and Computer Architecture (Harris &amp; Harris) — Chapter 1–2</strong><br>
+  불 대수, 게이트, 조합 회로를 가장 체계적으로 설명하는 교재. Verilog/VHDL 예제 포함.
+</div>
+
+<!-- ============================================================
+     핵심 요약
+     ============================================================ -->
+<h2>오늘의 핵심 요약</h2>
+
+<ul>
+  <li><strong>불 대수</strong>: AND·OR·NOT 세 연산으로 모든 논리 표현 가능. 드모르간 법칙으로 NAND/NOR 변환</li>
+  <li><strong>게이트</strong>: 트랜지스터를 조합한 기본 회로 소자. NAND·NOR는 만능 게이트</li>
+  <li><strong>조합 논리</strong>: 진리표 → SOP 불 식 → 간소화 → 게이트 구현</li>
+  <li><strong>반가산기</strong>: Sum = XOR, Carry = AND. 두 게이트면 1비트 덧셈 완성</li>
+  <li><strong>전가산기</strong>: 반가산기 2 + OR 1. Carry-in을 포함해 n비트 체인 연결 가능</li>
+  <li><strong>리플 캐리 가산기</strong>: 전가산기를 직렬 연결한 n비트 가산기. 실제 CPU는 올림 예측으로 속도 개선</li>
+</ul>
+
+<!-- ============================================================
+     다음 수업 예고
+     ============================================================ -->
+<div class="callout">
+  <div class="callout-title">다음 수업 (Day 4)</div>
+  <strong>산술 회로 — 뺄셈·비교기·ALU 구조</strong><br>
+  오늘 만든 가산기를 확장해 ALU(산술논리 연산 장치) 전체를 설계합니다.
+  뺄셈이 2의 보수 덧셈으로 처리되는 과정을 게이트 수준에서 추적합니다.
+</div>
+
+<!-- ============================================================
+     선생님께 질문
+     ============================================================ -->
+<div class="ask-teacher">
+  <strong>궁금한 점이 있으신가요?</strong><br>
+  이해가 안 되는 부분, 더 깊이 알고 싶은 내용, 또는 실무와 어떻게 연결되는지
+  Claude에게 바로 질문하세요. 선생님은 항상 여기 있습니다.
+</div>
+
+<div class="lesson-footer">
+  <div class="lesson-nav">
+    <a href="0002-number-representation.html">← Day 2: 수의 표현</a>
+    <a href="0004-arithmetic-circuits.html">Day 4: 산술 회로 →</a>
+  </div>
+  컴퓨터 구조 데일리 학습 · <a href="../reference/">참고 자료</a> · <a href="../RESOURCES.md">추천 자료 목록</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1, 'XOR는 두 입력이 다를 때 1. A=1, B=0이므로 서로 달라 출력 1.');
+  initQuiz('q2', 2, 'Sum = A ⊕ B. 올림 없는 1비트 합은 XOR로 정확히 표현됩니다.');
+  initQuiz('q3', 1, '드모르간: ¬(A·B) = Ā + B̄. NAND 출력과 동일한 표현입니다.');
+  initQuiz('q4', 1, 'NAND 하나로 NOT(NAND 입력 연결), NAND+NOT으로 AND, NAND+NOT+NAND로 OR를 만들 수 있어 모든 게이트 구현이 가능합니다.');
+</script>
+</body>
+</html>

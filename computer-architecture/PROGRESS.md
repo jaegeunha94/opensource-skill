@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-06-22 | 컴퓨터 구조란 무엇인가? & 폰 노이만 아키텍처 | [0001-what-is-computer-architecture.html](lessons/0001-what-is-computer-architecture.html) |
 | 2 | 2026-06-22 | 수의 표현 (Number Representation) | [0002-number-representation.html](lessons/0002-number-representation.html) |
+| 3 | 2026-06-23 | 디지털 논리 기초 (Digital Logic) | [0003-digital-logic.html](lessons/0003-digital-logic.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | 디지털 논리 기초 (Digital Logic) | AND/OR/NOT 게이트, 불 대수, 조합 논리 회로 |
 | 4 | 산술 회로 (Arithmetic Circuits) | 반가산기, 전가산기, 리플 캐리 가산기 |
 | 5 | 순서 논리 회로 (Sequential Logic) | 플립플롭, 레지스터, 카운터 |
 | 6 | 메모리 계층 1 (Memory Hierarchy) | SRAM vs DRAM, 캐시 메모리 개념 |
@@ -32,7 +32,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — 수의 표현(2진수·2의 보수·IEEE 754) 학습 완료. 다음은 디지털 논리 기초.
+**Day 3 완료** — 디지털 논리 기초(불 대수·게이트·반가산기·전가산기) 학습 완료. 다음은 산술 회로.
 
 ## 습득한 핵심 개념
 
@@ -40,7 +40,7 @@
 - [ ] 명령어 사이클 Fetch-Decode-Execute (✓ Day 1)
 - [ ] 컴퓨터 구조의 3층위 (✓ Day 1)
 - [x] 수의 표현 (✓ Day 2)
-- [ ] 디지털 논리 기초 (예정 Day 3)
+- [x] 디지털 논리 기초 (✓ Day 3)
 - [ ] 캐시 메모리 (예정 Day 6-8)
 - [ ] ISA 개념 (예정 Day 9)
 - [ ] 파이프라이닝 (예정 Day 11-12)
