@@ -10,6 +10,7 @@
 `.claude/skills/branch-integrator` 스킬을 사용해서 현재 `origin/main` 기준으로 `origin/study/*`와 `origin/claude/*` 브랜치를 순차 통합해줘.
 
 요구사항:
+- 작업 시작 전 현재 디렉터리나 홈을 대상 저장소로 가정하지 말고, 이 요청에 언급된 `.claude/skills/branch-integrator` 경로를 기준으로 위로 올라가며 `.git`을 찾아 대상 저장소 루트를 확정한 뒤 그 위치에서 preflight를 진행해줘.
 - merge commit을 만들지 말고 cherry-pick 방식으로 main에 선형 반영해줘.
 - 각 브랜치는 main보다 앞선 커밋이 있는 경우에만 통합해줘.
 - 충돌이 나면 즉시 멈추고 conflicted 파일과 현재 상태를 알려줘.
@@ -18,17 +19,6 @@
 - main에 성공적으로 반영된 원격 브랜치만 삭제해줘.
 ```
 
-특정 브랜치만 통합할 때:
-
-```text
-`.claude/skills/branch-integrator` 스킬을 사용해서 아래 브랜치만 `main`에 순차 통합해줘.
-
-- `origin/claude/cool-hypatia-ma60hf`
-- `origin/claude/peaceful-cerf-djbpq3`
-
-merge commit 없이 cherry-pick으로 반영하고, push 성공 후 반영된 브랜치만 삭제해줘.
-새로 추가된 `lessons/` 아래 레슨 URL도 GitHub Pages 경로로 모아서 출력해줘.
-```
 
 ## 충돌 해결 요청
 
