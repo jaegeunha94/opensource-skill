@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 4 — 산술 회로</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 4</span>
+  <strong>산술 회로 (Arithmetic Circuits)</strong>
+  <span class="lesson-date">· 2026-06-24</span>
+</div>
+
+<h1>덧셈에서 ALU까지 — CPU 산술의 핵심 회로</h1>
+
+<div class="progress-section">
+  <h3>학습 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 13%"></div>
+  </div>
+  <span class="progress-label">전체 커리큘럼의 약 13% 완료 · Day 4 / 30</span>
+</div>
+
+<h2>오늘 배울 것</h2>
+<ul>
+  <li>2의 보수로 뺄셈 회로를 가산기 하나로 구현하는 원리를 이해한다</li>
+  <li>비교기(Comparator) 회로가 두 수의 크기를 어떻게 판별하는지 배운다</li>
+  <li>올림 예측 가산기(Carry-Lookahead Adder)가 리플 캐리의 속도 문제를 어떻게 해결하는지 이해한다</li>
+  <li>ALU(산술논리 연산 장치)의 내부 구조와 연산 선택 원리를 파악한다</li>
+</ul>
+
+<!-- ============================================================
+     섹션 1: 뺄셈 회로
+     ============================================================ -->
+<h2>1. 뺄셈 회로 — 2의 보수의 진가</h2>
+
+<p>
+  Day 2에서 2의 보수를 배웠습니다. 2의 보수의 가장 큰 실용적 가치는
+  <strong>뺄셈을 덧셈 회로 하나로 처리</strong>할 수 있다는 것입니다.
+  CPU는 별도의 뺄셈 회로를 갖지 않고, 가산기 하나로 덧셈과 뺄셈을 모두 수행합니다.
+</p>
+
+<h3>1-1. 원리: A − B = A + (−B)</h3>
+
+<div class="diagram">
+2의 보수로 −B 만들기:
+  1단계: B의 각 비트를 XOR(NOT) 반전 → B̄  (1의 보수)
+  2단계: +1 더하기                   → B̄ + 1 = −B (2의 보수)
+
+따라서:
+  A − B = A + B̄ + 1
+
+회로 구현:
+  ① B의 각 비트를 XOR 게이트로 조건부 반전
+     (선택 신호 Sub=0: B 통과 → 덧셈
+              Sub=1: B 반전 → 뺄셈 준비)
+  ② 리플 캐리 가산기 최하위 Cin에 Sub 신호를 연결
+     (Sub=1일 때 Cin=1 → "+1" 자동 처리)
+</div>
+
+<h3>1-2. 덧셈/뺄셈 겸용 회로</h3>
+
+<div class="diagram">
+ Sub=0 (덧셈):  B₃ B₂ B₁ B₀  그대로 전달,  Cin = 0
+ Sub=1 (뺄셈):  B₃'B₂'B₁'B₀' 반전 전달,   Cin = 1
+
+        A₃B₃  A₂B₂  A₁B₁  A₀B₀
+        ⊕Sub  ⊕Sub  ⊕Sub  ⊕Sub   ← XOR로 조건부 반전
+          │     │     │     │
+        [FA] ← [FA] ← [FA] ← [FA] ← Cin = Sub
+          │     │     │     │
+         S₃    S₂    S₁    S₀      (+ 최종 Cout: 오버플로우 감지)
+
+게이트 추가 비용: XOR 게이트 n개 + Sub 신호선 1개
+</div>
+
+<div class="callout">
+  <div class="callout-title">오버플로우 감지</div>
+  부호 있는 정수 연산에서 결과가 표현 범위를 벗어나면 오버플로우입니다.<br>
+  <strong>감지 규칙:</strong> 최상위 비트(MSB) 자리로 들어오는 Carry와 나가는 Carry가 서로 다르면 오버플로우.<br>
+  <code>Overflow = Carry_in(MSB) XOR Carry_out(MSB)</code><br>
+  CPU의 상태 레지스터(Status Register)에 <strong>V(Overflow) 플래그</strong>로 기록됩니다.
+</div>
+
+<!-- ============================================================
+     섹션 2: 비교기
+     ============================================================ -->
+<h2>2. 비교기 (Comparator)</h2>
+
+<p>
+  비교기는 두 수 A, B의 크기 관계(=, &lt;, &gt;)를 회로로 판별합니다.
+  조건 분기(<code>if</code>, <code>jmp</code>)를 처리하는 CPU에서 필수 회로입니다.
+</p>
+
+<h3>2-1. 동일 비교 (Equality)</h3>
+
+<div class="diagram">
+A = B 판별:
+
+  모든 비트 쌍이 같아야 한다
+  → 각 비트 쌍에 XNOR 적용 (같으면 1)
+  → 결과를 모두 AND
+
+  Equal = XNOR(A₃,B₃) · XNOR(A₂,B₂) · XNOR(A₁,B₁) · XNOR(A₀,B₀)
+
+XNOR 진리표:
+  A  B │ XNOR
+  ─────┼──────
+  0  0 │  1    (같음)
+  0  1 │  0    (다름)
+  1  0 │  0    (다름)
+  1  1 │  1    (같음)
+</div>
+
+<h3>2-2. 크기 비교 (A &lt; B, A &gt; B)</h3>
+
+<div class="diagram">
+방법 1 — 뺄셈 이용:
+  A − B를 계산하고 결과의 부호 비트(MSB)를 본다
+    MSB = 1  →  A − B < 0  →  A < B
+    MSB = 0, 결과≠0  →  A > B
+    결과 = 0          →  A = B
+
+방법 2 — MSB 우선 비교 (직접 비교기):
+  가장 높은 비트부터 순서대로 비교:
+    Aᵢ = 0, Bᵢ = 1  →  즉시 A < B 확정
+    Aᵢ = 1, Bᵢ = 0  →  즉시 A > B 확정
+    Aᵢ = Bᵢ         →  다음 낮은 비트로 이동
+  → 4비트 비교기: 4단계 비교 논리를 게이트로 병렬 구현
+</div>
+
+<div class="callout">
+  <div class="callout-title">CPU 플래그 레지스터와의 연결</div>
+  비교 연산(CMP 명령어)은 내부적으로 뺄셈을 실행하되 결과를 저장하지 않고
+  플래그만 업데이트합니다.
+  <ul>
+    <li><strong>Z(Zero)</strong>: 결과 = 0 → A = B</li>
+    <li><strong>N(Negative)</strong>: MSB = 1 → A &lt; B (부호 있는)</li>
+    <li><strong>C(Carry)</strong>: Cout = 1 → A &lt; B (부호 없는)</li>
+    <li><strong>V(Overflow)</strong>: 부호 있는 오버플로우 발생</li>
+  </ul>
+  조건 분기 명령어(<code>BEQ</code>, <code>BLT</code> 등)는 이 플래그를 읽어 분기를 결정합니다.
+</div>
+
+<!-- ============================================================
+     섹션 3: 올림 예측 가산기
+     ============================================================ -->
+<h2>3. 올림 예측 가산기 (Carry-Lookahead Adder, CLA)</h2>
+
+<p>
+  Day 3의 리플 캐리 가산기는 올림(Carry)이 LSB부터 MSB까지 순차적으로 전파되어
+  n비트일 때 지연이 O(n)입니다. 32비트라면 32단계를 기다려야 합니다.
+  <strong>CLA는 수학적 공식으로 모든 자리의 Carry를 동시에 미리 계산</strong>해
+  지연을 O(log n)으로 줄입니다.
+</p>
+
+<h3>3-1. Generate와 Propagate</h3>
+
+<div class="diagram">
+자리 i에서 두 가지 신호를 정의:
+
+  Gᵢ (Generate, 생성): Aᵢ · Bᵢ
+    → Cin과 무관하게 이 자리가 Carry를 "생성"
+    → 1·1 = 1 이므로 무조건 올림 발생
+
+  Pᵢ (Propagate, 전파): Aᵢ ⊕ Bᵢ
+    → 이 자리는 Cin이 1이면 Carry를 "전파"
+    → A=0,B=1 또는 A=1,B=0 → Cin이 있으면 올림 전달
+
+올림 식:
+  C₁ = G₀ + P₀·C₀
+  C₂ = G₁ + P₁·C₁ = G₁ + P₁·G₀ + P₁·P₀·C₀
+  C₃ = G₂ + P₂·C₂ = G₂ + P₂·G₁ + P₂·P₁·G₀ + P₂·P₁·P₀·C₀
+  C₄ = G₃ + P₃·G₂ + P₃·P₂·G₁ + P₃·P₂·P₁·G₀ + P₃·P₂·P₁·P₀·C₀
+
+모든 Carry가 C₀(초기 올림)와 G, P만으로 표현됨
+→ G와 P는 A, B로부터 1단계 지연
+→ 모든 Carry는 추가 2단계 지연 (AND-OR)
+→ 합계 Sum = Pᵢ ⊕ Cᵢ로 1단계 더
+  총 지연: 4단계 (비트 수와 무관!)
+</div>
+
+<h3>3-2. 리플 캐리 vs CLA 비교</h3>
+
+<table>
+  <thead>
+    <tr><th>항목</th><th>리플 캐리 가산기</th><th>CLA 가산기</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>지연</td>
+      <td>O(n) — 비트마다 1단계 추가</td>
+      <td>O(log n) — 계층적 구성 시</td>
+    </tr>
+    <tr>
+      <td>게이트 수</td>
+      <td>적음 (FA n개)</td>
+      <td>많음 (G/P 계산 + 올림 네트워크)</td>
+    </tr>
+    <tr>
+      <td>면적</td>
+      <td>작음</td>
+      <td>큼</td>
+    </tr>
+    <tr>
+      <td>실제 사용</td>
+      <td>소형 임베디드, 교육용</td>
+      <td>범용 CPU ALU</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">현대 CPU의 실제 가산기</div>
+  실제 고성능 CPU는 <strong>접두사 가산기(Prefix Adder)</strong> 계열
+  (Kogge-Stone, Brent-Kung, Han-Carlson)을 사용합니다.
+  이는 CLA 개념을 계층적 트리로 확장한 것으로, 지연과 면적 사이의 균형을 최적화합니다.
+  하지만 기본 원리는 모두 Generate/Propagate 개념에 기반합니다.
+</div>
+
+<!-- ============================================================
+     섹션 4: ALU
+     ============================================================ -->
+<h2>4. ALU — 산술논리 연산 장치</h2>
+
+<p>
+  ALU(Arithmetic Logic Unit)는 CPU에서 실제 연산을 담당하는 핵심 회로입니다.
+  가산기, 비교기, 논리 게이트를 하나로 묶고 <strong>제어 신호(연산 코드)</strong>로
+  원하는 연산을 선택합니다.
+</p>
+
+<h3>4-1. ALU의 구성</h3>
+
+<div class="diagram">
+    A [n비트]    B [n비트]
+         │           │
+    ┌────┴───────────┴────┐
+    │  산술 유닛           │  논리 유닛
+    │  ┌──────────────┐   │  ┌──────────────┐
+    │  │ 가산기/뺄셈기 │   │  │ AND          │
+    │  │ (CLA 기반)   │   │  │ OR           │
+    │  └──────────────┘   │  │ XOR          │
+    │                     │  │ NOT          │
+    │  시프트 유닛         │  └──────────────┘
+    │  ┌──────────────┐   │
+    │  │ 논리/산술    │   │
+    │  │ 좌/우 시프트  │   │
+    │  └──────────────┘   │
+    └─────────┬───────────┘
+              │  여러 연산 결과
+         ┌────┴────┐
+         │  MUX    │ ← ALU Op 코드 (연산 선택)
+         └────┬────┘
+              │
+           Result [n비트]
+
+플래그 출력: Zero, Carry, Overflow, Negative
+</div>
+
+<h3>4-2. 연산 코드 예시 (간단한 4비트 ALU)</h3>
+
+<table>
+  <thead>
+    <tr><th>Op 코드</th><th>연산</th><th>설명</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>000</td><td>A + B</td><td>덧셈</td></tr>
+    <tr><td>001</td><td>A − B</td><td>뺄셈 (2의 보수)</td></tr>
+    <tr><td>010</td><td>A AND B</td><td>비트 AND</td></tr>
+    <tr><td>011</td><td>A OR B</td><td>비트 OR</td></tr>
+    <tr><td>100</td><td>A XOR B</td><td>비트 XOR</td></tr>
+    <tr><td>101</td><td>NOT A</td><td>비트 반전</td></tr>
+    <tr><td>110</td><td>A &lt;&lt; 1</td><td>논리 좌시프트 (× 2)</td></tr>
+    <tr><td>111</td><td>A &gt;&gt; 1</td><td>논리 우시프트 (÷ 2)</td></tr>
+  </tbody>
+</table>
+
+<h3>4-3. MUX(멀티플렉서)로 연산 선택</h3>
+
+<div class="diagram">
+멀티플렉서(MUX): n개 입력 중 1개를 선택 신호에 따라 출력하는 회로
+
+2-to-1 MUX:
+  입력: D₀, D₁, 선택 신호 S
+  출력: Y = S'·D₀ + S·D₁
+    S=0 → D₀ 선택
+    S=1 → D₁ 선택
+
+4-to-1 MUX (선택 신호 2비트 S₁S₀):
+  00 → D₀,  01 → D₁,  10 → D₂,  11 → D₃
+
+ALU는 각 유닛(가산기·논리·시프트)의 결과를 MUX 입력으로 받고,
+Op 코드를 MUX 선택 신호로 써서 정확한 결과를 라우팅합니다.
+</div>
+
+<div class="callout">
+  <div class="callout-title">시프트 연산과 곱셈</div>
+  곱셈 하드웨어는 비싸므로 2의 거듭제곱 곱셈은 시프트로 최적화합니다.
+  <ul>
+    <li><code>x &lt;&lt; 1</code> → x × 2 (좌시프트)</li>
+    <li><code>x &lt;&lt; 3</code> → x × 8</li>
+    <li><code>x &gt;&gt; 1</code> → x ÷ 2 (부호 있는: 산술 시프트, 부호 없는: 논리 시프트)</li>
+  </ul>
+  컴파일러는 상수 곱셈을 시프트 + 덧셈 조합으로 자동 변환합니다.<br>
+  예: <code>x × 5 = x × 4 + x = (x &lt;&lt; 2) + x</code>
+</div>
+
+<h3>4-4. ALU가 CPU 데이터패스에서 하는 역할</h3>
+
+<div class="diagram">
+단순화된 단일 사이클 데이터패스:
+
+  [명령어 메모리] → 명령어 디코더 → ALU Op 코드
+        │                                  │
+  [레지스터 파일] → A, B ────────────→ [ALU] → 결과 → [레지스터 파일]
+                                          │
+                                        [데이터 메모리] (Load/Store 시)
+
+- ALU의 연산 결과는 레지스터에 쓰거나(산술/논리 명령)
+  메모리 주소로 사용됩니다(Load/Store 명령).
+- 분기 명령에서는 ALU가 A−B를 계산해 Zero 플래그로 분기 여부 결정.
+</div>
+
+<!-- ============================================================
+     퀴즈
+     ============================================================ -->
+<h2>이해 확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. 4비트 A=0101(5), B=0011(3)에서 A−B를 2의 보수 방식으로 계산할 때, Cin에 넣는 값은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> 0</label></li>
+    <li><label><input type="radio" name="q1" value="1"> 1</label></li>
+    <li><label><input type="radio" name="q1" value="2"> B의 MSB</label></li>
+    <li><label><input type="radio" name="q1" value="3"> A의 MSB</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. CLA(올림 예측 가산기)에서 Generate 신호 Gᵢ의 논리식은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> Aᵢ + Bᵢ (OR)</label></li>
+    <li><label><input type="radio" name="q2" value="1"> Aᵢ ⊕ Bᵢ (XOR)</label></li>
+    <li><label><input type="radio" name="q2" value="2"> Aᵢ · Bᵢ (AND)</label></li>
+    <li><label><input type="radio" name="q2" value="3"> ¬(Aᵢ · Bᵢ) (NAND)</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. CPU 플래그 레지스터에서 부호 없는 정수의 A &lt; B를 나타내는 플래그는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> Z (Zero)</label></li>
+    <li><label><input type="radio" name="q3" value="1"> N (Negative)</label></li>
+    <li><label><input type="radio" name="q3" value="2"> C (Carry)</label></li>
+    <li><label><input type="radio" name="q3" value="3"> V (Overflow)</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. ALU에서 여러 연산 결과 중 하나를 Op 코드에 따라 선택하는 회로는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> 디코더 (Decoder)</label></li>
+    <li><label><input type="radio" name="q4" value="1"> 멀티플렉서 (MUX)</label></li>
+    <li><label><input type="radio" name="q4" value="2"> 인코더 (Encoder)</label></li>
+    <li><label><input type="radio" name="q4" value="3"> 플립플롭 (Flip-Flop)</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================
+     Primary Source
+     ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">오늘의 추천 자료</div>
+  <strong>Patterson &amp; Hennessy — Computer Organization and Design (5판) Chapter 3</strong><br>
+  덧셈·뺄셈·곱셈 하드웨어 구현을 그림과 함께 상세히 설명합니다.
+  리플 캐리에서 CLA, 부스 알고리즘까지 흐름이 자연스럽습니다.<br>
+  <br>
+  <strong>Harris &amp; Harris — Digital Design and Computer Architecture Chapter 5</strong><br>
+  ALU 설계를 SystemVerilog 코드로 직접 구현하며 배울 수 있습니다.
+  CLA 올림 트리의 시각적 다이어그램이 특히 유용합니다.
+</div>
+
+<!-- ============================================================
+     핵심 요약
+     ============================================================ -->
+<h2>오늘의 핵심 요약</h2>
+
+<ul>
+  <li><strong>뺄셈 = 덧셈</strong>: A − B = A + B̄ + 1. B를 XOR로 반전하고 Cin=1 주입, 별도 회로 불필요</li>
+  <li><strong>오버플로우</strong>: MSB Carry-in ≠ Carry-out이면 발생. V 플래그로 표시</li>
+  <li><strong>비교기</strong>: 뺄셈 결과의 플래그(Z, N, C)로 =, &lt;, &gt; 판별. CMP 명령어가 이 방식</li>
+  <li><strong>CLA</strong>: Generate(G=A·B)와 Propagate(P=A⊕B)로 올림을 미리 계산. 지연 O(log n)</li>
+  <li><strong>ALU</strong>: 가산기·논리·시프트 유닛을 MUX로 묶어 Op 코드로 연산 선택. CPU의 연산 엔진</li>
+  <li><strong>시프트 최적화</strong>: 2의 거듭제곱 곱셈은 컴파일러가 시프트+덧셈으로 변환해 ALU 연산 최소화</li>
+</ul>
+
+<!-- ============================================================
+     다음 수업 예고
+     ============================================================ -->
+<div class="callout">
+  <div class="callout-title">다음 수업 (Day 5)</div>
+  <strong>순서 논리 회로 — 상태를 기억하는 회로</strong><br>
+  지금까지 배운 조합 논리는 입력이 바뀌면 출력도 즉시 바뀝니다.
+  <strong>플립플롭(Flip-Flop)</strong>은 1비트 상태를 기억하는 소자로,
+  레지스터와 카운터, 그리고 CPU의 파이프라인 레지스터 모두 여기서 시작됩니다.
+</div>
+
+<!-- ============================================================
+     선생님께 질문
+     ============================================================ -->
+<div class="ask-teacher">
+  <strong>궁금한 점이 있으신가요?</strong><br>
+  이해가 안 되는 부분, 더 깊이 알고 싶은 내용, 또는 실무와 어떻게 연결되는지
+  Claude에게 바로 질문하세요. 선생님은 항상 여기 있습니다.
+</div>
+
+<div class="lesson-footer">
+  <div class="lesson-nav">
+    <a href="0003-digital-logic.html">← Day 3: 디지털 논리 기초</a>
+    <a href="0005-sequential-logic.html">Day 5: 순서 논리 회로 →</a>
+  </div>
+  컴퓨터 구조 데일리 학습 · <a href="../reference/">참고 자료</a> · <a href="../RESOURCES.md">추천 자료 목록</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1, 'A−B = A + B̄ + 1. 뺄셈 모드(Sub=1)에서 Cin에 1을 넣어 "+1"을 처리합니다.');
+  initQuiz('q2', 2, 'Gᵢ = Aᵢ · Bᵢ (AND). 두 입력이 모두 1이면 Cin 없이도 올림을 "생성"합니다.');
+  initQuiz('q3', 2, '부호 없는 정수에서 A < B이면 뺄셈 시 최상위 올림이 발생합니다 → C(Carry) 플래그.');
+  initQuiz('q4', 1, 'MUX(멀티플렉서)는 선택 신호에 따라 여러 입력 중 하나를 출력합니다. ALU의 연산 선택 핵심 소자입니다.');
+</script>
+</body>
+</html>
