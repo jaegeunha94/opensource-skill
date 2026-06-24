@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — 스택 (Stack)</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>스택 (Stack)</h1>
+<div class="lesson-meta">
+  <span class="day-badge">Day 3</span>
+  <span class="lesson-date">2026-06-24</span>
+  &nbsp;·&nbsp; Stack — LIFO 자료구조
+</div>
+
+<!-- ─── 학습 목표 ─── -->
+<h2>학습 목표</h2>
+<p>이 레슨을 마치면 다음을 할 수 있다:</p>
+<ul>
+  <li>LIFO 원리를 설명하고, 스택이 적합한 상황과 적합하지 않은 상황을 구분할 수 있다.</li>
+  <li>배열 기반 스택과 연결 리스트 기반 스택을 파이썬 코드로 직접 구현할 수 있다.</li>
+  <li>함수 호출 스택이 어떻게 동작하는지 그림으로 설명할 수 있다.</li>
+  <li>괄호 검사 알고리즘을 스택으로 설계하고 구현할 수 있다.</li>
+  <li>각 스택 연산의 시간복잡도와 공간복잡도를 분석할 수 있다.</li>
+</ul>
+
+<!-- ─── 1. LIFO 원리 ─── -->
+<h2>1. LIFO 원리 (Last In, First Out)</h2>
+<p>
+  <strong>스택(Stack)</strong>은 "마지막에 넣은 것이 가장 먼저 나온다"는
+  <em>LIFO(Last In, First Out)</em> 규칙을 따르는 자료구조다.
+  식당의 쟁반 더미를 생각해 보자. 가장 마지막에 올려놓은 쟁반을
+  가장 먼저 꺼내 쓴다.
+</p>
+
+<div class="diagram">
+     push →  TOP
+             ┌─────┐
+             │  E  │  ← 가장 최근에 삽입된 원소
+             ├─────┤
+             │  D  │
+             ├─────┤
+             │  C  │
+             ├─────┤
+             │  B  │
+             ├─────┤
+             │  A  │  ← 가장 먼저 삽입된 원소
+             └─────┘  BOTTOM
+
+  pop 시 E → D → C → B → A 순서로 꺼낸다.
+</div>
+<p class="diagram-caption">스택의 구조 — TOP에서만 삽입(push)과 제거(pop)가 일어난다</p>
+
+<h3>1-1. 핵심 연산</h3>
+<table>
+  <thead>
+    <tr><th>연산</th><th>설명</th><th>시간복잡도</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>push(x)</code></td><td>스택 TOP에 원소 x를 추가</td><td>O(1)</td></tr>
+    <tr><td><code>pop()</code></td><td>TOP 원소를 제거하고 반환. 빈 스택에서 호출 시 underflow 오류</td><td>O(1)</td></tr>
+    <tr><td><code>peek() / top()</code></td><td>TOP 원소를 제거 없이 반환</td><td>O(1)</td></tr>
+    <tr><td><code>is_empty()</code></td><td>스택이 비었는지 확인</td><td>O(1)</td></tr>
+    <tr><td><code>size()</code></td><td>현재 원소 수 반환</td><td>O(1)</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">스택 vs 큐 — 헷갈릴 때 기억할 것</div>
+  <p>
+    <strong>스택(Stack):</strong> LIFO — 브라우저 뒤로 가기, 실행 취소(Undo), 함수 호출 스택<br>
+    <strong>큐(Queue):</strong> FIFO — 프린터 대기열, BFS, 요청 처리 순서<br>
+    "마지막 것 먼저"가 자연스러운 문제라면 스택, "먼저 온 것 먼저"라면 큐.
+  </p>
+</div>
+
+<!-- ─── 2. 배열 기반 구현 ─── -->
+<h2>2. 배열 기반 스택 구현</h2>
+<p>
+  파이썬의 <code>list</code>(동적 배열)를 그대로 스택처럼 쓸 수 있다.
+  <code>list.append()</code>가 push, <code>list.pop()</code>이 pop 역할을 한다 — 둘 다 <em>상각 O(1)</em>.
+</p>
+
+<pre>
+class ArrayStack:
+    def __init__(self):
+        self._data = []          # 내부 저장 배열
+
+    def push(self, x):
+        self._data.append(x)     # 배열 끝 = TOP
+
+    def pop(self):
+        if self.is_empty():
+            raise IndexError("pop from empty stack")
+        return self._data.pop()  # 배열 끝에서 제거 — O(1) amortized
+
+    def peek(self):
+        if self.is_empty():
+            raise IndexError("peek from empty stack")
+        return self._data[-1]    # 배열 끝 원소 조회
+
+    def is_empty(self):
+        return len(self._data) == 0
+
+    def size(self):
+        return len(self._data)
+
+    def __repr__(self):
+        return f"Stack(bottom→top): {self._data}"
+
+
+# 사용 예
+s = ArrayStack()
+s.push(10)
+s.push(20)
+s.push(30)
+print(s)          # Stack(bottom→top): [10, 20, 30]
+print(s.pop())    # 30
+print(s.peek())   # 20
+print(s.size())   # 2
+</pre>
+
+<div class="diagram">
+push(10) → [10]
+push(20) → [10, 20]
+push(30) → [10, 20, 30]
+pop()    → [10, 20]  반환값: 30
+peek()   → [10, 20]  반환값: 20 (변화 없음)
+</div>
+<p class="diagram-caption">배열 기반 스택의 push/pop 추적</p>
+
+<h3>2-1. 배열 기반 스택의 특성</h3>
+<table>
+  <thead>
+    <tr><th>항목</th><th>내용</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>공간복잡도</td><td>O(n) — n개 원소 저장</td></tr>
+    <tr><td>캐시 효율</td><td>높음 — 연속 메모리, CPU 캐시 친화적</td></tr>
+    <tr><td>크기 제한</td><td>동적 배열 사용 시 사실상 없음. 고정 배열이면 overflow 발생</td></tr>
+    <tr><td>구현 난이도</td><td>낮음 — 언어 기본 배열로 즉시 구현 가능</td></tr>
+  </tbody>
+</table>
+
+<!-- ─── 3. 연결 리스트 기반 구현 ─── -->
+<h2>3. 연결 리스트 기반 스택 구현</h2>
+<p>
+  단일 연결 리스트의 <strong>head를 TOP</strong>으로 사용하면, push와 pop 모두 head 앞에서만
+  일어나므로 포인터 이동 없이 엄격한 <em>O(1)</em>이 보장된다.
+</p>
+
+<pre>
+class _Node:
+    __slots__ = ('data', 'next')
+    def __init__(self, data, next_node=None):
+        self.data = data
+        self.next = next_node
+
+
+class LinkedStack:
+    def __init__(self):
+        self._head = None        # TOP을 가리키는 포인터
+        self._size = 0
+
+    def push(self, x):
+        self._head = _Node(x, self._head)   # 새 노드를 HEAD 앞에 연결
+        self._size += 1
+
+    def pop(self):
+        if self.is_empty():
+            raise IndexError("pop from empty stack")
+        val = self._head.data
+        self._head = self._head.next         # HEAD를 한 칸 뒤로
+        self._size -= 1
+        return val
+
+    def peek(self):
+        if self.is_empty():
+            raise IndexError("peek from empty stack")
+        return self._head.data
+
+    def is_empty(self):
+        return self._head is None
+
+    def size(self):
+        return self._size
+</pre>
+
+<div class="diagram">
+push(A):  [A] → None        head = A
+push(B):  [B] → [A] → None  head = B   (B가 TOP)
+push(C):  [C] → [B] → [A] → None  head = C
+
+pop() →  C 반환, head = B
+         [B] → [A] → None
+</div>
+<p class="diagram-caption">연결 리스트 스택 — head(TOP)에서만 삽입·삭제</p>
+
+<h3>3-1. 배열 vs 연결 리스트 스택 비교</h3>
+<table>
+  <thead>
+    <tr><th>기준</th><th>배열 기반</th><th>연결 리스트 기반</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>push/pop 시간</td><td>Amortized O(1)</td><td>Worst-case O(1)</td></tr>
+    <tr><td>메모리 오버헤드</td><td>낮음 (데이터만)</td><td>높음 (데이터 + 포인터)</td></tr>
+    <tr><td>캐시 효율</td><td>우수 (연속 메모리)</td><td>낮음 (산재된 노드)</td></tr>
+    <tr><td>크기 제한</td><td>동적 확장 시 없음</td><td>메모리가 허용하는 한 없음</td></tr>
+    <tr><td>사용 권장</td><td>일반적인 경우</td><td>크기 예측 불가·실시간 시스템</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">실무에서는?</div>
+  <p>
+    파이썬에서는 <code>list</code>를 스택으로 그대로 쓰는 것이 표준 관용구다.
+    <code>collections.deque</code>도 양쪽 끝 O(1) 연산을 지원하므로 스택·큐 모두 사용 가능하다.
+    C++이라면 <code>std::stack</code>, Java라면 <code>Deque&lt;E&gt;</code>(<code>ArrayDeque</code> 구현)를 권장한다.
+  </p>
+</div>
+
+<!-- ─── 4. 함수 호출 스택 ─── -->
+<h2>4. 함수 호출 스택 (Call Stack)</h2>
+<p>
+  프로그래밍 언어 런타임은 함수 호출을 관리하기 위해 <em>콜 스택(call stack)</em>을 사용한다.
+  함수를 호출하면 <strong>스택 프레임(stack frame)</strong>이 PUSH되고,
+  함수가 반환되면 POP된다.
+</p>
+
+<pre>
+def c():
+    return 42
+
+def b():
+    return c() + 1
+
+def a():
+    return b() + 1
+
+result = a()   # 어떤 순서로 스택 프레임이 쌓일까?
+</pre>
+
+<div class="diagram">
+①  a() 호출                      ②  b() 호출
+                                  ┌────────────┐
+                                  │  b() 프레임 │ ← TOP
+   ┌────────────┐                 ├────────────┤
+   │  a() 프레임 │ ← TOP          │  a() 프레임 │
+   └────────────┘                 └────────────┘
+
+③  c() 호출                      ④  c() 반환 → pop
+   ┌────────────┐
+   │  c() 프레임 │ ← TOP          ┌────────────┐
+   ├────────────┤                 │  b() 프레임 │ ← TOP
+   │  b() 프레임 │                ├────────────┤
+   ├────────────┤                 │  a() 프레임 │
+   │  a() 프레임 │                └────────────┘
+   └────────────┘
+
+⑤  b() 반환 → pop               ⑥  a() 반환 → pop
+   ┌────────────┐                  (스택 비어 있음)
+   │  a() 프레임 │ ← TOP
+   └────────────┘
+</div>
+<p class="diagram-caption">콜 스택의 변화 — 호출할 때마다 PUSH, 반환할 때마다 POP</p>
+
+<h3>4-1. 재귀 vs 스택 반복문</h3>
+<p>
+  재귀(recursion)는 내부적으로 콜 스택을 사용한다.
+  재귀 깊이가 너무 깊으면 <code>RecursionError: maximum recursion depth exceeded</code>가 발생한다.
+  이 경우 명시적 스택으로 재귀를 대체할 수 있다.
+</p>
+
+<pre>
+# 재귀로 DFS
+def dfs_recursive(graph, node, visited=None):
+    if visited is None:
+        visited = set()
+    visited.add(node)
+    for neighbor in graph[node]:
+        if neighbor not in visited:
+            dfs_recursive(graph, neighbor, visited)
+    return visited
+
+# 명시적 스택으로 DFS — 재귀 없이 동일 결과
+def dfs_iterative(graph, start):
+    visited = set()
+    stack = [start]              # 명시적 스택 사용
+    while stack:
+        node = stack.pop()       # LIFO — 가장 최근 방문 후보
+        if node not in visited:
+            visited.add(node)
+            for neighbor in graph[node]:
+                if neighbor not in visited:
+                    stack.append(neighbor)
+    return visited
+</pre>
+
+<!-- ─── 5. 괄호 검사 ─── -->
+<h2>5. 응용: 괄호 검사 (Bracket Matching)</h2>
+<p>
+  스택의 가장 유명한 응용 문제다. 주어진 문자열에서 괄호의 종류와 순서가 올바른지 확인한다.
+</p>
+
+<h3>5-1. 알고리즘 설계</h3>
+<ol>
+  <li>문자를 왼쪽에서 오른쪽으로 순회한다.</li>
+  <li>여는 괄호 <code>(</code>, <code>[</code>, <code>{</code>를 만나면 스택에 PUSH한다.</li>
+  <li>닫는 괄호를 만나면:
+    <ul>
+      <li>스택이 비어 있으면 → <strong>실패</strong> (대응하는 여는 괄호 없음)</li>
+      <li>스택 TOP의 여는 괄호와 짝이 맞으면 → POP하고 계속</li>
+      <li>짝이 맞지 않으면 → <strong>실패</strong></li>
+    </ul>
+  </li>
+  <li>순회가 끝났을 때 스택이 비어 있으면 → <strong>성공</strong>, 그렇지 않으면 <strong>실패</strong>.</li>
+</ol>
+
+<div class="diagram">
+입력: "({[]})"
+
+문자  스택 상태         동작
+ (   [(]              push (
+ {   [(, {]           push {
+ [   [(, {, []        push [
+ ]   [(, {]           pop  [ — ] 와 짝 맞음 ✓
+ }   [(]              pop  { — } 와 짝 맞음 ✓
+ )   []               pop  ( — ) 와 짝 맞음 ✓
+
+스택 비어 있음 → 올바른 괄호열 ✓
+
+입력: "([)]"
+
+문자  스택 상태         동작
+ (   [(]              push (
+ [   [(, []           push [
+ )   실패 ✗           TOP=[ 이지만 ) 가 들어옴 → 짝 불일치
+</div>
+<p class="diagram-caption">괄호 검사 알고리즘 추적</p>
+
+<pre>
+def is_valid_brackets(s: str) -> bool:
+    MATCH = {')': '(', ']': '[', '}': '{'}
+    OPEN  = set('([{')
+    stack = []
+
+    for ch in s:
+        if ch in OPEN:
+            stack.append(ch)
+        elif ch in MATCH:
+            if not stack or stack[-1] != MATCH[ch]:
+                return False
+            stack.pop()
+    return len(stack) == 0
+
+
+# 테스트
+cases = [
+    ("()",        True),
+    ("()[]{}",   True),
+    ("({[]})",   True),
+    ("([)]",     False),
+    ("{[]",      False),
+    ("",          True),
+]
+for expr, expected in cases:
+    result = is_valid_brackets(expr)
+    status = "✓" if result == expected else "✗"
+    print(f"{status}  is_valid_brackets({expr!r}) = {result}")
+</pre>
+
+<h3>5-2. 복잡도 분석</h3>
+<table>
+  <thead>
+    <tr><th>항목</th><th>값</th><th>이유</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>시간복잡도</td><td>O(n)</td><td>각 문자를 한 번씩만 처리</td></tr>
+    <tr><td>공간복잡도</td><td>O(n)</td><td>최악의 경우 모든 문자가 여는 괄호 — 스택에 n개 쌓임</td></tr>
+  </tbody>
+</table>
+
+<!-- ─── 6. 다른 응용 ─── -->
+<h2>6. 스택의 다른 응용</h2>
+<table>
+  <thead>
+    <tr><th>응용 분야</th><th>스택 사용 방식</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>실행 취소 (Undo/Redo)</td><td>수행한 작업을 스택에 push, Ctrl+Z 시 pop</td></tr>
+    <tr><td>브라우저 뒤로 가기</td><td>방문 URL을 push, 뒤로 가기 시 pop → 앞으로 스택에 push</td></tr>
+    <tr><td>수식 계산 (후위 표기법)</td><td>피연산자를 push, 연산자를 만나면 두 값 pop 후 계산 결과 push</td></tr>
+    <tr><td>DFS (깊이 우선 탐색)</td><td>명시적 스택으로 재귀 대체 (Section 4-1 참고)</td></tr>
+    <tr><td>역순 출력</td><td>전체 push 후 pop하면 역순</td></tr>
+    <tr><td>컴파일러 파서</td><td>HTML/XML 태그 짝 맞춤, 구문 분석 트리 생성</td></tr>
+  </tbody>
+</table>
+
+<!-- ─── 7. 연습 문제 ─── -->
+<h2>7. 연습 문제</h2>
+
+<div class="quiz-block" id="q1">
+  <p class="quiz-question">Q1. 빈 스택에 1, 2, 3을 순서대로 push한 뒤, pop을 두 번 호출했을 때 남아 있는 원소는?</p>
+  <div class="quiz-options">
+    <label><input type="radio" name="q1" value="a"> (A) 1, 2</label>
+    <label><input type="radio" name="q1" value="b"> (B) 1만 남음</label>
+    <label><input type="radio" name="q1" value="c"> (C) 2, 3</label>
+    <label><input type="radio" name="q1" value="d"> (D) 스택이 비어 있음</label>
+  </div>
+  <button onclick="checkQ('q1','b','LIFO이므로 pop은 3, 2 순으로 꺼낸다. 남은 원소는 1뿐.')">확인</button>
+  <p class="quiz-feedback" id="q1-fb"></p>
+</div>
+
+<div class="quiz-block" id="q2">
+  <p class="quiz-question">Q2. 문자열 <code>"({[}])"</code>는 올바른 괄호열인가?</p>
+  <div class="quiz-options">
+    <label><input type="radio" name="q2" value="a"> (A) 올바른 괄호열이다</label>
+    <label><input type="radio" name="q2" value="b"> (B) 올바르지 않다</label>
+  </div>
+  <button onclick="checkQ('q2','b','스택에 (, {, [ 가 쌓인 상태에서 }를 만나면 TOP=[이므로 짝 불일치 → 실패.')">확인</button>
+  <p class="quiz-feedback" id="q2-fb"></p>
+</div>
+
+<div class="quiz-block" id="q3">
+  <p class="quiz-question">Q3. 연결 리스트 기반 스택에서 head를 TOP으로 사용할 때, push의 시간복잡도는?</p>
+  <div class="quiz-options">
+    <label><input type="radio" name="q3" value="a"> (A) O(n)</label>
+    <label><input type="radio" name="q3" value="b"> (B) Amortized O(1)</label>
+    <label><input type="radio" name="q3" value="c"> (C) Worst-case O(1)</label>
+    <label><input type="radio" name="q3" value="d"> (D) O(log n)</label>
+  </div>
+  <button onclick="checkQ('q3','c','head 앞에 새 노드를 연결하는 것만으로 완료 — 재할당·복사가 없으므로 항상 O(1).')">확인</button>
+  <p class="quiz-feedback" id="q3-fb"></p>
+</div>
+
+<!-- ─── 핵심 정리 ─── -->
+<h2>핵심 정리</h2>
+<ul>
+  <li><strong>LIFO</strong> — 마지막에 넣은 원소가 가장 먼저 나온다.</li>
+  <li>push, pop, peek 모두 <strong>O(1)</strong>이 목표 — 배열과 연결 리스트 둘 다 달성 가능.</li>
+  <li><strong>콜 스택</strong>은 함수 호출·반환 순서를 관리하는 언어 런타임의 스택이다.</li>
+  <li>괄호 검사, Undo, DFS 등 <em>"최근 상태를 빠르게 되돌아봐야 하는"</em> 문제에 스택이 적합하다.</li>
+  <li>파이썬에서는 <code>list</code>가 사실상 표준 스택이다. <code>append</code> = push, <code>pop</code> = pop.</li>
+</ul>
+
+<h2>다음 레슨 예고</h2>
+<p>
+  <strong>Day 4 — 큐 (Queue)</strong>: FIFO 원리, 원형 큐, 덱(Deque), BFS와의 연결을 살펴본다.
+</p>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

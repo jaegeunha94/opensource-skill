@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-06-22 | 자료구조 개요 & 추상 자료형(ADT) | [0001-what-is-data-structure.html](lessons/0001-what-is-data-structure.html) |
 | 2 | 2026-06-23 | 배열과 연결 리스트 (Arrays & Linked Lists) | [0002-arrays-and-linked-lists.html](lessons/0002-arrays-and-linked-lists.html) |
+| 3 | 2026-06-24 | 스택 (Stack) | [0003-stack.html](lessons/0003-stack.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | 스택 (Stack) | LIFO 원리, 배열·연결리스트 구현, 재귀 호출 스택, 괄호 검사 |
 | 4 | 큐 (Queue) | FIFO 원리, 원형 큐, 덱(Deque), BFS 연결 |
 | 5 | 해시 테이블 (Hash Tables) | 해시 함수, 충돌 해결(체이닝·오픈 어드레싱), O(1) 평균 탐색 |
 | 6 | 트리 기초 (Tree Basics) | 트리 용어, 이진 트리, 순회(전위·중위·후위·레벨) |
@@ -32,7 +32,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — 배열과 연결 리스트 학습 완료. 다음은 스택(Stack).
+**Day 3 완료** — 스택(Stack) 학습 완료. 다음은 큐(Queue).
 
 ## 습득한 핵심 개념
 
@@ -41,7 +41,8 @@
 - [x] 선형 vs 비선형 자료구조 분류 (✓ Day 1)
 - [x] Big O 표기법 기초 (✓ Day 1)
 - [x] 배열과 연결 리스트 (✓ Day 2)
-- [ ] 스택·큐 (예정 Day 3–4)
+- [x] 스택 (✓ Day 3)
+- [ ] 큐 (예정 Day 4)
 - [ ] 해시 테이블 (예정 Day 5)
 - [ ] 트리 계열 (예정 Day 6–10)
 - [ ] 그래프 (예정 Day 11–13)
