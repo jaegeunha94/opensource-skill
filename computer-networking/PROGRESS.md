@@ -8,12 +8,13 @@
 | 2 | 2026-06-22 | TCP/IP 모델과 물리·데이터링크 계층 | [day-02-tcpip-datalink.html](lessons/day-02-tcpip-datalink.html) |
 | 3 | 2026-06-22 | 네트워크 계층 — IP와 라우팅 | [day-03-network-layer-ip-routing.html](lessons/day-03-network-layer-ip-routing.html) |
 | 4 | 2026-06-23 | 전송 계층 — TCP vs UDP | [day-04-transport-tcp-udp.html](lessons/day-04-transport-tcp-udp.html) |
+| 5 | 2026-06-24 | 응용 계층 — DNS와 DHCP | [day-05-application-dns-dhcp.html](lessons/day-05-application-dns-dhcp.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | 응용 계층 — DNS와 DHCP | DNS 계층 구조, 재귀 쿼리, DHCP 임대 과정 |
+| ~~5~~ | ~~응용 계층 — DNS와 DHCP~~ | ~~DNS 계층 구조, 재귀 쿼리, DHCP 임대 과정~~ |
 | 6 | 응용 계층 — HTTP/HTTPS | HTTP 메서드, 상태 코드, 쿠키/세션, TLS 핸드셰이크 |
 | 7 | 네트워크 보안 기초 | 방화벽, NAT, VPN, TLS/SSL, 일반적인 공격 유형 |
 | 8 | 실습 — Wireshark 패킷 분석 | 필터링, TCP 스트림 추적, DNS/HTTP 트래픽 분석 |
@@ -22,7 +23,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — 다음: Day 5 (응용 계층 — DNS와 DHCP).
+**Day 5 완료** — 다음: Day 6 (응용 계층 — HTTP/HTTPS).
 
 ## 습득한 핵심 개념
 
@@ -42,7 +43,11 @@
 - [x] 흐름 제어 — 슬라이딩 윈도우 / rwnd (Day 4 완료)
 - [x] 혼잡 제어 — Slow Start / AIMD / Fast Retransmit (Day 4 완료)
 - [x] TCP 4-way handshake 및 TIME_WAIT (Day 4 완료)
-- [ ] DNS 재귀 쿼리 과정 (예정 Day 5)
+- [x] DNS 계층 구조 및 재귀 쿼리 과정 (Day 5 완료)
+- [x] DNS 레코드 타입 A/AAAA/CNAME/MX/NS/TXT (Day 5 완료)
+- [x] DNS TTL과 캐싱 (Day 5 완료)
+- [x] DHCP DORA 4단계 (Day 5 완료)
+- [x] DHCP 임대(Lease)와 갱신 (Day 5 완료)
 - [ ] HTTPS / TLS 핸드셰이크 (예정 Day 6)
 - [ ] NAT / 방화벽 동작 원리 (예정 Day 7)
 - [ ] Wireshark 패킷 분석 (예정 Day 8)
