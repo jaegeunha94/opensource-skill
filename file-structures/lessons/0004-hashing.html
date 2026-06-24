@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 4 — 직접 파일 / 해싱</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <h1>Day 4: 직접 파일 / 해싱</h1>
+  <div class="meta">
+    <span>📅 2026-06-24</span>
+    <span>⏱ 약 40분</span>
+    <span>📚 파일구조 과목</span>
+    <span>🔢 Lesson 4 / 10</span>
+  </div>
+
+  <!-- Learning Objectives -->
+  <div class="callout">
+    <strong>학습 목표</strong>
+    이 레슨을 마치면: (1) 직접 파일(Direct File)의 개념과 인덱스 기반 파일과의 차이를 설명할 수 있다. (2) 해시 함수의 역할과 나머지 연산·접기·중간-제곱 기법을 이해한다. (3) 충돌(Collision) 발생 원인과 체이닝·오픈 어드레싱 두 가지 해결 전략을 비교할 수 있다. (4) 버킷 개념과 적재율(Load Factor)이 성능에 미치는 영향을 계산하고 설명할 수 있다.
+  </div>
+
+  <!-- Section 1 -->
+  <h2>1. 직접 파일이란?</h2>
+
+  <p>
+    Day 1~3에서 배운 순차 파일과 인덱스 파일은 모두 <strong>키 값을 비교</strong>해서 레코드를 찾는다.
+    순차 파일은 처음부터 순서대로 훑고, 인덱스 파일은 인덱스를 이진 탐색한 뒤 블록을 읽는다.
+  </p>
+
+  <p>
+    <strong>직접 파일(Direct File)</strong>은 다른 접근법을 택한다.
+    키 값을 <strong>수학 함수(해시 함수)</strong>에 넣어 <em>저장 위치(주소)를 직접 계산</em>하고,
+    그 주소로 바로 이동한다. 이진 탐색도, 인덱스 순회도 필요 없다.
+  </p>
+
+  <div class="diagram">키 값 → [해시 함수] → 버킷 주소 → 직접 접근
+
+예시: 학번 20301 → h(20301) = 20301 % 100 = 1 → 버킷 #1로 바로 이동
+      학번 20455 → h(20455) = 20455 % 100 = 55 → 버킷 #55로 바로 이동
+      학번 20801 → h(20801) = 20801 % 100 = 1 → 버킷 #1 (충돌!)
+
+순차/인덱스 파일:  O(log B) ~ O(B) 블록 접근
+직접 파일 (이상적): O(1) — 한 번의 블록 접근</div>
+
+  <div class="callout tip">
+    <strong>직접 파일의 핵심 트레이드오프</strong>
+    검색이 O(1)에 가깝지만 <em>해시 충돌</em>이라는 문제가 발생하며,
+    키 공간(가능한 키 값 범위)에 비해 실제 사용 주소 공간이 낭비될 수 있다.
+    또한 범위 검색(예: 학번 20000~20500 전체)에는 불리하다.
+  </div>
+
+  <!-- Section 2 -->
+  <h2>2. 해시 함수</h2>
+
+  <p>
+    <strong>해시 함수(Hash Function)</strong>는 임의의 키 값을 받아
+    0 이상 B 미만(B = 버킷 수)의 정수 주소를 반환하는 함수다.
+  </p>
+
+  <h3>2-1. 나머지 연산 (Division / Modulo)</h3>
+
+  <p>
+    가장 단순하고 널리 쓰이는 방법.
+    <code>h(k) = k mod M</code> (M = 버킷 수)
+  </p>
+
+  <div class="diagram">M = 7 (버킷 수)
+
+h(23)  = 23 mod 7 = 2  → 버킷 #2
+h(47)  = 47 mod 7 = 5  → 버킷 #5
+h(100) = 100 mod 7 = 2 → 버킷 #2 (충돌)
+h(7)   = 7 mod 7  = 0  → 버킷 #0</div>
+
+  <div class="callout tip">
+    <strong>M 선택 팁</strong>
+    M을 소수(Prime number)로 선택하면 키 값이 특정 패턴을 가질 때 충돌이 분산된다.
+    예를 들어 키가 짝수만 있을 때 M=10이면 짝수 버킷만 사용되지만,
+    M=7이면 모든 버킷이 고르게 사용된다.
+  </div>
+
+  <h3>2-2. 접기 (Folding)</h3>
+
+  <p>
+    키를 여러 부분으로 나눈 뒤 합산(또는 XOR)하여 주소를 만든다.
+    키가 긴 문자열이거나 자릿수가 많은 숫자일 때 유용하다.
+  </p>
+
+  <div class="diagram">키 = 987654321 (9자리), 버킷 수 = 1000 (주소 3자리)
+
+3자리씩 분할:  987 | 654 | 321
+합산:          987 + 654 + 321 = 1962
+mod 1000:     1962 mod 1000 = 962 → 버킷 #962</div>
+
+  <h3>2-3. 중간-제곱법 (Mid-Square)</h3>
+
+  <p>
+    키를 제곱한 뒤 중간 자리를 꺼내 주소로 사용한다.
+    키의 모든 자릿수가 결과에 영향을 주어 분산이 좋다.
+  </p>
+
+  <div class="diagram">키 = 1234, 버킷 수 = 100 (주소 2자리)
+
+1234² = 1,522,756
+중간 2자리 추출:  1-52-2756 → 52
+주소 = 52 → 버킷 #52</div>
+
+  <!-- Section 3 -->
+  <h2>3. 버킷 (Bucket)</h2>
+
+  <p>
+    해시 파일의 저장 단위를 <strong>버킷(Bucket)</strong>이라고 한다.
+    버킷은 하나 이상의 레코드를 담을 수 있는 고정 크기 슬롯이다.
+    보통 <strong>버킷 하나 = 디스크 블록 하나</strong>에 대응한다.
+  </p>
+
+  <div class="diagram">해시 파일 (M=5 버킷, 버킷당 최대 2개 레코드)
+
+버킷 #0: [ 학번=20005 ] [ 학번=20010 ]    ← 만원
+버킷 #1: [ 학번=20001 ] [    비어있음  ]
+버킷 #2: [ 학번=20002 ] [ 학번=20007 ]    ← 만원
+버킷 #3: [    비어있음  ] [    비어있음  ]
+버킷 #4: [ 학번=20004 ] [    비어있음  ]
+
+h(20005) = 20005 mod 5 = 0 → 버킷 #0 ✓
+h(20010) = 20010 mod 5 = 0 → 버킷 #0 ✓ (같은 버킷, 충돌 없음)
+h(20015) = 20015 mod 5 = 0 → 버킷 #0 ✗ (오버플로우 발생!)</div>
+
+  <div class="callout">
+    <strong>용어 정리</strong>
+    <ul style="margin:0.5rem 0 0;">
+      <li><strong>버킷 용량(Bucket Capacity)</strong>: 버킷 하나에 들어갈 수 있는 최대 레코드 수</li>
+      <li><strong>오버플로우(Overflow)</strong>: 버킷이 꽉 찼는데 새 레코드가 같은 주소로 해싱될 때</li>
+      <li><strong>충돌(Collision)</strong>: 두 개 이상의 키가 같은 버킷 주소를 가질 때 (오버플로우의 원인)</li>
+    </ul>
+  </div>
+
+  <!-- Section 4 -->
+  <h2>4. 적재율 (Load Factor)</h2>
+
+  <p>
+    <strong>적재율(Load Factor, α)</strong>은 해시 파일이 얼마나 채워져 있는지를 나타내는 비율이다.
+  </p>
+
+  <div class="diagram">α = (저장된 레코드 수) / (전체 버킷 용량)
+  = n / (M × 버킷 용량)
+
+예: 레코드 70개, 버킷 10개, 버킷당 10칸
+α = 70 / (10 × 10) = 70 / 100 = 0.70 (70%)</div>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>적재율 범위</th>
+        <th>충돌 빈도</th>
+        <th>공간 낭비</th>
+        <th>권장 여부</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>α &lt; 0.5</strong></td>
+        <td><span class="badge good">낮음</span></td>
+        <td><span class="badge bad">큼 (50% 이상 비어있음)</span></td>
+        <td>공간 낭비 심함</td>
+      </tr>
+      <tr>
+        <td><strong>0.7 ≤ α ≤ 0.8</strong></td>
+        <td><span class="badge good">적절</span></td>
+        <td><span class="badge good">적절</span></td>
+        <td><span class="badge good">권장 범위</span></td>
+      </tr>
+      <tr>
+        <td><strong>α &gt; 0.9</strong></td>
+        <td><span class="badge bad">매우 높음</span></td>
+        <td><span class="badge good">낮음</span></td>
+        <td>성능 저하 심각</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout tip">
+    <strong>실무에서의 적재율</strong>
+    대부분의 해시 테이블 구현체는 α가 0.75를 넘으면 자동으로 <em>리해싱(Rehashing)</em>을 수행한다.
+    리해싱은 버킷 수를 2배로 늘리고 모든 레코드를 재배치하는 비용이 크지만, 충돌율을 낮춰 이후 성능을 보장한다.
+  </div>
+
+  <!-- Section 5 -->
+  <h2>5. 충돌 해결 전략</h2>
+
+  <p>
+    충돌은 불가피하다. 두 가지 주요 전략이 있다: <strong>체이닝</strong>과 <strong>오픈 어드레싱</strong>.
+  </p>
+
+  <h3>5-1. 체이닝 (Chaining / Separate Chaining)</h3>
+
+  <p>
+    각 버킷에 <strong>연결 리스트(Linked List)</strong>를 두고,
+    오버플로우가 발생하면 오버플로우 영역에 레코드를 추가하여 체인으로 연결한다.
+  </p>
+
+  <div class="diagram">버킷 #0: [ REC-A ] → [ REC-E ] → [ REC-I ] → null
+                            (메인 영역)  (오버플로우 블록 1) (오버플로우 블록 2)
+버킷 #1: [ REC-B ] → null
+버킷 #2: [ REC-C ] → [ REC-F ] → null
+버킷 #3: [  비어  ] → null
+버킷 #4: [ REC-D ] → null
+
+검색(REC-I): h(I) = 0 → 버킷#0 읽기 → 없음 → 체인 따라가기 → 블록1 읽기 → 없음
+             → 블록2 읽기 → REC-I 발견! (블록 접근 3회)</div>
+
+  <div class="callout">
+    <strong>체이닝 특징</strong>
+    <ul style="margin:0.5rem 0 0;">
+      <li>삭제가 비교적 간단 (체인에서 해당 노드 제거)</li>
+      <li>오버플로우 영역이 길어질수록 성능 저하 (체인 길이 비례)</li>
+      <li>파일 기반 해싱에서는 오버플로우 블록이 별도 영역에 할당됨</li>
+      <li>오버플로우 블록을 주기적으로 재구성(Reorganization)해야 성능 유지</li>
+    </ul>
+  </div>
+
+  <h3>5-2. 오픈 어드레싱 (Open Addressing)</h3>
+
+  <p>
+    오버플로우가 발생하면 <strong>다음 빈 버킷</strong>을 찾아 그 자리에 저장한다.
+    체인 포인터가 필요 없으므로 메모리/포인터 오버헤드가 없다.
+  </p>
+
+  <h4>선형 탐사 (Linear Probing)</h4>
+
+  <div class="diagram">M = 7, h(k) = k mod 7
+
+삽입 순서: 15, 22, 29 → h(15)=1, h(22)=1(충돌!), h(29)=1(충돌!)
+
+[0] 비어있음
+[1] 15           ← h(15)=1, 저장
+[2] 22           ← h(22)=1 충돌 → 다음 빈 칸 [2]에 저장
+[3] 29           ← h(29)=1 충돌 → [2] 충돌 → 다음 빈 칸 [3]에 저장
+[4] 비어있음
+[5] 비어있음
+[6] 비어있음
+
+검색(29): h(29)=1 → [1]은 15 (≠29) → [2]는 22 (≠29) → [3]은 29 ✓ (3번 비교)</div>
+
+  <div class="callout warn">
+    <strong>클러스터링 문제 (Primary Clustering)</strong>
+    선형 탐사는 같은 해시 주소의 키들이 인접 슬롯에 몰려 <em>클러스터(덩어리)</em>를 형성한다.
+    클러스터가 커질수록 탐사 횟수가 급격히 증가한다.
+    이를 해결하기 위해 <strong>이차 탐사(Quadratic Probing)</strong>나
+    <strong>이중 해싱(Double Hashing)</strong>을 사용한다.
+  </div>
+
+  <h4>이차 탐사 (Quadratic Probing)</h4>
+
+  <div class="diagram">충돌 시 탐사 간격을 1, 4, 9, 16... (i²) 씩 늘려가며 빈 자리를 찾는다.
+
+h(k)=1 충돌 → [1+1²] = [2] 시도 → 충돌 → [1+2²] = [5] 시도 → 성공
+
+선형 탐사보다 클러스터링이 덜 발생하지만, 이차 클러스터링(Secondary Clustering)은 남는다.</div>
+
+  <h4>이중 해싱 (Double Hashing)</h4>
+
+  <div class="diagram">두 번째 해시 함수 h₂(k)를 탐사 간격으로 사용한다.
+
+h₁(k) = k mod M          (기본 주소)
+h₂(k) = 1 + (k mod (M-2)) (탐사 간격, 항상 양수)
+
+충돌 시: (h₁(k) + i × h₂(k)) mod M  (i = 1, 2, 3, ...)
+
+k=22, M=7: h₁(22)=1, h₂(22)=1+(22 mod 5)=1+2=3
+충돌 시 탐사: [1+3] = [4], [1+6] = [0], ...
+
+→ 가장 균일한 분산, 클러스터링 최소화</div>
+
+  <!-- Section 6 -->
+  <h2>6. 체이닝 vs 오픈 어드레싱 비교</h2>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>비교 항목</th>
+        <th>체이닝 (Chaining)</th>
+        <th>오픈 어드레싱</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>구조</strong></td>
+        <td>메인 버킷 + 오버플로우 체인</td>
+        <td>단일 배열/파일 내 빈 슬롯 탐사</td>
+      </tr>
+      <tr>
+        <td><strong>공간 효율</strong></td>
+        <td>포인터 추가 오버헤드 있음</td>
+        <td>포인터 불필요 (공간 절약)</td>
+      </tr>
+      <tr>
+        <td><strong>삭제 처리</strong></td>
+        <td><span class="badge good">간단</span> — 체인에서 노드 제거</td>
+        <td><span class="badge bad">복잡</span> — Tombstone 마킹 필요</td>
+      </tr>
+      <tr>
+        <td><strong>적재율 민감도</strong></td>
+        <td>α &gt; 1도 가능 (체인이 길어짐)</td>
+        <td>α &lt; 1 필수 (슬롯이 모자라면 불가)</td>
+      </tr>
+      <tr>
+        <td><strong>성능 최악</strong></td>
+        <td>모든 키가 같은 버킷 → 체인 탐색 O(n)</td>
+        <td>모든 슬롯 찾아야 → O(n)</td>
+      </tr>
+      <tr>
+        <td><strong>실제 파일 시스템</strong></td>
+        <td>오버플로우 블록 체인 일반적</td>
+        <td>메모리 해시 테이블에서 주로 사용</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Section 7 -->
+  <h2>7. 직접 파일의 특성 정리</h2>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>특성</th>
+        <th>순차 파일</th>
+        <th>인덱스 파일</th>
+        <th>직접(해시) 파일</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>기본 키 검색</strong></td>
+        <td>O(log B) (이진 탐색)</td>
+        <td>O(log I + 1) (인덱스+블록)</td>
+        <td><span class="badge good">O(1) 이상적</span></td>
+      </tr>
+      <tr>
+        <td><strong>범위 검색</strong></td>
+        <td><span class="badge good">우수</span> (정렬 활용)</td>
+        <td><span class="badge good">우수</span> (인덱스 범위 탐색)</td>
+        <td><span class="badge bad">불리</span> (순서 없음)</td>
+      </tr>
+      <tr>
+        <td><strong>삽입</strong></td>
+        <td><span class="badge bad">느림</span> (정렬 유지)</td>
+        <td>중간 (인덱스 갱신)</td>
+        <td><span class="badge good">빠름</span> (주소 계산 후 저장)</td>
+      </tr>
+      <tr>
+        <td><strong>공간 활용</strong></td>
+        <td><span class="badge good">효율적</span></td>
+        <td>중간 (인덱스 별도)</td>
+        <td>낭비 가능 (미사용 버킷)</td>
+      </tr>
+      <tr>
+        <td><strong>적합한 상황</strong></td>
+        <td>순서 기반 처리, 배치 작업</td>
+        <td>균형 잡힌 범용</td>
+        <td>단건 키 검색이 지배적인 경우</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="primary-source">
+    <strong>📖 Primary Source</strong>
+    Folk, Zoellick &amp; Riccardi, <em>File Structures</em> — Chapter 6: Hashing.
+    나머지 연산 해시 함수, 버킷 구조, 체이닝(오버플로우 체인), 오픈 어드레싱,
+    그리고 적재율과 성능의 관계를 예제 파일과 함께 상세히 다룬다.
+    특히 &ldquo;Linear Probing과 Clustering&rdquo; 절과 &ldquo;Choice of Hash Function&rdquo; 절을 집중적으로 읽어라.
+  </div>
+
+  <!-- Section 8: Quiz -->
+  <h2>8. 확인 퀴즈</h2>
+
+  <div class="quiz" id="quiz1">
+    <h3>Quiz 1</h3>
+    <div class="quiz-question">
+      버킷 수 M = 11인 해시 파일에서 키 값 k = 253일 때,
+      나머지 연산 해시 함수 h(k) = k mod M의 결과는?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz1')">1</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz1')">10</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz1')">3</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz1')">5</div>
+    </div>
+    <div class="quiz-feedback" id="quiz1-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz1')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz2">
+    <h3>Quiz 2</h3>
+    <div class="quiz-question">
+      레코드 800개를 해시 파일에 저장할 때 버킷 수 M = 20, 버킷당 용량 = 50개라면
+      적재율 α는 얼마인가?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz2')">0.40 (40%)</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz2')">0.80 (80%)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz2')">1.60 (160%)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz2')">0.04 (4%)</div>
+    </div>
+    <div class="quiz-feedback" id="quiz2-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz2')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz3">
+    <h3>Quiz 3</h3>
+    <div class="quiz-question">
+      오픈 어드레싱에서 레코드를 삭제할 때 단순히 슬롯을 비워두면 어떤 문제가 생기는가?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz3')">삭제된 슬롯에 이후 레코드가 자동 이동된다</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz3')">탐사 도중 빈 슬롯을 만나면 검색을 조기 종료하여 뒤에 저장된 레코드를 못 찾는다</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz3')">해시 함수 결과가 달라진다</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz3')">적재율이 1을 초과하게 된다</div>
+    </div>
+    <div class="quiz-feedback" id="quiz3-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz3')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz4">
+    <h3>Quiz 4</h3>
+    <div class="quiz-question">
+      해시 파일이 순차 파일에 비해 특히 불리한 연산은 무엇인가?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz4')">기본 키로 단건 레코드 검색</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz4')">새 레코드 삽입</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz4')">특정 범위의 키를 가진 레코드 전체 조회 (범위 검색)</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz4')">기본 키로 레코드 삭제</div>
+    </div>
+    <div class="quiz-feedback" id="quiz4-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz4')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz5">
+    <h3>Quiz 5</h3>
+    <div class="quiz-question">
+      나머지 연산 해시 함수를 사용할 때 버킷 수 M을 소수(Prime Number)로 선택하는 이유는?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz5')">소수는 나머지 계산 속도가 빠르기 때문</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz5')">소수일 때 적재율이 항상 0.7 이하로 유지되기 때문</div>
+      <div class="quiz-option" data-correct="true"  onclick="answer(this, 'quiz5')">키 값에 특정 패턴(공약수)이 있어도 충돌이 고르게 분산되기 때문</div>
+      <div class="quiz-option" data-correct="false" onclick="answer(this, 'quiz5')">소수 버킷 수는 오버플로우가 발생하지 않기 때문</div>
+    </div>
+    <div class="quiz-feedback" id="quiz5-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz5')">다시 풀기</button>
+  </div>
+
+  <!-- Ask Prompt -->
+  <div class="ask-prompt">
+    <strong>궁금한 점이 있으면 언제든지 물어보세요!</strong>
+    "체이닝 vs 오픈 어드레싱 어떤 걸 쓸지 어떻게 결정하나요?",
+    "적재율이 높아지면 성능이 구체적으로 얼마나 나빠지나요?",
+    "이중 해싱은 실제 DB에서 사용되나요?" — 선생님(Claude)이 바로 답해드립니다.
+  </div>
+
+  <!-- Navigation -->
+  <div class="lesson-nav">
+    <span>← <a href="0003-index-structures.html">Day 3 — 인덱스 구조 기초</a></span>
+    <span>다음: <a href="0005-b-trees.html">Day 5 — B-트리 →</a></span>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    correct: '✅ 정답입니다!',
+    wrong:   '❌ 틀렸습니다. 정답을 확인하고 다시 생각해보세요.'
+  };
+
+  function answer(el, quizId) {
+    const quiz = document.getElementById(quizId);
+    const opts = quiz.querySelectorAll('.quiz-option');
+    const fb   = document.getElementById(quizId + '-feedback');
+
+    if ([...opts].some(o => o.classList.contains('correct') || o.classList.contains('wrong'))) return;
+
+    const isCorrect = el.dataset.correct === 'true';
+    el.classList.add(isCorrect ? 'correct' : 'wrong');
+
+    if (!isCorrect) {
+      opts.forEach(o => { if (o.dataset.correct === 'true') o.classList.add('correct'); });
+    }
+
+    fb.textContent = isCorrect ? FEEDBACK.correct : FEEDBACK.wrong;
+    fb.className   = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'wrong');
+  }
+
+  function resetQuiz(quizId) {
+    const quiz = document.getElementById(quizId);
+    quiz.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('correct', 'wrong'));
+    const fb = document.getElementById(quizId + '-feedback');
+    fb.textContent = '';
+    fb.className = 'quiz-feedback';
+  }
+</script>
+</body>
+</html>
