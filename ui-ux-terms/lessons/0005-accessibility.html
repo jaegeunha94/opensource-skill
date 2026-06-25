@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 5 — 접근성(a11y): WCAG·ARIA·포커스 관리</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    .level-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 0.15em 0.55em;
+      border-radius: 999px;
+      vertical-align: middle;
+      margin-left: 0.4rem;
+    }
+    .level-a   { background: #dcfce7; color: #15803d; }
+    .level-aa  { background: #dbeafe; color: #1d4ed8; }
+    .level-aaa { background: #ede9fe; color: #6d28d9; }
+
+    .contrast-demo {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin: 1.25rem 0;
+    }
+    .contrast-swatch {
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-weight: 600;
+      min-width: 180px;
+      text-align: center;
+    }
+    .swatch-fail  { background: #fef9c3; color: #ca8a04; border: 1px solid #fde047; }
+    .swatch-aa    { background: #1d4ed8; color: #ffffff; border: 1px solid transparent; }
+    .swatch-aaa   { background: #1e1b4b; color: #ffffff; border: 1px solid transparent; }
+
+    .aria-row {
+      display: grid;
+      grid-template-columns: auto 1fr 1fr;
+      gap: 0.5rem 1rem;
+      align-items: start;
+      margin-bottom: 0.75rem;
+      font-size: 0.875rem;
+    }
+    .aria-row code {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      background: #f3f4f6;
+      padding: 0.1em 0.4em;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .aria-label {
+      font-weight: 700;
+      color: var(--color-accent);
+      white-space: nowrap;
+    }
+
+    .pour-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .pour-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+    }
+    .pour-card .pour-initial {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--color-accent);
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+    .pour-card .pour-title {
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .pour-card .pour-desc {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="lesson-container">
+
+    <header class="lesson-header">
+      <span class="lesson-tag">UI/UX 용어 · Day 5</span>
+      <h1>접근성(a11y) — WCAG·ARIA·포커스 관리</h1>
+      <p class="lesson-meta">2026-06-25 &nbsp;·&nbsp; 예상 소요 시간 25분</p>
+    </header>
+
+    <!-- Learning objectives -->
+    <h2>이 레슨에서 배울 것</h2>
+    <ul style="padding-left:1.5rem; margin-bottom:1rem; font-size:0.9rem;">
+      <li>접근성(a11y)이 왜 개발·디자인 협업에서 필수 언어인지 설명할 수 있다</li>
+      <li>WCAG의 4원칙(POUR)과 성공 기준 레벨(A / AA / AAA)을 구분할 수 있다</li>
+      <li>ARIA의 역할(role), 속성(property), 상태(state)를 정확히 구분할 수 있다</li>
+      <li>포커스 관리와 색상 대비 기준을 실무 리뷰에서 적용할 수 있다</li>
+    </ul>
+
+    <!-- === SECTION 1: a11y란 === -->
+    <h2>1. 접근성(Accessibility, a11y)이란</h2>
+
+    <p>
+      <strong>접근성(Accessibility)</strong>은 장애가 있거나 없는 모든 사람이 제품·서비스를
+      동등하게 이용할 수 있도록 설계하는 것이다. "a11y"는 <em>a</em>ccessibilit<em>y</em> 사이의
+      11글자를 숫자로 줄인 약어로, 현업 대화·이슈 트래커에서 흔히 쓰인다.
+    </p>
+
+    <div class="callout">
+      <strong>왜 협업에서 중요한가?</strong> 접근성은 법적 의무(한국 전자정부법, 미국 ADA·Section 508,
+      유럽 EN 301 549)이자 SEO·유지보수 품질 지표이기도 하다. 디자인 리뷰에서
+      "이 컴포넌트 a11y 고려됐어요?"라는 질문이 나오면 WCAG와 ARIA 용어로 답할 수 있어야 한다.
+    </div>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Accessibility (a11y)</div>
+        <div class="term-ko">접근성</div>
+        <div class="term-def">
+          시각·청각·운동·인지 장애를 포함한 모든 사람이 콘텐츠와 기능을 이용할 수 있도록 보장하는 설계 원칙.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Assistive Technology (AT)</div>
+        <div class="term-ko">보조 기술</div>
+        <div class="term-def">
+          스크린 리더(NVDA, VoiceOver, TalkBack), 스위치 제어, 화면 확대기, 자막 등
+          장애인이 디지털 콘텐츠에 접근하는 데 사용하는 도구.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Inclusive Design</div>
+        <div class="term-ko">포용적 디자인</div>
+        <div class="term-def">
+          특정 그룹을 위한 사후 조치가 아니라 처음부터 다양한 사용자를 고려해 설계하는 접근법.
+          결과적으로 모든 사용자에게 더 나은 경험을 제공한다.
+        </div>
+      </div>
+    </div>
+
+    <!-- === SECTION 2: WCAG === -->
+    <h2>2. WCAG — 웹 콘텐츠 접근성 지침</h2>
+
+    <p>
+      <strong>WCAG(Web Content Accessibility Guidelines)</strong>는 W3C의 WAI(Web Accessibility Initiative)가
+      발행하는 국제 표준이다. 2025년 현재 실무 기준은 <strong>WCAG 2.1 AA</strong>이며,
+      WCAG 2.2(2023)가 최신 버전이다.
+    </p>
+
+    <h3>WCAG 4원칙 — POUR</h3>
+    <p style="font-size:0.9rem;">모든 성공 기준은 다음 4원칙 중 하나에 속한다.</p>
+
+    <div class="pour-grid">
+      <div class="pour-card">
+        <div class="pour-initial">P</div>
+        <div class="pour-title">Perceivable (인식 가능)</div>
+        <div class="pour-desc">
+          정보와 UI 컴포넌트는 사용자가 인식할 수 있는 방식으로 제공되어야 한다.<br>
+          <em>예: 이미지에 대체 텍스트, 동영상에 자막 제공</em>
+        </div>
+      </div>
+      <div class="pour-card">
+        <div class="pour-initial">O</div>
+        <div class="pour-title">Operable (운용 가능)</div>
+        <div class="pour-desc">
+          UI 컴포넌트와 네비게이션은 조작 가능해야 한다.<br>
+          <em>예: 키보드만으로 모든 기능 사용 가능, 충분한 시간 제공</em>
+        </div>
+      </div>
+      <div class="pour-card">
+        <div class="pour-initial">U</div>
+        <div class="pour-title">Understandable (이해 가능)</div>
+        <div class="pour-desc">
+          정보와 UI 조작 방법은 이해할 수 있어야 한다.<br>
+          <em>예: 명확한 오류 메시지, 일관된 네비게이션</em>
+        </div>
+      </div>
+      <div class="pour-card">
+        <div class="pour-initial">R</div>
+        <div class="pour-title">Robust (견고함)</div>
+        <div class="pour-desc">
+          콘텐츠는 보조 기술을 포함한 다양한 사용자 에이전트가 신뢰성 있게 해석할 수 있어야 한다.<br>
+          <em>예: 유효한 HTML, ARIA 올바른 사용</em>
+        </div>
+      </div>
+    </div>
+
+    <h3>성공 기준 레벨</h3>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>레벨</th>
+          <th>의미</th>
+          <th>실무 적용</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="level-badge level-a">A</span></td>
+          <td>최소 요구사항. 이를 충족하지 않으면 일부 사용자가 콘텐츠에 접근 불가</td>
+          <td>모든 프로젝트에서 필수</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-aa">AA</span></td>
+          <td>국제·법적 기준. 대부분의 장애 유형에 대응</td>
+          <td>실무 최소 기준 (한국 정부·EU 의무)</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-aaa">AAA</span></td>
+          <td>최고 수준. 모든 콘텐츠에서 달성하기 어렵지만 중요 콘텐츠에 적용</td>
+          <td>공공 서비스·의료·교육에서 권장</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- === SECTION 3: 색상 대비 === -->
+    <h2>3. 색상 대비(Color Contrast)</h2>
+
+    <p>
+      WCAG 1.4.3(AA)은 일반 텍스트의 전경색과 배경색 대비율이 <strong>최소 4.5:1</strong>이어야 하며,
+      큰 텍스트(18pt 이상 또는 14pt Bold)는 <strong>3:1</strong>을 요구한다.
+      WCAG 1.4.11(AA)은 UI 컴포넌트의 초점 표시자나 아이콘 같은 비텍스트 요소도 <strong>3:1</strong>을 요구한다.
+    </p>
+
+    <div class="contrast-demo">
+      <div class="contrast-swatch swatch-fail">
+        노란 배경 + 노란 텍스트<br>
+        <small>대비율 1.6:1 — 실패</small>
+      </div>
+      <div class="contrast-swatch swatch-aa">
+        파란 배경 + 흰 텍스트<br>
+        <small>대비율 8.6:1 — AA/AAA 통과</small>
+      </div>
+      <div class="contrast-swatch swatch-aaa">
+        짙은 남색 + 흰 텍스트<br>
+        <small>대비율 17.5:1 — AAA 통과</small>
+      </div>
+    </div>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Contrast Ratio</div>
+        <div class="term-ko">대비율</div>
+        <div class="term-def">
+          두 색상의 상대적 밝기(relative luminance) 차이를 나타내는 숫자. 1:1(동일)에서 21:1(흑백 최대)까지의 범위.
+          Figma의 A11y 플러그인, WebAIM Contrast Checker로 측정한다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Relative Luminance</div>
+        <div class="term-ko">상대 밝기</div>
+        <div class="term-def">
+          WCAG가 대비율 계산에 사용하는 색상 밝기 측정값. 선형 RGB 값에서 계산한다.
+          순수 흰색은 1.0, 순수 검정은 0. 두 밝기 값으로 대비율 = (L1 + 0.05) / (L2 + 0.05).
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Color Independence</div>
+        <div class="term-ko">색상 독립성</div>
+        <div class="term-def">
+          정보를 색상만으로 전달하지 않아야 한다는 원칙(WCAG 1.4.1 A). 오류 상태는 빨간색 + 아이콘 + 텍스트를 함께 사용해야 한다.
+        </div>
+      </div>
+    </div>
+
+    <!-- === SECTION 4: ARIA === -->
+    <h2>4. ARIA — 접근 가능한 리치 인터넷 애플리케이션</h2>
+
+    <p>
+      <strong>ARIA(Accessible Rich Internet Applications)</strong>는 W3C 표준으로,
+      HTML의 의미론적 정보가 부족할 때 스크린 리더 같은 보조 기술이 UI를 올바르게 해석하도록
+      속성을 추가하는 방법을 정의한다.
+    </p>
+
+    <div class="callout">
+      <strong>첫 번째 규칙:</strong> ARIA를 쓰기 전에 먼저 올바른 HTML 시맨틱 요소를 사용하라.
+      <code style="font-size:0.85rem; background:rgba(0,0,0,0.06); padding:0.1em 0.4em; border-radius:4px;">&lt;button&gt;</code> 대신
+      <code style="font-size:0.85rem; background:rgba(0,0,0,0.06); padding:0.1em 0.4em; border-radius:4px;">&lt;div role="button"&gt;</code>을 쓰는 것은 나쁜 패턴이다.
+    </div>
+
+    <h3>ARIA의 3가지 구성 요소</h3>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>구분</th>
+          <th>의미</th>
+          <th>예시</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Role (역할)</strong></td>
+          <td>요소의 유형·목적을 정의. 보조 기술이 "이게 뭔지" 이해하게 한다</td>
+          <td>
+            <code>role="dialog"</code>, <code>role="alert"</code>,
+            <code>role="tablist"</code>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Property (속성)</strong></td>
+          <td>요소의 성질을 설명하는 변하지 않는(또는 거의 변하지 않는) 정보</td>
+          <td>
+            <code>aria-label="닫기"</code>,
+            <code>aria-required="true"</code>,
+            <code>aria-describedby</code>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>State (상태)</strong></td>
+          <td>사용자 인터랙션에 따라 동적으로 변하는 현재 상태</td>
+          <td>
+            <code>aria-expanded="false"</code>,
+            <code>aria-checked="true"</code>,
+            <code>aria-disabled="true"</code>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>자주 쓰는 ARIA 패턴</h3>
+
+    <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 1.25rem; margin: 1rem 0;">
+      <div class="aria-row">
+        <span class="aria-label">레이블 제공</span>
+        <code>aria-label="검색"</code>
+        <span style="font-size:0.85rem; color:var(--color-text-muted);">아이콘 버튼처럼 텍스트가 없을 때</span>
+      </div>
+      <div class="aria-row">
+        <span class="aria-label">설명 연결</span>
+        <code>aria-describedby="hint-1"</code>
+        <span style="font-size:0.85rem; color:var(--color-text-muted);">입력 필드에 추가 설명 연결</span>
+      </div>
+      <div class="aria-row">
+        <span class="aria-label">라이브 알림</span>
+        <code>aria-live="polite"</code>
+        <span style="font-size:0.85rem; color:var(--color-text-muted);">동적으로 바뀌는 메시지 영역</span>
+      </div>
+      <div class="aria-row">
+        <span class="aria-label">숨김 처리</span>
+        <code>aria-hidden="true"</code>
+        <span style="font-size:0.85rem; color:var(--color-text-muted);">장식용 아이콘 등 AT에서 제외</span>
+      </div>
+      <div class="aria-row">
+        <span class="aria-label">현재 위치</span>
+        <code>aria-current="page"</code>
+        <span style="font-size:0.85rem; color:var(--color-text-muted);">현재 활성화된 네비게이션 링크</span>
+      </div>
+    </div>
+
+    <!-- === SECTION 5: 포커스 관리 === -->
+    <h2>5. 포커스 관리(Focus Management)</h2>
+
+    <p>
+      키보드 또는 스위치 기기로 탐색하는 사용자는 <strong>포커스(focus)</strong>를 통해 UI를 이동한다.
+      포커스 관리를 잘못하면 화면은 열렸지만 키보드 사용자는 막힌 상태가 되거나,
+      포커스가 숨겨진 요소로 이동하는 "포커스 트랩(focus trap)" 오류가 발생한다.
+    </p>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Focus Order</div>
+        <div class="term-ko">포커스 순서</div>
+        <div class="term-def">
+          Tab 키로 이동할 때의 순서. DOM 소스 순서와 시각적 순서가 일치해야 한다(WCAG 1.3.2, 2.4.3).
+          <code>tabindex</code>로 순서를 강제하는 것은 유지보수 문제를 유발하므로 지양한다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Focus Visible</div>
+        <div class="term-ko">포커스 가시성</div>
+        <div class="term-def">
+          키보드 포커스가 어디 있는지 시각적으로 보여야 한다(WCAG 2.4.7 AA, 2.4.11 AA).
+          기본 아웃라인을 <code>outline: none</code>으로 제거하면 이를 위반한다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Focus Trap</div>
+        <div class="term-ko">포커스 트랩</div>
+        <div class="term-def">
+          모달이나 드로어가 열렸을 때 포커스가 그 내부에만 순환하도록 제한하는 패턴.
+          <em>의도적</em> 포커스 트랩은 모달에서 필수이며, <em>비의도적</em> 포커스 트랩은 접근성 오류다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Skip Link</div>
+        <div class="term-ko">건너뛰기 링크</div>
+        <div class="term-def">
+          반복되는 네비게이션을 건너뛰고 본문으로 바로 이동하는 숨겨진 링크.
+          WCAG 2.4.1(A) 기준을 충족하며 페이지 상단에 숨겨두다가 Tab 시 나타나도록 구현한다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Screen Reader</div>
+        <div class="term-ko">스크린 리더</div>
+        <div class="term-def">
+          화면 콘텐츠를 음성이나 점자로 변환해 주는 보조 기술.
+          대표 도구: macOS VoiceOver, NVDA(Windows, 무료), TalkBack(Android).
+          시맨틱 HTML과 올바른 ARIA가 없으면 정보를 올바르게 전달하지 못한다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Keyboard Navigation</div>
+        <div class="term-ko">키보드 탐색</div>
+        <div class="term-def">
+          마우스 없이 Tab·Shift+Tab·Enter·Space·Arrow 키로만 모든 기능을 이용할 수 있어야 한다(WCAG 2.1 A).
+          커스텀 드롭다운·슬라이더·메뉴는 WAI-ARIA Authoring Practices의 키보드 패턴을 따른다.
+        </div>
+      </div>
+    </div>
+
+    <!-- === SECTION 6: 실무 체크리스트 === -->
+    <h2>6. 실무 리뷰 체크리스트</h2>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>기준</th>
+          <th>WCAG</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>일반 텍스트 대비율</td>
+          <td>4.5:1 이상</td>
+          <td><span class="level-badge level-aa">AA</span> 1.4.3</td>
+        </tr>
+        <tr>
+          <td>큰 텍스트 / UI 컴포넌트 대비율</td>
+          <td>3:1 이상</td>
+          <td><span class="level-badge level-aa">AA</span> 1.4.11</td>
+        </tr>
+        <tr>
+          <td>이미지 대체 텍스트</td>
+          <td><code>alt</code> 속성 제공 (장식 이미지는 <code>alt=""</code>)</td>
+          <td><span class="level-badge level-a">A</span> 1.1.1</td>
+        </tr>
+        <tr>
+          <td>포커스 가시성</td>
+          <td>아웃라인 또는 대체 스타일 유지</td>
+          <td><span class="level-badge level-aa">AA</span> 2.4.7</td>
+        </tr>
+        <tr>
+          <td>키보드 접근성</td>
+          <td>모든 기능 키보드로 사용 가능</td>
+          <td><span class="level-badge level-a">A</span> 2.1.1</td>
+        </tr>
+        <tr>
+          <td>오류 메시지</td>
+          <td>색상 외에 텍스트·아이콘 함께 제공</td>
+          <td><span class="level-badge level-a">A</span> 1.4.1</td>
+        </tr>
+        <tr>
+          <td>폼 레이블</td>
+          <td>모든 입력에 레이블 명시적 연결</td>
+          <td><span class="level-badge level-a">A</span> 1.3.1</td>
+        </tr>
+        <tr>
+          <td>건너뛰기 링크</td>
+          <td>페이지 상단에 Skip to main content 제공</td>
+          <td><span class="level-badge level-a">A</span> 2.4.1</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- === Primary source === -->
+    <div class="primary-source">
+      <div class="label">추천 1차 출처</div>
+      <a href="https://www.w3.org/WAI/WCAG21/quickref/" target="_blank" rel="noopener">
+        WCAG 2.1 Quick Reference — W3C WAI
+      </a>
+      <p style="margin-top:0.4rem; color:var(--color-text-muted);">
+        WCAG 성공 기준 전체 목록과 구현 기법을 필터링해 볼 수 있는 공식 레퍼런스.
+        ARIA 패턴은
+        <a href="https://www.w3.org/WAI/ARIA/apg/" target="_blank" rel="noopener">WAI-ARIA Authoring Practices Guide (APG)</a>를,
+        색상 대비 측정은
+        <a href="https://webaim.org/resources/contrastchecker/" target="_blank" rel="noopener">WebAIM Contrast Checker</a>를 활용하자.
+      </p>
+    </div>
+
+    <!-- === QUIZ === -->
+    <h2>7. 확인 퀴즈</h2>
+    <p style="font-size:0.9rem; color:var(--color-text-muted); margin-bottom:1.5rem;">
+      답을 보기 전에 먼저 스스로 생각해 보자.
+    </p>
+
+    <!-- Q1 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q1. WCAG의 4원칙을 나타내는 약어는 무엇인가?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. PEAR — Perceivable, Easy, Accessible, Readable</button></li>
+        <li><button onclick="answer(this, true)">B. POUR — Perceivable, Operable, Understandable, Robust</button></li>
+        <li><button onclick="answer(this, false)">C. PURE — Perceivable, Usable, Reliable, Extendable</button></li>
+        <li><button onclick="answer(this, false)">D. CORE — Comprehensive, Operable, Readable, Equitable</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q1"></p>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q2. 일반 텍스트의 색상 대비율 최솟값(WCAG AA 기준)은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. 2:1</button></li>
+        <li><button onclick="answer(this, false)">B. 3:1</button></li>
+        <li><button onclick="answer(this, true)">C. 4.5:1</button></li>
+        <li><button onclick="answer(this, false)">D. 7:1</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q2"></p>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q3. 아이콘 전용 버튼(텍스트 없는 버튼)에 접근성 레이블을 제공하는 올바른 ARIA 속성은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. <code>aria-role="label"</code></button></li>
+        <li><button onclick="answer(this, false)">B. <code>aria-title="닫기"</code></button></li>
+        <li><button onclick="answer(this, true)">C. <code>aria-label="닫기"</code></button></li>
+        <li><button onclick="answer(this, false)">D. <code>aria-text="닫기"</code></button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q3"></p>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q4. 모달 다이얼로그가 열렸을 때 Tab 키가 모달 내부 요소만 순환하도록 제한하는 것을 무엇이라 하는가?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. Skip Link</button></li>
+        <li><button onclick="answer(this, false)">B. Focus Visible</button></li>
+        <li><button onclick="answer(this, true)">C. Focus Trap</button></li>
+        <li><button onclick="answer(this, false)">D. Tab Index</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q4"></p>
+    </div>
+
+    <!-- Q5 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q5. "ARIA를 쓰기 전에 먼저 올바른 HTML 시맨틱 요소를 사용하라"는 원칙을 어떤 규칙이라고 부르는가?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. WCAG 2번째 규칙</button></li>
+        <li><button onclick="answer(this, true)">B. ARIA 첫 번째 규칙 (First Rule of ARIA)</button></li>
+        <li><button onclick="answer(this, false)">C. POUR 원칙</button></li>
+        <li><button onclick="answer(this, false)">D. Semantic HTML 원칙</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q5"></p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="lesson-nav">
+      <a href="0004-interaction-patterns.html">← Day 4 — 인터랙션 패턴</a>
+      <a href="0006-figma-handoff.html">Day 6 — 협업 툴 핸드오프 →</a>
+    </nav>
+
+    <!-- Ask teacher nudge -->
+    <div class="ask-teacher">
+      궁금한 점이 생겼나요? 에이전트에게 바로 물어보세요. 이 워크스페이스의 맥락을 유지한 채로 이어서 설명해 드립니다.
+    </div>
+
+  </div>
+
+  <script>
+    let answered = {};
+
+    function answer(btn, isCorrect) {
+      const li = btn.closest('li');
+      const options = li.closest('.quiz-options');
+      const section = li.closest('.quiz-section');
+      const feedbackId = section.querySelector('.quiz-feedback').id;
+
+      if (answered[feedbackId]) return;
+      answered[feedbackId] = true;
+
+      options.querySelectorAll('button').forEach(b => b.disabled = true);
+
+      const fb = document.getElementById(feedbackId);
+      if (isCorrect) {
+        btn.classList.add('correct');
+        fb.textContent = '정답입니다! ✓';
+        fb.className = 'quiz-feedback correct';
+      } else {
+        btn.classList.add('wrong');
+        fb.textContent = '오답입니다. 위 내용을 다시 읽고 정답을 찾아보세요.';
+        fb.className = 'quiz-feedback wrong';
+      }
+    }
+  </script>
+</body>
+</html>

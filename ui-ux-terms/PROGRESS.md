@@ -8,18 +8,18 @@
 | 2 | 2026-06-22 | 정보 구조(IA) — 네비게이션·사이트맵·카드 소팅 | [0002-information-architecture.html](lessons/0002-information-architecture.html) |
 | 3 | 2026-06-23 | 컴포넌트 시스템 — 디자인 시스템·원자 디자인·토큰 | [0003-component-systems.html](lessons/0003-component-systems.html) |
 | 4 | 2026-06-24 | 인터랙션 패턴 — 어포던스·마이크로인터랙션·피드백 | [0004-interaction-patterns.html](lessons/0004-interaction-patterns.html) |
+| 5 | 2026-06-25 | 접근성(a11y) — WCAG·ARIA·포커스 관리 | [0005-accessibility.html](lessons/0005-accessibility.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | 접근성(a11y) — WCAG·ARIA·포커스 관리 | WCAG, ARIA, Focus Management, Color Contrast, Screen Reader |
 | 6 | 협업 툴 — 피그마·제플린 핸드오프 용어 | Figma Handoff, Inspect Panel, Design Spec, Redline |
 | 7 | 사용자 조사 — 페르소나·사용자 여정·공감 지도 | Persona, User Journey Map, Empathy Map, Jobs-to-be-done |
 
 ## 현재 학습 위치
 
-**Day 4 완료** — Day 5 (접근성(a11y) — WCAG·ARIA·포커스 관리) 예정.
+**Day 5 완료** — Day 6 (협업 툴 — 피그마·제플린 핸드오프 용어) 예정.
 
 ## 습득한 핵심 개념
 
@@ -44,8 +44,14 @@
 - [x] Gestural Navigation (제스처 네비게이션) — Day 4
 - [x] Mapping (매핑) — Day 4
 - [x] Constraints (제약) — Day 4
-- [ ] WCAG — 예정 Day 5
-- [ ] ARIA — 예정 Day 5
+- [x] WCAG (Web Content Accessibility Guidelines) — Day 5
+- [x] POUR 원칙 (Perceivable·Operable·Understandable·Robust) — Day 5
+- [x] ARIA (Accessible Rich Internet Applications) — Day 5
+- [x] Color Contrast / 색상 대비 — Day 5
+- [x] Focus Management / 포커스 관리 — Day 5
+- [x] Screen Reader / 스크린 리더 — Day 5
+- [x] Focus Trap / 포커스 트랩 — Day 5
+- [x] Skip Link / 건너뛰기 링크 — Day 5
 - [ ] Figma Handoff — 예정 Day 6
 - [ ] Persona (페르소나) — 예정 Day 7
 - [ ] User Journey Map (사용자 여정 지도) — 예정 Day 7
