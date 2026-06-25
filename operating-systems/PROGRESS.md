@@ -7,13 +7,14 @@
 | 1 | 2026-06-22 | 운영체제란 무엇인가? — 핵심 역할, 커널·셸·시스템 콜, OS 유형 비교 | [0001-what-is-an-operating-system.html](lessons/0001-what-is-an-operating-system.html) |
 | 2 | 2026-06-22 | 프로세스와 PCB — 상태 전이, Process Control Block, 컨텍스트 스위치 | [0002-process-and-pcb.html](lessons/0002-process-and-pcb.html) |
 | 3 | 2026-06-23 | 스레드 — 스레드 vs 프로세스, 멀티스레딩, 커널 vs 사용자 레벨 스레드, 1:1/N:1/M:N 모델 | [0003-threads.html](lessons/0003-threads.html) |
+| 4 | 2026-06-24 | CPU 스케줄링 — FCFS, SJF, Round-Robin, 우선순위 스케줄링, 성능 지표, 선점 vs 비선점 | [0004-cpu-scheduling.html](lessons/0004-cpu-scheduling.html) |
+| 5 | 2026-06-25 | 프로세스 동기화 기초 — 경쟁 조건, 임계 구역, 뮤텍스, 세마포어 | [0005-process-synchronization.html](lessons/0005-process-synchronization.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | CPU 스케줄링 | FCFS, SJF, Round-Robin, 우선순위 스케줄링 |
-| 5 | 프로세스 동기화 기초 | 경쟁 조건, 임계 구역, 뮤텍스, 세마포어 |
+| 6 | 교착 상태 (Deadlock) | 발생 조건, 예방·회피·탐지·회복 |
 | 6 | 교착 상태 (Deadlock) | 발생 조건, 예방·회피·탐지·회복 |
 | 7 | 메모리 관리 기초 | 주소 바인딩, 연속 할당, 단편화 |
 | 8 | 가상 메모리와 페이징 | 페이지 테이블, TLB, 요구 페이징 |
@@ -27,7 +28,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — 다음: Day 4 CPU 스케줄링
+**Day 5 완료** — 다음: Day 6 교착 상태 (Deadlock)
 
 ## 습득한 핵심 개념
 
@@ -37,8 +38,9 @@
 - [x] OS 유형: 배치처리, 시분할, 실시간, 분산 (Day 1)
 - [x] 프로세스 상태 전이 및 PCB (Day 2)
 - [x] 스레드와 멀티스레딩 모델 (Day 3)
-- [ ] CPU 스케줄링 알고리즘 (예정 Day 4)
-- [ ] 세마포어 · 뮤텍스 (예정 Day 5)
+- [x] CPU 스케줄링 알고리즘 (Day 4)
+- [x] 세마포어 · 뮤텍스 (Day 5)
+- [x] 경쟁 조건 · 임계 구역 (Day 5)
 - [ ] 교착 상태 4가지 발생 조건 (예정 Day 6)
 - [ ] 가상 메모리 · 페이징 (예정 Day 7–9)
 - [ ] 파일 시스템 구조 (예정 Day 10–11)
