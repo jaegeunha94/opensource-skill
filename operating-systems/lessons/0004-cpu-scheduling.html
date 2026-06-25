@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 4 — CPU 스케줄링</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 4</span>
+  <strong>CPU 스케줄링 — FCFS, SJF, Round-Robin, 우선순위 스케줄링, 성능 지표</strong>
+  <span class="lesson-date">· 2026-06-24</span>
+</div>
+
+<h1>CPU 스케줄링</h1>
+
+<div class="progress-section">
+  <h3>학습 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 27%"></div>
+  </div>
+  <span class="progress-label">전체 커리큘럼의 약 27% 완료 · Day 4 / 15</span>
+</div>
+
+<h2>오늘 배울 것</h2>
+<ul>
+  <li>CPU 스케줄링이 왜 필요한지 설명할 수 있다</li>
+  <li>성능 지표(대기 시간, 반환 시간, 응답 시간, 처리량)를 계산할 수 있다</li>
+  <li>FCFS, SJF, Round-Robin, 우선순위 스케줄링의 동작 방식을 비교할 수 있다</li>
+  <li>선점형 vs 비선점형 스케줄링의 차이를 구분할 수 있다</li>
+  <li>호위 효과와 기아 문제를 설명하고 해결책을 말할 수 있다</li>
+</ul>
+
+<!-- ============================================================
+     섹션 1: CPU 스케줄링이란?
+     ============================================================ -->
+<h2>1. CPU 스케줄링이란?</h2>
+
+<p>
+  CPU는 한 번에 하나의 프로세스만 실행할 수 있습니다 (단일 코어 기준).
+  그런데 OS에는 수십 개의 프로세스가 동시에 존재합니다.
+  <strong>CPU 스케줄러(단기 스케줄러)</strong>는 <em>준비 큐(Ready Queue)</em>에 있는 프로세스 중
+  다음에 CPU를 받을 프로세스를 결정합니다.
+</p>
+
+<div class="callout">
+  <div class="callout-title">핵심 개념</div>
+  CPU 스케줄링 = "준비 상태의 여러 프로세스 중 누구에게 CPU를 줄 것인가?"를 결정하는 OS의 핵심 기능
+</div>
+
+<h3>스케줄링이 발생하는 시점</h3>
+<ul>
+  <li>프로세스가 실행(Running) → 대기(Waiting) 상태로 전환될 때 (I/O 요청)</li>
+  <li>프로세스가 실행(Running) → 준비(Ready) 상태로 전환될 때 (타임 슬라이스 만료, 인터럽트)</li>
+  <li>프로세스가 대기(Waiting) → 준비(Ready) 상태로 전환될 때 (I/O 완료)</li>
+  <li>프로세스가 종료될 때</li>
+</ul>
+
+<div class="callout warning">
+  <div class="callout-title">선점형 vs 비선점형</div>
+  <strong>비선점형(Non-preemptive)</strong>: CPU를 한 번 받으면 자발적으로 놓을 때(I/O, 종료)까지 계속 실행.<br>
+  <strong>선점형(Preemptive)</strong>: OS가 강제로 CPU를 빼앗아 다른 프로세스에게 줄 수 있음.
+  현대 OS(Linux, Windows)는 모두 선점형을 사용합니다.
+</div>
+
+<!-- ============================================================
+     섹션 2: 성능 지표
+     ============================================================ -->
+<h2>2. 성능 지표 (Scheduling Criteria)</h2>
+
+<p>스케줄링 알고리즘의 품질을 측정하는 지표입니다.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>지표</th>
+      <th>정의</th>
+      <th>목표</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>CPU 이용률 (Utilization)</strong></td>
+      <td>CPU가 실제로 작업에 사용된 비율</td>
+      <td>최대화</td>
+    </tr>
+    <tr>
+      <td><strong>처리량 (Throughput)</strong></td>
+      <td>단위 시간당 완료된 프로세스 수</td>
+      <td>최대화</td>
+    </tr>
+    <tr>
+      <td><strong>반환 시간 (Turnaround Time)</strong></td>
+      <td>프로세스 제출 ~ 완료까지 걸린 총 시간</td>
+      <td>최소화</td>
+    </tr>
+    <tr>
+      <td><strong>대기 시간 (Waiting Time)</strong></td>
+      <td>준비 큐에서 기다린 총 시간</td>
+      <td>최소화</td>
+    </tr>
+    <tr>
+      <td><strong>응답 시간 (Response Time)</strong></td>
+      <td>요청 제출 ~ 첫 번째 응답까지 걸린 시간</td>
+      <td>최소화</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">공식 기억법</div>
+  <strong>반환 시간</strong> = 완료 시간 − 도착 시간<br>
+  <strong>대기 시간</strong> = 반환 시간 − 실행 시간 (CPU 버스트 시간)<br>
+  <strong>응답 시간</strong> = 첫 번째 CPU 할당 시작 − 도착 시간
+</div>
+
+<!-- ============================================================
+     섹션 3: FCFS
+     ============================================================ -->
+<h2>3. FCFS — First-Come, First-Served</h2>
+
+<p>
+  <strong>도착 순서대로</strong> CPU를 할당하는 가장 단순한 알고리즘입니다.
+  비선점형이며, FIFO 큐로 구현합니다.
+</p>
+
+<h3>예시</h3>
+
+<table>
+  <thead>
+    <tr><th>프로세스</th><th>도착 시간</th><th>CPU 버스트</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>P1</td><td>0</td><td>24</td></tr>
+    <tr><td>P2</td><td>1</td><td>3</td></tr>
+    <tr><td>P3</td><td>2</td><td>3</td></tr>
+  </tbody>
+</table>
+
+<div class="diagram">
+  간트 차트 (Gantt Chart)
+  ┌──────────────────────────────┬─────┬─────┐
+  │             P1               │ P2  │ P3  │
+  └──────────────────────────────┴─────┴─────┘
+  0                             24   27   30
+
+  대기 시간: P1=0,  P2=23,  P3=25
+  평균 대기 시간 = (0 + 23 + 25) / 3 = 16ms
+</div>
+<p class="diagram-caption">그림 1: FCFS 스케줄링 — P1이 오래 걸려 P2, P3가 오래 기다림</p>
+
+<div class="callout warning">
+  <div class="callout-title">호위 효과 (Convoy Effect)</div>
+  CPU 버스트가 긴 프로세스 뒤에 짧은 프로세스들이 줄지어 기다리는 현상.
+  전체 평균 대기 시간이 크게 늘어납니다.
+  FCFS의 가장 큰 단점입니다.
+</div>
+
+<!-- ============================================================
+     섹션 4: SJF
+     ============================================================ -->
+<h2>4. SJF — Shortest-Job-First</h2>
+
+<p>
+  <strong>CPU 버스트가 가장 짧은</strong> 프로세스를 먼저 실행합니다.
+  이론적으로 평균 대기 시간을 최소화하는 최적 알고리즘입니다.
+</p>
+
+<h3>예시 (비선점형 SJF)</h3>
+
+<table>
+  <thead>
+    <tr><th>프로세스</th><th>도착 시간</th><th>CPU 버스트</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>P1</td><td>0</td><td>6</td></tr>
+    <tr><td>P2</td><td>2</td><td>8</td></tr>
+    <tr><td>P3</td><td>4</td><td>7</td></tr>
+    <tr><td>P4</td><td>5</td><td>3</td></tr>
+  </tbody>
+</table>
+
+<div class="diagram">
+  시간 0: 준비 큐 = [P1(6)]  → P1 실행
+  시간 6: 준비 큐 = [P2(8), P3(7), P4(3)] → 가장 짧은 P4 실행
+  시간 9: 준비 큐 = [P2(8), P3(7)] → P3 실행
+  시간 16: 준비 큐 = [P2(8)] → P2 실행
+
+  ┌──────┬───┬───────┬────────┐
+  │  P1  │P4 │  P3   │   P2   │
+  └──────┴───┴───────┴────────┘
+  0      6   9      16       24
+
+  대기 시간: P1=0, P2=16, P3=9, P4=4
+  평균 대기 시간 = (0 + 16 + 9 + 4) / 4 = 7.25ms (FCFS보다 훨씬 짧음!)
+</div>
+<p class="diagram-caption">그림 2: 비선점형 SJF — 짧은 작업을 우선하여 평균 대기 시간 감소</p>
+
+<div class="callout warning">
+  <div class="callout-title">SJF의 한계 — 기아 문제 (Starvation)</div>
+  CPU 버스트가 짧은 프로세스가 계속 들어오면, 버스트가 긴 프로세스는 영원히 CPU를 받지 못할 수 있습니다.<br>
+  해결책: <strong>에이징(Aging)</strong> — 오래 기다린 프로세스의 우선순위를 점진적으로 높여줌.<br>
+  또한, 실제로는 다음 CPU 버스트 시간을 미리 알 수 없어 <strong>지수 평균 예측</strong>을 사용합니다.
+</div>
+
+<h3>선점형 SJF — SRTF (Shortest Remaining Time First)</h3>
+
+<p>
+  새 프로세스가 도착할 때마다 남은 시간을 비교해 더 짧은 프로세스가 있으면 선점합니다.
+  평균 대기 시간은 더 줄지만 컨텍스트 스위치 오버헤드가 증가합니다.
+</p>
+
+<!-- ============================================================
+     섹션 5: Round-Robin
+     ============================================================ -->
+<h2>5. Round-Robin (RR)</h2>
+
+<p>
+  각 프로세스에 일정한 <strong>타임 퀀텀(Time Quantum, q)</strong>만큼 CPU를 순서대로 할당합니다.
+  타임 퀀텀이 끝나면 현재 프로세스를 준비 큐 맨 뒤로 보내고 다음 프로세스를 실행합니다.
+  <strong>선점형</strong>이며, 현대 OS의 기본 스케줄링 방식입니다.
+</p>
+
+<h3>예시 (q = 4ms)</h3>
+
+<table>
+  <thead>
+    <tr><th>프로세스</th><th>도착 시간</th><th>CPU 버스트</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>P1</td><td>0</td><td>24</td></tr>
+    <tr><td>P2</td><td>0</td><td>3</td></tr>
+    <tr><td>P3</td><td>0</td><td>3</td></tr>
+  </tbody>
+</table>
+
+<div class="diagram">
+  ┌────┬───┬───┬────┬────┬────┬────┐
+  │ P1 │P2 │P3 │ P1 │ P1 │ P1 │ P1 │
+  └────┴───┴───┴────┴────┴────┴────┘
+  0    4   7  10   14   18   22   26 (단, P2·P3는 3ms 후 완료)
+
+  대기 시간: P1 = (4+4+4+4+4) = 20 (남은 시간이 있어 다시 큐로)
+             P2 = 4ms,  P3 = 7ms
+  평균 대기 시간 = (20 + 4 + 7) / 3 ≈ 10.3ms
+</div>
+<p class="diagram-caption">그림 3: Round-Robin (q=4) — 응답성이 좋지만 컨텍스트 스위치 비용 발생</p>
+
+<h3>타임 퀀텀 크기의 영향</h3>
+
+<table>
+  <thead>
+    <tr><th>타임 퀀텀</th><th>특성</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>매우 작음 (→ 0)</td>
+      <td>프로세서 공유처럼 느껴지지만, 컨텍스트 스위치 오버헤드가 폭증</td>
+    </tr>
+    <tr>
+      <td>매우 큼 (→ ∞)</td>
+      <td>사실상 FCFS와 동일해져 응답성 저하</td>
+    </tr>
+    <tr>
+      <td>적정 크기 (일반적으로 10~100ms)</td>
+      <td>응답성과 효율성의 균형. 컨텍스트 스위치는 전체 시간의 10% 미만 권장</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ============================================================
+     섹션 6: 우선순위 스케줄링
+     ============================================================ -->
+<h2>6. 우선순위 스케줄링 (Priority Scheduling)</h2>
+
+<p>
+  각 프로세스에 <strong>우선순위 번호</strong>를 부여하고, 가장 높은 우선순위를 가진 프로세스를 먼저 실행합니다.
+  (관례상 낮은 숫자 = 높은 우선순위인 경우가 많음)
+  선점형 또는 비선점형으로 구현할 수 있습니다.
+</p>
+
+<table>
+  <thead>
+    <tr><th>프로세스</th><th>CPU 버스트</th><th>우선순위</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>P1</td><td>10</td><td>3</td></tr>
+    <tr><td>P2</td><td>1</td><td>1 (가장 높음)</td></tr>
+    <tr><td>P3</td><td>2</td><td>4</td></tr>
+    <tr><td>P4</td><td>1</td><td>5 (가장 낮음)</td></tr>
+    <tr><td>P5</td><td>5</td><td>2</td></tr>
+  </tbody>
+</table>
+
+<div class="diagram">
+  실행 순서 (비선점형): P2 → P5 → P1 → P3 → P4
+  ┌───┬─────┬──────────┬────┬───┐
+  │P2 │ P5  │    P1    │ P3 │P4 │
+  └───┴─────┴──────────┴────┴───┘
+  0   1     6         16  18  19
+
+  평균 대기 시간 = (6 + 0 + 16 + 18 + 1) / 5 = 8.2ms
+</div>
+<p class="diagram-caption">그림 4: 우선순위 스케줄링 — 우선순위 높은 순으로 실행</p>
+
+<div class="callout warning">
+  <div class="callout-title">기아 문제 (Starvation) & 에이징 (Aging)</div>
+  우선순위가 낮은 프로세스는 높은 우선순위 프로세스가 계속 들어오면 영원히 실행되지 못합니다.<br>
+  <strong>에이징</strong>: 대기 시간이 길어질수록 우선순위를 점진적으로 높여 기아를 방지합니다.
+  예: 15분마다 우선순위를 1씩 증가. Linux CFS는 가상 런타임(vruntime)으로 이 문제를 해결합니다.
+</div>
+
+<!-- ============================================================
+     섹션 7: 알고리즘 비교
+     ============================================================ -->
+<h2>7. 알고리즘 비교 요약</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>알고리즘</th>
+      <th>선점형</th>
+      <th>평균 대기</th>
+      <th>응답성</th>
+      <th>주요 문제</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>FCFS</strong></td>
+      <td>비선점</td>
+      <td>나쁨</td>
+      <td>나쁨</td>
+      <td>호위 효과</td>
+    </tr>
+    <tr>
+      <td><strong>SJF (비선점)</strong></td>
+      <td>비선점</td>
+      <td>최소 (이론)</td>
+      <td>보통</td>
+      <td>기아, 버스트 시간 예측 불가</td>
+    </tr>
+    <tr>
+      <td><strong>SRTF (선점 SJF)</strong></td>
+      <td>선점</td>
+      <td>최소 (이론)</td>
+      <td>좋음</td>
+      <td>기아, 컨텍스트 스위치 오버헤드</td>
+    </tr>
+    <tr>
+      <td><strong>Round-Robin</strong></td>
+      <td>선점</td>
+      <td>보통</td>
+      <td>매우 좋음</td>
+      <td>타임 퀀텀 크기 결정 어려움</td>
+    </tr>
+    <tr>
+      <td><strong>우선순위</strong></td>
+      <td>선점/비선점</td>
+      <td>보통</td>
+      <td>보통</td>
+      <td>기아 (에이징으로 해결)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">실제 OS는 다단계 큐를 사용</div>
+  실제 OS는 단일 알고리즘이 아닌 <strong>다단계 피드백 큐(Multilevel Feedback Queue)</strong>를 사용합니다.
+  예: CPU 버스트가 짧은 프로세스는 높은 우선순위 큐로, 긴 프로세스는 낮은 우선순위 큐로 내려보냅니다.
+  Linux의 CFS(Completely Fair Scheduler)는 Red-Black Tree와 가상 런타임으로 공정성을 보장합니다.
+</div>
+
+<!-- ============================================================
+     퀴즈
+     ============================================================ -->
+<h2>확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. FCFS 스케줄링에서 CPU 버스트 시간이 긴 프로세스 뒤에 짧은 프로세스들이 줄지어 기다리는 현상을 무엇이라 하는가?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> 기아 현상 (Starvation)</label></li>
+    <li><label><input type="radio" name="q1" value="1"> 교착 상태 (Deadlock)</label></li>
+    <li><label><input type="radio" name="q1" value="2"> 호위 효과 (Convoy Effect)</label></li>
+    <li><label><input type="radio" name="q1" value="3"> 에이징 (Aging)</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. SJF 알고리즘에서 새 프로세스가 도착했을 때 현재 실행 중인 프로세스의 남은 시간보다 짧으면 선점하는 변형 알고리즘은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> FCFS</label></li>
+    <li><label><input type="radio" name="q2" value="1"> SRTF (Shortest Remaining Time First)</label></li>
+    <li><label><input type="radio" name="q2" value="2"> Round-Robin</label></li>
+    <li><label><input type="radio" name="q2" value="3"> 다단계 피드백 큐</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. Round-Robin에서 타임 퀀텀을 매우 크게 설정하면 어떤 알고리즘과 유사해지는가?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> SJF</label></li>
+    <li><label><input type="radio" name="q3" value="1"> FCFS</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 우선순위 스케줄링</label></li>
+    <li><label><input type="radio" name="q3" value="3"> SRTF</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. 우선순위 스케줄링에서 기아(Starvation) 문제를 해결하기 위한 기법은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> 에이징 (Aging) — 대기 시간이 길어질수록 우선순위를 높임</label></li>
+    <li><label><input type="radio" name="q4" value="1"> 선점 — 현재 실행 중인 프로세스를 강제로 중단</label></li>
+    <li><label><input type="radio" name="q4" value="2"> 타임 퀀텀 — 일정 시간마다 교체</label></li>
+    <li><label><input type="radio" name="q4" value="3"> 호위 효과 — 긴 프로세스를 먼저 실행</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q5">
+  <p class="quiz-question">Q5. P1(버스트=6ms), P2(버스트=2ms), P3(버스트=8ms)이 동시에 도착했을 때 SJF(비선점형)의 평균 대기 시간은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q5" value="0"> 6ms</label></li>
+    <li><label><input type="radio" name="q5" value="1"> 5ms</label></li>
+    <li><label><input type="radio" name="q5" value="2"> 3.33ms</label></li>
+    <li><label><input type="radio" name="q5" value="3"> 8ms</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================
+     1차 자료 추천
+     ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">오늘의 추천 1차 자료</div>
+  <strong>OSTEP Chapter 7 — Scheduling: Introduction</strong><br>
+  <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf" target="_blank">pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf</a><br>
+  <small>FCFS, SJF, RR을 간트 차트로 시각화하며 직접 계산하는 예제가 풍부합니다.
+  Chapter 8(Multi-Level Feedback)도 함께 읽으면 실제 OS 스케줄러의 동작 방식을 이해하는 데 도움이 됩니다.</small>
+</div>
+
+<!-- ============================================================
+     다음 레슨 예고
+     ============================================================ -->
+<h2>다음 레슨 예고</h2>
+<p>
+  <strong>Day 5 — 프로세스 동기화 기초</strong>: 여러 프로세스/스레드가 공유 데이터에 접근할 때 발생하는
+  경쟁 조건(Race Condition)과 임계 구역(Critical Section) 문제를 다룹니다.
+  뮤텍스(Mutex)와 세마포어(Semaphore)를 사용한 해결책을 배웁니다.
+</p>
+
+<div class="ask-teacher">
+  <strong>질문이 있으신가요?</strong> 간트 차트 계산법, 특정 알고리즘의 동작 방식, Linux CFS 내부 구조 등
+  궁금한 점이 있다면 언제든지 Claude에게 물어보세요.
+</div>
+
+<!-- ============================================================
+     Footer
+     ============================================================ -->
+<div class="lesson-footer">
+  운영체제 학습 워크스페이스 · <a href="../PROGRESS.md">학습 현황</a> · <a href="../RESOURCES.md">참고 자료</a>
+  <div class="lesson-nav">
+    <a href="0003-threads.html">← Day 3: 스레드</a>
+    <a href="0005-process-synchronization.html">다음 → Day 5: 프로세스 동기화</a>
+  </div>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 2, '호위 효과(Convoy Effect)는 CPU 버스트가 긴 프로세스가 앞에 있을 때 짧은 프로세스들이 오래 기다리는 현상입니다. FCFS의 가장 큰 단점으로, SJF나 RR로 해결할 수 있습니다.');
+  initQuiz('q2', 1, 'SRTF(Shortest Remaining Time First)는 선점형 SJF입니다. 새 프로세스가 도착할 때마다 현재 프로세스의 남은 실행 시간과 비교해, 더 짧은 프로세스에게 CPU를 넘깁니다.');
+  initQuiz('q3', 1, '타임 퀀텀을 무한대로 키우면 Round-Robin은 선착순(FCFS)과 동일해집니다. 첫 번째 프로세스가 타임아웃 없이 완료될 때까지 실행되기 때문입니다.');
+  initQuiz('q4', 0, '에이징(Aging)은 프로세스가 오래 대기할수록 우선순위를 점진적으로 높여 기아를 방지합니다. Linux CFS는 가상 런타임(vruntime)을 사용해 실행 시간이 적은 프로세스에 더 높은 우선순위를 자동으로 부여합니다.');
+  initQuiz('q5', 2, 'SJF 실행 순서: P2(2ms) → P1(6ms) → P3(8ms). 대기 시간: P2=0, P1=2, P3=8. 평균=(0+2+8)/3=10/3≈3.33ms. 비교: FCFS(P1→P2→P3)라면 평균=(0+6+8)/3≈4.67ms로 더 높습니다.');
+</script>
+
+</body>
+</html>
