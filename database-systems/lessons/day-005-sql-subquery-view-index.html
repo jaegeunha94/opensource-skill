@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — SQL 고급: 서브쿼리·뷰·인덱스</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 920px; margin: 0 auto; padding: 48px 24px 72px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.68; color: #202124; background: #fff; }
+    h1 { margin: 0 0 24px; font-size: 2rem; line-height: 1.25; }
+    h2 { margin-top: 40px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+    h3 { margin-top: 28px; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.95rem; }
+    th, td { border: 1px solid #d8dee4; padding: 8px 10px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 16px; background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 4px; }
+    blockquote { margin: 18px 0; padding: 2px 18px; border-left: 4px solid #d8dee4; color: #57606a; background: #f6f8fa; }
+    details { margin: 18px 0; padding: 12px 16px; border: 1px solid #d8dee4; border-radius: 6px; }
+    summary { cursor: pointer; font-weight: 600; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+    .back { margin-bottom: 28px; font-size: 0.95rem; }
+    .tip { background: #e8f0fe; border-left: 4px solid #0b57d0; padding: 2px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; }
+    .warn { background: #fef7e0; border-left: 4px solid #e37400; padding: 2px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; }
+    .diagram { background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; padding: 20px; margin: 18px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.88em; line-height: 1.5; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 데이터베이스 학습 목록</a></nav>
+<h1>Day 5 — SQL 고급: 서브쿼리·뷰·인덱스</h1>
+<p><strong>날짜</strong>: 2026-06-25</p>
+<p><strong>소요 시간</strong>: 약 75분</p>
+<p><strong>선행 조건</strong>: <a href="./day-004-sql-join-aggregate.html">Day 4 — SQL 중급: JOIN &amp; 집계</a></p>
+<hr>
+
+<h2>학습 목표</h2>
+<p>이 레슨을 마치면 다음을 할 수 있다:</p>
+<ol>
+  <li>스칼라·행·테이블 서브쿼리를 구분하고 적절히 사용할 수 있다</li>
+  <li>상관 서브쿼리(Correlated Subquery)의 동작 원리를 설명하고 작성할 수 있다</li>
+  <li><code>EXISTS</code> / <code>NOT EXISTS</code>로 존재 여부를 검사할 수 있다</li>
+  <li><code>CREATE VIEW</code>로 뷰를 정의하고 재사용할 수 있다</li>
+  <li><code>CREATE INDEX</code>로 인덱스를 생성하고 성능 개선 원리를 이해할 수 있다</li>
+</ol>
+<hr>
+
+<h2>1. 실습용 스키마</h2>
+<p>Day 2~4에서 사용한 <code>departments</code>·<code>employees</code> 테이블을 계속 활용한다. 데이터가 없다면 아래 스크립트를 실행한다.</p>
+
+<pre><code>-- departments
+CREATE TABLE departments (
+  dept_id   INT PRIMARY KEY,
+  dept_name VARCHAR(50) NOT NULL
+);
+
+-- employees
+CREATE TABLE employees (
+  emp_id    INT PRIMARY KEY,
+  name      VARCHAR(50) NOT NULL,
+  dept_id   INT REFERENCES departments(dept_id),
+  salary    NUMERIC(10, 0),
+  hire_date DATE
+);
+
+INSERT INTO departments VALUES (1,'개발팀'),(2,'마케팅팀'),(3,'인사팀'),(4,'기획팀');
+INSERT INTO employees VALUES
+  (101,'김철수',1,6000000,'2022-03-15'),
+  (102,'이영희',1,7500000,'2021-07-01'),
+  (103,'박민준',2,5500000,'2023-01-10'),
+  (104,'최수진',3,6200000,'2020-09-20'),
+  (105,'정도윤',2,5000000,'2024-02-28'),
+  (106,'한지민',NULL,6800000,'2025-01-05');</code></pre>
+<hr>
+
+<h2>2. 서브쿼리(Subquery)</h2>
+<p>서브쿼리는 다른 SQL 문 안에 중첩된 <code>SELECT</code> 문이다. 결과 형태에 따라 세 종류로 구분한다.</p>
+
+<table>
+  <thead>
+    <tr><th>종류</th><th>반환 값</th><th>위치</th><th>예시 상황</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>스칼라(Scalar)</strong></td>
+      <td>단일 행·단일 열 (값 1개)</td>
+      <td>SELECT·WHERE·HAVING</td>
+      <td>전체 평균 급여를 비교 기준으로 사용</td>
+    </tr>
+    <tr>
+      <td><strong>행(Row)</strong></td>
+      <td>단일 행·여러 열</td>
+      <td>WHERE + 행 비교</td>
+      <td>특정 직원과 동일한 (부서, 급여)인 직원 검색</td>
+    </tr>
+    <tr>
+      <td><strong>테이블(Table)</strong></td>
+      <td>여러 행·여러 열</td>
+      <td>FROM (인라인 뷰), IN·ANY·ALL</td>
+      <td>부서별 평균 급여 결과를 다시 JOIN</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>2-1. 스칼라 서브쿼리</h3>
+<p>전체 평균 급여보다 높은 직원을 조회한다.</p>
+
+<pre><code>-- 전체 직원 평균 급여보다 높은 직원
+SELECT name, salary
+FROM   employees
+WHERE  salary > (SELECT AVG(salary) FROM employees);
+
+-- 결과: 이영희(7,500,000), 한지민(6,800,000)</code></pre>
+
+<div class="tip">
+  <p><strong>포인트</strong>: 스칼라 서브쿼리는 반드시 행 1개, 열 1개를 반환해야 한다. 여러 행이 반환되면 오류가 발생한다.</p>
+</div>
+
+<h3>2-2. IN 서브쿼리</h3>
+<p>서브쿼리 결과 목록 안에 값이 존재하는지 확인한다.</p>
+
+<pre><code>-- 직원이 한 명 이상 있는 부서 이름 조회
+SELECT dept_name
+FROM   departments
+WHERE  dept_id IN (
+  SELECT DISTINCT dept_id
+  FROM   employees
+  WHERE  dept_id IS NOT NULL
+);
+
+-- 결과: 개발팀, 마케팅팀, 인사팀  (기획팀 제외)</code></pre>
+
+<h3>2-3. 테이블 서브쿼리 (인라인 뷰)</h3>
+<p>FROM 절에 서브쿼리를 배치하면 임시 테이블처럼 사용할 수 있다. 반드시 별칭(alias)을 붙여야 한다.</p>
+
+<pre><code>-- 부서별 평균 급여를 인라인 뷰로 만들어 부서명과 JOIN
+SELECT d.dept_name, avg_info.avg_salary
+FROM   departments d
+JOIN   (
+  SELECT dept_id, ROUND(AVG(salary)) AS avg_salary
+  FROM   employees
+  WHERE  dept_id IS NOT NULL
+  GROUP BY dept_id
+) AS avg_info ON d.dept_id = avg_info.dept_id;
+
+-- 결과 예시
+-- 개발팀    | 6,750,000
+-- 마케팅팀  | 5,250,000
+-- 인사팀    | 6,200,000</code></pre>
+<hr>
+
+<h2>3. 상관 서브쿼리(Correlated Subquery)</h2>
+<p>상관 서브쿼리는 외부 쿼리의 현재 행을 참조하는 서브쿼리다. 외부 행마다 한 번씩 실행되므로 일반 서브쿼리보다 느릴 수 있다.</p>
+
+<div class="diagram">
+외부 쿼리가 employees 행을 하나씩 처리할 때마다
+  → 내부 서브쿼리가 현재 행의 dept_id를 사용해 실행
+  → 내부 결과로 조건을 평가
+  → 조건 통과 시 외부 결과에 포함</div>
+
+<h3>3-1. 자신의 부서 평균보다 높은 급여를 받는 직원</h3>
+
+<pre><code>SELECT e.name, e.salary, e.dept_id
+FROM   employees e
+WHERE  e.salary > (
+  SELECT AVG(e2.salary)
+  FROM   employees e2
+  WHERE  e2.dept_id = e.dept_id   -- 외부 쿼리의 e.dept_id 참조
+);
+
+-- 결과: 이영희(개발팀, 7,500,000), 한지민(NULL — 부서 없으므로 NULL 비교 → 제외)</code></pre>
+
+<div class="warn">
+  <p><strong>주의</strong>: <code>e.dept_id</code>가 <code>NULL</code>인 행은 서브쿼리 내 <code>WHERE dept_id = NULL</code>이 항상 거짓이므로 비교 결과가 <code>NULL</code>이 되어 조건을 통과하지 못한다.</p>
+</div>
+
+<h3>3-2. 부서 평균 급여와 각 직원 급여를 나란히 표시</h3>
+
+<pre><code>SELECT
+  e.name,
+  e.salary,
+  (SELECT ROUND(AVG(e2.salary))
+   FROM   employees e2
+   WHERE  e2.dept_id = e.dept_id) AS dept_avg
+FROM employees e;</code></pre>
+<hr>
+
+<h2>4. EXISTS / NOT EXISTS</h2>
+<p><code>EXISTS</code>는 서브쿼리가 한 행이라도 반환하면 <code>TRUE</code>를 돌려준다. 실제 값을 반환하지 않고 존재 여부만 확인하므로 <code>IN</code>보다 대규모 데이터에서 빠를 때가 많다.</p>
+
+<h3>4-1. EXISTS — 직원이 존재하는 부서</h3>
+
+<pre><code>SELECT dept_name
+FROM   departments d
+WHERE  EXISTS (
+  SELECT 1
+  FROM   employees e
+  WHERE  e.dept_id = d.dept_id
+);
+
+-- 결과: 개발팀, 마케팅팀, 인사팀</code></pre>
+
+<div class="tip">
+  <p><strong>관례</strong>: <code>EXISTS</code> 내부의 <code>SELECT</code>는 <code>SELECT 1</code> 또는 <code>SELECT *</code>로 쓴다. 어떤 값을 반환하느냐는 중요하지 않고 행의 존재 여부만 본다.</p>
+</div>
+
+<h3>4-2. NOT EXISTS — 직원이 없는 부서</h3>
+
+<pre><code>SELECT dept_name
+FROM   departments d
+WHERE  NOT EXISTS (
+  SELECT 1
+  FROM   employees e
+  WHERE  e.dept_id = d.dept_id
+);
+
+-- 결과: 기획팀</code></pre>
+
+<h3>4-3. IN vs EXISTS 비교</h3>
+
+<table>
+  <thead>
+    <tr><th>구분</th><th>IN</th><th>EXISTS</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>반환</td><td>서브쿼리 결과 목록과 일치 여부</td><td>행 존재 여부(TRUE/FALSE)</td></tr>
+    <tr><td>NULL 처리</td><td>결과에 NULL 포함 시 NOT IN 오작동 가능</td><td>NULL에 안전</td></tr>
+    <tr><td>성능</td><td>소규모에 적합</td><td>대규모 외부 테이블에 유리</td></tr>
+    <tr><td>가독성</td><td>단순 목록 비교 시 직관적</td><td>상관 서브쿼리와 결합 시 명확</td></tr>
+  </tbody>
+</table>
+<hr>
+
+<h2>5. 뷰(VIEW)</h2>
+<p>뷰는 이름이 붙은 저장된 <code>SELECT</code> 문이다. 실제 데이터를 복사하지 않고 쿼리를 재사용·단순화하는 가상 테이블이다.</p>
+
+<div class="diagram">
+[뷰 정의]                       [뷰 조회]
+CREATE VIEW v AS                SELECT * FROM v;
+  SELECT ...;                   ↓
+                          DB 내부에서 원본 쿼리를 실행
+                          → 항상 최신 데이터 반환</div>
+
+<h3>5-1. 기본 문법</h3>
+
+<pre><code>CREATE VIEW view_name AS
+  SELECT ...;
+
+-- 조회
+SELECT * FROM view_name;
+
+-- 삭제
+DROP VIEW view_name;
+
+-- 재정의 (PostgreSQL·MySQL)
+CREATE OR REPLACE VIEW view_name AS
+  SELECT ...;</code></pre>
+
+<h3>5-2. 부서별 직원 정보 뷰</h3>
+
+<pre><code>CREATE VIEW v_emp_dept AS
+  SELECT
+    e.emp_id,
+    e.name        AS emp_name,
+    e.salary,
+    d.dept_name
+  FROM employees e
+  LEFT JOIN departments d ON e.dept_id = d.dept_id;
+
+-- 이후 단순하게 조회
+SELECT dept_name, COUNT(*) AS headcount, AVG(salary) AS avg_salary
+FROM   v_emp_dept
+GROUP  BY dept_name;</code></pre>
+
+<h3>5-3. 뷰의 장점과 한계</h3>
+
+<table>
+  <thead>
+    <tr><th>장점</th><th>한계</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>복잡한 JOIN을 숨겨 쿼리 단순화</td><td>성능 개선 효과 없음 (매번 원본 실행)</td></tr>
+    <tr><td>접근 제어 — 민감 컬럼 제외한 뷰 노출</td><td>일부 DB에서 INSERT/UPDATE 불가</td></tr>
+    <tr><td>논리적 데이터 독립성 — 테이블 구조 변경 시 뷰만 수정</td><td>뷰에 ORDER BY·LIMIT 포함 시 중첩 주의</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <p><strong>Materialized View</strong>: PostgreSQL 등에서 지원하는 구체화 뷰는 결과를 물리적으로 저장해 읽기 성능을 크게 높인다. 데이터는 <code>REFRESH MATERIALIZED VIEW</code>로 갱신한다.</p>
+</div>
+<hr>
+
+<h2>6. 인덱스(INDEX)</h2>
+<p>인덱스는 특정 컬럼의 값을 정렬·구조화하여 저장한 별도 자료구조다. <code>WHERE</code>·<code>JOIN</code>·<code>ORDER BY</code> 성능을 극적으로 높일 수 있다.</p>
+
+<h3>6-1. 인덱스가 없을 때 vs 있을 때</h3>
+
+<div class="diagram">
+인덱스 없음 (Full Table Scan)
+employees 테이블 (100만 행)
+┌──────────────────────────────────────────┐
+│ 처음부터 끝까지 모든 행을 읽어 비교      │
+│ → 최악의 경우 100만 번 비교              │
+└──────────────────────────────────────────┘
+
+인덱스 있음 (Index Scan)
+employees.name 인덱스 (B-Tree)
+          [박]
+         /    \
+      [김]    [이]
+      /  \    /  \
+   [김철수][김민][이영희][이순신]
+→ 트리 순회만으로 O(log n) 탐색</div>
+
+<h3>6-2. 기본 문법</h3>
+
+<pre><code>-- 단일 컬럼 인덱스
+CREATE INDEX idx_emp_name ON employees(name);
+
+-- 복합 컬럼 인덱스 (왼쪽 컬럼부터 순서 중요)
+CREATE INDEX idx_emp_dept_salary ON employees(dept_id, salary);
+
+-- UNIQUE 인덱스
+CREATE UNIQUE INDEX idx_emp_email ON employees(email);
+
+-- 인덱스 삭제
+DROP INDEX idx_emp_name;          -- PostgreSQL
+DROP INDEX idx_emp_name ON employees;  -- MySQL</code></pre>
+
+<h3>6-3. EXPLAIN으로 실행 계획 확인</h3>
+<p><code>EXPLAIN</code>은 쿼리가 어떤 방식으로 실행될지 미리 보여준다. 인덱스 사용 여부를 검증할 때 필수다.</p>
+
+<pre><code>EXPLAIN SELECT * FROM employees WHERE name = '김철수';
+
+-- 인덱스 미생성 시
+-- Seq Scan on employees  (cost=0.00..12.10 rows=1 width=52)
+--   Filter: ((name)::text = '김철수')
+
+-- 인덱스 생성 후
+CREATE INDEX idx_emp_name ON employees(name);
+EXPLAIN SELECT * FROM employees WHERE name = '김철수';
+-- Index Scan using idx_emp_name on employees  (cost=0.15..8.17 rows=1 width=52)
+--   Index Cond: ((name)::text = '김철수')</code></pre>
+
+<h3>6-4. 인덱스가 효과 없는 상황</h3>
+
+<table>
+  <thead>
+    <tr><th>상황</th><th>예시</th><th>이유</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>함수 적용</td><td><code>WHERE UPPER(name) = 'KIM'</code></td><td>인덱스는 원본 값으로 구성됨</td></tr>
+    <tr><td>선행 와일드카드</td><td><code>WHERE name LIKE '%철수'</code></td><td>B-Tree는 접두사 기준으로 정렬됨</td></tr>
+    <tr><td>묵시적 형변환</td><td><code>WHERE emp_id = '101'</code> (INT 컬럼에 문자열)</td><td>타입 캐스팅이 인덱스를 무력화</td></tr>
+    <tr><td>복합 인덱스 왼쪽 컬럼 누락</td><td><code>idx(dept_id, salary)</code>에서 <code>WHERE salary = 5000000</code></td><td>선두 컬럼 없이 두 번째 컬럼만 사용</td></tr>
+    <tr><td>선택도가 낮은 컬럼</td><td>boolean 컬럼, 성별 등</td><td>전체 대비 매칭 행이 너무 많으면 Full Scan이 유리</td></tr>
+  </tbody>
+</table>
+
+<h3>6-5. 커버링 인덱스</h3>
+<p>쿼리에 필요한 모든 컬럼이 인덱스에 포함되면 테이블을 읽지 않고 인덱스만으로 결과를 반환한다. 이를 <strong>커버링 인덱스(Covering Index)</strong>라 한다.</p>
+
+<pre><code>CREATE INDEX idx_emp_dept_name ON employees(dept_id, name);
+
+-- dept_id와 name만 필요한 쿼리 → 테이블 접근 없이 인덱스만 사용
+SELECT name FROM employees WHERE dept_id = 1;</code></pre>
+
+<div class="tip">
+  <p><strong>PostgreSQL</strong>에서는 <code>INCLUDE</code> 절로 인덱스에 추가 컬럼을 포함할 수 있다: <code>CREATE INDEX idx ON t(a) INCLUDE (b, c);</code></p>
+</div>
+<hr>
+
+<h2>7. 종합 실습</h2>
+<p>서브쿼리, 뷰, 인덱스를 조합한 시나리오다.</p>
+
+<h3>시나리오: 부서 평균보다 높은 급여를 받는 직원 목록 뷰 생성</h3>
+
+<pre><code>-- 1단계: 뷰 생성
+CREATE VIEW v_high_earners AS
+  SELECT e.emp_id, e.name, e.salary, d.dept_name,
+         dept_avg.avg_salary
+  FROM   employees e
+  JOIN   departments d ON e.dept_id = d.dept_id
+  JOIN   (
+    SELECT dept_id, ROUND(AVG(salary)) AS avg_salary
+    FROM   employees
+    WHERE  dept_id IS NOT NULL
+    GROUP  BY dept_id
+  ) AS dept_avg ON e.dept_id = dept_avg.dept_id
+  WHERE  e.salary > dept_avg.avg_salary;
+
+-- 2단계: 인덱스로 성능 최적화
+CREATE INDEX idx_emp_dept ON employees(dept_id);
+CREATE INDEX idx_emp_salary ON employees(salary);
+
+-- 3단계: 뷰 조회
+SELECT dept_name, name, salary, avg_salary
+FROM   v_high_earners
+ORDER  BY dept_name, salary DESC;
+
+-- 기대 결과
+-- 개발팀  | 이영희 | 7,500,000 | 6,750,000</code></pre>
+
+<h3>퀴즈</h3>
+
+<details>
+  <summary>Q1. 급여가 전체 평균보다 낮은 직원의 이름과 급여를 구하시오.</summary>
+  <pre><code>SELECT name, salary
+FROM   employees
+WHERE  salary &lt; (SELECT AVG(salary) FROM employees);</code></pre>
+  <p>전체 평균 급여 ≈ 6,166,667 → 박민준(5,500,000), 정도윤(5,000,000)</p>
+</details>
+
+<details>
+  <summary>Q2. EXISTS를 사용해 직원이 없는 부서 이름을 조회하시오.</summary>
+  <pre><code>SELECT dept_name
+FROM   departments d
+WHERE  NOT EXISTS (
+  SELECT 1 FROM employees e WHERE e.dept_id = d.dept_id
+);</code></pre>
+  <p>결과: 기획팀</p>
+</details>
+
+<details>
+  <summary>Q3. 다음 중 인덱스가 사용되지 않는 쿼리는? (idx_emp_name 인덱스 존재 가정)</summary>
+  <ol type="a">
+    <li><code>WHERE name = '김철수'</code></li>
+    <li><code>WHERE name LIKE '김%'</code></li>
+    <li><code>WHERE name LIKE '%철수'</code></li>
+    <li><code>WHERE name &gt; '나'</code></li>
+  </ol>
+  <p><strong>정답: c.</strong> 선행 와일드카드(<code>%철수</code>)는 B-Tree 인덱스를 사용할 수 없다.</p>
+</details>
+<hr>
+
+<h2>8. 핵심 요약</h2>
+
+<table>
+  <thead>
+    <tr><th>개념</th><th>한 줄 요약</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>스칼라 서브쿼리</td><td>값 1개를 반환 → WHERE·SELECT 절에서 단일 값으로 사용</td></tr>
+    <tr><td>테이블 서브쿼리</td><td>FROM 절 인라인 뷰, IN·ANY·ALL 등과 결합</td></tr>
+    <tr><td>상관 서브쿼리</td><td>외부 쿼리 행마다 실행, 현재 행을 내부에서 참조</td></tr>
+    <tr><td>EXISTS</td><td>행 존재 여부만 확인, NULL에 안전, 대용량에 유리</td></tr>
+    <tr><td>VIEW</td><td>이름 붙인 SELECT, 논리적 추상화·접근 제어에 활용</td></tr>
+    <tr><td>INDEX</td><td>B-Tree 구조로 특정 컬럼 탐색 가속, 쓰기 오버헤드 발생</td></tr>
+    <tr><td>EXPLAIN</td><td>실행 계획 분석으로 인덱스 사용 여부 확인</td></tr>
+  </tbody>
+</table>
+
+<h2>다음 학습</h2>
+<p><a href="./index.html">← 목록으로 돌아가기</a></p>
+<p>Day 6: <strong>정규화</strong> — 함수적 종속, 1NF·2NF·3NF·BCNF, 역정규화</p>
+
+</body>
+</html>
