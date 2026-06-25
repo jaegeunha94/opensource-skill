@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — 응용 계층 : HTTP/HTTPS</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 920px; margin: 0 auto; padding: 48px 24px 72px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.68; color: #202124; background: #fff; }
+    h1 { margin: 0 0 24px; font-size: 2rem; line-height: 1.25; }
+    h2 { margin-top: 40px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+    h3 { margin-top: 28px; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.95rem; }
+    th, td { border: 1px solid #d8dee4; padding: 8px 10px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 16px; background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 4px; }
+    blockquote { margin: 18px 0; padding: 2px 18px; border-left: 4px solid #d8dee4; color: #57606a; background: #f6f8fa; }
+    details { margin: 18px 0; padding: 12px 16px; border: 1px solid #d8dee4; border-radius: 6px; }
+    summary { cursor: pointer; font-weight: 600; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+    .back { margin-bottom: 28px; font-size: 0.95rem; }
+    .quiz-section { margin-top: 48px; padding: 28px; background: #f0f7ff; border: 1px solid #c2d9f5; border-radius: 10px; }
+    .quiz-section h2 { border-top: none; margin-top: 0; padding-top: 0; }
+    .question { margin: 20px 0; }
+    .question p { font-weight: 600; margin-bottom: 10px; }
+    .options label { display: block; margin: 6px 0; cursor: pointer; padding: 6px 10px; border-radius: 6px; border: 1px solid #d8dee4; background: #fff; transition: background 0.15s; }
+    .options label:hover { background: #e8f0fe; }
+    .options input[type="radio"] { margin-right: 8px; }
+    .check-btn { margin-top: 14px; padding: 8px 22px; background: #0b57d0; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+    .check-btn:hover { background: #0943a8; }
+    .result { margin-top: 10px; font-weight: 600; min-height: 1.4em; }
+    .correct { color: #188038; }
+    .wrong { color: #c62828; }
+    .tip { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 2px 18px; margin: 18px 0; }
+    .nav-links { margin-top: 48px; display: flex; gap: 16px; flex-wrap: wrap; }
+    .nav-links a { padding: 8px 20px; border: 1px solid #d8dee4; border-radius: 6px; text-decoration: none; font-size: 0.95rem; }
+    .nav-links a:hover { background: #f6f8fa; }
+    /* TLS 핸드셰이크 시뮬레이터 */
+    .sim-box { margin-top: 24px; background: #fff; border: 1px solid #d8dee4; border-radius: 8px; padding: 20px; }
+    .sim-desc { margin-top: 14px; padding: 12px 16px; background: #f0f7ff; border-radius: 6px; font-size: 0.93rem; min-height: 3rem; }
+    .sim-btn { padding: 8px 18px; background: #0b57d0; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; margin: 4px; }
+    .sim-btn:hover { background: #0943a8; }
+    .sim-btn:disabled { background: #9aa0a6; cursor: default; }
+    .sim-step-label { display: inline-block; background: #0b57d0; color: #fff; border-radius: 50%; width: 24px; height: 24px; text-align: center; line-height: 24px; font-size: 0.82rem; font-weight: 700; margin-right: 8px; }
+    .tls-flow { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.88rem; line-height: 1.8; }
+    .tls-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+    .tls-row.active-row { background: #e8f0fe; border-radius: 6px; padding: 3px 6px; }
+    .tls-col { width: 120px; text-align: center; font-weight: 600; font-size: 0.85rem; }
+    .tls-msg { flex: 1; }
+    .tls-arr { color: #0b57d0; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.82rem; font-weight: 600; margin-right: 4px; }
+    .badge-get { background: #e8f0fe; color: #0b57d0; }
+    .badge-post { background: #fce8e6; color: #c62828; }
+    .badge-put { background: #e6f4ea; color: #188038; }
+    .badge-del { background: #fef3c7; color: #92400e; }
+    .badge-ok { background: #e6f4ea; color: #188038; }
+    .badge-4xx { background: #fce8e6; color: #c62828; }
+    .badge-5xx { background: #fef3c7; color: #92400e; }
+    .badge-3xx { background: #e8f0fe; color: #0b57d0; }
+    .cookie-demo { display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0; }
+    .cookie-box { flex: 1; min-width: 200px; padding: 14px; border: 1px solid #d8dee4; border-radius: 8px; background: #f6f8fa; }
+    .cookie-box h4 { margin: 0 0 8px; font-size: 0.9rem; }
+    .cookie-box pre { margin: 0; font-size: 0.8rem; }
+    .http-ver { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
+    .http-ver-card { flex: 1; min-width: 160px; padding: 14px; border: 1px solid #d8dee4; border-radius: 8px; }
+    .http-ver-card h4 { margin: 0 0 6px; color: #0b57d0; }
+    .http-ver-card p { margin: 0; font-size: 0.88rem; color: #57606a; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+  <h1>Day 6 — 응용 계층 : HTTP/HTTPS</h1>
+
+  <blockquote>
+    <p><strong>학습 목표</strong></p>
+    <p>- HTTP 요청·응답 구조와 주요 메서드(GET, POST, PUT, DELETE)를 설명할 수 있다.</p>
+    <p>- HTTP 상태 코드 계열(1xx~5xx)과 자주 쓰이는 코드의 의미를 안다.</p>
+    <p>- 쿠키와 세션의 차이를 구분하고 각각이 언제 쓰이는지 설명할 수 있다.</p>
+    <p>- TLS 핸드셰이크의 단계별 흐름(ClientHello → ServerHello → 키 교환 → 완료)을 순서대로 설명할 수 있다.</p>
+  </blockquote>
+
+  <hr>
+
+  <h2>1. HTTP란?</h2>
+
+  <p><strong>HTTP(HyperText Transfer Protocol)</strong>는 웹 브라우저와 서버 사이에서 데이터를 주고받는 응용 계층 프로토콜이다. <a href="./day-04-transport-tcp-udp.html">Day 4</a>에서 배운 TCP(포트 80) 위에서 동작하며, <strong>요청(Request) / 응답(Response)</strong> 모델을 따른다.</p>
+
+  <blockquote>
+    <p>HTTP는 <strong>무상태(Stateless)</strong> 프로토콜이다 — 서버는 각 요청을 독립적으로 처리하며, 이전 요청을 기억하지 않는다. 로그인 상태 유지 등 "기억"이 필요한 경우를 위해 쿠키와 세션이 등장한다.</p>
+  </blockquote>
+
+  <div class="http-ver">
+    <div class="http-ver-card">
+      <h4>HTTP/1.0</h4>
+      <p>요청마다 새 TCP 연결. 매번 핸드셰이크 비용 발생.</p>
+    </div>
+    <div class="http-ver-card">
+      <h4>HTTP/1.1</h4>
+      <p>지속 연결(Keep-Alive) 기본. 파이프라이닝 지원. 현재도 널리 사용.</p>
+    </div>
+    <div class="http-ver-card">
+      <h4>HTTP/2</h4>
+      <p>바이너리 프레이밍. 멀티플렉싱(한 연결에 여러 스트림). 헤더 압축(HPACK).</p>
+    </div>
+    <div class="http-ver-card">
+      <h4>HTTP/3</h4>
+      <p>UDP 기반 QUIC 사용. TCP Head-of-Line 차단 해소. 더 빠른 연결 수립.</p>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2>2. HTTP 요청 구조</h2>
+
+  <pre><code>GET /index.html HTTP/1.1          ← 요청 라인: 메서드, 경로, 버전
+Host: www.example.com             ← 헤더
+User-Agent: Mozilla/5.0
+Accept: text/html
+Accept-Encoding: gzip, deflate
+Connection: keep-alive
+                                  ← 빈 줄 (헤더 종료 구분자)
+[본문(Body) — GET은 보통 없음]</code></pre>
+
+  <h3>요청 구성요소</h3>
+
+  <table>
+    <thead><tr><th>구성요소</th><th>설명</th><th>예시</th></tr></thead>
+    <tbody>
+      <tr><td><strong>요청 라인</strong></td><td>메서드, URL 경로, HTTP 버전</td><td><code>GET /api/users HTTP/1.1</code></td></tr>
+      <tr><td><strong>헤더</strong></td><td>부가 메타데이터. 키:값 형태</td><td><code>Content-Type: application/json</code></td></tr>
+      <tr><td><strong>빈 줄</strong></td><td>헤더와 본문 구분. 필수</td><td></td></tr>
+      <tr><td><strong>본문(Body)</strong></td><td>전송 데이터. POST/PUT에서 사용</td><td><code>{"name": "Alice"}</code></td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>3. HTTP 응답 구조</h2>
+
+  <pre><code>HTTP/1.1 200 OK                   ← 상태 라인: 버전, 상태 코드, 메시지
+Date: Wed, 25 Jun 2026 09:00:00 GMT
+Content-Type: text/html; charset=UTF-8
+Content-Length: 1024
+Set-Cookie: session_id=abc123; HttpOnly; Secure
+                                  ← 빈 줄
+&lt;!DOCTYPE html&gt;                  ← 본문(응답 데이터)
+&lt;html&gt;…&lt;/html&gt;</code></pre>
+
+  <hr>
+
+  <h2>4. HTTP 메서드</h2>
+
+  <table>
+    <thead><tr><th>메서드</th><th>의미</th><th>본문</th><th>멱등성</th><th>주요 사용처</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-get">GET</span></td><td>리소스 조회</td><td>없음</td><td>예</td><td>웹 페이지 읽기, 데이터 검색</td></tr>
+      <tr><td><span class="badge badge-post">POST</span></td><td>리소스 생성</td><td>있음</td><td>아니오</td><td>회원 가입, 댓글 작성</td></tr>
+      <tr><td><span class="badge badge-put">PUT</span></td><td>리소스 전체 교체</td><td>있음</td><td>예</td><td>사용자 정보 전체 수정</td></tr>
+      <tr><td><span class="badge badge-put">PATCH</span></td><td>리소스 일부 수정</td><td>있음</td><td>조건부</td><td>이메일 주소만 변경</td></tr>
+      <tr><td><span class="badge badge-del">DELETE</span></td><td>리소스 삭제</td><td>없음(선택)</td><td>예</td><td>게시글 삭제</td></tr>
+      <tr><td><span class="badge badge-get">HEAD</span></td><td>헤더만 조회 (본문 없음)</td><td>없음</td><td>예</td><td>파일 크기 확인, 캐시 유효성 검사</td></tr>
+      <tr><td><span class="badge badge-get">OPTIONS</span></td><td>지원 메서드 조회</td><td>없음</td><td>예</td><td>CORS preflight 요청</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip">
+    <p><strong>멱등성(Idempotency)</strong> — 같은 요청을 여러 번 보내도 결과가 동일한 성질. GET·PUT·DELETE는 멱등. POST는 멱등하지 않음(요청마다 새 리소스가 생성될 수 있음). 네트워크 오류 시 재시도 로직 설계에 중요하다.</p>
+  </div>
+
+  <hr>
+
+  <h2>5. HTTP 상태 코드</h2>
+
+  <p>상태 코드는 3자리 숫자로 응답의 결과를 나타낸다. 첫 자리가 계열을 구분한다.</p>
+
+  <table>
+    <thead><tr><th>계열</th><th>의미</th><th>자주 쓰이는 코드</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>1xx</strong> 정보</td>
+        <td>요청 수신, 처리 중</td>
+        <td><code>100 Continue</code> — 요청 본문을 계속 보내도 됨</td>
+      </tr>
+      <tr>
+        <td><strong>2xx</strong> 성공</td>
+        <td>요청 정상 처리</td>
+        <td>
+          <code>200 OK</code> — 성공<br>
+          <code>201 Created</code> — 리소스 생성됨<br>
+          <code>204 No Content</code> — 성공, 응답 본문 없음
+        </td>
+      </tr>
+      <tr>
+        <td><strong>3xx</strong> 리다이렉션</td>
+        <td>다른 위치로 이동 필요</td>
+        <td>
+          <code>301 Moved Permanently</code> — URL 영구 변경<br>
+          <code>302 Found</code> — 임시 리다이렉트<br>
+          <code>304 Not Modified</code> — 캐시 사용 가능
+        </td>
+      </tr>
+      <tr>
+        <td><strong>4xx</strong> 클라이언트 오류</td>
+        <td>잘못된 요청</td>
+        <td>
+          <code>400 Bad Request</code> — 잘못된 문법<br>
+          <code>401 Unauthorized</code> — 인증 필요<br>
+          <code>403 Forbidden</code> — 권한 없음<br>
+          <code>404 Not Found</code> — 리소스 없음<br>
+          <code>429 Too Many Requests</code> — 요청 한도 초과
+        </td>
+      </tr>
+      <tr>
+        <td><strong>5xx</strong> 서버 오류</td>
+        <td>서버 측 문제</td>
+        <td>
+          <code>500 Internal Server Error</code> — 서버 내부 오류<br>
+          <code>502 Bad Gateway</code> — 게이트웨이 오류<br>
+          <code>503 Service Unavailable</code> — 서버 과부하/점검<br>
+          <code>504 Gateway Timeout</code> — 게이트웨이 타임아웃
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <details>
+    <summary>401 vs 403 — 헷갈리는 차이</summary>
+    <p style="margin-top:12px"><strong>401 Unauthorized</strong>는 이름과 달리 <em>인증(Authentication)</em> 문제다. "누군지 모르겠어 — 로그인해줘." 응답에 <code>WWW-Authenticate</code> 헤더를 포함해야 한다.</p>
+    <p><strong>403 Forbidden</strong>은 <em>인가(Authorization)</em> 문제다. "누군지는 알지만, 이 리소스에 접근할 권한이 없어." 로그인해도 허용되지 않는다는 뜻.</p>
+  </details>
+
+  <hr>
+
+  <h2>6. 쿠키(Cookie)와 세션(Session)</h2>
+
+  <p>HTTP가 무상태(Stateless)이므로 로그인 유지, 장바구니 등 "상태"가 필요한 웹 기능은 쿠키와 세션으로 구현한다.</p>
+
+  <h3>쿠키</h3>
+
+  <p>서버가 <code>Set-Cookie</code> 헤더로 클라이언트 브라우저에 작은 데이터를 저장한다. 이후 같은 서버로 요청 시 <code>Cookie</code> 헤더에 자동으로 포함된다.</p>
+
+  <div class="cookie-demo">
+    <div class="cookie-box">
+      <h4>서버 → 클라이언트</h4>
+      <pre>HTTP/1.1 200 OK
+Set-Cookie: session_id=abc123;
+  HttpOnly;
+  Secure;
+  SameSite=Lax;
+  Max-Age=3600</pre>
+    </div>
+    <div class="cookie-box">
+      <h4>클라이언트 → 서버 (이후 요청)</h4>
+      <pre>GET /profile HTTP/1.1
+Host: example.com
+Cookie: session_id=abc123</pre>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>쿠키 속성</th><th>의미</th></tr></thead>
+    <tbody>
+      <tr><td><code>HttpOnly</code></td><td>JavaScript(document.cookie)로 접근 불가 → XSS 공격 방지</td></tr>
+      <tr><td><code>Secure</code></td><td>HTTPS 연결에서만 전송 → 평문 노출 방지</td></tr>
+      <tr><td><code>SameSite</code></td><td>크로스사이트 요청 시 쿠키 전송 제어 → CSRF 공격 방지</td></tr>
+      <tr><td><code>Max-Age</code> / <code>Expires</code></td><td>쿠키 유효 기간. 없으면 브라우저 닫을 때 삭제(세션 쿠키)</td></tr>
+      <tr><td><code>Domain</code> / <code>Path</code></td><td>쿠키를 전송할 도메인/경로 범위 지정</td></tr>
+    </tbody>
+  </table>
+
+  <h3>세션</h3>
+
+  <p>서버 측에 사용자 상태를 저장하고, 클라이언트에는 세션 ID만 쿠키로 전달하는 방식이다.</p>
+
+  <pre><code>① 사용자 로그인 요청 (아이디·비밀번호)
+      │
+      ▼
+② 서버가 인증 후 메모리/DB에 세션 저장: { session_id: "abc123", user: "Alice", expires: ... }
+      │
+      ▼
+③ Set-Cookie: session_id=abc123; HttpOnly; Secure
+      │
+      ▼
+④ 이후 요청마다 Cookie: session_id=abc123 자동 포함
+      │
+      ▼
+⑤ 서버가 세션 저장소에서 "abc123" 찾아 사용자 상태 복원</code></pre>
+
+  <table>
+    <thead><tr><th></th><th>쿠키</th><th>세션</th></tr></thead>
+    <tbody>
+      <tr><td><strong>저장 위치</strong></td><td>클라이언트 브라우저</td><td>서버 (메모리, Redis, DB)</td></tr>
+      <tr><td><strong>보안</strong></td><td>클라이언트 조작 가능 (서명 없으면 위험)</td><td>ID만 노출, 실제 데이터는 서버에 안전하게 보관</td></tr>
+      <tr><td><strong>확장성</strong></td><td>서버 상태 없음 → 수평 확장 쉬움</td><td>서버 공유 세션 저장소 필요 → Redis 등 활용</td></tr>
+      <tr><td><strong>만료</strong></td><td>Max-Age/Expires 설정</td><td>서버에서 명시적 관리</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip">
+    <p><strong>JWT(JSON Web Token)</strong> — 세션 저장소 없이 서버가 서명한 토큰을 클라이언트에 발급하는 방식. 토큰 자체에 사용자 정보가 담겨 있어 서버 상태가 필요 없다(무상태 인증). 그러나 토큰 취소(revocation)가 어렵다는 트레이드오프가 있다.</p>
+  </div>
+
+  <hr>
+
+  <h2>7. HTTPS와 TLS</h2>
+
+  <p><strong>HTTPS(HTTP Secure)</strong>는 HTTP에 <strong>TLS(Transport Layer Security)</strong>를 더한 것이다. 전송 데이터를 암호화하여 도청·위변조·피싱을 방지한다. TCP 포트 443을 사용한다.</p>
+
+  <table>
+    <thead><tr><th>보호 목표</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><strong>기밀성(Confidentiality)</strong></td><td>대칭 암호화로 데이터를 암호화해 도청 방지</td></tr>
+      <tr><td><strong>무결성(Integrity)</strong></td><td>MAC(메시지 인증 코드)으로 데이터 변조 감지</td></tr>
+      <tr><td><strong>인증(Authentication)</strong></td><td>서버 인증서(X.509)로 접속 서버가 진짜임을 증명</td></tr>
+    </tbody>
+  </table>
+
+  <h3>TLS 버전</h3>
+
+  <table>
+    <thead><tr><th>버전</th><th>상태</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td>SSL 2.0 / 3.0</td><td>사용 금지</td><td>취약점(POODLE 등) 다수 발견</td></tr>
+      <tr><td>TLS 1.0 / 1.1</td><td>사용 지양</td><td>2021년 RFC 8996으로 공식 폐기</td></tr>
+      <tr><td>TLS 1.2</td><td>사용 중</td><td>현재 가장 널리 배포</td></tr>
+      <tr><td>TLS 1.3</td><td>권장</td><td>핸드셰이크 1-RTT, 불필요한 알고리즘 제거, 더 빠르고 안전</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <h2>8. TLS 핸드셰이크 (TLS 1.2 기준)</h2>
+
+  <p>TLS 핸드셰이크는 암호화 통신을 시작하기 전 <strong>암호 알고리즘 협상, 서버 인증, 세션 키 교환</strong>을 수행하는 과정이다.</p>
+
+  <h3>핸드셰이크 시뮬레이터</h3>
+
+  <div class="sim-box">
+    <p>단계별로 TLS 1.2 핸드셰이크를 따라가 보자.</p>
+    <div style="margin-bottom:14px">
+      <button class="sim-btn" id="tls-prev" onclick="tlsStep(-1)" disabled>◀ 이전</button>
+      <button class="sim-btn" id="tls-next" onclick="tlsStep(1)">다음 ▶</button>
+      <button class="sim-btn" onclick="tlsReset()" style="background:#57606a">처음부터</button>
+    </div>
+    <div class="tls-flow" id="tls-flow">
+      <div class="tls-row" id="tls-r0">
+        <div class="tls-col">클라이언트</div>
+        <div class="tls-msg"></div>
+        <div class="tls-col">서버</div>
+      </div>
+      <div class="tls-row" id="tls-r1">
+        <div class="tls-col"></div>
+        <div class="tls-msg"><span class="tls-arr">──── ClientHello ────────────────────►</span></div>
+        <div class="tls-col"></div>
+      </div>
+      <div class="tls-row" id="tls-r2">
+        <div class="tls-col"></div>
+        <div class="tls-msg"><span class="tls-arr">◄─── ServerHello ────────────────────</span></div>
+        <div class="tls-col"></div>
+      </div>
+      <div class="tls-row" id="tls-r3">
+        <div class="tls-col"></div>
+        <div class="tls-msg"><span class="tls-arr">◄─── Certificate (서버 인증서) ───────</span></div>
+        <div class="tls-col"></div>
+      </div>
+      <div class="tls-row" id="tls-r4">
+        <div class="tls-col"></div>
+        <div class="tls-msg"><span class="tls-arr">◄─── ServerHelloDone ────────────────</span></div>
+        <div class="tls-col"></div>
+      </div>
+      <div class="tls-row" id="tls-r5">
+        <div class="tls-col"></div>
+        <div class="tls-msg"><span class="tls-arr">──── ClientKeyExchange ──────────────►</span></div>
+        <div class="tls-col"></div>
+      </div>
+      <div class="tls-row" id="tls-r6">
+        <div class="tls-col"></div>
+        <div class="tls-msg"><span class="tls-arr">──── ChangeCipherSpec ───────────────►</span></div>
+        <div class="tls-col"></div>
+      </div>
+      <div class="tls-row" id="tls-r7">
+        <div class="tls-col"></div>
+        <div class="tls-msg"><span class="tls-arr">──── Finished (암호화) ──────────────►</span></div>
+        <div class="tls-col"></div>
+      </div>
+      <div class="tls-row" id="tls-r8">
+        <div class="tls-col"></div>
+        <div class="tls-msg"><span class="tls-arr">◄─── ChangeCipherSpec ───────────────</span></div>
+        <div class="tls-col"></div>
+      </div>
+      <div class="tls-row" id="tls-r9">
+        <div class="tls-col"></div>
+        <div class="tls-msg"><span class="tls-arr">◄─── Finished (암호화) ──────────────</span></div>
+        <div class="tls-col"></div>
+      </div>
+      <div class="tls-row" id="tls-r10">
+        <div class="tls-col"></div>
+        <div class="tls-msg" style="text-align:center; color:#188038; font-weight:600">🔒 암호화된 HTTP 데이터 교환</div>
+        <div class="tls-col"></div>
+      </div>
+    </div>
+    <div class="sim-desc" id="tls-desc">
+      TCP 연결이 수립된 직후 TLS 핸드셰이크가 시작된다. <strong>다음 ▶</strong>을 눌러 각 단계를 살펴보자.
+    </div>
+  </div>
+
+  <h3>핸드셰이크 단계 상세</h3>
+
+  <table>
+    <thead><tr><th>단계</th><th>메시지</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><code>ClientHello</code></td><td>클라이언트가 지원하는 TLS 버전, 암호 스위트(Cipher Suite) 목록, 랜덤값 전송</td></tr>
+      <tr><td>2</td><td><code>ServerHello</code></td><td>서버가 선택한 TLS 버전·암호 스위트, 서버 랜덤값 전송</td></tr>
+      <tr><td>3</td><td><code>Certificate</code></td><td>서버가 공개키가 포함된 X.509 인증서 전송. 클라이언트는 CA 체인으로 서버 신원 검증</td></tr>
+      <tr><td>4</td><td><code>ServerHelloDone</code></td><td>서버 협상 완료 신호</td></tr>
+      <tr><td>5</td><td><code>ClientKeyExchange</code></td><td>클라이언트가 Pre-Master Secret(RSA 암호화 또는 DH 공개값) 전송</td></tr>
+      <tr><td>6~7</td><td><code>ChangeCipherSpec + Finished</code></td><td>클라이언트: "이제 암호화 시작". Finished 메시지를 협상된 키로 암호화하여 전송</td></tr>
+      <tr><td>8~9</td><td><code>ChangeCipherSpec + Finished</code></td><td>서버도 동일하게 응답. 양쪽 모두 세션 키 도출 확인</td></tr>
+      <tr><td>10</td><td>암호화 HTTP</td><td>이후 HTTP 데이터는 대칭키(AES-GCM 등)로 암호화되어 전송</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip">
+    <p><strong>TLS 1.3의 개선</strong> — TLS 1.2는 핸드셰이크에 2-RTT가 필요하지만, TLS 1.3은 1-RTT로 단축했다(또는 세션 재개 시 0-RTT도 가능). 취약한 암호 알고리즘(RSA 키 교환, RC4, MD5 등)을 제거하고 Perfect Forward Secrecy를 필수화했다.</p>
+  </div>
+
+  <h3>인증서 체인 (Certificate Chain)</h3>
+
+  <pre><code>루트 CA (예: DigiCert 루트, OS·브라우저에 내장)
+  └── 중간 CA (예: DigiCert SHA2 Secure Server CA)
+        └── 서버 인증서 (example.com)
+              ├── 공개키 (서버의 RSA/ECDSA 공개키)
+              ├── 발급 도메인 (CN, SAN)
+              └── 서명 (중간 CA의 개인키로 서명)</code></pre>
+
+  <p>클라이언트는 서버 인증서 → 중간 CA → 루트 CA 순서로 신뢰 체인을 검증한다. 루트 CA는 OS·브라우저에 내장되어 있어 신뢰 앵커 역할을 한다.</p>
+
+  <hr>
+
+  <h2>9. HTTP vs HTTPS 전체 요청 흐름</h2>
+
+  <pre><code>HTTPS 요청: https://www.example.com/page
+
+① DNS 조회 (Day 5)
+   www.example.com → 93.184.216.34
+
+② TCP 3-way handshake (Day 4)
+   포트 443으로 연결
+
+③ TLS 핸드셰이크 (Day 6)
+   암호 스위트 협상 + 서버 인증 + 세션 키 교환
+
+④ HTTP 요청 (TLS 암호화)
+   GET /page HTTP/1.1
+   Host: www.example.com
+   Cookie: session_id=...
+
+⑤ HTTP 응답 (TLS 암호화)
+   HTTP/1.1 200 OK
+   Content-Type: text/html
+   Set-Cookie: ...
+   [HTML 본문]
+
+⑥ (재방문) 브라우저 쿠키 → 서버가 세션 복원</code></pre>
+
+  <hr>
+
+  <!-- 퀴즈 섹션 -->
+  <div class="quiz-section">
+    <h2>확인 퀴즈</h2>
+    <p>배운 내용을 확인해보자. 선택 후 <em>정답 확인</em>을 눌러라.</p>
+
+    <!-- Q1 -->
+    <div class="question" id="q1">
+      <p>1. HTTP가 "무상태(Stateless)" 프로토콜이라는 것의 의미는?</p>
+      <div class="options">
+        <label><input type="radio" name="q1" value="a"> 서버가 각 요청을 독립적으로 처리하며 이전 요청을 기억하지 않는다</label>
+        <label><input type="radio" name="q1" value="b"> 서버가 항상 200 OK만 응답한다</label>
+        <label><input type="radio" name="q1" value="c"> 클라이언트가 상태 코드를 무시한다</label>
+        <label><input type="radio" name="q1" value="d"> TCP 연결을 재사용하지 않는다</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer('q1','a')">정답 확인</button>
+      <p class="result" id="q1-result"></p>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question" id="q2">
+      <p>2. 다음 중 멱등성(Idempotency)이 없는 HTTP 메서드는?</p>
+      <div class="options">
+        <label><input type="radio" name="q2" value="a"> GET</label>
+        <label><input type="radio" name="q2" value="b"> PUT</label>
+        <label><input type="radio" name="q2" value="c"> DELETE</label>
+        <label><input type="radio" name="q2" value="d"> POST</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer('q2','d')">정답 확인</button>
+      <p class="result" id="q2-result"></p>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question" id="q3">
+      <p>3. HTTP 상태 코드 <code>301</code>의 의미는?</p>
+      <div class="options">
+        <label><input type="radio" name="q3" value="a"> 인증이 필요함</label>
+        <label><input type="radio" name="q3" value="b"> 요청한 리소스가 영구적으로 다른 URL로 이동됨</label>
+        <label><input type="radio" name="q3" value="c"> 서버 내부 오류</label>
+        <label><input type="radio" name="q3" value="d"> 요청 성공, 응답 본문 없음</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer('q3','b')">정답 확인</button>
+      <p class="result" id="q3-result"></p>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question" id="q4">
+      <p>4. 쿠키에 <code>HttpOnly</code> 속성을 설정하는 이유는?</p>
+      <div class="options">
+        <label><input type="radio" name="q4" value="a"> HTTPS에서만 전송되도록 강제하기 위해</label>
+        <label><input type="radio" name="q4" value="b"> JavaScript에서 쿠키에 접근하지 못하게 하여 XSS 공격을 방지하기 위해</label>
+        <label><input type="radio" name="q4" value="c"> 크로스사이트 요청 위조(CSRF)를 방지하기 위해</label>
+        <label><input type="radio" name="q4" value="d"> 쿠키 만료 기간을 무제한으로 설정하기 위해</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer('q4','b')">정답 확인</button>
+      <p class="result" id="q4-result"></p>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question" id="q5">
+      <p>5. TLS 핸드셰이크에서 서버가 자신의 신원을 증명하기 위해 전송하는 것은?</p>
+      <div class="options">
+        <label><input type="radio" name="q5" value="a"> 세션 ID</label>
+        <label><input type="radio" name="q5" value="b"> Pre-Master Secret</label>
+        <label><input type="radio" name="q5" value="c"> X.509 인증서 (공개키 포함)</label>
+        <label><input type="radio" name="q5" value="d"> 클라이언트의 쿠키</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer('q5','c')">정답 확인</button>
+      <p class="result" id="q5-result"></p>
+    </div>
+
+    <!-- Q6 -->
+    <div class="question" id="q6">
+      <p>6. HTTP/2가 HTTP/1.1 대비 성능을 향상시킨 핵심 기술은?</p>
+      <div class="options">
+        <label><input type="radio" name="q6" value="a"> UDP 전환으로 TCP 오버헤드 제거</label>
+        <label><input type="radio" name="q6" value="b"> 멀티플렉싱 — 한 TCP 연결에서 여러 요청·응답을 동시 처리</label>
+        <label><input type="radio" name="q6" value="c"> 쿠키 크기 제한 완화</label>
+        <label><input type="radio" name="q6" value="d"> 상태 코드 체계 변경</label>
+      </div>
+      <button class="check-btn" onclick="checkAnswer('q6','b')">정답 확인</button>
+      <p class="result" id="q6-result"></p>
+    </div>
+  </div>
+
+  <hr>
+
+  <h2>10. 오늘의 핵심 정리</h2>
+
+  <table>
+    <thead><tr><th>개념</th><th>한 줄 요약</th></tr></thead>
+    <tbody>
+      <tr><td>HTTP</td><td>무상태 요청/응답 프로토콜. TCP 80. 텍스트 기반.</td></tr>
+      <tr><td>HTTP 메서드</td><td>GET(조회), POST(생성), PUT(교체), PATCH(수정), DELETE(삭제). GET·PUT·DELETE는 멱등.</td></tr>
+      <tr><td>상태 코드</td><td>2xx 성공, 3xx 리다이렉트, 4xx 클라이언트 오류, 5xx 서버 오류.</td></tr>
+      <tr><td>쿠키</td><td>서버가 클라이언트에 저장하는 작은 데이터. HttpOnly·Secure·SameSite 속성으로 보안 강화.</td></tr>
+      <tr><td>세션</td><td>상태를 서버에 저장, 클라이언트엔 ID만 쿠키로 전달. 서버 측 보안이 높음.</td></tr>
+      <tr><td>HTTPS</td><td>HTTP + TLS. 기밀성·무결성·인증 세 가지를 보장. TCP 443.</td></tr>
+      <tr><td>TLS 핸드셰이크</td><td>ClientHello → ServerHello·인증서 → 키 교환 → ChangeCipherSpec·Finished. 이후 대칭키 암호화.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>추천 학습 자료</h2>
+
+  <ul>
+    <li><strong>교재</strong> — <em>Computer Networking: A Top-Down Approach</em>, Kurose &amp; Ross, Chapter 2.2 (HTTP)</li>
+    <li><strong>RFC</strong> — RFC 9110 (HTTP Semantics), RFC 8446 (TLS 1.3), RFC 6265 (쿠키)</li>
+    <li><strong>실습 명령어</strong>
+      <ul>
+        <li><code>curl -v https://www.example.com</code> — TLS 핸드셰이크 포함 상세 출력</li>
+        <li><code>curl -I https://www.example.com</code> — HTTP 응답 헤더만 확인 (HEAD 요청)</li>
+        <li><code>openssl s_client -connect www.example.com:443</code> — TLS 인증서 체인 확인</li>
+      </ul>
+    </li>
+    <li><strong>브라우저 DevTools</strong> — Network 탭에서 HTTP 요청·응답 헤더, 상태 코드, 타이밍(TTFB, TLS 포함) 직접 관찰</li>
+    <li><strong>Wireshark 필터</strong> — <code>tls</code>, <code>http</code> 필터로 핸드셰이크와 HTTP 패킷 분석</li>
+  </ul>
+
+  <blockquote>
+    <p><strong>다음 단계</strong> — Day 7에서는 <strong>네트워크 보안 기초</strong>를 다룬다. 방화벽·NAT·VPN 동작 원리, TLS/SSL 이후의 보안 위협과 방어 기법을 살펴본다.</p>
+    <p>이해가 안 가거나 궁금한 점이 있으면 언제든지 Claude에게 질문하라.</p>
+  </blockquote>
+
+  <div class="nav-links">
+    <a href="./day-05-application-dns-dhcp.html">← Day 5 — 응용 계층·DNS와 DHCP</a>
+    <a href="./index.html">목록으로</a>
+  </div>
+
+  <script>
+    /* 퀴즈 */
+    const EXPLANATIONS = {
+      q1: { correct: 'a', text: 'HTTP는 <strong>무상태(Stateless)</strong>라서 서버가 각 요청을 독립적으로 처리한다. "로그인 상태 유지"처럼 상태가 필요한 기능은 쿠키·세션으로 구현한다.' },
+      q2: { correct: 'd', text: '<strong>POST</strong>는 멱등하지 않다. 같은 요청을 두 번 보내면 두 개의 리소스가 생성될 수 있다. GET·PUT·DELETE는 같은 요청을 여러 번 보내도 결과가 동일하다(멱등).' },
+      q3: { correct: 'b', text: '<strong>301 Moved Permanently</strong>는 리소스가 영구적으로 새 URL로 이동했음을 뜻한다. 브라우저는 이 응답을 캐싱하고 이후 자동으로 새 URL로 이동한다. 302는 임시 이동.' },
+      q4: { correct: 'b', text: '<code>HttpOnly</code>는 JavaScript(<code>document.cookie</code>)에서 쿠키에 접근하지 못하도록 막아 <strong>XSS(Cross-Site Scripting)</strong> 공격으로부터 세션 쿠키를 보호한다. HTTPS 강제는 <code>Secure</code> 속성의 역할이다.' },
+      q5: { correct: 'c', text: 'TLS 핸드셰이크에서 서버는 <strong>X.509 인증서</strong>를 전송한다. 인증서에는 서버 공개키와 CA 서명이 포함되어 있어, 클라이언트가 신뢰 체인을 통해 서버 신원을 검증할 수 있다.' },
+      q6: { correct: 'b', text: 'HTTP/2의 핵심은 <strong>멀티플렉싱(Multiplexing)</strong>이다. 하나의 TCP 연결 안에서 여러 요청과 응답을 동시에 처리해 HTTP/1.1의 Head-of-Line 차단(HOL Blocking) 문제를 해결했다. (UDP 전환은 HTTP/3의 특징.)' }
+    };
+
+    function checkAnswer(qid, correct) {
+      const selected = document.querySelector(`input[name="${qid}"]:checked`);
+      const resultEl = document.getElementById(`${qid}-result`);
+      if (!selected) { resultEl.textContent = '선택지를 고르세요.'; resultEl.className = 'result'; return; }
+      const exp = EXPLANATIONS[qid];
+      if (selected.value === exp.correct) {
+        resultEl.innerHTML = '✓ 정답! ' + exp.text;
+        resultEl.className = 'result correct';
+      } else {
+        resultEl.innerHTML = '✗ 오답. ' + exp.text;
+        resultEl.className = 'result wrong';
+      }
+    }
+
+    /* TLS 핸드셰이크 시뮬레이터 */
+    let tlsCurrent = 0;
+    const TLS_ROWS = 11;
+    const TLS_DESCS = [
+      'TCP 연결이 수립된 직후 TLS 핸드셰이크가 시작된다. <strong>다음 ▶</strong>을 눌러 각 단계를 살펴보자.',
+      '<span class="sim-step-label">1</span><strong>ClientHello</strong> — 클라이언트가 협상을 시작한다. 지원하는 TLS 버전(예: TLS 1.2, 1.3), 암호 스위트 목록(예: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256), 클라이언트 랜덤값(32바이트)을 서버에 전송한다.',
+      '<span class="sim-step-label">2</span><strong>ServerHello</strong> — 서버가 클라이언트 제안에서 가장 강력한 암호 스위트를 선택한다. 선택된 버전·암호 스위트와 서버 랜덤값을 응답한다.',
+      '<span class="sim-step-label">3</span><strong>Certificate</strong> — 서버가 X.509 인증서를 전송한다. 인증서에는 서버 공개키와 CA(인증기관) 서명이 포함된다. 클라이언트는 신뢰 체인(서버 인증서 → 중간 CA → 루트 CA)을 검증해 서버 신원을 확인한다.',
+      '<span class="sim-step-label">4</span><strong>ServerHelloDone</strong> — 서버가 협상 메시지 전송을 완료했음을 알린다.',
+      '<span class="sim-step-label">5</span><strong>ClientKeyExchange</strong> — 클라이언트가 Pre-Master Secret을 서버 공개키로 암호화하여 전송한다(RSA 방식). 또는 ECDHE 방식이면 클라이언트의 DH 공개값을 전송한다. 양쪽 모두 이 값으로 Master Secret(세션 키)을 독립적으로 계산한다.',
+      '<span class="sim-step-label">6</span><strong>ChangeCipherSpec (클라이언트)</strong> — "이제부터 협상된 암호화 알고리즘과 세션 키를 사용하겠다"는 신호. 이 메시지 이후 모든 데이터가 암호화된다.',
+      '<span class="sim-step-label">7</span><strong>Finished (클라이언트, 암호화)</strong> — 핸드셰이크 메시지 전체의 해시값을 세션 키로 암호화하여 전송한다. 서버는 이를 검증해 핸드셰이크가 변조되지 않았음을 확인한다.',
+      '<span class="sim-step-label">8</span><strong>ChangeCipherSpec (서버)</strong> — 서버도 암호화 전환을 선언한다.',
+      '<span class="sim-step-label">9</span><strong>Finished (서버, 암호화)</strong> — 서버도 동일하게 핸드셰이크 해시를 암호화 전송. 클라이언트가 검증하면 핸드셰이크 완료. 이제 양쪽 모두 동일한 세션 키를 보유하고 있다.',
+      '<span class="sim-step-label">✓</span><strong>암호화된 HTTP 데이터 교환 시작!</strong> 이후 모든 HTTP 요청과 응답은 협상된 대칭키(예: AES-256-GCM)로 암호화된다. 네트워크에서 패킷을 가로채도 내용을 읽을 수 없다.'
+    ];
+
+    function tlsStep(dir) {
+      const next = tlsCurrent + dir;
+      if (next < 0 || next >= TLS_ROWS) return;
+      if (tlsCurrent > 0) document.getElementById('tls-r' + tlsCurrent).classList.remove('active-row');
+      tlsCurrent = next;
+      if (tlsCurrent > 0) document.getElementById('tls-r' + tlsCurrent).classList.add('active-row');
+      document.getElementById('tls-desc').innerHTML = TLS_DESCS[tlsCurrent];
+      document.getElementById('tls-prev').disabled = tlsCurrent === 0;
+      document.getElementById('tls-next').disabled = tlsCurrent === TLS_ROWS - 1;
+    }
+
+    function tlsReset() {
+      if (tlsCurrent > 0) document.getElementById('tls-r' + tlsCurrent).classList.remove('active-row');
+      tlsCurrent = 0;
+      document.getElementById('tls-desc').innerHTML = TLS_DESCS[0];
+      document.getElementById('tls-prev').disabled = true;
+      document.getElementById('tls-next').disabled = false;
+    }
+  </script>
+</body>
+</html>

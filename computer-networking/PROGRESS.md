@@ -9,13 +9,15 @@
 | 3 | 2026-06-22 | 네트워크 계층 — IP와 라우팅 | [day-03-network-layer-ip-routing.html](lessons/day-03-network-layer-ip-routing.html) |
 | 4 | 2026-06-23 | 전송 계층 — TCP vs UDP | [day-04-transport-tcp-udp.html](lessons/day-04-transport-tcp-udp.html) |
 | 5 | 2026-06-24 | 응용 계층 — DNS와 DHCP | [day-05-application-dns-dhcp.html](lessons/day-05-application-dns-dhcp.html) |
+| 6 | 2026-06-25 | 응용 계층 — HTTP/HTTPS | [day-06-application-http-https.html](lessons/day-06-application-http-https.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
 | ~~5~~ | ~~응용 계층 — DNS와 DHCP~~ | ~~DNS 계층 구조, 재귀 쿼리, DHCP 임대 과정~~ |
-| 6 | 응용 계층 — HTTP/HTTPS | HTTP 메서드, 상태 코드, 쿠키/세션, TLS 핸드셰이크 |
+| ~~6~~ | ~~응용 계층 — HTTP/HTTPS~~ | ~~HTTP 메서드, 상태 코드, 쿠키/세션, TLS 핸드셰이크~~ |
+| 7 | 네트워크 보안 기초 | 방화벽, NAT, VPN, TLS/SSL, 일반적인 공격 유형 |
 | 7 | 네트워크 보안 기초 | 방화벽, NAT, VPN, TLS/SSL, 일반적인 공격 유형 |
 | 8 | 실습 — Wireshark 패킷 분석 | 필터링, TCP 스트림 추적, DNS/HTTP 트래픽 분석 |
 | 9 | 무선 네트워크 & 최신 트렌드 | Wi-Fi 표준, SDN 개념, 클라우드 네트워킹 기초 |
@@ -23,7 +25,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 다음: Day 6 (응용 계층 — HTTP/HTTPS).
+**Day 6 완료** — 다음: Day 7 (네트워크 보안 기초).
 
 ## 습득한 핵심 개념
 
@@ -48,7 +50,12 @@
 - [x] DNS TTL과 캐싱 (Day 5 완료)
 - [x] DHCP DORA 4단계 (Day 5 완료)
 - [x] DHCP 임대(Lease)와 갱신 (Day 5 완료)
-- [ ] HTTPS / TLS 핸드셰이크 (예정 Day 6)
+- [x] HTTP 요청/응답 구조 및 메서드 (Day 6 완료)
+- [x] HTTP 상태 코드 계열 1xx~5xx (Day 6 완료)
+- [x] 쿠키 속성 HttpOnly·Secure·SameSite (Day 6 완료)
+- [x] 세션 vs 쿠키 차이와 JWT 개념 (Day 6 완료)
+- [x] HTTPS / TLS 핸드셰이크 (Day 6 완료)
+- [x] TLS 인증서 체인 및 CA 검증 (Day 6 완료)
 - [ ] NAT / 방화벽 동작 원리 (예정 Day 7)
 - [ ] Wireshark 패킷 분석 (예정 Day 8)
 - [ ] Wi-Fi 표준 및 SDN 개요 (예정 Day 9)
