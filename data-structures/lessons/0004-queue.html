@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — 큐 (Queue)</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>큐 (Queue)</h1>
+<div class="lesson-meta">
+  <span class="day-badge">Day 4</span>
+  <span class="lesson-date">2026-06-25</span>
+  &nbsp;·&nbsp; Queue — FIFO 자료구조
+</div>
+
+<!-- ─── 학습 목표 ─── -->
+<h2>학습 목표</h2>
+<p>이 레슨을 마치면 다음을 할 수 있다:</p>
+<ul>
+  <li>FIFO(First-In First-Out) 원리를 설명하고 스택(LIFO)과 비교할 수 있다.</li>
+  <li>배열 기반 큐와 원형 큐(circular queue)의 차이를 그림으로 설명할 수 있다.</li>
+  <li>연결 리스트 기반 큐를 Python으로 직접 구현할 수 있다.</li>
+  <li>덱(Deque)이 필요한 상황과 <code>collections.deque</code> 사용법을 안다.</li>
+  <li>BFS(너비 우선 탐색)에서 큐가 어떤 역할을 하는지 설명할 수 있다.</li>
+</ul>
+
+<!-- ─── 1. FIFO 원리 ─── -->
+<h2>1. FIFO 원리</h2>
+<p>
+  <strong>큐(Queue)</strong>는 한쪽(rear)에서 데이터를 넣고 반대쪽(front)에서 꺼내는 선형 자료구조다.
+  가장 먼저 들어온 것이 가장 먼저 나가기 때문에 <em>FIFO(First-In First-Out)</em>라고 부른다.
+  줄 서기(대기열)를 생각하면 된다.
+</p>
+
+<div class="diagram">
+  enqueue(A) → enqueue(B) → enqueue(C)
+
+  front                         rear
+    ↓                             ↓
+  ┌───┬───┬───┐
+  │ A │ B │ C │
+  └───┴───┴───┘
+
+  dequeue() → A 반환
+
+  front           rear
+    ↓               ↓
+  ┌───┬───┐
+  │ B │ C │
+  └───┴───┘
+</div>
+<p class="diagram-caption">큐의 FIFO 구조 — front에서 꺼내고 rear에 넣는다</p>
+
+<div class="callout">
+  <div class="callout-title">일상 속 큐</div>
+  <ul>
+    <li><strong>은행·카페 대기줄</strong>: 먼저 온 손님을 먼저 처리한다.</li>
+    <li><strong>프린터 대기열</strong>: 먼저 보낸 문서를 먼저 출력한다.</li>
+    <li><strong>키보드 입력 버퍼</strong>: 입력 순서대로 처리한다.</li>
+    <li><strong>BFS 탐색</strong>: 가까운 노드부터 탐색하기 위해 큐를 사용한다.</li>
+    <li><strong>OS 프로세스 스케줄링</strong>: 라운드 로빈 방식에서 실행 대기 큐 사용.</li>
+  </ul>
+</div>
+
+<!-- ─── 2. 핵심 연산 & 시간복잡도 ─── -->
+<h2>2. 핵심 연산과 시간복잡도</h2>
+<table>
+  <thead>
+    <tr><th>연산</th><th>설명</th><th>시간복잡도</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>enqueue(x)</code></td><td>rear에 원소 x를 추가</td><td>O(1)</td></tr>
+    <tr><td><code>dequeue()</code></td><td>front 원소를 제거하고 반환</td><td>O(1)*</td></tr>
+    <tr><td><code>peek() / front()</code></td><td>front 원소를 제거 없이 확인</td><td>O(1)</td></tr>
+    <tr><td><code>isEmpty()</code></td><td>큐가 비어 있는지 확인</td><td>O(1)</td></tr>
+    <tr><td><code>size()</code></td><td>원소 개수 반환</td><td>O(1)</td></tr>
+  </tbody>
+</table>
+
+<div class="callout warning">
+  <div class="callout-title">배열 기반 큐의 함정</div>
+  <p>
+    Python <code>list</code>에서 <code>pop(0)</code>으로 dequeue를 구현하면 <strong>O(n)</strong>이 된다.
+    앞 원소를 제거한 후 나머지 원소를 한 칸씩 앞으로 당겨야 하기 때문이다.
+    올바른 방법은 원형 큐(circular queue) 또는 <code>collections.deque</code>를 사용하는 것이다.
+  </p>
+</div>
+
+<!-- ─── 3. 원형 큐 ─── -->
+<h2>3. 원형 큐 (Circular Queue)</h2>
+<p>
+  고정 크기 배열로 큐를 구현할 때, 매번 원소를 앞으로 당기는 대신
+  <strong>front/rear 포인터를 원형으로 이동</strong>시켜 공간을 재활용한다.
+  이 구조를 <em>원형 큐(circular queue, ring buffer)</em>라고 한다.
+</p>
+
+<div class="diagram">
+크기 5인 원형 큐 (인덱스 0~4):
+
+초기: front=0, rear=0, size=0
+[ _ | _ | _ | _ | _ ]
+  ↑f,r
+
+enqueue(A,B,C): front=0, rear=3, size=3
+[ A | B | C | _ | _ ]
+  ↑f       ↑r
+
+dequeue() → A: front=1, rear=3, size=2
+[ _ | B | C | _ | _ ]
+      ↑f   ↑r
+
+enqueue(D,E): front=1, rear=0 (wrap!), size=4
+[ E | B | C | D | _ ]
+  ↑r  ↑f
+
+포인터가 배열 끝을 넘으면 0으로 돌아온다 (mod 연산)
+</div>
+<p class="diagram-caption">원형 큐 — rear가 끝에 닿으면 배열 앞으로 돌아가 공간을 재활용한다</p>
+
+<pre><code>class CircularQueue:
+    def __init__(self, capacity: int):
+        self._data = [None] * capacity
+        self._capacity = capacity
+        self._front = 0
+        self._size = 0
+
+    def enqueue(self, value):
+        if self._size == self._capacity:
+            raise OverflowError("queue is full")
+        rear = (self._front + self._size) % self._capacity
+        self._data[rear] = value
+        self._size += 1
+
+    def dequeue(self):
+        if self._size == 0:
+            raise IndexError("dequeue from empty queue")
+        value = self._data[self._front]
+        self._data[self._front] = None          # GC를 위해 참조 제거
+        self._front = (self._front + 1) % self._capacity
+        self._size -= 1
+        return value
+
+    def peek(self):
+        if self._size == 0:
+            raise IndexError("peek from empty queue")
+        return self._data[self._front]
+
+    def is_empty(self):
+        return self._size == 0
+
+    def is_full(self):
+        return self._size == self._capacity
+
+    def size(self):
+        return self._size
+
+
+# 사용 예
+cq = CircularQueue(4)
+cq.enqueue(10)
+cq.enqueue(20)
+cq.enqueue(30)
+print(cq.dequeue())   # 10
+cq.enqueue(40)
+cq.enqueue(50)        # rear가 wrap around
+print(cq.size())      # 4 (가득 참)
+</code></pre>
+
+<!-- ─── 4. 연결 리스트 기반 큐 ─── -->
+<h2>4. 연결 리스트 기반 큐 (무제한 크기)</h2>
+<p>
+  고정 크기 제한이 없는 큐가 필요하면 연결 리스트를 사용한다.
+  <strong>tail(rear) 포인터</strong>를 유지해 enqueue를 <code>O(1)</code>에 수행한다.
+</p>
+
+<pre><code>class Node:
+    def __init__(self, value, next_node=None):
+        self.value = value
+        self.next = next_node
+
+
+class LinkedQueue:
+    def __init__(self):
+        self._head = None   # front
+        self._tail = None   # rear
+        self._size = 0
+
+    def enqueue(self, value):
+        new_node = Node(value)
+        if self._tail is None:          # 빈 큐
+            self._head = self._tail = new_node
+        else:
+            self._tail.next = new_node
+            self._tail = new_node
+        self._size += 1
+
+    def dequeue(self):
+        if self.is_empty():
+            raise IndexError("dequeue from empty queue")
+        value = self._head.value
+        self._head = self._head.next
+        if self._head is None:          # 큐가 비어진 경우
+            self._tail = None
+        self._size -= 1
+        return value
+
+    def peek(self):
+        if self.is_empty():
+            raise IndexError("peek from empty queue")
+        return self._head.value
+
+    def is_empty(self):
+        return self._head is None
+
+    def size(self):
+        return self._size
+</code></pre>
+
+<div class="diagram">
+enqueue(A), enqueue(B), enqueue(C) 후:
+
+head → [A|→] → [B|→] → [C|None]
+                          ↑ tail
+
+dequeue() → A 반환:
+
+head → [B|→] → [C|None]
+                 ↑ tail
+</div>
+<p class="diagram-caption">연결 리스트 큐: head에서 dequeue, tail에서 enqueue — 둘 다 O(1)</p>
+
+<!-- ─── 5. collections.deque ─── -->
+<h2>5. Python <code>collections.deque</code> — 실무에서 가장 빠른 선택</h2>
+<p>
+  Python 표준 라이브러리의 <code>collections.deque</code>는 이중 연결 리스트 기반으로
+  양쪽 끝에서 <code>O(1)</code> 연산을 제공한다. 큐와 덱(deque) 모두 구현할 수 있다.
+</p>
+
+<pre><code>from collections import deque
+
+# 큐로 사용
+q = deque()
+q.append(1)      # enqueue — rear에 추가
+q.append(2)
+q.append(3)
+print(q.popleft())   # dequeue — front에서 제거 → 1
+print(q.popleft())   # 2
+
+# 덱(양방향)으로 사용
+dq = deque()
+dq.appendleft(10)    # front에 추가
+dq.append(20)        # rear에 추가
+dq.appendleft(5)     # front에 추가
+print(dq)            # deque([5, 10, 20])
+print(dq.pop())      # rear에서 제거 → 20
+print(dq.popleft())  # front에서 제거 → 5
+</code></pre>
+
+<h3>덱(Deque)의 주요 연산</h3>
+<table>
+  <thead>
+    <tr><th>연산</th><th>설명</th><th>시간복잡도</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>append(x)</code></td><td>rear에 추가 (큐 enqueue)</td><td>O(1)</td></tr>
+    <tr><td><code>appendleft(x)</code></td><td>front에 추가</td><td>O(1)</td></tr>
+    <tr><td><code>pop()</code></td><td>rear에서 제거 (스택 pop)</td><td>O(1)</td></tr>
+    <tr><td><code>popleft()</code></td><td>front에서 제거 (큐 dequeue)</td><td>O(1)</td></tr>
+    <tr><td><code>rotate(k)</code></td><td>k 칸 오른쪽 회전 (음수면 왼쪽)</td><td>O(k)</td></tr>
+    <tr><td><code>maxlen</code></td><td>최대 크기 지정 — 넘으면 반대쪽 원소 자동 제거</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">큐 구현 선택 가이드</div>
+  <ul>
+    <li><strong>Python 실무</strong>: <code>collections.deque</code> — 구현 없이 바로 사용, O(1) 보장.</li>
+    <li><strong>고정 크기 버퍼</strong>: 원형 큐 (링 버퍼) — 네트워크 패킷, 오디오 스트림 처리.</li>
+    <li><strong>학습·면접 구현</strong>: 연결 리스트 기반 큐 — 내부 동작을 명확히 보여준다.</li>
+    <li><strong>절대 사용 금지</strong>: <code>list.pop(0)</code> — O(n)이라 큐에 부적합.</li>
+  </ul>
+</div>
+
+<!-- ─── 6. BFS 응용 ─── -->
+<h2>6. 응용 — BFS(너비 우선 탐색)</h2>
+<p>
+  그래프나 트리에서 <strong>가까운 노드부터</strong> 탐색하는 BFS는 큐를 핵심 자료구조로 사용한다.
+  방문할 노드를 큐에 enqueue하고, dequeue하며 인접 노드를 확인한다.
+</p>
+
+<div class="diagram">
+그래프 예:
+    1
+   / \
+  2   3
+ / \
+4   5
+
+BFS 탐색 순서 (시작: 1):
+
+단계  큐 상태         방문
+ 0    [1]            —
+ 1    [2, 3]         1
+ 2    [3, 4, 5]      2
+ 3    [4, 5]         3
+ 4    [5]            4
+ 5    []             5
+
+방문 순서: 1 → 2 → 3 → 4 → 5
+</div>
+<p class="diagram-caption">BFS — 레벨(깊이)별로 넓게 퍼져 나가며 탐색한다</p>
+
+<pre><code>from collections import deque
+
+def bfs(graph: dict, start: int) -> list:
+    visited = set()
+    queue = deque([start])
+    visited.add(start)
+    order = []
+
+    while queue:
+        node = queue.popleft()   # dequeue
+        order.append(node)
+
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)   # enqueue
+
+    return order
+
+
+# 사용 예
+graph = {
+    1: [2, 3],
+    2: [4, 5],
+    3: [],
+    4: [],
+    5: [],
+}
+print(bfs(graph, 1))   # [1, 2, 3, 4, 5]
+</code></pre>
+
+<h3>BFS 시간·공간복잡도</h3>
+<table>
+  <thead>
+    <tr><th>복잡도</th><th>값</th><th>이유</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>시간</td><td>O(V + E)</td><td>모든 노드(V)와 간선(E)을 한 번씩 처리</td></tr>
+    <tr><td>공간</td><td>O(V)</td><td>최악의 경우 모든 노드가 큐에 들어감</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">BFS vs DFS — 어떤 탐색이 더 적합한가?</div>
+  <ul>
+    <li><strong>최단 경로 (가중치 없음)</strong>: BFS — 레벨별 탐색이 자동으로 최단 거리를 보장.</li>
+    <li><strong>연결 요소 찾기</strong>: BFS 또는 DFS 모두 가능.</li>
+    <li><strong>깊이 우선, 메모리 절약</strong>: DFS (재귀 또는 명시적 스택, Day 12에서 상세 학습).</li>
+  </ul>
+</div>
+
+<!-- ─── 핵심 정리 ─── -->
+<h2>핵심 정리</h2>
+<div class="callout success">
+  <div class="callout-title">이 레슨의 핵심</div>
+  <ul>
+    <li>큐는 <strong>FIFO</strong> — 먼저 들어온 것이 먼저 나간다.</li>
+    <li>enqueue, dequeue, peek 모두 <strong>O(1)</strong> (구현에 따라).</li>
+    <li>Python에서는 <strong><code>collections.deque</code></strong>가 최선의 큐 구현이다. <code>list.pop(0)</code>은 절대 사용하지 않는다.</li>
+    <li><strong>원형 큐</strong>는 고정 크기 배열로 공간을 효율적으로 재활용한다.</li>
+    <li><strong>BFS</strong>는 큐의 핵심 응용 — 가중치 없는 그래프에서 최단 경로를 보장한다.</li>
+  </ul>
+</div>
+
+<!-- ─── 퀴즈 ─── -->
+<h2>확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. Python <code>list</code>를 사용해 큐를 구현할 때 <code>pop(0)</code>을 dequeue로 쓰면 안 되는 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="a"> 반환값이 잘못된다.</label></li>
+    <li><label><input type="radio" name="q1" value="b"> O(n)이 되어 큰 큐에서 성능이 나쁘다.</label></li>
+    <li><label><input type="radio" name="q1" value="c"> 파이썬에서 <code>pop(0)</code>은 지원되지 않는다.</label></li>
+    <li><label><input type="radio" name="q1" value="d"> 원소가 역순으로 반환된다.</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="checkQuiz('q1','b','list.pop(0)은 앞 원소를 제거한 뒤 나머지를 한 칸씩 앞으로 당기므로 O(n)이다. collections.deque.popleft()는 O(1)이다.')">제출</button>
+  <div class="quiz-feedback" id="q1-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. 원형 큐에서 rear 포인터의 다음 위치를 계산하는 올바른 방법은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="a"> <code>rear + 1</code></label></li>
+    <li><label><input type="radio" name="q2" value="b"> <code>(rear + 1) % capacity</code></label></li>
+    <li><label><input type="radio" name="q2" value="c"> <code>rear - 1</code></label></li>
+    <li><label><input type="radio" name="q2" value="d"> <code>(rear - 1 + capacity) % capacity</code></label></li>
+  </ul>
+  <button class="quiz-submit" onclick="checkQuiz('q2','b','mod(%) 연산을 사용해 포인터가 배열 끝을 넘으면 0으로 돌아오도록 한다. 이것이 원형(circular) 동작의 핵심이다.')">제출</button>
+  <div class="quiz-feedback" id="q2-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. BFS 탐색을 그래프 {1:[2,3], 2:[4], 3:[], 4:[]}에서 노드 1부터 시작하면 방문 순서는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="a"> 1 → 2 → 4 → 3</label></li>
+    <li><label><input type="radio" name="q3" value="b"> 1 → 2 → 3 → 4</label></li>
+    <li><label><input type="radio" name="q3" value="c"> 1 → 4 → 2 → 3</label></li>
+    <li><label><input type="radio" name="q3" value="d"> 4 → 2 → 3 → 1</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="checkQuiz('q3','b','BFS는 레벨별로 탐색한다. 1(레벨0) → 2,3(레벨1) → 4(레벨2) 순서가 된다. 큐에서 2를 꺼내 4를 enqueue하지만, 3이 먼저 dequeue된다.')">제출</button>
+  <div class="quiz-feedback" id="q3-feedback"></div>
+</div>
+
+<!-- ─── 진행 현황 ─── -->
+<div class="progress-section">
+  <h3>전체 커리큘럼 진행률</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 20%"></div>
+  </div>
+  <p class="progress-label">Day 4 / 20 완료 (20%)</p>
+  <p class="progress-label">다음: Day 5 — 해시 테이블 (Hash Tables): 해시 함수, 충돌 해결(체이닝·오픈 어드레싱), O(1) 평균 탐색</p>
+</div>
+
+<!-- ─── 푸터 ─── -->
+<div class="lesson-footer">
+  자료구조 학습 워크스페이스 &middot; Day 4
+  <div class="lesson-nav">
+    <a href="./0003-stack.html">← Day 3: 스택</a>
+    <a href="./index.html">목록으로</a>
+  </div>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
