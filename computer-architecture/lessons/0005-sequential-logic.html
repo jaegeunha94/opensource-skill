@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 5 — 순서 논리 회로</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 5</span>
+  <strong>순서 논리 회로 (Sequential Logic)</strong>
+  <span class="lesson-date">· 2026-06-25</span>
+</div>
+
+<h1>기억하는 회로 — 플립플롭에서 레지스터까지</h1>
+
+<div class="progress-section">
+  <h3>학습 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 17%"></div>
+  </div>
+  <span class="progress-label">전체 커리큘럼의 약 17% 완료 · Day 5 / 30</span>
+</div>
+
+<h2>오늘 배울 것</h2>
+<ul>
+  <li>조합 논리 회로와 순서 논리 회로의 차이를 이해한다</li>
+  <li>SR 래치 → D 플립플롭으로 발전하는 과정을 따라간다</li>
+  <li>클럭(Clock)이 회로 동기화에 미치는 역할을 파악한다</li>
+  <li>레지스터(Register)와 카운터(Counter)가 플립플롭으로 어떻게 만들어지는지 이해한다</li>
+</ul>
+
+<!-- ============================================================
+     섹션 1: 조합 vs 순서 논리
+     ============================================================ -->
+<h2>1. 조합 논리 vs 순서 논리</h2>
+
+<p>
+  Day 3~4에서 다룬 게이트·가산기·ALU는 모두 <strong>조합 논리 회로</strong>입니다.
+  현재 입력만으로 출력이 결정되며, 이전 상태를 기억하지 않습니다.
+</p>
+
+<div class="diagram">
+조합 논리 (Combinational Logic):
+  출력 = f(현재 입력)
+  기억 없음, 클럭 없음
+  예: 게이트, 가산기, ALU, MUX
+
+순서 논리 (Sequential Logic):
+  출력 = f(현재 입력, 현재 상태)
+  상태(state)를 저장하고 클럭에 맞춰 갱신
+  예: 플립플롭, 레지스터, 카운터, FSM
+</div>
+
+<div class="callout">
+  <div class="callout-title">왜 기억이 필요한가?</div>
+  CPU는 이전 명령어의 결과를 다음 명령어에서 사용해야 합니다.
+  레지스터 파일에 값을 저장하고, 프로그램 카운터(PC)가 다음 실행할 명령어 주소를 기억하며,
+  파이프라인 스테이지 사이에 데이터가 전달되려면 모두 "기억하는 회로"가 필수입니다.
+</div>
+
+<!-- ============================================================
+     섹션 2: SR 래치
+     ============================================================ -->
+<h2>2. SR 래치 (SR Latch)</h2>
+
+<p>
+  가장 단순한 기억 회로입니다. NAND 게이트 두 개를 교차 결합(cross-coupled)하면
+  출력이 입력에 되먹임(feedback)되어 상태를 유지합니다.
+</p>
+
+<h3>2-1. NAND SR 래치 구조</h3>
+
+<div class="diagram">
+         S̄ ──┬──[NAND]── Q
+              │       │
+              └───────┘ (피드백)
+         R̄ ──┬──[NAND]── Q̄
+              │       │
+              └───────┘ (피드백)
+
+ (S̄: Set bar, R̄: Reset bar — 둘 다 active-low 입력)
+</div>
+
+<h3>2-2. SR 래치 진리표</h3>
+
+<table>
+  <thead>
+    <tr><th>S̄</th><th>R̄</th><th>Q(다음)</th><th>Q̄(다음)</th><th>설명</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td>1</td><td>Q(유지)</td><td>Q̄(유지)</td><td>기억 — 상태 유지</td></tr>
+    <tr><td>0</td><td>1</td><td>1</td><td>0</td><td>Set — Q를 1로 세팅</td></tr>
+    <tr><td>1</td><td>0</td><td>0</td><td>1</td><td>Reset — Q를 0으로 리셋</td></tr>
+    <tr><td>0</td><td>0</td><td>1*</td><td>1*</td><td>금지 — 정의되지 않은 상태</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">금지 상태가 문제인 이유</div>
+  S̄=R̄=0이면 Q와 Q̄ 모두 1이 되어 보수 관계가 깨집니다.
+  이 상태를 해제할 때 둘 중 어느 쪽이 먼저 바뀌느냐에 따라
+  최종 상태가 결정되지 않는 <strong>경쟁 조건(Race Condition)</strong>이 발생합니다.
+  SR 래치의 이 한계를 해결하기 위해 클럭과 D 플립플롭이 등장합니다.
+</div>
+
+<!-- ============================================================
+     섹션 3: D 플립플롭
+     ============================================================ -->
+<h2>3. D 플립플롭 (D Flip-Flop)</h2>
+
+<p>
+  SR 래치의 금지 상태 문제를 해결한 회로가 D 플립플롭입니다.
+  입력이 D(Data) 하나뿐이고, <strong>클럭 엣지(Clock Edge)</strong>에서만 상태가 바뀝니다.
+</p>
+
+<h3>3-1. 클럭과 엣지 트리거</h3>
+
+<div class="diagram">
+클럭 신호:
+       ┌──┐  ┌──┐  ┌──┐
+  0 ───┘  └──┘  └──┘  └───
+
+  상승 엣지(Rising Edge) ↑: 0 → 1 전환 순간
+  하강 엣지(Falling Edge) ↓: 1 → 0 전환 순간
+
+엣지 트리거 플립플롭:
+  클럭이 특정 엣지(보통 ↑)에 도달하는 그 순간에만 D를 캡처해 Q에 저장
+  클럭 엣지 사이에는 D가 아무리 바뀌어도 Q는 변하지 않음
+</div>
+
+<h3>3-2. D 플립플롭 동작</h3>
+
+<table>
+  <thead>
+    <tr><th>CLK (엣지)</th><th>D</th><th>Q(다음)</th><th>설명</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>↑ (상승)</td><td>0</td><td>0</td><td>D=0을 캡처</td></tr>
+    <tr><td>↑ (상승)</td><td>1</td><td>1</td><td>D=1을 캡처</td></tr>
+    <tr><td>유지 (엣지 아님)</td><td>X</td><td>Q(유지)</td><td>상태 변화 없음</td></tr>
+  </tbody>
+</table>
+
+<div class="diagram">
+타이밍 다이어그램:
+
+CLK:  ─┐┌─┐┌─┐┌─
+D:    ──┤0├─┤1├──
+Q:    ──┤ └─┤ └──
+       (↑에서 D 값 캡처)
+
+실제:
+  CLK  ───┐  ┌──┐  ┌──
+D    ─X───┤1 │0 │──
+Q    ─Q₀──┤1─┘0─┘──
+          ↑  ↑
+          캡처 순간
+</div>
+
+<h3>3-3. 셋업/홀드 타임 (Setup/Hold Time)</h3>
+
+<div class="diagram">
+올바른 캡처를 위해 D가 안정해야 하는 시간:
+
+  Setup Time (t_su):
+    CLK 상승 엣지 이전에 D가 안정 상태를 유지해야 하는 최소 시간
+    → 위반 시: 플립플롭이 불안정한 값을 캡처
+
+  Hold Time (t_h):
+    CLK 상승 엣지 이후에도 D를 유지해야 하는 최소 시간
+    → 위반 시: 내부 래치가 안정화되기 전에 D가 바뀌어 오류 발생
+
+  타이밍:
+  D    ─────[안정 구간]─────
+                ↑셋업     ↑홀드
+  CLK  ─────────↑─────────
+
+이것이 CPU 클럭 속도의 물리적 한계를 결정합니다.
+(클럭 주기 > 조합 논리 지연 + 셋업 타임 + 플립플롭 전파 지연)
+</div>
+
+<!-- ============================================================
+     섹션 4: 레지스터
+     ============================================================ -->
+<h2>4. 레지스터 (Register)</h2>
+
+<p>
+  D 플립플롭을 n개 병렬로 묶으면 n비트 레지스터가 됩니다.
+  CPU의 레지스터 파일(Register File)은 이 구조의 배열입니다.
+</p>
+
+<h3>4-1. n비트 레지스터 구조</h3>
+
+<div class="diagram">
+4비트 레지스터:
+
+  D₃ ─[FF]─ Q₃
+  D₂ ─[FF]─ Q₂      CLK ─┬─┬─┬─┬─
+  D₁ ─[FF]─ Q₁           │ │ │ │
+  D₀ ─[FF]─ Q₀           FF FF FF FF
+
+CLK 한 번에 D₃D₂D₁D₀ 전체가 Q₃Q₂Q₁Q₀에 동시 저장
+→ 4비트 값을 하나의 원자적 동작으로 캡처
+</div>
+
+<h3>4-2. Write Enable이 있는 레지스터</h3>
+
+<div class="diagram">
+실제 레지스터는 매 클럭마다 갱신되면 안 됩니다.
+Write Enable(WE) 신호로 갱신 시점을 제어합니다.
+
+WE=0: D = Q (현재 값을 D로 되먹임 → 상태 유지)
+WE=1: D = 새 입력값 (클럭에 새 값 캡처)
+
+구현: D = MUX(현재Q, 새입력, WE)
+</div>
+
+<h3>4-3. CPU 레지스터 파일</h3>
+
+<div class="diagram">
+ARM Cortex-A 기준: 31개 범용 레지스터(x0~x30), 각 64비트
+RISC-V 기준: 32개 범용 레지스터(x0~x31)
+
+레지스터 파일 구조:
+  ┌─────────────────────────────────────┐
+  │  레지스터 배열 (32 × 64비트 FF)      │
+  │                                     │
+  │  읽기 포트 2개: rs1, rs2 주소 입력  │
+  │    → 조합 논리로 해당 레지스터 값 출력│
+  │  쓰기 포트 1개: rd 주소 + 쓸 값     │
+  │    → 클럭에 맞춰 해당 레지스터 갱신 │
+  └─────────────────────────────────────┘
+
+한 사이클에 2개 읽기 + 1개 쓰기가 동시에 가능
+(ALU가 두 피연산자를 읽고 결과를 다시 저장)
+</div>
+
+<!-- ============================================================
+     섹션 5: 카운터
+     ============================================================ -->
+<h2>5. 카운터 (Counter)</h2>
+
+<p>
+  카운터는 클럭 펄스마다 숫자를 1씩 증가(또는 감소)시키는 순서 회로입니다.
+  CPU에서 <strong>프로그램 카운터(PC)</strong>가 가장 중요한 카운터입니다.
+</p>
+
+<h3>5-1. 비동기 이진 카운터 (리플 카운터)</h3>
+
+<div class="diagram">
+T 플립플롭(Toggle FF: 클럭마다 상태 반전)을 직렬 연결:
+
+  CLK ─[T-FF₀]─ Q₀(LSB)
+                  └─[T-FF₁]─ Q₁
+                               └─[T-FF₂]─ Q₂
+                                            └─[T-FF₃]─ Q₃(MSB)
+
+Q₀가 1→0 될 때마다 Q₁이 토글 (Q₀의 하강 엣지가 Q₁의 클럭)
+→ 2비트씩 체인으로 연결
+
+카운트 순서: 0000 → 0001 → 0010 → 0011 → ... → 1111 → 0000
+
+단점: 각 비트가 순차적으로 토글 → 일시적으로 중간 값이 나타남 (글리치)
+</div>
+
+<h3>5-2. 동기 이진 카운터</h3>
+
+<div class="diagram">
+모든 플립플롭이 같은 CLK을 사용:
+
+  Q₀의 D = Q₀ ⊕ 1      = NOT(Q₀)    항상 토글
+  Q₁의 D = Q₁ ⊕ Q₀              Q₀=1일 때 토글
+  Q₂의 D = Q₂ ⊕ (Q₁·Q₀)        Q₁Q₀=11일 때 토글
+  Q₃의 D = Q₃ ⊕ (Q₂·Q₁·Q₀)    Q₂Q₁Q₀=111일 때 토글
+
+장점: 모든 비트가 같은 클럭에 동시 갱신 → 글리치 없음
+→ 실제 CPU PC는 동기 카운터 사용
+</div>
+
+<h3>5-3. 프로그램 카운터 (PC)</h3>
+
+<div class="diagram">
+PC = 현재 실행 중인 명령어의 메모리 주소를 저장하는 레지스터
+
+기본 동작:
+  PC ← PC + 4   (명령어 하나 = 4바이트인 경우, 순차 실행)
+
+분기 명령어:
+  PC ← 분기 목적지 주소  (조건부 / 무조건 점프)
+
+인터럽트:
+  PC ← 인터럽트 핸들러 주소  (이전 PC는 스택에 저장)
+
+PC는 특수 레지스터로, 매 클럭 사이클 자동 증가 또는
+ALU가 계산한 분기 주소로 갱신됩니다.
+</div>
+
+<!-- ============================================================
+     섹션 6: 유한 상태 기계 (FSM) 개요
+     ============================================================ -->
+<h2>6. 유한 상태 기계 (FSM) 개요</h2>
+
+<p>
+  순서 논리 회로의 일반적인 모델이 유한 상태 기계(Finite State Machine)입니다.
+  CPU의 제어 유닛(Control Unit)이 FSM으로 구현됩니다.
+</p>
+
+<div class="diagram">
+FSM 구성 요소:
+  ① 상태 레지스터   : 현재 상태를 저장하는 D 플립플롭
+  ② 다음 상태 논리  : 현재 상태 + 입력 → 다음 상태 (조합 논리)
+  ③ 출력 논리       : 현재 상태 (+ 입력) → 출력 (조합 논리)
+
+두 가지 FSM 유형:
+  Mealy 기계: 출력 = f(현재 상태, 현재 입력)  — 빠름, 상태 수 적음
+  Moore 기계: 출력 = f(현재 상태만)            — 안전, 글리치 적음
+
+CPU 제어 유닛 예:
+  상태: Fetch → Decode → Execute → Memory → Writeback
+  각 상태에서 제어 신호(RegWrite, MemRead 등)를 출력
+</div>
+
+<div class="callout">
+  <div class="callout-title">클럭 주파수와 성능의 관계</div>
+  클럭 1주기 = 1 사이클 = 최소 실행 단위<br>
+  클럭이 빠를수록 초당 더 많은 상태 전이가 발생 → 더 빠른 연산<br>
+  <strong>최대 클럭 = 1 / (조합 논리 지연 + 셋업 타임 + 클럭 지터)</strong><br>
+  Intel Core i9-13900K의 최대 부스트 클럭 ≈ 5.8 GHz는
+  이 물리적 한계를 반도체 공정 기술로 밀어붙인 결과입니다.
+</div>
+
+<!-- ============================================================
+     퀴즈
+     ============================================================ -->
+<h2>이해 확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. SR 래치에서 S̄=R̄=0을 금지 상태로 보는 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> 게이트 수가 너무 많아져서</label></li>
+    <li><label><input type="radio" name="q1" value="1"> Q와 Q̄가 모두 1이 되어 보수 관계가 깨지고, 해제 시 경쟁 조건이 발생해서</label></li>
+    <li><label><input type="radio" name="q1" value="2"> 전력 소비가 두 배가 되어서</label></li>
+    <li><label><input type="radio" name="q1" value="3"> 이 상태에서는 래치가 꺼지기 때문에</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. 상승 엣지 트리거 D 플립플롭에서, CLK이 0→1로 바뀌는 순간 D=1이라면 Q는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> 0 (이전 상태 유지)</label></li>
+    <li><label><input type="radio" name="q2" value="1"> 1 (D 값 캡처)</label></li>
+    <li><label><input type="radio" name="q2" value="2"> 불확정 상태</label></li>
+    <li><label><input type="radio" name="q2" value="3"> Q̄와 같은 값</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. CPU의 프로그램 카운터(PC)가 순서 논리 회로인 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> 조합 논리보다 게이트가 적어서</label></li>
+    <li><label><input type="radio" name="q3" value="1"> 현재 명령어 주소(상태)를 기억하고 클럭마다 다음 주소로 갱신해야 해서</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 덧셈 연산이 필요해서</label></li>
+    <li><label><input type="radio" name="q3" value="3"> 출력이 하나뿐이어서</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. 셋업 타임(Setup Time) 위반이 발생하면 어떤 문제가 생기는가?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> 플립플롭 출력이 항상 0이 된다</label></li>
+    <li><label><input type="radio" name="q4" value="1"> 플립플롭이 불안정한 값을 캡처해 오동작이 발생한다</label></li>
+    <li><label><input type="radio" name="q4" value="2"> 클럭이 멈춘다</label></li>
+    <li><label><input type="radio" name="q4" value="3"> 전력 소비가 급증한다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================
+     Primary Source
+     ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">오늘의 추천 자료</div>
+  <strong>Digital Design and Computer Architecture (Harris &amp; Harris) — Chapter 3</strong><br>
+  순서 논리 회로 전체를 SR 래치 → D 래치 → D 플립플롭 → 레지스터 → FSM 순서로
+  체계적으로 다룹니다. Verilog 구현 예제도 함께 제공합니다.<br>
+  <br>
+  <strong>Nand2Tetris Project 3</strong><br>
+  D 플립플롭에서 1비트 셀 → 레지스터 → RAM으로 단계적으로 직접 구현합니다.
+  개념을 코드로 확인하는 가장 빠른 방법입니다.<br>
+  <br>
+  <strong>Computer Organization and Design (Patterson &amp; Hennessy) — Appendix B</strong><br>
+  FSM과 데이터패스 제어 신호 설계를 다루며, CPU 제어 유닛과의 연결을 설명합니다.
+</div>
+
+<!-- ============================================================
+     핵심 요약
+     ============================================================ -->
+<h2>오늘의 핵심 요약</h2>
+
+<ul>
+  <li><strong>순서 논리</strong>: 출력 = f(현재 입력, 현재 상태). 클럭과 피드백으로 상태를 기억</li>
+  <li><strong>SR 래치</strong>: 가장 단순한 기억 소자. S̄=R̄=0 금지 상태(경쟁 조건)가 한계</li>
+  <li><strong>D 플립플롭</strong>: 엣지 트리거로 금지 상태 제거. 클럭 ↑에서만 D를 Q에 캡처</li>
+  <li><strong>셋업/홀드 타임</strong>: 클럭 엣지 전후로 D를 안정 유지해야 하는 최소 시간. CPU 클럭 속도 한계</li>
+  <li><strong>레지스터</strong>: D-FF n개 병렬 = n비트 저장. Write Enable로 갱신 시점 제어</li>
+  <li><strong>카운터</strong>: 동기 이진 카운터로 글리치 없이 매 클럭 증가. PC가 대표적</li>
+  <li><strong>FSM</strong>: 순서 논리의 일반 모델. CPU 제어 유닛은 Fetch→Decode→Execute FSM</li>
+</ul>
+
+<!-- ============================================================
+     다음 수업 예고
+     ============================================================ -->
+<div class="callout">
+  <div class="callout-title">다음 수업 (Day 6)</div>
+  <strong>메모리 계층 1 — SRAM vs DRAM과 캐시 메모리 개념</strong><br>
+  레지스터는 빠르지만 용량이 아주 작습니다. 그 아래로 L1/L2/L3 캐시, 주기억장치(DRAM),
+  보조기억장치(SSD/HDD)로 이어지는 메모리 계층을 살펴봅니다.
+  SRAM(플립플롭 기반)과 DRAM(커패시터 기반)의 구조적 차이부터 시작합니다.
+</div>
+
+<!-- ============================================================
+     선생님께 질문
+     ============================================================ -->
+<div class="ask-teacher">
+  <strong>궁금한 점이 있으신가요?</strong><br>
+  이해가 안 되는 부분, 더 깊이 알고 싶은 내용, 또는 실무와 어떻게 연결되는지
+  Claude에게 바로 질문하세요. 선생님은 항상 여기 있습니다.
+</div>
+
+<div class="lesson-footer">
+  <div class="lesson-nav">
+    <a href="0004-arithmetic-circuits.html">← Day 4: 산술 회로</a>
+    <a href="0006-memory-hierarchy-1.html">Day 6: 메모리 계층 1 →</a>
+  </div>
+  컴퓨터 구조 데일리 학습 · <a href="../reference/">참고 자료</a> · <a href="../RESOURCES.md">추천 자료 목록</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1, 'S̄=R̄=0이면 두 NAND 출력이 모두 1 → Q=Q̄=1로 보수 관계 붕괴. 해제 시 어느 쪽이 먼저 변하느냐에 따라 최종 상태가 결정되지 않아 경쟁 조건이 발생합니다.');
+  initQuiz('q2', 1, '상승 엣지에서 D=1이므로 Q=1로 캡처됩니다. 엣지 이후에는 D가 바뀌어도 Q는 유지됩니다.');
+  initQuiz('q3', 1, 'PC는 "현재 실행 중인 명령어 주소"라는 상태를 기억해야 하고, 매 클럭마다 +4(또는 분기 주소)로 갱신됩니다. 이는 전형적인 순서 논리 회로의 특성입니다.');
+  initQuiz('q4', 1, '셋업 타임 위반 시 플립플롭 내부가 안정화되기 전에 클럭 엣지가 도착해 메타스태빌리티(metastability)가 발생하고, 결과가 0인지 1인지 결정되지 않는 오동작이 생깁니다.');
+</script>
+</body>
+</html>
