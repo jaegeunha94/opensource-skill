@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — 네트워크 보안 기초</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 920px; margin: 0 auto; padding: 48px 24px 72px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.68; color: #202124; background: #fff; }
+    h1 { margin: 0 0 24px; font-size: 2rem; line-height: 1.25; }
+    h2 { margin-top: 40px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+    h3 { margin-top: 28px; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.95rem; }
+    th, td { border: 1px solid #d8dee4; padding: 8px 10px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 16px; background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 4px; }
+    blockquote { margin: 18px 0; padding: 2px 18px; border-left: 4px solid #d8dee4; color: #57606a; background: #f6f8fa; }
+    details { margin: 18px 0; padding: 12px 16px; border: 1px solid #d8dee4; border-radius: 6px; }
+    summary { cursor: pointer; font-weight: 600; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+    .back { margin-bottom: 28px; font-size: 0.95rem; }
+    .quiz-section { margin-top: 48px; padding: 28px; background: #f0f7ff; border: 1px solid #c2d9f5; border-radius: 10px; }
+    .quiz-section h2 { border-top: none; margin-top: 0; padding-top: 0; }
+    .question { margin: 20px 0; }
+    .question p { font-weight: 600; margin-bottom: 10px; }
+    .options label { display: block; margin: 6px 0; cursor: pointer; padding: 6px 10px; border-radius: 6px; border: 1px solid #d8dee4; background: #fff; transition: background 0.15s; }
+    .options label:hover { background: #e8f0fe; }
+    .options input[type="radio"] { margin-right: 8px; }
+    .check-btn { margin-top: 14px; padding: 8px 22px; background: #0b57d0; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+    .check-btn:hover { background: #0943a8; }
+    .result { margin-top: 10px; font-weight: 600; min-height: 1.4em; }
+    .correct { color: #188038; }
+    .wrong { color: #c62828; }
+    .tip { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 2px 18px; margin: 18px 0; }
+    .danger { background: #fce8e6; border-left: 4px solid #c62828; padding: 2px 18px; margin: 18px 0; }
+    .nav-links { margin-top: 48px; display: flex; gap: 16px; flex-wrap: wrap; }
+    .nav-links a { padding: 8px 20px; border: 1px solid #d8dee4; border-radius: 6px; text-decoration: none; font-size: 0.95rem; }
+    .nav-links a:hover { background: #f6f8fa; }
+    /* NAT 시뮬레이터 */
+    .nat-box { margin-top: 20px; background: #fff; border: 1px solid #d8dee4; border-radius: 8px; padding: 20px; }
+    .nat-btn { padding: 8px 18px; background: #0b57d0; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; margin: 4px; }
+    .nat-btn:hover { background: #0943a8; }
+    .nat-btn:disabled { background: #9aa0a6; cursor: default; }
+    .nat-flow { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.88rem; line-height: 2; }
+    .nat-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+    .nat-row.active-row { background: #e8f0fe; border-radius: 6px; padding: 4px 8px; font-weight: 600; }
+    .nat-label { width: 90px; text-align: center; font-weight: 700; font-size: 0.82rem; padding: 2px 6px; border-radius: 4px; }
+    .nat-label.private { background: #e6f4ea; color: #188038; }
+    .nat-label.router { background: #fce8e6; color: #c62828; }
+    .nat-label.internet { background: #e8f0fe; color: #0b57d0; }
+    .nat-desc { margin-top: 12px; padding: 10px 14px; background: #f0f7ff; border-radius: 6px; font-size: 0.93rem; min-height: 2.5rem; }
+    /* 방화벽 규칙 체커 */
+    .fw-box { margin-top: 20px; background: #fff; border: 1px solid #d8dee4; border-radius: 8px; padding: 20px; }
+    .fw-table td select, .fw-table td input { width: 100%; font-size: 0.9rem; padding: 4px 6px; border: 1px solid #d8dee4; border-radius: 4px; box-sizing: border-box; }
+    .fw-result-row td { background: #f0f7ff; font-weight: 600; }
+    .fw-allow { color: #188038; }
+    .fw-deny { color: #c62828; }
+    /* 공격 유형 뱃지 */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.82rem; font-weight: 600; margin-right: 4px; }
+    .badge-dos { background: #fce8e6; color: #c62828; }
+    .badge-mitm { background: #fef3c7; color: #92400e; }
+    .badge-phishing { background: #f3e8ff; color: #6b21a8; }
+    .badge-sqli { background: #e0f2fe; color: #0369a1; }
+    .badge-scan { background: #f0fdf4; color: #166534; }
+    .badge-replay { background: #fff1f2; color: #be123c; }
+  </style>
+</head>
+<body>
+  <div class="back"><a href="./index.html">← 학습 목록으로</a></div>
+
+  <h1>Day 7 — 네트워크 보안 기초</h1>
+
+  <p>오늘은 네트워크를 보호하는 핵심 기술과 대표적인 공격 패턴을 배웁니다. NAT로 사설 IP를 숨기는 원리, 방화벽이 트래픽을 필터링하는 방식, VPN의 터널링 개념, 그리고 실제로 자주 발생하는 공격 유형까지 다룹니다.</p>
+
+  <blockquote>
+    <strong>학습 목표</strong><br>
+    NAT 동작 원리와 포트 변환 테이블 이해 · 방화벽 규칙(ACL) 적용 순서 파악 ·
+    VPN 터널링과 암호화 개념 설명 · 주요 네트워크 공격(DoS/DDoS, MitM, IP Spoofing 등) 식별
+  </blockquote>
+
+  <!-- ───────────────────────────── 1. NAT ───────────────────────────── -->
+  <h2>1. NAT — Network Address Translation</h2>
+
+  <p>NAT는 사설 IP 주소(<code>192.168.x.x</code>, <code>10.x.x.x</code>, <code>172.16–31.x.x</code>)를 공인 IP로 변환해 인터넷에 내보내는 기술입니다. IPv4 주소 부족 문제를 해결하고, 내부 망 구조를 외부에 숨기는 보안 효과도 줍니다.</p>
+
+  <h3>1-1. NAT 종류</h3>
+
+  <table>
+    <tr><th>종류</th><th>설명</th><th>사용 예</th></tr>
+    <tr>
+      <td><strong>Static NAT</strong></td>
+      <td>사설 IP 1개 ↔ 공인 IP 1개 (1:1 고정 매핑)</td>
+      <td>내부 서버를 외부에 공개할 때</td>
+    </tr>
+    <tr>
+      <td><strong>Dynamic NAT</strong></td>
+      <td>사설 IP 풀 → 공인 IP 풀 (동적 매핑, 공인 IP 부족 시 거부)</td>
+      <td>공인 IP 풀이 여럿인 기업망</td>
+    </tr>
+    <tr>
+      <td><strong>PAT / NAPT</strong></td>
+      <td>여러 사설 IP → 공인 IP 1개 + 포트 번호로 구분 (N:1)</td>
+      <td>가정용 공유기(가장 흔한 형태)</td>
+    </tr>
+  </table>
+
+  <div class="tip">
+    <p><strong>PAT(Port Address Translation)</strong>가 일반 NAT와 다른 핵심은 <strong>포트 번호</strong>를 추가 식별자로 사용한다는 점입니다. 공유기 한 대에 연결된 스마트폰·노트북·TV가 각각 다른 포트로 변환되어 인터넷을 공유할 수 있습니다.</p>
+  </div>
+
+  <h3>1-2. NAT 변환 테이블 (PAT 예시)</h3>
+
+  <table>
+    <tr><th>사설 IP:포트</th><th>공인 IP:포트</th><th>목적지</th><th>프로토콜</th></tr>
+    <tr><td>192.168.1.10:<strong>5001</strong></td><td>203.0.113.1:<strong>40001</strong></td><td>8.8.8.8:53</td><td>UDP</td></tr>
+    <tr><td>192.168.1.20:<strong>5002</strong></td><td>203.0.113.1:<strong>40002</strong></td><td>142.250.80.46:443</td><td>TCP</td></tr>
+    <tr><td>192.168.1.30:<strong>5003</strong></td><td>203.0.113.1:<strong>40003</strong></td><td>104.26.10.78:80</td><td>TCP</td></tr>
+  </table>
+
+  <p>응답 패킷이 돌아오면 라우터는 목적지 포트(40001, 40002, …)를 보고 변환 테이블에서 원래 사설 IP:포트를 찾아 내부로 전달합니다.</p>
+
+  <h3>1-3. 인터랙티브 — NAT 패킷 흐름 시뮬레이터</h3>
+
+  <div class="nat-box">
+    <div class="nat-flow" id="natFlow">
+      <div class="nat-row" id="nat-r0">
+        <span class="nat-label private">내부 PC</span>
+        <span>192.168.1.10:5001 → 8.8.8.8:53 (DNS 쿼리)</span>
+      </div>
+      <div class="nat-row" id="nat-r1">
+        <span class="nat-label router">라우터</span>
+        <span>NAT 변환: src 192.168.1.10:5001 → 203.0.113.1:40001</span>
+      </div>
+      <div class="nat-row" id="nat-r2">
+        <span class="nat-label internet">인터넷</span>
+        <span>203.0.113.1:40001 → 8.8.8.8:53 (출발)</span>
+      </div>
+      <div class="nat-row" id="nat-r3">
+        <span class="nat-label internet">인터넷</span>
+        <span>8.8.8.8:53 → 203.0.113.1:40001 (응답 도착)</span>
+      </div>
+      <div class="nat-row" id="nat-r4">
+        <span class="nat-label router">라우터</span>
+        <span>역변환: dst 203.0.113.1:40001 → 192.168.1.10:5001</span>
+      </div>
+      <div class="nat-row" id="nat-r5">
+        <span class="nat-label private">내부 PC</span>
+        <span>192.168.1.10:5001 수신 완료 (DNS 응답)</span>
+      </div>
+    </div>
+    <div class="nat-desc" id="natDesc">▶ 버튼을 눌러 패킷 흐름을 단계별로 확인하세요.</div>
+    <div style="margin-top:14px;">
+      <button class="nat-btn" id="natNextBtn" onclick="natNext()">▶ 다음 단계</button>
+      <button class="nat-btn" onclick="natReset()">↺ 처음부터</button>
+    </div>
+  </div>
+
+  <!-- ───────────────────────────── 2. 방화벽 ───────────────────────────── -->
+  <h2>2. 방화벽 (Firewall)</h2>
+
+  <p>방화벽은 미리 정의된 규칙(ACL)에 따라 패킷을 허용(<code>ALLOW</code>) 또는 차단(<code>DENY</code>)합니다. 규칙은 위에서 아래로 순서대로 평가하며, 첫 번째로 일치하는 규칙이 적용됩니다.</p>
+
+  <h3>2-1. 패킷 필터링 vs 상태 검사 vs 애플리케이션 방화벽</h3>
+
+  <table>
+    <tr><th>유형</th><th>검사 수준</th><th>특징</th></tr>
+    <tr>
+      <td>패킷 필터링</td>
+      <td>IP/포트/프로토콜</td>
+      <td>빠르지만 연결 상태 인식 없음; 1세대 방화벽</td>
+    </tr>
+    <tr>
+      <td>상태 검사 (Stateful)</td>
+      <td>연결 상태 테이블</td>
+      <td>TCP 연결 확립 여부 추적; 현재 대부분의 방화벽</td>
+    </tr>
+    <tr>
+      <td>NGFW / 애플리케이션</td>
+      <td>L7 페이로드</td>
+      <td>HTTP URL, DNS 도메인, 앱 프로토콜까지 필터링</td>
+    </tr>
+  </table>
+
+  <h3>2-2. 방화벽 규칙 예시</h3>
+
+  <table>
+    <tr><th>#</th><th>방향</th><th>출발 IP</th><th>목적지 IP</th><th>포트</th><th>프로토콜</th><th>동작</th></tr>
+    <tr><td>1</td><td>IN</td><td>any</td><td>10.0.0.10</td><td>443</td><td>TCP</td><td class="fw-allow">ALLOW</td></tr>
+    <tr><td>2</td><td>IN</td><td>any</td><td>10.0.0.10</td><td>80</td><td>TCP</td><td class="fw-allow">ALLOW</td></tr>
+    <tr><td>3</td><td>IN</td><td>192.168.1.0/24</td><td>any</td><td>22</td><td>TCP</td><td class="fw-allow">ALLOW</td></tr>
+    <tr><td>4</td><td>IN</td><td>any</td><td>any</td><td>22</td><td>TCP</td><td class="fw-deny">DENY</td></tr>
+    <tr><td>5</td><td>IN</td><td>any</td><td>any</td><td>any</td><td>any</td><td class="fw-deny">DENY</td></tr>
+  </table>
+
+  <div class="tip">
+    <p><strong>묵시적 거부 (Implicit Deny)</strong> — 마지막 규칙 5처럼 모든 트래픽을 거부하는 규칙을 두어, 위에서 매칭되지 않은 패킷은 모두 차단합니다. "허용 목록(allowlist)" 방식의 기본 원칙입니다.</p>
+  </div>
+
+  <h3>2-3. DMZ (비무장지대)</h3>
+  <p>웹 서버처럼 외부에 공개되어야 하는 시스템은 <strong>DMZ</strong> 구역에 배치합니다. 인터넷 ↔ DMZ 사이에 외부 방화벽, DMZ ↔ 내부망 사이에 내부 방화벽을 두어 이중으로 보호합니다.</p>
+
+  <pre>인터넷
+    │
+  [외부 방화벽]  — 443, 80만 허용
+    │
+  [DMZ: 웹 서버 / 메일 서버]
+    │
+  [내부 방화벽]  — DB 포트만 내부 허용
+    │
+  [내부망: DB, 업무 시스템]</pre>
+
+  <!-- ───────────────────────────── 3. VPN ───────────────────────────── -->
+  <h2>3. VPN — Virtual Private Network</h2>
+
+  <p>VPN은 공용 인터넷 위에 암호화된 <strong>터널</strong>을 만들어 마치 전용 회선처럼 안전하게 통신합니다.</p>
+
+  <h3>3-1. 핵심 개념</h3>
+  <ul>
+    <li><strong>터널링</strong> — 원본 IP 패킷을 새 패킷으로 캡슐화해 전송. 수신 측에서 역캡슐화.</li>
+    <li><strong>암호화</strong> — AES-256 등으로 페이로드를 암호화해 도청 방지.</li>
+    <li><strong>인증</strong> — 사전 공유 키(PSK), 인증서, 사용자 ID/PW 등으로 신원 확인.</li>
+  </ul>
+
+  <h3>3-2. 주요 VPN 프로토콜 비교</h3>
+
+  <table>
+    <tr><th>프로토콜</th><th>계층</th><th>포트</th><th>특징</th></tr>
+    <tr>
+      <td><strong>IPsec</strong></td>
+      <td>L3</td>
+      <td>UDP 500/4500</td>
+      <td>기업 사이트 간 VPN(S2S) · AH(인증)+ESP(암호화) 모드</td>
+    </tr>
+    <tr>
+      <td><strong>OpenVPN</strong></td>
+      <td>L4/TLS</td>
+      <td>UDP 1194 / TCP 443</td>
+      <td>오픈소스, TLS 기반, 방화벽 우회 용이</td>
+    </tr>
+    <tr>
+      <td><strong>WireGuard</strong></td>
+      <td>L3</td>
+      <td>UDP 51820</td>
+      <td>간결한 코드(~4000줄), 빠른 속도, 최신 표준</td>
+    </tr>
+    <tr>
+      <td><strong>SSL VPN</strong></td>
+      <td>L4/TLS</td>
+      <td>TCP 443</td>
+      <td>브라우저 기반 원격 접속; 클라이언트 설치 불필요</td>
+    </tr>
+  </table>
+
+  <h3>3-3. Site-to-Site vs Remote Access VPN</h3>
+  <table>
+    <tr><th></th><th>Site-to-Site</th><th>Remote Access</th></tr>
+    <tr><td>목적</td><td>두 거점 사무실 연결</td><td>재택·출장 직원이 내부망 접속</td></tr>
+    <tr><td>장치</td><td>양쪽 라우터/방화벽</td><td>직원 단말 + VPN 서버</td></tr>
+    <tr><td>예시</td><td>본사-지사 IPsec 터널</td><td>GlobalProtect, Cisco AnyConnect</td></tr>
+  </table>
+
+  <!-- ───────────────────────────── 4. 일반적인 공격 유형 ───────────────────────────── -->
+  <h2>4. 주요 네트워크 공격 유형</h2>
+
+  <h3>4-1. DoS / DDoS</h3>
+  <p><span class="badge badge-dos">DoS/DDoS</span> <strong>서비스 거부 공격</strong> — 대량의 트래픽(패킷)을 서버에 쏟아 정상 사용자가 접근하지 못하도록 만드는 공격입니다.</p>
+
+  <table>
+    <tr><th>유형</th><th>원리</th><th>대응</th></tr>
+    <tr>
+      <td>SYN Flood</td>
+      <td>TCP 3-way handshake 중 SYN만 대량 전송 → 서버 연결 테이블 소진</td>
+      <td>SYN Cookie, Rate Limiting</td>
+    </tr>
+    <tr>
+      <td>UDP Flood</td>
+      <td>랜덤 포트로 대량 UDP 패킷 전송 → 서버 ICMP 응답 부하</td>
+      <td>트래픽 기반 필터링</td>
+    </tr>
+    <tr>
+      <td>HTTP Flood</td>
+      <td>정상처럼 보이는 HTTP GET/POST 대량 전송 (L7 공격)</td>
+      <td>CAPTCHA, 행동 분석, CDN</td>
+    </tr>
+    <tr>
+      <td>DNS 증폭</td>
+      <td>소스 IP를 피해자로 위조 → DNS 응답(큰 패킷)이 피해자에게 쏟아짐</td>
+      <td>BCP38 Ingress Filtering</td>
+    </tr>
+  </table>
+
+  <div class="tip">
+    <p><strong>DDoS</strong>는 수천~수백만 대의 감염된 기기(봇넷)가 동시에 공격해 단일 차단으로 막기 어렵습니다. CDN, Anycast 흡수, ISP 협력 차단(Blackholing)을 조합해 대응합니다.</p>
+  </div>
+
+  <h3>4-2. Man-in-the-Middle (MitM)</h3>
+  <p><span class="badge badge-mitm">MitM</span> 통신 경로에 공격자가 끼어들어 패킷을 가로채거나 변조합니다.</p>
+
+  <ul>
+    <li><strong>ARP Spoofing</strong> — 위조된 ARP 응답을 브로드캐스트해 게이트웨이 MAC을 자신의 MAC으로 교체.</li>
+    <li><strong>DNS Spoofing</strong> — DNS 캐시를 오염시켜 도메인이 공격자 서버로 연결되게 함.</li>
+    <li><strong>SSL Stripping</strong> — HTTPS → HTTP 다운그레이드 후 평문 트래픽 도청.</li>
+  </ul>
+
+  <p><strong>대응</strong> — HTTPS 강제(HSTS), 인증서 고정(Certificate Pinning), Dynamic ARP Inspection(DAI), DNSSEC.</p>
+
+  <h3>4-3. IP Spoofing</h3>
+  <p><span class="badge badge-scan">IP 스푸핑</span> 출발지 IP를 위조해 출처를 숨기거나 신뢰된 IP인 척합니다. DDoS 증폭 공격에 주로 쓰입니다. 대응책은 <strong>BCP38</strong> — ISP가 자신이 할당하지 않은 출발지 IP를 가진 패킷을 출구에서 버리는 규칙입니다.</p>
+
+  <h3>4-4. 포트 스캔</h3>
+  <p><span class="badge badge-scan">정찰</span> 공격 전 대상 시스템의 열린 포트와 서비스를 파악하는 단계입니다. <strong>nmap</strong>이 대표적인 도구이며, 반열린(half-open) SYN 스캔으로 로그를 남기지 않고 스캔할 수 있습니다.</p>
+
+  <pre>nmap -sS -p 1-65535 192.168.1.10    # SYN 스캔 (반열린 스캔)</pre>
+
+  <p><strong>탐지 · 대응</strong> — IDS(Intrusion Detection System) 경보, Rate Limiting, 포트 노킹(port knocking).</p>
+
+  <h3>4-5. 재전송 공격 (Replay Attack)</h3>
+  <p><span class="badge badge-replay">재전송</span> 정상 인증 패킷을 캡처해 나중에 다시 전송해 인증을 통과하는 공격입니다. <strong>Nonce</strong>(일회용 난수), <strong>Timestamp</strong>, <strong>Sequence Number</strong>로 방어합니다.</p>
+
+  <h3>4-6. 피싱 / 소셜 엔지니어링</h3>
+  <p><span class="badge badge-phishing">피싱</span> 기술적 취약점보다 사람을 속이는 공격입니다. 가짜 로그인 페이지, 악성 이메일 첨부 등이 대표적입니다. <strong>스피어 피싱</strong>은 특정 대상을 겨냥해 정교하게 꾸민 형태입니다.</p>
+
+  <hr>
+
+  <h2>5. 정리 — 보안 계층별 대응</h2>
+
+  <table>
+    <tr><th>계층</th><th>위협</th><th>대응 기술</th></tr>
+    <tr><td>물리 / L2</td><td>ARP Spoofing, MAC Flooding</td><td>DAI, Port Security, 802.1X</td></tr>
+    <tr><td>네트워크 / L3</td><td>IP Spoofing, DoS, 라우팅 변조</td><td>BCP38, ACL, IPsec</td></tr>
+    <tr><td>전송 / L4</td><td>SYN Flood, 포트 스캔</td><td>SYN Cookie, 방화벽, IDS/IPS</td></tr>
+    <tr><td>응용 / L7</td><td>SQL Injection, XSS, HTTP Flood</td><td>WAF, HTTPS, 입력 검증</td></tr>
+    <tr><td>전 계층</td><td>MitM, 도청</td><td>TLS, VPN, PKI, DNSSEC</td></tr>
+  </table>
+
+  <!-- ───────────────────────────── 퀴즈 ───────────────────────────── -->
+  <div class="quiz-section">
+    <h2>확인 퀴즈</h2>
+
+    <!-- Q1 -->
+    <div class="question" id="q1">
+      <p>1. PAT(Port Address Translation)에서 여러 내부 호스트를 구별하는 데 사용하는 식별자는?</p>
+      <div class="options">
+        <label><input type="radio" name="q1" value="a"> IP 주소</label>
+        <label><input type="radio" name="q1" value="b"> MAC 주소</label>
+        <label><input type="radio" name="q1" value="c"> 포트 번호</label>
+        <label><input type="radio" name="q1" value="d"> TTL 값</label>
+      </div>
+      <button class="check-btn" onclick="checkQ('q1','c','포트 번호를 추가 식별자로 사용해 여러 사설 IP를 공인 IP 하나에 매핑합니다.')">확인</button>
+      <div class="result" id="q1-result"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question" id="q2">
+      <p>2. 방화벽 규칙 평가 원칙으로 옳은 것은?</p>
+      <div class="options">
+        <label><input type="radio" name="q2" value="a"> 모든 규칙을 검사하고 가장 구체적인 규칙을 적용한다</label>
+        <label><input type="radio" name="q2" value="b"> 위에서 아래로 순서대로 평가하고, 첫 매칭 규칙을 적용한다</label>
+        <label><input type="radio" name="q2" value="c"> ALLOW 규칙이 DENY 규칙보다 항상 우선한다</label>
+        <label><input type="radio" name="q2" value="d"> 마지막 규칙이 가장 높은 우선순위를 갖는다</label>
+      </div>
+      <button class="check-btn" onclick="checkQ('q2','b','방화벽은 위→아래 순서로 규칙을 평가하며, 첫 번째로 일치하는 규칙의 동작(ALLOW/DENY)을 적용합니다.')">확인</button>
+      <div class="result" id="q2-result"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question" id="q3">
+      <p>3. SYN Flood 공격의 원리는?</p>
+      <div class="options">
+        <label><input type="radio" name="q3" value="a"> DNS 서버 캐시를 오염시켜 잘못된 IP로 유도한다</label>
+        <label><input type="radio" name="q3" value="b"> TCP 3-way handshake 중 SYN만 대량 보내 서버의 연결 테이블을 고갈시킨다</label>
+        <label><input type="radio" name="q3" value="c"> 캡처한 인증 패킷을 재전송해 세션을 탈취한다</label>
+        <label><input type="radio" name="q3" value="d"> 패킷의 출발지 MAC 주소를 위조해 스위치 테이블을 오염시킨다</label>
+      </div>
+      <button class="check-btn" onclick="checkQ('q3','b','SYN을 무수히 보내 서버가 SYN-ACK 상태로 대기하게 만들어 연결 테이블(backlog queue)을 소진시킵니다.')">확인</button>
+      <div class="result" id="q3-result"></div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question" id="q4">
+      <p>4. ARP Spoofing의 목적은?</p>
+      <div class="options">
+        <label><input type="radio" name="q4" value="a"> 공격자의 IP를 위조해 방화벽 규칙을 우회한다</label>
+        <label><input type="radio" name="q4" value="b"> 피해자의 ARP 캐시에 게이트웨이 IP를 공격자 MAC으로 등록해 트래픽을 가로챈다</label>
+        <label><input type="radio" name="q4" value="c"> DNS 응답을 위조해 사용자를 가짜 사이트로 유도한다</label>
+        <label><input type="radio" name="q4" value="d"> VPN 터널을 끊어 평문 통신으로 다운그레이드한다</label>
+      </div>
+      <button class="check-btn" onclick="checkQ('q4','b','ARP Spoofing은 위조 ARP 응답으로 피해자 기기의 ARP 캐시를 오염시켜, 피해자 → 게이트웨이 트래픽이 공격자를 경유하게 합니다.')">확인</button>
+      <div class="result" id="q4-result"></div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question" id="q5">
+      <p>5. 재전송 공격(Replay Attack)을 방어하기 위한 기법이 아닌 것은?</p>
+      <div class="options">
+        <label><input type="radio" name="q5" value="a"> Nonce (일회용 난수)</label>
+        <label><input type="radio" name="q5" value="b"> Timestamp 검증</label>
+        <label><input type="radio" name="q5" value="c"> Sequence Number</label>
+        <label><input type="radio" name="q5" value="d"> MTU 크기 증가</label>
+      </div>
+      <button class="check-btn" onclick="checkQ('q5','d','MTU(최대 전송 단위) 크기는 재전송 공격 방어와 관계없습니다. Nonce·Timestamp·Sequence Number가 패킷 고유성을 보장합니다.')">확인</button>
+      <div class="result" id="q5-result"></div>
+    </div>
+  </div>
+
+  <div class="nav-links">
+    <a href="./day-06-application-http-https.html">← Day 6 — HTTP/HTTPS</a>
+    <a href="./index.html">학습 목록</a>
+    <a href="./day-08-wireshark-analysis.html">Day 8 — Wireshark 패킷 분석 →</a>
+  </div>
+
+  <script>
+    /* ──── NAT 시뮬레이터 ──── */
+    const natSteps = [
+      { row: 'nat-r0', desc: '1단계 — 내부 PC(192.168.1.10:5001)가 DNS 서버(8.8.8.8:53)로 쿼리 패킷을 보냅니다.' },
+      { row: 'nat-r1', desc: '2단계 — 라우터가 NAT 변환 테이블에 항목을 추가하고, 출발지를 공인 IP(203.0.113.1:40001)로 변경합니다.' },
+      { row: 'nat-r2', desc: '3단계 — 변환된 패킷이 인터넷으로 나갑니다. 외부에서는 공인 IP만 보입니다.' },
+      { row: 'nat-r3', desc: '4단계 — DNS 응답 패킷이 공인 IP:포트(203.0.113.1:40001)로 돌아옵니다.' },
+      { row: 'nat-r4', desc: '5단계 — 라우터가 NAT 테이블을 역참조해 목적지를 원래 사설 IP(192.168.1.10:5001)로 복원합니다.' },
+      { row: 'nat-r5', desc: '6단계 — 내부 PC가 DNS 응답을 수신합니다. 내부 IP는 외부에 한 번도 노출되지 않았습니다. ✅' },
+    ];
+    let natStep = -1;
+
+    function natNext() {
+      const rows = document.querySelectorAll('.nat-row');
+      rows.forEach(r => r.classList.remove('active-row'));
+      natStep++;
+      if (natStep >= natSteps.length) {
+        document.getElementById('natDesc').textContent = '모든 단계 완료! ↺ 버튼으로 다시 시작하세요.';
+        document.getElementById('natNextBtn').disabled = true;
+        return;
+      }
+      const s = natSteps[natStep];
+      document.getElementById(s.row).classList.add('active-row');
+      document.getElementById('natDesc').textContent = s.desc;
+    }
+
+    function natReset() {
+      natStep = -1;
+      document.querySelectorAll('.nat-row').forEach(r => r.classList.remove('active-row'));
+      document.getElementById('natDesc').textContent = '▶ 버튼을 눌러 패킷 흐름을 단계별로 확인하세요.';
+      document.getElementById('natNextBtn').disabled = false;
+    }
+
+    /* ──── 퀴즈 체커 ──── */
+    function checkQ(id, correct, explanation) {
+      const selected = document.querySelector(`input[name="${id}"]:checked`);
+      const resultEl = document.getElementById(`${id}-result`);
+      if (!selected) { resultEl.textContent = '선택지를 골라주세요.'; resultEl.className = 'result'; return; }
+      if (selected.value === correct) {
+        resultEl.innerHTML = `✅ 정답! ${explanation}`;
+        resultEl.className = 'result correct';
+      } else {
+        resultEl.innerHTML = `❌ 오답. 힌트: ${explanation}`;
+        resultEl.className = 'result wrong';
+      }
+    }
+  </script>
+</body>
+</html>
