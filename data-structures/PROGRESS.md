@@ -8,12 +8,12 @@
 | 2 | 2026-06-23 | 배열과 연결 리스트 (Arrays & Linked Lists) | [0002-arrays-and-linked-lists.html](lessons/0002-arrays-and-linked-lists.html) |
 | 3 | 2026-06-24 | 스택 (Stack) | [0003-stack.html](lessons/0003-stack.html) |
 | 4 | 2026-06-25 | 큐 (Queue) | [0004-queue.html](lessons/0004-queue.html) |
+| 5 | 2026-06-26 | 해시 테이블 (Hash Tables) | [0005-hash-tables.html](lessons/0005-hash-tables.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | 해시 테이블 (Hash Tables) | 해시 함수, 충돌 해결(체이닝·오픈 어드레싱), O(1) 평균 탐색 |
 | 6 | 트리 기초 (Tree Basics) | 트리 용어, 이진 트리, 순회(전위·중위·후위·레벨) |
 | 7 | 이진 탐색 트리 (BST) | 삽입·탐색·삭제 O(log n), 균형 문제 |
 | 8 | 힙 (Heap) | 최대힙·최소힙, 힙 정렬, 우선순위 큐 |
@@ -32,7 +32,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — 큐(Queue) 학습 완료. 다음은 해시 테이블(Hash Tables).
+**Day 5 완료** — 해시 테이블(Hash Tables) 학습 완료. 다음은 트리 기초(Tree Basics).
 
 ## 습득한 핵심 개념
 
@@ -43,8 +43,7 @@
 - [x] 배열과 연결 리스트 (✓ Day 2)
 - [x] 스택 (✓ Day 3)
 - [x] 큐 — FIFO, 원형 큐, collections.deque, BFS 응용 (✓ Day 4)
-- [ ] 해시 테이블 (예정 Day 5)
-- [ ] 해시 테이블 (예정 Day 5)
+- [x] 해시 테이블 — 해시 함수, 체이닝, 오픈 어드레싱, 로드 팩터, 리해싱 (✓ Day 5)
 - [ ] 트리 계열 (예정 Day 6–10)
 - [ ] 그래프 (예정 Day 11–13)
 - [ ] 정렬 알고리즘 (예정 Day 14–16)

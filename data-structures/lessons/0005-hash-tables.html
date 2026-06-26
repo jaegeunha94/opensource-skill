@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — 해시 테이블 (Hash Tables)</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>해시 테이블 (Hash Tables)</h1>
+<div class="lesson-meta">
+  <span class="day-badge">Day 5</span>
+  <span class="lesson-date">2026-06-26</span>
+  &nbsp;·&nbsp; Hash Tables — 해시 함수, 충돌 해결, O(1) 평균 탐색
+</div>
+
+<!-- ─── 학습 목표 ─── -->
+<h2>학습 목표</h2>
+<p>이 레슨을 마치면 다음을 할 수 있다:</p>
+<ul>
+  <li>해시 테이블이 O(1) 평균 탐색·삽입·삭제를 달성하는 원리를 설명할 수 있다.</li>
+  <li>좋은 해시 함수의 조건을 나열하고 간단한 해시 함수를 직접 작성할 수 있다.</li>
+  <li>체이닝(Chaining)과 오픈 어드레싱(Open Addressing) 두 충돌 해결 방식의 차이를 비교할 수 있다.</li>
+  <li>로드 팩터(load factor)가 성능에 미치는 영향을 설명하고 리해싱이 필요한 시점을 알 수 있다.</li>
+  <li>Python의 <code>dict</code>와 <code>set</code>이 해시 테이블임을 알고 올바르게 활용할 수 있다.</li>
+</ul>
+
+<!-- ─── 1. 해시 테이블이란? ─── -->
+<h2>1. 해시 테이블이란?</h2>
+<p>
+  <strong>해시 테이블(Hash Table)</strong>은 키(key)를 해시 함수로 변환해 얻은 인덱스에
+  값을 저장하는 자료구조다. 배열 처럼 인덱스로 직접 접근하기 때문에
+  평균 <strong>O(1)</strong>의 탐색·삽입·삭제가 가능하다.
+</p>
+
+<div class="diagram">
+해시 테이블의 기본 구조:
+
+  키(key)  →  해시 함수  →  인덱스  →  배열(버킷) 접근
+  "apple"  →  hash()    →    3     →  table[3] = "사과"
+  "banana" →  hash()    →    7     →  table[7] = "바나나"
+  "cherry" →  hash()    →    1     →  table[1] = "체리"
+
+  인덱스 0  1        2  3        4  5  6  7
+        ┌──┬────────┬──┬────────┬──┬──┬──┬────────┐
+        │  │"체리"  │  │"사과"  │  │  │  │"바나나"│
+        └──┴────────┴──┴────────┴──┴──┴──┴────────┘
+</div>
+<p class="diagram-caption">해시 테이블 — 키를 인덱스로 변환해 배열에 직접 저장한다</p>
+
+<div class="callout">
+  <div class="callout-title">왜 해시 테이블이 필요한가?</div>
+  <ul>
+    <li><strong>배열</strong>: 인덱스로 O(1) 접근, 하지만 키가 정수여야 하고 범위가 크면 메모리 낭비.</li>
+    <li><strong>연결 리스트</strong>: 키가 무엇이든 저장 가능, 하지만 탐색에 O(n) 시간이 걸린다.</li>
+    <li><strong>해시 테이블</strong>: 어떤 키든 해시 함수로 정수 인덱스로 변환 → O(1) 접근, 메모리 효율.</li>
+  </ul>
+</div>
+
+<!-- ─── 2. 해시 함수 ─── -->
+<h2>2. 해시 함수 (Hash Function)</h2>
+<p>
+  <strong>해시 함수</strong>는 임의의 키를 받아 배열 인덱스(정수)를 반환하는 함수다.
+  <code>index = hash(key) % table_size</code> 형태가 가장 기본이다.
+</p>
+
+<h3>좋은 해시 함수의 조건</h3>
+<table>
+  <thead>
+    <tr><th>조건</th><th>설명</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>결정론적 (Deterministic)</td><td>같은 키는 항상 같은 인덱스를 반환해야 한다.</td></tr>
+    <tr><td>균등 분포 (Uniform Distribution)</td><td>인덱스가 배열 전체에 고루 분산되어야 충돌이 줄어든다.</td></tr>
+    <tr><td>빠른 계산 (Fast Computation)</td><td>O(1) 또는 O(키 길이) 내에 계산되어야 한다.</td></tr>
+    <tr><td>눈사태 효과 (Avalanche)</td><td>키의 작은 변화가 인덱스를 크게 바꿔야 한다 (보안 해시에서 더 중요).</td></tr>
+  </tbody>
+</table>
+
+<h3>간단한 해시 함수 예시 (정수 키)</h3>
+<pre><code>def hash_int(key: int, size: int) -> int:
+    return key % size
+
+# 예: 테이블 크기 10
+print(hash_int(42, 10))    # 2
+print(hash_int(153, 10))   # 3
+print(hash_int(0, 10))     # 0
+</code></pre>
+
+<h3>문자열 해시 함수 — 다항 롤링 해시</h3>
+<pre><code>def hash_str(key: str, size: int, base: int = 31) -> int:
+    """다항 롤링 해시: h = (c0*b^n + c1*b^(n-1) + ... + cn) % size"""
+    h = 0
+    for ch in key:
+        h = (h * base + ord(ch)) % size
+    return h
+
+print(hash_str("apple",  1000))   # 예: 927
+print(hash_str("Apple",  1000))   # 예: 895 (대소문자만 달라도 다른 값)
+print(hash_str("appel",  1000))   # 예: 해당 값 (철자 순서가 달라도 다른 값)
+</code></pre>
+
+<div class="callout warning">
+  <div class="callout-title">나쁜 해시 함수 — 길이만 반환</div>
+  <p>
+    <code>hash_str = lambda key, size: len(key) % size</code> 같은 함수는 키 길이가 같으면
+    항상 같은 인덱스가 되어 <strong>충돌이 폭증</strong>한다. O(1)은커녕 O(n)도 보장하지 못한다.
+  </p>
+</div>
+
+<!-- ─── 3. 충돌 ─── -->
+<h2>3. 충돌 (Collision)</h2>
+<p>
+  두 개 이상의 키가 같은 인덱스로 매핑되는 현상을 <strong>충돌(Collision)</strong>이라 한다.
+  비둘기집 원리에 의해 키의 범위가 테이블 크기보다 크면 충돌은 <em>필연적으로</em> 발생한다.
+</p>
+
+<div class="diagram">
+충돌 예시 (테이블 크기 = 5):
+
+  "apple"  → hash % 5 = 2  ─┐
+  "grape"  → hash % 5 = 2  ─┤  → 인덱스 2에서 충돌!
+  "lemon"  → hash % 5 = 4
+  "mango"  → hash % 5 = 2  ─┘  → 세 번째 충돌!
+</div>
+<p class="diagram-caption">서로 다른 키가 같은 인덱스로 매핑 — 충돌 처리 전략이 필요하다</p>
+
+<!-- ─── 4. 충돌 해결 — 체이닝 ─── -->
+<h2>4. 충돌 해결 1 — 체이닝 (Separate Chaining)</h2>
+<p>
+  각 버킷(배열 슬롯)에 <strong>연결 리스트</strong>(또는 다른 자료구조)를 두고,
+  충돌하는 키를 같은 버킷의 리스트에 이어 붙이는 방식이다.
+</p>
+
+<div class="diagram">
+체이닝 예시 (테이블 크기 = 5):
+
+인덱스 0: → None
+인덱스 1: → ("fig", 1500) → None
+인덱스 2: → ("apple", 800) → ("grape", 300) → ("mango", 200) → None
+인덱스 3: → ("banana", 500) → None
+인덱스 4: → ("lemon", 900) → None
+</div>
+<p class="diagram-caption">체이닝 — 같은 인덱스의 충돌 항목을 연결 리스트로 관리한다</p>
+
+<pre><code>class ChainingHashTable:
+    def __init__(self, size: int = 16):
+        self._size = size
+        self._buckets = [[] for _ in range(size)]  # 각 버킷은 (key, value) 리스트
+
+    def _hash(self, key) -> int:
+        return hash(key) % self._size
+
+    def put(self, key, value) -> None:
+        idx = self._hash(key)
+        for i, (k, v) in enumerate(self._buckets[idx]):
+            if k == key:
+                self._buckets[idx][i] = (key, value)  # 키 존재 시 업데이트
+                return
+        self._buckets[idx].append((key, value))        # 새 항목 추가
+
+    def get(self, key):
+        idx = self._hash(key)
+        for k, v in self._buckets[idx]:
+            if k == key:
+                return v
+        raise KeyError(key)
+
+    def delete(self, key) -> None:
+        idx = self._hash(key)
+        bucket = self._buckets[idx]
+        for i, (k, v) in enumerate(bucket):
+            if k == key:
+                bucket.pop(i)
+                return
+        raise KeyError(key)
+
+
+# 사용 예
+ht = ChainingHashTable()
+ht.put("apple", 800)
+ht.put("grape", 300)
+ht.put("apple", 850)    # 업데이트
+print(ht.get("apple"))  # 850
+ht.delete("grape")
+</code></pre>
+
+<h3>체이닝의 시간복잡도</h3>
+<table>
+  <thead>
+    <tr><th>연산</th><th>평균</th><th>최악 (모든 키 충돌)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>탐색(get)</td><td>O(1)</td><td>O(n)</td></tr>
+    <tr><td>삽입(put)</td><td>O(1)</td><td>O(n)</td></tr>
+    <tr><td>삭제(delete)</td><td>O(1)</td><td>O(n)</td></tr>
+  </tbody>
+</table>
+
+<!-- ─── 5. 충돌 해결 — 오픈 어드레싱 ─── -->
+<h2>5. 충돌 해결 2 — 오픈 어드레싱 (Open Addressing)</h2>
+<p>
+  충돌이 발생하면 <strong>같은 배열 내의 다른 빈 슬롯을 탐색</strong>해서 저장하는 방식이다.
+  모든 데이터가 배열 안에만 존재하므로 포인터 오버헤드가 없다.
+</p>
+
+<h3>선형 탐사 (Linear Probing)</h3>
+<p>충돌 시 <code>(index + 1) % size</code>씩 순차적으로 다음 빈 슬롯을 탐색한다.</p>
+
+<div class="diagram">
+선형 탐사 예시 (테이블 크기 = 7):
+
+  "apple"  → idx 2  → 비어 있음 → table[2] = "apple"
+  "grape"  → idx 2  → 충돌! → 탐사 → table[3] = "grape"
+  "cherry" → idx 3  → 충돌! → 탐사 → table[4] = "cherry"
+
+  인덱스:  0    1    2        3        4         5    6
+         [ _  | _  |"apple"  |"grape" |"cherry"  | _  | _ ]
+
+  "lime"   → idx 4  → 충돌! → idx5 비어있음 → table[5] = "lime"
+</div>
+<p class="diagram-caption">선형 탐사 — 충돌 시 한 칸씩 오른쪽으로 이동해 빈 슬롯을 찾는다 (클러스터링 위험)</p>
+
+<h3>이차 탐사 (Quadratic Probing)</h3>
+<p>충돌 시 탐사 간격을 1, 4, 9, 16, …(i²)로 늘려 클러스터링을 줄인다.</p>
+<pre><code># 이차 탐사 인덱스 계산
+index = (initial_hash + i * i) % size   # i = 1, 2, 3, …
+</code></pre>
+
+<h3>이중 해싱 (Double Hashing)</h3>
+<p>두 번째 해시 함수로 탐사 간격을 결정해 클러스터링을 크게 줄인다.</p>
+<pre><code># 이중 해싱 인덱스 계산
+step = hash2(key)                         # 두 번째 해시 함수
+index = (initial_hash + i * step) % size  # i = 1, 2, 3, …
+</code></pre>
+
+<pre><code>class OpenAddressingHashTable:
+    _DELETED = object()   # 삭제된 슬롯을 나타내는 sentinel
+
+    def __init__(self, size: int = 16):
+        self._size = size
+        self._slots = [None] * size
+        self._count = 0
+
+    def _hash(self, key) -> int:
+        return hash(key) % self._size
+
+    def put(self, key, value) -> None:
+        if self._count / self._size > 0.7:
+            self._resize()
+        idx = self._hash(key)
+        i = 0
+        while self._slots[(idx + i) % self._size] not in (None, self._DELETED):
+            slot_key, _ = self._slots[(idx + i) % self._size]
+            if slot_key == key:
+                self._slots[(idx + i) % self._size] = (key, value)  # 업데이트
+                return
+            i += 1
+        self._slots[(idx + i) % self._size] = (key, value)
+        self._count += 1
+
+    def get(self, key):
+        idx = self._hash(key)
+        i = 0
+        while self._slots[(idx + i) % self._size] is not None:
+            slot = self._slots[(idx + i) % self._size]
+            if slot is not self._DELETED and slot[0] == key:
+                return slot[1]
+            i += 1
+            if i == self._size:
+                break
+        raise KeyError(key)
+
+    def delete(self, key) -> None:
+        idx = self._hash(key)
+        i = 0
+        while self._slots[(idx + i) % self._size] is not None:
+            slot = self._slots[(idx + i) % self._size]
+            if slot is not self._DELETED and slot[0] == key:
+                self._slots[(idx + i) % self._size] = self._DELETED  # lazy 삭제
+                self._count -= 1
+                return
+            i += 1
+            if i == self._size:
+                break
+        raise KeyError(key)
+
+    def _resize(self) -> None:
+        old_slots = self._slots
+        self._size *= 2
+        self._slots = [None] * self._size
+        self._count = 0
+        for slot in old_slots:
+            if slot and slot is not self._DELETED:
+                self.put(slot[0], slot[1])
+</code></pre>
+
+<div class="callout warning">
+  <div class="callout-title">삭제 주의 — Lazy 삭제가 필요한 이유</div>
+  <p>
+    오픈 어드레싱에서 슬롯을 단순히 <code>None</code>으로 비우면
+    탐사 체인이 끊겨 이후 탐색 시 존재하는 키를 찾지 못한다.
+    반드시 <strong>sentinel(삭제 마커)</strong>을 두고 나중에 일괄 정리(리해싱)한다.
+  </p>
+</div>
+
+<!-- ─── 6. 체이닝 vs 오픈 어드레싱 비교 ─── -->
+<h2>6. 체이닝 vs 오픈 어드레싱 비교</h2>
+<table>
+  <thead>
+    <tr><th>기준</th><th>체이닝 (Chaining)</th><th>오픈 어드레싱 (Open Addressing)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>데이터 위치</td><td>배열 + 외부 연결 리스트</td><td>배열 내부에만 존재</td></tr>
+    <tr><td>메모리</td><td>포인터 오버헤드 있음</td><td>캐시 친화적, 포인터 없음</td></tr>
+    <tr><td>로드 팩터 허용 범위</td><td>1 이상도 허용 (버킷이 늘어남)</td><td>1 미만 필수 (보통 0.7 이하 권장)</td></tr>
+    <tr><td>삭제 구현</td><td>단순 (리스트에서 제거)</td><td>Sentinel 필요 (lazy delete)</td></tr>
+    <tr><td>클러스터링</td><td>없음</td><td>선형 탐사 시 1차 클러스터링 발생</td></tr>
+    <tr><td>대표 사용처</td><td>Java HashMap, Python dict (CPython)</td><td>Python set (일부 구현), 임베디드 환경</td></tr>
+  </tbody>
+</table>
+
+<!-- ─── 7. 로드 팩터와 리해싱 ─── -->
+<h2>7. 로드 팩터와 리해싱 (Load Factor & Rehashing)</h2>
+<p>
+  <strong>로드 팩터(α)</strong> = 저장된 항목 수 / 테이블 크기.
+  α가 높을수록 충돌이 많아져 성능이 저하된다.
+</p>
+
+<div class="diagram">
+로드 팩터별 성능 (체이닝 기준):
+
+α = 0.1   → 버킷당 평균 0.1개 → 거의 충돌 없음 → O(1) 탐색
+α = 0.5   → 버킷당 평균 0.5개 → 충돌 적음    → O(1) 탐색
+α = 1.0   → 버킷당 평균 1.0개 → 충돌 보통    → O(1) 탐색 (체이닝은 여전히 O(1))
+α = 5.0   → 버킷당 평균 5.0개 → 충돌 많음    → 점점 O(n) 탐색에 수렴
+
+오픈 어드레싱 권장 범위: α < 0.7  (Python dict는 α > 2/3 시 자동 리해싱)
+</div>
+<p class="diagram-caption">로드 팩터가 높을수록 충돌 빈도가 늘어 성능이 저하된다</p>
+
+<p>
+  <strong>리해싱(Rehashing)</strong>: 로드 팩터가 임계값을 초과하면
+  더 큰 배열(보통 2배)을 새로 만들고 모든 항목을 재삽입한다.
+  리해싱 자체는 O(n)이지만, <em>분할 상환 분석(amortized analysis)</em>으로
+  삽입 1회당 O(1)이 된다.
+</p>
+
+<pre><code># Python dict의 리해싱 임계값 확인 (CPython 내부)
+# dict는 로드 팩터가 2/3을 넘으면 자동으로 리해싱된다
+import sys
+
+d = {}
+prev_size = sys.getsizeof(d)
+for i in range(20):
+    d[i] = i
+    cur_size = sys.getsizeof(d)
+    if cur_size != prev_size:
+        print(f"크기 증가: len={len(d)}, size={cur_size} bytes")
+        prev_size = cur_size
+</code></pre>
+
+<!-- ─── 8. Python dict & set ─── -->
+<h2>8. Python <code>dict</code>와 <code>set</code></h2>
+<p>
+  Python의 <code>dict</code>와 <code>set</code>은 둘 다 해시 테이블로 구현되어
+  평균 O(1)의 탐색·삽입·삭제를 제공한다.
+</p>
+
+<pre><code># dict — 해시 테이블 (키: 해시 가능한 값, 값: 임의의 값)
+prices = {"apple": 800, "banana": 500, "grape": 300}
+prices["lemon"] = 900           # 삽입 O(1)
+print(prices["apple"])          # 탐색 O(1)  → 800
+del prices["banana"]            # 삭제 O(1)
+print("grape" in prices)        # 멤버십 O(1) → True
+
+# set — 해시 테이블 (중복 없는 키만 저장)
+fruits = {"apple", "banana", "apple"}
+print(fruits)                   # {'apple', 'banana'} — 중복 제거
+
+# 교집합·합집합·차집합 모두 O(n)
+a = {1, 2, 3, 4}
+b = {3, 4, 5, 6}
+print(a & b)   # 교집합: {3, 4}
+print(a | b)   # 합집합: {1, 2, 3, 4, 5, 6}
+print(a - b)   # 차집합: {1, 2}
+</code></pre>
+
+<h3>해시 가능한(hashable) vs 불가능한 타입</h3>
+<table>
+  <thead>
+    <tr><th>해시 가능 (dict 키 가능)</th><th>해시 불가능 (dict 키 불가)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>int</code>, <code>float</code>, <code>str</code>, <code>tuple</code>(불변 요소만), <code>frozenset</code></td><td><code>list</code>, <code>dict</code>, <code>set</code> (변경 가능하기 때문)</td></tr>
+  </tbody>
+</table>
+
+<pre><code># 불변(tuple)은 키로 사용 가능
+coords = {}
+coords[(37.5, 127.0)] = "서울"
+coords[(35.1, 129.0)] = "부산"
+print(coords[(37.5, 127.0)])   # "서울"
+
+# 가변(list)은 키로 사용 불가
+try:
+    bad = {[1, 2]: "value"}    # TypeError: unhashable type: 'list'
+except TypeError as e:
+    print(e)
+</code></pre>
+
+<!-- ─── 9. 실전 응용 ─── -->
+<h2>9. 실전 응용 — 빈도 집계와 중복 탐지</h2>
+
+<h3>빈도 집계 (Frequency Count)</h3>
+<pre><code>from collections import Counter
+
+words = ["apple", "banana", "apple", "cherry", "banana", "apple"]
+
+# Counter는 dict를 상속한 해시 테이블
+freq = Counter(words)
+print(freq)            # Counter({'apple': 3, 'banana': 2, 'cherry': 1})
+print(freq["apple"])   # 3
+
+# 직접 구현
+freq2 = {}
+for w in words:
+    freq2[w] = freq2.get(w, 0) + 1
+print(freq2)           # {'apple': 3, 'banana': 2, 'cherry': 1}
+</code></pre>
+
+<h3>두 합계 (Two Sum) — LeetCode #1</h3>
+<pre><code>def two_sum(nums: list, target: int) -> list:
+    """해시 테이블로 O(n) 풀이 — 나머지(complement)를 저장한다."""
+    seen = {}                           # {값: 인덱스}
+    for i, n in enumerate(nums):
+        complement = target - n
+        if complement in seen:          # O(1) 탐색
+            return [seen[complement], i]
+        seen[n] = i
+    return []
+
+print(two_sum([2, 7, 11, 15], 9))      # [0, 1]
+print(two_sum([3, 2, 4], 6))           # [1, 2]
+</code></pre>
+
+<div class="callout">
+  <div class="callout-title">해시 테이블이 어울리는 문제 패턴</div>
+  <ul>
+    <li>중복 탐지 (Duplicate detection): <code>set</code>으로 방문 여부 O(1) 확인.</li>
+    <li>빈도 집계 (Frequency counting): <code>Counter</code> 또는 <code>defaultdict(int)</code>.</li>
+    <li>빠른 탐색 (Fast lookup): 값→인덱스 매핑 (<em>Two Sum</em> 패턴).</li>
+    <li>그룹화 (Grouping): <code>defaultdict(list)</code>로 키별 항목 묶기.</li>
+    <li>캐싱 (Memoization): 계산 결과를 <code>dict</code>에 저장해 재계산 방지.</li>
+  </ul>
+</div>
+
+<!-- ─── 핵심 정리 ─── -->
+<h2>핵심 정리</h2>
+<div class="callout success">
+  <div class="callout-title">이 레슨의 핵심</div>
+  <ul>
+    <li>해시 테이블은 <strong>해시 함수</strong>로 키를 인덱스로 변환해 <strong>O(1) 평균</strong> 탐색·삽입·삭제를 달성한다.</li>
+    <li><strong>충돌은 필연적</strong>이다 — 체이닝(외부 연결 리스트)이나 오픈 어드레싱(내부 탐사)으로 해결한다.</li>
+    <li><strong>로드 팩터(α)</strong>가 높아지면 충돌이 늘고 성능이 저하 — 임계값 초과 시 <strong>리해싱</strong>으로 배열을 2배 확장한다.</li>
+    <li>Python의 <strong><code>dict</code>와 <code>set</code></strong>이 해시 테이블 구현이다 — 변경 불가능한 타입만 키로 사용할 수 있다.</li>
+    <li>최악의 경우 O(n)이지만, 좋은 해시 함수 + 적절한 로드 팩터 유지 시 실제로는 거의 O(1)이다.</li>
+  </ul>
+</div>
+
+<!-- ─── 퀴즈 ─── -->
+<h2>확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. 체이닝 방식 해시 테이블에서 모든 키가 같은 인덱스로 충돌할 때의 최악 탐색 시간복잡도는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="a"> O(1)</label></li>
+    <li><label><input type="radio" name="q1" value="b"> O(log n)</label></li>
+    <li><label><input type="radio" name="q1" value="c"> O(n)</label></li>
+    <li><label><input type="radio" name="q1" value="d"> O(n²)</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="checkQuiz('q1','c','모든 키가 같은 버킷에 모이면 하나의 연결 리스트에 n개가 쌓여, 탐색 시 리스트 전체를 순회해야 하므로 O(n)이다.')">제출</button>
+  <div class="quiz-feedback" id="q1-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. 오픈 어드레싱 해시 테이블에서 슬롯을 단순히 <code>None</code>으로 삭제하면 안 되는 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="a"> 메모리 낭비가 발생한다.</label></li>
+    <li><label><input type="radio" name="q2" value="b"> 탐사 체인이 끊겨 다른 키를 탐색할 수 없게 된다.</label></li>
+    <li><label><input type="radio" name="q2" value="c"> 다음 삽입 시 인덱스 계산이 틀려진다.</label></li>
+    <li><label><input type="radio" name="q2" value="d"> 해시 함수가 달라진다.</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="checkQuiz('q2','b','None을 만나면 탐사를 멈추므로, 해당 슬롯 이후에 저장된 키들을 더 이상 탐색할 수 없게 된다. Sentinel(삭제 마커)을 두어 체인을 유지해야 한다.')">제출</button>
+  <div class="quiz-feedback" id="q2-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. Python에서 해시 테이블(dict) 키로 사용할 <strong>수 없는</strong> 타입은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="a"> <code>tuple</code></label></li>
+    <li><label><input type="radio" name="q3" value="b"> <code>frozenset</code></label></li>
+    <li><label><input type="radio" name="q3" value="c"> <code>list</code></label></li>
+    <li><label><input type="radio" name="q3" value="d"> <code>str</code></label></li>
+  </ul>
+  <button class="quiz-submit" onclick="checkQuiz('q3','c','list는 변경 가능(mutable)하므로 해시할 수 없다(unhashable). dict 키나 set 원소로 사용하면 TypeError가 발생한다.')">제출</button>
+  <div class="quiz-feedback" id="q3-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. 해시 테이블의 로드 팩터(α)를 낮게 유지할 때의 장점과 단점으로 올바른 것은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="a"> 충돌이 줄어 성능이 좋아지고, 메모리 사용량도 줄어든다.</label></li>
+    <li><label><input type="radio" name="q4" value="b"> 충돌이 줄어 성능이 좋아지지만, 메모리를 더 많이 사용한다.</label></li>
+    <li><label><input type="radio" name="q4" value="c"> 충돌이 늘어 성능이 나빠지지만, 메모리를 아낄 수 있다.</label></li>
+    <li><label><input type="radio" name="q4" value="d"> 충돌도 늘고 메모리도 더 많이 사용한다.</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="checkQuiz('q4','b','로드 팩터가 낮으면 빈 슬롯이 많아 충돌이 적고 탐색이 빠르지만, 그만큼 배열 크기 대비 실제 사용 공간이 적어 메모리 낭비가 발생한다.')">제출</button>
+  <div class="quiz-feedback" id="q4-feedback"></div>
+</div>
+
+<!-- ─── 진행 현황 ─── -->
+<div class="progress-section">
+  <h3>전체 커리큘럼 진행률</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 25%"></div>
+  </div>
+  <p class="progress-label">Day 5 / 20 완료 (25%)</p>
+  <p class="progress-label">다음: Day 6 — 트리 기초 (Tree Basics): 트리 용어, 이진 트리, 순회(전위·중위·후위·레벨)</p>
+</div>
+
+<!-- ─── 푸터 ─── -->
+<div class="lesson-footer">
+  자료구조 학습 워크스페이스 &middot; Day 5
+  <div class="lesson-nav">
+    <a href="./0004-queue.html">← Day 4: 큐</a>
+    <a href="./index.html">목록으로</a>
+  </div>
+</div>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
