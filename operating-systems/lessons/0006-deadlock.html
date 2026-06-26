@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — 교착 상태 (Deadlock) | 운영체제</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+  <div class="lesson-meta">
+    <span class="day-badge">Day 6</span>
+    <span class="lesson-date">2026-06-26</span>
+    &nbsp;·&nbsp; 운영체제 학습 코스
+  </div>
+
+  <h1>교착 상태 (Deadlock)</h1>
+  <p>둘 이상의 프로세스가 서로 상대방이 가진 자원을 기다리며 영원히 진행되지 못하는 상태를 <strong>교착 상태(Deadlock)</strong>라 합니다.
+  교착 상태가 왜 발생하는지, 어떻게 예방·회피·탐지·회복하는지 배웁니다.</p>
+
+  <div class="callout">
+    <div class="callout-title">학습 목표</div>
+    <ul>
+      <li>교착 상태의 4가지 필요 조건을 모두 열거할 수 있다.</li>
+      <li>자원 할당 그래프(Resource-Allocation Graph)로 교착 상태를 판별할 수 있다.</li>
+      <li>예방·회피·탐지·회복 전략의 차이를 설명할 수 있다.</li>
+      <li>은행원 알고리즘(Banker's Algorithm)의 원리를 이해한다.</li>
+    </ul>
+  </div>
+
+  <!-- 1. 교착 상태란 -->
+  <h2>1. 교착 상태란?</h2>
+  <p>Day 5에서 살펴본 생산자-소비자 예제를 떠올려 보세요.
+  <code>wait(mutex)</code>를 <code>wait(empty/full)</code>보다 먼저 호출하면 교착 상태가 생긴다고 했습니다.
+  더 직관적인 예시를 봅시다.</p>
+
+  <div class="diagram">
+  프로세스 A: lock(mutex_1) → wait for mutex_2 …
+  프로세스 B: lock(mutex_2) → wait for mutex_1 …
+
+  A는 B가 mutex_2를 놓기를 기다리고,
+  B는 A가 mutex_1을 놓기를 기다린다.
+  → 둘 다 영원히 대기 — 교착 상태 발생
+  </div>
+  <p class="diagram-caption">그림 1 — 교착 상태의 직관적 예시</p>
+
+  <!-- 2. 4가지 필요 조건 -->
+  <h2>2. 교착 상태의 4가지 필요 조건 (Coffman, 1971)</h2>
+  <p>아래 조건이 <strong>동시에 모두</strong> 성립할 때만 교착 상태가 발생할 수 있습니다.
+  하나라도 깨면 교착 상태는 불가능합니다.</p>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>조건</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>상호 배제 (Mutual Exclusion)</strong></td>
+        <td>자원은 한 번에 하나의 프로세스만 사용할 수 있다.</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>점유와 대기 (Hold and Wait)</strong></td>
+        <td>최소 하나의 자원을 점유한 채로 다른 자원을 기다린다.</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>비선점 (No Preemption)</strong></td>
+        <td>자원을 강제로 빼앗을 수 없다. 프로세스가 자발적으로 해제해야 한다.</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><strong>순환 대기 (Circular Wait)</strong></td>
+        <td>프로세스 집합이 원형으로 서로의 자원을 기다린다.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warning">
+    <div class="callout-title">암기 팁 — "상점비순"</div>
+    <strong>상</strong>호 배제 → <strong>점</strong>유와 대기 → <strong>비</strong>선점 → <strong>순</strong>환 대기
+  </div>
+
+  <!-- 3. 자원 할당 그래프 -->
+  <h2>3. 자원 할당 그래프 (Resource-Allocation Graph)</h2>
+  <p>자원 할당 그래프는 프로세스(원)와 자원(사각형)을 노드로, 할당·요청 관계를 방향 간선으로 표현합니다.</p>
+
+  <table>
+    <thead>
+      <tr><th>간선 방향</th><th>의미</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>자원 → 프로세스</td>
+        <td>자원이 해당 프로세스에게 <strong>할당</strong>됨</td>
+      </tr>
+      <tr>
+        <td>프로세스 → 자원</td>
+        <td>프로세스가 해당 자원을 <strong>요청(대기)</strong> 중</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="diagram">
+  자원 인스턴스가 1개인 경우:
+    그래프에 사이클 존재 → 교착 상태 확정
+
+  자원 인스턴스가 여러 개인 경우:
+    사이클 존재 → 교착 상태 가능(확정 아님)
+    사이클 없음  → 교착 상태 없음
+  </div>
+  <p class="diagram-caption">그림 2 — 자원 할당 그래프 해석 규칙</p>
+
+  <!-- 4. 처리 전략 개요 -->
+  <h2>4. 교착 상태 처리 전략</h2>
+
+  <table>
+    <thead>
+      <tr><th>전략</th><th>발생 시점</th><th>아이디어</th><th>비용</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>예방 (Prevention)</strong></td>
+        <td>사전</td>
+        <td>4가지 조건 중 하나를 원천 차단</td>
+        <td>높음 (자원 낭비·성능 저하)</td>
+      </tr>
+      <tr>
+        <td><strong>회피 (Avoidance)</strong></td>
+        <td>사전</td>
+        <td>안전 상태(Safe State)인 경우에만 자원 할당</td>
+        <td>중간 (최대 사용량 정보 필요)</td>
+      </tr>
+      <tr>
+        <td><strong>탐지 (Detection)</strong></td>
+        <td>사후</td>
+        <td>주기적으로 교착 상태 여부 검사</td>
+        <td>낮음 (검사 오버헤드)</td>
+      </tr>
+      <tr>
+        <td><strong>회복 (Recovery)</strong></td>
+        <td>사후</td>
+        <td>탐지 후 프로세스 종료 또는 자원 선점</td>
+        <td>중간 (일부 작업 손실 가능)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 5. 예방 -->
+  <h2>5. 교착 상태 예방 (Prevention)</h2>
+  <p>4가지 필요 조건 중 하나를 부정합니다.</p>
+
+  <table>
+    <thead>
+      <tr><th>깨는 조건</th><th>방법</th><th>단점</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>상호 배제</td>
+        <td>공유 가능한 자원(읽기 전용 파일 등)은 배제 안 함</td>
+        <td>모든 자원에 적용 불가</td>
+      </tr>
+      <tr>
+        <td>점유와 대기</td>
+        <td>실행 전 필요한 자원을 <strong>모두</strong> 미리 요청, 또는 자원 없을 때만 요청</td>
+        <td>자원 이용률 저하, 기아 가능</td>
+      </tr>
+      <tr>
+        <td>비선점</td>
+        <td>새 자원 요청 실패 시 보유 자원을 모두 반납</td>
+        <td>CPU/메모리 등 상태 저장이 필요한 자원에 부적합</td>
+      </tr>
+      <tr>
+        <td>순환 대기</td>
+        <td>모든 자원에 전역 번호 부여 후 <strong>번호 순서대로만</strong> 요청 허용</td>
+        <td>유연한 자원 사용 제한</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 6. 회피 — 은행원 알고리즘 -->
+  <h2>6. 교착 상태 회피 — 은행원 알고리즘 (Banker's Algorithm)</h2>
+  <p>Dijkstra(1965)가 제안. OS는 프로세스의 <strong>최대 자원 사용량</strong>을 미리 알고, 자원 요청 시 할당 후에도
+  <strong>안전 상태(Safe State)</strong>가 유지되는지 시뮬레이션합니다.</p>
+
+  <div class="callout">
+    <div class="callout-title">안전 상태 (Safe State)</div>
+    <p>모든 프로세스를 교착 상태 없이 완료할 수 있는 실행 순서(안전 순서)가 존재하는 상태.
+    안전 상태 → 교착 상태 발생 가능성 없음. 불안전 상태 → 교착 상태 발생 가능.</p>
+  </div>
+
+  <h3>예시: 자원 A 10개, 프로세스 3개</h3>
+  <pre>
+           Max  Allocated  Need  Available
+Process 0:  7       0        7      3
+Process 1:  3       2        1
+Process 2:  9       3        6
+
+안전 순서 탐색:
+  Available = 3
+  P1의 Need(1) ≤ Available(3) → P1 실행 → 반납 후 Available = 5
+  P0의 Need(7) ≤ Available(5)? 아니오
+  P2의 Need(6) ≤ Available(5)? 아니오
+  P0의 Need(7) ≤ Available(5)? 아직 불가 → 재검사
+  ... (P0: 불가, P2: 불가)
+  → 안전 순서 없음? 아니요 — P1 → P0 → P2 순서 재탐색 필요
+
+  ※ 실제 계산은 이 단순 예시와 다를 수 있음. 알고리즘 흐름을 이해하는 것이 핵심.</pre>
+
+  <p>은행원 알고리즘의 핵심 절차:</p>
+  <ol>
+    <li>자원 요청이 들어오면 <strong>가상으로 할당</strong>한다.</li>
+    <li>안전 순서가 존재하는지 탐색한다 (모든 프로세스의 Need ≤ Available 순서 탐색).</li>
+    <li>안전 순서 존재 → 할당 확정. 불안전 → 요청 거부 후 대기.</li>
+  </ol>
+
+  <div class="callout warning">
+    <div class="callout-title">한계</div>
+    <ul>
+      <li>프로세스 수와 최대 자원 사용량을 <strong>미리</strong> 알아야 한다.</li>
+      <li>안전 순서 탐색 시간: O(n² × m) — 프로세스·자원 수 많을수록 비쌈.</li>
+      <li>실제 범용 OS에서는 거의 사용되지 않음.</li>
+    </ul>
+  </div>
+
+  <!-- 7. 탐지와 회복 -->
+  <h2>7. 교착 상태 탐지 및 회복</h2>
+
+  <h3>7-1. 탐지 (Detection)</h3>
+  <p>OS가 주기적으로 <strong>대기 그래프(Wait-for Graph)</strong>를 생성해 사이클을 검사합니다.
+  자원 인스턴스가 여러 개면 은행원 알고리즘과 유사한 탐지 알고리즘(Shoshani-Coffman)을 사용합니다.</p>
+
+  <div class="diagram">
+  대기 그래프 = 자원 할당 그래프에서 자원 노드를 제거한 것
+  P_i → P_j : P_i가 P_j가 보유한 자원을 대기 중
+  사이클 탐지 (DFS, O(V+E)) → 교착 상태 확정
+  </div>
+  <p class="diagram-caption">그림 3 — 대기 그래프 (Wait-for Graph)</p>
+
+  <h3>7-2. 회복 (Recovery)</h3>
+  <p>교착 상태가 탐지되면 두 가지 방법 중 하나로 회복합니다.</p>
+
+  <table>
+    <thead>
+      <tr><th>방법</th><th>설명</th><th>비고</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>프로세스 종료</strong></td>
+        <td>교착 상태 관련 프로세스를 하나씩 또는 모두 종료</td>
+        <td>단순하지만 작업 손실 큼</td>
+      </tr>
+      <tr>
+        <td><strong>자원 선점 (Preemption)</strong></td>
+        <td>교착 상태를 깨는 데 필요한 자원을 강제로 빼앗아 다른 프로세스에 할당</td>
+        <td>체크포인트/롤백 필요</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>자원 선점 시 고려 사항:</p>
+  <ul>
+    <li><strong>희생자 선택</strong>: 최소 비용(남은 작업, 보유 자원 수)으로 선점할 프로세스 선택.</li>
+    <li><strong>롤백</strong>: 선점된 프로세스를 안전 상태로 되돌려야 함 (최근 체크포인트로).</li>
+    <li><strong>기아 방지</strong>: 같은 프로세스가 반복 희생되지 않도록 카운터 관리.</li>
+  </ul>
+
+  <!-- Primary Source -->
+  <div class="primary-source">
+    <div class="ps-label">1차 자료 권장</div>
+    <p><strong>OSTEP 32장 — Concurrency Bugs (Deadlock)</strong> (무료 PDF)<br>
+    <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/threads-bugs.pdf" target="_blank">https://pages.cs.wisc.edu/~remzi/OSTEP/threads-bugs.pdf</a><br>
+    교착 상태의 발생 조건과 실제 코드 예시를 통해 직관적으로 설명합니다.
+    Silberschatz <em>Operating System Concepts</em>(공룡책) 8장도 Banker's Algorithm을 자세히 다룹니다.</p>
+  </div>
+
+  <!-- Quiz -->
+  <h2>복습 퀴즈</h2>
+
+  <div class="quiz" id="q1">
+    <p class="quiz-question">Q1. 교착 상태의 4가지 필요 조건이 아닌 것은?</p>
+    <ul class="quiz-options">
+      <li><label><input type="radio" name="q1" value="0"> 상호 배제 (Mutual Exclusion)</label></li>
+      <li><label><input type="radio" name="q1" value="1"> 점유와 대기 (Hold and Wait)</label></li>
+      <li><label><input type="radio" name="q1" value="2"> 선점 (Preemption)</label></li>
+      <li><label><input type="radio" name="q1" value="3"> 순환 대기 (Circular Wait)</label></li>
+    </ul>
+    <button class="quiz-submit">제출</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz" id="q2">
+    <p class="quiz-question">Q2. 은행원 알고리즘이 확인하는 것은?</p>
+    <ul class="quiz-options">
+      <li><label><input type="radio" name="q2" value="0"> 사이클 유무</label></li>
+      <li><label><input type="radio" name="q2" value="1"> 안전 상태(Safe State) 유지 여부</label></li>
+      <li><label><input type="radio" name="q2" value="2"> 프로세스 우선순위</label></li>
+      <li><label><input type="radio" name="q2" value="3"> 페이지 교체 여부</label></li>
+    </ul>
+    <button class="quiz-submit">제출</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz" id="q3">
+    <p class="quiz-question">Q3. 교착 상태를 순환 대기 조건을 깨서 예방하는 방법은?</p>
+    <ul class="quiz-options">
+      <li><label><input type="radio" name="q3" value="0"> 공유 가능한 자원에 상호 배제 적용</label></li>
+      <li><label><input type="radio" name="q3" value="1"> 자원에 전역 번호를 부여하고 번호 순서대로만 요청 허용</label></li>
+      <li><label><input type="radio" name="q3" value="2"> 새 요청 실패 시 보유 자원 모두 반납</label></li>
+      <li><label><input type="radio" name="q3" value="3"> 실행 전 모든 자원을 미리 요청</label></li>
+    </ul>
+    <button class="quiz-submit">제출</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="ask-teacher">
+    궁금한 점이 있으면 질문하세요. 다음은 Day 7 — 메모리 관리 기초(주소 바인딩, 연속 할당, 단편화)입니다.
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-section">
+    <h3>학습 진행률</h3>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" style="width: 40%"></div>
+    </div>
+    <div class="progress-label">6 / 15 완료 (Day 6)</div>
+  </div>
+
+  <!-- Footer Nav -->
+  <div class="lesson-footer">
+    <div class="lesson-nav">
+      <a href="./0005-process-synchronization.html">← Day 5: 프로세스 동기화 기초</a>
+      <a href="./index.html">학습 목록</a>
+    </div>
+    <p style="margin-top:0.75rem">다음: Day 7 — 메모리 관리 기초 — 주소 바인딩, 연속 할당, 단편화</p>
+  </div>
+
+  <script src="../assets/quiz.js"></script>
+  <script>
+    initQuiz('q1', 2, '비선점(No Preemption)이 교착 상태의 필요 조건입니다. "선점(Preemption)"은 조건이 아니며, 오히려 비선점 조건을 깨면 교착 상태를 예방할 수 있습니다.');
+    initQuiz('q2', 1, '은행원 알고리즘은 자원을 가상으로 할당한 후 안전 순서(Safe Sequence)가 존재하는지, 즉 안전 상태가 유지되는지 확인합니다.');
+    initQuiz('q3', 1, '모든 자원에 전역 번호를 부여하고 오름차순으로만 요청하도록 강제하면 순환 대기가 불가능해져 교착 상태를 예방할 수 있습니다.');
+  </script>
+</body>
+</html>
