@@ -9,12 +9,12 @@
 | 3 | 2026-06-23 | 디지털 논리 기초 (Digital Logic) | [0003-digital-logic.html](lessons/0003-digital-logic.html) |
 | 4 | 2026-06-24 | 산술 회로 (Arithmetic Circuits) | [0004-arithmetic-circuits.html](lessons/0004-arithmetic-circuits.html) |
 | 5 | 2026-06-25 | 순서 논리 회로 (Sequential Logic) | [0005-sequential-logic.html](lessons/0005-sequential-logic.html) |
+| 6 | 2026-06-26 | 메모리 계층 1 (Memory Hierarchy) | [0006-memory-hierarchy-1.html](lessons/0006-memory-hierarchy-1.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | 메모리 계층 1 (Memory Hierarchy) | SRAM vs DRAM, 캐시 메모리 개념 |
 | 7 | 메모리 계층 2 (Cache) | 직접 매핑, 집합 연관, 완전 연관 캐시 |
 | 8 | 메모리 계층 3 (Cache 심화) | 쓰기 정책, 교체 알고리즘, 다단 캐시 |
 | 9 | 명령어 집합 아키텍처 (ISA) | RISC vs CISC, 명령어 형식, 어드레싱 모드 |
@@ -32,7 +32,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 순서 논리 회로(SR 래치·D 플립플롭·레지스터·카운터·FSM 개요) 학습 완료. 다음은 메모리 계층.
+**Day 6 완료** — 메모리 계층 피라미드·SRAM vs DRAM·지역성의 원리·AMAT·3C 미스 학습 완료. 다음은 캐시 구조(직접 매핑·집합 연관·완전 연관).
 
 ## 습득한 핵심 개념
 
@@ -43,7 +43,8 @@
 - [x] 디지털 논리 기초 (✓ Day 3)
 - [x] 산술 회로 / ALU 구조 (✓ Day 4)
 - [x] 순서 논리 회로 / 레지스터 (✓ Day 5)
-- [ ] 캐시 메모리 (예정 Day 6-8)
+- [x] 메모리 계층 구조 / SRAM vs DRAM (✓ Day 6)
+- [ ] 캐시 구조 (예정 Day 7-8)
 - [ ] ISA 개념 (예정 Day 9)
 - [ ] 파이프라이닝 (예정 Day 11-12)
 - [ ] 가상 메모리 (예정 Day 15-16)
