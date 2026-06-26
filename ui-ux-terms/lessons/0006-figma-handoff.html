@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 6 — 협업 툴: Figma·Zeplin 핸드오프 용어</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    .tool-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 0.15em 0.6em;
+      border-radius: 999px;
+      vertical-align: middle;
+      margin-left: 0.35rem;
+    }
+    .badge-figma  { background: #ffede0; color: #e05c00; }
+    .badge-zeplin { background: #fff0b8; color: #a07000; }
+    .badge-both   { background: #ede9fe; color: #5b21b6; }
+
+    .workflow-steps {
+      counter-reset: step-counter;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin: 1.5rem 0;
+    }
+    .workflow-step {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+    }
+    .step-num {
+      counter-increment: step-counter;
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: var(--color-accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.25rem; }
+    .step-body p { font-size: 0.875rem; color: var(--color-text-muted); margin: 0; }
+
+    .panel-diagram {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 1.5rem 0;
+    }
+    .panel-header {
+      background: var(--color-accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 0.5rem 1rem;
+      letter-spacing: 0.05em;
+    }
+    .panel-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.55rem 1rem;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .panel-row:last-child { border-bottom: none; }
+    .panel-key { color: var(--color-text-muted); }
+    .panel-val { font-weight: 600; font-family: var(--font-mono); font-size: 0.8rem; }
+
+    .handoff-flow {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin: 1.5rem 0;
+      font-size: 0.875rem;
+    }
+    .flow-box {
+      background: var(--color-surface);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .flow-box.active { border-color: var(--color-accent); color: var(--color-accent); }
+    .flow-arrow { color: var(--color-text-muted); font-size: 1.1rem; }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      background: #f3f4f6;
+      padding: 0.1em 0.4em;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="lesson-container">
+
+    <header class="lesson-header">
+      <span class="lesson-tag">UI/UX 용어 · Day 6</span>
+      <h1>협업 툴 — Figma·Zeplin 핸드오프 용어</h1>
+      <p class="lesson-meta">2026-06-26 &nbsp;·&nbsp; 예상 소요 시간 25분</p>
+    </header>
+
+    <!-- Learning objectives -->
+    <h2>이 레슨에서 배울 것</h2>
+    <ul style="padding-left:1.5rem; margin-bottom:1rem; font-size:0.9rem;">
+      <li>디자이너-개발자 협업 흐름(핸드오프 워크플로우)을 설명할 수 있다</li>
+      <li>Figma Inspect Panel, Dev Mode, Design Spec, Redline의 차이를 구분할 수 있다</li>
+      <li>Zeplin의 핵심 개념과 Figma와의 포지셔닝을 비교할 수 있다</li>
+      <li>Export 설정(배율·포맷)을 실무 기준으로 판단할 수 있다</li>
+    </ul>
+
+    <!-- === SECTION 1: 핸드오프란 === -->
+    <h2>1. 핸드오프(Handoff)란</h2>
+
+    <p>
+      <strong>핸드오프(Handoff)</strong>는 디자인 작업이 완료된 후
+      개발자가 구현할 수 있도록 설계 정보(치수·색상·폰트·컴포넌트 상태 등)를
+      전달하는 과정 전체를 가리킨다. 전통적으로 PDF·PNG 레드라인(Redline) 문서를
+      수작업으로 만들었지만, 현재는 Figma와 Zeplin 같은 툴이 이 과정을 자동화한다.
+    </p>
+
+    <div class="callout">
+      <strong>핵심 질문:</strong> "이 버튼의 배경색이 뭔가요?" "아이콘 크기는 몇 px인가요?" —
+      개발자가 이런 질문을 디자이너에게 매번 묻지 않아도 되도록 해 주는 것이 핸드오프 툴의 역할이다.
+    </div>
+
+    <h3>핸드오프 워크플로우</h3>
+    <div class="handoff-flow">
+      <div class="flow-box">디자인 완성<br><small style="font-weight:400; color:var(--color-text-muted);">Figma 파일</small></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box active">핸드오프<br><small style="font-weight:400;">Inspect / Dev Mode</small></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box">구현<br><small style="font-weight:400; color:var(--color-text-muted);">개발자</small></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box">QA<br><small style="font-weight:400; color:var(--color-text-muted);">디자이너 검수</small></div>
+    </div>
+
+    <!-- === SECTION 2: Figma 핵심 용어 === -->
+    <h2>2. Figma 핵심 핸드오프 용어</h2>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Inspect Panel <span class="tool-badge badge-figma">Figma</span></div>
+        <div class="term-ko">인스펙트 패널</div>
+        <div class="term-def">
+          Figma 우측 패널의 탭 중 하나. 선택한 레이어의 CSS 스니펫·치수·색상·
+          타이포그래피·간격 값을 자동으로 보여준다. 개발자가 Figma 뷰어 권한만으로
+          접근할 수 있다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Dev Mode <span class="tool-badge badge-figma">Figma</span></div>
+        <div class="term-ko">개발자 모드</div>
+        <div class="term-def">
+          2023년 이후 Figma에 추가된 개발자 전용 뷰. CSS·Android·iOS 코드 스니펫,
+          변수(Variable) 값, 주석(Annotation), 레이아웃 그리드를 한 화면에 표시한다.
+          Inspect Panel의 상위 버전으로 이해하면 된다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Design Spec <span class="tool-badge badge-both">공통</span></div>
+        <div class="term-ko">디자인 스펙</div>
+        <div class="term-def">
+          컴포넌트나 화면의 시각적 속성(크기·색상·간격·폰트·상태)을 체계적으로 명세한 문서.
+          Figma Dev Mode, Zeplin, Storybook Docs 등 다양한 형태로 생성된다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Redline <span class="tool-badge badge-both">공통</span></div>
+        <div class="term-ko">레드라인</div>
+        <div class="term-def">
+          요소 간 거리·패딩·마진을 빨간선(→←)으로 표시한 치수 주석 방식.
+          Figma Dev Mode 또는 Zeplin에서 요소를 hover하면 자동 생성된다.
+          과거에는 Sketch + Zeplin 또는 PNG 수동 작업으로 만들었다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Annotation <span class="tool-badge badge-figma">Figma</span></div>
+        <div class="term-ko">어노테이션</div>
+        <div class="term-def">
+          디자인 파일 위에 추가하는 메모·설명 레이어. 개발자에게 특정 동작·상태·제약 조건을
+          별도로 설명할 때 사용한다. Figma의 공식 Annotation 기능(Dev Mode) 또는
+          커스텀 프레임으로 만든다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Variable <span class="tool-badge badge-figma">Figma</span></div>
+        <div class="term-ko">변수</div>
+        <div class="term-def">
+          Figma에서 색상·숫자·문자열 값을 저장하는 단위. 디자인 토큰(Day 3)과 동일 개념이며
+          Dev Mode에서 CSS 변수 이름으로 연결되어 코드에 바로 적용할 수 있다.
+        </div>
+      </div>
+    </div>
+
+    <!-- === SECTION 3: Inspect Panel 실전 === -->
+    <h2>3. Inspect Panel — 개발자가 읽는 정보</h2>
+
+    <p>
+      Figma에서 프레임·컴포넌트·텍스트 레이어를 선택하면 우측 Inspect 탭에서
+      아래와 같은 정보를 확인할 수 있다.
+    </p>
+
+    <div class="panel-diagram">
+      <div class="panel-header">Figma Inspect Panel — 버튼 컴포넌트 예시</div>
+      <div class="panel-row">
+        <span class="panel-key">Width × Height</span>
+        <span class="panel-val">120 × 40 px</span>
+      </div>
+      <div class="panel-row">
+        <span class="panel-key">Background</span>
+        <span class="panel-val">#4F46E5 (Indigo/600)</span>
+      </div>
+      <div class="panel-row">
+        <span class="panel-key">Border Radius</span>
+        <span class="panel-val">8 px</span>
+      </div>
+      <div class="panel-row">
+        <span class="panel-key">Padding</span>
+        <span class="panel-val">10 px 20 px</span>
+      </div>
+      <div class="panel-row">
+        <span class="panel-key">Font</span>
+        <span class="panel-val">Inter · 14 px · Semibold · #FFFFFF</span>
+      </div>
+      <div class="panel-row">
+        <span class="panel-key">Shadow</span>
+        <span class="panel-val">0 1px 3px rgba(0,0,0,0.12)</span>
+      </div>
+      <div class="panel-row">
+        <span class="panel-key">CSS (Dev Mode)</span>
+        <span class="panel-val">background: var(--indigo-600);</span>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>팁:</strong> Figma Dev Mode에서 토큰 이름(<code>var(--indigo-600)</code>)이 나타나려면
+      디자이너가 Variable이나 Style에 이름을 붙여 두어야 한다. 원시 hex 값만 보인다면
+      토큰 정의가 빠진 것이므로 디자이너에게 확인 요청을 해야 한다.
+    </div>
+
+    <!-- === SECTION 4: Export === -->
+    <h2>4. Export 설정 — 에셋 전달</h2>
+
+    <p>
+      아이콘·이미지·일러스트 같은 에셋은 Figma에서 직접 내보낼 수 있다.
+      실무에서 자주 쓰는 포맷과 배율 기준을 정리하면 다음과 같다.
+    </p>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>에셋 유형</th>
+          <th>권장 포맷</th>
+          <th>배율 설정</th>
+          <th>사용 이유</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>아이콘 (단색·다색)</td>
+          <td>SVG</td>
+          <td>1×</td>
+          <td>벡터라 크기 무관하게 선명; 코드에서 색상 변경 가능</td>
+        </tr>
+        <tr>
+          <td>사진·복잡한 이미지</td>
+          <td>WebP / JPG</td>
+          <td>1× 2× 3×</td>
+          <td>Retina 대응; @1x 기본, @2x 고해상도, @3x 최고 해상도</td>
+        </tr>
+        <tr>
+          <td>투명 배경 이미지</td>
+          <td>PNG</td>
+          <td>1× 2× 3×</td>
+          <td>알파 채널 지원; 일러스트·스티커 등에 적합</td>
+        </tr>
+        <tr>
+          <td>애니메이션</td>
+          <td>Lottie (JSON)</td>
+          <td>–</td>
+          <td>After Effects 연동; 벡터 기반 경량 애니메이션</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">@1x / @2x / @3x</div>
+        <div class="term-ko">배율 (Scale Factor)</div>
+        <div class="term-def">
+          디바이스 픽셀 밀도(DPR)에 따른 이미지 배율.
+          표준 화면은 1×, Retina/고밀도 디스플레이는 2×·3×를 사용한다.
+          <code>srcset</code> 속성 또는 iOS/Android의 @2x/@3x 파일 명명 규칙으로 제공된다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Slice</div>
+        <div class="term-ko">슬라이스</div>
+        <div class="term-def">
+          Figma에서 특정 영역을 지정해 그 범위만 내보내는 기능. 겹치는 레이어나
+          그룹 경계를 무시하고 원하는 직사각형 영역을 정확하게 내보낼 때 유용하다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Mark for Export</div>
+        <div class="term-ko">내보내기 지정</div>
+        <div class="term-def">
+          Figma에서 레이어에 Export 설정을 미리 정의해 두는 것. 개발자가
+          Assets 패널 → Export에서 한꺼번에 다운로드할 수 있도록 디자이너가 사전에 설정한다.
+        </div>
+      </div>
+    </div>
+
+    <!-- === SECTION 5: Zeplin === -->
+    <h2>5. Zeplin — 전용 핸드오프 플랫폼</h2>
+
+    <p>
+      <strong>Zeplin</strong>은 Figma/Sketch/XD 파일을 가져와 개발자 전용 핸드오프 환경을 제공하는
+      서드파티 툴이다. 2023년 이후 Figma가 Dev Mode를 강화하면서 포지셔닝이 겹쳤지만,
+      스타일 가이드 자동화·조직 단위 관리·Jira 연동 등 팀 규모가 큰 곳에서 여전히 사용된다.
+    </p>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Styleguide <span class="tool-badge badge-zeplin">Zeplin</span></div>
+        <div class="term-ko">스타일가이드</div>
+        <div class="term-def">
+          Zeplin이 Figma 파일에서 색상·텍스트 스타일·컴포넌트를 자동 추출해 생성하는 문서.
+          팀 전체가 공통 스타일을 한 곳에서 확인하고 코드 스니펫을 복사할 수 있다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Screen <span class="tool-badge badge-zeplin">Zeplin</span></div>
+        <div class="term-ko">스크린</div>
+        <div class="term-def">
+          Zeplin에서 개별 디자인 아트보드를 가리키는 단위. 각 스크린에서 레이어를
+          클릭하면 치수·색상·코드가 표시된다. Figma의 Frame에 해당한다.
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Connected Components <span class="tool-badge badge-zeplin">Zeplin</span></div>
+        <div class="term-ko">연결된 컴포넌트</div>
+        <div class="term-def">
+          Zeplin 화면의 컴포넌트와 코드 저장소의 실제 컴포넌트를 연결하는 기능.
+          개발자가 "이 버튼 = <code>&lt;Button variant="primary"&gt;</code>" 라는 매핑을 바로 확인할 수 있다.
+        </div>
+      </div>
+    </div>
+
+    <h3>Figma Dev Mode vs Zeplin — 포지셔닝 비교</h3>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>기능</th>
+          <th>Figma Dev Mode</th>
+          <th>Zeplin</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>접근성</td>
+          <td>Figma 파일 내 전환</td>
+          <td>별도 웹앱·데스크탑 앱</td>
+        </tr>
+        <tr>
+          <td>코드 스니펫</td>
+          <td>CSS / iOS (SwiftUI) / Android (Compose)</td>
+          <td>CSS / Swift / Kotlin / React 등 다중</td>
+        </tr>
+        <tr>
+          <td>스타일 가이드</td>
+          <td>Figma Variables / Styles</td>
+          <td>자동 추출 + 팀 공유 페이지</td>
+        </tr>
+        <tr>
+          <td>연동</td>
+          <td>Jira·GitHub (플러그인)</td>
+          <td>Jira·Slack·GitHub 네이티브 연동</td>
+        </tr>
+        <tr>
+          <td>가격</td>
+          <td>Figma 유료 플랜 포함</td>
+          <td>별도 구독</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- === SECTION 6: 핸드오프 체크리스트 === -->
+    <h2>6. 핸드오프 준비 체크리스트</h2>
+
+    <p style="font-size:0.9rem;">디자이너가 핸드오프 전 확인해야 할 사항, 개발자가 수령 시 확인해야 할 사항.</p>
+
+    <div class="workflow-steps">
+      <div class="workflow-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>컴포넌트 정리</strong>
+          <p>모든 요소가 컴포넌트로 캡슐화되어 있고, 이름이 명확한가? (예: <code>Button/Primary/Default</code>)</p>
+        </div>
+      </div>
+      <div class="workflow-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>스타일 정의</strong>
+          <p>색상과 폰트가 Figma Styles 또는 Variables로 정의되어 코드 토큰 이름이 붙어 있는가?</p>
+        </div>
+      </div>
+      <div class="workflow-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>상태(State) 포함</strong>
+          <p>Default·Hover·Active·Disabled·Error 등 모든 상태 디자인이 포함되어 있는가?</p>
+        </div>
+      </div>
+      <div class="workflow-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>에셋 내보내기 지정</strong>
+          <p>아이콘·이미지 레이어에 Export 설정(SVG/PNG, 배율)이 미리 지정되어 있는가?</p>
+        </div>
+      </div>
+      <div class="workflow-step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>어노테이션 추가</strong>
+          <p>애니메이션·제스처·엣지케이스처럼 시각만으로 전달하기 어려운 동작을 주석으로 설명했는가?</p>
+        </div>
+      </div>
+      <div class="workflow-step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <strong>뷰어 권한 확인</strong>
+          <p>개발자에게 Figma 파일 또는 Zeplin 프로젝트의 Viewer/Developer 권한을 부여했는가?</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- === Primary source === -->
+    <div class="primary-source">
+      <div class="label">추천 1차 출처</div>
+      <a href="https://help.figma.com/hc/en-us/articles/15023124644503-Guide-to-Dev-Mode" target="_blank" rel="noopener">
+        Figma Dev Mode 공식 가이드 — Figma Help Center
+      </a>
+      <p style="margin-top:0.4rem; color:var(--color-text-muted);">
+        Zeplin 비교는
+        <a href="https://zeplin.io/blog/figma-to-zeplin/" target="_blank" rel="noopener">Zeplin 공식 블로그</a>를,
+        Export 포맷 결정은 web.dev의
+        <a href="https://web.dev/learn/images" target="_blank" rel="noopener">Learn Images</a>를 참고하자.
+      </p>
+    </div>
+
+    <!-- === QUIZ === -->
+    <h2>7. 확인 퀴즈</h2>
+    <p style="font-size:0.9rem; color:var(--color-text-muted); margin-bottom:1.5rem;">
+      답을 보기 전에 먼저 스스로 생각해 보자.
+    </p>
+
+    <!-- Q1 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q1. Figma에서 개발자가 레이어를 선택했을 때 치수·색상·CSS 스니펫을 보여주는 패널 이름은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. Properties Panel</button></li>
+        <li><button onclick="answer(this, true)">B. Inspect Panel</button></li>
+        <li><button onclick="answer(this, false)">C. Layers Panel</button></li>
+        <li><button onclick="answer(this, false)">D. Assets Panel</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q1"></p>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q2. 요소 간 거리·패딩·마진을 빨간선으로 자동 표시해 주는 핸드오프 기능의 이름은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. Annotation</button></li>
+        <li><button onclick="answer(this, false)">B. Styleguide</button></li>
+        <li><button onclick="answer(this, true)">C. Redline</button></li>
+        <li><button onclick="answer(this, false)">D. Slice</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q2"></p>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q3. 아이콘 에셋을 내보낼 때 크기에 무관하게 선명하고 코드에서 색상 변경이 가능한 권장 포맷은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. PNG @2x</button></li>
+        <li><button onclick="answer(this, false)">B. JPG @3x</button></li>
+        <li><button onclick="answer(this, true)">C. SVG</button></li>
+        <li><button onclick="answer(this, false)">D. WebP</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q3"></p>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q4. Zeplin에서 Figma/Sketch 파일의 색상·텍스트·컴포넌트를 자동 추출해 팀이 공유하는 문서를 무엇이라 하는가?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. Design Spec</button></li>
+        <li><button onclick="answer(this, false)">B. Inspect Panel</button></li>
+        <li><button onclick="answer(this, true)">C. Styleguide</button></li>
+        <li><button onclick="answer(this, false)">D. Connected Components</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q4"></p>
+    </div>
+
+    <!-- Q5 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q5. 핸드오프 체크리스트에서 "Default·Hover·Active·Disabled·Error" 등을 포함해야 한다는 항목은 무엇인가?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. 스타일 정의</button></li>
+        <li><button onclick="answer(this, false)">B. 에셋 내보내기 지정</button></li>
+        <li><button onclick="answer(this, true)">C. 상태(State) 포함</button></li>
+        <li><button onclick="answer(this, false)">D. 어노테이션 추가</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q5"></p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="lesson-nav">
+      <a href="0005-accessibility.html">← Day 5 — 접근성(a11y)</a>
+      <a href="0007-user-research.html">Day 7 — 사용자 조사 →</a>
+    </nav>
+
+    <!-- Ask teacher nudge -->
+    <div class="ask-teacher">
+      궁금한 점이 생겼나요? 에이전트에게 바로 물어보세요. 이 워크스페이스의 맥락을 유지한 채로 이어서 설명해 드립니다.
+    </div>
+
+  </div>
+
+  <script>
+    let answered = {};
+
+    function answer(btn, isCorrect) {
+      const li = btn.closest('li');
+      const options = li.closest('.quiz-options');
+      const section = li.closest('.quiz-section');
+      const feedbackId = section.querySelector('.quiz-feedback').id;
+
+      if (answered[feedbackId]) return;
+      answered[feedbackId] = true;
+
+      options.querySelectorAll('button').forEach(b => b.disabled = true);
+
+      const fb = document.getElementById(feedbackId);
+      if (isCorrect) {
+        btn.classList.add('correct');
+        fb.textContent = '정답입니다! ✓';
+        fb.className = 'quiz-feedback correct';
+      } else {
+        btn.classList.add('wrong');
+        fb.textContent = '오답입니다. 위 내용을 다시 읽고 정답을 찾아보세요.';
+        fb.className = 'quiz-feedback wrong';
+      }
+    }
+  </script>
+</body>
+</html>
