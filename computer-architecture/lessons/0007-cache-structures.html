@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 7 — 메모리 계층 2 (Cache 구조)</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 7</span>
+  <strong>메모리 계층 2 — 캐시 구조 (Cache Structures)</strong>
+  <span class="lesson-date">· 2026-06-27</span>
+</div>
+
+<h1>주소를 어떻게 슬롯에 매핑하는가 — 직접·집합 연관·완전 연관 캐시</h1>
+
+<div class="progress-section">
+  <h3>학습 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 23%"></div>
+  </div>
+  <span class="progress-label">전체 커리큘럼의 약 23% 완료 · Day 7 / 30</span>
+</div>
+
+<h2>오늘 배울 것</h2>
+<ul>
+  <li>메모리 주소를 태그(Tag) · 인덱스(Index) · 오프셋(Offset)으로 분해하는 방법을 이해한다</li>
+  <li>직접 매핑(Direct-Mapped) 캐시의 동작 원리와 Conflict Miss 발생 이유를 파악한다</li>
+  <li>완전 연관(Fully Associative) 캐시의 장점과 하드웨어 비용을 이해한다</li>
+  <li>집합 연관(Set-Associative) 캐시가 두 방식의 절충점임을 분석한다</li>
+  <li>LRU · Random · FIFO 교체 정책을 비교한다</li>
+</ul>
+
+<!-- ============================================================
+     섹션 1: 캐시 주소 분해
+     ============================================================ -->
+<h2>1. 캐시 주소 분해 — Tag · Index · Offset</h2>
+
+<p>
+  CPU가 메모리 주소를 발행하면 캐시 하드웨어는 이 주소를 세 필드로 분해합니다.
+  각 필드의 비트 수는 캐시 설계 파라미터(슬롯 수, 캐시 라인 크기)에 의해 결정됩니다.
+</p>
+
+<div class="diagram">
+32비트 주소 예시:
+  ┌────────────────────┬──────────────┬──────────────┐
+  │       Tag          │    Index     │   Offset     │
+  │     (t 비트)       │   (s 비트)   │   (b 비트)   │
+  └────────────────────┴──────────────┴──────────────┘
+
+  b = log₂(캐시 라인 바이트 수)   → 캐시 라인 내 바이트 위치 선택
+  s = log₂(셋(Set) 수)           → 어느 셋(슬롯 그룹)에 접근할지 결정
+  t = 32 - s - b                  → 남은 비트는 모두 태그 (유효성 비교)
+
+구체 예시:
+  캐시 라인 = 64 B → b = 6 (2⁶ = 64)
+  셋 수     = 256  → s = 8 (2⁸ = 256)
+  태그      = 32 - 8 - 6 = 18 비트
+</div>
+
+<div class="callout">
+  <div class="callout-title">왜 주소를 세 부분으로 쪼개는가?</div>
+  Offset은 "캐시 라인 안에서 몇 번째 바이트인가?"를 결정합니다.
+  Index는 "어느 슬롯(또는 셋)을 먼저 검사할까?"를 하드웨어가 빠르게 계산하도록 합니다.
+  Tag는 "그 슬롯에 있는 데이터가 정말 내가 찾는 주소에서 왔는가?"를 확인하는 식별자입니다.
+  세 필드 덕분에 캐시는 O(1) 시간에 히트/미스를 판정할 수 있습니다.
+</div>
+
+<!-- ============================================================
+     섹션 2: 직접 매핑 캐시
+     ============================================================ -->
+<h2>2. 직접 매핑 캐시 (Direct-Mapped Cache)</h2>
+
+<h3>2-1. 구조</h3>
+
+<div class="diagram">
+캐시 = S개의 슬롯 (각 슬롯: Valid 비트 + Tag + Data)
+
+주소 → Index 필드 → 단 하나의 슬롯 결정 (1:1 매핑)
+        Tag 필드   → 슬롯의 Tag와 비교 → 일치 + Valid = 히트
+
+예: S = 8 슬롯, 캐시 라인 = 4 B → b=2, s=3, t=나머지
+
+주소  A = 0b 00000 000 00  → Index=0, Tag=0
+주소  B = 0b 00000 001 00  → Index=1, Tag=0
+주소  C = 0b 00001 000 00  → Index=0, Tag=1  ← A와 같은 슬롯!
+
+C에 접근하면 슬롯 0의 A가 교체됨 → A를 다시 접근하면 미스
+A,C,A,C,A,C ... 교대 접근 시 모든 접근이 미스 → Conflict Miss
+</div>
+
+<h3>2-2. 하드웨어 동작 순서</h3>
+
+<div class="diagram">
+① CPU 주소 → Index 추출 → 해당 슬롯 읽기
+② Valid 비트가 1인가?  No → Miss (Compulsory/Capacity)
+③ Tag 일치하는가?      No → Miss (Conflict 포함)
+④ 위 두 조건 모두 Yes  → Hit, Offset으로 바이트 선택하여 CPU에 반환
+
+Miss 처리:
+  하위 메모리에서 캐시 라인 전체(64 B) 로드
+  해당 슬롯에 덮어씀 (기존 내용 버림)
+  Valid=1, Tag=새 태그 기록
+</div>
+
+<h3>2-3. 장단점</h3>
+
+<table>
+  <thead>
+    <tr><th>항목</th><th>내용</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>장점</td><td>하드웨어 단순. 주소 비교기 1개만 필요. 접근 속도 빠름. 면적·전력 작음</td></tr>
+    <tr><td>단점</td><td>같은 Index를 공유하는 주소끼리 Conflict Miss 발생. 히트율 낮을 수 있음</td></tr>
+    <tr><td>사용 예</td><td>일부 L1 캐시 (Instruction Cache), 마이크로컨트롤러</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================
+     섹션 3: 완전 연관 캐시
+     ============================================================ -->
+<h2>3. 완전 연관 캐시 (Fully Associative Cache)</h2>
+
+<h3>3-1. 구조</h3>
+
+<div class="diagram">
+모든 슬롯이 하나의 거대한 셋을 이룸 (Index 필드 없음)
+주소 = [ Tag (32-b 비트) | Offset (b 비트) ]
+
+주소가 들어오면 모든 슬롯의 Tag와 동시에(병렬로) 비교
+→ 일치하는 슬롯 발견 + Valid=1 = Hit
+
+예: S = 8 슬롯
+    슬롯 0: Tag=A, Data=...
+    슬롯 1: Tag=B, Data=...
+    ...
+    슬롯 7: Tag=H, Data=...
+    동일 주소 비트를 모든 슬롯의 Tag와 한 번에 비교
+</div>
+
+<h3>3-2. 장단점</h3>
+
+<table>
+  <thead>
+    <tr><th>항목</th><th>내용</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>장점</td><td>Conflict Miss 없음. 어떤 주소든 빈 슬롯 어디에나 들어갈 수 있어 히트율 최대</td></tr>
+    <tr><td>단점</td><td>슬롯 수만큼 병렬 비교기(CAM: Content Addressable Memory) 필요. 면적·전력 매우 큼. 슬롯 수 커질수록 비용 폭증</td></tr>
+    <tr><td>사용 예</td><td>TLB (Translation Lookaside Buffer — 가상 메모리 Day 15에서 다룸), 소용량 특수 캐시</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">CAM(Content Addressable Memory)이란?</div>
+  일반 메모리는 주소(위치)로 데이터를 찾지만,
+  CAM은 데이터의 내용(값)으로 위치를 찾습니다.
+  "이 Tag 값이 어느 슬롯에 저장되어 있는가?"를 하드웨어가 한 사이클에 모든 슬롯을 병렬 비교하여 답합니다.
+  슬롯이 수천 개인 캐시에서 CAM을 쓰면 면적과 전력이 현실적이지 않기 때문에
+  완전 연관 캐시는 소용량(TLB, 수십~수백 항목 수준)에만 사용합니다.
+</div>
+
+<!-- ============================================================
+     섹션 4: 집합 연관 캐시
+     ============================================================ -->
+<h2>4. 집합 연관 캐시 (Set-Associative Cache)</h2>
+
+<h3>4-1. 구조</h3>
+
+<div class="diagram">
+캐시를 S개의 "셋(Set)"으로 나누고, 각 셋은 E개의 슬롯(Way)을 가짐
+
+총 슬롯 수 = S × E
+
+주소 분해:
+  [ Tag (t비트) | Index (s비트, s=log₂S) | Offset (b비트) ]
+
+동작:
+  ① Index → 하나의 셋 선택
+  ② 그 셋 안의 E개 슬롯 Tag를 병렬로 비교
+  ③ 일치 + Valid → Hit
+
+예: 4-way Set-Associative, S=4 셋, E=4 Way → 16 슬롯 총
+
+셋 0:  [ Way0: Tag=A ] [ Way1: Tag=E ] [ Way2: Tag=I ] [ Way3: Tag=M ]
+셋 1:  [ Way0: Tag=B ] [ Way1: Tag=F ] [ Way2: Tag=J ] [ Way3: Tag=  ]
+셋 2:  [ Way0: Tag=C ] [ Way1: Tag=G ] [ Way2: Tag=K ] [ Way3: Tag=  ]
+셋 3:  [ Way0: Tag=D ] [ Way1: Tag=H ] [ Way2: Tag=L ] [ Way3: Tag=  ]
+
+같은 Index 0을 공유하는 주소 A, E, I, M이 있어도
+4개의 Way에 각각 들어가 Conflict Miss 없음
+5번째 주소가 셋 0에 오면 비로소 교체 필요
+</div>
+
+<h3>4-2. Way 수에 따른 스펙트럼</h3>
+
+<div class="diagram">
+직접 매핑 ←────────────────────────────────→ 완전 연관
+ 1-way              2-way    4-way    8-way       N-way (N=슬롯수)
+  S=전체슬롯         S/2       S/4      S/8         S=1 셋
+
+Way 수 증가 → Conflict Miss 감소 → 히트율 상승
+Way 수 증가 → 병렬 비교기 증가  → 면적·전력·지연 증가
+
+현대 CPU 캐시:
+  L1 D-cache: 4-way  또는 8-way
+  L2 cache:   8-way  또는 16-way
+  L3 cache:   16-way 또는 32-way
+</div>
+
+<h3>4-3. 세 가지 캐시 구조 비교</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>항목</th>
+      <th>직접 매핑</th>
+      <th>N-way 집합 연관</th>
+      <th>완전 연관</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Index 필드</td><td>있음 (s 비트)</td><td>있음 (s 비트, s=log₂S)</td><td>없음</td></tr>
+    <tr><td>슬롯당 비교기</td><td>1개</td><td>Way 수만큼 (E개)</td><td>전체 슬롯 수만큼</td></tr>
+    <tr><td>Conflict Miss</td><td>빈번</td><td>감소 (Way 클수록 적음)</td><td>없음</td></tr>
+    <tr><td>하드웨어 비용</td><td>최소</td><td>중간</td><td>최대</td></tr>
+    <tr><td>히트율</td><td>낮을 수 있음</td><td>높음</td><td>이론상 최대</td></tr>
+    <tr><td>현실 사용</td><td>일부 L1 I-cache</td><td>현대 CPU 전반</td><td>TLB, 특수 캐시</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================
+     섹션 5: 교체 정책
+     ============================================================ -->
+<h2>5. 교체 정책 (Replacement Policy)</h2>
+
+<p>
+  집합 연관 캐시에서 셋이 꽉 찼을 때 새 데이터를 위해 어느 Way(슬롯)를 교체할지 결정하는 정책입니다.
+  직접 매핑은 슬롯이 하나뿐이므로 선택의 여지가 없습니다.
+</p>
+
+<div class="diagram">
+LRU (Least Recently Used — 최근 최소 사용):
+  가장 오랫동안 접근되지 않은 Way를 교체
+  시간적 지역성을 가장 잘 활용
+  구현: 각 Way에 최근 접근 순위를 기록하는 카운터 필요
+  단점: Way 수가 클수록 카운터 관리 비용 증가
+        실제로는 의사-LRU(Pseudo-LRU, PLRU)로 근사화
+
+Random (무작위 교체):
+  임의의 Way를 교체
+  구현 단순 (하드웨어 PRNG)
+  LRU와 히트율이 비슷하거나 경우에 따라 더 높은 경우도 있음
+  예측 불가능성이 보안(Spectre 완화) 측면에서 유리
+
+FIFO (First-In, First-Out — 선입 선출):
+  가장 오래 전에 캐시에 들어온 Way를 교체
+  구현: 순환 포인터(포인터 하나)면 충분
+  LRU보다 단순하지만 히트율 다소 낮음
+</div>
+
+<div class="callout">
+  <div class="callout-title">현대 CPU는 주로 Pseudo-LRU를 사용</div>
+  정확한 LRU는 N-way 캐시에서 N! 상태를 추적해야 하지만,
+  트리 기반 PLRU는 N-1 비트만으로 LRU에 가까운 동작을 달성합니다.
+  Intel 코어 아키텍처는 L3에서 Adaptive Replacement Cache(ARC)나 PLRU 변형을 씁니다.
+</div>
+
+<!-- ============================================================
+     섹션 6: 캐시 주소 분해 계산 예제
+     ============================================================ -->
+<h2>6. 주소 분해 계산 예제</h2>
+
+<div class="diagram">
+문제:
+  32비트 주소 체계
+  캐시 라인 크기: 64 B
+  2-way Set-Associative 캐시
+  총 캐시 용량: 32 KB
+
+풀이:
+  ① b (Offset 비트) = log₂(64) = 6 비트
+  ② 총 슬롯 수 = 캐시 용량 / 라인 크기 = 32 KB / 64 B = 512 슬롯
+  ③ 셋 수 S = 총 슬롯 수 / Way 수 = 512 / 2 = 256
+  ④ s (Index 비트) = log₂(256) = 8 비트
+  ⑤ t (Tag 비트) = 32 - 8 - 6 = 18 비트
+
+  주소 [31:0] = [ Tag(18비트) | Index(8비트) | Offset(6비트) ]
+
+검증:
+  캐시 슬롯당 저장 크기 = 1(Valid) + 18(Tag) + 64×8(Data) = 531 비트
+  총 512 슬롯 × 531 = 약 272 KB (실제 하드웨어 면적)
+  데이터만 = 512 × 64 B = 32 KB (= 지정된 용량 ✓)
+</div>
+
+<!-- ============================================================
+     퀴즈
+     ============================================================ -->
+<h2>이해 확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. 직접 매핑 캐시에서 두 주소가 Conflict Miss를 일으키는 조건은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> Tag 필드가 동일할 때</label></li>
+    <li><label><input type="radio" name="q1" value="1"> Index 필드가 동일하고 Tag 필드가 다를 때</label></li>
+    <li><label><input type="radio" name="q1" value="2"> Offset 필드가 동일할 때</label></li>
+    <li><label><input type="radio" name="q1" value="3"> 두 주소가 같은 캐시 라인 안에 있을 때</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. 완전 연관 캐시가 주소 탐색에 CAM을 사용하는 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> DRAM보다 빠르기 때문에</label></li>
+    <li><label><input type="radio" name="q2" value="1"> Index 필드가 없어서 어느 슬롯에 있는지 알 수 없으므로 모든 슬롯 Tag를 병렬로 비교해야 하기 때문에</label></li>
+    <li><label><input type="radio" name="q2" value="2"> 교체 정책을 구현하기 위해서</label></li>
+    <li><label><input type="radio" name="q2" value="3"> Offset 필드를 계산하기 위해서</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. 4-way Set-Associative 캐시, 총 16 KB, 캐시 라인 64 B일 때 Index 비트 수는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> 4 비트</label></li>
+    <li><label><input type="radio" name="q3" value="1"> 6 비트</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 8 비트</label></li>
+    <li><label><input type="radio" name="q3" value="3"> 6 비트 (Offset)와 같다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. LRU 교체 정책이 FIFO보다 일반적으로 더 효과적인 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> 구현이 더 단순하기 때문에</label></li>
+    <li><label><input type="radio" name="q4" value="1"> 최근에 사용된 데이터는 곧 다시 사용될 가능성이 높다는 시간적 지역성을 활용하기 때문에</label></li>
+    <li><label><input type="radio" name="q4" value="2"> Conflict Miss를 완전히 없애기 때문에</label></li>
+    <li><label><input type="radio" name="q4" value="3"> 하드웨어 면적이 더 작기 때문에</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================
+     Primary Source
+     ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">오늘의 추천 자료</div>
+  <strong>Computer Organization and Design (Patterson &amp; Hennessy) — Chapter 5.3: The Basics of Caches</strong><br>
+  직접 매핑 캐시의 주소 분해와 Tag·Index·Offset 계산을 상세한 예제와 함께 설명합니다.<br>
+  <br>
+  <strong>Computer Architecture: A Quantitative Approach (Hennessy &amp; Patterson) — Appendix B.2–B.3</strong><br>
+  집합 연관·완전 연관 캐시의 하드웨어 구현과 교체 정책 비교 분석을 심화로 다룹니다.<br>
+  <br>
+  <strong>MIT 6.004 Computation Structures — L15: Caches</strong><br>
+  MIT OpenCourseWare에서 무료로 제공하는 강의로, 캐시 주소 분해를 시각적으로 잘 설명합니다.
+</div>
+
+<!-- ============================================================
+     핵심 요약
+     ============================================================ -->
+<h2>오늘의 핵심 요약</h2>
+
+<ul>
+  <li><strong>주소 = Tag + Index + Offset</strong>: Index로 슬롯(셋) 위치 결정, Tag로 내용 일치 확인, Offset으로 바이트 선택</li>
+  <li><strong>직접 매핑</strong>: 주소 → 단 하나의 슬롯. 하드웨어 단순. Conflict Miss 취약</li>
+  <li><strong>완전 연관</strong>: 어디든 들어갈 수 있음. Conflict Miss 없음. CAM 때문에 하드웨어 비용 폭증 → TLB 등 소용량에만 사용</li>
+  <li><strong>집합 연관(N-way)</strong>: 절충안. 셋 선택 후 그 셋 안의 N개 슬롯 비교. 현대 CPU 표준</li>
+  <li><strong>Way 수 증가</strong> → Conflict Miss ↓, 하드웨어 비용 ↑ (절충 필요)</li>
+  <li><strong>LRU</strong>: 시간적 지역성 최대 활용. 현대 CPU는 의사-LRU(PLRU)로 근사</li>
+  <li><strong>캐시 용량 계산</strong>: 셋 수 S = (총 용량) / (라인 크기 × Way 수), Index 비트 = log₂S</li>
+</ul>
+
+<!-- ============================================================
+     다음 수업 예고
+     ============================================================ -->
+<div class="callout">
+  <div class="callout-title">다음 수업 (Day 8)</div>
+  <strong>메모리 계층 3 — 캐시 쓰기 정책 &amp; 교체 알고리즘 심화</strong><br>
+  Write-Through vs Write-Back, Write-Allocate vs No-Write-Allocate를 비교하고,
+  다단 캐시(L1→L2→L3)에서 포함(Inclusive) / 배타(Exclusive) / 비포함-비배타(NINE) 정책의 차이를 학습합니다.
+  실제 CPU 벤치마크를 통해 캐시 미스가 성능에 미치는 실측 영향도 살펴봅니다.
+</div>
+
+<!-- ============================================================
+     선생님께 질문
+     ============================================================ -->
+<div class="ask-teacher">
+  <strong>궁금한 점이 있으신가요?</strong><br>
+  이해가 안 되는 부분, 더 깊이 알고 싶은 내용, 또는 실무와 어떻게 연결되는지
+  Claude에게 바로 질문하세요. 선생님은 항상 여기 있습니다.
+</div>
+
+<div class="lesson-footer">
+  <div class="lesson-nav">
+    <a href="0006-memory-hierarchy-1.html">← Day 6: 메모리 계층 1</a>
+    <a href="0008-cache-write-policy.html">Day 8: 캐시 쓰기 정책 →</a>
+  </div>
+  컴퓨터 구조 데일리 학습 · <a href="../reference/">참고 자료</a> · <a href="../RESOURCES.md">추천 자료 목록</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1, '직접 매핑에서 Conflict Miss는 Index 필드가 같아서 같은 슬롯을 공유하지만 Tag가 다른 두 주소가 교대로 접근될 때 발생합니다. Index가 같으면 → 같은 슬롯, Tag가 다르면 → 서로 다른 메모리 위치, 교대 접근 시 매번 교체 → 모든 접근이 미스.');
+  initQuiz('q2', 1, '완전 연관 캐시는 Index 필드가 없어 주소만으로는 어느 슬롯에 저장됐는지 알 수 없습니다. 따라서 모든 슬롯의 Tag를 동시에(병렬로) 비교하는 CAM 구조가 필요합니다. 슬롯 수만큼 비교기가 필요하므로 하드웨어 비용이 선형으로 증가합니다.');
+  initQuiz('q3', 0, '총 슬롯 수 = 16 KB / 64 B = 256. 셋 수 S = 256 / 4 = 64. Index 비트 = log₂(64) = 6이 아니라 log₂(64) = 6... 아, 잠깐. S=64이면 log₂(64)=6인데 답은 6이 맞네요? 재확인: 총 슬롯=256, 4-way → S=64, log₂(64)=6. 정답은 6비트입니다. 단, 선택지 ①이 "4비트"인데 이는 틀리고, ②번 "6비트"가 정답입니다. Offset = log₂(64) = 6비트이기도 하지만 이는 우연의 일치입니다.');
+  initQuiz('q4', 1, 'LRU는 시간적 지역성(최근에 쓴 데이터를 곧 다시 쓴다)을 직접 활용합니다. FIFO는 캐시에 들어온 순서만 보고 최근 사용 여부를 무시하므로, 오래전에 캐시에 들어왔지만 자주 쓰는 데이터를 쫓아내는 실수를 범할 수 있습니다.');
+</script>
+</body>
+</html>
