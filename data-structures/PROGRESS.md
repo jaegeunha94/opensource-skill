@@ -9,12 +9,12 @@
 | 3 | 2026-06-24 | 스택 (Stack) | [0003-stack.html](lessons/0003-stack.html) |
 | 4 | 2026-06-25 | 큐 (Queue) | [0004-queue.html](lessons/0004-queue.html) |
 | 5 | 2026-06-26 | 해시 테이블 (Hash Tables) | [0005-hash-tables.html](lessons/0005-hash-tables.html) |
+| 6 | 2026-06-27 | 트리 기초 (Tree Basics) | [0006-tree-basics.html](lessons/0006-tree-basics.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | 트리 기초 (Tree Basics) | 트리 용어, 이진 트리, 순회(전위·중위·후위·레벨) |
 | 7 | 이진 탐색 트리 (BST) | 삽입·탐색·삭제 O(log n), 균형 문제 |
 | 8 | 힙 (Heap) | 최대힙·최소힙, 힙 정렬, 우선순위 큐 |
 | 9 | 균형 이진 트리 (AVL / Red-Black) | 회전 연산, 높이 균형 조건 |
@@ -32,7 +32,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 해시 테이블(Hash Tables) 학습 완료. 다음은 트리 기초(Tree Basics).
+**Day 6 완료** — 트리 기초(Tree Basics) 학습 완료. 다음은 이진 탐색 트리(BST).
 
 ## 습득한 핵심 개념
 
@@ -44,6 +44,10 @@
 - [x] 스택 (✓ Day 3)
 - [x] 큐 — FIFO, 원형 큐, collections.deque, BFS 응용 (✓ Day 4)
 - [x] 해시 테이블 — 해시 함수, 체이닝, 오픈 어드레싱, 로드 팩터, 리해싱 (✓ Day 5)
-- [ ] 트리 계열 (예정 Day 6–10)
+- [x] 트리 기초 — 용어(루트·리프·깊이·높이), 이진 트리 종류, 전위·중위·후위·레벨 순회 (✓ Day 6)
+- [ ] 이진 탐색 트리 (예정 Day 7)
+- [ ] 힙 (예정 Day 8)
+- [ ] 균형 이진 트리 AVL/Red-Black (예정 Day 9)
+- [ ] 트라이 (예정 Day 10)
 - [ ] 그래프 (예정 Day 11–13)
 - [ ] 정렬 알고리즘 (예정 Day 14–16)
