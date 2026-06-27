@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 7 — 고급 인덱싱</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <h1>Day 7: 고급 인덱싱 (Advanced Indexing)</h1>
+  <div class="meta">
+    <span>📅 2026-06-27</span>
+    <span>⏱ 약 55분</span>
+    <span>📚 파일구조 과목</span>
+    <span>🔢 Lesson 7 / 10</span>
+  </div>
+
+  <!-- Learning Objectives -->
+  <div class="callout">
+    <strong>학습 목표</strong>
+    이 레슨을 마치면: (1) 다중 키 인덱스의 구조와 복합 조건 검색 최적화를 설명할 수 있다.
+    (2) 비트맵 인덱스가 낮은 카디널리티 컬럼에 유리한 이유를 이해한다.
+    (3) 주어진 쿼리 패턴에 맞는 인덱스 구조를 선택하고 그 근거를 논리적으로 설명할 수 있다.
+    (4) 인덱스가 쓰기 성능에 미치는 트레이드오프를 인식한다.
+  </div>
+
+  <!-- Section 1 -->
+  <h2>1. 다중 키 인덱스 (Multi-Key Index)</h2>
+
+  <p>
+    Day 3에서 배운 단순 인덱스는 하나의 탐색 키(Search Key)만 사용한다.
+    그런데 실제 쿼리는 여러 컬럼을 동시에 조건으로 사용하는 경우가 많다.
+    <strong>다중 키 인덱스</strong>는 두 개 이상의 필드를 묶어 하나의 인덱스를 구성한다.
+  </p>
+
+  <pre><code>-- 두 컬럼을 동시에 조건으로 사용하는 쿼리 예시
+SELECT * FROM employees
+WHERE department = 'Engineering'
+  AND salary BETWEEN 60000 AND 90000;</code></pre>
+
+  <h3>1-1. 복합 인덱스 (Composite Index)</h3>
+
+  <p>
+    가장 일반적인 다중 키 인덱스다. <strong>여러 컬럼을 순서대로 연결해 하나의 탐색 키</strong>로 만든다.
+    예를 들어 <code>(department, salary)</code> 복합 인덱스는 다음 형태로 레코드를 정렬한다:
+  </p>
+
+  <div class="diagram">복합 인덱스 (department, salary) 의 정렬 순서
+
+(Engineering, 55000) → 레코드 A
+(Engineering, 72000) → 레코드 B
+(Engineering, 90000) → 레코드 C
+(HR,          48000) → 레코드 D
+(HR,          63000) → 레코드 E
+(Marketing,   51000) → 레코드 F
+
+→ department 기준 1차 정렬, 같은 department 내 salary 기준 2차 정렬</div>
+
+  <h3>1-2. 선두 컬럼 규칙 (Leading Column Rule)</h3>
+
+  <p>
+    복합 인덱스는 <strong>왼쪽(선두) 컬럼부터 순서대로</strong> 인덱스를 활용할 수 있다.
+    중간 컬럼을 건너뛰면 인덱스를 온전히 사용할 수 없다.
+  </p>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>쿼리 조건</th>
+        <th>인덱스 (dept, salary) 활용 여부</th>
+        <th>설명</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>WHERE dept = 'Eng'</code></td>
+        <td><span class="badge good">활용 가능</span></td>
+        <td>선두 컬럼만 사용 — 인덱스 범위 스캔</td>
+      </tr>
+      <tr>
+        <td><code>WHERE dept = 'Eng' AND salary = 72000</code></td>
+        <td><span class="badge good">최대 활용</span></td>
+        <td>두 컬럼 모두 인덱스 조건으로 사용</td>
+      </tr>
+      <tr>
+        <td><code>WHERE dept = 'Eng' AND salary &gt; 60000</code></td>
+        <td><span class="badge good">활용 가능</span></td>
+        <td>선두 등치 + 후속 범위 — 인덱스 범위 스캔</td>
+      </tr>
+      <tr>
+        <td><code>WHERE salary = 72000</code></td>
+        <td><span class="badge bad">활용 불가</span></td>
+        <td>선두 컬럼 없이 후속 컬럼만 — 풀 스캔 필요</td>
+      </tr>
+      <tr>
+        <td><code>WHERE salary &gt; 60000 AND dept = 'Eng'</code></td>
+        <td><span class="badge mid">부분 활용</span></td>
+        <td>옵티마이저가 dept 조건으로 필터 후 나머지 조건 적용</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <strong>컬럼 순서가 핵심이다</strong>
+    <code>(dept, salary)</code> 인덱스와 <code>(salary, dept)</code> 인덱스는 서로 다른 쿼리 패턴에 최적화된다.
+    인덱스 설계 전에 어떤 컬럼이 조건에 자주 등장하는지, 등치 조건인지 범위 조건인지 반드시 파악해야 한다.
+  </div>
+
+  <h3>1-3. 다중 인덱스 교차 (Index Intersection)</h3>
+
+  <p>
+    여러 개의 단일 컬럼 인덱스를 <strong>교집합(Intersection)</strong>으로 결합해 복합 조건을 처리하는 방법이다.
+    복합 인덱스를 만들기 어렵거나 조건이 동적으로 바뀔 때 사용한다.
+  </p>
+
+  <div class="diagram">단일 인덱스 교차 처리 과정 (dept 조건 + salary 조건)
+
+1. 인덱스 A (dept): dept='Engineering' → {RID: 101, 102, 105, 108}
+2. 인덱스 B (salary): salary BETWEEN 60000 AND 90000 → {RID: 102, 104, 105, 109}
+3. 교집합(Intersection): {102, 105}
+4. 두 RID에 해당하는 레코드만 테이블에서 가져옴</div>
+
+  <div class="callout tip">
+    <strong>복합 인덱스 vs 인덱스 교차</strong>
+    복합 인덱스는 단일 B+-트리 순회로 처리하므로 더 효율적이다. 인덱스 교차는 두 인덱스를 각각 순회하고
+    RID 집합을 정렬·교집합해야 하므로 오버헤드가 크다. 자주 쓰이는 복합 조건은 복합 인덱스가 우선이다.
+  </div>
+
+  <!-- Section 2 -->
+  <h2>2. 비트맵 인덱스 (Bitmap Index)</h2>
+
+  <p>
+    비트맵 인덱스는 <strong>카디널리티(Cardinality)가 낮은 컬럼</strong>, 즉 값의 종류가 적은 컬럼에 특화된 인덱스다.
+    성별, 지역, 등급처럼 값이 몇 가지뿐인 컬럼에서 B+-트리보다 훨씬 효율적이다.
+  </p>
+
+  <h3>2-1. 비트맵 인덱스 구조</h3>
+
+  <p>
+    각 컬럼 값(Distinct Value)마다 <strong>비트 벡터(Bit Vector)</strong>를 하나 생성한다.
+    비트 벡터의 각 비트는 테이블의 한 행(Row)에 대응하며, 해당 행이 그 값을 가지면 1, 아니면 0이다.
+  </p>
+
+  <div class="diagram">employees 테이블 (5개 행)
+
+ Row | dept        | gender
+-----|-------------|-------
+  1  | Engineering | M
+  2  | Engineering | F
+  3  | HR          | F
+  4  | Marketing   | M
+  5  | HR          | M
+
+비트맵 인덱스 — dept 컬럼:
+
+ dept=Engineering : [1, 1, 0, 0, 0]
+ dept=HR          : [0, 0, 1, 0, 1]
+ dept=Marketing   : [0, 0, 0, 1, 0]
+
+비트맵 인덱스 — gender 컬럼:
+
+ gender=M : [1, 0, 0, 1, 1]
+ gender=F : [0, 1, 1, 0, 0]</div>
+
+  <h3>2-2. 비트 연산으로 쿼리 처리</h3>
+
+  <p>
+    비트맵 인덱스의 강점은 복합 조건 쿼리를 <strong>비트 AND/OR 연산</strong>으로 처리한다는 점이다.
+    비트 연산은 CPU 수준에서 병렬 처리되어 매우 빠르다.
+  </p>
+
+  <div class="diagram">쿼리: WHERE dept = 'HR' AND gender = 'F'
+
+ dept=HR  : [0, 0, 1, 0, 1]
+ gender=F : [0, 1, 1, 0, 0]
+            AND 연산
+            ──────────────
+ 결과      : [0, 0, 1, 0, 0]  → Row 3만 해당
+
+쿼리: WHERE dept = 'Engineering' OR dept = 'HR'
+
+ dept=Engineering : [1, 1, 0, 0, 0]
+ dept=HR          : [0, 0, 1, 0, 1]
+                    OR 연산
+                    ──────────────
+ 결과             : [1, 1, 1, 0, 1]  → Row 1, 2, 3, 5 해당</div>
+
+  <h3>2-3. 비트맵 인덱스의 장단점</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>항목</th>
+        <th>비트맵 인덱스</th>
+        <th>B+-트리 인덱스</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>적합한 카디널리티</td>
+        <td><span class="badge good">낮음</span> (성별, 지역, 등급 등)</td>
+        <td><span class="badge good">높음</span> (이름, 주문번호, 날짜 등)</td>
+      </tr>
+      <tr>
+        <td>복합 조건 처리</td>
+        <td><span class="badge good">비트 AND/OR로 초고속</span></td>
+        <td><span class="badge mid">인덱스 교차 필요</span></td>
+      </tr>
+      <tr>
+        <td>저장 공간</td>
+        <td><span class="badge good">매우 작음</span> (비트 단위)</td>
+        <td><span class="badge mid">중간</span></td>
+      </tr>
+      <tr>
+        <td>동시 쓰기 성능</td>
+        <td><span class="badge bad">매우 나쁨</span> (행 삽입 시 모든 비트벡터 잠금)</td>
+        <td><span class="badge good">양호</span> (해당 노드만 잠금)</td>
+      </tr>
+      <tr>
+        <td>주요 사용 환경</td>
+        <td>데이터 웨어하우스(DW), OLAP, 읽기 집약적 분석</td>
+        <td>OLTP, 빈번한 업데이트가 있는 시스템</td>
+      </tr>
+      <tr>
+        <td>집계 쿼리 (COUNT, SUM)</td>
+        <td><span class="badge good">비트 카운트(popcount)로 초고속</span></td>
+        <td><span class="badge mid">인덱스 스캔 필요</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <strong>비트맵 인덱스와 동시성</strong>
+    단 한 행이 삽입·수정·삭제될 때도 해당 컬럼의 모든 비트 벡터를 변경해야 한다.
+    이로 인해 OLTP 환경(잦은 쓰기)에서는 심각한 잠금(Lock) 경합이 발생한다.
+    Oracle Database는 비트맵 인덱스를 지원하지만, MySQL InnoDB는 지원하지 않는 이유가 바로 이것이다.
+  </div>
+
+  <!-- Section 3 -->
+  <h2>3. 인덱스 선택 기준</h2>
+
+  <p>
+    인덱스가 많을수록 검색은 빠르지만 삽입·수정·삭제 시 유지 비용이 증가한다.
+    또한 인덱스 자체가 저장 공간을 차지한다.
+    다음 기준을 체계적으로 적용해 필요한 인덱스만 생성해야 한다.
+  </p>
+
+  <h3>3-1. 쿼리 패턴 분석</h3>
+
+  <p>
+    먼저 시스템에서 자주 실행되는 쿼리를 분류한다.
+  </p>
+
+  <ul>
+    <li><strong>점 쿼리 (Point Query):</strong> <code>WHERE id = 42</code> — 단건 등치 검색. B+-트리나 해싱 모두 적합.</li>
+    <li><strong>범위 쿼리 (Range Query):</strong> <code>WHERE date BETWEEN A AND B</code> — B+-트리가 유일한 실용적 선택.</li>
+    <li><strong>다중 조건 쿼리 (Multi-Condition):</strong> 복합 인덱스 설계 필요.</li>
+    <li><strong>집계 쿼리 (Aggregate):</strong> <code>COUNT</code>, <code>SUM</code> — 커버링 인덱스 또는 비트맵 인덱스.</li>
+    <li><strong>조인 쿼리 (Join):</strong> 조인 키 컬럼에 인덱스를 두어 Nested Loop Join을 최적화.</li>
+  </ul>
+
+  <h3>3-2. 인덱스 선택 체크리스트</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>질문</th>
+        <th>YES이면</th>
+        <th>NO이면</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>이 컬럼이 WHERE 절에 자주 등장하는가?</td>
+        <td>인덱스 후보</td>
+        <td>인덱스 불필요</td>
+      </tr>
+      <tr>
+        <td>카디널리티가 높은가? (값이 다양한가?)</td>
+        <td>B+-트리 인덱스 유리</td>
+        <td>비트맵 인덱스 고려</td>
+      </tr>
+      <tr>
+        <td>범위 조건 (<code>&gt;</code>, <code>&lt;</code>, <code>BETWEEN</code>)이 자주 쓰이는가?</td>
+        <td>B+-트리 필수</td>
+        <td>해싱도 가능</td>
+      </tr>
+      <tr>
+        <td>테이블이 자주 업데이트되는가?</td>
+        <td>인덱스 수를 최소화</td>
+        <td>읽기 최적화 우선</td>
+      </tr>
+      <tr>
+        <td>인덱스 컬럼만으로 쿼리가 해결되는가?</td>
+        <td>커버링 인덱스 설계</td>
+        <td>테이블 접근(Heap Fetch) 필요</td>
+      </tr>
+      <tr>
+        <td>두 컬럼이 항상 함께 조건에 등장하는가?</td>
+        <td>복합 인덱스 설계</td>
+        <td>단일 인덱스 분리</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>3-3. 선택도 (Selectivity)와 인덱스 효율</h3>
+
+  <p>
+    <strong>선택도(Selectivity)</strong> = (조건에 맞는 행 수) / (전체 행 수)
+  </p>
+
+  <p>
+    선택도가 낮을수록(= 조건에 맞는 행이 적을수록) 인덱스가 더 효과적이다.
+    반대로 선택도가 높으면(= 거의 모든 행이 조건에 해당) 인덱스를 타더라도 결국 대부분 행을 읽게 되어
+    풀 테이블 스캔(Full Table Scan)보다 오히려 느릴 수 있다.
+  </p>
+
+  <div class="diagram">선택도 예시 (100만 건 테이블)
+
+컬럼 A (gender — 값 2종류):
+  선택도 ≈ 0.5 (50만 건 해당) → 인덱스 효과 미미 → 비트맵 고려
+  단, 복합 조건과 함께라면 AND로 필터링 효과 있음
+
+컬럼 B (user_id — 값 100만 종류):
+  선택도 ≈ 0.000001 (1건 해당) → B+-트리 인덱스 매우 효과적
+
+컬럼 C (status — 값 4종류, 95%가 'completed'):
+  선택도 ≈ 0.95 (WHERE status='completed') → 인덱스보다 풀 스캔이 나을 수 있음
+  반면 WHERE status='pending'은 선택도 ≈ 0.01 → 인덱스 효과적</div>
+
+  <h3>3-4. 커버링 인덱스 (Covering Index)</h3>
+
+  <p>
+    쿼리가 필요로 하는 모든 컬럼이 인덱스에 포함되어 있을 때,
+    데이터베이스는 실제 테이블을 읽지 않고 인덱스만으로 결과를 반환할 수 있다.
+    이를 <strong>커버링 인덱스</strong> 또는 <strong>Index-Only Scan</strong>이라고 한다.
+  </p>
+
+  <pre><code>-- 인덱스: (dept, salary, name)
+SELECT name, salary
+FROM employees
+WHERE dept = 'Engineering';
+
+-- 위 쿼리는 dept, salary, name 모두 인덱스에 있음
+-- → 테이블 접근(Heap Fetch) 불필요 → I/O 대폭 절감</code></pre>
+
+  <div class="callout tip">
+    <strong>INCLUDE 컬럼 (PostgreSQL, SQL Server)</strong>
+    일부 DBMS는 정렬 키에 포함시키지 않고 리프 노드에만 추가 컬럼을 저장하는
+    <code>INCLUDE</code> 절을 지원한다. 커버링 인덱스를 구성할 때 불필요한 키 블로트(bloat) 없이
+    원하는 컬럼을 인덱스에 포함시킬 수 있다.
+  </div>
+
+  <h3>3-5. 인덱스 설계 원칙 요약</h3>
+
+  <div class="callout">
+    <strong>인덱스 설계 5원칙</strong>
+    <ol style="margin:0.5rem 0 0; padding-left:1.3rem;">
+      <li><strong>쿼리 주도(Query-Driven):</strong> 실제 자주 실행되는 쿼리를 먼저 파악한다.</li>
+      <li><strong>고선택도 우선:</strong> 선택도가 낮은(결과 행이 적은) 컬럼에 인덱스를 건다.</li>
+      <li><strong>등치 → 범위 순서:</strong> 복합 인덱스에서 등치 조건 컬럼을 앞에, 범위 조건 컬럼을 뒤에 배치한다.</li>
+      <li><strong>쓰기 비용 인식:</strong> 인덱스 하나 추가 = 모든 INSERT/UPDATE/DELETE마다 인덱스 유지 비용 추가.</li>
+      <li><strong>커버링 인덱스 고려:</strong> 자주 실행되는 쿼리는 필요한 컬럼을 인덱스에 포함해 테이블 접근을 줄인다.</li>
+    </ol>
+  </div>
+
+  <!-- Section 4 -->
+  <h2>4. 파일구조별 인덱스 적용 종합 비교</h2>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>인덱스 유형</th>
+        <th>점 쿼리</th>
+        <th>범위 쿼리</th>
+        <th>복합 조건</th>
+        <th>쓰기 부담</th>
+        <th>주요 적용처</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>단일 B+-트리</td>
+        <td><span class="badge good">O(log n)</span></td>
+        <td><span class="badge good">O(log n + k)</span></td>
+        <td><span class="badge mid">인덱스 교차</span></td>
+        <td><span class="badge mid">중간</span></td>
+        <td>OLTP 기본 인덱스</td>
+      </tr>
+      <tr>
+        <td>복합 B+-트리</td>
+        <td><span class="badge good">O(log n)</span></td>
+        <td><span class="badge good">O(log n + k)</span></td>
+        <td><span class="badge good">단일 스캔</span></td>
+        <td><span class="badge mid">중간</span></td>
+        <td>다중 조건 OLTP</td>
+      </tr>
+      <tr>
+        <td>해시 인덱스</td>
+        <td><span class="badge good">O(1)</span></td>
+        <td><span class="badge bad">불가</span></td>
+        <td><span class="badge bad">미지원</span></td>
+        <td><span class="badge good">낮음</span></td>
+        <td>동등 검색 전용</td>
+      </tr>
+      <tr>
+        <td>비트맵 인덱스</td>
+        <td><span class="badge mid">비트 스캔</span></td>
+        <td><span class="badge mid">가능(비효율)</span></td>
+        <td><span class="badge good">비트 AND/OR</span></td>
+        <td><span class="badge bad">매우 높음</span></td>
+        <td>DW·OLAP 분석</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Quiz 1 -->
+  <div class="quiz">
+    <h3>확인 문제 1</h3>
+    <div class="quiz-question">
+      복합 인덱스 <code>(A, B, C)</code>가 있을 때, <code>WHERE B = 5 AND C = 10</code> 쿼리는 이 인덱스를 얼마나 활용할 수 있는가?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" onclick="checkAnswer(this, false)">
+        <span>A.</span> B와 C가 모두 포함되므로 완전히 활용할 수 있다.
+      </div>
+      <div class="quiz-option" onclick="checkAnswer(this, true)">
+        <span>B.</span> 선두 컬럼 A 조건이 없으므로 인덱스를 활용할 수 없고 풀 스캔이 필요하다.
+      </div>
+      <div class="quiz-option" onclick="checkAnswer(this, false)">
+        <span>C.</span> 두 번째 컬럼부터 시작하면 되므로 절반 정도 활용된다.
+      </div>
+      <div class="quiz-option" onclick="checkAnswer(this, false)">
+        <span>D.</span> C 컬럼 인덱스만 단독으로 사용한다.
+      </div>
+    </div>
+    <div class="quiz-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz(this)">다시 풀기</button>
+  </div>
+
+  <!-- Quiz 2 -->
+  <div class="quiz">
+    <h3>확인 문제 2</h3>
+    <div class="quiz-question">
+      비트맵 인덱스가 가장 적합한 컬럼은?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" onclick="checkAnswer(this, false)">
+        <span>A.</span> 고유 값이 100만 개인 <code>order_id</code> 컬럼
+      </div>
+      <div class="quiz-option" onclick="checkAnswer(this, false)">
+        <span>B.</span> 날짜별로 값이 다른 <code>created_at</code> 컬럼
+      </div>
+      <div class="quiz-option" onclick="checkAnswer(this, true)">
+        <span>C.</span> '남'/'여' 두 가지 값만 가지는 <code>gender</code> 컬럼
+      </div>
+      <div class="quiz-option" onclick="checkAnswer(this, false)">
+        <span>D.</span> 자주 업데이트되는 <code>last_login</code> 컬럼
+      </div>
+    </div>
+    <div class="quiz-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz(this)">다시 풀기</button>
+  </div>
+
+  <!-- Quiz 3 -->
+  <div class="quiz">
+    <h3>확인 문제 3</h3>
+    <div class="quiz-question">
+      선택도(Selectivity)가 0.95인 컬럼에 B+-트리 인덱스를 추가했을 때 예상되는 결과는?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" onclick="checkAnswer(this, false)">
+        <span>A.</span> 거의 모든 행을 찾아야 하므로 검색 속도가 크게 향상된다.
+      </div>
+      <div class="quiz-option" onclick="checkAnswer(this, true)">
+        <span>B.</span> 인덱스 오버헤드로 인해 오히려 풀 테이블 스캔보다 느려질 수 있다.
+      </div>
+      <div class="quiz-option" onclick="checkAnswer(this, false)">
+        <span>C.</span> 인덱스 교차를 통해 다른 인덱스와 결합해 항상 빠르다.
+      </div>
+      <div class="quiz-option" onclick="checkAnswer(this, false)">
+        <span>D.</span> 선택도와 인덱스 효율은 관계없다.
+      </div>
+    </div>
+    <div class="quiz-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz(this)">다시 풀기</button>
+  </div>
+
+  <!-- Quiz 4 -->
+  <div class="quiz">
+    <h3>확인 문제 4</h3>
+    <div class="quiz-question">
+      복합 인덱스 <code>(dept, salary)</code>에서 등치 조건 컬럼(dept)을 앞에 배치하고 범위 조건 컬럼(salary)을 뒤에 배치하는 이유는?
+    </div>
+    <div class="quiz-options">
+      <div class="quiz-option" onclick="checkAnswer(this, false)">
+        <span>A.</span> 알파벳 순서로 컬럼을 정렬하기 위해서이다.
+      </div>
+      <div class="quiz-option" onclick="checkAnswer(this, false)">
+        <span>B.</span> dept 컬럼이 salary보다 저장 크기가 작아서이다.
+      </div>
+      <div class="quiz-option" onclick="checkAnswer(this, true)">
+        <span>C.</span> 등치 조건으로 먼저 범위를 좁힌 후 나머지 범위 조건을 인덱스 내에서 연속 스캔할 수 있기 때문이다.
+      </div>
+      <div class="quiz-option" onclick="checkAnswer(this, false)">
+        <span>D.</span> 범위 조건 컬럼을 앞에 두면 인덱스 분할이 불가능하기 때문이다.
+      </div>
+    </div>
+    <div class="quiz-feedback"></div>
+    <button class="quiz-reset" onclick="resetQuiz(this)">다시 풀기</button>
+  </div>
+
+  <div class="primary-source">
+    <strong>핵심 출처</strong>
+    이 레슨의 개념은 Folk·Zoellick·Riccardi <em>File Structures: An Object-Oriented Approach with C++</em> (3rd ed.),
+    Ramakrishnan·Gehrke <em>Database Management Systems</em> (3rd ed.) Chapter 8·10·14,
+    그리고 CMU 15-445 "Database Systems" 강의 노트(Indexes)와
+    Oracle Database 공식 문서 "Bitmap Indexes"를 기반으로 한다.
+  </div>
+
+  <!-- Ask Prompt -->
+  <div class="ask-prompt">
+    <strong>💬 이해가 안 되는 부분이 있나요?</strong>
+    복합 인덱스 컬럼 순서 결정 방법, 비트맵 인덱스가 동시성에 취약한 이유,
+    커버링 인덱스가 실제로 I/O를 줄이는 원리, 또는 특정 쿼리에 어떤 인덱스를 써야 하는지
+    궁금한 점이 있으면 질문하세요.
+  </div>
+
+  <!-- Navigation -->
+  <nav class="lesson-nav">
+    <a href="./0006-b-plus-trees.html">← Day 6: B+-트리</a>
+    <a href="./index.html">목록으로</a>
+    <a href="./0008-file-systems.html">Day 8: 파일 시스템 →</a>
+  </nav>
+
+</div><!-- .page -->
+
+<script>
+function checkAnswer(el, isCorrect) {
+  const quiz = el.closest('.quiz');
+  const opts = quiz.querySelectorAll('.quiz-option');
+  opts.forEach(o => { o.style.pointerEvents = 'none'; });
+  const feedback = quiz.querySelector('.quiz-feedback');
+  if (isCorrect) {
+    el.classList.add('correct');
+    feedback.className = 'quiz-feedback show correct';
+    feedback.textContent = '정답입니다!';
+  } else {
+    el.classList.add('wrong');
+    feedback.className = 'quiz-feedback show wrong';
+    feedback.textContent = '틀렸습니다. 다시 생각해 보세요.';
+  }
+}
+function resetQuiz(btn) {
+  const quiz = btn.closest('.quiz');
+  quiz.querySelectorAll('.quiz-option').forEach(o => {
+    o.className = 'quiz-option';
+    o.style.pointerEvents = '';
+  });
+  const feedback = quiz.querySelector('.quiz-feedback');
+  feedback.className = 'quiz-feedback';
+  feedback.textContent = '';
+}
+</script>
+
+</body>
+</html>
