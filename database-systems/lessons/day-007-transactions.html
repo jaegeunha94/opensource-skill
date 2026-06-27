@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — 트랜잭션과 동시성 제어</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 920px; margin: 0 auto; padding: 48px 24px 72px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.68; color: #202124; background: #fff; }
+    h1 { margin: 0 0 24px; font-size: 2rem; line-height: 1.25; }
+    h2 { margin-top: 40px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+    h3 { margin-top: 28px; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.95rem; }
+    th, td { border: 1px solid #d8dee4; padding: 8px 10px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 16px; background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 4px; }
+    blockquote { margin: 18px 0; padding: 2px 18px; border-left: 4px solid #d8dee4; color: #57606a; background: #f6f8fa; }
+    details { margin: 18px 0; padding: 12px 16px; border: 1px solid #d8dee4; border-radius: 6px; }
+    summary { cursor: pointer; font-weight: 600; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+    .back { margin-bottom: 28px; font-size: 0.95rem; }
+    .tip { background: #e8f0fe; border-left: 4px solid #0b57d0; padding: 2px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; }
+    .warn { background: #fef7e0; border-left: 4px solid #e37400; padding: 2px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; }
+    .danger { background: #fce8e6; border-left: 4px solid #c5221f; padding: 2px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; }
+    .diagram { background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; padding: 20px; margin: 18px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.88em; line-height: 1.5; overflow-x: auto; white-space: pre; }
+    .quiz-section { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 24px; margin: 28px 0; }
+    .quiz-section h3 { margin-top: 0; color: #166534; }
+    .question { margin: 16px 0; }
+    .question p { margin: 4px 0; font-weight: 600; }
+    .answer { display: none; background: #fff; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px 14px; margin-top: 8px; }
+    .answer-btn { margin-top: 6px; cursor: pointer; border: 1px solid #166534; background: #f0fdf4; color: #166534; border-radius: 4px; padding: 3px 10px; font-size: 0.85rem; }
+    .answer-btn:hover { background: #dcfce7; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0; }
+    @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+    .card { border: 1px solid #d8dee4; border-radius: 8px; padding: 16px 20px; }
+    .card h4 { margin: 0 0 8px; }
+    .tag { display: inline-block; padding: 1px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 600; margin: 0 4px 4px 0; }
+    .tag-acid { background: #dbeafe; color: #1e40af; }
+    .tag-iso { background: #fce7f3; color: #9d174d; }
+    .tag-lock { background: #d1fae5; color: #065f46; }
+    .tag-mvcc { background: #ede9fe; color: #4c1d95; }
+    .timeline { border-left: 3px solid #0b57d0; margin: 18px 0; padding-left: 20px; }
+    .timeline-item { margin: 12px 0; position: relative; }
+    .timeline-item::before { content: ''; position: absolute; left: -26px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: #0b57d0; border: 2px solid #fff; box-shadow: 0 0 0 2px #0b57d0; }
+  </style>
+</head>
+<body>
+
+<div class="back"><a href="./index.html">← 데이터베이스 학습 목록</a></div>
+
+<h1>Day 7 — 트랜잭션과 동시성 제어</h1>
+
+<p>
+  <span class="tag tag-acid">ACID</span>
+  <span class="tag tag-iso">격리 수준</span>
+  <span class="tag tag-lock">Lock</span>
+  <span class="tag tag-mvcc">MVCC</span>
+</p>
+
+<blockquote>
+  <strong>학습 목표</strong><br>
+  트랜잭션의 개념과 ACID 속성을 설명할 수 있다.<br>
+  Commit·Rollback·Savepoint를 올바르게 사용할 수 있다.<br>
+  4가지 격리 수준과 각각에서 발생 가능한 이상 현상(Dirty Read·Non-repeatable Read·Phantom Read)을 구분할 수 있다.<br>
+  Lock 기반 동시성 제어와 MVCC의 차이를 이해한다.
+</blockquote>
+
+<hr>
+
+<h2>1. 트랜잭션이란?</h2>
+
+<p>
+  <strong>트랜잭션(Transaction)</strong>은 하나의 논리적 작업 단위로 묶인 SQL 문의 집합이다.
+  "전부 성공하거나, 전부 실패하거나(All or Nothing)"가 핵심 원칙이다.
+</p>
+
+<h3>1.1 고전적 예시 — 계좌 이체</h3>
+
+<pre><code>-- 계좌 A → B로 50,000원 이체
+BEGIN;
+
+UPDATE accounts SET balance = balance - 50000 WHERE id = 'A';
+UPDATE accounts SET balance = balance + 50000 WHERE id = 'B';
+
+COMMIT;
+</code></pre>
+
+<p>
+  첫 번째 UPDATE 성공 후 두 번째 UPDATE 전에 오류가 발생하면?<br>
+  트랜잭션 없이는 A 잔액만 감소하고 B는 그대로인 <em>데이터 불일치</em>가 남는다.<br>
+  트랜잭션 안에서는 <code>ROLLBACK</code>으로 A도 원래 잔액으로 복구된다.
+</p>
+
+<div class="diagram">
+[BEGIN]
+   │
+   ├─ UPDATE A: balance - 50000  ← OK
+   │
+   ├─ UPDATE B: balance + 50000  ← 오류 발생!
+   │
+   └─ ROLLBACK  →  A 잔액 복구, 아무 변경도 없던 상태로 회귀
+</div>
+
+<hr>
+
+<h2>2. ACID 속성</h2>
+
+<p>데이터베이스 트랜잭션이 보장해야 하는 4가지 속성이다.</p>
+
+<div class="grid2">
+  <div class="card">
+    <h4>① Atomicity — 원자성</h4>
+    <p>트랜잭션 안의 모든 작업은 전부 완료되거나 전부 취소된다. 부분 완료는 허용되지 않는다.</p>
+    <p><em>구현</em>: Undo Log (롤백 시 이전 값 복원)</p>
+  </div>
+  <div class="card">
+    <h4>② Consistency — 일관성</h4>
+    <p>트랜잭션 실행 전후에 데이터베이스는 항상 정의된 무결성 제약조건을 만족해야 한다.</p>
+    <p><em>예</em>: 잔액은 음수가 될 수 없다 (CHECK 제약).</p>
+  </div>
+  <div class="card">
+    <h4>③ Isolation — 격리성</h4>
+    <p>동시에 실행 중인 트랜잭션들은 서로 영향을 주지 않는다. 각 트랜잭션은 혼자 실행되는 것처럼 보여야 한다.</p>
+    <p><em>구현</em>: Lock, MVCC, 격리 수준 설정</p>
+  </div>
+  <div class="card">
+    <h4>④ Durability — 지속성</h4>
+    <p>커밋된 트랜잭션의 결과는 시스템 장애가 발생해도 영구적으로 유지된다.</p>
+    <p><em>구현</em>: Redo Log (WAL — Write-Ahead Logging)</p>
+  </div>
+</div>
+
+<div class="tip">
+  <p>
+    <strong>ACID vs BASE</strong><br>
+    NoSQL 시스템은 가용성과 확장성을 위해 ACID 대신 BASE(Basically Available, Soft state, Eventual consistency)를 선택하는 경우가 많다. Day 10(NoSQL)에서 자세히 다룬다.
+  </p>
+</div>
+
+<hr>
+
+<h2>3. Commit · Rollback · Savepoint</h2>
+
+<h3>3.1 기본 제어 명령</h3>
+
+<table>
+  <thead>
+    <tr><th>명령</th><th>의미</th><th>언제 사용</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>BEGIN</code> / <code>START TRANSACTION</code></td><td>트랜잭션 시작</td><td>명시적 트랜잭션 개시</td></tr>
+    <tr><td><code>COMMIT</code></td><td>변경 사항을 영구 반영</td><td>모든 작업이 정상 완료되었을 때</td></tr>
+    <tr><td><code>ROLLBACK</code></td><td>변경 사항을 전부 취소</td><td>오류 발생 또는 의도적 취소</td></tr>
+    <tr><td><code>SAVEPOINT name</code></td><td>중간 저장점 생성</td><td>부분 롤백이 필요할 때</td></tr>
+    <tr><td><code>ROLLBACK TO SAVEPOINT name</code></td><td>해당 저장점까지만 롤백</td><td>전체 취소 없이 일부만 되돌릴 때</td></tr>
+    <tr><td><code>RELEASE SAVEPOINT name</code></td><td>저장점 삭제</td><td>더 이상 필요 없을 때</td></tr>
+  </tbody>
+</table>
+
+<h3>3.2 Savepoint 예시</h3>
+
+<pre><code>BEGIN;
+
+INSERT INTO orders (id, product, qty) VALUES (1001, 'notebook', 2);
+SAVEPOINT after_order;       -- 저장점 생성
+
+INSERT INTO payments (order_id, amount) VALUES (1001, 30000);
+-- 결제 처리 중 오류 감지
+
+ROLLBACK TO SAVEPOINT after_order;   -- 결제만 취소, 주문은 유지
+
+-- 재시도 또는 다른 처리...
+COMMIT;
+</code></pre>
+
+<h3>3.3 자동 커밋 (Auto-commit)</h3>
+
+<p>
+  MySQL, PostgreSQL 등 대부분의 DBMS는 기본적으로 <strong>Auto-commit ON</strong> 상태이다.
+  이 경우 개별 SQL 문 하나하나가 독립 트랜잭션으로 처리된다.
+  여러 SQL을 하나의 트랜잭션으로 묶으려면 반드시 <code>BEGIN</code>으로 명시해야 한다.
+</p>
+
+<pre><code>-- MySQL: 자동 커밋 끄기
+SET autocommit = 0;
+
+-- PostgreSQL: 기본값 ON. BEGIN 호출 시 트랜잭션 블록 진입
+BEGIN;
+...
+COMMIT;
+</code></pre>
+
+<hr>
+
+<h2>4. 동시성 문제 — 이상 현상</h2>
+
+<p>여러 트랜잭션이 동시에 실행될 때 격리성이 부족하면 다음 세 가지 이상 현상이 발생한다.</p>
+
+<h3>4.1 Dirty Read (오손 읽기)</h3>
+
+<p>아직 커밋되지 않은 트랜잭션의 변경 내용을 다른 트랜잭션이 읽는다.</p>
+
+<div class="diagram">
+T1: BEGIN
+T1: UPDATE accounts SET balance = 100000 WHERE id = 'A';  -- 아직 커밋 안 함
+
+T2: SELECT balance FROM accounts WHERE id = 'A';  -- 100000 읽음 (더티 리드!)
+
+T1: ROLLBACK  -- 원래 80000으로 복구
+
+T2가 읽은 100000은 존재하지 않았던 값 → 불일치
+</div>
+
+<h3>4.2 Non-repeatable Read (반복 불가 읽기)</h3>
+
+<p>같은 트랜잭션 안에서 같은 행을 두 번 읽었을 때 값이 달라진다.</p>
+
+<div class="diagram">
+T1: SELECT balance FROM accounts WHERE id = 'A';  -- 결과: 80000
+
+T2: UPDATE accounts SET balance = 90000 WHERE id = 'A'; COMMIT;
+
+T1: SELECT balance FROM accounts WHERE id = 'A';  -- 결과: 90000  ← 달라짐!
+</div>
+
+<h3>4.3 Phantom Read (유령 읽기)</h3>
+
+<p>같은 트랜잭션 안에서 같은 조건으로 두 번 SELECT 했을 때 결과 행의 수가 달라진다.</p>
+
+<div class="diagram">
+T1: SELECT * FROM orders WHERE amount > 10000;  -- 5행 반환
+
+T2: INSERT INTO orders (amount) VALUES (15000); COMMIT;
+
+T1: SELECT * FROM orders WHERE amount > 10000;  -- 6행 반환  ← 유령 행 등장!
+</div>
+
+<div class="warn">
+  <p>
+    <strong>Non-repeatable Read vs Phantom Read</strong><br>
+    Non-repeatable Read는 <em>기존 행의 값</em>이 변경되는 문제,<br>
+    Phantom Read는 <em>행의 개수(집합)</em>가 달라지는 문제다.
+  </p>
+</div>
+
+<hr>
+
+<h2>5. 트랜잭션 격리 수준</h2>
+
+<p>
+  SQL 표준(ISO/IEC 9075)은 이상 현상을 허용 범위에 따라 4가지 격리 수준을 정의한다.
+  수준이 높을수록 데이터 정확성은 높아지고, 동시성(성능)은 낮아진다.
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>격리 수준</th>
+      <th>Dirty Read</th>
+      <th>Non-repeatable Read</th>
+      <th>Phantom Read</th>
+      <th>성능</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>READ UNCOMMITTED</strong></td>
+      <td>발생 가능</td>
+      <td>발생 가능</td>
+      <td>발생 가능</td>
+      <td>최고</td>
+    </tr>
+    <tr>
+      <td><strong>READ COMMITTED</strong></td>
+      <td>방지</td>
+      <td>발생 가능</td>
+      <td>발생 가능</td>
+      <td>높음</td>
+    </tr>
+    <tr>
+      <td><strong>REPEATABLE READ</strong></td>
+      <td>방지</td>
+      <td>방지</td>
+      <td>발생 가능<br><small>(InnoDB는 방지)</small></td>
+      <td>중간</td>
+    </tr>
+    <tr>
+      <td><strong>SERIALIZABLE</strong></td>
+      <td>방지</td>
+      <td>방지</td>
+      <td>방지</td>
+      <td>최저</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>5.1 격리 수준 설정</h3>
+
+<pre><code>-- MySQL / MariaDB
+SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+-- PostgreSQL
+SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+-- 세션 전체에 적용
+ALTER SESSION SET ISOLATION LEVEL SERIALIZABLE;  -- Oracle
+</code></pre>
+
+<h3>5.2 READ UNCOMMITTED</h3>
+
+<p>
+  커밋되지 않은 데이터도 읽는다. 가장 낮은 격리 수준.
+  Dirty Read가 발생하므로 데이터 정합성이 중요하지 않은 통계성 읽기 등에 제한적으로 사용한다.
+</p>
+
+<h3>5.3 READ COMMITTED</h3>
+
+<p>
+  커밋된 데이터만 읽는다. Dirty Read는 방지하지만 Non-repeatable Read는 허용한다.
+  Oracle, PostgreSQL의 <strong>기본값</strong>.
+  일반적인 OLTP 환경에서 널리 사용된다.
+</p>
+
+<h3>5.4 REPEATABLE READ</h3>
+
+<p>
+  같은 트랜잭션 안에서 같은 행을 반복 조회하면 항상 같은 값을 반환한다.
+  MySQL InnoDB의 <strong>기본값</strong>.
+  InnoDB는 MVCC(갭 락 포함)를 통해 Phantom Read까지 방지한다.
+</p>
+
+<h3>5.5 SERIALIZABLE</h3>
+
+<p>
+  가장 높은 격리 수준. 트랜잭션들이 마치 순차적으로 실행된 것처럼 보장한다.
+  모든 이상 현상을 방지하지만 Lock 경합으로 인한 성능 저하가 크다.
+  금융, 재고 관리처럼 정합성이 절대적으로 중요한 경우에 사용한다.
+</p>
+
+<hr>
+
+<h2>6. 동시성 제어 메커니즘</h2>
+
+<h3>6.1 Lock 기반 제어</h3>
+
+<p>트랜잭션이 데이터에 접근하기 전에 Lock을 획득하는 방식이다.</p>
+
+<table>
+  <thead>
+    <tr><th>Lock 종류</th><th>다른 명칭</th><th>읽기 허용</th><th>쓰기 허용</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>공유 잠금 (Shared Lock)</td>
+      <td>S Lock, 읽기 Lock</td>
+      <td>O (여러 트랜잭션 동시 가능)</td>
+      <td>X</td>
+    </tr>
+    <tr>
+      <td>배타 잠금 (Exclusive Lock)</td>
+      <td>X Lock, 쓰기 Lock</td>
+      <td>X</td>
+      <td>X (오직 해당 트랜잭션만)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="diagram">
+호환성 행렬:
+
+           S Lock    X Lock
+S Lock     허용       충돌
+X Lock     충돌       충돌
+</div>
+
+<h3>6.2 Lock 세분화</h3>
+
+<table>
+  <thead>
+    <tr><th>범위</th><th>설명</th><th>장점</th><th>단점</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>테이블 락</td>
+      <td>테이블 전체에 Lock</td>
+      <td>오버헤드 낮음</td>
+      <td>동시성 극도로 낮음</td>
+    </tr>
+    <tr>
+      <td>행 락 (Row Lock)</td>
+      <td>개별 행에만 Lock</td>
+      <td>동시성 높음</td>
+      <td>많은 Lock 관리 비용</td>
+    </tr>
+    <tr>
+      <td>페이지 락</td>
+      <td>디스크 페이지 단위</td>
+      <td>중간 절충</td>
+      <td>구현 DBMS 제한적</td>
+    </tr>
+    <tr>
+      <td>갭 락 (Gap Lock)</td>
+      <td>인덱스 범위 사이 공간</td>
+      <td>Phantom Read 방지</td>
+      <td>InnoDB REPEATABLE READ 이상에서만</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>6.3 교착 상태 (Deadlock)</h3>
+
+<p>두 트랜잭션이 서로 상대방의 Lock 해제를 기다리는 상태이다.</p>
+
+<div class="diagram">
+T1: Lock(A) 획득  →  Lock(B) 요청 → 대기
+T2: Lock(B) 획득  →  Lock(A) 요청 → 대기
+
+→ 영원히 대기 = 교착 상태
+</div>
+
+<p>DBMS는 Deadlock Detector가 주기적으로 탐지하여 희생자(Victim) 트랜잭션을 롤백시킨다.</p>
+
+<div class="warn">
+  <p>
+    <strong>Deadlock 예방 팁</strong><br>
+    ① Lock 획득 순서를 항상 동일하게 통일한다.<br>
+    ② 트랜잭션을 짧게 유지하고 빠르게 커밋한다.<br>
+    ③ 불필요한 대량 Lock을 피한다.
+  </p>
+</div>
+
+<h3>6.4 MVCC (Multi-Version Concurrency Control)</h3>
+
+<p>
+  Lock 없이 <strong>데이터의 여러 버전</strong>을 관리하여 읽기와 쓰기가 서로를 차단하지 않도록 한다.
+  읽기 트랜잭션은 스냅샷을 통해 자신이 시작된 시점의 데이터를 본다.
+</p>
+
+<div class="diagram">
+시간 ──────────────────────────────────────────────────▶
+
+T_write: BEGIN → UPDATE row X (값 80→90) → COMMIT
+T_read:  BEGIN (스냅샷 T=10 기준) → SELECT row X → 80 반환 (이전 버전)
+                                   ← 쓰기가 커밋되었어도 영향 없음!
+</div>
+
+<table>
+  <thead>
+    <tr><th></th><th>Lock 기반</th><th>MVCC</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>읽기-쓰기 충돌</td>
+      <td>읽기도 대기</td>
+      <td>읽기 대기 없음</td>
+    </tr>
+    <tr>
+      <td>오래된 버전 관리</td>
+      <td>불필요</td>
+      <td>Undo 세그먼트 사용</td>
+    </tr>
+    <tr>
+      <td>대표 DBMS</td>
+      <td>MyISAM, 일부 NoSQL</td>
+      <td>InnoDB, PostgreSQL, Oracle</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <p>
+    <strong>PostgreSQL의 MVCC</strong><br>
+    PostgreSQL은 UPDATE를 내부적으로 "이전 행 삭제 + 새 행 삽입"으로 처리한다.
+    오래된 버전 행은 <code>VACUUM</code>이 정리한다.
+    MySQL InnoDB는 Undo Log에 이전 버전을 별도로 저장하는 방식을 쓴다.
+  </p>
+</div>
+
+<hr>
+
+<h2>7. 실전 패턴 — 격리 수준별 SQL</h2>
+
+<h3>7.1 SELECT FOR UPDATE (비관적 잠금)</h3>
+
+<p>읽은 행에 즉시 배타 락을 거는 패턴. 이후 변경이 확실한 경우 사용한다.</p>
+
+<pre><code>BEGIN;
+
+-- 재고를 읽으면서 동시에 잠금
+SELECT stock FROM products WHERE id = 42 FOR UPDATE;
+
+-- 재고 감소
+UPDATE products SET stock = stock - 1 WHERE id = 42;
+
+COMMIT;
+</code></pre>
+
+<h3>7.2 낙관적 잠금 (Optimistic Locking)</h3>
+
+<p>Lock 대신 버전 번호(version) 컬럼으로 충돌을 감지한다.</p>
+
+<pre><code>-- 1. 데이터 조회
+SELECT id, stock, version FROM products WHERE id = 42;
+-- 결과: (42, 10, 5)
+
+-- 2. 업데이트 시도 — 버전이 일치할 때만 성공
+UPDATE products
+SET stock = 9, version = version + 1
+WHERE id = 42 AND version = 5;
+
+-- 영향받은 행이 0 → 동시 수정 감지 → 재시도 또는 오류 처리
+</code></pre>
+
+<h3>7.3 SKIP LOCKED — 큐 처리</h3>
+
+<p>이미 잠긴 행을 건너뛰고 처리 가능한 행만 선택. 작업 큐 패턴에서 유용하다.</p>
+
+<pre><code>-- PostgreSQL / MySQL 8+
+BEGIN;
+SELECT * FROM job_queue
+WHERE status = 'pending'
+ORDER BY created_at
+LIMIT 1
+FOR UPDATE SKIP LOCKED;
+
+UPDATE job_queue SET status = 'processing' WHERE id = :picked_id;
+COMMIT;
+</code></pre>
+
+<hr>
+
+<h2>8. 트랜잭션 설계 원칙</h2>
+
+<div class="timeline">
+  <div class="timeline-item">
+    <strong>짧게 유지</strong> — 트랜잭션이 길수록 Lock 점유 시간이 늘어 동시성이 저하된다.
+  </div>
+  <div class="timeline-item">
+    <strong>최소한의 범위</strong> — 꼭 필요한 데이터에만 Lock을 건다.
+  </div>
+  <div class="timeline-item">
+    <strong>일관된 Lock 순서</strong> — Deadlock 예방을 위해 여러 테이블을 접근할 때 항상 같은 순서로 Lock을 획득한다.
+  </div>
+  <div class="timeline-item">
+    <strong>읽기 전용 트랜잭션 구분</strong> — 읽기만 하는 경우 <code>SET TRANSACTION READ ONLY</code>를 선언하면 DBMS 최적화 힌트가 된다.
+  </div>
+  <div class="timeline-item">
+    <strong>오류 처리</strong> — 예외 발생 시 반드시 <code>ROLLBACK</code>을 호출해 자원을 해제한다.
+  </div>
+</div>
+
+<hr>
+
+<h2>9. 정리 — 한눈에 보기</h2>
+
+<table>
+  <thead>
+    <tr><th>개념</th><th>핵심 한 줄 요약</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>트랜잭션</td><td>All or Nothing 논리 작업 단위</td></tr>
+    <tr><td>ACID</td><td>원자성·일관성·격리성·지속성</td></tr>
+    <tr><td>Commit</td><td>변경 영구 반영</td></tr>
+    <tr><td>Rollback</td><td>변경 전부 취소</td></tr>
+    <tr><td>Savepoint</td><td>부분 롤백 지점 지정</td></tr>
+    <tr><td>Dirty Read</td><td>미커밋 데이터 읽기</td></tr>
+    <tr><td>Non-repeatable Read</td><td>같은 행을 재조회 시 값이 달라짐</td></tr>
+    <tr><td>Phantom Read</td><td>같은 조건 재조회 시 행 수가 달라짐</td></tr>
+    <tr><td>READ UNCOMMITTED</td><td>세 가지 이상 현상 모두 허용</td></tr>
+    <tr><td>READ COMMITTED</td><td>Dirty Read만 방지 (PostgreSQL 기본값)</td></tr>
+    <tr><td>REPEATABLE READ</td><td>Dirty + Non-repeatable Read 방지 (MySQL 기본값)</td></tr>
+    <tr><td>SERIALIZABLE</td><td>세 가지 이상 현상 모두 방지, 성능 최저</td></tr>
+    <tr><td>S Lock / X Lock</td><td>공유/배타 잠금 — 읽기는 공유, 쓰기는 배타</td></tr>
+    <tr><td>MVCC</td><td>버전 관리로 읽기-쓰기 충돌 없이 동시 처리</td></tr>
+  </tbody>
+</table>
+
+<hr>
+
+<div class="quiz-section">
+  <h3>확인 퀴즈</h3>
+
+  <div class="question">
+    <p>Q1. ACID의 I(Isolation)를 구현하는 두 가지 주요 메커니즘은?</p>
+    <button class="answer-btn" onclick="toggle('a1')">정답 보기</button>
+    <div class="answer" id="a1">Lock 기반 제어와 MVCC(Multi-Version Concurrency Control).</div>
+  </div>
+
+  <div class="question">
+    <p>Q2. READ COMMITTED 격리 수준에서 방지되지 않는 이상 현상 두 가지는?</p>
+    <button class="answer-btn" onclick="toggle('a2')">정답 보기</button>
+    <div class="answer" id="a2">Non-repeatable Read와 Phantom Read. Dirty Read는 방지되지만 나머지 두 이상 현상은 허용된다.</div>
+  </div>
+
+  <div class="question">
+    <p>Q3. Dirty Read가 발생할 수 있는 격리 수준은?</p>
+    <button class="answer-btn" onclick="toggle('a3')">정답 보기</button>
+    <div class="answer" id="a3">READ UNCOMMITTED. 이 수준에서만 아직 커밋되지 않은 데이터를 읽을 수 있다.</div>
+  </div>
+
+  <div class="question">
+    <p>Q4. 두 트랜잭션이 서로 상대방의 Lock 해제를 기다리는 상황을 무엇이라 하며, DBMS는 이를 어떻게 해결하나?</p>
+    <button class="answer-btn" onclick="toggle('a4')">정답 보기</button>
+    <div class="answer" id="a4">교착 상태(Deadlock). DBMS의 Deadlock Detector가 주기적으로 순환 대기를 탐지하고, 희생자(Victim) 트랜잭션을 선택하여 강제 롤백시킨다.</div>
+  </div>
+
+  <div class="question">
+    <p>Q5. MVCC에서 읽기 트랜잭션이 쓰기 트랜잭션과 충돌하지 않는 이유는?</p>
+    <button class="answer-btn" onclick="toggle('a5')">정답 보기</button>
+    <div class="answer" id="a5">읽기 트랜잭션은 자신이 시작된 시점의 스냅샷(이전 버전 데이터)을 사용하기 때문에 쓰기 트랜잭션이 동시에 수정하더라도 Lock을 기다리지 않는다.</div>
+  </div>
+
+  <div class="question">
+    <p>Q6. MySQL InnoDB의 기본 격리 수준은 무엇이며, Phantom Read를 어떻게 방지하나?</p>
+    <button class="answer-btn" onclick="toggle('a6')">정답 보기</button>
+    <div class="answer" id="a6">REPEATABLE READ가 기본값이다. InnoDB는 MVCC와 Gap Lock(갭 락)을 함께 사용하여 인덱스 범위 사이의 삽입을 차단함으로써 Phantom Read까지 방지한다.</div>
+  </div>
+</div>
+
+<hr>
+
+<h2>다음 학습</h2>
+<p><strong>Day 8</strong>에서는 <em>인덱스 구조와 쿼리 최적화</em>를 깊이 다룬다. B-Tree 인덱스의 내부 구조, EXPLAIN 실행 계획 분석, 커버링 인덱스와 슬로우 쿼리 튜닝 방법을 배운다.</p>
+<p><a href="./index.html">← 학습 목록으로 돌아가기</a></p>
+
+<script>
+function toggle(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+</script>
+
+</body>
+</html>

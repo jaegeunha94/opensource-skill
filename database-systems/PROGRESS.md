@@ -10,20 +10,21 @@
 | 4 | 2026-06-23 | SQL 중급 — JOIN & 집계 | [day-004-sql-join-aggregate.html](lessons/day-004-sql-join-aggregate.html) |
 | 5 | 2026-06-24 | SQL 고급 — 서브쿼리·뷰·인덱스 | [day-005-sql-advanced.html](lessons/day-005-sql-advanced.html) |
 | 6 | 2026-06-26 | 정규화 — 1NF·2NF·3NF·BCNF·역정규화 | [day-006-normalization.html](lessons/day-006-normalization.html) |
+| 7 | 2026-06-27 | 트랜잭션과 동시성 제어 | [day-007-transactions.html](lessons/day-007-transactions.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
 | ~~6~~ | ~~정규화~~ | ~~완료~~ |
-| 7 | 트랜잭션과 동시성 제어 | ACID, Commit/Rollback, 격리 수준, Dirty Read·Phantom Read |
+| ~~7~~ | ~~트랜잭션과 동시성 제어~~ | ~~완료~~ |
 | 8 | 인덱스 구조와 쿼리 최적화 | B-Tree 인덱스, EXPLAIN, 커버링 인덱스, 슬로우 쿼리 |
 | 9 | 저장 프로시저·트리거·함수 | CREATE PROCEDURE, CREATE TRIGGER, 사용자 정의 함수 |
 | 10 | NoSQL 데이터베이스 | Document·Key-Value·Column·Graph, CAP 정리, 사용 사례 비교 |
 
 ## 현재 학습 위치
 
-**Day 6 완료** — Day 7 (트랜잭션과 동시성 제어)부터 시작.
+**Day 7 완료** — Day 8 (인덱스 구조와 쿼리 최적화)부터 시작.
 
 ## 습득한 핵심 개념
 
@@ -50,5 +51,10 @@
 - [x] 정규화 1NF·2NF·3NF·BCNF (Day 6)
 - [x] 함수적 종속·부분FD·이행적FD (Day 6)
 - [x] 역정규화와 절충점 (Day 6)
-- [ ] ACID & 트랜잭션 (예정 Day 7)
+- [x] ACID & 트랜잭션 (Day 7)
+- [x] Commit·Rollback·Savepoint (Day 7)
+- [x] 격리 수준: READ UNCOMMITTED·READ COMMITTED·REPEATABLE READ·SERIALIZABLE (Day 7)
+- [x] Dirty Read·Non-repeatable Read·Phantom Read (Day 7)
+- [x] Lock (S Lock·X Lock·갭 락) & Deadlock (Day 7)
+- [x] MVCC (Multi-Version Concurrency Control) (Day 7)
 - [ ] 인덱스 구조 및 쿼리 최적화 심화 (예정 Day 8)
