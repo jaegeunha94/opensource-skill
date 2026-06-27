@@ -10,16 +10,17 @@
 | 4 | 2026-06-24 | 인터랙션 패턴 — 어포던스·마이크로인터랙션·피드백 | [0004-interaction-patterns.html](lessons/0004-interaction-patterns.html) |
 | 5 | 2026-06-25 | 접근성(a11y) — WCAG·ARIA·포커스 관리 | [0005-accessibility.html](lessons/0005-accessibility.html) |
 | 6 | 2026-06-26 | 협업 툴 — Figma·Zeplin 핸드오프 용어 | [0006-figma-handoff.html](lessons/0006-figma-handoff.html) |
+| 7 | 2026-06-27 | 사용자 조사 — 페르소나·사용자 여정·공감 지도 | [0007-user-research.html](lessons/0007-user-research.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | 사용자 조사 — 페르소나·사용자 여정·공감 지도 | Persona, User Journey Map, Empathy Map, Jobs-to-be-done |
+| 8 | 프로토타이핑 기법 — Lo-Fi·Hi-Fi·인터랙티브 프로토타입 | Lo-Fi Prototype, Hi-Fi Prototype, Paper Prototype, Clickable Prototype, Wizard of Oz |
 
 ## 현재 학습 위치
 
-**Day 6 완료** — Day 7 (사용자 조사 — 페르소나·사용자 여정·공감 지도) 예정.
+**Day 7 완료** — Day 8 (프로토타이핑 기법 — Lo-Fi·Hi-Fi·인터랙티브 프로토타입) 예정.
 
 ## 습득한 핵심 개념
 
@@ -60,5 +61,15 @@
 - [x] Annotation — Day 6
 - [x] Export / Scale Factor (@1x @2x @3x) — Day 6
 - [x] Zeplin Styleguide — Day 6
-- [ ] Persona (페르소나) — 예정 Day 7
-- [ ] User Journey Map (사용자 여정 지도) — 예정 Day 7
+- [x] Persona (페르소나) — Day 7
+- [x] User Journey Map (사용자 여정 지도) — Day 7
+- [x] Empathy Map (공감 지도) — Day 7
+- [x] Jobs-to-be-done / JTBD — Day 7
+- [x] Qualitative Research / 정성적 조사 — Day 7
+- [x] Quantitative Research / 정량적 조사 — Day 7
+- [x] Touchpoint (접점) — Day 7
+- [x] Moment of Truth (결정적 순간) — Day 7
+- [x] Affinity Diagram (어피니티 다이어그램) — Day 7
+- [x] Pain Points / Gains — Day 7
+- [ ] Lo-Fi Prototype (로우파이 프로토타입) — 예정 Day 8
+- [ ] Hi-Fi Prototype (하이파이 프로토타입) — 예정 Day 8
