@@ -11,6 +11,7 @@
 | 5 | 2026-06-24 | 응용 계층 — DNS와 DHCP | [day-05-application-dns-dhcp.html](lessons/day-05-application-dns-dhcp.html) |
 | 6 | 2026-06-25 | 응용 계층 — HTTP/HTTPS | [day-06-application-http-https.html](lessons/day-06-application-http-https.html) |
 | 7 | 2026-06-26 | 네트워크 보안 기초 | [day-07-network-security.html](lessons/day-07-network-security.html) |
+| 8 | 2026-06-27 | 실습 — Wireshark 패킷 분석 | [day-08-wireshark-analysis.html](lessons/day-08-wireshark-analysis.html) |
 
 ## 다음 예정 학습
 
@@ -19,13 +20,13 @@
 | ~~5~~ | ~~응용 계층 — DNS와 DHCP~~ | ~~DNS 계층 구조, 재귀 쿼리, DHCP 임대 과정~~ |
 | ~~6~~ | ~~응용 계층 — HTTP/HTTPS~~ | ~~HTTP 메서드, 상태 코드, 쿠키/세션, TLS 핸드셰이크~~ |
 | ~~7~~ | ~~네트워크 보안 기초~~ | ~~방화벽, NAT, VPN, TLS/SSL, 일반적인 공격 유형~~ |
-| 8 | 실습 — Wireshark 패킷 분석 | 필터링, TCP 스트림 추적, DNS/HTTP 트래픽 분석 |
+| ~~8~~ | ~~실습 — Wireshark 패킷 분석~~ | ~~필터링, TCP 스트림 추적, DNS/HTTP 트래픽 분석~~ |
 | 9 | 무선 네트워크 & 최신 트렌드 | Wi-Fi 표준, SDN 개념, 클라우드 네트워킹 기초 |
 | 10 | 종합 복습 & 실전 문제 | 전체 개념 연결, 서브넷 계산 실전, 프로토콜 흐름 추적 |
 
 ## 현재 학습 위치
 
-**Day 7 완료** — 다음: Day 8 (Wireshark 패킷 분석).
+**Day 8 완료** — 다음: Day 9 (무선 네트워크 & SDN).
 
 ## 습득한 핵심 개념
 
@@ -59,5 +60,5 @@
 - [x] NAT / 방화벽 동작 원리 (Day 7 완료)
 - [x] VPN 터널링 및 프로토콜 비교 (Day 7 완료)
 - [x] 주요 네트워크 공격 유형 DoS/MitM/IP Spoofing/Replay (Day 7 완료)
-- [ ] Wireshark 패킷 분석 (예정 Day 8)
+- [x] Wireshark 패킷 분석 (Day 8 완료)
 - [ ] Wi-Fi 표준 및 SDN 개요 (예정 Day 9)
