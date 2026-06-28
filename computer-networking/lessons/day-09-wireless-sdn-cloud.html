@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 9 — 무선 네트워크 &amp; 최신 트렌드</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 920px; margin: 0 auto; padding: 48px 24px 72px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.68; color: #202124; background: #fff; }
+    h1 { margin: 0 0 24px; font-size: 2rem; line-height: 1.25; }
+    h2 { margin-top: 40px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+    h3 { margin-top: 28px; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.95rem; }
+    th, td { border: 1px solid #d8dee4; padding: 8px 10px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 16px; background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.88em; line-height: 1.6; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 4px; }
+    blockquote { margin: 18px 0; padding: 2px 18px; border-left: 4px solid #d8dee4; color: #57606a; background: #f6f8fa; }
+    details { margin: 18px 0; padding: 12px 16px; border: 1px solid #d8dee4; border-radius: 6px; }
+    summary { cursor: pointer; font-weight: 600; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+    .back { margin-bottom: 28px; font-size: 0.95rem; }
+    .tip { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 2px 18px; margin: 18px 0; }
+    .info { background: #e8f0fe; border-left: 4px solid #0b57d0; padding: 2px 18px; margin: 18px 0; }
+
+    /* 퀴즈 */
+    .quiz-section { margin-top: 48px; padding: 28px; background: #f0f7ff; border: 1px solid #c2d9f5; border-radius: 10px; }
+    .quiz-section h2 { border-top: none; margin-top: 0; padding-top: 0; }
+    .question { margin: 20px 0; }
+    .question p { font-weight: 600; margin-bottom: 10px; }
+    .options label { display: block; margin: 6px 0; cursor: pointer; padding: 6px 10px; border-radius: 6px; border: 1px solid #d8dee4; background: #fff; transition: background 0.15s; }
+    .options label:hover { background: #e8f0fe; }
+    .options input[type="radio"] { margin-right: 8px; }
+    .check-btn { margin-top: 14px; padding: 8px 22px; background: #0b57d0; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+    .check-btn:hover { background: #0943a8; }
+    .result { margin-top: 10px; font-weight: 600; min-height: 1.4em; }
+    .correct { color: #188038; }
+    .wrong { color: #c62828; }
+
+    /* SDN 시뮬레이터 */
+    .sdn-sim { margin-top: 20px; border: 1px solid #d8dee4; border-radius: 10px; overflow: hidden; }
+    .sdn-sim-header { background: #f6f8fa; padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #d8dee4; font-size: 0.95rem; }
+    .sdn-canvas { display: flex; gap: 0; }
+    .sdn-plane { flex: 1; padding: 16px; }
+    .sdn-plane h4 { margin: 0 0 12px; font-size: 0.9rem; color: #57606a; text-transform: uppercase; letter-spacing: 0.04em; }
+    .sdn-ctrl { background: #e8f0fe; border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 0.88rem; }
+    .sdn-switch { background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; font-size: 0.85rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .sdn-flow-table { width: 100%; font-size: 0.82rem; border-collapse: collapse; }
+    .sdn-flow-table th, .sdn-flow-table td { border: 1px solid #d8dee4; padding: 5px 8px; }
+    .sdn-flow-table th { background: #f6f8fa; }
+    .sdn-add-btn { margin-top: 10px; padding: 6px 14px; background: #188038; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85rem; }
+    .sdn-add-btn:hover { background: #166534; }
+    .sdn-msg { margin-top: 8px; font-size: 0.82rem; color: #188038; min-height: 1.2em; }
+
+    .wifi-band-bar { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+    .wifi-band-label { width: 90px; font-size: 0.9rem; font-weight: 600; }
+    .wifi-band-fill { height: 20px; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 0.8rem; color: #fff; font-weight: 600; }
+
+    .nav-links { margin-top: 48px; display: flex; gap: 16px; flex-wrap: wrap; }
+    .nav-links a { padding: 8px 20px; border: 1px solid #d8dee4; border-radius: 6px; text-decoration: none; font-size: 0.95rem; }
+    .nav-links a:hover { background: #f6f8fa; }
+  </style>
+</head>
+<body>
+
+<p class="back"><a href="./index.html">← 학습 목록으로</a></p>
+
+<h1>Day 9 — 무선 네트워크 &amp; 최신 트렌드</h1>
+
+<p>오늘은 <strong>Wi-Fi(IEEE 802.11) 표준</strong>의 발전 과정, <strong>SDN(Software Defined Networking)</strong> 개념,
+그리고 <strong>클라우드 네트워킹</strong> 기초를 학습합니다.
+Day 1~8에서 쌓은 OSI/TCP-IP, IP 라우팅, 보안 지식이 여기서 연결됩니다.</p>
+
+<div class="info">
+  <p><strong>오늘의 학습 목표</strong></p>
+  <ul>
+    <li>Wi-Fi 세대별 표준(802.11 b/g/n/ac/ax)의 주파수·속도 차이를 설명한다.</li>
+    <li>CSMA/CA, SSID, BSS, AP 로밍 개념을 이해한다.</li>
+    <li>SDN의 제어 평면·데이터 평면 분리 원리와 OpenFlow를 설명한다.</li>
+    <li>VPC, CDN, 로드밸런서, 서비스 메시 개념을 구분한다.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2>1. 무선 네트워크 기초</h2>
+
+<h3>1-1. 유선 vs 무선의 차이</h3>
+
+<p>유선 이더넷은 CSMA/CD(충돌 감지)를 사용하지만, 무선은 <strong>숨겨진 노드 문제(Hidden Node Problem)</strong> 때문에 충돌을 감지하기 어렵습니다.
+그래서 무선은 <strong>CSMA/CA(Collision Avoidance)</strong>를 사용합니다.</p>
+
+<table>
+  <thead>
+    <tr><th>항목</th><th>유선(이더넷)</th><th>무선(Wi-Fi)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>매체 접근</td><td>CSMA/CD</td><td>CSMA/CA</td></tr>
+    <tr><td>충돌 처리</td><td>충돌 감지 후 재전송</td><td>충돌 회피 — RTS/CTS 핸드셰이크</td></tr>
+    <tr><td>보안 위협</td><td>물리 접근 필요</td><td>전파 도청 가능 — WPA3 암호화 필요</td></tr>
+    <tr><td>대역폭 공유</td><td>스위치로 전이중(full-duplex)</td><td>AP에 연결된 모든 기기가 채널 공유</td></tr>
+  </tbody>
+</table>
+
+<h3>1-2. CSMA/CA 동작 원리</h3>
+
+<ol>
+  <li>전송 전 채널이 비어 있는지 감지(Listen Before Talk).</li>
+  <li>비어 있으면 <strong>DIFS(Distributed Inter-Frame Space)</strong> 대기.</li>
+  <li>무작위 Backoff 카운터 설정 → 카운터가 0이 되면 전송.</li>
+  <tr></tr>
+  <li>선택적으로 <strong>RTS(Request to Send) / CTS(Clear to Send)</strong>를 교환하여 숨겨진 노드 문제 완화.</li>
+  <li>수신자가 ACK를 반환 → 없으면 재전송.</li>
+</ol>
+
+<div class="tip">
+  <p><strong>숨겨진 노드 문제:</strong> A와 C가 모두 B에게 전송 중이지만, A와 C는 서로의 전파를 감지하지 못하는 경우. RTS/CTS로 AP가 중재합니다.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2>2. Wi-Fi 표준 (IEEE 802.11)</h2>
+
+<h3>2-1. 세대별 비교</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>표준</th><th>세대 명칭</th><th>주파수</th><th>최대 속도</th><th>핵심 기술</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>802.11b</td><td>Wi-Fi 1</td><td>2.4 GHz</td><td>11 Mbps</td><td>DSSS</td></tr>
+    <tr><td>802.11a</td><td>Wi-Fi 2</td><td>5 GHz</td><td>54 Mbps</td><td>OFDM</td></tr>
+    <tr><td>802.11g</td><td>Wi-Fi 3</td><td>2.4 GHz</td><td>54 Mbps</td><td>OFDM</td></tr>
+    <tr><td>802.11n</td><td>Wi-Fi 4</td><td>2.4 / 5 GHz</td><td>600 Mbps</td><td>MIMO, 채널 본딩(40 MHz)</td></tr>
+    <tr><td>802.11ac</td><td>Wi-Fi 5</td><td>5 GHz</td><td>6.9 Gbps</td><td>MU-MIMO, 160 MHz 채널, 256-QAM</td></tr>
+    <tr><td>802.11ax</td><td>Wi-Fi 6/6E</td><td>2.4 / 5 / 6 GHz</td><td>9.6 Gbps</td><td>OFDMA, BSS Coloring, TWT</td></tr>
+    <tr><td>802.11be</td><td>Wi-Fi 7</td><td>2.4 / 5 / 6 GHz</td><td>46 Gbps</td><td>Multi-Link Operation, 4096-QAM, 320 MHz</td></tr>
+  </tbody>
+</table>
+
+<h3>2-2. 주파수 대역 비교 (시각화)</h3>
+
+<p>2.4 GHz는 장거리, 5 GHz는 고속 단거리 특성을 가집니다.</p>
+
+<div>
+  <div class="wifi-band-bar">
+    <div class="wifi-band-label">2.4 GHz</div>
+    <div class="wifi-band-fill" style="width:55%; background:#0b57d0;">벽 투과 우수 / 혼잡 (채널 1·6·11)</div>
+  </div>
+  <div class="wifi-band-bar">
+    <div class="wifi-band-label">5 GHz</div>
+    <div class="wifi-band-fill" style="width:75%; background:#188038;">고속 / 짧은 도달 거리 (채널 36~165)</div>
+  </div>
+  <div class="wifi-band-bar">
+    <div class="wifi-band-label">6 GHz</div>
+    <div class="wifi-band-fill" style="width:92%; background:#7b2ff7;">최고속 / 매우 짧은 도달 거리 (Wi-Fi 6E/7)</div>
+  </div>
+</div>
+
+<h3>2-3. 핵심 무선 용어</h3>
+
+<table>
+  <thead>
+    <tr><th>용어</th><th>설명</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>SSID</td><td>Wi-Fi 네트워크 이름. 동일 SSID로 복수의 AP를 묶어 로밍 지원.</td></tr>
+    <tr><td>BSSID</td><td>AP의 MAC 주소 — 같은 SSID 내 AP를 구분.</td></tr>
+    <tr><td>BSS</td><td>Basic Service Set — 하나의 AP와 연결된 단말 집합.</td></tr>
+    <tr><td>ESS</td><td>Extended Service Set — 여러 AP가 같은 SSID로 묶인 구조 (기업 Wi-Fi).</td></tr>
+    <tr><td>로밍</td><td>이동 시 단말이 RSSI(신호 강도) 기반으로 더 강한 AP로 자동 재연결.</td></tr>
+    <tr><td>채널</td><td>2.4 GHz는 겹치지 않는 채널이 3개(1·6·11), 5 GHz는 25개 이상.</td></tr>
+    <tr><td>MIMO</td><td>Multiple Input Multiple Output — 복수 안테나로 동시 스트림 전송.</td></tr>
+    <tr><td>MU-MIMO</td><td>Multi-User MIMO — 여러 단말에 동시에 서로 다른 스트림 전송(Wi-Fi 5+).</td></tr>
+    <tr><td>OFDMA</td><td>채널을 작은 단위(RU)로 분할해 여러 단말에 할당(Wi-Fi 6). LTE와 유사.</td></tr>
+    <tr><td>TWT</td><td>Target Wake Time — 단말이 수면·깨어남 시간을 AP와 협의해 배터리 절약.</td></tr>
+    <tr><td>WPA3</td><td>SAE(Simultaneous Authentication of Equals) 사용 — 사전 공격 저항성 강화.</td></tr>
+  </tbody>
+</table>
+
+<details>
+  <summary>WPA2 vs WPA3 차이 자세히 보기</summary>
+  <table>
+    <thead><tr><th>항목</th><th>WPA2</th><th>WPA3</th></tr></thead>
+    <tbody>
+      <tr><td>키 교환</td><td>PSK(Pre-Shared Key) 4-way handshake</td><td>SAE(Dragonfly) — Offline 사전 공격 불가</td></tr>
+      <tr><td>개인 네트워크</td><td>같은 PSK 공유 → 패킷 복호화 가능</td><td>개별 세션 키 → 과거 트래픽 보호(Forward Secrecy)</td></tr>
+      <tr><td>개방 네트워크</td><td>암호화 없음</td><td>OWE(Opportunistic Wireless Encryption) — 암호화 적용</td></tr>
+      <tr><td>엔터프라이즈</td><td>CCMP(AES-128)</td><td>192비트 암호 스위트</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<!-- ============================================================ -->
+<h2>3. SDN (Software Defined Networking)</h2>
+
+<h3>3-1. 전통적 네트워크의 한계</h3>
+
+<p>전통 네트워크에서 스위치·라우터는 <strong>제어 평면(Control Plane)</strong>과 <strong>데이터 평면(Data Plane)</strong>이 같은 장비 안에 있습니다.
+설정 변경마다 장비 하나씩 SSH로 접속해 CLI를 입력해야 합니다. 수백 대 장비를 운영하면 설정 불일치가 생기기 쉽습니다.</p>
+
+<h3>3-2. SDN 핵심 개념</h3>
+
+<p>SDN은 제어 평면을 <strong>중앙 집중 컨트롤러</strong>로 분리합니다.</p>
+
+<pre>
+┌─────────────────────────────────┐
+│      애플리케이션 평면           │   (트래픽 분석, 정책 앱)
+│  Application Plane              │
+└──────────────┬──────────────────┘
+               │ Northbound API (REST)
+┌──────────────▼──────────────────┐
+│      제어 평면 (Controller)      │   (OpenDaylight, ONOS, Floodlight)
+│  Control Plane                  │
+└──────────────┬──────────────────┘
+               │ Southbound API (OpenFlow, NETCONF)
+┌──────────────▼──────────────────┐
+│      데이터 평면 (Switches)      │   (패킷 포워딩만 담당)
+│  Data Plane / Forwarding Plane  │
+└─────────────────────────────────┘
+</pre>
+
+<table>
+  <thead><tr><th>평면</th><th>역할</th><th>예시</th></tr></thead>
+  <tbody>
+    <tr><td>애플리케이션 평면</td><td>비즈니스 정책 정의, 트래픽 분석</td><td>로드밸런서 앱, 방화벽 정책 앱</td></tr>
+    <tr><td>제어 평면</td><td>라우팅 결정, 플로우 테이블 생성·배포</td><td>ONOS, OpenDaylight</td></tr>
+    <tr><td>데이터 평면</td><td>플로우 테이블에 따라 패킷 포워딩</td><td>OpenFlow 지원 스위치, Open vSwitch</td></tr>
+  </tbody>
+</table>
+
+<h3>3-3. OpenFlow 플로우 테이블</h3>
+
+<p>SDN 스위치는 각 패킷을 <strong>플로우(Flow)</strong> 단위로 처리합니다.
+플로우 테이블 항목은 <em>매칭 조건 + 액션</em>으로 구성됩니다.</p>
+
+<table>
+  <thead><tr><th>매칭 필드</th><th>액션</th><th>우선순위</th></tr></thead>
+  <tbody>
+    <tr><td>dst_ip=10.0.0.2, proto=TCP, dst_port=80</td><td>포트 3으로 전달</td><td>100</td></tr>
+    <tr><td>src_ip=192.168.1.0/24</td><td>드롭(보안 정책)</td><td>200</td></tr>
+    <tr><td>*</td><td>컨트롤러에 문의(Packet-In)</td><td>0</td></tr>
+  </tbody>
+</table>
+
+<h3>3-4. SDN 시뮬레이터</h3>
+
+<div class="sdn-sim">
+  <div class="sdn-sim-header">SDN 플로우 테이블 시뮬레이터</div>
+  <div class="sdn-canvas">
+    <div class="sdn-plane" style="background:#e8f0fe22; border-right:1px solid #d8dee4;">
+      <h4>컨트롤러 (제어 평면)</h4>
+      <div class="sdn-ctrl">
+        <strong>ONOS Controller</strong><br>
+        관리 스위치: SW1, SW2, SW3<br>
+        등록 플로우: <span id="flow-count">3</span>개
+      </div>
+      <button class="sdn-add-btn" onclick="addFlow()">+ 새 플로우 추가</button>
+      <div class="sdn-msg" id="sdn-msg"></div>
+    </div>
+    <div class="sdn-plane">
+      <h4>SW1 플로우 테이블 (데이터 평면)</h4>
+      <table class="sdn-flow-table" id="flow-table">
+        <thead>
+          <tr><th>#</th><th>매칭 조건</th><th>액션</th><th>우선순위</th></tr>
+        </thead>
+        <tbody id="flow-tbody">
+          <tr><td>1</td><td>dst=10.0.0.2, TCP:80</td><td>포트 3 전달</td><td>100</td></tr>
+          <tr><td>2</td><td>src=192.168.1.0/24</td><td>드롭</td><td>200</td></tr>
+          <tr><td>3</td><td>*</td><td>컨트롤러 문의</td><td>0</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  const newFlows = [
+    { match: 'dst=10.0.0.5, UDP:53', action: '포트 1 전달', prio: 150 },
+    { match: 'dst=10.0.0.10, ICMP', action: '포트 2 전달', prio: 120 },
+    { match: 'vlan=100', action: '포트 4·5 플러드', prio: 80 },
+    { match: 'src=10.0.99.0/24', action: '드롭 (차단 정책)', prio: 250 },
+  ];
+  let fIdx = 0, fCount = 3;
+
+  function addFlow() {
+    if (fIdx >= newFlows.length) {
+      document.getElementById('sdn-msg').textContent = '컨트롤러에서 배포할 플로우가 없습니다.';
+      return;
+    }
+    const f = newFlows[fIdx++];
+    fCount++;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${fCount}</td><td>${f.match}</td><td>${f.action}</td><td>${f.prio}</td>`;
+    tr.style.background = '#e6f4ea';
+    document.getElementById('flow-tbody').appendChild(tr);
+    document.getElementById('flow-count').textContent = fCount;
+    document.getElementById('sdn-msg').textContent = `✓ 컨트롤러가 SW1에 플로우 #${fCount} 배포 완료 (OpenFlow Packet-Out)`;
+    setTimeout(() => { tr.style.background = ''; }, 1500);
+  }
+</script>
+
+<h3>3-5. NFV (Network Function Virtualization)</h3>
+
+<p>SDN과 함께 자주 등장하는 개념입니다. 전용 하드웨어(방화벽 어플라이언스, 로드밸런서 장비)를 소프트웨어로 구현해 범용 서버에서 실행합니다.</p>
+
+<table>
+  <thead><tr><th>기존 방식</th><th>NFV</th></tr></thead>
+  <tbody>
+    <tr><td>전용 방화벽 장비 구매·설치</td><td>VM/컨테이너로 vFirewall 실행</td></tr>
+    <tr><td>로드밸런서 어플라이언스</td><td>소프트웨어 로드밸런서 (HAProxy, Nginx)</td></tr>
+    <tr><td>WAN 최적화 박스</td><td>vWAN 소프트웨어</td></tr>
+    <tr><td>확장: 장비 추가 구매</td><td>확장: VM 인스턴스 증가(탄력적 스케일)</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2>4. 클라우드 네트워킹 기초</h2>
+
+<h3>4-1. VPC (Virtual Private Cloud)</h3>
+
+<p>클라우드 제공자(AWS, GCP, Azure) 내에서 논리적으로 격리된 사설 네트워크 공간입니다.
+Day 3의 IP 서브넷 개념이 그대로 적용됩니다.</p>
+
+<pre>
+VPC (10.0.0.0/16)
+├── Public Subnet  (10.0.1.0/24)  ← 인터넷 게이트웨이 연결
+│     └── EC2 웹 서버 (10.0.1.10)
+└── Private Subnet (10.0.2.0/24)  ← 외부 직접 접근 불가
+      └── RDS DB 서버 (10.0.2.20)
+            ↑
+        NAT Gateway를 통해서만 아웃바운드 가능
+</pre>
+
+<table>
+  <thead><tr><th>컴포넌트</th><th>설명</th><th>Day 연결</th></tr></thead>
+  <tbody>
+    <tr><td>Internet Gateway</td><td>VPC ↔ 인터넷 연결점</td><td>Day 3 라우터 개념</td></tr>
+    <tr><td>NAT Gateway</td><td>Private 서브넷 → 인터넷 아웃바운드</td><td>Day 7 NAT</td></tr>
+    <tr><td>Security Group</td><td>인스턴스 단위 스테이트풀 방화벽</td><td>Day 7 방화벽</td></tr>
+    <tr><td>NACL</td><td>서브넷 단위 스테이트리스 ACL</td><td>Day 7 방화벽</td></tr>
+    <tr><td>VPC Peering</td><td>두 VPC 간 프라이빗 통신</td><td>Day 3 라우팅</td></tr>
+    <tr><td>VPN Gateway</td><td>온프레미스 ↔ VPC IPSec 터널</td><td>Day 7 VPN</td></tr>
+  </tbody>
+</table>
+
+<h3>4-2. 로드밸런서 (Load Balancer)</h3>
+
+<p>트래픽을 여러 서버에 분산해 가용성과 처리량을 높입니다.</p>
+
+<table>
+  <thead><tr><th>종류</th><th>OSI 계층</th><th>분산 기준</th><th>예시</th></tr></thead>
+  <tbody>
+    <tr><td>L4 LB (Transport)</td><td>4계층</td><td>IP:Port 기반</td><td>AWS NLB, HAProxy TCP</td></tr>
+    <tr><td>L7 LB (Application)</td><td>7계층</td><td>URL 경로, 헤더, 쿠키</td><td>AWS ALB, Nginx, Traefik</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <p><strong>L7 LB 예시:</strong> <code>/api/*</code> → 백엔드 서버 그룹 A, <code>/static/*</code> → CDN으로 리다이렉트.</p>
+</div>
+
+<h3>4-3. CDN (Content Delivery Network)</h3>
+
+<p>전 세계 <strong>엣지 서버(PoP, Point of Presence)</strong>에 정적 콘텐츠를 캐싱해 사용자와 가까운 서버에서 응답합니다.
+Day 6의 HTTP 캐시(Cache-Control) 헤더가 CDN 동작의 기반입니다.</p>
+
+<pre>
+사용자 (서울) → CDN PoP (서울) → [캐시 히트] → 즉시 응답
+                              → [캐시 미스] → 오리진 서버 (미국) 요청 후 캐싱
+</pre>
+
+<h3>4-4. 서비스 메시 (Service Mesh)</h3>
+
+<p>마이크로서비스 환경에서 서비스 간 통신을 관리하는 인프라 계층입니다.
+각 서비스 옆에 <strong>사이드카 프록시</strong>(Envoy 등)를 배치해 로드밸런싱·암호화·관찰 가능성을 처리합니다.</p>
+
+<table>
+  <thead><tr><th>기능</th><th>설명</th></tr></thead>
+  <tbody>
+    <tr><td>트래픽 관리</td><td>A/B 테스트, 카나리 배포, 타임아웃/재시도</td></tr>
+    <tr><td>mTLS</td><td>서비스 간 상호 TLS 인증 자동화</td></tr>
+    <tr><td>관찰 가능성</td><td>분산 트레이싱(Jaeger), 메트릭(Prometheus)</td></tr>
+    <tr><td>대표 구현</td><td>Istio, Linkerd, Consul Connect</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2>5. 전체 흐름 정리</h2>
+
+<p>오늘 배운 내용을 Day 1~8 지식과 연결합니다.</p>
+
+<table>
+  <thead><tr><th>오늘 개념</th><th>연결 Day</th><th>연결 포인트</th></tr></thead>
+  <tbody>
+    <tr><td>CSMA/CA</td><td>Day 2</td><td>유선 CSMA/CD와 비교</td></tr>
+    <tr><td>Wi-Fi 채널 / OFDMA</td><td>Day 2</td><td>이더넷 대역폭 공유 vs 무선</td></tr>
+    <tr><td>WPA3 / SAE</td><td>Day 6, 7</td><td>TLS 핸드셰이크, 방화벽 보안</td></tr>
+    <tr><td>SDN 플로우 테이블</td><td>Day 3</td><td>라우팅 테이블 → 플로우 테이블</td></tr>
+    <tr><td>VPC 서브넷 / NAT</td><td>Day 3, 7</td><td>IP 서브넷, NAT, 방화벽</td></tr>
+    <tr><td>L7 로드밸런서</td><td>Day 6</td><td>HTTP 헤더/URL 경로 분기</td></tr>
+    <tr><td>CDN 캐싱</td><td>Day 6</td><td>Cache-Control, ETag</td></tr>
+    <tr><td>서비스 메시 mTLS</td><td>Day 6, 7</td><td>TLS 핸드셰이크, VPN</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<div class="quiz-section">
+  <h2>오늘의 퀴즈</h2>
+
+  <div class="question" id="q1">
+    <p>Q1. Wi-Fi에서 CSMA/CD 대신 CSMA/CA를 사용하는 가장 주된 이유는?</p>
+    <div class="options">
+      <label><input type="radio" name="q1" value="a"> a) 무선 신호가 더 빠르기 때문</label>
+      <label><input type="radio" name="q1" value="b"> b) 무선 환경에서는 충돌을 감지(detect)하기 어려워 사전에 회피(avoid)해야 하기 때문</label>
+      <label><input type="radio" name="q1" value="c"> c) 2.4 GHz 대역에서만 동작하기 때문</label>
+      <label><input type="radio" name="q1" value="d"> d) 유선보다 낮은 지연이 필요하기 때문</label>
+    </div>
+    <button class="check-btn" onclick="check('q1','b')">정답 확인</button>
+    <div class="result" id="q1-result"></div>
+  </div>
+
+  <div class="question" id="q2">
+    <p>Q2. SDN에서 OpenFlow가 동작하는 인터페이스 위치는?</p>
+    <div class="options">
+      <label><input type="radio" name="q2" value="a"> a) Northbound API — 컨트롤러와 애플리케이션 사이</label>
+      <label><input type="radio" name="q2" value="b"> b) Southbound API — 컨트롤러와 데이터 평면 스위치 사이</label>
+      <label><input type="radio" name="q2" value="c"> c) Eastbound API — 컨트롤러 간 통신</label>
+      <label><input type="radio" name="q2" value="d"> d) Westbound API — 인터넷 게이트웨이 사이</label>
+    </div>
+    <button class="check-btn" onclick="check('q2','b')">정답 확인</button>
+    <div class="result" id="q2-result"></div>
+  </div>
+
+  <div class="question" id="q3">
+    <p>Q3. Wi-Fi 6(802.11ax)에서 새로 도입된 다중 사용자 채널 분할 기술은?</p>
+    <div class="options">
+      <label><input type="radio" name="q3" value="a"> a) MIMO</label>
+      <label><input type="radio" name="q3" value="b"> b) 채널 본딩(Channel Bonding)</label>
+      <label><input type="radio" name="q3" value="c"> c) OFDMA</label>
+      <label><input type="radio" name="q3" value="d"> d) DSSS</label>
+    </div>
+    <button class="check-btn" onclick="check('q3','c')">정답 확인</button>
+    <div class="result" id="q3-result"></div>
+  </div>
+
+  <div class="question" id="q4">
+    <p>Q4. AWS VPC에서 Private 서브넷의 인스턴스가 인터넷 업데이트를 받으려면 무엇이 필요한가?</p>
+    <div class="options">
+      <label><input type="radio" name="q4" value="a"> a) Internet Gateway를 Private 서브넷 라우팅 테이블에 직접 연결</label>
+      <label><input type="radio" name="q4" value="b"> b) NAT Gateway를 Public 서브넷에 배치하고, Private 서브넷에서 0.0.0.0/0 → NAT Gateway로 라우팅</label>
+      <label><input type="radio" name="q4" value="c"> c) Security Group에 인바운드 0.0.0.0/0 허용</label>
+      <label><input type="radio" name="q4" value="d"> d) NACL에서 모든 트래픽 허용</label>
+    </div>
+    <button class="check-btn" onclick="check('q4','b')">정답 확인</button>
+    <div class="result" id="q4-result"></div>
+  </div>
+
+  <div class="question" id="q5">
+    <p>Q5. 서비스 메시(Service Mesh)에서 mTLS가 하는 역할은?</p>
+    <div class="options">
+      <label><input type="radio" name="q5" value="a"> a) 클라이언트만 서버를 인증 (단방향 TLS)</label>
+      <label><input type="radio" name="q5" value="b"> b) 서버와 클라이언트가 서로를 인증 (양방향 TLS)</label>
+      <label><input type="radio" name="q5" value="c"> c) HTTP/2 멀티플렉싱 최적화</label>
+      <label><input type="radio" name="q5" value="d"> d) DNS 조회 암호화</label>
+    </div>
+    <button class="check-btn" onclick="check('q5','b')">정답 확인</button>
+    <div class="result" id="q5-result"></div>
+  </div>
+</div>
+
+<script>
+  const explanations = {
+    q1: { b: '무선 전파는 반이중(half-duplex) 특성 때문에 전송 중 수신이 어려워 충돌 감지가 불가능합니다. 그래서 전송 전에 회피합니다.' },
+    q2: { b: 'Southbound API(남향 인터페이스)는 컨트롤러가 스위치를 프로그래밍하는 인터페이스입니다. OpenFlow, NETCONF, gRPC 등이 해당합니다.' },
+    q3: { c: 'OFDMA(직교 주파수 분할 다중 접속)는 채널을 작은 자원 단위(RU)로 나눠 여러 단말에 동시 할당합니다. LTE/5G와 유사한 방식입니다.' },
+    q4: { b: 'NAT Gateway는 Private 서브넷 인스턴스의 IP를 자신의 퍼블릭 IP로 변환해 아웃바운드 트래픽을 허용합니다. 인바운드 직접 접근은 차단됩니다.' },
+    q5: { b: 'mTLS(Mutual TLS)는 서버가 클라이언트 인증서를 검증하고, 클라이언트도 서버 인증서를 검증합니다. 서비스 메시에서 자동으로 인증서를 발급·갱신합니다.' },
+  };
+
+  function check(qid, correct) {
+    const sel = document.querySelector(`input[name="${qid}"]:checked`);
+    const res = document.getElementById(`${qid}-result`);
+    if (!sel) { res.textContent = '보기를 선택해 주세요.'; res.className = 'result'; return; }
+    if (sel.value === correct) {
+      res.className = 'result correct';
+      res.textContent = '✓ 정답! ' + (explanations[qid][correct] || '');
+    } else {
+      res.className = 'result wrong';
+      res.textContent = '✗ 오답. 정답: ' + correct.toUpperCase() + ' — ' + (explanations[qid][correct] || '');
+    }
+  }
+</script>
+
+<hr>
+
+<div class="nav-links">
+  <a href="./day-08-wireshark-analysis.html">← Day 8 — Wireshark 패킷 분석</a>
+  <a href="./index.html">학습 목록</a>
+  <a href="./day-10-review-practice.html">Day 10 — 종합 복습 →</a>
+</div>
+
+</body>
+</html>
