@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — 가상 메모리와 페이징 | 운영체제</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+  <div class="lesson-meta">
+    <span class="day-badge">Day 8</span>
+    <span class="lesson-date">2026-06-28</span>
+    &nbsp;·&nbsp; 운영체제 학습 코스
+  </div>
+
+  <h1>가상 메모리와 페이징</h1>
+  <p>Day 7에서 연속 메모리 할당의 외부 단편화 문제를 확인했습니다.
+  현대 OS는 이를 <strong>가상 메모리(Virtual Memory)</strong>와 <strong>페이징(Paging)</strong>으로 해결합니다.
+  오늘은 페이지 테이블의 구조, TLB의 역할, 그리고 요구 페이징의 동작 원리를 배웁니다.</p>
+
+  <div class="callout">
+    <div class="callout-title">학습 목표</div>
+    <ul>
+      <li>가상 메모리가 왜 필요한지, 어떤 문제를 해결하는지 설명할 수 있다.</li>
+      <li>페이징의 기본 구조(페이지, 프레임, 페이지 테이블)를 그림으로 설명할 수 있다.</li>
+      <li>TLB(Translation Lookaside Buffer)가 주소 변환 성능을 어떻게 개선하는지 이해한다.</li>
+      <li>요구 페이징(Demand Paging)과 페이지 폴트(Page Fault) 처리 과정을 순서대로 말할 수 있다.</li>
+    </ul>
+  </div>
+
+  <!-- 1. 가상 메모리란 -->
+  <h2>1. 가상 메모리란?</h2>
+  <p>프로세스는 자신이 메모리 전체를 독점한다는 <strong>환상(illusion)</strong> 속에서 실행됩니다.
+  실제 물리 메모리가 얼마나 있든 상관없이, 각 프로세스는 0번 주소부터 시작하는
+  넓은 <em>가상 주소 공간(virtual address space)</em>을 갖습니다.</p>
+
+  <div class="diagram">
+  프로세스 A 가상 공간          프로세스 B 가상 공간
+  ┌─────────────────┐           ┌─────────────────┐
+  │ 0xFFFF…  스택   │           │ 0xFFFF…  스택   │
+  │   ↓              │           │   ↓              │
+  │   (빈 공간)      │           │   (빈 공간)      │
+  │   ↑              │           │   ↑              │
+  │         힙      │           │         힙      │
+  │   BSS / 데이터   │           │   BSS / 데이터   │
+  │ 0x0000   텍스트  │           │ 0x0000   텍스트  │
+  └─────────────────┘           └─────────────────┘
+           │ MMU (페이지 테이블)           │
+           └───────────┬──────────────────┘
+                       ↓
+              ┌────────────────────┐
+              │   물리 메모리 (RAM) │
+              │  (두 프로세스가 공유) │
+              └────────────────────┘
+  </div>
+  <p class="diagram-caption">그림 1 — 각 프로세스는 독립된 가상 주소 공간을 가진다</p>
+
+  <div class="callout">
+    <div class="callout-title">가상 메모리의 핵심 이점</div>
+    <ul>
+      <li><strong>격리(Isolation)</strong>: 프로세스 A가 프로세스 B의 메모리를 직접 읽거나 쓸 수 없다.</li>
+      <li><strong>용량 초과 수용</strong>: 물리 메모리보다 큰 프로그램도 실행 가능하다 (디스크를 보조 메모리로 활용).</li>
+      <li><strong>공유 메모리</strong>: 공유 라이브러리 등 같은 물리 페이지를 여러 프로세스가 매핑할 수 있다.</li>
+    </ul>
+  </div>
+
+  <!-- 2. 페이징의 기본 구조 -->
+  <h2>2. 페이징(Paging)의 기본 구조</h2>
+  <p>페이징은 가상 주소 공간과 물리 메모리를 같은 크기의 고정 단위로 나누어 관리합니다.</p>
+
+  <table>
+    <thead>
+      <tr><th>용어</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>페이지 (Page)</strong></td><td>가상 주소 공간을 나눈 고정 크기 단위 (예: 4 KB)</td></tr>
+      <tr><td><strong>프레임 (Frame)</strong></td><td>물리 메모리를 나눈 같은 크기의 단위 (예: 4 KB)</td></tr>
+      <tr><td><strong>페이지 테이블 (Page Table)</strong></td><td>페이지 번호 → 프레임 번호 매핑 테이블; 프로세스마다 하나씩 존재</td></tr>
+      <tr><td><strong>페이지 크기 (Page Size)</strong></td><td>보통 4 KB ~ 4 MB; 2의 거듭제곱이어야 오프셋 계산이 단순해짐</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2-1. 가상 주소의 구성</h3>
+  <p>CPU가 생성하는 가상 주소는 두 필드로 나뉩니다.</p>
+
+  <div class="diagram">
+  가상 주소 (32비트, 페이지 크기 4 KB = 2¹²)
+  ┌────────────────────────┬───────────────┐
+  │  페이지 번호 (VPN)      │  오프셋       │
+  │  상위 20비트            │  하위 12비트  │
+  └────────────────────────┴───────────────┘
+       페이지 테이블 인덱스       페이지 내 위치
+  </div>
+  <p class="diagram-caption">그림 2 — 32비트 가상 주소의 페이지 번호와 오프셋 분리</p>
+
+  <h3>2-2. 주소 변환 과정</h3>
+  <div class="diagram">
+  1. CPU가 가상 주소 0x00002ABC를 생성
+     → VPN = 0x00002,  offset = 0xABC
+
+  2. MMU가 페이지 테이블에서 VPN 2 항목 조회
+     → 프레임 번호 (PFN) = 7
+
+  3. 물리 주소 = PFN × 페이지크기 + offset
+              = 7 × 4096 + 0xABC
+              = 0x007ABC
+  </div>
+  <p class="diagram-caption">그림 3 — 페이지 번호(VPN)로 프레임 번호(PFN)를 찾고 오프셋을 합친다</p>
+
+  <div class="callout success">
+    <div class="callout-title">외부 단편화가 없는 이유</div>
+    <p>페이지는 고정 크기이므로 연속되지 않은 프레임들에 나누어 배치할 수 있습니다.
+    따라서 연속 할당에서 발생하던 외부 단편화가 원칙적으로 사라집니다.<br>
+    내부 단편화는 마지막 페이지에서 미세하게 발생할 수 있지만 페이지 크기만큼만 최대 낭비됩니다.</p>
+  </div>
+
+  <!-- 3. 페이지 테이블 항목 -->
+  <h2>3. 페이지 테이블 항목(PTE)의 구성</h2>
+  <p>각 페이지 테이블 항목(Page Table Entry, PTE)은 프레임 번호 외에 여러 제어 비트를 포함합니다.</p>
+
+  <table>
+    <thead>
+      <tr><th>비트</th><th>이름</th><th>역할</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>V</code></td><td>Valid(Present) bit</td><td>1이면 물리 메모리에 실제 존재, 0이면 페이지 폴트 트리거</td></tr>
+      <tr><td><code>R/W</code></td><td>Read/Write bit</td><td>쓰기 허용 여부; 0이면 쓰기 시 보호 오류 발생</td></tr>
+      <tr><td><code>U/S</code></td><td>User/Supervisor</td><td>사용자 모드 프로세스의 접근 허용 여부</td></tr>
+      <tr><td><code>D</code></td><td>Dirty bit</td><td>페이지 내용이 수정된 경우 1; 페이지 교체 시 디스크에 저장 여부 판단</td></tr>
+      <tr><td><code>A</code></td><td>Accessed bit</td><td>최근에 참조된 경우 1; LRU 근사 알고리즘에 사용</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 4. TLB -->
+  <h2>4. TLB — 주소 변환 캐시</h2>
+  <p>페이지 테이블은 메모리(RAM)에 저장됩니다. 주소 변환마다 메모리를 한 번 더 읽어야 하므로
+  성능이 반 토막납니다. 이를 해결하기 위해 <strong>TLB(Translation Lookaside Buffer)</strong>라는
+  빠른 하드웨어 캐시를 CPU 내부에 둡니다.</p>
+
+  <div class="diagram">
+  CPU → 가상 주소 VPN 발생
+         │
+         ▼
+    ┌─────────────────────────────────────┐
+    │  TLB (CPU 내부, 수십~수백 항목)     │
+    │  VPN → PFN 쌍을 캐싱                │
+    └──────────────┬──────────────────────┘
+        TLB Hit ◄──┤──► TLB Miss
+    (수 ns)        │           │
+                   │           ▼
+                   │    메모리 내 페이지 테이블 조회
+                   │    (수십~수백 ns)
+                   │           │
+                   │    TLB에 항목 추가
+                   │           │
+                   └───────────┘
+                        PFN 확보 → 물리 주소 계산
+  </div>
+  <p class="diagram-caption">그림 4 — TLB Hit 시 메모리 접근 없이 즉시 PFN 획득</p>
+
+  <h3>TLB 적중률(Hit Rate)과 실효 접근 시간</h3>
+  <p>TLB 적중률이 높을수록 평균 메모리 접근 시간이 줄어듭니다.</p>
+
+  <div class="callout">
+    <div class="callout-title">실효 접근 시간(EAT) 계산 예시</div>
+    <p>TLB 접근 시간 = 20 ns, 메모리 접근 시간 = 100 ns, TLB 적중률 = 90%</p>
+    <pre>EAT = 0.90 × (20 + 100) + 0.10 × (20 + 100 + 100)
+    = 0.90 × 120 + 0.10 × 220
+    = 108 + 22
+    = 130 ns</pre>
+    <p>TLB가 없을 때 200 ns → TLB 도입으로 약 35% 단축.</p>
+  </div>
+
+  <h3>TLB 무효화(TLB Flush)</h3>
+  <p>컨텍스트 스위치 시 다른 프로세스의 TLB 항목이 남아있으면 잘못된 변환이 발생합니다.
+  OS는 컨텍스트 스위치마다 TLB를 전체 무효화하거나,
+  ASID(Address Space Identifier)를 PTE에 태깅하여 선택적 무효화를 수행합니다.</p>
+
+  <!-- 5. 요구 페이징 -->
+  <h2>5. 요구 페이징(Demand Paging)</h2>
+  <p>프로세스를 실행할 때 전체 프로그램을 메모리에 올리지 않고,
+  <strong>실제로 필요한 페이지만 그때그때 적재</strong>하는 전략입니다.
+  나머지 페이지는 디스크(스왑 영역)에 머뭅니다.</p>
+
+  <h3>5-1. 페이지 폴트(Page Fault) 처리 과정</h3>
+  <p>유효 비트(V)가 0인 페이지에 접근하면 하드웨어가 <em>페이지 폴트 인터럽트</em>를 발생시킵니다.</p>
+
+  <div class="diagram">
+  1. CPU → PTE의 V=0 감지 → 페이지 폴트 인터럽트
+  2. OS 페이지 폴트 핸들러 실행
+     ├─ 페이지가 합법적 접근인지 확인 (불법이면 → SIGSEGV 종료)
+     ├─ 빈 프레임 확보 (없으면 → 페이지 교체 알고리즘 실행)
+     ├─ 디스크(스왑)에서 해당 페이지 읽기 (I/O, 느림!)
+     └─ PTE 갱신: PFN 기록, V←1
+  3. 인터럽트를 발생시킨 명령 재실행
+  4. 이번엔 TLB Hit or PTE V=1 → 정상 실행
+  </div>
+  <p class="diagram-caption">그림 5 — 페이지 폴트 처리 6단계</p>
+
+  <div class="callout warning">
+    <div class="callout-title">스래싱(Thrashing) 위험</div>
+    <p>너무 많은 프로세스가 동시에 실행되어 물리 메모리가 부족해지면,
+    OS가 페이지 폴트를 처리하느라 유용한 작업보다 페이지 교체에 대부분의 시간을 씁니다.
+    이 현상을 <strong>스래싱</strong>이라 하며, CPU 이용률이 급격히 떨어집니다.
+    → 해결책: 워킹셋(Working Set) 모델로 적정 프로세스 수를 제한하거나,
+    물리 메모리를 증설합니다.</p>
+  </div>
+
+  <!-- 6. 페이지 테이블의 크기 문제 -->
+  <h2>6. 페이지 테이블의 크기 문제와 해결책</h2>
+  <p>32비트 주소 공간에서 페이지 크기가 4 KB이면 페이지 테이블 항목이
+  2²⁰ ≈ 100만 개가 필요합니다. 항목당 4바이트면 프로세스 하나당 4 MB.
+  64비트에서는 수십 TB에 달합니다. 이를 해결하는 기술이 있습니다.</p>
+
+  <table>
+    <thead>
+      <tr><th>기법</th><th>핵심 아이디어</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>계층적 페이지 테이블</strong><br>(Multi-level Page Table)</td>
+        <td>페이지 테이블 자체를 다시 페이지 단위로 나눈다.
+        사용 중인 영역의 테이블만 메모리에 상주시켜 공간 절약. (x86-64는 4단계 사용)</td>
+      </tr>
+      <tr>
+        <td><strong>역방향 페이지 테이블</strong><br>(Inverted Page Table)</td>
+        <td>물리 프레임마다 항목 하나 (PID, VPN). 항목 수 = 물리 프레임 수.
+        공간은 획기적으로 줄지만, 조회 시 해시가 필요.</td>
+      </tr>
+      <tr>
+        <td><strong>세그멘테이션 + 페이징</strong><br>(Intel x86 과거 방식)</td>
+        <td>먼저 세그먼트로 영역을 나눈 후 각 세그먼트 내에서 페이징 적용.
+        복잡성이 높아 현대 64비트 OS에서는 페이징 단독으로 대체.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 7. 퀴즈 -->
+  <h2>7. 확인 퀴즈</h2>
+
+  <div class="quiz" id="q1">
+    <p class="quiz-question">Q1. 페이지 크기가 4 KB(2¹²)이고 가상 주소가 32비트라면,
+    페이지 번호(VPN)를 표현하는 데 몇 비트가 필요한가?</p>
+    <ul class="quiz-options">
+      <li><label><input type="radio" name="q1" value="0"> 12비트</label></li>
+      <li><label><input type="radio" name="q1" value="1"> 16비트</label></li>
+      <li><label><input type="radio" name="q1" value="2"> 20비트</label></li>
+      <li><label><input type="radio" name="q1" value="3"> 24비트</label></li>
+    </ul>
+    <button class="quiz-submit">확인</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz" id="q2">
+    <p class="quiz-question">Q2. TLB의 역할로 가장 올바른 것은?</p>
+    <ul class="quiz-options">
+      <li><label><input type="radio" name="q2" value="0"> 페이지 폴트 발생 시 빈 프레임을 찾아 준다</label></li>
+      <li><label><input type="radio" name="q2" value="1"> 최근에 사용된 VPN→PFN 매핑을 캐싱하여 주소 변환 속도를 높인다</label></li>
+      <li><label><input type="radio" name="q2" value="2"> 물리 메모리를 페이지와 프레임으로 분할한다</label></li>
+      <li><label><input type="radio" name="q2" value="3"> 스왑 공간을 관리하는 디스크 캐시다</label></li>
+    </ul>
+    <button class="quiz-submit">확인</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz" id="q3">
+    <p class="quiz-question">Q3. 페이지 테이블 항목(PTE)의 Valid 비트가 0일 때 발생하는 이벤트는?</p>
+    <ul class="quiz-options">
+      <li><label><input type="radio" name="q3" value="0"> TLB Miss</label></li>
+      <li><label><input type="radio" name="q3" value="1"> 컨텍스트 스위치</label></li>
+      <li><label><input type="radio" name="q3" value="2"> 페이지 폴트 인터럽트</label></li>
+      <li><label><input type="radio" name="q3" value="3"> 스래싱</label></li>
+    </ul>
+    <button class="quiz-submit">확인</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <div class="quiz" id="q4">
+    <p class="quiz-question">Q4. 요구 페이징이 연속 메모리 할당보다 유리한 핵심 이유는?</p>
+    <ul class="quiz-options">
+      <li><label><input type="radio" name="q4" value="0"> 내부 단편화를 완전히 제거한다</label></li>
+      <li><label><input type="radio" name="q4" value="1"> 비연속 프레임을 사용하므로 외부 단편화가 없고, 필요한 페이지만 적재해 물리 메모리를 절약한다</label></li>
+      <li><label><input type="radio" name="q4" value="2"> 페이지 폴트가 발생하지 않아 항상 빠르다</label></li>
+      <li><label><input type="radio" name="q4" value="3"> TLB를 사용하지 않아 하드웨어 비용이 낮다</label></li>
+    </ul>
+    <button class="quiz-submit">확인</button>
+    <div class="quiz-feedback"></div>
+  </div>
+
+  <!-- 진행 현황 -->
+  <div class="progress-section">
+    <h3>학습 진행 현황</h3>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" style="width: 53%;"></div>
+    </div>
+    <span class="progress-label">Day 8 / 15 완료 (53%)</span>
+  </div>
+
+  <!-- 추천 자료 -->
+  <div class="primary-source">
+    <div class="ps-label">추천 1차 자료</div>
+    <p><strong>OSTEP — Chapter 18: Paging: Introduction</strong><br>
+    Remzi Arpaci-Dusseau 저. 페이징 구조와 페이지 테이블을 그림 중심으로 명쾌하게 설명합니다.
+    무료 PDF로 제공됩니다.<br>
+    <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/vm-paging.pdf">ostep.org → Chapter 18 (PDF)</a></p>
+    <p style="margin-top:0.75rem;"><strong>OSTEP — Chapter 19: Paging: Faster Translations (TLBs)</strong><br>
+    TLB Hit/Miss, EAT 계산, TLB Flush 내용이 상세히 다뤄집니다.<br>
+    <a href="https://pages.cs.wisc.edu/~remzi/OSTEP/vm-tlbs.pdf">ostep.org → Chapter 19 (PDF)</a></p>
+    <p style="margin-top:0.75rem;"><strong>Silberschatz "Dinosaur Book" Chapter 10: Virtual Memory</strong><br>
+    요구 페이징, 페이지 폴트 처리, 스래싱의 표준 교과서 설명입니다.</p>
+  </div>
+
+  <!-- 질문 유도 -->
+  <div class="ask-teacher">
+    이해가 안 되는 부분이 있나요? 언제든지 질문해 주세요.
+    "TLB는 왜 CPU 안에 있는 건가요?", "스래싱이 발생하면 어떻게 감지하나요?",
+    "64비트 주소에서 계층적 페이지 테이블은 몇 단계인가요?" 등을 물어보세요.
+  </div>
+
+  <!-- 다음 학습 예고 -->
+  <div class="callout success">
+    <div class="callout-title">다음 학습 (Day 9)</div>
+    <p><strong>페이지 교체 알고리즘</strong> — FIFO, OPT, LRU, Clock 알고리즘.<br>
+    물리 메모리가 가득 찼을 때 어떤 페이지를 쫓아낼지 결정하는 전략들을 비교합니다.</p>
+  </div>
+
+  <footer class="lesson-footer">
+    운영체제 학습 코스 &nbsp;|&nbsp;
+    <nav class="lesson-nav">
+      <a href="./0007-memory-management-basics.html">← Day 7: 메모리 관리 기초</a>
+      <a href="./index.html">목록으로</a>
+    </nav>
+  </footer>
+
+  <script src="../assets/quiz.js"></script>
+  <script>
+    initQuiz('q1', 2, '32비트 - 오프셋 12비트 = VPN 20비트. 페이지 테이블 항목 수 = 2²⁰ ≈ 104만 개.');
+    initQuiz('q2', 1, 'TLB는 최근에 사용된 VPN→PFN 매핑을 CPU 내부에 캐싱합니다. Hit 시 메모리 접근 없이 즉시 PFN을 얻습니다.');
+    initQuiz('q3', 2, 'Valid 비트 = 0이면 해당 페이지가 물리 메모리에 없다는 신호입니다. 하드웨어가 <strong>페이지 폴트 인터럽트</strong>를 발생시키고 OS가 처리합니다.');
+    initQuiz('q4', 1, '페이징은 비연속 프레임을 사용하므로 외부 단편화가 없고, 요구 페이징은 실제 참조 시에만 페이지를 적재하여 물리 메모리 사용을 최소화합니다.');
+  </script>
+
+</body>
+</html>
