@@ -11,16 +11,17 @@
 | 5 | 2026-06-25 | 접근성(a11y) — WCAG·ARIA·포커스 관리 | [0005-accessibility.html](lessons/0005-accessibility.html) |
 | 6 | 2026-06-26 | 협업 툴 — Figma·Zeplin 핸드오프 용어 | [0006-figma-handoff.html](lessons/0006-figma-handoff.html) |
 | 7 | 2026-06-27 | 사용자 조사 — 페르소나·사용자 여정·공감 지도 | [0007-user-research.html](lessons/0007-user-research.html) |
+| 8 | 2026-06-28 | 프로토타이핑 기법 — Lo-Fi·Hi-Fi·인터랙티브 프로토타입 | [0008-prototyping-techniques.html](lessons/0008-prototyping-techniques.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | 프로토타이핑 기법 — Lo-Fi·Hi-Fi·인터랙티브 프로토타입 | Lo-Fi Prototype, Hi-Fi Prototype, Paper Prototype, Clickable Prototype, Wizard of Oz |
+| 9 | 사용성 테스트 — 테스트 계획·진행·결과 분석 | Usability Testing, Think-Aloud Protocol, Task Success Rate, SUS, Moderated vs Unmoderated |
 
 ## 현재 학습 위치
 
-**Day 7 완료** — Day 8 (프로토타이핑 기법 — Lo-Fi·Hi-Fi·인터랙티브 프로토타입) 예정.
+**Day 8 완료** — Day 9 (사용성 테스트 — 테스트 계획·진행·결과 분석) 예정.
 
 ## 습득한 핵심 개념
 
@@ -71,5 +72,11 @@
 - [x] Moment of Truth (결정적 순간) — Day 7
 - [x] Affinity Diagram (어피니티 다이어그램) — Day 7
 - [x] Pain Points / Gains — Day 7
-- [ ] Lo-Fi Prototype (로우파이 프로토타입) — 예정 Day 8
-- [ ] Hi-Fi Prototype (하이파이 프로토타입) — 예정 Day 8
+- [x] Lo-Fi Prototype (로우파이 프로토타입) — Day 8
+- [x] Hi-Fi Prototype (하이파이 프로토타입) — Day 8
+- [x] Paper Prototype (페이퍼 프로토타입) — Day 8
+- [x] Clickable Prototype (클릭어블 프로토타입) — Day 8
+- [x] Wizard of Oz Prototype (오즈의 마법사 프로토타입) — Day 8
+- [x] Fidelity (충실도) — Day 8
+- [ ] Usability Testing (사용성 테스트) — 예정 Day 9
+- [ ] Think-Aloud Protocol — 예정 Day 9

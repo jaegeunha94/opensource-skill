@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 8 — 프로토타이핑 기법: Lo-Fi·Hi-Fi·인터랙티브 프로토타입</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* Fidelity spectrum bar */
+    .fidelity-spectrum {
+      display: flex;
+      gap: 0;
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 1.5rem 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    }
+    .fidelity-segment {
+      flex: 1;
+      padding: 1rem;
+      text-align: center;
+      font-size: 0.82rem;
+    }
+    .fidelity-segment .seg-label {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 0.35rem;
+    }
+    .seg-low   { background: #f3f4f6; color: #374151; }
+    .seg-mid   { background: #dbeafe; color: #1e40af; }
+    .seg-high  { background: var(--color-accent-light); color: var(--color-accent); }
+
+    /* Arrow between segments */
+    .fidelity-arrow {
+      display: flex;
+      align-items: center;
+      padding: 0 0.25rem;
+      color: var(--color-text-muted);
+      font-size: 1.1rem;
+      background: #fff;
+    }
+
+    /* Prototype timeline */
+    .proto-timeline {
+      position: relative;
+      margin: 1.5rem 0;
+      padding-left: 2.5rem;
+    }
+    .proto-timeline::before {
+      content: '';
+      position: absolute;
+      left: 0.85rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--color-border);
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 1.25rem;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+    }
+    .timeline-dot {
+      position: absolute;
+      left: -1.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 50%;
+      background: var(--color-accent);
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 2px var(--color-accent);
+    }
+    .timeline-item .item-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--color-accent);
+      margin-bottom: 0.3rem;
+    }
+    .timeline-item .item-desc {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+      margin: 0;
+    }
+
+    /* Prototype type cards with image-mockup area */
+    .proto-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .proto-card-visual {
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      min-height: 6rem;
+    }
+    .visual-lofi  { background: #f3f4f6; }
+    .visual-paper { background: #fef9c3; }
+    .visual-hifi  { background: var(--color-accent-light); }
+    .visual-click { background: #d1fae5; }
+    .visual-woz   { background: #fce7f3; }
+
+    .proto-card-body {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--color-border);
+    }
+    .proto-card-body .card-title {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--color-accent);
+      margin-bottom: 0.2rem;
+    }
+    .proto-card-body .card-ko {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .proto-card-body .card-desc {
+      font-size: 0.875rem;
+      line-height: 1.6;
+    }
+    .proto-card-meta {
+      margin-top: 0.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+    .meta-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 0.15em 0.6em;
+      border-radius: 999px;
+    }
+    .badge-speed-fast  { background: #d1fae5; color: #065f46; }
+    .badge-speed-slow  { background: #fce7f3; color: #9d174d; }
+    .badge-cost-low    { background: #f0fdf4; color: #166534; }
+    .badge-cost-high   { background: #fff7ed; color: #92400e; }
+    .badge-when        { background: var(--color-tag-bg); color: var(--color-tag); }
+
+    /* Comparison pros/cons columns */
+    .pros-cons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 480px) { .pros-cons { grid-template-columns: 1fr; } }
+    .pros-box, .cons-box {
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+    }
+    .pros-box { background: #f0fdf4; border: 1px solid #86efac; }
+    .cons-box { background: #fef2f2; border: 1px solid #fca5a5; }
+    .pros-box .box-title { color: #15803d; font-weight: 700; font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .cons-box .box-title { color: #b91c1c; font-weight: 700; font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .pros-box ul, .cons-box ul {
+      padding-left: 1rem;
+      font-size: 0.82rem;
+    }
+    .pros-box li, .cons-box li { margin-bottom: 0.25rem; }
+
+    /* Sketch wireframe simulation */
+    .wireframe-sketch {
+      background: #fff;
+      border: 2px dashed #9ca3af;
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin: 1rem 0;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: #6b7280;
+      line-height: 1.6;
+      white-space: pre;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="lesson-container">
+
+    <header class="lesson-header">
+      <span class="lesson-tag">UI/UX 용어 · Day 8</span>
+      <h1>프로토타이핑 기법 — Lo-Fi·Hi-Fi·인터랙티브 프로토타입</h1>
+      <p class="lesson-meta">2026-06-28 &nbsp;·&nbsp; 예상 소요 시간 30분</p>
+    </header>
+
+    <!-- Learning objectives -->
+    <h2>이 레슨에서 배울 것</h2>
+    <ul style="padding-left:1.5rem; margin-bottom:1rem; font-size:0.9rem;">
+      <li>Prototype 충실도(Fidelity) 스펙트럼을 Lo-Fi · Mid-Fi · Hi-Fi 3단계로 구분할 수 있다</li>
+      <li>Paper Prototype · Clickable Prototype · Wizard of Oz의 목적과 차이를 설명할 수 있다</li>
+      <li>개발 단계별로 어떤 프로토타입을 선택해야 하는지 판단할 수 있다</li>
+      <li>프로토타입과 Mockup · Wireframe의 역할 차이를 정리할 수 있다</li>
+    </ul>
+
+    <!-- === SECTION 1: 프로토타입이란 === -->
+    <h2>1. Prototype(프로토타입)이란</h2>
+
+    <p>
+      <strong>프로토타입(Prototype)</strong>은 최종 제품이 구현되기 전에 아이디어·인터랙션·
+      사용성을 검증하기 위해 만드는 <em>시뮬레이션 가능한 시제품</em>이다.
+      "클릭하면 무슨 일이 일어나는가"를 실제 코드 없이 보여 줄 수 있다.
+    </p>
+
+    <div class="callout">
+      <strong>핵심 목적:</strong> 아이디어를 <em>빠르게 실체화</em>해서 사용자·이해관계자와 공유하고
+      피드백을 얻는 것. "만들기 전에 실패하라(Fail early, fail cheap)"는 원칙이 프로토타이핑의 철학이다.
+    </div>
+
+    <h3>산출물 스펙트럼 — Wireframe → Mockup → Prototype</h3>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>산출물</th>
+          <th>정의</th>
+          <th>상호작용</th>
+          <th>주요 목적</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Wireframe</strong> (와이어프레임)</td>
+          <td>레이아웃과 콘텐츠 배치를 흑백 선으로 표현한 구조 설계도</td>
+          <td>없음</td>
+          <td>정보 구조·레이아웃 검토</td>
+        </tr>
+        <tr>
+          <td><strong>Mockup</strong> (목업)</td>
+          <td>실제 색상·타이포·이미지를 적용한 정적 시각 디자인</td>
+          <td>없음</td>
+          <td>비주얼 디자인 검토</td>
+        </tr>
+        <tr>
+          <td><strong>Prototype</strong> (프로토타입)</td>
+          <td>화면 전환·클릭·입력 등 인터랙션을 시뮬레이션하는 시제품</td>
+          <td>있음</td>
+          <td>사용성 테스트·이해관계자 공유</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- === SECTION 2: Fidelity === -->
+    <h2>2. 충실도(Fidelity) 스펙트럼</h2>
+
+    <p>
+      프로토타입의 <strong>충실도(Fidelity)</strong>란 최종 제품과 얼마나 가까운지를 나타내는 척도다.
+      낮은 충실도(Lo-Fi)는 빠르고 저렴하지만 추상적이고, 높은 충실도(Hi-Fi)는
+      현실감이 높지만 제작 비용이 크다.
+    </p>
+
+    <div class="fidelity-spectrum">
+      <div class="fidelity-segment seg-low">
+        <div class="seg-label">Lo-Fi</div>
+        스케치·종이<br>흑백·낮은 디테일<br>빠른 반복
+      </div>
+      <div class="fidelity-arrow">→</div>
+      <div class="fidelity-segment seg-mid">
+        <div class="seg-label">Mid-Fi</div>
+        디지털 와이어프레임<br>기본 인터랙션<br>그레이스케일
+      </div>
+      <div class="fidelity-arrow">→</div>
+      <div class="fidelity-segment seg-high">
+        <div class="seg-label">Hi-Fi</div>
+        실제 디자인·컬러<br>전체 인터랙션<br>실제 콘텐츠
+      </div>
+    </div>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Visual Fidelity</div>
+        <div class="term-ko">시각적 충실도</div>
+        <div class="term-def">색상·타이포·이미지 등 비주얼이 최종 제품과 얼마나 가까운가. Lo-Fi는 흑백 선, Hi-Fi는 완성 디자인.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Functional Fidelity</div>
+        <div class="term-ko">기능적 충실도</div>
+        <div class="term-def">인터랙션·상태 변화·에러 처리 등 기능이 얼마나 구현되어 있는가. 클릭 가능한 버튼부터 실데이터 연동까지 범위가 다양하다.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Content Fidelity</div>
+        <div class="term-ko">콘텐츠 충실도</div>
+        <div class="term-def">Lorem Ipsum 가짜 텍스트 vs 실제 콘텐츠. 실제 문구를 사용하면 더 현실적인 사용성 테스트가 가능하다.</div>
+      </div>
+    </div>
+
+    <!-- === SECTION 3: Prototype Types === -->
+    <h2>3. 주요 프로토타입 유형</h2>
+
+    <!-- Lo-Fi -->
+    <div class="proto-card">
+      <div class="proto-card-visual visual-lofi">✏️</div>
+      <div class="proto-card-body">
+        <div class="card-title">Lo-Fi Prototype</div>
+        <div class="card-ko">로우파이 프로토타입 · 저충실도 프로토타입</div>
+        <div class="card-desc">
+          화이트보드 스케치나 종이로 만든 매우 단순한 프로토타입이다.
+          색상·타이포·이미지 없이 기능과 레이아웃에만 집중한다.
+          아이디어를 빠르게 검증하고 버리는 초기 발산 단계에 적합하다.
+          팀원 누구나 만들 수 있어 디자이너에 대한 의존을 줄인다.
+        </div>
+        <div class="proto-card-meta">
+          <span class="meta-badge badge-speed-fast">제작 빠름</span>
+          <span class="meta-badge badge-cost-low">비용 낮음</span>
+          <span class="meta-badge badge-when">초기 아이디어 검증</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paper Prototype -->
+    <div class="proto-card">
+      <div class="proto-card-visual visual-paper">📄</div>
+      <div class="proto-card-body">
+        <div class="card-title">Paper Prototype</div>
+        <div class="card-ko">페이퍼 프로토타입 · 종이 프로토타입</div>
+        <div class="card-desc">
+          Lo-Fi의 한 형태로, 실제 종이에 화면을 그리고 오려 붙여 만드는 프로토타입이다.
+          진행자가 사용자의 입력에 맞춰 종이 조각을 수동으로 교체해 가며 인터랙션을 시뮬레이션한다.
+          도구 없이 즉시 만들 수 있어 브레인스토밍 직후 빠른 사용성 테스트에 자주 쓰인다.
+        </div>
+        <div class="proto-card-meta">
+          <span class="meta-badge badge-speed-fast">도구 불필요</span>
+          <span class="meta-badge badge-cost-low">재료비 0원</span>
+          <span class="meta-badge badge-when">팀 워크숍·브레인스토밍 직후</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hi-Fi -->
+    <div class="proto-card">
+      <div class="proto-card-visual visual-hifi">🖥️</div>
+      <div class="proto-card-body">
+        <div class="card-title">Hi-Fi Prototype</div>
+        <div class="card-ko">하이파이 프로토타입 · 고충실도 프로토타입</div>
+        <div class="card-desc">
+          최종 제품과 시각적으로 거의 동일하며 실제 인터랙션을 포함하는 프로토타입이다.
+          Figma · Adobe XD · Framer 같은 디자인 툴로 제작하며,
+          실제 색상·타이포·이미지·트랜지션 애니메이션을 포함한다.
+          이해관계자 프레젠테이션, 개발 핸드오프 직전 사용성 테스트에 적합하다.
+        </div>
+        <div class="proto-card-meta">
+          <span class="meta-badge badge-speed-slow">제작 시간 소요</span>
+          <span class="meta-badge badge-cost-high">비용 높음</span>
+          <span class="meta-badge badge-when">이해관계자 검토·최종 사용성 테스트</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clickable Prototype -->
+    <div class="proto-card">
+      <div class="proto-card-visual visual-click">🖱️</div>
+      <div class="proto-card-body">
+        <div class="card-title">Clickable Prototype</div>
+        <div class="card-ko">클릭어블 프로토타입 · 인터랙티브 프로토타입</div>
+        <div class="card-desc">
+          버튼·링크를 클릭하면 다음 화면으로 전환되는 인터랙션이 연결된 프로토타입이다.
+          Mid-Fi 수준의 와이어프레임에 화면 전환만 연결한 단순한 형태부터,
+          Hi-Fi 디자인에 애니메이션까지 포함한 고급 형태까지 범위가 넓다.
+          Figma의 "Prototype 탭"이나 InVision으로 흔히 제작한다.
+        </div>
+        <div class="proto-card-meta">
+          <span class="meta-badge badge-speed-fast">빠른 인터랙션 연결</span>
+          <span class="meta-badge badge-when">사용 흐름(Task Flow) 검증</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wizard of Oz -->
+    <div class="proto-card">
+      <div class="proto-card-visual visual-woz">🧙</div>
+      <div class="proto-card-body">
+        <div class="card-title">Wizard of Oz Prototype</div>
+        <div class="card-ko">오즈의 마법사 프로토타입</div>
+        <div class="card-desc">
+          AI · 음성 인식 · 복잡한 알고리즘처럼 구현 비용이 높은 기능을
+          사람이 뒤에서 수동으로 조작해 마치 구현된 것처럼 시뮬레이션하는 기법이다.
+          사용자는 실제로 작동하는 시스템이라고 믿는다. "오즈의 마법사"처럼
+          커튼 뒤에서 사람이 조종한다는 의미에서 이름이 붙었다.
+          초기 AI 챗봇이나 음성 검색 UI 검증에 자주 활용된다.
+        </div>
+        <div class="proto-card-meta">
+          <span class="meta-badge badge-when">AI·음성·복잡 알고리즘 조기 검증</span>
+          <span class="meta-badge badge-cost-low">개발 없이 가능</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- === SECTION 4: Paper Prototype 시뮬레이션 === -->
+    <h2>4. Paper Prototype — 어떻게 생겼나?</h2>
+
+    <p>아래는 모바일 앱 로그인 화면을 종이로 스케치한 Lo-Fi Prototype의 예시다.</p>
+
+    <div class="wireframe-sketch">┌─────────────────────────────┐
+│  ☰          App Name        │  ← 상단 바
+├─────────────────────────────┤
+│                             │
+│       [LOGO / 앱 아이콘]     │
+│                             │
+│  ┌─────────────────────┐    │
+│  │  이메일 입력         │    │  ← 텍스트 필드
+│  └─────────────────────┘    │
+│                             │
+│  ┌─────────────────────┐    │
+│  │  비밀번호 입력        │    │  ← 텍스트 필드
+│  └─────────────────────┘    │
+│                             │
+│  [   로그인 버튼 (CTA)   ]   │  ← 주 버튼
+│                             │
+│       소셜 로그인 옵션       │
+│     [G]  [f]  [애플]        │
+│                             │
+│     회원가입 | 비번 찾기      │
+└─────────────────────────────┘</div>
+
+    <div class="callout">
+      <strong>Lo-Fi의 장점:</strong> 디자인이 "미완성처럼 보일수록" 사용자가 비주얼에 집중하지 않고
+      기능에 솔직한 피드백을 준다. Nielsen Norman Group은 이를
+      <em>"낮은 완성도가 더 좋은 피드백을 유도한다"</em>고 설명한다.
+    </div>
+
+    <!-- === SECTION 5: Lo-Fi vs Hi-Fi 비교 === -->
+    <h2>5. Lo-Fi vs Hi-Fi — 언제 무엇을 선택하나?</h2>
+
+    <div class="pros-cons">
+      <div class="pros-box">
+        <div class="box-title">Lo-Fi 를 선택하는 경우</div>
+        <ul>
+          <li>초기 아이디어 발산 단계</li>
+          <li>여러 컨셉을 빠르게 비교해야 할 때</li>
+          <li>예산·시간이 제한적일 때</li>
+          <li>비주얼보다 기능·흐름 검증이 목적일 때</li>
+          <li>팀 내부 워크숍·스케치 세션</li>
+        </ul>
+      </div>
+      <div class="cons-box">
+        <div class="box-title">Hi-Fi 를 선택하는 경우</div>
+        <ul>
+          <li>이해관계자·투자자 프레젠테이션</li>
+          <li>비주얼 디자인을 포함한 사용성 테스트</li>
+          <li>개발 핸드오프 직전 최종 검증</li>
+          <li>마케팅 데모 영상 제작</li>
+          <li>신뢰도가 높은 사용자 테스트 결과가 필요할 때</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>프로토타입 선택 기준 요약</h3>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>Lo-Fi (Paper·Sketch)</th>
+          <th>Mid-Fi (Clickable)</th>
+          <th>Hi-Fi (Figma 인터랙티브)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>제작 시간</td>
+          <td>수 분~수 시간</td>
+          <td>수 시간~1일</td>
+          <td>수 일~수 주</td>
+        </tr>
+        <tr>
+          <td>비용</td>
+          <td>매우 낮음</td>
+          <td>낮음~중간</td>
+          <td>높음</td>
+        </tr>
+        <tr>
+          <td>반복 속도</td>
+          <td>매우 빠름</td>
+          <td>빠름</td>
+          <td>느림</td>
+        </tr>
+        <tr>
+          <td>피드백 유형</td>
+          <td>기능·흐름</td>
+          <td>흐름·레이아웃</td>
+          <td>전반적 경험</td>
+        </tr>
+        <tr>
+          <td>적합한 단계</td>
+          <td>발산(Ideation)</td>
+          <td>수렴(Refinement)</td>
+          <td>검증·핸드오프</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- === SECTION 6: 프로토타이핑 프로세스 === -->
+    <h2>6. 프로토타이핑 프로세스</h2>
+
+    <p>
+      실무에서 프로토타입은 <strong>한 번에 Hi-Fi로 바로 가지 않는다.</strong>
+      충실도를 점차 높여 가며 각 단계에서 다른 질문에 답한다.
+    </p>
+
+    <div class="proto-timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="item-title">① 종이 스케치 (Paper Prototype)</div>
+        <div class="item-desc">"이 아이디어가 말이 되는가?" — 5분 만에 여러 컨셉을 그리고, 팀 내부에서 피드백을 주고받는다.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="item-title">② Lo-Fi 디지털 와이어프레임</div>
+        <div class="item-desc">"화면 흐름이 논리적인가?" — Figma · Balsamiq 등으로 흑백 와이어프레임을 그리고, 화면 전환 링크를 연결한다.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="item-title">③ Clickable Prototype (Mid-Fi)</div>
+        <div class="item-desc">"사용자가 태스크를 완료할 수 있는가?" — 실제 사용자에게 클릭해 보게 하면서 사용성 문제를 발견한다.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="item-title">④ Hi-Fi Prototype</div>
+        <div class="item-desc">"전체 경험이 만족스러운가?" — 최종 비주얼을 적용하고, 이해관계자 승인 후 개발 핸드오프로 이동한다.</div>
+      </div>
+    </div>
+
+    <!-- === SECTION 7: 핵심 용어 카드 === -->
+    <h2>7. 핵심 용어 정리</h2>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Fidelity</div>
+        <div class="term-ko">충실도</div>
+        <div class="term-def">프로토타입이 최종 제품과 얼마나 가까운지를 나타내는 척도. 시각적·기능적·콘텐츠 충실도로 세분된다.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Lo-Fi Prototype</div>
+        <div class="term-ko">로우파이 프로토타입</div>
+        <div class="term-def">낮은 충실도의 프로토타입. 종이 스케치·흑백 와이어프레임 수준으로 빠르고 저렴하게 제작한다.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Hi-Fi Prototype</div>
+        <div class="term-ko">하이파이 프로토타입</div>
+        <div class="term-def">최종 제품과 거의 동일한 수준의 프로토타입. Figma 등 디자인 툴로 제작하며 전체 인터랙션을 포함한다.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Paper Prototype</div>
+        <div class="term-ko">페이퍼 프로토타입</div>
+        <div class="term-def">Lo-Fi의 한 형태. 종이에 화면을 그리고 오려 붙여 인터랙션을 수동으로 시뮬레이션한다.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Clickable Prototype</div>
+        <div class="term-ko">클릭어블 프로토타입</div>
+        <div class="term-def">버튼·링크에 화면 전환 인터랙션이 연결된 프로토타입. Mid-Fi~Hi-Fi 수준에서 주로 사용한다.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Wizard of Oz</div>
+        <div class="term-ko">오즈의 마법사 프로토타입</div>
+        <div class="term-def">구현이 어려운 기능을 사람이 수동으로 흉내 내어 시뮬레이션하는 프로토타이핑 기법.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Interactive Prototype</div>
+        <div class="term-ko">인터랙티브 프로토타입</div>
+        <div class="term-def">Clickable Prototype과 혼용되며, 특히 애니메이션·상태 변화·제스처 인터랙션까지 포함한 높은 수준의 프로토타입을 가리킬 때 쓴다.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Throwaway Prototype</div>
+        <div class="term-ko">일회용 프로토타입</div>
+        <div class="term-def">검증 후 폐기하는 것을 전제로 만드는 프로토타입. Lo-Fi가 대표적이다. 코드로 빌드하는 Throwaway Prototype도 있다.</div>
+      </div>
+    </div>
+
+    <!-- === Primary source === -->
+    <div class="primary-source">
+      <div class="label">추천 1차 출처</div>
+      <a href="https://www.nngroup.com/articles/ux-prototype-hi-lo-fidelity/" target="_blank" rel="noopener">
+        UX Prototypes: Low Fidelity vs. High Fidelity — Nielsen Norman Group
+      </a>
+      <p style="margin-top:0.4rem; color:var(--color-text-muted);">
+        Paper Prototyping에 대한 심화 내용은
+        <a href="https://www.nngroup.com/articles/paper-prototyping/" target="_blank" rel="noopener">Paper Prototyping: Getting User Data Before You Code (NN/g)</a>를,
+        Wizard of Oz에 대한 배경은
+        <a href="https://www.nngroup.com/articles/wizard-of-oz/" target="_blank" rel="noopener">Wizard of Oz Studies — Why and How (NN/g)</a>를 참고하자.
+      </p>
+    </div>
+
+    <!-- === QUIZ === -->
+    <h2>8. 확인 퀴즈</h2>
+    <p style="font-size:0.9rem; color:var(--color-text-muted); margin-bottom:1.5rem;">
+      답을 보기 전에 먼저 스스로 생각해 보자.
+    </p>
+
+    <!-- Q1 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q1. 초기 아이디어 발산 단계에서 가장 적합한 프로토타입 유형은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. Hi-Fi Prototype</button></li>
+        <li><button onclick="answer(this, true)">B. Lo-Fi Prototype</button></li>
+        <li><button onclick="answer(this, false)">C. Clickable Prototype</button></li>
+        <li><button onclick="answer(this, false)">D. Interactive Prototype</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q1"></p>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q2. AI 음성 비서 기능을 실제 개발 없이 사람이 뒤에서 수동으로 흉내 내어 검증하는 프로토타이핑 기법은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. Paper Prototype</button></li>
+        <li><button onclick="answer(this, false)">B. Clickable Prototype</button></li>
+        <li><button onclick="answer(this, true)">C. Wizard of Oz</button></li>
+        <li><button onclick="answer(this, false)">D. Hi-Fi Prototype</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q2"></p>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q3. 프로토타입의 충실도(Fidelity)를 결정하는 세 가지 차원에 해당하지 않는 것은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. Visual Fidelity</button></li>
+        <li><button onclick="answer(this, false)">B. Functional Fidelity</button></li>
+        <li><button onclick="answer(this, false)">C. Content Fidelity</button></li>
+        <li><button onclick="answer(this, true)">D. Cost Fidelity</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q3"></p>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q4. 다음 중 Wireframe · Mockup · Prototype의 가장 큰 차이는?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. 제작 도구가 다르다</button></li>
+        <li><button onclick="answer(this, false)">B. 팀 내 담당자가 다르다</button></li>
+        <li><button onclick="answer(this, true)">C. 상호작용(인터랙션) 유무로 구분된다</button></li>
+        <li><button onclick="answer(this, false)">D. 색상 사용 여부로만 구분된다</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q4"></p>
+    </div>
+
+    <!-- Q5 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q5. Hi-Fi Prototype을 선택해야 하는 상황으로 가장 적합한 것은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this, false)">A. 팀 내부 아이디어 스케치 세션</button></li>
+        <li><button onclick="answer(this, false)">B. 5분 안에 컨셉을 비교해야 할 때</button></li>
+        <li><button onclick="answer(this, true)">C. 이해관계자 프레젠테이션 및 개발 핸드오프 직전</button></li>
+        <li><button onclick="answer(this, false)">D. 예산이 없어 종이만 사용 가능할 때</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q5"></p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="lesson-nav">
+      <a href="0007-user-research.html">← Day 7 — 사용자 조사</a>
+      <a href="index.html">목록으로 →</a>
+    </nav>
+
+    <!-- Ask teacher nudge -->
+    <div class="ask-teacher">
+      궁금한 점이 생겼나요? 에이전트에게 바로 물어보세요. 이 워크스페이스의 맥락을 유지한 채로 이어서 설명해 드립니다.
+    </div>
+
+  </div>
+
+  <script>
+    let answered = {};
+
+    function answer(btn, isCorrect) {
+      const li = btn.closest('li');
+      const options = li.closest('.quiz-options');
+      const section = li.closest('.quiz-section');
+      const feedbackId = section.querySelector('.quiz-feedback').id;
+
+      if (answered[feedbackId]) return;
+      answered[feedbackId] = true;
+
+      options.querySelectorAll('button').forEach(b => b.disabled = true);
+
+      const fb = document.getElementById(feedbackId);
+      if (isCorrect) {
+        btn.classList.add('correct');
+        fb.textContent = '정답입니다! ✓';
+        fb.className = 'quiz-feedback correct';
+      } else {
+        btn.classList.add('wrong');
+        fb.textContent = '오답입니다. 위 내용을 다시 읽고 정답을 찾아보세요.';
+        fb.className = 'quiz-feedback wrong';
+      }
+    }
+  </script>
+</body>
+</html>
