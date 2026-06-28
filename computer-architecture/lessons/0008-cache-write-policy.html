@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 8 — 메모리 계층 3 (캐시 쓰기 정책 & 다단 캐시)</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 8</span>
+  <strong>메모리 계층 3 — 캐시 쓰기 정책 &amp; 다단 캐시</strong>
+  <span class="lesson-date">· 2026-06-28</span>
+</div>
+
+<h1>캐시에 쓸 때 무슨 일이 일어나는가 — Write 정책과 다단 캐시 포함 정책</h1>
+
+<div class="progress-section">
+  <h3>학습 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 27%"></div>
+  </div>
+  <span class="progress-label">전체 커리큘럼의 약 27% 완료 · Day 8 / 30</span>
+</div>
+
+<h2>오늘 배울 것</h2>
+<ul>
+  <li>Write-Through와 Write-Back의 차이, 각각의 장단점을 이해한다</li>
+  <li>Write-Allocate와 No-Write-Allocate 정책이 무엇인지 파악한다</li>
+  <li>다단 캐시(L1→L2→L3)의 역할 분담을 이해한다</li>
+  <li>Inclusive / Exclusive / NINE 포함 정책의 차이를 분석한다</li>
+  <li>캐시 쓰기 정책이 실제 CPU 성능에 미치는 영향을 파악한다</li>
+</ul>
+
+<!-- ============================================================
+     섹션 1: 왜 쓰기 정책이 중요한가
+     ============================================================ -->
+<h2>1. 읽기 히트는 쉽다 — 쓰기는 복잡하다</h2>
+
+<p>
+  Day 7에서 캐시 히트·미스와 교체 정책을 배웠습니다.
+  읽기(Load) 히트는 단순합니다: 캐시에 데이터가 있으면 바로 CPU에 반환합니다.
+  그런데 쓰기(Store) 히트가 발생하면 어떻게 해야 할까요?
+</p>
+
+<p>
+  캐시에 수정한 데이터를 <em>언제</em> 아래 메모리 계층에 반영하느냐가 <strong>쓰기 정책(Write Policy)</strong>입니다.
+  이 선택은 메모리 트래픽, 일관성, 전력 소비에 직접 영향을 줍니다.
+</p>
+
+<div class="callout">
+  <div class="callout-title">핵심 질문</div>
+  캐시에 쓴 데이터가 아래 메모리(L2, RAM)와 다른 상태로 유지되는 것을 허용할 것인가?<br>
+  허용하면 성능은 올라가지만 일관성 관리가 복잡해집니다.
+</div>
+
+<!-- ============================================================
+     섹션 2: Write-Through vs Write-Back
+     ============================================================ -->
+<h2>2. Write-Through vs Write-Back</h2>
+
+<h3>2-1. Write-Through (즉시 반영)</h3>
+
+<div class="diagram">
+CPU → 캐시 슬롯 수정 → 동시에 아래 메모리(L2 또는 RAM)에도 즉시 기록
+
+예) CPU가 주소 0x1000에 값 42를 저장:
+  ┌────────────────────────────────────────────────────┐
+  │ 1. L1 캐시 슬롯 업데이트 (값 = 42)                │
+  │ 2. L2/RAM 주소 0x1000에도 즉시 42 기록            │
+  └────────────────────────────────────────────────────┘
+
+  캐시 슬롯에 "Dirty 비트" 불필요 — 캐시와 메모리 항상 동기화
+</div>
+
+<table>
+  <thead>
+    <tr><th>항목</th><th>내용</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>장점</td><td>캐시와 메모리 항상 일치 → 일관성 관리 단순, 캐시 교체 시 그냥 버려도 됨</td></tr>
+    <tr><td>단점</td><td>모든 쓰기가 하위 메모리로 전달 → 버스 트래픽 증가, 느린 쓰기 레이턴시</td></tr>
+    <tr><td>완화 기법</td><td>Write Buffer: 쓰기 요청을 버퍼에 모아 메모리 버스를 비동기로 처리</td></tr>
+    <tr><td>사용 예</td><td>일부 임베디드 시스템, 캐시가 작고 단순해야 하는 환경</td></tr>
+  </tbody>
+</table>
+
+<h3>2-2. Write-Back (지연 반영)</h3>
+
+<div class="diagram">
+CPU → 캐시 슬롯 수정 → 슬롯에 Dirty 비트만 설정 (메모리 업데이트 보류)
+     → 해당 슬롯이 교체될 때만 수정 내용을 아래 메모리에 기록 (Write-Back)
+
+예) CPU가 주소 0x1000에 42 저장:
+  ┌────────────────────────────────────────────────────────────────┐
+  │ 1. L1 캐시 슬롯 업데이트 (값 = 42, Dirty 비트 = 1)           │
+  │ 2. 메모리 접근 없음 ← 핵심 이점!                              │
+  │ 3. 나중에 이 슬롯이 교체될 때: 메모리에 42 기록 후 슬롯 해제 │
+  └────────────────────────────────────────────────────────────────┘
+
+Dirty 비트 = 0: 캐시와 메모리 동일 → 교체 시 그냥 버려도 됨
+Dirty 비트 = 1: 캐시가 메모리보다 최신 → 교체 전 반드시 Write-Back 필요
+</div>
+
+<table>
+  <thead>
+    <tr><th>항목</th><th>내용</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>장점</td><td>반복 쓰기 시 메모리 트래픽 최소화 (같은 슬롯을 100번 수정해도 메모리 접근은 교체 시 1번)</td></tr>
+    <tr><td>단점</td><td>Dirty 비트 필요, 교체 시 추가 지연(Dirty 슬롯은 메모리 쓰기 완료 후 교체). 멀티코어 캐시 일관성 복잡</td></tr>
+    <tr><td>사용 예</td><td>현대 CPU L1/L2/L3 대부분 (Intel Core, AMD Zen 시리즈 등)</td></tr>
+  </tbody>
+</table>
+
+<h3>2-3. 두 정책 비교</h3>
+
+<div class="diagram">
+시나리오: 동일 캐시 슬롯(주소 A)에 10번 연속 쓰기
+
+Write-Through:
+  쓰기 1 → 메모리 접근 1
+  쓰기 2 → 메모리 접근 2
+  ...
+  쓰기 10 → 메모리 접근 10
+  총 메모리 쓰기: 10회 (느린 DRAM 접근 10번)
+
+Write-Back:
+  쓰기 1~10 → L1 캐시 슬롯만 수정, Dirty=1
+  슬롯 교체 시 → 메모리 접근 1회 (최종 값만 저장)
+  총 메모리 쓰기: 1회 (DRAM 접근 1번)
+
+결론: 쓰기가 빈번할수록 Write-Back이 유리
+</div>
+
+<!-- ============================================================
+     섹션 3: Write-Allocate vs No-Write-Allocate
+     ============================================================ -->
+<h2>3. 쓰기 미스 처리 — Write-Allocate vs No-Write-Allocate</h2>
+
+<p>
+  지금까지는 쓰기 <em>히트</em>를 다뤘습니다. 그렇다면 <strong>쓰기 미스</strong>(캐시에 없는 주소에 쓰기)는 어떻게 처리할까요?
+</p>
+
+<h3>3-1. Write-Allocate (쓰기 미스 → 캐시에 올린 뒤 쓰기)</h3>
+
+<div class="diagram">
+CPU가 캐시에 없는 주소 0x2000에 쓰기 요청 (Write Miss)
+
+Write-Allocate 처리 순서:
+  ① 메모리에서 0x2000이 포함된 캐시 라인 전체 읽기 (64 B Fetch)
+  ② 캐시 슬롯에 로드
+  ③ 원하는 위치(0x2000)에 새 값 기록
+  ④ Dirty 비트 = 1 (Write-Back 정책과 쌍으로 사용)
+
+이점: 이후 같은 주소 주변을 읽거나 쓸 때 캐시 히트
+단점: 쓰기 미스마다 캐시 라인 Fetch 비용 발생
+</div>
+
+<h3>3-2. No-Write-Allocate (쓰기 미스 → 캐시 로드 없이 바로 메모리에 쓰기)</h3>
+
+<div class="diagram">
+CPU가 캐시에 없는 주소 0x2000에 쓰기 요청 (Write Miss)
+
+No-Write-Allocate 처리 순서:
+  ① 메모리의 0x2000에 직접 값 기록 (캐시 미사용)
+  ② 캐시 슬롯 변경 없음
+
+이점: 쓰기 미스 시 캐시 슬롯 오염 없음 (읽기 데이터가 밀려나지 않음)
+단점: 이후 0x2000 주변을 다시 쓸 때도 캐시 이점 없음
+조합: Write-Through와 주로 함께 사용
+</div>
+
+<h3>3-3. 실용적 조합</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>쓰기 정책 조합</th>
+      <th>일반적 사용</th>
+      <th>이유</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Write-Back + Write-Allocate</td>
+      <td>현대 CPU (L1/L2/L3)</td>
+      <td>반복 접근 지역성 최대 활용, 메모리 트래픽 최소화</td>
+    </tr>
+    <tr>
+      <td>Write-Through + No-Write-Allocate</td>
+      <td>임베디드, 단순 캐시</td>
+      <td>구현 단순, 캐시-메모리 일관성 유지 용이</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">직관적 이해</div>
+  Write-Back + Write-Allocate는 "쓰다 보면 나중에 또 쓸 테니 일단 캐시에 올려두자"는 낙관적 전략입니다.<br>
+  Write-Through + No-Write-Allocate는 "한 번 쓰고 안 건드릴 데이터는 굳이 캐시를 오염시키지 말자"는 보수적 전략입니다.<br>
+  스트리밍(순차적 대량 쓰기) 워크로드에서는 No-Write-Allocate가 유리할 수 있습니다.
+</div>
+
+<!-- ============================================================
+     섹션 4: 다단 캐시
+     ============================================================ -->
+<h2>4. 다단 캐시 (Multi-Level Cache)</h2>
+
+<h3>4-1. L1 / L2 / L3 구조와 역할</h3>
+
+<div class="diagram">
+CPU Core
+  │
+  ▼
+L1 Cache ── 가장 작고 빠름: 32–64 KB, ~4 사이클
+  │         Core별 전용 (Private). 명령어(I-Cache) + 데이터(D-Cache) 분리
+  │
+  ▼
+L2 Cache ── 중간 크기·속도: 256 KB – 1 MB, ~12 사이클
+  │         Core별 전용 (Private) 또는 그룹 공유
+  │
+  ▼
+L3 Cache ── 크고 느림: 8 – 64 MB, ~40 사이클
+  │         모든 Core 공유 (Shared, Last-Level Cache = LLC)
+  │
+  ▼
+Main Memory (DRAM) ── 매우 큼: GB 단위, ~100–200 사이클
+  │
+  ▼
+SSD / Disk (가상 메모리 영역)
+
+각 단계 미스 시 다음 단계에서 캐시 라인 Fetch
+</div>
+
+<p>
+  계층마다 크기와 레이턴시의 균형을 맞춰 전체 평균 접근 시간(AMAT)을 낮춥니다.
+</p>
+
+<div class="diagram">
+AMAT (Average Memory Access Time) 공식:
+
+AMAT = Hit Time_L1 + Miss Rate_L1 × (Hit Time_L2 + Miss Rate_L2 × (Hit Time_L3 + Miss Rate_L3 × Hit Time_Mem))
+
+예시 (단순화):
+  L1 Hit Time = 4사이클,  Miss Rate = 5%
+  L2 Hit Time = 12사이클, Miss Rate = 10%
+  L3 Hit Time = 40사이클, Miss Rate = 1%
+  Mem Hit Time = 150사이클
+
+  AMAT = 4 + 0.05 × (12 + 0.10 × (40 + 0.01 × 150))
+       = 4 + 0.05 × (12 + 0.10 × 41.5)
+       = 4 + 0.05 × (12 + 4.15)
+       = 4 + 0.05 × 16.15
+       = 4 + 0.81
+       ≈ 4.81 사이클  ← L1이 99% 이상 결정
+</div>
+
+<div class="callout">
+  <div class="callout-title">왜 L1 히트율이 압도적으로 중요한가?</div>
+  AMAT 공식에서 L2·L3 레이턴시는 L1 미스율에 의해 가중됩니다.
+  L1 미스율이 5%에서 2%로 줄면 AMAT이 크게 개선됩니다.
+  그래서 컴파일러 최적화(루프 순서 변경, 캐시 친화적 자료구조)는 L1 히트율을 높이는 데 집중합니다.
+</div>
+
+<!-- ============================================================
+     섹션 5: Inclusive / Exclusive / NINE
+     ============================================================ -->
+<h2>5. 다단 캐시 포함 정책</h2>
+
+<p>
+  L1과 L2, L2와 L3 사이에서 같은 캐시 라인이 여러 계층에 중복 존재할 수 있을까요?
+  이를 결정하는 것이 <strong>포함 정책(Inclusion Policy)</strong>입니다.
+</p>
+
+<h3>5-1. Inclusive (포함 정책)</h3>
+
+<div class="diagram">
+규칙: L1에 있는 데이터는 반드시 L2에도 존재한다 (L1 ⊆ L2)
+
+L1 캐시: [A] [B] [C]
+L2 캐시: [A] [B] [C] [D] [E] [F] ...   ← L1 내용이 L2에 중복 포함
+
+장점:
+  · L1 미스 시 L2에서 즉시 찾을 수 있음 (백킹 스토어 보장)
+  · 캐시 스누핑(Snoop) 시 L2만 확인해도 됨 → 멀티코어 일관성 프로토콜 단순화
+  · L2 교체 시 L1에 알림(Invalidation) 필요
+
+단점:
+  · L1 용량이 L2 유효 용량에 "이중으로 카운트"됨
+    → 실제 고유 데이터 저장 용량 = L2 - L1 (L1 중복분 제외)
+  · L1 크기가 증가하면 L2 유효 용량 손실 증가
+
+사용 예: 일부 Intel 아키텍처 (Skylake 이전 L3)
+</div>
+
+<h3>5-2. Exclusive (배타 정책)</h3>
+
+<div class="diagram">
+규칙: 동일 캐시 라인은 단 하나의 계층에만 존재한다 (L1 ∩ L2 = ∅)
+
+L1 캐시: [A] [B] [C]
+L2 캐시: [D] [E] [F] [G] ...   ← L1과 겹치는 항목 없음
+
+L1 미스 발생 시:
+  L2에서 찾은 라인을 L1으로 이동 (Swap — L1의 교체 라인이 L2로)
+
+장점:
+  · 전체 L1+L2 용량을 완전히 활용 (중복 없음)
+  · 소용량 L1도 실제 효과적 용량 극대화
+
+단점:
+  · L1 미스 시 Swap 연산 복잡도
+  · 멀티코어 스누핑 시 L2도 확인해야 함 → 일관성 프로토콜 복잡
+
+사용 예: AMD Zen 시리즈 (L1↔L2 Exclusive), 일부 임베디드 CPU
+</div>
+
+<h3>5-3. NINE (Non-Inclusive Non-Exclusive / 비포함-비배타)</h3>
+
+<div class="diagram">
+규칙: L1과 L2가 겹쳐도 되고 안 겹쳐도 된다 — 명시적 포함 관계 없음
+
+L1 캐시: [A] [B] [C]
+L2 캐시: [B] [D] [E] ...   ← B는 중복, A·C는 L1만, D·E는 L2만
+
+동작:
+  · L1 미스 → L2 확인, 있으면 L1으로 복사 (L2에서 제거하지 않음)
+  · L1 교체 → L2에 알림 없이 그냥 제거 (L2에 복사본 있을 수도, 없을 수도)
+
+장점:
+  · Inclusive/Exclusive 간 절충 → 구현 유연성
+  · L3(LLC)로 많이 사용: 각 Core L2와 겹치는 부분이 자연스럽게 공유 데이터 역할
+
+단점:
+  · 일관성 프로토콜이 L1·L2 양쪽을 추적해야 할 수 있음
+
+사용 예: Intel Skylake 이후 L3 (NINE LLC)
+</div>
+
+<h3>5-4. 세 정책 비교 요약</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>정책</th>
+      <th>중복 허용</th>
+      <th>유효 용량</th>
+      <th>스누핑 복잡도</th>
+      <th>대표 사용처</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Inclusive</td>
+      <td>L1 ⊆ L2</td>
+      <td>L2 − L1 (손실 있음)</td>
+      <td>낮음 (L2만 확인)</td>
+      <td>Intel Skylake 이전 L3</td>
+    </tr>
+    <tr>
+      <td>Exclusive</td>
+      <td>완전 분리</td>
+      <td>L1 + L2 (최대)</td>
+      <td>중간 (스왑 필요)</td>
+      <td>AMD Zen L1↔L2</td>
+    </tr>
+    <tr>
+      <td>NINE</td>
+      <td>가변</td>
+      <td>가변 (L2 이상)</td>
+      <td>높음 (양쪽 추적)</td>
+      <td>Intel Skylake 이후 L3</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ============================================================
+     섹션 6: 실제 성능 영향
+     ============================================================ -->
+<h2>6. 캐시 쓰기 정책과 실제 성능</h2>
+
+<h3>6-1. 벤치마크 관점에서의 영향</h3>
+
+<div class="diagram">
+[Write-Heavy 워크로드 — 동일 위치 반복 수정]
+  Write-Through: 매 쓰기마다 메모리 버스 사용 → 버스 포화 시 성능 급락
+  Write-Back:    교체 시에만 메모리 접근 → 버스 트래픽 대폭 감소
+
+[Sequential 대량 쓰기 — 스트리밍]
+  Write-Allocate: 캐시 라인 Fetch 후 쓰기 → 순차 쓰기엔 불필요한 읽기
+  No-Write-Allocate: 직접 메모리 기록 → 스트리밍에 더 효율적
+  → 컴파일러 NT(Non-Temporal) 스토어 명령어(예: movntps)는 이를 직접 활용
+
+[캐시 용량 초과 워크로드]
+  Inclusive L3: L1 크기가 L3 용량에서 중복으로 "차감" → 대형 작업에서 유효 용량 감소
+  NINE L3: 중복 제한 없음 → 더 많은 고유 데이터 보관 가능
+</div>
+
+<h3>6-2. 프로그래머 관점: 캐시 친화적 코드</h3>
+
+<div class="diagram">
+나쁜 예 (Column-Major 접근 — C 언어 2D 배열):
+  for (j = 0; j &lt; N; j++)          // 외부 루프: 열(column)
+    for (i = 0; i &lt; N; i++)        // 내부 루프: 행(row)
+      sum += A[i][j];              // 메모리상 N칸씩 점프 → 캐시 라인 낭비
+
+좋은 예 (Row-Major 접근):
+  for (i = 0; i &lt; N; i++)          // 외부 루프: 행(row)
+    for (j = 0; j &lt; N; j++)        // 내부 루프: 열(column)
+      sum += A[i][j];              // 메모리상 연속 접근 → 캐시 라인 완전 활용
+
+왜 차이가 나는가?
+  C의 2D 배열은 행 우선(Row-Major) 저장
+  A[0][0] A[0][1] ... A[0][N-1] A[1][0] ... (연속 메모리)
+  내부 루프가 j(열)를 순회하면 연속 주소 → 같은 캐시 라인 재사용
+  내부 루프가 i(행)를 순회하면 N칸씩 점프 → 매번 다른 캐시 라인
+</div>
+
+<div class="callout warning">
+  <div class="callout-title">Write 정책과 코드 최적화의 연결</div>
+  Write-Back + Write-Allocate를 쓰는 현대 CPU에서 같은 메모리 위치를 반복 수정하는 코드는
+  첫 접근(미스 + Fetch) 이후 캐시 내에서 빠르게 수정됩니다.
+  반면 대용량 배열을 순차 1회 기록하는 스트리밍 코드는 Non-Temporal 스토어를 쓰거나
+  컴파일러 힌트(prefetch, restrict)를 활용하면 캐시 오염을 줄일 수 있습니다.
+</div>
+
+<!-- ============================================================
+     퀴즈
+     ============================================================ -->
+<h2>이해 확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. Write-Back 정책에서 캐시 슬롯 교체 시 Dirty 비트가 1인 슬롯에 반드시 해야 하는 작업은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> 슬롯을 그냥 버린다</label></li>
+    <li><label><input type="radio" name="q1" value="1"> 수정된 내용을 아래 메모리 계층에 기록한 뒤 슬롯을 해제한다</label></li>
+    <li><label><input type="radio" name="q1" value="2"> 새 데이터를 슬롯에 덮어쓴 후 Dirty 비트를 0으로 리셋한다</label></li>
+    <li><label><input type="radio" name="q1" value="3"> 아래 메모리에서 다시 데이터를 읽어 슬롯을 갱신한다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. Write-Allocate 정책이 Write-Through보다 Write-Back과 더 잘 어울리는 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> Write-Allocate는 미스 시 캐시 라인을 로드하므로 이후 같은 위치 반복 쓰기는 캐시 내에서 처리되는데, Write-Back이 이 이점을 극대화하기 때문이다</label></li>
+    <li><label><input type="radio" name="q2" value="1"> Write-Through는 캐시에 데이터를 올리지 않기 때문이다</label></li>
+    <li><label><input type="radio" name="q2" value="2"> Dirty 비트가 필요 없어서이다</label></li>
+    <li><label><input type="radio" name="q2" value="3"> Write-Allocate는 메모리에 직접 쓰기 때문이다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. Inclusive L3 캐시의 단점으로 가장 적절한 것은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> L1 미스 시 L2를 확인할 수 없다</label></li>
+    <li><label><input type="radio" name="q3" value="1"> L1에 있는 데이터가 L3에도 중복 저장되어 L3의 실제 유효 용량이 줄어든다</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 캐시 교체 정책을 사용할 수 없다</label></li>
+    <li><label><input type="radio" name="q3" value="3"> Write-Back을 사용할 수 없다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. C 언어로 NxN 행렬을 합산할 때 Row-Major 접근이 Column-Major보다 빠른 근본적 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> Row-Major는 덧셈 연산이 더 적기 때문이다</label></li>
+    <li><label><input type="radio" name="q4" value="1"> C 배열이 행 우선으로 메모리에 저장되어 Row-Major 접근이 연속 주소를 순회하므로 한 캐시 라인 로드 후 여러 원소를 히트로 처리할 수 있기 때문이다</label></li>
+    <li><label><input type="radio" name="q4" value="2"> Column-Major는 캐시 슬롯 수를 초과하기 때문이다</label></li>
+    <li><label><input type="radio" name="q4" value="3"> Row-Major는 Write-Back을 사용하고 Column-Major는 Write-Through를 사용하기 때문이다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================
+     Primary Source
+     ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">오늘의 추천 자료</div>
+  <strong>Computer Organization and Design (Patterson &amp; Hennessy) — Chapter 5.4: Handling Cache Misses / 5.8: Advanced Optimizations of Caches</strong><br>
+  Write-Through·Write-Back 정책과 Write Buffer, 다단 캐시 최적화를 상세히 다룹니다.<br>
+  <br>
+  <strong>Computer Architecture: A Quantitative Approach (Hennessy &amp; Patterson) — Appendix B.3–B.5</strong><br>
+  포함 정책(Inclusive/Exclusive/NINE)과 AMAT 계산을 심화 수준으로 설명합니다.<br>
+  <br>
+  <strong>Intel® 64 and IA-32 Architectures Optimization Reference Manual — Chapter 2</strong><br>
+  현대 Intel CPU의 L1/L2/L3 캐시 쓰기 정책과 Non-Temporal 스토어 활용법을 실무 관점에서 설명합니다.
+</div>
+
+<!-- ============================================================
+     핵심 요약
+     ============================================================ -->
+<h2>오늘의 핵심 요약</h2>
+
+<ul>
+  <li><strong>Write-Through</strong>: 쓰기 시 캐시와 메모리 동시 업데이트 → 단순하지만 버스 트래픽 증가</li>
+  <li><strong>Write-Back</strong>: 캐시에만 기록(Dirty 비트), 교체 시 메모리 반영 → 트래픽 감소, 현대 CPU 표준</li>
+  <li><strong>Write-Allocate</strong>: 쓰기 미스 시 캐시 라인 Fetch 후 쓰기 → Write-Back과 짝</li>
+  <li><strong>No-Write-Allocate</strong>: 쓰기 미스 시 메모리 직접 기록 → Write-Through와 짝, 스트리밍에 유리</li>
+  <li><strong>다단 캐시 AMAT</strong>: L1 히트율이 압도적 영향 → L1 최적화(코드 지역성)가 핵심</li>
+  <li><strong>Inclusive</strong>: L1 ⊆ L2, 스누핑 단순 but 유효 용량 손실</li>
+  <li><strong>Exclusive</strong>: L1∩L2=∅, 용량 최대화 but 스왑 복잡</li>
+  <li><strong>NINE</strong>: 가변 중복, 현대 Intel LLC 방식 — 유연하지만 일관성 관리 복잡</li>
+  <li><strong>코드 최적화</strong>: 행 우선 접근, 루프 순서 변경으로 캐시 라인 재사용률 극대화</li>
+</ul>
+
+<!-- ============================================================
+     다음 수업 예고
+     ============================================================ -->
+<div class="callout">
+  <div class="callout-title">다음 수업 (Day 9)</div>
+  <strong>명령어 집합 아키텍처 (ISA) — RISC vs CISC, 명령어 형식, 어드레싱 모드</strong><br>
+  CPU가 실제로 이해하는 언어인 ISA를 배웁니다.
+  RISC(ARM, RISC-V)와 CISC(x86)의 설계 철학 차이,
+  명령어 인코딩 형식(R/I/S/B/U/J 타입 등), 그리고 다양한 어드레싱 모드를 학습합니다.
+</div>
+
+<!-- ============================================================
+     선생님께 질문
+     ============================================================ -->
+<div class="ask-teacher">
+  <strong>궁금한 점이 있으신가요?</strong><br>
+  이해가 안 되는 부분, 더 깊이 알고 싶은 내용, 또는 실무와 어떻게 연결되는지
+  Claude에게 바로 질문하세요. 선생님은 항상 여기 있습니다.
+</div>
+
+<div class="lesson-footer">
+  <div class="lesson-nav">
+    <a href="0007-cache-structures.html">← Day 7: 캐시 구조</a>
+    <a href="0009-isa.html">Day 9: 명령어 집합 아키텍처 →</a>
+  </div>
+  컴퓨터 구조 데일리 학습 · <a href="../reference/">참고 자료</a> · <a href="../RESOURCES.md">추천 자료 목록</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1, 'Dirty 비트 = 1은 캐시 슬롯이 메모리보다 최신 상태임을 의미합니다. 슬롯을 교체하기 전에 반드시 수정된 내용을 아래 메모리 계층(L2 또는 RAM)에 Write-Back한 뒤 슬롯을 해제해야 합니다. 그냥 버리면 변경 사항이 영구 소실됩니다.');
+  initQuiz('q2', 0, 'Write-Allocate는 쓰기 미스 시 캐시 라인을 메모리에서 로드합니다. Write-Back과 조합하면 이후 같은 위치에 대한 반복 쓰기가 모두 캐시 내에서 처리되어 메모리 접근이 최소화됩니다. Write-Through는 어차피 매 쓰기마다 메모리에 접근하므로 Write-Allocate로 캐시에 올리는 이점이 줄어듭니다.');
+  initQuiz('q3', 1, 'Inclusive 정책에서는 L1(또는 L2)에 있는 데이터가 반드시 L3에도 존재해야 합니다. 따라서 L3 용량 중 L1·L2 크기만큼은 항상 중복 데이터로 채워집니다. L1+L2 총 크기가 클수록 L3의 실제 활용 가능한 고유 데이터 용량이 줄어드는 단점이 있습니다.');
+  initQuiz('q4', 1, 'C 언어의 2D 배열은 행 우선(Row-Major)으로 메모리에 저장됩니다. 즉 A[i][0], A[i][1], ..., A[i][N-1]이 연속 주소에 위치합니다. Row-Major로 접근하면 한 캐시 라인(보통 64 B = 16개 int)을 로드한 뒤 그 안의 여러 원소를 캐시 히트로 처리합니다. Column-Major 접근은 A[0][j], A[1][j], ...처럼 N칸씩 건너뛰어 매번 새 캐시 라인을 로드해야 합니다.');
+</script>
+</body>
+</html>

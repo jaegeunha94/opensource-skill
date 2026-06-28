@@ -11,12 +11,13 @@
 | 5 | 2026-06-25 | 순서 논리 회로 (Sequential Logic) | [0005-sequential-logic.html](lessons/0005-sequential-logic.html) |
 | 6 | 2026-06-26 | 메모리 계층 1 (Memory Hierarchy) | [0006-memory-hierarchy-1.html](lessons/0006-memory-hierarchy-1.html) |
 | 7 | 2026-06-27 | 메모리 계층 2 — 캐시 구조 (Cache Structures) | [0007-cache-structures.html](lessons/0007-cache-structures.html) |
+| 8 | 2026-06-28 | 메모리 계층 3 — 캐시 쓰기 정책 & 다단 캐시 | [0008-cache-write-policy.html](lessons/0008-cache-write-policy.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | 메모리 계층 3 (Cache 심화) | 쓰기 정책, 교체 알고리즘, 다단 캐시 |
+| ~~8~~ | ~~메모리 계층 3 (Cache 심화)~~ | ~~완료~~ |
 | 9 | 명령어 집합 아키텍처 (ISA) | RISC vs CISC, 명령어 형식, 어드레싱 모드 |
 | 10 | 단순 프로세서 설계 (Simple CPU) | 단일 사이클 데이터패스, 제어 신호 |
 | 11 | 파이프라이닝 1 (Pipelining) | 5단계 파이프라인, 처리량 vs 지연 시간 |
@@ -32,7 +33,7 @@
 
 ## 현재 학습 위치
 
-**Day 7 완료** — 캐시 주소 분해(Tag·Index·Offset)·직접 매핑·완전 연관·집합 연관 캐시·교체 정책(LRU/Random/FIFO) 학습 완료. 다음은 캐시 쓰기 정책(Write-Through/Write-Back)과 다단 캐시 포함 정책.
+**Day 8 완료** — Write-Through/Write-Back 쓰기 정책, Write-Allocate/No-Write-Allocate, 다단 캐시(L1→L2→L3) AMAT 계산, Inclusive·Exclusive·NINE 포함 정책 학습 완료. 다음은 명령어 집합 아키텍처(ISA) — RISC vs CISC, 명령어 형식, 어드레싱 모드.
 
 ## 습득한 핵심 개념
 
@@ -45,7 +46,7 @@
 - [x] 순서 논리 회로 / 레지스터 (✓ Day 5)
 - [x] 메모리 계층 구조 / SRAM vs DRAM (✓ Day 6)
 - [x] 캐시 구조 / Tag·Index·Offset·집합 연관 (✓ Day 7)
-- [ ] 캐시 쓰기 정책 / 다단 캐시 (예정 Day 8)
+- [x] 캐시 쓰기 정책 / 다단 캐시 / 포함 정책 (✓ Day 8)
 - [ ] ISA 개념 (예정 Day 9)
 - [ ] 파이프라이닝 (예정 Day 11-12)
 - [ ] 가상 메모리 (예정 Day 15-16)
