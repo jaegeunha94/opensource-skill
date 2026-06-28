@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 8 — 파일 시스템</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <h1>Day 8: 파일 시스템 (File System)</h1>
+  <div class="meta">
+    <span>📅 2026-06-28</span>
+    <span>⏱ 약 60분</span>
+    <span>📚 파일구조 과목</span>
+    <span>🔢 Lesson 8 / 10</span>
+  </div>
+
+  <!-- Learning Objectives -->
+  <div class="callout">
+    <strong>학습 목표</strong>
+    이 레슨을 마치면: (1) 디스크에서 파일 데이터를 관리하는 세 가지 블록 할당 방식(연속·연결·인덱스)의 구조와 트레이드오프를 설명할 수 있다.
+    (2) FAT 파일 시스템의 테이블 구조와 체인 탐색 원리를 이해한다.
+    (3) Unix/Linux의 inode가 파일 메타데이터와 데이터 블록 포인터를 어떻게 관리하는지 설명할 수 있다.
+    (4) 디렉터리가 파일 이름과 inode 번호를 연결하는 방식을 이해한다.
+  </div>
+
+  <!-- Section 0: 배경 -->
+  <h2>0. 왜 파일 시스템이 필요한가?</h2>
+
+  <p>
+    Day 1~7에서 우리는 레코드·인덱스·B+-트리처럼 <em>논리적</em> 수준의 파일 구조를 다뤘다.
+    그 아래에는 운영체제가 관리하는 <strong>파일 시스템(File System)</strong>이 있다.
+    파일 시스템은 물리적 디스크 블록과 사용자가 보는 파일/디렉터리 간의 다리 역할을 한다.
+  </p>
+
+  <div class="callout tip">
+    <strong>핵심 문제</strong>
+    "파일 데이터가 여러 블록에 걸쳐 있을 때, 운영체제는 어떤 블록이 어느 파일에 속하는지
+    어떻게 추적하는가?"
+  </div>
+
+  <h3>0-1. 디스크 블록 복습</h3>
+
+  <p>
+    디스크는 고정 크기의 <strong>블록(Block)</strong>으로 나뉜다(보통 4 KB).
+    운영체제는 블록 번호를 단위로 I/O를 수행한다.
+    파일 시스템의 핵심 임무는 <em>"어떤 블록들이 하나의 파일을 구성하는가"</em>를 기록하는 것이다.
+  </p>
+
+  <div class="diagram">디스크 (논리 뷰)
+
+블록 0  | 블록 1  | 블록 2  | 블록 3  | 블록 4  | 블록 5  | ...
+[슈퍼블록] [비트맵] [inode 영역 →      ] [데이터 블록 영역 →              ]</div>
+
+  <!-- Section 1: 블록 할당 방식 -->
+  <h2>1. 세 가지 블록 할당 방식</h2>
+
+  <h3>1-1. 연속 할당 (Contiguous Allocation)</h3>
+
+  <p>
+    파일에 연속된 블록 범위를 통째로 할당한다.
+    파일 항목에는 <strong>시작 블록 번호</strong>와 <strong>길이(블록 수)</strong>만 저장하면 된다.
+  </p>
+
+  <div class="diagram">디렉터리 항목:  파일A → 시작=3, 길이=4
+
+블록:  0   1   2  [3   4   5   6]  7   8
+                  ← 파일 A 데이터 →</div>
+
+  <table class="comparison-table">
+    <thead>
+      <tr><th>장점</th><th>단점</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>순차 접근이 빠름 (디스크 헤드 이동 최소)</td>
+        <td>외부 단편화 — 중간 크기 빈 공간 낭비</td>
+      </tr>
+      <tr>
+        <td>임의 접근 O(1) — 시작 + 오프셋으로 바로 계산</td>
+        <td>파일 크기 미리 선언 필요 (동적 확장 불가)</td>
+      </tr>
+      <tr>
+        <td>구현 단순</td>
+        <td>파일 삭제 후 조각 모음 필요</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <strong>외부 단편화 예</strong>
+    10 MB 파일을 지우고 5 MB 파일 두 개를 지우면 빈 공간이 20 MB지만,
+    연속된 15 MB 공간이 없어 15 MB 파일을 저장할 수 없다.
+  </div>
+
+  <h3>1-2. 연결 할당 (Linked Allocation)</h3>
+
+  <p>
+    각 블록의 끝에 <strong>다음 블록 번호(포인터)</strong>를 저장한다.
+    디렉터리에는 첫 번째 블록 번호만 기록하면 된다.
+  </p>
+
+  <div class="diagram">디렉터리 항목:  파일B → 시작=1
+
+블록 1: [데이터...][→4]
+블록 4: [데이터...][→9]
+블록 9: [데이터...][→NULL]   ← 마지막 블록</div>
+
+  <table class="comparison-table">
+    <thead>
+      <tr><th>장점</th><th>단점</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>외부 단편화 없음</td>
+        <td>임의 접근 O(n) — n번째 블록까지 체인 순회 필요</td>
+      </tr>
+      <tr>
+        <td>파일 크기 유연하게 확장</td>
+        <td>포인터 저장으로 유효 데이터 공간 약간 감소</td>
+      </tr>
+      <tr>
+        <td>외부 단편화 없음</td>
+        <td>포인터 손상 시 파일 일부 손실 위험</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>1-3. 인덱스 할당 (Indexed Allocation)</h3>
+
+  <p>
+    파일마다 하나의 <strong>인덱스 블록(Index Block)</strong>을 두고,
+    그 안에 데이터 블록 번호 목록을 저장한다.
+    디렉터리 항목은 인덱스 블록 번호만 가리킨다.
+  </p>
+
+  <div class="diagram">디렉터리 항목: 파일C → 인덱스 블록=6
+
+블록 6 (인덱스 블록):
+  [2, 5, 8, 11, ...]
+
+블록 2:  [데이터...]
+블록 5:  [데이터...]
+블록 8:  [데이터...]
+블록 11: [데이터...]</div>
+
+  <table class="comparison-table">
+    <thead>
+      <tr><th>장점</th><th>단점</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>임의 접근 O(1) — 인덱스 블록 로드 후 직접 접근</td>
+        <td>작은 파일도 인덱스 블록 하나 낭비</td>
+      </tr>
+      <tr>
+        <td>외부 단편화 없음</td>
+        <td>매우 큰 파일 → 인덱스 블록 여러 개 필요 (다단계 인덱스)</td>
+      </tr>
+      <tr>
+        <td>연결 할당보다 신뢰성 높음</td>
+        <td>인덱스 블록 손상 시 전체 파일 손실</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>비교 요약</strong>
+    연속 할당: 빠른 순차/임의 접근, 단편화 취약.
+    연결 할당: 단편화 없음, 임의 접근 느림.
+    인덱스 할당: 임의 접근 O(1), 소형 파일 오버헤드.
+    현대 파일 시스템은 대부분 <strong>인덱스 기반</strong>을 택하거나 둘을 혼합한다.
+  </div>
+
+  <!-- Section 2: FAT -->
+  <h2>2. FAT 파일 시스템</h2>
+
+  <div class="primary-source">
+    <strong>출처</strong>
+    Silberschatz et al., <em>Operating System Concepts</em> 10th ed., Ch. 15 "File-System Implementation"
+  </div>
+
+  <p>
+    <strong>FAT(File Allocation Table)</strong>은 연결 할당의 포인터 정보를
+    디스크 블록 내부가 아닌 <strong>별도 테이블</strong>에 모아 관리한다.
+    MS-DOS 시대부터 사용된 방식으로 FAT12, FAT16, FAT32 등이 있다.
+  </p>
+
+  <h3>2-1. 구조</h3>
+
+  <div class="diagram">디스크 레이아웃 (FAT 파티션)
+
+┌──────────┬──────────┬───────────────┬────────────────────────────┐
+│ 부트 레코드 │  FAT 영역  │  루트 디렉터리  │       데이터 영역             │
+└──────────┴──────────┴───────────────┴────────────────────────────┘
+
+FAT 테이블 (인덱스 = 클러스터 번호)
+
+클러스터:  0    1    2    3    4    5    6    7    8    9
+          [예약][예약][EOC][  5][EOC][  8][FREE][FREE][EOC][FREE]
+                        ↑         ↑         ↑
+                      파일A     파일A     파일A
+                    시작(2)→다음(5)→다음(8)→끝(EOC)</div>
+
+  <ul>
+    <li>각 테이블 항목의 값 = 파일 체인의 <strong>다음 클러스터 번호</strong></li>
+    <li><code>EOC(End Of Chain)</code>: 파일의 마지막 클러스터</li>
+    <li><code>FREE</code>: 사용 가능한 빈 클러스터</li>
+    <li>파일 접근: 디렉터리 항목에서 시작 클러스터 조회 → FAT 체인 순회</li>
+  </ul>
+
+  <h3>2-2. 특징과 한계</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr><th>특징</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>메타데이터 집중</td>
+        <td>FAT 테이블을 메모리에 올리면 체인 탐색이 빠름</td>
+      </tr>
+      <tr>
+        <td>FAT32 최대 파일 크기</td>
+        <td>4 GB − 1 바이트 (32비트 항목 한계)</td>
+      </tr>
+      <tr>
+        <td>권한/소유자 없음</td>
+        <td>유닉스 스타일 퍼미션 미지원 → USB 드라이브에 여전히 널리 사용</td>
+      </tr>
+      <tr>
+        <td>신뢰성</td>
+        <td>FAT 복사본을 두 개 유지하여 손상에 대비</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Section 3: inode -->
+  <h2>3. inode — Unix/Linux 파일 시스템</h2>
+
+  <p>
+    Unix/Linux(ext2/ext3/ext4 등)는 <strong>inode(Index Node)</strong>를 사용해
+    파일 메타데이터와 데이터 블록 포인터를 관리한다.
+    FAT과 달리 파일 이름은 inode에 없고, <em>디렉터리</em>가 이름↔inode 번호를 매핑한다.
+  </p>
+
+  <h3>3-1. inode 구조</h3>
+
+  <div class="diagram">inode #42
+┌─────────────────────────────────┐
+│ 파일 타입        : 일반 파일      │
+│ 소유자 UID       : 1000          │
+│ 그룹 GID         : 1000          │
+│ 권한 모드        : 0644          │
+│ 파일 크기        : 18,432 바이트  │
+│ 생성/수정/접근 시각              │
+│ 링크 수          : 2             │
+├─────────────────────────────────┤
+│ 직접 포인터 [0]  → 블록 87       │  ← 데이터 블록 직접 참조 (보통 12개)
+│ 직접 포인터 [1]  → 블록 124      │
+│ 직접 포인터 [2]  → 블록 201      │
+│ ...                             │
+│ 직접 포인터 [11] → 블록 309      │
+├─────────────────────────────────┤
+│ 단일 간접 포인터 → 블록 500      │  ← 블록 번호 목록을 담은 블록
+│ 이중 간접 포인터 → 블록 600      │  ← 간접 블록을 가리키는 블록
+│ 삼중 간접 포인터 → 블록 700      │  ← 이중 간접 블록을 가리키는 블록
+└─────────────────────────────────┘</div>
+
+  <h3>3-2. 간접 포인터 계산 예</h3>
+
+  <p>블록 크기 4 KB, 블록 번호 4 바이트라고 가정:</p>
+
+  <ul>
+    <li>직접 포인터 12개 → 12 × 4 KB = <strong>48 KB</strong></li>
+    <li>단일 간접: 포인터 1024개 → 1024 × 4 KB = <strong>4 MB</strong></li>
+    <li>이중 간접: 1024 × 1024 × 4 KB = <strong>4 GB</strong></li>
+    <li>삼중 간접: 1024³ × 4 KB = <strong>4 TB</strong></li>
+  </ul>
+
+  <div class="callout tip">
+    <strong>설계 철학</strong>
+    대부분의 파일은 작으므로 직접 포인터로 충분하다.
+    큰 파일만 간접 포인터 단계를 추가로 사용한다.
+    이 방식은 소형 파일의 접근을 매우 빠르게 유지하면서 대형 파일도 지원한다.
+  </div>
+
+  <h3>3-3. inode vs FAT 비교</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr><th>항목</th><th>FAT</th><th>inode (ext4)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>블록 포인터 위치</td><td>전역 FAT 테이블</td><td>각 파일의 inode</td></tr>
+      <tr><td>파일 이름</td><td>디렉터리 항목에 포함</td><td>디렉터리가 별도 관리</td></tr>
+      <tr><td>권한/소유자</td><td>미지원</td><td>지원 (uid, gid, mode)</td></tr>
+      <tr><td>임의 접근</td><td>체인 순회 필요</td><td>O(1) (직접 포인터 범위 내)</td></tr>
+      <tr><td>최대 파일 크기</td><td>4 GB (FAT32)</td><td>수 TB (ext4: 16 TB)</td></tr>
+      <tr><td>주요 용도</td><td>USB, SD카드, 임베디드</td><td>Linux 서버/데스크톱</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Section 4: 디렉터리 구조 -->
+  <h2>4. 디렉터리 구조</h2>
+
+  <p>
+    <strong>디렉터리(Directory)</strong>는 파일 이름과 파일 정보(또는 inode 번호)를 연결하는
+    특수 파일이다. 계층적 디렉터리 트리가 오늘날 표준이다.
+  </p>
+
+  <h3>4-1. 선형 목록 (Linear List)</h3>
+
+  <p>
+    디렉터리 파일을 <em>이름 + inode 번호</em> 쌍의 배열로 구성한다.
+    구현이 단순하지만 파일 검색이 O(n)이다.
+  </p>
+
+  <div class="diagram">디렉터리 /home/user/ (선형 목록)
+
+항목 0: "."        → inode 42
+항목 1: ".."       → inode 2
+항목 2: "report"   → inode 105
+항목 3: "data.csv" → inode 218
+항목 4: "notes"    → inode 77</div>
+
+  <h3>4-2. 해시 테이블 (Hash Table)</h3>
+
+  <p>
+    파일 이름에 해시 함수를 적용해 인덱스를 구해 빠르게 조회한다.
+    충돌 시 체이닝이나 선형 탐사를 사용한다. 검색 O(1) 평균.
+    ext4는 <code>dir_hash</code> 옵션으로 이를 지원한다.
+  </p>
+
+  <h3>4-3. 경로 해석 과정 (Path Resolution)</h3>
+
+  <div class="diagram">경로 "/home/user/report" 해석 과정
+
+1. "/" 루트 디렉터리 inode 읽기 (항상 inode 2)
+2. inode 2 → 데이터 블록 → "home" 항목 → inode 5
+3. inode 5  → 데이터 블록 → "user" 항목 → inode 42
+4. inode 42 → 데이터 블록 → "report" 항목 → inode 105
+5. inode 105 → 데이터 블록들 → 파일 내용 반환</div>
+
+  <div class="callout">
+    <strong>하드 링크 vs 소프트 링크</strong>
+    <strong>하드 링크</strong>: 같은 inode를 가리키는 디렉터리 항목 추가 → inode의 링크 수(nlink) 증가.
+    <strong>소프트(심볼릭) 링크</strong>: 경로 문자열을 담은 별도 inode 생성 → 원본 삭제 시 깨짐.
+  </div>
+
+  <!-- Section 5: 실제 파일 시스템 -->
+  <h2>5. 실제 파일 시스템 구조 예 — ext4</h2>
+
+  <div class="diagram">ext4 파티션 레이아웃
+
+┌──────────┬────────────────────────────────────────────────────┐
+│ 부트 블록 │             블록 그룹 0, 1, 2, ...                  │
+└──────────┴────────────────────────────────────────────────────┘
+
+블록 그룹 구조 (블록 그룹마다 반복):
+┌──────────┬────────┬────────────┬────────────┬──────────────────┐
+│ 슈퍼블록  │ 그룹   │ 블록 비트맵 │ inode 비트맵│ inode 테이블     │  데이터 블록들 │
+│ (복사본) │ 디스크립터│            │            │                  │               │
+└──────────┴────────┴────────────┴────────────┴──────────────────┘
+
+슈퍼블록: 전체 파일 시스템 정보 (블록 수, 블록 크기, inode 수 등)
+그룹 디스크립터: 각 블록 그룹의 비트맵·inode 테이블 위치
+블록 비트맵: 어떤 데이터 블록이 사용 중인지 1비트로 표시
+inode 비트맵: 어떤 inode가 사용 중인지 1비트로 표시
+inode 테이블: 고정 크기 inode 항목들의 배열</div>
+
+  <!-- Section 6: 비교 표 -->
+  <h2>6. 파일 시스템 방식 총정리</h2>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>구분</th>
+        <th>연속 할당</th>
+        <th>연결 할당 (FAT)</th>
+        <th>인덱스 할당 (inode)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>단편화</td>
+        <td><span class="badge bad">외부 단편화</span></td>
+        <td><span class="badge good">없음</span></td>
+        <td><span class="badge good">없음</span></td>
+      </tr>
+      <tr>
+        <td>순차 접근</td>
+        <td><span class="badge good">빠름</span></td>
+        <td><span class="badge mid">보통</span></td>
+        <td><span class="badge good">빠름</span></td>
+      </tr>
+      <tr>
+        <td>임의 접근</td>
+        <td><span class="badge good">O(1)</span></td>
+        <td><span class="badge bad">O(n) 체인 순회</span></td>
+        <td><span class="badge good">O(1) (직접 범위)</span></td>
+      </tr>
+      <tr>
+        <td>파일 확장</td>
+        <td><span class="badge bad">어려움</span></td>
+        <td><span class="badge good">쉬움</span></td>
+        <td><span class="badge good">쉬움</span></td>
+      </tr>
+      <tr>
+        <td>메타데이터 위치</td>
+        <td>디렉터리</td>
+        <td>전역 FAT 테이블</td>
+        <td>개별 inode</td>
+      </tr>
+      <tr>
+        <td>권한 지원</td>
+        <td>불가</td>
+        <td>불가(FAT)</td>
+        <td>지원(uid/gid/mode)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Quiz -->
+  <div class="quiz" id="quiz1">
+    <h3>확인 퀴즈 1</h3>
+    <p class="quiz-question">
+      ext4에서 파일 이름은 어디에 저장되는가?
+    </p>
+    <div class="quiz-options">
+      <div class="quiz-option" onclick="answer(this,'wrong','quiz1')">
+        inode 내부의 이름 필드
+      </div>
+      <div class="quiz-option" onclick="answer(this,'correct','quiz1')">
+        디렉터리 파일의 항목 (이름 → inode 번호 매핑)
+      </div>
+      <div class="quiz-option" onclick="answer(this,'wrong','quiz1')">
+        슈퍼블록의 파일 목록
+      </div>
+      <div class="quiz-option" onclick="answer(this,'wrong','quiz1')">
+        FAT 테이블 항목
+      </div>
+    </div>
+    <div class="quiz-feedback" id="quiz1-fb"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz1')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz2">
+    <h3>확인 퀴즈 2</h3>
+    <p class="quiz-question">
+      FAT32에서 단일 파일의 최대 크기가 약 4 GB로 제한되는 근본 이유는?
+    </p>
+    <div class="quiz-options">
+      <div class="quiz-option" onclick="answer(this,'wrong','quiz2')">
+        디스크 파티션 크기 제한 때문에
+      </div>
+      <div class="quiz-option" onclick="answer(this,'wrong','quiz2')">
+        클러스터 크기가 4 KB로 고정되어 있기 때문에
+      </div>
+      <div class="quiz-option" onclick="answer(this,'correct','quiz2')">
+        파일 크기를 저장하는 필드가 32비트 정수이기 때문에 (2³² − 1 바이트)
+      </div>
+      <div class="quiz-option" onclick="answer(this,'wrong','quiz2')">
+        FAT 테이블 항목이 최대 4 GB 주소만 표현할 수 있기 때문에
+      </div>
+    </div>
+    <div class="quiz-feedback" id="quiz2-fb"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz2')">다시 풀기</button>
+  </div>
+
+  <div class="quiz" id="quiz3">
+    <h3>확인 퀴즈 3</h3>
+    <p class="quiz-question">
+      inode의 다중 간접 포인터(단일→이중→삼중)를 사용하는 주된 이유는?
+    </p>
+    <div class="quiz-options">
+      <div class="quiz-option" onclick="answer(this,'wrong','quiz3')">
+        파일 이름을 효율적으로 저장하기 위해
+      </div>
+      <div class="quiz-option" onclick="answer(this,'wrong','quiz3')">
+        디렉터리 검색 속도를 높이기 위해
+      </div>
+      <div class="quiz-option" onclick="answer(this,'correct','quiz3')">
+        inode 크기를 고정하면서도 매우 큰 파일(TB 수준)을 지원하기 위해
+      </div>
+      <div class="quiz-option" onclick="answer(this,'wrong','quiz3')">
+        FAT 방식과 호환성을 유지하기 위해
+      </div>
+    </div>
+    <div class="quiz-feedback" id="quiz3-fb"></div>
+    <button class="quiz-reset" onclick="resetQuiz('quiz3')">다시 풀기</button>
+  </div>
+
+  <!-- Ask prompt -->
+  <div class="ask-prompt">
+    <strong>더 깊이 탐구하고 싶다면</strong>
+    "ext4의 익스텐트(extent) 방식이 inode 블록 포인터와 어떻게 다른가요?",
+    "NTFS의 MFT(Master File Table)와 ext4 inode를 비교해 주세요",
+    "저널링(journaling)이 파일 시스템 일관성에 어떤 역할을 하나요?" 등을 물어보세요.
+  </div>
+
+  <!-- Navigation -->
+  <div class="lesson-nav">
+    <a href="./0007-advanced-indexing.html">← Day 7: 고급 인덱싱</a>
+    <a href="./index.html">목록으로</a>
+    <a href="./0009-external-sorting.html">Day 9: 외부 정렬 →</a>
+  </div>
+
+</div>
+
+<script>
+  const FEEDBACK = {
+    correct: '정답입니다! 잘 이해하셨습니다.',
+    wrong: '다시 생각해보세요. 힌트: 본문의 해당 섹션을 다시 읽어보세요.'
+  };
+
+  function answer(el, result, quizId) {
+    const quiz = document.getElementById(quizId);
+    if (quiz.querySelector('.correct, .wrong')) return;
+    el.classList.add(result);
+    const fb = document.getElementById(quizId + '-fb');
+    fb.textContent = FEEDBACK[result];
+    fb.className = 'quiz-feedback show ' + result;
+  }
+
+  function resetQuiz(quizId) {
+    const quiz = document.getElementById(quizId);
+    quiz.querySelectorAll('.quiz-option').forEach(o => o.className = 'quiz-option');
+    const fb = document.getElementById(quizId + '-fb');
+    fb.className = 'quiz-feedback';
+    fb.textContent = '';
+  }
+</script>
+</body>
+</html>
