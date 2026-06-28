@@ -11,6 +11,7 @@
 | 5 | 2026-06-24 | SQL 고급 — 서브쿼리·뷰·인덱스 | [day-005-sql-advanced.html](lessons/day-005-sql-advanced.html) |
 | 6 | 2026-06-26 | 정규화 — 1NF·2NF·3NF·BCNF·역정규화 | [day-006-normalization.html](lessons/day-006-normalization.html) |
 | 7 | 2026-06-27 | 트랜잭션과 동시성 제어 | [day-007-transactions.html](lessons/day-007-transactions.html) |
+| 8 | 2026-06-28 | 인덱스 구조와 쿼리 최적화 | [day-008-index-query-optimization.html](lessons/day-008-index-query-optimization.html) |
 
 ## 다음 예정 학습
 
@@ -18,13 +19,13 @@
 |-----|-----------|-----------|
 | ~~6~~ | ~~정규화~~ | ~~완료~~ |
 | ~~7~~ | ~~트랜잭션과 동시성 제어~~ | ~~완료~~ |
-| 8 | 인덱스 구조와 쿼리 최적화 | B-Tree 인덱스, EXPLAIN, 커버링 인덱스, 슬로우 쿼리 |
+| ~~8~~ | ~~인덱스 구조와 쿼리 최적화~~ | ~~완료~~ |
 | 9 | 저장 프로시저·트리거·함수 | CREATE PROCEDURE, CREATE TRIGGER, 사용자 정의 함수 |
 | 10 | NoSQL 데이터베이스 | Document·Key-Value·Column·Graph, CAP 정리, 사용 사례 비교 |
 
 ## 현재 학습 위치
 
-**Day 7 완료** — Day 8 (인덱스 구조와 쿼리 최적화)부터 시작.
+**Day 8 완료** — Day 9 (저장 프로시저·트리거·함수)부터 시작.
 
 ## 습득한 핵심 개념
 
@@ -57,4 +58,10 @@
 - [x] Dirty Read·Non-repeatable Read·Phantom Read (Day 7)
 - [x] Lock (S Lock·X Lock·갭 락) & Deadlock (Day 7)
 - [x] MVCC (Multi-Version Concurrency Control) (Day 7)
-- [ ] 인덱스 구조 및 쿼리 최적화 심화 (예정 Day 8)
+- [x] B-Tree / B+Tree 인덱스 구조, 클러스터링 vs 세컨더리 인덱스 (Day 8)
+- [x] 복합 인덱스와 왼쪽 접두사 원칙 (Day 8)
+- [x] 커버링 인덱스 (Day 8)
+- [x] EXPLAIN 실행 계획 분석 (type, key, rows, Extra) (Day 8)
+- [x] 슬로우 쿼리 로그 설정 및 튜닝 프로세스 (Day 8)
+- [x] 인덱스 안티패턴 (함수 적용 무력화, 선행 와일드카드, OR 조건, UUID PK) (Day 8)
+- [ ] 저장 프로시저·트리거·함수 (예정 Day 9)

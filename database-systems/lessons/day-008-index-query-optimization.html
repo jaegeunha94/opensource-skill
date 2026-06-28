@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — 인덱스 구조와 쿼리 최적화</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --accent: #6c8ef5;
+      --accent2: #56cfaa;
+      --warn: #f5a623;
+      --danger: #f56262;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --border: #2d3250;
+      --code-bg: #12151f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.75; }
+
+    header {
+      background: linear-gradient(135deg, #1e2340 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 2rem 2rem;
+      text-align: center;
+    }
+    header .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      padding: .25rem .75rem;
+      border-radius: 999px;
+      margin-bottom: .75rem;
+    }
+    header h1 { font-size: 2rem; font-weight: 800; margin-bottom: .4rem; }
+    header p { color: var(--text-dim); font-size: .95rem; }
+
+    nav.toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      max-width: 860px;
+      margin: 2rem auto 0;
+    }
+    nav.toc h2 { font-size: .85rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .75rem; }
+    nav.toc ol { padding-left: 1.25rem; }
+    nav.toc li { margin-bottom: .3rem; }
+    nav.toc a { color: var(--text-dim); text-decoration: none; font-size: .9rem; }
+    nav.toc a:hover { color: var(--accent); }
+
+    main { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+
+    section { margin-bottom: 3rem; }
+    h2 { font-size: 1.5rem; font-weight: 700; color: var(--accent); margin-bottom: 1rem; padding-bottom: .4rem; border-bottom: 2px solid var(--border); }
+    h3 { font-size: 1.1rem; font-weight: 700; color: var(--accent2); margin: 1.5rem 0 .6rem; }
+    h4 { font-size: .95rem; font-weight: 700; color: var(--warn); margin: 1.2rem 0 .5rem; }
+    p { margin-bottom: .85rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: .85rem; }
+    li { margin-bottom: .3rem; }
+    strong { color: #fff; }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      margin: .75rem 0 1rem;
+      font-size: .85rem;
+      line-height: 1.6;
+    }
+    code { font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace; }
+    p code, li code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: .1rem .4rem;
+      font-size: .83rem;
+      color: var(--accent2);
+    }
+
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: var(--surface2);
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+    }
+    .callout.warn { border-left-color: var(--warn); }
+    .callout.danger { border-left-color: var(--danger); }
+    .callout.tip { border-left-color: var(--accent2); }
+    .callout-title { font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: .4rem; }
+    .callout .callout-title { color: var(--accent); }
+    .callout.warn .callout-title { color: var(--warn); }
+    .callout.danger .callout-title { color: var(--danger); }
+    .callout.tip .callout-title { color: var(--accent2); }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .88rem; }
+    th { background: var(--surface2); color: var(--accent); font-weight: 700; padding: .6rem .9rem; text-align: left; border: 1px solid var(--border); }
+    td { padding: .55rem .9rem; border: 1px solid var(--border); }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      font-family: 'Fira Code', monospace;
+      font-size: .82rem;
+      white-space: pre;
+      overflow-x: auto;
+      line-height: 1.5;
+      color: var(--accent2);
+      margin: .75rem 0 1rem;
+    }
+
+    .quiz {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+    }
+    .quiz h3 { margin-top: 0; }
+    details summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: .9rem; margin-top: .5rem; }
+    details[open] summary { margin-bottom: .5rem; }
+    details p { margin-bottom: 0; }
+
+    .concept-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .concept-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .9rem 1rem;
+    }
+    .concept-card .label { font-size: .75rem; font-weight: 700; color: var(--accent2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .3rem; }
+    .concept-card .value { font-size: .9rem; }
+
+    footer { text-align: center; color: var(--text-dim); font-size: .8rem; padding: 2rem; border-top: 1px solid var(--border); }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="badge">DATABASE SYSTEMS · DAY 8</span>
+  <h1>인덱스 구조와 쿼리 최적화</h1>
+  <p>Index Structures & Query Optimization — B-Tree, EXPLAIN, 커버링 인덱스, 슬로우 쿼리</p>
+</header>
+
+<nav class="toc">
+  <h2>목차</h2>
+  <ol>
+    <li><a href="#why-index">1. 인덱스가 필요한 이유</a></li>
+    <li><a href="#btree">2. B-Tree 인덱스 구조</a></li>
+    <li><a href="#index-types">3. 인덱스 종류</a></li>
+    <li><a href="#composite">4. 복합 인덱스와 열 순서</a></li>
+    <li><a href="#covering">5. 커버링 인덱스</a></li>
+    <li><a href="#explain">6. EXPLAIN으로 실행 계획 읽기</a></li>
+    <li><a href="#slow-query">7. 슬로우 쿼리 분석과 튜닝</a></li>
+    <li><a href="#antipatterns">8. 인덱스 안티패턴</a></li>
+    <li><a href="#summary">9. 핵심 정리</a></li>
+    <li><a href="#quiz">10. 확인 문제</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- 1. 왜 인덱스가 필요한가 -->
+<section id="why-index">
+  <h2>1. 인덱스가 필요한 이유</h2>
+
+  <p>인덱스(Index)가 없으면 DB 엔진은 <strong>풀 테이블 스캔(Full Table Scan)</strong> — 즉 모든 행을 하나씩 검사해야 합니다. 행이 100만 개면 100만 번의 비교가 필요합니다.</p>
+
+  <div class="callout">
+    <div class="callout-title">핵심 비유</div>
+    두꺼운 사전에서 단어를 찾을 때, 처음 페이지부터 넘기는 것이 풀 스캔, 맨 뒤 색인 페이지를 보는 것이 인덱스 스캔입니다.
+  </div>
+
+  <h3>시간 복잡도 비교</h3>
+  <table>
+    <thead><tr><th>방법</th><th>시간 복잡도</th><th>예시 (1억 건)</th></tr></thead>
+    <tbody>
+      <tr><td>풀 테이블 스캔</td><td>O(N)</td><td>최악 1억 번 비교</td></tr>
+      <tr><td>B-Tree 인덱스</td><td>O(log N)</td><td>약 27번 비교</td></tr>
+      <tr><td>해시 인덱스</td><td>O(1)</td><td>1번 (등가 검색만)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>인덱스의 대가</h3>
+  <ul>
+    <li><strong>저장 공간 증가:</strong> 인덱스 자체도 디스크를 차지합니다.</li>
+    <li><strong>쓰기 성능 저하:</strong> INSERT/UPDATE/DELETE 시 인덱스도 함께 갱신됩니다.</li>
+    <li><strong>유지보수 비용:</strong> 인덱스가 많을수록 옵티마이저가 최적 계획을 고르는 데 오래 걸립니다.</li>
+  </ul>
+
+  <div class="callout warn">
+    <div class="callout-title">경험 법칙</div>
+    <strong>읽기(SELECT) 가 잦고 쓰기(INSERT/UPDATE/DELETE) 가 적은 컬럼</strong>에 인덱스를 걸어야 효과적입니다.
+  </div>
+</section>
+
+<!-- 2. B-Tree 인덱스 구조 -->
+<section id="btree">
+  <h2>2. B-Tree 인덱스 구조</h2>
+
+  <p>MySQL(InnoDB), PostgreSQL 등 대부분의 RDBMS는 기본 인덱스로 <strong>B+Tree</strong>를 사용합니다.</p>
+
+  <h3>B+Tree란?</h3>
+  <p>B+Tree는 B-Tree의 변형으로 다음 특성을 가집니다.</p>
+  <ul>
+    <li><strong>균형 트리(Balanced Tree):</strong> 모든 리프 노드가 같은 깊이에 위치합니다.</li>
+    <li><strong>내부 노드:</strong> 키(key)만 저장하고, 자식 노드로 향하는 포인터를 가집니다.</li>
+    <li><strong>리프 노드:</strong> 실제 키와 행 포인터(또는 PK)를 저장하며, <strong>링크드 리스트</strong>로 연결됩니다.</li>
+    <li>리프 링크 덕분에 범위 검색(<code>BETWEEN</code>, <code>&lt;</code>, <code>&gt;</code>, <code>ORDER BY</code>)이 빠릅니다.</li>
+  </ul>
+
+  <div class="diagram">
+                   [ 30 | 70 ]          ← 루트 노드
+                  /      |      \
+           [10|20]    [40|60]   [80|90]  ← 내부 노드
+          /   |   \   ...
+    [1..9] [10..19] [20..29]   ...       ← 리프 노드 (← → 링크드 리스트)
+       ↓       ↓       ↓
+     행 포인터 / PK 값</div>
+
+  <h3>클러스터링 인덱스 vs 세컨더리 인덱스</h3>
+
+  <table>
+    <thead><tr><th>구분</th><th>클러스터링 인덱스</th><th>세컨더리 인덱스</th></tr></thead>
+    <tbody>
+      <tr><td>정의</td><td>행 데이터 자체를 인덱스 순서로 물리적으로 정렬</td><td>별도 트리, 리프에 PK 값 저장</td></tr>
+      <tr><td>개수</td><td>테이블당 1개 (보통 PRIMARY KEY)</td><td>여러 개 생성 가능</td></tr>
+      <tr><td>InnoDB 특성</td><td>PK = 클러스터링 인덱스</td><td>PK를 통해 실제 행 조회</td></tr>
+      <tr><td>PK 없을 때</td><td>내부적으로 rowid 자동 생성</td><td>-</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout tip">
+    <div class="callout-title">InnoDB 핵심</div>
+    InnoDB에서 세컨더리 인덱스 리프에는 실제 행 주소 대신 <strong>PK 값</strong>이 저장됩니다. 따라서 세컨더리 인덱스로 검색하면 리프 도달 후 다시 클러스터링 인덱스를 탐색해 실제 행을 가져옵니다 — 이를 <strong>이중 탐색(double lookup)</strong>이라 합니다.
+  </div>
+
+  <h3>인덱스 생성 문법</h3>
+  <pre><code class="language-sql">-- 단일 컬럼 인덱스
+CREATE INDEX idx_users_email ON users(email);
+
+-- 유니크 인덱스
+CREATE UNIQUE INDEX idx_users_email_uniq ON users(email);
+
+-- 복합 인덱스
+CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);
+
+-- 인덱스 삭제
+DROP INDEX idx_users_email ON users;   -- MySQL
+DROP INDEX idx_users_email;            -- PostgreSQL</code></pre>
+</section>
+
+<!-- 3. 인덱스 종류 -->
+<section id="index-types">
+  <h2>3. 인덱스 종류</h2>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <div class="label">B-Tree</div>
+      <div class="value">기본. 범위·등가·정렬 모두 지원. 대부분의 상황에 적합.</div>
+    </div>
+    <div class="concept-card">
+      <div class="label">Hash</div>
+      <div class="value">등가(=) 검색만 O(1). 범위·ORDER BY 불가. Memory 엔진에서 사용.</div>
+    </div>
+    <div class="concept-card">
+      <div class="label">Full-Text</div>
+      <div class="value">자연어 텍스트 검색. LIKE '%keyword%' 대신 MATCH…AGAINST 사용.</div>
+    </div>
+    <div class="concept-card">
+      <div class="label">Spatial (R-Tree)</div>
+      <div class="value">지리 데이터(GIS). 위치 기반 검색. PostgreSQL PostGIS 등.</div>
+    </div>
+    <div class="concept-card">
+      <div class="label">함수 기반 인덱스</div>
+      <div class="value">표현식 결과에 인덱스. MySQL 8+, PostgreSQL. LOWER(email) 등.</div>
+    </div>
+    <div class="concept-card">
+      <div class="label">부분 인덱스</div>
+      <div class="value">WHERE 조건을 만족하는 행에만 인덱스. PostgreSQL 지원.</div>
+    </div>
+  </div>
+
+  <h3>Full-Text 인덱스 예시</h3>
+  <pre><code class="language-sql">-- MySQL Full-Text
+ALTER TABLE articles ADD FULLTEXT INDEX idx_ft_content(title, body);
+
+SELECT * FROM articles
+WHERE MATCH(title, body) AGAINST ('데이터베이스 인덱스' IN BOOLEAN MODE);
+
+-- LIKE '%...%' 는 앞에 와일드카드가 있으면 인덱스를 사용하지 못함
+-- Full-Text로 대체해야 성능 확보 가능</code></pre>
+
+  <h3>부분 인덱스 예시 (PostgreSQL)</h3>
+  <pre><code class="language-sql">-- 미처리 주문만 인덱스 (status = 'pending')
+CREATE INDEX idx_orders_pending ON orders(created_at)
+WHERE status = 'pending';
+
+-- 전체 주문 중 미처리가 소수일 때 매우 효과적</code></pre>
+</section>
+
+<!-- 4. 복합 인덱스와 열 순서 -->
+<section id="composite">
+  <h2>4. 복합 인덱스와 열 순서</h2>
+
+  <p>복합 인덱스(Composite Index)는 여러 컬럼을 하나의 인덱스로 결합합니다. <strong>열의 순서가 성능을 결정합니다.</strong></p>
+
+  <h3>왼쪽 접두사 원칙 (Leftmost Prefix Rule)</h3>
+  <p><code>CREATE INDEX idx ON t(a, b, c)</code> 인덱스가 있을 때:</p>
+
+  <table>
+    <thead><tr><th>WHERE 조건</th><th>인덱스 사용 여부</th><th>사용되는 컬럼</th></tr></thead>
+    <tbody>
+      <tr><td><code>WHERE a = 1</code></td><td>✅ 사용</td><td>a</td></tr>
+      <tr><td><code>WHERE a = 1 AND b = 2</code></td><td>✅ 사용</td><td>a, b</td></tr>
+      <tr><td><code>WHERE a = 1 AND b = 2 AND c = 3</code></td><td>✅ 사용</td><td>a, b, c</td></tr>
+      <tr><td><code>WHERE b = 2</code></td><td>❌ 사용 불가</td><td>—</td></tr>
+      <tr><td><code>WHERE a = 1 AND c = 3</code></td><td>⚠️ 부분 사용</td><td>a만</td></tr>
+      <tr><td><code>WHERE a BETWEEN 1 AND 5 AND b = 2</code></td><td>⚠️ 부분 사용</td><td>a 범위 후 b 필터링</td></tr>
+    </tbody>
+  </table>
+
+  <h3>컬럼 순서 설계 원칙</h3>
+  <ol>
+    <li><strong>등가 조건(=)이 자주 쓰이는 컬럼을 앞에</strong> 배치합니다.</li>
+    <li><strong>카디널리티가 높은 컬럼(=고유값이 많은)</strong>을 앞에 배치하면 초기 필터링 효과가 큽니다.</li>
+    <li>범위 조건(<code>BETWEEN</code>, <code>&lt;</code>, <code>LIKE 'abc%'</code>)이 있는 컬럼은 뒤에 배치합니다.</li>
+    <li><code>ORDER BY</code>에 쓰이는 컬럼도 인덱스에 포함하면 정렬 비용을 절감할 수 있습니다.</li>
+  </ol>
+
+  <h3>실전 예시</h3>
+  <pre><code class="language-sql">-- 주문 테이블 예시: user_id로 필터링 후 최신순 정렬
+SELECT * FROM orders
+WHERE user_id = 42 AND status = 'paid'
+ORDER BY created_at DESC
+LIMIT 10;
+
+-- 좋은 인덱스 설계
+CREATE INDEX idx_orders_user_status_date
+ON orders(user_id, status, created_at DESC);
+-- user_id (등가) → status (등가) → created_at (정렬) 순서</code></pre>
+</section>
+
+<!-- 5. 커버링 인덱스 -->
+<section id="covering">
+  <h2>5. 커버링 인덱스 (Covering Index)</h2>
+
+  <p><strong>커버링 인덱스</strong>란 쿼리가 필요로 하는 모든 컬럼이 인덱스 안에 포함되어 있어, <strong>실제 테이블 행을 전혀 읽지 않고 인덱스만으로 결과를 반환</strong>하는 경우를 말합니다.</p>
+
+  <div class="diagram">
+일반 인덱스 조회:
+  ① 인덱스 B+Tree 탐색 → 리프에서 PK 획득
+  ② PK로 클러스터링 인덱스 재탐색 → 실제 행 읽기  ← 추가 I/O 발생
+
+커버링 인덱스 조회:
+  ① 인덱스 B+Tree 탐색 → 리프에서 바로 결과 반환  ← I/O 절감!</div>
+
+  <h3>커버링 인덱스 구현</h3>
+  <pre><code class="language-sql">-- 쿼리: 특정 사용자의 최근 주문 ID와 금액만 조회
+SELECT order_id, amount FROM orders
+WHERE user_id = 42
+ORDER BY created_at DESC
+LIMIT 5;
+
+-- user_id, created_at, order_id, amount 모두 인덱스에 포함
+CREATE INDEX idx_covering ON orders(user_id, created_at DESC, order_id, amount);
+-- SELECT 컬럼(order_id, amount)까지 인덱스에 넣어야 커버링 인덱스로 동작
+
+-- EXPLAIN 결과에서 "Using index" 표시 → 커버링 인덱스 사용 중
+-- "Using index condition" → 인덱스로 필터링하나 행 접근 필요</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-title">PostgreSQL Include 컬럼</div>
+    PostgreSQL 11+에서는 <code>INCLUDE</code> 절로 인덱스 트리 탐색에는 사용하지 않지만 커버링 목적으로 포함할 컬럼을 지정할 수 있습니다.
+    <pre style="margin:.5rem 0 0"><code>CREATE INDEX idx_cov ON orders(user_id, created_at) INCLUDE (order_id, amount);</code></pre>
+  </div>
+</section>
+
+<!-- 6. EXPLAIN -->
+<section id="explain">
+  <h2>6. EXPLAIN으로 실행 계획 읽기</h2>
+
+  <p><code>EXPLAIN</code>은 옵티마이저가 어떤 순서로, 어떤 접근 방법으로 쿼리를 실행할지 보여줍니다. 쿼리 튜닝의 첫 단계입니다.</p>
+
+  <h3>MySQL EXPLAIN 주요 컬럼</h3>
+  <pre><code class="language-sql">EXPLAIN SELECT o.order_id, u.name
+FROM orders o
+JOIN users u ON o.user_id = u.id
+WHERE o.status = 'pending'
+ORDER BY o.created_at DESC;</code></pre>
+
+  <table>
+    <thead><tr><th>컬럼</th><th>의미</th><th>체크 포인트</th></tr></thead>
+    <tbody>
+      <tr><td><code>type</code></td><td>접근 방법 (성능 순위)</td><td>const &gt; eq_ref &gt; ref &gt; range &gt; index &gt; <strong>ALL</strong></td></tr>
+      <tr><td><code>key</code></td><td>실제 사용된 인덱스</td><td>NULL이면 인덱스 미사용</td></tr>
+      <tr><td><code>rows</code></td><td>읽어야 하는 예상 행 수</td><td>작을수록 좋음</td></tr>
+      <tr><td><code>filtered</code></td><td>조건 후 남는 행의 비율(%)</td><td>높을수록 효율적</td></tr>
+      <tr><td><code>Extra</code></td><td>추가 정보</td><td>아래 표 참고</td></tr>
+    </tbody>
+  </table>
+
+  <h3>type 접근 방법 설명</h3>
+  <table>
+    <thead><tr><th>type 값</th><th>설명</th><th>성능</th></tr></thead>
+    <tbody>
+      <tr><td><code>const</code></td><td>PK/Unique 인덱스 + 상수 등가 (행이 최대 1개)</td><td>최고</td></tr>
+      <tr><td><code>eq_ref</code></td><td>JOIN 시 PK/Unique 사용, 행 1개씩 매칭</td><td>매우 좋음</td></tr>
+      <tr><td><code>ref</code></td><td>일반 인덱스 등가 검색 (여러 행 가능)</td><td>좋음</td></tr>
+      <tr><td><code>range</code></td><td>인덱스 범위 스캔 (BETWEEN, &lt;, &gt;, IN)</td><td>보통</td></tr>
+      <tr><td><code>index</code></td><td>인덱스 전체 스캔 (커버링 인덱스 또는 정렬)</td><td>나쁨</td></tr>
+      <tr><td><code>ALL</code></td><td>풀 테이블 스캔</td><td>최악</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Extra 주요 값</h3>
+  <table>
+    <thead><tr><th>Extra 값</th><th>의미</th></tr></thead>
+    <tbody>
+      <tr><td><code>Using index</code></td><td>커버링 인덱스 사용 — 매우 좋음</td></tr>
+      <tr><td><code>Using where</code></td><td>인덱스 후 추가 WHERE 필터링</td></tr>
+      <tr><td><code>Using filesort</code></td><td>인덱스 정렬 불가, 메모리/파일 정렬 사용 — 개선 대상</td></tr>
+      <tr><td><code>Using temporary</code></td><td>임시 테이블 생성 — 성능 주의</td></tr>
+      <tr><td><code>Using index condition</code></td><td>ICP(Index Condition Pushdown) 활성화</td></tr>
+    </tbody>
+  </table>
+
+  <h3>EXPLAIN ANALYZE (MySQL 8.0+, PostgreSQL)</h3>
+  <pre><code class="language-sql">-- 실제 실행 후 측정값 포함 (예측 vs 실제 비교 가능)
+EXPLAIN ANALYZE
+SELECT * FROM orders WHERE user_id = 42 AND status = 'pending';
+
+/* PostgreSQL 출력 예시:
+   Index Scan using idx_orders_user on orders  (cost=0.43..12.78 rows=5 width=120)
+                                               (actual time=0.051..0.063 rows=3 loops=1)
+     Index Cond: (user_id = 42)
+     Filter: ((status)::text = 'pending')
+   Planning Time: 0.312 ms
+   Execution Time: 0.091 ms
+*/</code></pre>
+</section>
+
+<!-- 7. 슬로우 쿼리 분석 -->
+<section id="slow-query">
+  <h2>7. 슬로우 쿼리 분석과 튜닝</h2>
+
+  <h3>MySQL 슬로우 쿼리 로그 활성화</h3>
+  <pre><code class="language-sql">-- 현재 설정 확인
+SHOW VARIABLES LIKE 'slow_query%';
+SHOW VARIABLES LIKE 'long_query_time';
+
+-- 활성화 (my.cnf 또는 동적 설정)
+SET GLOBAL slow_query_log = 'ON';
+SET GLOBAL long_query_time = 1;           -- 1초 이상 걸리는 쿼리 기록
+SET GLOBAL slow_query_log_file = '/var/log/mysql/slow.log';
+
+-- 인덱스 미사용 쿼리도 기록
+SET GLOBAL log_queries_not_using_indexes = 'ON';</code></pre>
+
+  <h3>mysqldumpslow 분석</h3>
+  <pre><code class="language-bash"># 상위 10개 느린 쿼리 (평균 실행 시간 순)
+mysqldumpslow -s at -t 10 /var/log/mysql/slow.log
+
+# 호출 횟수 기준 상위 10개
+mysqldumpslow -s c -t 10 /var/log/mysql/slow.log</code></pre>
+
+  <h3>단계별 쿼리 튜닝 프로세스</h3>
+  <ol>
+    <li><strong>슬로우 로그에서 문제 쿼리 식별</strong> — 빈도 × 실행 시간 기준으로 우선순위 결정</li>
+    <li><strong>EXPLAIN 실행</strong> — type=ALL, Using filesort, Using temporary 등 확인</li>
+    <li><strong>인덱스 추가/수정</strong> — WHERE, JOIN, ORDER BY, GROUP BY 컬럼 기준</li>
+    <li><strong>쿼리 재작성</strong> — 서브쿼리 → JOIN, 불필요한 함수 제거</li>
+    <li><strong>스키마 개선</strong> — 정규화/역정규화 재검토, 파티셔닝 고려</li>
+    <li><strong>측정 후 확인</strong> — EXPLAIN ANALYZE로 before/after 비교</li>
+  </ol>
+
+  <h3>자주 발생하는 슬로우 쿼리 패턴</h3>
+
+  <h4>패턴 1: 인덱스 컬럼에 함수 적용</h4>
+  <pre><code class="language-sql">-- ❌ 인덱스 미사용 (email 컬럼 인덱스가 있어도 무력화)
+SELECT * FROM users WHERE UPPER(email) = 'USER@EXAMPLE.COM';
+
+-- ✅ 개선: 데이터를 소문자로 저장하거나 함수 기반 인덱스 사용
+SELECT * FROM users WHERE email = LOWER('USER@EXAMPLE.COM');
+
+-- 또는 함수 기반 인덱스 (MySQL 8+)
+CREATE INDEX idx_email_lower ON users((LOWER(email)));</code></pre>
+
+  <h4>패턴 2: 선행 와일드카드 LIKE</h4>
+  <pre><code class="language-sql">-- ❌ 인덱스 미사용
+SELECT * FROM products WHERE name LIKE '%phone%';
+
+-- ✅ Full-Text 인덱스로 대체
+SELECT * FROM products
+WHERE MATCH(name) AGAINST ('phone' IN BOOLEAN MODE);</code></pre>
+
+  <h4>패턴 3: 암묵적 형변환</h4>
+  <pre><code class="language-sql">-- ❌ phone_number가 VARCHAR인데 숫자로 비교 → 형변환 → 인덱스 무력화
+SELECT * FROM users WHERE phone_number = 01012345678;
+
+-- ✅ 타입 일치
+SELECT * FROM users WHERE phone_number = '010-1234-5678';</code></pre>
+
+  <h4>패턴 4: N+1 쿼리 문제</h4>
+  <pre><code class="language-sql">-- ❌ 애플리케이션에서 루프로 쿼리 반복 (N+1)
+-- 사용자 100명 조회 → 각 사용자 주문 100번 조회 = 101번 쿼리
+
+-- ✅ JOIN으로 한 번에
+SELECT u.id, u.name, COUNT(o.order_id) AS order_count
+FROM users u
+LEFT JOIN orders o ON o.user_id = u.id
+GROUP BY u.id, u.name;</code></pre>
+
+  <h4>패턴 5: SELECT * 남용</h4>
+  <pre><code class="language-sql">-- ❌ 불필요한 컬럼까지 모두 읽음
+SELECT * FROM orders WHERE user_id = 42;
+
+-- ✅ 필요한 컬럼만 지정 (커버링 인덱스 가능성도 높아짐)
+SELECT order_id, status, total_amount FROM orders WHERE user_id = 42;</code></pre>
+</section>
+
+<!-- 8. 안티패턴 -->
+<section id="antipatterns">
+  <h2>8. 인덱스 안티패턴</h2>
+
+  <table>
+    <thead><tr><th>안티패턴</th><th>문제</th><th>해결책</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>인덱스 과다 생성</td>
+        <td>INSERT/UPDATE/DELETE 속도 저하, 옵티마이저 혼란</td>
+        <td>실제 쿼리 패턴 분석 후 필요한 것만 생성</td>
+      </tr>
+      <tr>
+        <td>카디널리티 낮은 컬럼 단독 인덱스</td>
+        <td>성별(M/F), 불리언 등 — 풀 스캔과 차이 없음</td>
+        <td>다른 컬럼과 복합 인덱스로 결합</td>
+      </tr>
+      <tr>
+        <td>PK를 UUID(v4)로 사용</td>
+        <td>완전 무작위 → B+Tree 삽입 시 페이지 분할 빈번</td>
+        <td>UUID v7(시간 정렬), ULID, 또는 AUTO_INCREMENT 사용</td>
+      </tr>
+      <tr>
+        <td>인덱스 컬럼 OR 조건</td>
+        <td><code>WHERE a = 1 OR b = 2</code> — 인덱스 효율 저하</td>
+        <td>각 조건별 쿼리를 UNION ALL로 합치기</td>
+      </tr>
+      <tr>
+        <td>대용량 컬럼 인덱스</td>
+        <td>TEXT/BLOB 전체 인덱스 불가 (prefix 길이 제한)</td>
+        <td>prefix 인덱스 또는 Full-Text 인덱스 사용</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>OR 조건 개선 예시</h3>
+  <pre><code class="language-sql">-- ❌ OR 조건 — 인덱스가 있어도 비효율
+SELECT * FROM products WHERE category_id = 1 OR brand_id = 5;
+
+-- ✅ UNION ALL로 각각 인덱스 활용
+SELECT * FROM products WHERE category_id = 1
+UNION ALL
+SELECT * FROM products WHERE brand_id = 5 AND category_id != 1;</code></pre>
+
+  <h3>인덱스 카디널리티 확인</h3>
+  <pre><code class="language-sql">-- 컬럼별 유일값 개수 확인 (카디널리티)
+SELECT
+  column_name,
+  COUNT(DISTINCT column_name) AS cardinality,
+  COUNT(*) AS total_rows,
+  ROUND(COUNT(DISTINCT column_name) / COUNT(*) * 100, 2) AS selectivity_pct
+FROM information_schema.columns
+-- 실제로는 테이블에서 직접 조회
+;
+
+-- 예시
+SELECT
+  COUNT(DISTINCT status) AS status_cardinality,        -- 낮음 → 단독 인덱스 비효율
+  COUNT(DISTINCT user_id) AS user_cardinality,         -- 높음 → 인덱스 효과적
+  COUNT(*) AS total
+FROM orders;</code></pre>
+</section>
+
+<!-- 9. 핵심 정리 -->
+<section id="summary">
+  <h2>9. 핵심 정리</h2>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <div class="label">B+Tree</div>
+      <div class="value">균형 트리, 리프 링크드 리스트로 범위 검색 O(log N). 대부분 RDBMS 기본.</div>
+    </div>
+    <div class="concept-card">
+      <div class="label">클러스터링 인덱스</div>
+      <div class="value">행 데이터 자체 정렬. InnoDB에서 PK = 클러스터링 인덱스.</div>
+    </div>
+    <div class="concept-card">
+      <div class="label">왼쪽 접두사 원칙</div>
+      <div class="value">복합 인덱스 (a,b,c): b만으로는 인덱스 사용 불가. 등가 컬럼을 앞에.</div>
+    </div>
+    <div class="concept-card">
+      <div class="label">커버링 인덱스</div>
+      <div class="value">SELECT 컬럼까지 인덱스에 포함 → 테이블 접근 없이 결과 반환.</div>
+    </div>
+    <div class="concept-card">
+      <div class="label">EXPLAIN type=ALL</div>
+      <div class="value">풀 테이블 스캔 → 대용량 테이블에서 즉시 인덱스 추가 검토.</div>
+    </div>
+    <div class="concept-card">
+      <div class="label">슬로우 쿼리 3대 원인</div>
+      <div class="value">인덱스 미사용, 함수 적용으로 인덱스 무력화, N+1 쿼리.</div>
+    </div>
+  </div>
+
+  <h3>한 문장 요약</h3>
+  <div class="callout">
+    <div class="callout-title">요약</div>
+    인덱스는 읽기를 빠르게 하지만 쓰기를 느리게 한다 — EXPLAIN으로 실행 계획을 검증하고, 슬로우 쿼리 로그로 병목을 식별하며, 커버링 인덱스와 복합 인덱스 컬럼 순서로 추가 최적화를 달성한다.
+  </div>
+</section>
+
+<!-- 10. 확인 문제 -->
+<section id="quiz">
+  <h2>10. 확인 문제</h2>
+
+  <div class="quiz">
+    <h3>Q1. B+Tree vs B-Tree</h3>
+    <p>B+Tree가 범위 검색에 유리한 이유는 무엇인가?</p>
+    <details>
+      <summary>정답 보기</summary>
+      <p>B+Tree는 모든 실제 데이터가 <strong>리프 노드</strong>에 있고, 리프 노드들이 <strong>링크드 리스트</strong>로 연결되어 있기 때문입니다. 범위 검색 시 시작 리프를 찾은 후 포인터를 순서대로 따라가면 O(k) (k = 결과 건수) 추가 탐색만으로 범위 내 모든 데이터를 읽을 수 있습니다. B-Tree는 내부 노드에도 데이터가 있어 범위 순회 시 트리를 재탐색해야 합니다.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <h3>Q2. 복합 인덱스 컬럼 순서</h3>
+    <p>다음 쿼리에 대해 최적 인덱스를 설계하시오.</p>
+    <pre><code class="language-sql">SELECT product_id, price FROM products
+WHERE category_id = 5 AND status = 'active'
+ORDER BY price ASC
+LIMIT 20;</code></pre>
+    <details>
+      <summary>정답 보기</summary>
+      <p><code>CREATE INDEX idx ON products(category_id, status, price) INCLUDE (product_id);</code> (PostgreSQL) 또는 <code>CREATE INDEX idx ON products(category_id, status, price, product_id);</code> (MySQL)<br><br>
+      이유: ① <code>category_id = 5</code> 등가 → 앞, ② <code>status = 'active'</code> 등가 → 다음, ③ <code>ORDER BY price ASC</code> → 마지막 컬럼으로 정렬 비용 제거 (Using filesort 방지). <code>product_id</code>와 <code>price</code>까지 포함하면 커버링 인덱스가 됩니다.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <h3>Q3. EXPLAIN 분석</h3>
+    <p>EXPLAIN 결과의 <code>Extra</code> 컬럼에 <code>Using filesort</code>가 표시될 때 어떤 의미이며, 어떻게 해결할 수 있나?</p>
+    <details>
+      <summary>정답 보기</summary>
+      <p><code>Using filesort</code>는 인덱스를 이용한 정렬이 불가능해 <strong>별도 정렬 작업(메모리 또는 임시 파일)</strong>을 수행한다는 의미입니다. 해결 방법: ORDER BY에 사용되는 컬럼을 인덱스에 포함시키고, 인덱스 컬럼 순서가 ORDER BY 컬럼 순서와 일치하도록 설계합니다. 다만 WHERE 조건에 범위 연산자가 있거나 ORDER BY 방향이 혼합(ASC/DESC)이면 인덱스 정렬이 불가할 수 있습니다.</p>
+    </details>
+  </div>
+
+  <div class="quiz">
+    <h3>Q4. 인덱스 무력화 원인 찾기</h3>
+    <p>아래 쿼리에서 인덱스가 사용되지 않는 이유를 설명하고 수정하시오. (<code>created_at</code>에 인덱스 있음)</p>
+    <pre><code class="language-sql">SELECT * FROM orders WHERE YEAR(created_at) = 2025;</code></pre>
+    <details>
+      <summary>정답 보기</summary>
+      <p><code>YEAR()</code> 함수를 인덱스 컬럼에 적용하면 옵티마이저가 인덱스를 사용할 수 없습니다 (함수 적용으로 인덱스 무력화). 수정:
+      <pre><code>SELECT * FROM orders
+WHERE created_at >= '2025-01-01 00:00:00'
+  AND created_at <  '2026-01-01 00:00:00';</code></pre>
+      이렇게 범위 조건으로 바꾸면 <code>range</code> 타입으로 인덱스를 활용합니다.</p>
+    </details>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>데이터베이스 학습 워크스페이스 · Day 8 · 2026-06-28 |
+    <a href="./index.html">← 목록으로</a>
+  </p>
+</footer>
+
+</body>
+</html>
