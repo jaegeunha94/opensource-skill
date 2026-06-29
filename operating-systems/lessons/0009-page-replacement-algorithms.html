@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 9 — 페이지 교체 알고리즘 | 운영체제</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>페이지 교체 알고리즘</h1>
+<div class="lesson-meta">
+  <span class="day-badge">Day 9</span>
+  <span>운영체제</span>
+  <span class="lesson-date"> · 2026-06-29</span>
+</div>
+
+<!-- 학습 목표 -->
+<div class="callout">
+  <div class="callout-title">학습 목표</div>
+  <ul>
+    <li>페이지 폴트 발생 시 교체 알고리즘이 필요한 이유를 설명할 수 있다.</li>
+    <li>FIFO, OPT, LRU, Clock 알고리즘의 동작 원리를 손으로 추적할 수 있다.</li>
+    <li>Belady의 이상 현상이 무엇인지 설명하고, 어떤 알고리즘에서 발생하는지 안다.</li>
+    <li>실제 OS에서 LRU 근사 알고리즘이 사용되는 이유를 이해한다.</li>
+  </ul>
+</div>
+
+<!-- 진행 상황 -->
+<div class="progress-section">
+  <h3>코스 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 60%"></div>
+  </div>
+  <div class="progress-label">Day 9 / 15 — 메모리 관리 심화</div>
+</div>
+
+<!-- 1. 배경 -->
+<h2>1. 왜 페이지 교체가 필요한가?</h2>
+<p>
+  Day 8에서 배웠듯이, 요구 페이징(Demand Paging)은 <em>실제로 필요한 페이지만</em>
+  물리 메모리에 올린다. 하지만 물리 프레임이 가득 찬 상태에서 새 페이지가 필요하면
+  <strong>페이지 폴트(Page Fault)</strong>가 발생하고, OS는 기존 프레임 중 하나를 내보내야 한다.
+  이때 어떤 페이지를 희생(victim)으로 고를지 결정하는 것이 <strong>페이지 교체 알고리즘</strong>이다.
+</p>
+<p>
+  좋은 교체 알고리즘의 목표는 단순하다 — <strong>페이지 폴트 횟수를 최소화</strong>하는 것.
+  폴트가 줄어들면 디스크 I/O도 줄고 프로세스 응답 속도가 빨라진다.
+</p>
+
+<div class="callout warning">
+  <div class="callout-title">더티 비트 (Dirty Bit / Modified Bit)</div>
+  프레임을 교체할 때, 해당 페이지가 수정된 적이 있으면 디스크에 다시 써야 한다.
+  수정되지 않은 페이지는 그냥 버리면 되므로 교체 비용이 낮다.
+  OS는 <strong>더티 비트</strong>를 확인해 불필요한 디스크 쓰기를 피한다.
+</div>
+
+<!-- 2. FIFO -->
+<h2>2. FIFO — 선입선출</h2>
+<p>
+  <strong>First-In, First-Out</strong>: 메모리에 가장 먼저 들어온 페이지를 교체한다.
+  구현이 쉽지만, 오래 머문 페이지가 반드시 사용 빈도가 낮다는 보장이 없다.
+</p>
+
+<h3>예시 추적 (프레임 3개, 참조열 7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0 1 7 0 1)</h3>
+
+<div class="diagram">
+참조:  7  0  1  2  0  3  0  4  2  3  0  3  2  1  2  0  1  7  0  1
+      ─────────────────────────────────────────────────────────────
+F[0]  7  7  7  2  2  2  2  4  4  4  0  0  0  1  1  1  1  1  1  1
+F[1]  ─  0  0  0  0  3  3  3  2  2  2  2  2  2  2  0  0  0  0  0
+F[2]  ─  ─  1  1  1  1  0  0  0  3  3  3  3  3  3  3  1  7  7  7
+      ─────────────────────────────────────────────────────────────
+폴트  *  *  *  *     *     *  *  *  *        *        *  *  *
+</div>
+<p class="diagram-caption">총 15번 페이지 폴트 (프레임 3개 기준)</p>
+
+<div class="callout warning">
+  <div class="callout-title">Belady의 이상 현상 (Belady's Anomaly)</div>
+  FIFO는 직관에 반하는 특성을 가진다 — 프레임을 <strong>늘렸는데도 페이지 폴트가 증가</strong>하는
+  경우가 있다. 이를 <em>Belady의 이상 현상</em>이라 부르며, FIFO에서만 발생한다.
+  OPT와 LRU는 이 현상이 없다 (스택 알고리즘).
+</div>
+
+<!-- 3. OPT -->
+<h2>3. OPT — 최적 교체</h2>
+<p>
+  <strong>Optimal (Bélády's Optimal Algorithm)</strong>: 앞으로 가장 오랫동안 사용되지 않을
+  페이지를 교체한다. 미래의 참조열을 알아야 하므로 <em>실제 구현은 불가능</em>하지만,
+  다른 알고리즘의 성능 비교 기준(하한)으로 활용된다.
+</p>
+
+<div class="diagram">
+참조:  7  0  1  2  0  3  0  4  2  3  0  3  2  1  2  0  1  7  0  1
+      ─────────────────────────────────────────────────────────────
+F[0]  7  7  7  2  2  2  2  2  2  2  2  2  2  2  2  2  2  7  7  7
+F[1]  ─  0  0  0  0  0  0  4  4  4  0  0  0  0  0  0  0  0  0  0
+F[2]  ─  ─  1  1  1  3  3  3  3  3  3  3  3  1  1  1  1  1  1  1
+      ─────────────────────────────────────────────────────────────
+폴트  *  *  *  *     *     *           *              *  *
+</div>
+<p class="diagram-caption">총 9번 페이지 폴트 — OPT가 달성 가능한 최소 폴트 수</p>
+
+<!-- 4. LRU -->
+<h2>4. LRU — 최근 최소 사용</h2>
+<p>
+  <strong>Least Recently Used</strong>: 가장 오랫동안 사용되지 않은 페이지를 교체한다.
+  과거의 참조 패턴이 미래를 근사한다는 <em>지역성 원리(Locality of Reference)</em>에 기반한다.
+  OPT에 가장 근접한 실용 알고리즘이지만, 정확한 구현을 위해서는 하드웨어 지원이 필요하다.
+</p>
+
+<h3>LRU 구현 방법</h3>
+<ul>
+  <li><strong>카운터(Counter)</strong>: 각 페이지에 마지막 참조 시각을 기록. 교체 시 가장 작은 값 선택. 오버헤드가 크다.</li>
+  <li><strong>스택(Stack)</strong>: 이중 연결 리스트로 참조 순서 유지. 참조 시 해당 노드를 스택 상단으로 이동. 교체 시 스택 하단 제거.</li>
+</ul>
+
+<div class="diagram">
+참조:  7  0  1  2  0  3  0  4  2  3  0  3  2  1  2  0  1  7  0  1
+      ─────────────────────────────────────────────────────────────
+F[0]  7  7  7  2  2  2  2  4  4  4  0  0  0  1  1  1  1  7  7  7
+F[1]  ─  0  0  0  0  0  0  0  2  2  2  2  2  2  2  0  0  0  0  0
+F[2]  ─  ─  1  1  1  3  3  3  3  3  3  3  3  3  3  3  1  1  1  1
+      ─────────────────────────────────────────────────────────────
+폴트  *  *  *  *     *     *  *  *  *        *  *        *  *
+</div>
+<p class="diagram-caption">총 12번 페이지 폴트 (FIFO보다 적고 OPT보다는 많음)</p>
+
+<!-- 5. Clock -->
+<h2>5. Clock 알고리즘 (Second-Chance)</h2>
+<p>
+  LRU의 정확한 구현은 비싸다. 실제 OS(Linux, Windows 등)는 <strong>Clock 알고리즘</strong>으로
+  LRU를 근사한다. 모든 프레임을 원형 큐로 배치하고 <strong>참조 비트(Reference Bit)</strong>를 이용한다.
+</p>
+
+<h3>동작 원리</h3>
+
+<div class="diagram">
+  ┌───────────────────────────────────────────────────────┐
+  │  초기 상태 (프레임 4개, 참조 비트 포함)               │
+  │                                                       │
+  │   ┌────┐   ┌────┐   ┌────┐   ┌────┐                  │
+  │   │ A  │ → │ B  │ → │ C  │ → │ D  │ ──┐              │
+  │   │ R=1│   │ R=0│   │ R=1│   │ R=0│   │              │
+  │   └────┘   └────┘   └────┘   └────┘   │              │
+  │      ↑                                 │              │
+  │    시계침 ←──────────────────────────── ┘              │
+  └───────────────────────────────────────────────────────┘
+</div>
+
+<ol>
+  <li>시계침이 현재 프레임을 가리킨다.</li>
+  <li>참조 비트 = 1이면 <strong>0으로 초기화</strong>하고 시계침을 다음으로 이동 (두 번째 기회 부여).</li>
+  <li>참조 비트 = 0이면 해당 프레임을 <strong>교체</strong>한다.</li>
+  <li>페이지가 참조될 때마다 해당 프레임의 참조 비트를 1로 설정한다.</li>
+</ol>
+
+<div class="callout success">
+  <div class="callout-title">왜 Clock이 실용적인가?</div>
+  참조 비트는 하드웨어(MMU)가 자동으로 설정하므로 OS 오버헤드가 없다.
+  LRU의 정확한 시간 순서를 유지하지 않아도 되므로 구현이 간단하고 빠르다.
+  Linux의 페이지 교체는 Clock 변형(Active/Inactive 리스트 기반)을 사용한다.
+</div>
+
+<!-- 6. 알고리즘 비교 -->
+<h2>6. 알고리즘 비교</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>알고리즘</th>
+      <th>교체 기준</th>
+      <th>구현 복잡도</th>
+      <th>폴트 수</th>
+      <th>Belady 이상</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>FIFO</td>
+      <td>가장 오래된 페이지</td>
+      <td>낮음</td>
+      <td>많음</td>
+      <td>발생 가능</td>
+    </tr>
+    <tr>
+      <td>OPT</td>
+      <td>미래에 가장 안 쓸 페이지</td>
+      <td>구현 불가</td>
+      <td>최소 (기준)</td>
+      <td>없음</td>
+    </tr>
+    <tr>
+      <td>LRU</td>
+      <td>가장 오래 전에 사용된 페이지</td>
+      <td>높음 (HW 필요)</td>
+      <td>OPT에 근사</td>
+      <td>없음</td>
+    </tr>
+    <tr>
+      <td>Clock</td>
+      <td>참조 비트 0인 첫 프레임</td>
+      <td>낮음</td>
+      <td>LRU 근사</td>
+      <td>없음</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- 7. 스래싱 -->
+<h2>7. 스래싱 (Thrashing)</h2>
+<p>
+  프레임 수가 너무 적으면 페이지 폴트가 폭발적으로 증가해 CPU가 프로세스를 실행하는
+  대신 계속 페이지 교체만 반복하는 <strong>스래싱</strong> 상태에 빠진다.
+</p>
+
+<div class="diagram">
+  CPU 이용률
+     ↑
+ 100%│         ★ 최적점
+     │        / \
+     │       /   \──── 스래싱 구간
+     │      /
+     │     /
+     └──────────────────→ 다중 프로그래밍 정도 (MPD)
+</div>
+<p class="diagram-caption">MPD가 너무 높으면 CPU 이용률이 오히려 급감한다.</p>
+
+<p>
+  해결책으로는 <strong>워킹 셋(Working Set) 모델</strong>과 <strong>페이지 폴트 빈도(PFF) 제어</strong>가 있다.
+  워킹 셋은 최근 Δ번의 참조에서 사용된 페이지 집합으로, 이를 기반으로 프로세스마다
+  필요한 최소 프레임 수를 보장한다.
+</p>
+
+<!-- 퀴즈 -->
+<h2>확인 퀴즈</h2>
+
+<!-- Q1 -->
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. 프레임 수를 늘렸는데도 페이지 폴트가 증가하는 이상 현상이 발생하는 알고리즘은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> OPT</label></li>
+    <li><label><input type="radio" name="q1" value="1"> FIFO</label></li>
+    <li><label><input type="radio" name="q1" value="2"> LRU</label></li>
+    <li><label><input type="radio" name="q1" value="3"> Clock</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- Q2 -->
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. Clock 알고리즘에서 참조 비트가 1인 프레임을 만났을 때 OS가 하는 행동은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> 즉시 해당 프레임을 교체한다</label></li>
+    <li><label><input type="radio" name="q2" value="1"> 참조 비트를 0으로 초기화하고 다음 프레임으로 이동한다</label></li>
+    <li><label><input type="radio" name="q2" value="2"> 해당 페이지를 디스크에 즉시 기록한다</label></li>
+    <li><label><input type="radio" name="q2" value="3"> 프로세스를 일시 중지한다</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- Q3 -->
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. OPT 알고리즘이 실제 OS에 구현되지 않는 가장 큰 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> 페이지 폴트 수가 너무 많아서</label></li>
+    <li><label><input type="radio" name="q3" value="1"> 미래의 페이지 참조열을 알 수 없어서</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 하드웨어 지원이 필요해서</label></li>
+    <li><label><input type="radio" name="q3" value="3"> Belady 이상 현상이 발생해서</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- Q4 -->
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. 스래싱(Thrashing)이 발생하는 근본 원인은 무엇인가?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> CPU 클럭 속도가 너무 느려서</label></li>
+    <li><label><input type="radio" name="q4" value="1"> 프로세스에 할당된 프레임이 워킹 셋보다 적어서</label></li>
+    <li><label><input type="radio" name="q4" value="2"> 페이지 테이블이 너무 커서</label></li>
+    <li><label><input type="radio" name="q4" value="3"> TLB 적중률이 낮아서</label></li>
+  </ul>
+  <button class="quiz-submit">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- 핵심 요약 -->
+<h2>핵심 요약</h2>
+<ul>
+  <li><strong>FIFO</strong>: 구현 간단, Belady 이상 발생 가능, 성능 낮음.</li>
+  <li><strong>OPT</strong>: 최소 폴트, 이론적 기준점. 미래 참조열 불가 → 구현 불가.</li>
+  <li><strong>LRU</strong>: 지역성 원리 활용, OPT 근사. 정확한 구현에 HW 오버헤드 필요.</li>
+  <li><strong>Clock</strong>: 참조 비트로 LRU 근사. 실제 OS에서 사용.</li>
+  <li><strong>스래싱</strong>: 프레임 부족 → 폭발적 페이지 폴트 → CPU 이용률 급감. 워킹 셋 모델로 방지.</li>
+</ul>
+
+<!-- 다음 레슨 미리보기 -->
+<div class="callout">
+  <div class="callout-title">다음 학습 (Day 10)</div>
+  <strong>파일 시스템</strong> — 파일 구조, 디렉터리 트리, 연속·연결·인덱스 할당 방식을 배웁니다.
+  <a href="./index.html">← 학습 목록으로</a>
+</div>
+
+<!-- 권장 자료 -->
+<div class="primary-source">
+  <div class="ps-label">권장 자료</div>
+  <p>
+    <strong>Operating System Concepts (Silberschatz et al.) — Chapter 10: Virtual Memory</strong>
+    <br>페이지 교체 알고리즘의 가장 권위 있는 교과서 설명. FIFO, OPT, LRU, Clock을
+    동일한 예시로 비교하며 설명한다.
+  </p>
+  <p>
+    <strong>OSTEP — Chapter 22: Beyond Physical Memory: Policies</strong>
+    (<a href="https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys-policy.pdf">ostep.org</a>)
+    — 무료 공개 교재. 시뮬레이션 예시와 함께 Clock 알고리즘 변형까지 다룬다.
+  </p>
+</div>
+
+<!-- Ask Teacher Banner -->
+<div class="ask-teacher">
+  궁금한 점이 있으면 언제든 Claude에게 질문하세요.
+  "FIFO로 직접 추적해볼게요" 또는 "Clock 알고리즘 시뮬레이션 보여줘" 같은 요청도 가능합니다.
+</div>
+
+<!-- Footer -->
+<div class="lesson-footer">
+  <div>운영체제 학습 워크스페이스 · Day 9</div>
+  <div class="lesson-nav">
+    <a href="./0008-virtual-memory-and-paging.html">← Day 8: 가상 메모리와 페이징</a>
+    <a href="./index.html">목록</a>
+  </div>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1, 'FIFO에서만 Belady의 이상 현상이 발생합니다. LRU와 OPT는 스택 알고리즘이므로 이 현상이 없습니다.');
+  initQuiz('q2', 1, '참조 비트 1 → 0으로 초기화 후 시계침 이동. 이것이 "두 번째 기회" 부여입니다.');
+  initQuiz('q3', 1, 'OPT는 미래의 참조열을 알아야 하므로 실제 구현이 불가능합니다. 성능 비교 기준으로만 사용됩니다.');
+  initQuiz('q4', 1, '프로세스에 필요한 워킹 셋(최소 프레임 집합)이 확보되지 않으면 지속적인 페이지 폴트가 발생해 스래싱에 빠집니다.');
+</script>
+
+</body>
+</html>

@@ -12,6 +12,7 @@
 | 6 | 2026-06-26 | 교착 상태 (Deadlock) — 4가지 발생 조건, 예방·회피·탐지·회복, 은행원 알고리즘 | [0006-deadlock.html](lessons/0006-deadlock.html) |
 | 7 | 2026-06-27 | 메모리 관리 기초 — 주소 바인딩(컴파일/적재/실행 시간), 연속 할당, 내부·외부 단편화, 압축 | [0007-memory-management-basics.html](lessons/0007-memory-management-basics.html) |
 | 8 | 2026-06-28 | 가상 메모리와 페이징 — 페이지·프레임·페이지 테이블, TLB, 요구 페이징, 페이지 폴트 | [0008-virtual-memory-and-paging.html](lessons/0008-virtual-memory-and-paging.html) |
+| 9 | 2026-06-29 | 페이지 교체 알고리즘 — FIFO, OPT, LRU, Clock, Belady 이상, 스래싱, 워킹 셋 | [0009-page-replacement-algorithms.html](lessons/0009-page-replacement-algorithms.html) |
 
 ## 다음 예정 학습
 
@@ -19,8 +20,7 @@
 |-----|-----------|-----------|
 | ~~7~~ | ~~메모리 관리 기초~~ | ~~주소 바인딩, 연속 할당, 단편화~~ |
 | ~~8~~ | ~~가상 메모리와 페이징~~ | ~~페이지 테이블, TLB, 요구 페이징~~ |
-| 9 | 페이지 교체 알고리즘 | FIFO, OPT, LRU, Clock |
-| 9 | 페이지 교체 알고리즘 | FIFO, OPT, LRU, Clock |
+| ~~9~~ | ~~페이지 교체 알고리즘~~ | ~~FIFO, OPT, LRU, Clock~~ |
 | 10 | 파일 시스템 | 파일 구조, 디렉터리, 할당 방식 |
 | 11 | 파일 시스템 구현 | inode, FAT, ext4 개요 |
 | 12 | I/O 시스템 | 인터럽트 방식, DMA, I/O 스케줄링 |
@@ -30,7 +30,7 @@
 
 ## 현재 학습 위치
 
-**Day 8 완료** — 다음: Day 9 페이지 교체 알고리즘
+**Day 9 완료** — 다음: Day 10 파일 시스템
 
 ## 습득한 핵심 개념
 
@@ -52,6 +52,7 @@
 - [x] 내부 단편화 vs 외부 단편화 (Day 7)
 - [x] 최초·최적·최악 적합 알고리즘 (Day 7)
 - [x] 가상 메모리 · 페이징 (Day 8)
-- [ ] 페이지 교체 알고리즘 (예정 Day 9)
+- [x] 페이지 교체 알고리즘 — FIFO, OPT, LRU, Clock (Day 9)
+- [x] Belady 이상 현상 / 스래싱 / 워킹 셋 (Day 9)
 - [ ] 파일 시스템 구조 (예정 Day 10–11)
 - [ ] I/O 스케줄링 (예정 Day 12)
