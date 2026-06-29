@@ -13,6 +13,7 @@
 | 7 | 2026-06-26 | 네트워크 보안 기초 | [day-07-network-security.html](lessons/day-07-network-security.html) |
 | 8 | 2026-06-27 | 실습 — Wireshark 패킷 분석 | [day-08-wireshark-analysis.html](lessons/day-08-wireshark-analysis.html) |
 | 9 | 2026-06-28 | 무선 네트워크 & 최신 트렌드 | [day-09-wireless-sdn-cloud.html](lessons/day-09-wireless-sdn-cloud.html) |
+| 10 | 2026-06-29 | 종합 복습 & 실전 문제 | [day-10-final-review.html](lessons/day-10-final-review.html) |
 
 ## 다음 예정 학습
 
@@ -23,11 +24,11 @@
 | ~~7~~ | ~~네트워크 보안 기초~~ | ~~방화벽, NAT, VPN, TLS/SSL, 일반적인 공격 유형~~ |
 | ~~8~~ | ~~실습 — Wireshark 패킷 분석~~ | ~~필터링, TCP 스트림 추적, DNS/HTTP 트래픽 분석~~ |
 | ~~9~~ | ~~무선 네트워크 & 최신 트렌드~~ | ~~Wi-Fi 표준, SDN 개념, 클라우드 네트워킹 기초~~ |
-| 10 | 종합 복습 & 실전 문제 | 전체 개념 연결, 서브넷 계산 실전, 프로토콜 흐름 추적 |
+| ~~10~~ | ~~종합 복습 & 실전 문제~~ | ~~전체 개념 연결, 서브넷 계산 실전, 프로토콜 흐름 추적~~ |
 
 ## 현재 학습 위치
 
-**Day 9 완료** — 다음: Day 10 (종합 복습 & 실전 문제).
+**Day 10 완료** — 네트워크 기초 과정 전 과정 완료 🎉
 
 ## 습득한 핵심 개념
 
@@ -65,4 +66,4 @@
 - [x] Wi-Fi 표준(802.11 세대별) 및 CSMA/CA (Day 9 완료)
 - [x] SDN 제어 평면·데이터 평면 분리 및 OpenFlow (Day 9 완료)
 - [x] VPC, NAT Gateway, Security Group, 로드밸런서, CDN, 서비스 메시 (Day 9 완료)
-- [ ] 전체 개념 연결 및 서브넷 계산 실전 (예정 Day 10)
+- [x] 전체 개념 연결 및 서브넷 계산 실전 (Day 10 완료)

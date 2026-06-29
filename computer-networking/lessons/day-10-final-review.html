@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 — 종합 복습 &amp; 실전 문제</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 960px; margin: 0 auto; padding: 48px 24px 72px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.68; color: #202124; background: #fff; }
+    h1 { margin: 0 0 24px; font-size: 2rem; line-height: 1.25; }
+    h2 { margin-top: 48px; padding-top: 12px; border-top: 2px solid #e5e7eb; }
+    h3 { margin-top: 28px; color: #1a1a1a; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.93rem; }
+    th, td { border: 1px solid #d8dee4; padding: 8px 10px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 16px; background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.88em; line-height: 1.6; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.3em; border-radius: 4px; }
+    blockquote { margin: 18px 0; padding: 2px 18px; border-left: 4px solid #d8dee4; color: #57606a; background: #f6f8fa; }
+    details { margin: 18px 0; padding: 12px 16px; border: 1px solid #d8dee4; border-radius: 6px; }
+    summary { cursor: pointer; font-weight: 600; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+    .back { margin-bottom: 28px; font-size: 0.95rem; }
+    .tip  { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 2px 18px; margin: 18px 0; }
+    .info { background: #e8f0fe; border-left: 4px solid #0b57d0; padding: 2px 18px; margin: 18px 0; }
+    .success { background: #e6f4ea; border-left: 4px solid #188038; padding: 2px 18px; margin: 18px 0; }
+
+    /* 카드 그리드 */
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin: 20px 0; }
+    .card { border: 1px solid #d8dee4; border-radius: 8px; padding: 14px 16px; background: #fafafa; }
+    .card h4 { margin: 0 0 6px; font-size: 0.95rem; color: #0b57d0; }
+    .card ul { margin: 0; padding-left: 18px; font-size: 0.88rem; }
+
+    /* 서브넷 계산기 */
+    .subnet-calc { margin: 24px 0; padding: 20px 24px; border: 1px solid #c2d9f5; border-radius: 10px; background: #f0f7ff; }
+    .subnet-calc h3 { margin-top: 0; }
+    .subnet-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 14px; }
+    .subnet-row label { font-size: 0.9rem; font-weight: 600; display: block; margin-bottom: 4px; }
+    .subnet-row input { padding: 7px 10px; border: 1px solid #d8dee4; border-radius: 6px; font-size: 0.95rem; width: 160px; }
+    .calc-btn { padding: 8px 22px; background: #0b57d0; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; }
+    .calc-btn:hover { background: #0943a8; }
+    .subnet-result { margin-top: 14px; font-size: 0.9rem; line-height: 2; }
+    .subnet-result table { font-size: 0.88rem; }
+    .err { color: #c62828; font-weight: 600; }
+
+    /* 프로토콜 흐름 시뮬레이터 */
+    .flow-sim { margin: 24px 0; border: 1px solid #d8dee4; border-radius: 10px; overflow: hidden; }
+    .flow-sim-header { background: #f6f8fa; padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #d8dee4; display: flex; align-items: center; gap: 12px; }
+    .flow-body { padding: 16px; }
+    .flow-select { padding: 6px 12px; border: 1px solid #d8dee4; border-radius: 6px; font-size: 0.9rem; }
+    .flow-run-btn { padding: 6px 18px; background: #188038; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+    .flow-run-btn:hover { background: #166534; }
+    .flow-steps { margin-top: 14px; }
+    .flow-step { display: flex; gap: 12px; align-items: flex-start; padding: 10px 14px; margin-bottom: 6px; border-radius: 8px; font-size: 0.88rem; opacity: 0; transition: opacity 0.3s, transform 0.3s; transform: translateX(-10px); }
+    .flow-step.show { opacity: 1; transform: none; }
+    .step-num { min-width: 26px; height: 26px; border-radius: 50%; background: #0b57d0; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; flex-shrink: 0; }
+    .step-layer { font-weight: 700; min-width: 70px; font-size: 0.82rem; padding: 2px 8px; border-radius: 4px; text-align: center; align-self: center; }
+    .l-app  { background: #e8f0fe; color: #0b57d0; }
+    .l-trans { background: #e6f4ea; color: #188038; }
+    .l-net  { background: #fff3e0; color: #e65100; }
+    .l-link { background: #fce8f3; color: #a01457; }
+    .l-phys { background: #f3e8ff; color: #6a0dad; }
+    .step-desc { flex: 1; }
+
+    /* 퀴즈 */
+    .quiz-section { margin-top: 48px; padding: 28px; background: #f0f7ff; border: 1px solid #c2d9f5; border-radius: 10px; }
+    .quiz-section h2 { border-top: none; margin-top: 0; padding-top: 0; }
+    .question { margin: 24px 0; padding-bottom: 20px; border-bottom: 1px solid #d8dee4; }
+    .question:last-of-type { border-bottom: none; }
+    .question p { font-weight: 600; margin-bottom: 10px; }
+    .options label { display: block; margin: 6px 0; cursor: pointer; padding: 7px 12px; border-radius: 6px; border: 1px solid #d8dee4; background: #fff; transition: background 0.15s; }
+    .options label:hover { background: #e8f0fe; }
+    .options input[type="radio"] { margin-right: 8px; }
+    .check-btn { margin-top: 14px; padding: 8px 22px; background: #0b57d0; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+    .check-btn:hover { background: #0943a8; }
+    .result { margin-top: 10px; font-weight: 600; min-height: 1.4em; padding: 6px 10px; border-radius: 5px; }
+    .correct { color: #188038; background: #e6f4ea; }
+    .wrong   { color: #c62828; background: #fdecea; }
+
+    /* 최종 점수 */
+    #final-score { display: none; margin-top: 24px; padding: 20px; background: #fff; border: 2px solid #0b57d0; border-radius: 10px; text-align: center; }
+    #final-score h3 { margin: 0 0 8px; font-size: 1.4rem; }
+    #score-val { font-size: 2.5rem; font-weight: 700; color: #0b57d0; }
+    .submit-all-btn { margin-top: 20px; padding: 10px 28px; background: #188038; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 1.05rem; }
+    .submit-all-btn:hover { background: #166534; }
+
+    .nav-links { margin-top: 48px; display: flex; gap: 16px; flex-wrap: wrap; }
+    .nav-links a { padding: 8px 20px; border: 1px solid #d8dee4; border-radius: 6px; text-decoration: none; font-size: 0.95rem; }
+    .nav-links a:hover { background: #f6f8fa; }
+
+    @media (max-width: 600px) {
+      .card-grid { grid-template-columns: 1fr 1fr; }
+      .subnet-row input { width: 130px; }
+    }
+  </style>
+</head>
+<body>
+
+<p class="back"><a href="./index.html">← 학습 목록으로</a></p>
+
+<h1>Day 10 — 종합 복습 &amp; 실전 문제</h1>
+
+<p>Day 1부터 Day 9까지 학습한 <strong>네트워크 전 영역</strong>을 연결합니다.
+개념 지도로 전체 흐름을 재정리하고, <strong>서브넷 계산기</strong>로 실전 연습을 하며,
+<strong>프로토콜 흐름 시뮬레이터</strong>로 패킷이 어떻게 이동하는지 추적합니다.
+마지막으로 종합 퀴즈로 스스로를 검증하세요.</p>
+
+<div class="info">
+  <p><strong>오늘의 학습 목표</strong></p>
+  <ul>
+    <li>Day 1~9 핵심 개념을 계층별로 연결해 설명할 수 있다.</li>
+    <li>CIDR 표기법으로 네트워크 주소, 브로드캐스트, 호스트 범위를 계산한다.</li>
+    <li>HTTP 요청 한 건이 OSI 각 계층을 통과하는 순서를 추적한다.</li>
+    <li>종합 퀴즈 10문항으로 취약 개념을 파악하고 복습 방향을 정한다.</li>
+  </ul>
+</div>
+
+<!-- ===================== 개념 지도 ===================== -->
+<h2>1. 전체 개념 지도</h2>
+
+<p>아래 카드는 OSI 계층별 핵심 키워드와 Day 연결을 보여줍니다. 각 계층을 클릭하면 관련 레슨으로 이동합니다.</p>
+
+<div class="card-grid">
+  <div class="card">
+    <h4><a href="./day-01-network-basics-osi.html">응용 계층 (7)</a></h4>
+    <ul>
+      <li>HTTP/HTTPS (Day 6)</li>
+      <li>DNS · DHCP (Day 5)</li>
+      <li>TLS 핸드셰이크 (Day 6)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>표현·세션 계층 (6·5)</h4>
+    <ul>
+      <li>데이터 인코딩</li>
+      <li>세션 관리</li>
+      <li>쿠키·JWT (Day 6)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4><a href="./day-04-transport-tcp-udp.html">전송 계층 (4)</a></h4>
+    <ul>
+      <li>TCP 3-way handshake</li>
+      <li>UDP 무연결</li>
+      <li>포트 · 흐름/혼잡 제어</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4><a href="./day-03-network-layer-ip-routing.html">네트워크 계층 (3)</a></h4>
+    <ul>
+      <li>IP · CIDR · 서브넷</li>
+      <li>라우팅 테이블 · LPM</li>
+      <li>ICMP · IPv6</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4><a href="./day-02-tcpip-datalink.html">데이터링크 계층 (2)</a></h4>
+    <ul>
+      <li>이더넷 프레임</li>
+      <li>MAC 주소 · ARP</li>
+      <li>스위치 MAC 테이블</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>물리 계층 (1)</h4>
+    <ul>
+      <li>비트 전송</li>
+      <li>케이블 · 광섬유</li>
+      <li>Wi-Fi (Day 9)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4><a href="./day-07-network-security.html">보안 & NAT</a></h4>
+    <ul>
+      <li>방화벽 · NAT</li>
+      <li>VPN · TLS/SSL</li>
+      <li>공격 유형 (Day 7)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4><a href="./day-09-wireless-sdn-cloud.html">최신 트렌드</a></h4>
+    <ul>
+      <li>Wi-Fi 802.11 세대</li>
+      <li>SDN · OpenFlow</li>
+      <li>클라우드 VPC · CDN</li>
+    </ul>
+  </div>
+</div>
+
+<h3>계층 간 데이터 단위 정리</h3>
+
+<table>
+  <thead><tr><th>계층</th><th>PDU 이름</th><th>주요 헤더 정보</th><th>장비</th></tr></thead>
+  <tbody>
+    <tr><td>응용 (7)</td><td>메시지(Message)</td><td>HTTP 헤더, URL, 쿠키</td><td>서버, 브라우저</td></tr>
+    <tr><td>전송 (4)</td><td>세그먼트(Segment)</td><td>TCP: 포트, 시퀀스, ACK, 플래그 / UDP: 포트, 길이</td><td>OS 네트워크 스택</td></tr>
+    <tr><td>네트워크 (3)</td><td>패킷(Packet)</td><td>출발지·목적지 IP, TTL, 프로토콜</td><td>라우터</td></tr>
+    <tr><td>데이터링크 (2)</td><td>프레임(Frame)</td><td>출발지·목적지 MAC, EtherType, FCS</td><td>스위치</td></tr>
+    <tr><td>물리 (1)</td><td>비트(Bit)</td><td>전기·빛·전파 신호</td><td>허브, 케이블, NIC</td></tr>
+  </tbody>
+</table>
+
+<!-- ===================== 서브넷 계산기 ===================== -->
+<h2>2. 실전 서브넷 계산기</h2>
+
+<p>IP 주소와 프리픽스 길이를 입력하면 네트워크 정보를 즉시 계산합니다.
+계산 과정도 펼쳐볼 수 있으니 왜 그 값이 나오는지 직접 확인하세요.</p>
+
+<div class="subnet-calc">
+  <h3 style="margin-top:0">서브넷 계산기</h3>
+  <div class="subnet-row">
+    <div>
+      <label for="ip-input">IP 주소 (예: 192.168.10.50)</label>
+      <input type="text" id="ip-input" placeholder="192.168.10.50">
+    </div>
+    <div>
+      <label for="prefix-input">프리픽스 (예: 26)</label>
+      <input type="number" id="prefix-input" min="0" max="32" placeholder="26" style="width:80px">
+    </div>
+    <button class="calc-btn" onclick="calcSubnet()">계산</button>
+  </div>
+  <div class="subnet-result" id="subnet-result"></div>
+</div>
+
+<h3>연습 문제</h3>
+<details>
+  <summary>문제 1 — <code>10.0.4.200/22</code> 의 네트워크 주소와 호스트 수는?</summary>
+  <p><strong>풀이:</strong> /22 → 서브넷 마스크 <code>255.255.252.0</code> (상위 22비트 = 1)<br>
+  세 번째 옥텟 4 = <code>00000100</code> → 하위 2비트 마스킹 → <code>00000100</code> &amp; <code>11111100</code> = <code>00000100</code> = 4<br>
+  → 네트워크 주소: <code>10.0.4.0</code>, 브로드캐스트: <code>10.0.7.255</code><br>
+  → 호스트 수: 2^(32-22) − 2 = <strong>1022</strong>개</p>
+</details>
+<details>
+  <summary>문제 2 — 100개 호스트를 수용하는 최소 서브넷 프리픽스는?</summary>
+  <p><strong>풀이:</strong> 2^n − 2 ≥ 100 → n ≥ 7 → 호스트 비트 <strong>7</strong>개<br>
+  → 프리픽스 = 32 − 7 = <strong>/25</strong> (최대 호스트 126개)</p>
+</details>
+<details>
+  <summary>문제 3 — <code>172.16.0.0/12</code> 에 속하는 IP는? (다음 중 하나 고르기)</summary>
+  <p>보기: A) 172.31.255.255 &nbsp; B) 172.32.0.1 &nbsp; C) 173.0.0.1<br>
+  <strong>정답: A</strong><br>
+  /12 → 앞 12비트 고정: <code>10101100.0000</code> = 172.0∼172.31.x.x<br>
+  172.31.255.255 → 세 번째 옥텟 172.X에서 두 번째 옥텟 31 = <code>00011111</code> → 상위 4비트 0000 ✔<br>
+  172.32.0.1 → 두 번째 옥텟 32 = <code>00100000</code> → 상위 4비트 0010 ✗</p>
+</details>
+
+<!-- ===================== 프로토콜 흐름 시뮬레이터 ===================== -->
+<h2>3. 프로토콜 흐름 추적기</h2>
+
+<p>시나리오를 선택하고 <strong>시작</strong>을 누르면 패킷이 각 계층을 어떻게 통과하는지 단계별로 보여줍니다.</p>
+
+<div class="flow-sim">
+  <div class="flow-sim-header">
+    <label for="flow-select">시나리오:</label>
+    <select class="flow-select" id="flow-select">
+      <option value="http">브라우저 → HTTP GET → 웹서버</option>
+      <option value="dns">도메인 접속 시 DNS 조회 흐름</option>
+      <option value="tcp">TCP 3-way Handshake</option>
+      <option value="dhcp">PC 부팅 후 DHCP IP 취득</option>
+      <option value="arp">같은 LAN 내 ARP → 통신</option>
+    </select>
+    <button class="flow-run-btn" onclick="runFlow()">▶ 시작</button>
+  </div>
+  <div class="flow-body">
+    <div class="flow-steps" id="flow-steps"></div>
+  </div>
+</div>
+
+<!-- ===================== 핵심 공식 정리 ===================== -->
+<h2>4. 핵심 공식 &amp; 암기 포인트</h2>
+
+<table>
+  <thead><tr><th>주제</th><th>공식 / 핵심 암기</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>서브넷 호스트 수</td>
+      <td><code>2^(32 − prefix) − 2</code> (네트워크 주소 + 브로드캐스트 제외)</td>
+    </tr>
+    <tr>
+      <td>서브넷 마스크</td>
+      <td>prefix 개수만큼 상위 비트를 1로 채움. /24 → <code>255.255.255.0</code></td>
+    </tr>
+    <tr>
+      <td>TCP Handshake</td>
+      <td>연결: SYN → SYN-ACK → ACK (3-way) / 종료: FIN → ACK → FIN → ACK (4-way)</td>
+    </tr>
+    <tr>
+      <td>DNS 조회</td>
+      <td>캐시 → 재귀 리졸버 → 루트 NS → TLD NS → 권한 NS</td>
+    </tr>
+    <tr>
+      <td>DHCP DORA</td>
+      <td>Discover(브로드캐스트) → Offer → Request → Acknowledge</td>
+    </tr>
+    <tr>
+      <td>ARP</td>
+      <td>IP를 알 때 MAC을 얻는 프로토콜. 브로드캐스트 요청 → 유니캐스트 응답</td>
+    </tr>
+    <tr>
+      <td>TLS 핸드셰이크</td>
+      <td>ClientHello → ServerHello + 인증서 → 키교환 → Finished (대칭키 교환 완료)</td>
+    </tr>
+    <tr>
+      <td>혼잡 제어</td>
+      <td>Slow Start(지수↑) → Congestion Avoidance(선형↑) → Fast Retransmit/Recovery</td>
+    </tr>
+    <tr>
+      <td>NAT</td>
+      <td>사설 IP + 포트 ↔ 공인 IP + 포트 변환. PAT(Port Address Translation)이 가장 일반적</td>
+    </tr>
+    <tr>
+      <td>Wi-Fi 세대</td>
+      <td>802.11b(11M) → g(54M) → n(600M) → ac(3.5G) → ax(9.6G, Wi-Fi 6)</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ===================== 종합 퀴즈 ===================== -->
+<div class="quiz-section">
+  <h2>5. 종합 퀴즈 (10문항)</h2>
+  <p>각 문제에서 보기 하나를 선택하고 <strong>확인</strong>을 누르세요. 전체 제출 후 점수를 확인하세요.</p>
+
+  <!-- Q1 -->
+  <div class="question" id="q1">
+    <p>Q1. OSI 7계층에서 라우터가 주로 동작하는 계층은?</p>
+    <div class="options">
+      <label><input type="radio" name="q1" value="a"> A) 데이터링크 계층 (2)</label>
+      <label><input type="radio" name="q1" value="b"> B) 네트워크 계층 (3)</label>
+      <label><input type="radio" name="q1" value="c"> C) 전송 계층 (4)</label>
+      <label><input type="radio" name="q1" value="d"> D) 응용 계층 (7)</label>
+    </div>
+    <button class="check-btn" onclick="check('q1','b','네트워크 계층(3)에서 IP 주소를 보고 라우팅합니다. 스위치는 데이터링크(2)입니다.')">확인</button>
+    <div class="result" id="q1-result"></div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="question" id="q2">
+    <p>Q2. <code>192.168.1.0/26</code> 네트워크에서 사용 가능한 호스트 수는?</p>
+    <div class="options">
+      <label><input type="radio" name="q2" value="a"> A) 30개</label>
+      <label><input type="radio" name="q2" value="b"> B) 62개</label>
+      <label><input type="radio" name="q2" value="c"> C) 126개</label>
+      <label><input type="radio" name="q2" value="d"> D) 254개</label>
+    </div>
+    <button class="check-btn" onclick="check('q2','b','2^(32-26) − 2 = 64 − 2 = 62개. 네트워크(.0)와 브로드캐스트(.63)를 제외합니다.')">확인</button>
+    <div class="result" id="q2-result"></div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="question" id="q3">
+    <p>Q3. TCP 3-way handshake의 올바른 순서는?</p>
+    <div class="options">
+      <label><input type="radio" name="q3" value="a"> A) ACK → SYN → SYN-ACK</label>
+      <label><input type="radio" name="q3" value="b"> B) SYN → ACK → SYN-ACK</label>
+      <label><input type="radio" name="q3" value="c"> C) SYN → SYN-ACK → ACK</label>
+      <label><input type="radio" name="q3" value="d"> D) SYN-ACK → SYN → ACK</label>
+    </div>
+    <button class="check-btn" onclick="check('q3','c','클라이언트 SYN → 서버 SYN-ACK → 클라이언트 ACK. 이 세 단계로 연결이 확립됩니다.')">확인</button>
+    <div class="result" id="q3-result"></div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="question" id="q4">
+    <p>Q4. DNS 재귀 쿼리에서 <strong>가장 먼저</strong> 질의하는 서버는?</p>
+    <div class="options">
+      <label><input type="radio" name="q4" value="a"> A) 권한 네임서버(Authoritative NS)</label>
+      <label><input type="radio" name="q4" value="b"> B) TLD 네임서버</label>
+      <label><input type="radio" name="q4" value="c"> C) 루트 네임서버</label>
+      <label><input type="radio" name="q4" value="d"> D) 재귀 리졸버(Recursive Resolver)</label>
+    </div>
+    <button class="check-btn" onclick="check('q4','d','클라이언트는 재귀 리졸버(보통 ISP 또는 8.8.8.8)에 먼저 질의합니다. 리졸버가 루트 → TLD → 권한 NS를 순서대로 조회합니다.')">확인</button>
+    <div class="result" id="q4-result"></div>
+  </div>
+
+  <!-- Q5 -->
+  <div class="question" id="q5">
+    <p>Q5. DHCP에서 클라이언트가 처음 보내는 메시지 유형은?</p>
+    <div class="options">
+      <label><input type="radio" name="q5" value="a"> A) DHCP Request</label>
+      <label><input type="radio" name="q5" value="b"> B) DHCP Discover</label>
+      <label><input type="radio" name="q5" value="c"> C) DHCP Offer</label>
+      <label><input type="radio" name="q5" value="d"> D) DHCP Acknowledge</label>
+    </div>
+    <button class="check-btn" onclick="check('q5','b','DORA: Discover → Offer → Request → Acknowledge. 클라이언트는 브로드캐스트로 Discover를 보냅니다.')">확인</button>
+    <div class="result" id="q5-result"></div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="question" id="q6">
+    <p>Q6. HTTP 응답 코드 <code>301</code> 의 의미는?</p>
+    <div class="options">
+      <label><input type="radio" name="q6" value="a"> A) 요청 성공 (OK)</label>
+      <label><input type="radio" name="q6" value="b"> B) 영구 이동 (Moved Permanently)</label>
+      <label><input type="radio" name="q6" value="c"> C) 일시 리다이렉트 (Found)</label>
+      <label><input type="radio" name="q6" value="d"> D) 리소스 없음 (Not Found)</label>
+    </div>
+    <button class="check-btn" onclick="check('q6','b','301은 리소스가 영구적으로 새 URL로 이동했음을 나타냅니다. 임시 리다이렉트는 302입니다.')">확인</button>
+    <div class="result" id="q6-result"></div>
+  </div>
+
+  <!-- Q7 -->
+  <div class="question" id="q7">
+    <p>Q7. NAT(Network Address Translation)의 주된 목적은?</p>
+    <div class="options">
+      <label><input type="radio" name="q7" value="a"> A) DNS 조회 속도 향상</label>
+      <label><input type="radio" name="q7" value="b"> B) 사설 IP 주소를 공인 IP로 변환해 IPv4 주소 부족을 완화</label>
+      <label><input type="radio" name="q7" value="c"> C) 패킷을 암호화해 기밀성 확보</label>
+      <label><input type="radio" name="q7" value="d"> D) TCP 연결 오류 감지</label>
+    </div>
+    <button class="check-btn" onclick="check('q7','b','NAT는 내부 사설 IP 여러 개를 하나의 공인 IP로 변환합니다. IPv4 고갈 문제를 실질적으로 해결하는 역할을 합니다.')">확인</button>
+    <div class="result" id="q7-result"></div>
+  </div>
+
+  <!-- Q8 -->
+  <div class="question" id="q8">
+    <p>Q8. TLS 핸드셰이크 중 대칭키 재료를 안전하게 교환하기 위해 사용하는 방식은?</p>
+    <div class="options">
+      <label><input type="radio" name="q8" value="a"> A) MD5 해시</label>
+      <label><input type="radio" name="q8" value="b"> B) 서버의 공개키로 암호화(RSA) 또는 ECDH 키 교환</label>
+      <label><input type="radio" name="q8" value="c"> C) ARP 브로드캐스트</label>
+      <label><input type="radio" name="q8" value="d"> D) ICMP Echo</label>
+    </div>
+    <button class="check-btn" onclick="check('q8','b','TLS는 비대칭키(RSA/ECDH)로 대칭키(세션키)를 안전하게 교환한 후, 실제 데이터는 대칭키로 암호화합니다.')">확인</button>
+    <div class="result" id="q8-result"></div>
+  </div>
+
+  <!-- Q9 -->
+  <div class="question" id="q9">
+    <p>Q9. TCP 혼잡 제어에서 패킷 손실 감지 직후 cwnd(혼잡 윈도우)가 따르는 단계는?</p>
+    <div class="options">
+      <label><input type="radio" name="q9" value="a"> A) 즉시 최대값으로 상승</label>
+      <label><input type="radio" name="q9" value="b"> B) Slow Start 재시작 또는 빠른 재전송 후 절반으로 감소</label>
+      <label><input type="radio" name="q9" value="c"> C) UDP로 프로토콜 전환</label>
+      <label><input type="radio" name="q9" value="d"> D) 연결 즉시 종료</label>
+    </div>
+    <button class="check-btn" onclick="check('q9','b','타임아웃 손실 → cwnd=1 MSS, Slow Start 재시작. 3중복ACK → Fast Retransmit + cwnd 절반 감소 후 Congestion Avoidance.')">확인</button>
+    <div class="result" id="q9-result"></div>
+  </div>
+
+  <!-- Q10 -->
+  <div class="question" id="q10">
+    <p>Q10. SDN(Software Defined Networking)에서 제어 평면과 데이터 평면을 연결하는 표준 프로토콜은?</p>
+    <div class="options">
+      <label><input type="radio" name="q10" value="a"> A) OSPF</label>
+      <label><input type="radio" name="q10" value="b"> B) BGP</label>
+      <label><input type="radio" name="q10" value="c"> C) OpenFlow</label>
+      <label><input type="radio" name="q10" value="d"> D) SNMP</label>
+    </div>
+    <button class="check-btn" onclick="check('q10','c','OpenFlow는 SDN 컨트롤러(제어 평면)가 스위치(데이터 평면)의 플로우 테이블을 프로그래밍하는 표준 프로토콜입니다.')">확인</button>
+    <div class="result" id="q10-result"></div>
+  </div>
+
+  <button class="submit-all-btn" onclick="showFinalScore()">최종 점수 확인</button>
+
+  <div id="final-score">
+    <h3>최종 점수</h3>
+    <div id="score-val"></div>
+    <p id="score-comment"></p>
+    <p style="margin-top:12px; font-size:0.9rem; color:#57606a">틀린 문제는 해당 Day 레슨으로 돌아가 복습하세요.</p>
+  </div>
+</div>
+
+<!-- ===================== 다음 단계 ===================== -->
+<h2>6. 다음 단계 — 심화 학습 제안</h2>
+
+<div class="success">
+  <p>🎉 <strong>네트워크 기초 과정을 모두 완료했습니다!</strong><br>
+  Day 1~10를 통해 OSI·TCP/IP 계층, 라우팅, 전송 계층, 응용 계층, 보안, 최신 트렌드까지 전영역을 다뤘습니다.</p>
+</div>
+
+<h3>추천 심화 주제</h3>
+<ul>
+  <li><strong>CCNA / CompTIA Network+</strong> 자격증 문제 풀이로 실전 감각 강화</li>
+  <li><strong>BGP &amp; OSPF 심화</strong> — 인터넷 AS 간 라우팅 프로토콜</li>
+  <li><strong>쿠버네티스 네트워킹</strong> — CNI, Service, Ingress, NetworkPolicy</li>
+  <li><strong>실습: GNS3 또는 Cisco Packet Tracer</strong>로 토폴로지 직접 구성</li>
+  <li><strong>eBPF &amp; XDP</strong> — 커널 레벨 고성능 패킷 처리 최신 기술</li>
+</ul>
+
+<blockquote>
+  <strong>추천 자료:</strong> Computer Networks (Tanenbaum, 6th ed.) — 각 계층 심화 이론의 표준 참고서
+</blockquote>
+
+<div class="tip">
+  <p><strong>학습 팁:</strong> 궁금한 점이 생기면 언제든 질문하세요. 각 레슨 링크를 통해 원하는 주제로 바로 돌아갈 수 있습니다.</p>
+</div>
+
+<div class="nav-links">
+  <a href="./day-09-wireless-sdn-cloud.html">← Day 9</a>
+  <a href="./index.html">학습 목록</a>
+</div>
+
+<script>
+/* ---------- 서브넷 계산기 ---------- */
+function calcSubnet() {
+  const ipStr = document.getElementById('ip-input').value.trim();
+  const prefix = parseInt(document.getElementById('prefix-input').value, 10);
+  const el = document.getElementById('subnet-result');
+
+  const parts = ipStr.split('.').map(Number);
+  if (parts.length !== 4 || parts.some(p => isNaN(p) || p < 0 || p > 255)) {
+    el.innerHTML = '<span class="err">올바른 IPv4 주소를 입력하세요.</span>'; return;
+  }
+  if (isNaN(prefix) || prefix < 0 || prefix > 32) {
+    el.innerHTML = '<span class="err">프리픽스는 0~32 사이 정수여야 합니다.</span>'; return;
+  }
+
+  const ipNum = (parts[0]<<24>>>0) + (parts[1]<<16) + (parts[2]<<8) + parts[3];
+  const maskNum = prefix === 0 ? 0 : (0xFFFFFFFF << (32 - prefix)) >>> 0;
+  const netNum  = (ipNum & maskNum) >>> 0;
+  const bcNum   = (netNum | (~maskNum >>> 0)) >>> 0;
+  const firstNum = prefix < 31 ? netNum + 1 : netNum;
+  const lastNum  = prefix < 31 ? bcNum  - 1 : bcNum;
+  const hostCount = prefix >= 31 ? (prefix === 32 ? 1 : 2) : Math.pow(2, 32 - prefix) - 2;
+
+  function toIp(n) {
+    return [(n>>>24)&255, (n>>>16)&255, (n>>>8)&255, n&255].join('.');
+  }
+  function maskToStr(m) {
+    return [(m>>>24)&255,(m>>>16)&255,(m>>>8)&255,m&255].join('.');
+  }
+
+  el.innerHTML = `
+    <table>
+      <tr><th>항목</th><th>값</th></tr>
+      <tr><td>입력 IP</td><td>${ipStr}</td></tr>
+      <tr><td>프리픽스</td><td>/${prefix}</td></tr>
+      <tr><td>서브넷 마스크</td><td>${maskToStr(maskNum)}</td></tr>
+      <tr><td>네트워크 주소</td><td>${toIp(netNum)}</td></tr>
+      <tr><td>브로드캐스트 주소</td><td>${toIp(bcNum)}</td></tr>
+      <tr><td>사용 가능한 IP 범위</td><td>${toIp(firstNum)} ~ ${toIp(lastNum)}</td></tr>
+      <tr><td>호스트 수</td><td>${hostCount.toLocaleString()}개</td></tr>
+      <tr><td>클래스</td><td>${parts[0] < 128 ? 'A' : parts[0] < 192 ? 'B' : parts[0] < 224 ? 'C' : 'D/E'}</td></tr>
+    </table>`;
+}
+
+/* ---------- 프로토콜 흐름 시뮬레이터 ---------- */
+const FLOWS = {
+  http: [
+    { layer: 'l-app',   label: '응용',     desc: '브라우저: URL 파싱 → HTTP GET 요청 생성 (GET /index.html HTTP/1.1)' },
+    { layer: 'l-app',   label: '응용',     desc: 'DNS 조회: 브라우저 캐시 없음 → 재귀 리졸버에 A 레코드 질의 → 서버 IP 획득' },
+    { layer: 'l-trans', label: '전송',     desc: 'TCP 소켓 열기: SYN → SYN-ACK → ACK (3-way handshake, 포트 80)' },
+    { layer: 'l-trans', label: '전송',     desc: 'HTTP 메시지를 TCP 세그먼트로 분할, 시퀀스 번호·포트 헤더 추가' },
+    { layer: 'l-net',   label: '네트워크', desc: '라우팅 테이블 조회 → 목적지 IP 기반 다음 홉(게이트웨이) 선택, IP 헤더 추가' },
+    { layer: 'l-link',  label: '데이터링크', desc: 'ARP로 게이트웨이 MAC 조회 → 이더넷 프레임 생성 (출발·목적 MAC + FCS)' },
+    { layer: 'l-phys',  label: '물리',     desc: '프레임을 비트 신호로 변환 → NIC가 케이블/무선으로 송신' },
+    { layer: 'l-app',   label: '응용',     desc: '서버: HTTP 응답 생성 (200 OK + HTML) → 역방향으로 같은 과정 반복' },
+  ],
+  dns: [
+    { layer: 'l-app',   label: '응용',     desc: '브라우저: "www.example.com" 주소 입력 → 로컬 DNS 캐시 확인 (miss)' },
+    { layer: 'l-trans', label: '전송',     desc: 'UDP 포트 53으로 재귀 리졸버에 질의 패킷 전송 (UDP: 빠른 단방향 요청)' },
+    { layer: 'l-net',   label: '네트워크', desc: '리졸버 → 루트 네임서버(13개 클러스터): ".com NS가 어디 있나요?"' },
+    { layer: 'l-net',   label: '네트워크', desc: '루트 → TLD(com) 네임서버 주소 반환 / 리졸버 → TLD: "example.com NS?"' },
+    { layer: 'l-net',   label: '네트워크', desc: 'TLD → 권한 NS 주소 반환 / 리졸버 → 권한 NS: "www.example.com A 레코드?"' },
+    { layer: 'l-app',   label: '응용',     desc: '권한 NS → A 레코드(93.184.216.34) 반환 → 리졸버가 캐시(TTL) 후 클라이언트 전달' },
+    { layer: 'l-app',   label: '응용',     desc: '브라우저: IP 획득 → HTTP(S) 연결 시작' },
+  ],
+  tcp: [
+    { layer: 'l-trans', label: '전송',     desc: '[클라이언트 → 서버] SYN 전송: 시퀀스 번호 x 설정, SYN 플래그 ON' },
+    { layer: 'l-trans', label: '전송',     desc: '[서버 → 클라이언트] SYN-ACK: 서버 시퀀스 y, ACK = x+1' },
+    { layer: 'l-trans', label: '전송',     desc: '[클라이언트 → 서버] ACK: ACK = y+1 → 연결 확립 (ESTABLISHED)' },
+    { layer: 'l-app',   label: '응용',     desc: '이제 양방향 데이터 전송 가능. 클라이언트 HTTP 요청 전송 시작' },
+    { layer: 'l-trans', label: '전송',     desc: '[종료 시] FIN → ACK → FIN → ACK 4-way handshake → TIME_WAIT(2×MSL)' },
+  ],
+  dhcp: [
+    { layer: 'l-app',   label: '응용',     desc: '[PC 부팅] IP 없음 → DHCP Discover 생성 (srcIP=0.0.0.0, dst=255.255.255.255)' },
+    { layer: 'l-trans', label: '전송',     desc: 'UDP 포트 68(클라이언트) → 67(서버) 브로드캐스트 전송' },
+    { layer: 'l-app',   label: '응용',     desc: 'DHCP 서버: Offer 전송 — 제안 IP, 서브넷, 게이트웨이, DNS, 임대 시간 포함' },
+    { layer: 'l-app',   label: '응용',     desc: 'PC: Offer 수락 → Request 브로드캐스트 (다른 서버에게도 알림)' },
+    { layer: 'l-app',   label: '응용',     desc: 'DHCP 서버: Acknowledge 전송 → PC가 IP 설정 완료. 임대 갱신은 T1(50%) 시점에 시작' },
+  ],
+  arp: [
+    { layer: 'l-net',   label: '네트워크', desc: 'PC(10.0.0.2)가 10.0.0.5에게 패킷 전송 시도 → ARP 캐시 확인 (miss)' },
+    { layer: 'l-link',  label: '데이터링크', desc: 'ARP Request 브로드캐스트: "10.0.0.5의 MAC 주소가 뭐예요? (ff:ff:ff:ff:ff:ff)"' },
+    { layer: 'l-link',  label: '데이터링크', desc: '같은 LAN의 모든 장비 수신. 10.0.0.5만 자신의 IP 인식 → ARP Reply 유니캐스트 응답' },
+    { layer: 'l-link',  label: '데이터링크', desc: 'PC: ARP 캐시에 10.0.0.5 → aa:bb:cc:dd:ee:05 저장' },
+    { layer: 'l-net',   label: '네트워크', desc: '이제 이더넷 프레임 목적지 MAC을 채워 패킷 전송 시작' },
+  ],
+};
+
+function runFlow() {
+  const key = document.getElementById('flow-select').value;
+  const steps = FLOWS[key];
+  const el = document.getElementById('flow-steps');
+  el.innerHTML = '';
+
+  steps.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'flow-step';
+    div.style.background = i % 2 === 0 ? '#f8f9fa' : '#fff';
+    div.innerHTML = `
+      <div class="step-num">${i+1}</div>
+      <div class="step-layer ${s.layer}">${s.label}</div>
+      <div class="step-desc">${s.desc}</div>`;
+    el.appendChild(div);
+    setTimeout(() => div.classList.add('show'), 100 + i * 180);
+  });
+}
+
+/* ---------- 퀴즈 ---------- */
+const answers = {};
+const explanations = {};
+
+function check(qid, correct, explanation) {
+  const radios = document.querySelectorAll(`input[name="${qid}"]`);
+  let selected = null;
+  radios.forEach(r => { if (r.checked) selected = r.value; });
+  const el = document.getElementById(`${qid}-result`);
+  if (!selected) { el.textContent = '보기를 선택해 주세요.'; el.className = 'result'; return; }
+  const ok = selected === correct;
+  answers[qid] = ok;
+  explanations[qid] = explanation;
+  el.className = 'result ' + (ok ? 'correct' : 'wrong');
+  el.textContent = (ok ? '✓ 정답입니다! ' : '✗ 틀렸습니다. ') + explanation;
+}
+
+function showFinalScore() {
+  const total = 10;
+  const scored = Object.values(answers).filter(Boolean).length;
+  const el = document.getElementById('final-score');
+  const scoreEl = document.getElementById('score-val');
+  const commentEl = document.getElementById('score-comment');
+  el.style.display = 'block';
+  scoreEl.textContent = `${scored} / ${total}`;
+  const pct = (scored / total) * 100;
+  if (pct === 100) commentEl.textContent = '완벽합니다! 네트워크 기초를 완전히 습득했습니다.';
+  else if (pct >= 80)  commentEl.textContent = '훌륭합니다! 틀린 문제만 해당 레슨에서 복습하세요.';
+  else if (pct >= 60)  commentEl.textContent = '좋습니다. 틀린 개념 위주로 레슨을 다시 살펴보세요.';
+  else commentEl.textContent = '조금 더 복습이 필요합니다. Day 1~9 레슨을 다시 확인해 보세요.';
+  el.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>
