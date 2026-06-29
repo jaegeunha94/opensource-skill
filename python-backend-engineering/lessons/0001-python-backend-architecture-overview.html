@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — Python 백엔드 아키텍처 전체 구조 개요</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="lesson-wrap">
+
+  <!-- ── Header ────────────────────────────────────── -->
+  <header class="lesson-header">
+    <div class="lesson-meta">
+      <span class="tag tag-day">Day 1</span>
+      <span class="tag tag-level">실무자 기준</span>
+      <span class="tag tag-time">약 40분</span>
+    </div>
+    <h1 class="lesson-title">Python 백엔드 아키텍처<br>전체 구조 개요</h1>
+    <p class="lesson-subtitle">
+      실제 서비스를 지탱하는 백엔드가 어떤 계층으로 구성되고,
+      요청 하나가 어떻게 흘러가는지 전체 그림을 그린다.
+      Python 문법이 아니라 <strong>구조적 사고</strong>가 이 레슨의 목표다.
+    </p>
+  </header>
+
+  <!-- ── 1. 왜 구조를 먼저 보는가 ─────────────────── -->
+  <h2>1. 왜 구조를 먼저 이해해야 하는가</h2>
+
+  <p>
+    코드를 작성하기 전에 <strong>전체 구조</strong>를 파악하지 않으면
+    나중에 잘못 붙인 기능들이 서로 얽혀 수정이 불가능해진다.
+    실무 백엔드 엔지니어의 첫 번째 질문은 항상 이것이다:
+  </p>
+
+  <blockquote class="callout info">
+    <div class="callout-title">핵심 질문</div>
+    "이 요청은 어디서 들어와서, 어디를 거쳐, 어디에 저장되고, 어떻게 응답되는가?"
+  </blockquote>
+
+  <p>
+    이 흐름을 <strong>Request Lifecycle</strong>이라 부른다.
+    이것을 알면 N+1 쿼리가 어디서 터지는지, 인증 토큰이 어느 계층에서 검증되는지,
+    에러가 어느 지점에서 잡혀야 하는지 즉시 판단할 수 있다.
+  </p>
+
+  <!-- ── 2. 전체 구조 다이어그램 ───────────────────── -->
+  <h2>2. 실무 Python 백엔드의 전체 구조</h2>
+
+  <div class="diagram">┌─────────────────────────────────────────────────────────────┐
+│                       CLIENT LAYER                          │
+│              (Browser / Mobile App / CLI / 3rd Party)       │
+└─────────────────────────┬───────────────────────────────────┘
+                          │  HTTPS Request
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   GATEWAY / REVERSE PROXY                   │
+│              nginx  ·  AWS ALB  ·  Traefik                  │
+│   TLS 종료  ·  로드밸런싱  ·  Rate Limiting  ·  정적 파일   │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  PYTHON API LAYER (FastAPI)                  │
+│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐   │
+│  │  Middleware  │  │   Routers    │  │  Request/Response │   │
+│  │(Auth, CORS,  │→ │ /users       │→ │ Schema (Pydantic) │   │
+│  │  Logging)   │  │ /products    │  │  Validation       │   │
+│  └─────────────┘  └──────┬───────┘  └──────────────────┘   │
+└─────────────────────────┬───────────────────────────────────┘
+                          │  validated data
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    SERVICE LAYER                             │
+│         비즈니스 로직 · 유스케이스 · 도메인 규칙             │
+│   UserService  ·  OrderService  ·  PaymentService           │
+└───────────┬─────────────┬──────────────────┬────────────────┘
+            │             │                  │
+            ▼             ▼                  ▼
+┌───────────────┐ ┌───────────────┐ ┌───────────────────────┐
+│  DATA LAYER   │ │  CACHE LAYER  │ │  MESSAGE QUEUE / TASK │
+│  (PostgreSQL) │ │  (Redis)      │ │  (Celery + Redis)     │
+│  SQLAlchemy   │ │  세션·캐싱    │ │  이메일·알림·배치      │
+│  ORM + Core   │ └───────────────┘ └───────────────────────┘
+└───────────────┘
+            │
+            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   OBSERVABILITY LAYER                        │
+│   Structured Logging  ·  Prometheus Metrics  ·  Tracing     │
+│              (수평으로 모든 계층에 적용)                     │
+└─────────────────────────────────────────────────────────────┘</div>
+
+  <p>
+    각 계층은 독립적으로 교체 가능해야 한다.
+    서비스 레이어는 PostgreSQL인지 MySQL인지 알면 안 되고,
+    API 레이어는 비즈니스 로직을 직접 가지면 안 된다.
+    이 <strong>관심사의 분리(Separation of Concerns)</strong>가 유지보수 가능한 코드의 핵심이다.
+  </p>
+
+  <!-- ── 3. 프레임워크 선택 ────────────────────────── -->
+  <h2>3. 프레임워크 선택 기준</h2>
+
+  <p>
+    Python 백엔드에서 가장 많이 묻는 질문:
+    <strong>"FastAPI vs Django vs Flask, 무엇을 써야 하나요?"</strong>
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>기준</th>
+        <th>FastAPI</th>
+        <th>Django</th>
+        <th>Flask</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>타입 힌트 / 자동 문서화</strong></td>
+        <td>✅ 1급 지원 (OpenAPI 자동 생성)</td>
+        <td>⚠️ 별도 라이브러리 필요</td>
+        <td>⚠️ 별도 라이브러리 필요</td>
+      </tr>
+      <tr>
+        <td><strong>비동기 (async/await)</strong></td>
+        <td>✅ 네이티브</td>
+        <td>⚠️ ASGI 모드 필요 (Django 4.1+)</td>
+        <td>⚠️ 제한적</td>
+      </tr>
+      <tr>
+        <td><strong>배터리 포함</strong></td>
+        <td>❌ 직접 구성</td>
+        <td>✅ ORM·관리자·인증 내장</td>
+        <td>❌ 직접 구성</td>
+      </tr>
+      <tr>
+        <td><strong>학습 곡선</strong></td>
+        <td>낮음 (Python 3.10+ 경험 있으면)</td>
+        <td>중간 (Django ORM, MTV 패턴)</td>
+        <td>낮음 (단순하지만 설계는 직접)</td>
+      </tr>
+      <tr>
+        <td><strong>적합한 상황</strong></td>
+        <td>신규 API 서버, 마이크로서비스</td>
+        <td>어드민·CMS 포함된 모놀리스</td>
+        <td>초소형 서비스, 프로토타입</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout tip">
+    <div class="callout-title">실무 판단 기준</div>
+    <p>
+      <strong>신규 프로젝트</strong>이고 팀이 타입 힌트에 익숙하다면 FastAPI가 기본 선택지다.
+      어드민 패널, 복잡한 인증, 레거시 연동이 많다면 Django를 고려한다.
+      Flask는 특수 목적(ML 모델 서빙, 내부 툴)에 제한적으로 쓴다.
+    </p>
+    <p>이 학습 과정은 <strong>FastAPI + SQLAlchemy + Celery + PostgreSQL</strong> 스택을 기준으로 한다.</p>
+  </div>
+
+  <!-- ── 4. 요청 수명 주기 ─────────────────────────── -->
+  <h2>4. 요청 수명 주기 — 코드로 보는 흐름</h2>
+
+  <p>
+    예시: <code>POST /api/v1/orders</code> 요청이 처리되는 과정.
+    각 계층이 무엇을 하는지 코드 조각과 함께 확인한다.
+  </p>
+
+  <h3>① 게이트웨이 → API 레이어 (FastAPI)</h3>
+  <pre><code><span class="cmt"># app/api/v1/orders.py</span>
+<span class="kw">from</span> fastapi <span class="kw">import</span> APIRouter, Depends, status
+<span class="kw">from</span> app.schemas.order <span class="kw">import</span> OrderCreate, OrderResponse
+<span class="kw">from</span> app.services.order_service <span class="kw">import</span> OrderService
+<span class="kw">from</span> app.api.deps <span class="kw">import</span> get_current_user, get_order_service
+
+router = <span class="cls">APIRouter</span>()
+
+<span class="dec">@router.post</span>(<span class="str">"/orders"</span>, response_model=<span class="cls">OrderResponse</span>, status_code=status.<span class="fn">HTTP_201_CREATED</span>)
+<span class="kw">async def</span> <span class="fn">create_order</span>(
+    body: <span class="cls">OrderCreate</span>,                  <span class="cmt"># Pydantic이 JSON 파싱 + 검증</span>
+    current_user = <span class="cls">Depends</span>(get_current_user),  <span class="cmt"># 미들웨어가 JWT 확인</span>
+    svc: <span class="cls">OrderService</span> = <span class="cls">Depends</span>(get_order_service),
+):
+    <span class="kw">return await</span> svc.<span class="fn">create_order</span>(user_id=current_user.id, data=body)</code></pre>
+
+  <p>
+    라우터는 <strong>입력 검증</strong>과 <strong>의존성 주입</strong>만 담당한다.
+    비즈니스 로직은 전혀 없다.
+  </p>
+
+  <h3>② 서비스 레이어 (비즈니스 로직)</h3>
+  <pre><code><span class="cmt"># app/services/order_service.py</span>
+<span class="kw">class</span> <span class="cls">OrderService</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, repo: <span class="cls">OrderRepository</span>, event_bus: <span class="cls">EventBus</span>):
+        self.repo = repo
+        self.event_bus = event_bus
+
+    <span class="kw">async def</span> <span class="fn">create_order</span>(self, user_id: int, data: <span class="cls">OrderCreate</span>) -> <span class="cls">Order</span>:
+        <span class="cmt"># 비즈니스 규칙: 재고 확인</span>
+        <span class="kw">if not await</span> self.repo.<span class="fn">check_stock</span>(data.product_id, data.quantity):
+            <span class="kw">raise</span> <span class="cls">InsufficientStockError</span>()
+
+        order = <span class="kw">await</span> self.repo.<span class="fn">create</span>(user_id=user_id, **data.<span class="fn">model_dump</span>())
+
+        <span class="cmt"># 사이드이펙트: 이메일 발송은 백그라운드로</span>
+        <span class="kw">await</span> self.event_bus.<span class="fn">publish</span>(<span class="str">"order.created"</span>, {<span class="str">"order_id"</span>: order.id})
+        <span class="kw">return</span> order</code></pre>
+
+  <p>
+    서비스 레이어는 DB가 PostgreSQL인지, 캐시가 Redis인지 모른다.
+    오직 <strong>도메인 규칙</strong>에만 집중한다.
+  </p>
+
+  <h3>③ 데이터 레이어 (Repository + SQLAlchemy)</h3>
+  <pre><code><span class="cmt"># app/repositories/order_repo.py</span>
+<span class="kw">class</span> <span class="cls">OrderRepository</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, session: <span class="cls">AsyncSession</span>):
+        self.session = session
+
+    <span class="kw">async def</span> <span class="fn">create</span>(self, **kwargs) -> <span class="cls">Order</span>:
+        order = <span class="cls">Order</span>(**kwargs)
+        self.session.<span class="fn">add</span>(order)
+        <span class="kw">await</span> self.session.<span class="fn">flush</span>()   <span class="cmt"># DB에 INSERT, 트랜잭션은 아직 열려있음</span>
+        <span class="kw">return</span> order</code></pre>
+
+  <h3>④ 백그라운드 태스크 (Celery)</h3>
+  <pre><code><span class="cmt"># app/tasks/notifications.py</span>
+<span class="kw">from</span> app.celery_app <span class="kw">import</span> celery
+
+<span class="dec">@celery.task</span>(bind=<span class="kw">True</span>, max_retries=<span class="num">3</span>, default_retry_delay=<span class="num">60</span>)
+<span class="kw">def</span> <span class="fn">send_order_confirmation_email</span>(self, order_id: int):
+    <span class="kw">try</span>:
+        <span class="fn">send_email</span>(order_id)
+    <span class="kw">except</span> <span class="cls">EmailServiceDown</span> <span class="kw">as</span> exc:
+        <span class="kw">raise</span> self.<span class="fn">retry</span>(exc=exc)  <span class="cmt"># 최대 3번 재시도</span></code></pre>
+
+  <!-- ── 5. 표준 프로젝트 구조 ──────────────────────── -->
+  <h2>5. 실무 표준 프로젝트 구조</h2>
+
+  <p>FastAPI 기반 중소형 API 서버의 권장 디렉터리 구조다.</p>
+
+  <div class="diagram">my-backend/
+├── app/
+│   ├── main.py               # FastAPI 앱 인스턴스, 라이프스팟 핸들러
+│   ├── api/
+│   │   ├── deps.py           # 공통 의존성 (DB 세션, 현재 사용자)
+│   │   └── v1/
+│   │       ├── __init__.py
+│   │       ├── users.py      # 라우터: /users
+│   │       └── orders.py     # 라우터: /orders
+│   ├── core/
+│   │   ├── config.py         # 환경 변수 → Pydantic Settings
+│   │   └── security.py       # JWT 생성·검증
+│   ├── db/
+│   │   ├── base.py           # SQLAlchemy Base, 세션 팩토리
+│   │   └── session.py        # async_session_maker
+│   ├── models/               # SQLAlchemy ORM 모델 (DB 스키마)
+│   │   ├── user.py
+│   │   └── order.py
+│   ├── schemas/              # Pydantic 스키마 (API 입출력)
+│   │   ├── user.py
+│   │   └── order.py
+│   ├── services/             # 비즈니스 로직
+│   │   ├── user_service.py
+│   │   └── order_service.py
+│   ├── repositories/         # DB 접근 추상화
+│   │   ├── user_repo.py
+│   │   └── order_repo.py
+│   └── tasks/                # Celery 백그라운드 태스크
+│       └── notifications.py
+├── alembic/                  # 마이그레이션 스크립트
+│   └── versions/
+├── tests/
+│   ├── unit/
+│   └── integration/
+├── docker-compose.yml        # PostgreSQL + Redis + app
+├── Dockerfile
+├── pyproject.toml            # 의존성 (uv / poetry)
+└── .env.example</div>
+
+  <div class="callout warn">
+    <div class="callout-title">흔한 실수</div>
+    <p>
+      초보자는 라우터 함수 안에 비즈니스 로직과 SQL을 모두 넣는다.
+      요청 50개까지는 문제없어 보이지만, 팀이 커지면 어느 파일에서 무엇을 고쳐야 하는지 아무도 모르게 된다.
+      처음부터 <strong>라우터 → 서비스 → 레포지토리</strong> 3계층을 지키는 습관이 중요하다.
+    </p>
+  </div>
+
+  <!-- ── 6. 관측성 계층은 왜 수평인가 ──────────────── -->
+  <h2>6. 관측성(Observability) 계층은 왜 수평으로 배치하는가</h2>
+
+  <p>
+    로깅·메트릭·트레이싱은 모든 계층에 걸쳐 동작해야 한다.
+    요청이 어느 계층에서 느려졌는지 알려면 각 계층을 관통하는
+    <strong>상관 ID(Correlation ID)</strong>가 있어야 한다.
+  </p>
+
+  <pre><code><span class="cmt"># 미들웨어에서 요청 ID를 발급하고 모든 로그에 붙인다</span>
+<span class="kw">import</span> uuid, structlog
+
+<span class="kw">async def</span> <span class="fn">correlation_id_middleware</span>(request, call_next):
+    request_id = str(uuid.<span class="fn">uuid4</span>())
+    structlog.<span class="fn">contextvars</span>.<span class="fn">bind_contextvars</span>(request_id=request_id)
+    response = <span class="kw">await</span> <span class="fn">call_next</span>(request)
+    response.headers[<span class="str">"X-Request-ID"</span>] = request_id
+    <span class="kw">return</span> response</code></pre>
+
+  <p>
+    이 패턴 덕분에 에러 로그를 보면 어느 사용자의 어느 요청에서 문제가 생겼는지
+    즉시 추적할 수 있다.
+  </p>
+
+  <!-- ── 7. 이 과목에서 다룰 것들 ──────────────────── -->
+  <h2>7. 이 과목에서 다룰 주제들</h2>
+
+  <table>
+    <thead>
+      <tr><th>Day</th><th>주제</th><th>왜 중요한가</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>1</strong></td><td>아키텍처 개요 (지금)</td><td>전체 그림 없이 세부는 의미 없음</td></tr>
+      <tr><td><strong>2</strong></td><td>API 설계 원칙</td><td>API는 계약이다 — 한 번 배포하면 바꾸기 어렵다</td></tr>
+      <tr><td><strong>3</strong></td><td>데이터 모델링과 ORM</td><td>잘못된 스키마는 N+1 쿼리와 마이그레이션 지옥을 만든다</td></tr>
+      <tr><td><strong>4</strong></td><td>서비스 경계 설계</td><td>경계가 없으면 모든 것이 섞인다</td></tr>
+      <tr><td><strong>5</strong></td><td>트랜잭션과 동시성</td><td>데이터 정합성은 한 번 깨지면 복구가 매우 어렵다</td></tr>
+      <tr><td><strong>6</strong></td><td>인증과 인가</td><td>보안 결함은 비즈니스 리스크다</td></tr>
+      <tr><td><strong>7</strong></td><td>백그라운드 작업</td><td>응답 시간과 사이드이펙트를 분리해야 한다</td></tr>
+      <tr><td><strong>8</strong></td><td>관측성</td><td>볼 수 없는 시스템은 고칠 수 없다</td></tr>
+      <tr><td><strong>9</strong></td><td>배포와 운영</td><td>코드가 프로덕션에 없으면 존재하지 않는 것이다</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── Quiz ──────────────────────────────────────── -->
+  <section class="quiz-section">
+    <h2>🧠 이해도 점검</h2>
+
+    <!-- Q1 -->
+    <div class="quiz-question"
+         data-answer="c"
+         data-explanation="라우터는 입력 검증과 의존성 주입만 담당한다. 비즈니스 로직은 서비스 레이어에 있어야 한다.">
+      <p>Q1. FastAPI 라우터 함수의 올바른 역할은?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a">
+          <span class="quiz-option-letter">A</span>
+          SQL 쿼리를 직접 실행하고 결과를 반환한다
+        </div>
+        <div class="quiz-option" data-value="b">
+          <span class="quiz-option-letter">B</span>
+          모든 비즈니스 규칙을 검사하고 데이터를 저장한다
+        </div>
+        <div class="quiz-option" data-value="c">
+          <span class="quiz-option-letter">C</span>
+          요청을 파싱·검증하고, 의존성을 주입받아 서비스를 호출한다
+        </div>
+        <div class="quiz-option" data-value="d">
+          <span class="quiz-option-letter">D</span>
+          이메일 발송 같은 사이드이펙트를 직접 처리한다
+        </div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz-question"
+         data-answer="b"
+         data-explanation="서비스 레이어는 데이터 저장소가 무엇인지 알면 안 된다. Repository 인터페이스를 통해 추상화된다.">
+      <p>Q2. 서비스 레이어(Service Layer)가 직접 알아서는 안 되는 것은?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a">
+          <span class="quiz-option-letter">A</span>
+          도메인 비즈니스 규칙
+        </div>
+        <div class="quiz-option" data-value="b">
+          <span class="quiz-option-letter">B</span>
+          데이터 저장소가 PostgreSQL인지 MySQL인지 여부
+        </div>
+        <div class="quiz-option" data-value="c">
+          <span class="quiz-option-letter">C</span>
+          재고가 충분한지 확인하는 규칙
+        </div>
+        <div class="quiz-option" data-value="d">
+          <span class="quiz-option-letter">D</span>
+          이벤트를 발행해야 하는 시점
+        </div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz-question"
+         data-answer="a"
+         data-explanation="신규 API 서버에서 FastAPI는 타입 힌트 기반 자동 문서화, 네이티브 async 지원으로 가장 적합하다.">
+      <p>Q3. 신규 API 서버를 만들 때, 타입 힌트와 자동 OpenAPI 문서화가 가장 잘 지원되는 프레임워크는?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a">
+          <span class="quiz-option-letter">A</span>
+          FastAPI
+        </div>
+        <div class="quiz-option" data-value="b">
+          <span class="quiz-option-letter">B</span>
+          Django
+        </div>
+        <div class="quiz-option" data-value="c">
+          <span class="quiz-option-letter">C</span>
+          Flask
+        </div>
+        <div class="quiz-option" data-value="d">
+          <span class="quiz-option-letter">D</span>
+          세 프레임워크 모두 동일하다
+        </div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz-question"
+         data-answer="d"
+         data-explanation="Correlation ID는 미들웨어에서 발급되어 모든 계층의 로그에 붙는다. 이를 통해 하나의 요청을 전체 스택에서 추적할 수 있다.">
+      <p>Q4. 관측성(Observability)에서 Correlation ID(요청 ID)가 필요한 이유는?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a">
+          <span class="quiz-option-letter">A</span>
+          DB 쿼리 최적화를 위해
+        </div>
+        <div class="quiz-option" data-value="b">
+          <span class="quiz-option-letter">B</span>
+          사용자 인증을 위해
+        </div>
+        <div class="quiz-option" data-value="c">
+          <span class="quiz-option-letter">C</span>
+          API 응답 속도를 높이기 위해
+        </div>
+        <div class="quiz-option" data-value="d">
+          <span class="quiz-option-letter">D</span>
+          하나의 요청을 여러 계층·서비스에 걸쳐 추적하기 위해
+        </div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </section>
+
+  <!-- ── 1차 자료 ────────────────────────────────────── -->
+  <h2>권장 1차 자료</h2>
+  <ul>
+    <li>
+      <a href="https://fastapi.tiangolo.com" target="_blank" rel="noopener">FastAPI 공식 문서</a> —
+      Tutorial 섹션 전체를 한 번 읽는다. 코드 예제가 실무 수준이다.
+    </li>
+    <li>
+      <a href="https://www.cosmicpython.com" target="_blank" rel="noopener">Architecture Patterns with Python</a> —
+      무료 공개. Part 1 (Repository, Service Layer 패턴)을 읽는다.
+    </li>
+  </ul>
+
+  <!-- ── Ask teacher ────────────────────────────────── -->
+  <div class="ask-teacher">
+    <strong>질문이 있으신가요?</strong><br>
+    각 계층의 역할이 헷갈리거나, 프로젝트 구조를 직접 잡을 때 판단이 어려운 부분이 있으면
+    언제든 AI에게 질문하세요. 예시: "서비스 레이어 없이 라우터에 로직을 써도 되나요?" 같은 질문도 환영합니다.
+  </div>
+
+  <!-- ── Footer ─────────────────────────────────────── -->
+  <footer class="lesson-footer">
+    <a href="./index.html">← 레슨 목록</a>
+    <span style="color:var(--text-dim);font-size:0.85rem;">Day 1 — Python 백엔드 아키텍처 개요</span>
+    <a href="./0002-api-design-principles.html">Day 2: API 설계 원칙 →</a>
+  </footer>
+
+</main>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

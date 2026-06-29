@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>레퍼런스 — Python 백엔드 구성요소 치트시트</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="lesson-wrap">
+  <header class="lesson-header">
+    <div class="lesson-meta">
+      <span class="tag tag-day">Reference</span>
+      <span class="tag tag-level">빠른 참조</span>
+    </div>
+    <h1 class="lesson-title">Python 백엔드 구성요소 치트시트</h1>
+    <p class="lesson-subtitle">실무에서 자주 참조하는 계층별 책임, 기술 스택, 판단 기준</p>
+  </header>
+
+  <h2>계층별 책임 요약</h2>
+  <table>
+    <thead><tr><th>계층</th><th>책임</th><th>알면 안 되는 것</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Router (API)</strong></td>
+        <td>요청 파싱, 스키마 검증, 의존성 주입, 응답 직렬화</td>
+        <td>비즈니스 규칙, SQL, 이메일 발송</td>
+      </tr>
+      <tr>
+        <td><strong>Service</strong></td>
+        <td>유스케이스 조율, 비즈니스 규칙, 이벤트 발행</td>
+        <td>DB 드라이버 종류, HTTP 요청/응답 형식</td>
+      </tr>
+      <tr>
+        <td><strong>Repository</strong></td>
+        <td>영속성 조작 (CRUD), 쿼리 추상화</td>
+        <td>비즈니스 규칙, HTTP 계층</td>
+      </tr>
+      <tr>
+        <td><strong>Model (ORM)</strong></td>
+        <td>DB 테이블 구조 정의</td>
+        <td>API 스키마, 비즈니스 로직</td>
+      </tr>
+      <tr>
+        <td><strong>Schema (Pydantic)</strong></td>
+        <td>API 입출력 검증 및 직렬화</td>
+        <td>DB 구조, 비즈니스 규칙</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>기술 스택 선택 가이드</h2>
+  <table>
+    <thead><tr><th>역할</th><th>권장 선택</th><th>대안</th></tr></thead>
+    <tbody>
+      <tr><td>API 프레임워크</td><td>FastAPI</td><td>Django REST Framework, Flask</td></tr>
+      <tr><td>ORM</td><td>SQLAlchemy 2.x (async)</td><td>Tortoise ORM, Django ORM</td></tr>
+      <tr><td>마이그레이션</td><td>Alembic</td><td>Django migrations</td></tr>
+      <tr><td>데이터 검증</td><td>Pydantic v2</td><td>marshmallow, attrs</td></tr>
+      <tr><td>설정 관리</td><td>pydantic-settings</td><td>python-decouple, dynaconf</td></tr>
+      <tr><td>비동기 태스크</td><td>Celery + Redis</td><td>ARQ, Dramatiq, RQ</td></tr>
+      <tr><td>캐시</td><td>Redis (redis-py / aioredis)</td><td>Memcached</td></tr>
+      <tr><td>구조화 로깅</td><td>structlog</td><td>loguru, python-json-logger</td></tr>
+      <tr><td>메트릭</td><td>prometheus-fastapi-instrumentator</td><td>statsd, datadog</td></tr>
+      <tr><td>트레이싱</td><td>OpenTelemetry Python</td><td>Jaeger client (deprecated)</td></tr>
+      <tr><td>테스트</td><td>pytest + httpx (AsyncClient)</td><td>unittest</td></tr>
+      <tr><td>의존성 관리</td><td>uv</td><td>poetry, pip-tools</td></tr>
+    </tbody>
+  </table>
+
+  <h2>HTTP 상태 코드 — 실무 판단 기준</h2>
+  <table>
+    <thead><tr><th>코드</th><th>의미</th><th>쓰는 상황</th></tr></thead>
+    <tbody>
+      <tr><td><code>200</code></td><td>OK</td><td>GET 성공, PUT/PATCH 성공</td></tr>
+      <tr><td><code>201</code></td><td>Created</td><td>POST로 리소스 생성 성공</td></tr>
+      <tr><td><code>204</code></td><td>No Content</td><td>DELETE 성공 (바디 없음)</td></tr>
+      <tr><td><code>400</code></td><td>Bad Request</td><td>입력 검증 실패 (클라이언트 잘못)</td></tr>
+      <tr><td><code>401</code></td><td>Unauthorized</td><td>인증 없음 또는 토큰 만료</td></tr>
+      <tr><td><code>403</code></td><td>Forbidden</td><td>인증은 됐지만 권한 없음</td></tr>
+      <tr><td><code>404</code></td><td>Not Found</td><td>리소스가 존재하지 않음</td></tr>
+      <tr><td><code>409</code></td><td>Conflict</td><td>중복 생성, 낙관적 잠금 충돌</td></tr>
+      <tr><td><code>422</code></td><td>Unprocessable</td><td>FastAPI 기본 검증 오류 (Pydantic)</td></tr>
+      <tr><td><code>429</code></td><td>Too Many Requests</td><td>Rate limit 초과</td></tr>
+      <tr><td><code>500</code></td><td>Internal Server Error</td><td>예상치 못한 서버 오류</td></tr>
+      <tr><td><code>503</code></td><td>Service Unavailable</td><td>DB 다운, 의존 서비스 불가</td></tr>
+    </tbody>
+  </table>
+
+  <h2>FastAPI 의존성 주입 패턴</h2>
+  <pre><code><span class="cmt"># app/api/deps.py</span>
+<span class="kw">from</span> fastapi <span class="kw">import</span> Depends, HTTPException, status
+<span class="kw">from</span> app.db.session <span class="kw">import</span> async_session_maker
+<span class="kw">from</span> app.core.security <span class="kw">import</span> decode_jwt
+
+<span class="kw">async def</span> <span class="fn">get_db</span>():
+    <span class="kw">async with</span> async_session_maker() <span class="kw">as</span> session:
+        <span class="kw">yield</span> session   <span class="cmt"># 요청 종료 시 자동 close</span>
+
+<span class="kw">async def</span> <span class="fn">get_current_user</span>(token: str = <span class="cls">Depends</span>(oauth2_scheme), db = <span class="cls">Depends</span>(get_db)):
+    payload = <span class="fn">decode_jwt</span>(token)
+    <span class="kw">if not</span> payload:
+        <span class="kw">raise</span> <span class="cls">HTTPException</span>(status_code=<span class="num">401</span>)
+    <span class="kw">return await</span> db.<span class="fn">get</span>(<span class="cls">User</span>, payload[<span class="str">"sub"</span>])</code></pre>
+
+  <footer class="lesson-footer">
+    <a href="../lessons/index.html">← 레슨 목록</a>
+    <a href="../PROGRESS.md">진행 상황</a>
+  </footer>
+</main>
+</body>
+</html>

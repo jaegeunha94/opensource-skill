@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Backend 구성을 위한 Python 실무자 기준 학습 목록</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .index-wrap { max-width: 680px; margin: 0 auto; padding: 3rem 1.5rem; }
+    .index-wrap h1 { font-size: 1.6rem; margin-bottom: 0.5rem; color: #f1f5f9; }
+    .index-wrap p  { color: var(--text-muted); margin-bottom: 2rem; }
+    .lesson-list   { list-style: none; padding: 0; }
+    .lesson-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 0.6rem;
+      background: var(--surface);
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .lesson-list li:hover { border-color: var(--accent); background: #1a2a42; }
+    .lesson-list li a     { color: var(--text); text-decoration: none; font-weight: 500; }
+    .lesson-list li:hover a { color: var(--accent-light); }
+    .day-badge {
+      font-size: 0.7rem; font-weight: 700;
+      background: #1e3a5f; color: var(--accent-light);
+      padding: 0.2rem 0.55rem; border-radius: 4px;
+      white-space: nowrap; flex-shrink: 0; margin-top: 0.15rem;
+    }
+    .lesson-desc { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .coming-soon { opacity: 0.45; pointer-events: none; }
+  </style>
+</head>
+<body>
+<div class="index-wrap">
+  <h1>Backend 구성을 위한 Python 실무자 기준 학습</h1>
+  <p>Python 기본 문법이 아닌, 실무 백엔드 시스템을 설계하고 운영하는 역량을 다룹니다.</p>
+
+  <ul class="lesson-list">
+    <li>
+      <span class="day-badge">Day 1</span>
+      <div>
+        <a href="./0001-python-backend-architecture-overview.html">Python 백엔드 아키텍처 전체 구조 개요</a>
+        <div class="lesson-desc">요청 수명 주기, 프레임워크 선택 기준, 실무 프로젝트 구조</div>
+      </div>
+    </li>
+    <li class="coming-soon">
+      <span class="day-badge">Day 2</span>
+      <div>
+        <span>API 설계 원칙 — REST, OpenAPI, FastAPI 실전</span>
+        <div class="lesson-desc">HTTP 메서드 의미론, Pydantic 스키마, 자동 문서화</div>
+      </div>
+    </li>
+    <li class="coming-soon">
+      <span class="day-badge">Day 3</span>
+      <div>
+        <span>데이터 모델링과 ORM</span>
+        <div class="lesson-desc">SQLAlchemy 2.x, Alembic 마이그레이션, N+1 문제</div>
+      </div>
+    </li>
+    <li class="coming-soon">
+      <span class="day-badge">Day 4</span>
+      <div>
+        <span>서비스 경계 설계</span>
+        <div class="lesson-desc">레이어드 아키텍처, Repository 패턴, 도메인 서비스</div>
+      </div>
+    </li>
+    <li class="coming-soon">
+      <span class="day-badge">Day 5</span>
+      <div>
+        <span>트랜잭션과 동시성</span>
+        <div class="lesson-desc">ACID, 격리 수준, 낙관적/비관적 잠금</div>
+      </div>
+    </li>
+    <li class="coming-soon">
+      <span class="day-badge">Day 6</span>
+      <div>
+        <span>인증과 인가</span>
+        <div class="lesson-desc">JWT, OAuth2, RBAC</div>
+      </div>
+    </li>
+    <li class="coming-soon">
+      <span class="day-badge">Day 7</span>
+      <div>
+        <span>백그라운드 작업</span>
+        <div class="lesson-desc">Celery, Redis Queue, 재시도 전략</div>
+      </div>
+    </li>
+    <li class="coming-soon">
+      <span class="day-badge">Day 8</span>
+      <div>
+        <span>관측성</span>
+        <div class="lesson-desc">구조화 로깅, Prometheus, OpenTelemetry</div>
+      </div>
+    </li>
+    <li class="coming-soon">
+      <span class="day-badge">Day 9</span>
+      <div>
+        <span>배포와 운영</span>
+        <div class="lesson-desc">Docker, Compose, CI/CD, 헬스체크</div>
+      </div>
+    </li>
+  </ul>
+</div>
+</body>
+</html>
