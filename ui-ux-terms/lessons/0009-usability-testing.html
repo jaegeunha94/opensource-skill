@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 9 — 사용성 테스트: 계획·진행·결과 분석</title>
+  <link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* SUS score meter */
+    .sus-meter {
+      display: flex;
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 1.25rem 0;
+      font-size: 0.78rem;
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    }
+    .sus-seg {
+      flex: 1;
+      padding: 0.7rem 0.5rem;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .sus-worst  { background: #fee2e2; color: #b91c1c; }
+    .sus-poor   { background: #fef3c7; color: #92400e; }
+    .sus-ok     { background: #fef9c3; color: #713f12; }
+    .sus-good   { background: #d1fae5; color: #065f46; }
+    .sus-best   { background: #a7f3d0; color: #064e3b; }
+
+    /* Phase steps */
+    .phase-steps {
+      counter-reset: phase;
+      margin: 1.5rem 0;
+    }
+    .phase-step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .phase-step .step-num {
+      counter-increment: phase;
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: var(--color-accent);
+      color: white;
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .phase-step .step-body {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 0.9rem 1.1rem;
+      flex: 1;
+    }
+    .phase-step .step-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--color-accent);
+      margin-bottom: 0.25rem;
+    }
+    .phase-step .step-desc {
+      font-size: 0.875rem;
+      color: var(--color-text);
+      margin: 0;
+    }
+
+    /* Moderated vs Unmoderated comparison */
+    .mod-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    @media (max-width: 500px) { .mod-compare { grid-template-columns: 1fr; } }
+    .mod-box {
+      border-radius: var(--radius);
+      padding: 1.1rem;
+    }
+    .mod-box-mod   { background: var(--color-accent-light); border: 1px solid #c4b5fd; }
+    .mod-box-unmod { background: #fef9c3; border: 1px solid #fde68a; }
+    .mod-box .box-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    .mod-box-mod .box-title   { color: var(--color-accent); }
+    .mod-box-unmod .box-title { color: #92400e; }
+    .mod-box ul {
+      font-size: 0.82rem;
+      padding-left: 1.1rem;
+    }
+    .mod-box li { margin-bottom: 0.2rem; }
+
+    /* Task scenario card */
+    .scenario-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.25rem;
+      margin: 0.75rem 0;
+      font-size: 0.9rem;
+    }
+    .scenario-card .sc-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted);
+      margin-bottom: 0.35rem;
+    }
+    .scenario-card blockquote {
+      border-left: 3px solid var(--color-accent);
+      margin: 0;
+      padding-left: 0.75rem;
+      font-style: italic;
+      color: var(--color-text);
+      line-height: 1.6;
+    }
+    .scenario-card .sc-note {
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+    }
+
+    /* Metrics row */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.75rem;
+      margin: 1.25rem 0;
+    }
+    .metric-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+    }
+    .metric-card .metric-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
+    .metric-card .metric-name { font-weight: 700; font-size: 0.88rem; color: var(--color-accent); }
+    .metric-card .metric-ko   { font-size: 0.75rem; color: var(--color-text-muted); margin-bottom: 0.4rem; }
+    .metric-card .metric-desc { font-size: 0.8rem; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="lesson-container">
+
+    <header class="lesson-header">
+      <span class="lesson-tag">UI/UX 용어 · Day 9</span>
+      <h1>사용성 테스트 — 계획·진행·결과 분석</h1>
+      <p class="lesson-meta">2026-06-29 &nbsp;·&nbsp; 예상 소요 시간 30분</p>
+    </header>
+
+    <!-- Learning objectives -->
+    <h2>이 레슨에서 배울 것</h2>
+    <ul style="padding-left:1.5rem; margin-bottom:1rem; font-size:0.9rem;">
+      <li>Usability Testing의 목적과 전형적인 진행 단계를 설명할 수 있다</li>
+      <li>Think-Aloud Protocol이 무엇이며 왜 사용하는지 이해할 수 있다</li>
+      <li>Moderated vs Unmoderated Testing의 차이와 각각의 적합한 상황을 구분할 수 있다</li>
+      <li>Task Success Rate · Time on Task · SUS 점수를 해석할 수 있다</li>
+    </ul>
+
+    <!-- === SECTION 1: 사용성 테스트란 === -->
+    <h2>1. Usability Testing(사용성 테스트)이란</h2>
+
+    <p>
+      <strong>사용성 테스트(Usability Testing)</strong>는 실제 사용자가 제품을 직접 사용하는 과정을 관찰해
+      <em>어디서 막히고, 왜 어려워하는지</em>를 발견하는 평가 방법이다.
+      디자이너나 개발자의 추측 대신, 실제 행동 데이터를 통해 UX 문제를 찾는다.
+    </p>
+
+    <div class="callout">
+      <strong>핵심 원칙:</strong> 사용성 테스트는 <em>사용자를 테스트하는 것이 아니라 제품을 테스트하는 것</em>이다.
+      진행 중 "잘하셨어요"는 금물 — 사용자 행동이 그대로 피드백이다.
+    </div>
+
+    <h3>왜 사용성 테스트를 하는가?</h3>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>문제 발견 방법</th>
+          <th>신뢰도</th>
+          <th>비용</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>전문가 검토 (Heuristic Evaluation)</td>
+          <td>중간 — 실제 사용자 행동이 아님</td>
+          <td>낮음</td>
+        </tr>
+        <tr>
+          <td><strong>사용성 테스트</strong></td>
+          <td><strong>높음 — 실제 사용자 행동 관찰</strong></td>
+          <td>중간</td>
+        </tr>
+        <tr>
+          <td>A/B 테스트</td>
+          <td>높음 — 대규모 정량 데이터</td>
+          <td>높음 (트래픽 필요)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- === SECTION 2: Think-Aloud === -->
+    <h2>2. Think-Aloud Protocol (생각 말하기 프로토콜)</h2>
+
+    <p>
+      <strong>Think-Aloud Protocol</strong>은 사용자가 제품을 조작하면서 머릿속에 떠오르는 생각을
+      실시간으로 소리 내어 말하게 하는 기법이다.
+      1983년 Jakob Nielsen과 동료들이 소프트웨어 평가에 도입하면서 표준 기법이 됐다.
+    </p>
+
+    <div class="mod-compare">
+      <div class="mod-box mod-box-mod">
+        <div class="box-title">동시적 Think-Aloud (Concurrent)</div>
+        <ul>
+          <li>과업 수행 중 실시간으로 말함</li>
+          <li>즉각적인 생각·감정을 포착할 수 있다</li>
+          <li>말하면서 속도가 느려지는 단점</li>
+          <li>가장 널리 사용되는 방식</li>
+        </ul>
+      </div>
+      <div class="mod-box mod-box-unmod">
+        <div class="box-title">회고적 Think-Aloud (Retrospective)</div>
+        <ul>
+          <li>과업 완료 후 세션 영상을 보며 설명</li>
+          <li>수행 중 방해받지 않아 자연스러운 행동 관찰 가능</li>
+          <li>기억이 흐려지거나 합리화될 수 있다</li>
+          <li>복잡한 인터랙션 과업에 적합</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="sc-label">진행자 안내 스크립트 예시</div>
+      <blockquote>
+        "지금부터 제품을 사용하시면서 머릿속에 떠오르는 모든 생각을 소리 내어 말씀해 주세요.
+        '이 버튼이 뭘까?' '여기서 찾을 줄 알았는데 없네' 처럼 무엇이든 좋습니다.
+        저는 도움을 드리지 않을 거예요 — 어려우신 부분이 바로 저희가 개선할 부분입니다."
+      </blockquote>
+      <div class="sc-note">참가자에게 정답을 찾는 것이 목표가 아님을 명확히 전달하는 것이 중요하다.</div>
+    </div>
+
+    <!-- === SECTION 3: Moderated vs Unmoderated === -->
+    <h2>3. Moderated vs Unmoderated Testing</h2>
+
+    <p>
+      사용성 테스트는 <strong>진행자(Moderator)의 존재 여부</strong>에 따라 두 가지로 나뉜다.
+    </p>
+
+    <div class="mod-compare">
+      <div class="mod-box mod-box-mod">
+        <div class="box-title">Moderated Testing (진행자 있음)</div>
+        <ul>
+          <li>연구자가 실시간으로 참여해 질문하고 탐색한다</li>
+          <li>예상치 못한 행동에 즉시 "왜 그렇게 하셨나요?" 질문 가능</li>
+          <li>대면(In-person) 또는 화상(Remote Moderated)으로 진행</li>
+          <li>소수 참가자(5~8명)로 깊은 인사이트 도출에 적합</li>
+          <li>진행 비용·시간이 많이 든다</li>
+        </ul>
+      </div>
+      <div class="mod-box mod-box-unmod">
+        <div class="box-title">Unmoderated Testing (진행자 없음)</div>
+        <ul>
+          <li>참가자가 혼자 과업을 수행하고 녹화·기록됨</li>
+          <li>UserTesting · Maze · Lookback 같은 툴로 자동화</li>
+          <li>더 많은 참가자 (20~100명)에서 정량 데이터 수집 가능</li>
+          <li>지역·시간 제약 없이 글로벌 참가자 모집 가능</li>
+          <li>탐색적 질문(why)이 어렵다</li>
+        </ul>
+      </div>
+    </div>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>Moderated</th>
+          <th>Unmoderated</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>참가자 수</td>
+          <td>5–8명</td>
+          <td>20–100명+</td>
+        </tr>
+        <tr>
+          <td>인사이트 유형</td>
+          <td>정성적(Why)</td>
+          <td>정량적(What/How many)</td>
+        </tr>
+        <tr>
+          <td>비용</td>
+          <td>높음</td>
+          <td>낮음~중간</td>
+        </tr>
+        <tr>
+          <td>적합한 단계</td>
+          <td>초기·탐색 단계</td>
+          <td>검증·스케일 단계</td>
+        </tr>
+        <tr>
+          <td>즉석 질문</td>
+          <td>가능</td>
+          <td>불가</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- === SECTION 4: 테스트 계획 === -->
+    <h2>4. 테스트 계획 — Test Plan & Task Scenario</h2>
+
+    <p>
+      사용성 테스트를 시작하기 전에 <strong>Test Plan(테스트 계획)</strong>을 작성한다.
+      계획 없이 진행하면 수집된 데이터가 일관성 없고 비교 불가능해진다.
+    </p>
+
+    <div class="phase-steps">
+      <div class="phase-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">연구 목표 정의 (Research Goal)</div>
+          <p class="step-desc">"사용자가 장바구니에서 주문 완료까지 얼마나 쉽게 이동하는가?"처럼 구체적으로 답할 질문을 먼저 정한다.</p>
+        </div>
+      </div>
+      <div class="phase-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">참가자 모집 (Screener)</div>
+          <p class="step-desc"><strong>Screener(선별 설문)</strong>로 목표 사용자 특성에 맞는 참가자를 필터링한다. 내부 직원·디자이너는 제외해야 편향이 줄어든다.</p>
+        </div>
+      </div>
+      <div class="phase-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">과업 시나리오 작성 (Task Scenario)</div>
+          <p class="step-desc">사용자에게 주어질 현실적인 상황 설명. "버튼을 클릭하세요"처럼 정답을 알려주는 지시가 아닌, 목표를 제시하는 시나리오여야 한다.</p>
+        </div>
+      </div>
+      <div class="phase-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">측정 지표 결정 (Metrics)</div>
+          <p class="step-desc">Task Success Rate, Time on Task, Error Rate, SUS 등 어떤 지표를 수집할지 미리 정해 둔다.</p>
+        </div>
+      </div>
+      <div class="phase-step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-title">파일럿 테스트 (Pilot Test)</div>
+          <p class="step-desc">실제 참가자 모집 전 내부 팀원으로 리허설을 진행해 과업 설명의 불명확한 부분을 수정한다.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>좋은 Task Scenario vs 나쁜 Task Scenario</h3>
+
+    <div class="scenario-card">
+      <div class="sc-label" style="color:var(--color-wrong);">❌ 나쁜 예 — 정답을 내포한 지시</div>
+      <blockquote>"'장바구니' 버튼을 클릭하고 '결제하기' 버튼을 눌러 주문을 완료하세요."</blockquote>
+      <div class="sc-note">버튼 이름을 그대로 알려 주므로 사용자가 레이블을 인식하는지 전혀 테스트할 수 없다.</div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="sc-label" style="color:var(--color-correct);">✓ 좋은 예 — 목표 상황 제시</div>
+      <blockquote>"선물로 줄 블루투스 이어폰을 구입하려고 합니다. 마음에 드는 제품을 골라 주문을 완료해 주세요."</blockquote>
+      <div class="sc-note">사용자가 스스로 탐색하도록 유도하고 네비게이션·레이블·흐름을 자연스럽게 테스트할 수 있다.</div>
+    </div>
+
+    <!-- === SECTION 5: 주요 측정 지표 === -->
+    <h2>5. 주요 측정 지표 (Metrics)</h2>
+
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="metric-icon">✅</div>
+        <div class="metric-name">Task Success Rate</div>
+        <div class="metric-ko">과업 성공률</div>
+        <div class="metric-desc">참가자 중 과업을 성공적으로 완료한 비율. 기준선(Benchmark)과 비교해 설계 개선 여부를 판단한다.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">⏱️</div>
+        <div class="metric-name">Time on Task</div>
+        <div class="metric-ko">과업 소요 시간</div>
+        <div class="metric-desc">과업 시작부터 완료(또는 포기)까지 걸린 시간. 효율성(Efficiency)을 나타내는 핵심 지표다.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">❌</div>
+        <div class="metric-name">Error Rate</div>
+        <div class="metric-ko">오류율</div>
+        <div class="metric-desc">과업 수행 중 발생한 실수·잘못된 클릭·되돌아가기 횟수. 오류가 많을수록 인터페이스가 혼란스럽다는 신호다.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">😵</div>
+        <div class="metric-name">Confusion Points</div>
+        <div class="metric-ko">혼란 포인트</div>
+        <div class="metric-desc">사용자가 멈추거나 길을 잃는 특정 화면·요소. Think-Aloud와 함께 관찰해 구체적인 원인을 파악한다.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">💬</div>
+        <div class="metric-name">Satisfaction (SAT)</div>
+        <div class="metric-ko">만족도</div>
+        <div class="metric-desc">리커트 척도(1–7) 또는 SUS로 측정하는 주관적 만족감. 객관적 성과 지표와 함께 해석해야 정확하다.</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">🔍</div>
+        <div class="metric-name">Findability</div>
+        <div class="metric-ko">검색 가능성</div>
+        <div class="metric-desc">사용자가 특정 정보나 기능을 찾을 수 있는지 여부. 네비게이션·IA(정보 구조) 평가에 주로 사용된다.</div>
+      </div>
+    </div>
+
+    <!-- === SECTION 6: SUS === -->
+    <h2>6. SUS — System Usability Scale (시스템 사용성 척도)</h2>
+
+    <p>
+      <strong>SUS(System Usability Scale)</strong>는 1986년 John Brooke이 개발한 10문항 설문으로,
+      빠르고 표준화된 방식으로 사용성을 수치화한다.
+      각 문항을 1~5점으로 평가하며, 공식 계산법에 따라 <strong>0~100점</strong>으로 환산한다.
+    </p>
+
+    <div class="sus-meter">
+      <div class="sus-seg sus-worst">0–50<br>Unacceptable<br>사용 불가</div>
+      <div class="sus-seg sus-poor">51–67<br>Poor<br>미흡</div>
+      <div class="sus-seg sus-ok">68<br>OK<br>업계 평균</div>
+      <div class="sus-seg sus-good">69–84<br>Good<br>양호</div>
+      <div class="sus-seg sus-best">85–100<br>Excellent<br>탁월</div>
+    </div>
+
+    <div class="callout">
+      <strong>SUS 68점 = 업계 평균.</strong> 68점 미만이면 개선이 시급하다는 신호이고,
+      85점 이상이면 최상위 10% 수준의 사용성을 갖췄다고 볼 수 있다.
+      (Bangor et al., 2008 기준)
+    </div>
+
+    <h3>SUS 10문항 (요약)</h3>
+    <table class="compare-table">
+      <thead>
+        <tr><th>#</th><th>문항 (요약)</th><th>방향</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>이 시스템을 자주 사용하고 싶다</td><td>긍정</td></tr>
+        <tr><td>2</td><td>이 시스템이 불필요하게 복잡하다</td><td>부정</td></tr>
+        <tr><td>3</td><td>이 시스템이 사용하기 쉽다고 생각한다</td><td>긍정</td></tr>
+        <tr><td>4</td><td>기술 지원이 필요할 것 같다</td><td>부정</td></tr>
+        <tr><td>5</td><td>이 시스템의 다양한 기능이 잘 통합돼 있다</td><td>긍정</td></tr>
+        <tr><td>6</td><td>이 시스템에 일관성이 없다</td><td>부정</td></tr>
+        <tr><td>7</td><td>대부분 사람이 빠르게 배울 수 있을 것 같다</td><td>긍정</td></tr>
+        <tr><td>8</td><td>이 시스템이 매우 불편하다</td><td>부정</td></tr>
+        <tr><td>9</td><td>이 시스템을 사용하면서 자신감을 느꼈다</td><td>긍정</td></tr>
+        <tr><td>10</td><td>사용하기 전에 많은 것을 배워야 했다</td><td>부정</td></tr>
+      </tbody>
+    </table>
+
+    <!-- === SECTION 7: 결과 분석 === -->
+    <h2>7. 결과 분석 — 관찰에서 인사이트로</h2>
+
+    <p>
+      테스트 후 수집된 데이터를 분석해 <strong>실행 가능한 인사이트(Actionable Insight)</strong>로 전환해야 한다.
+    </p>
+
+    <div class="phase-steps">
+      <div class="phase-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">관찰 노트 정리 (Observation Notes)</div>
+          <p class="step-desc">테스트 중 메모한 관찰 사항을 수집한다. "참가자 3명이 'My Account' 레이블을 찾지 못함" 처럼 구체적으로 기록한다.</p>
+        </div>
+      </div>
+      <div class="phase-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">어피니티 다이어그램 (Affinity Diagram)</div>
+          <p class="step-desc">Day 7에서 배운 어피니티 다이어그램을 활용해 관련 관찰 사항을 주제별로 클러스터링한다.</p>
+        </div>
+      </div>
+      <div class="phase-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">심각도 분류 (Severity Rating)</div>
+          <p class="step-desc">Nielsen의 0–4 심각도 척도로 각 문제를 분류한다. 4(사용 불가) → 3(심각) → 2(개선 필요) → 1(미미) → 0(실제 문제 아님).</p>
+        </div>
+      </div>
+      <div class="phase-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-title">개선 권고안 작성 (Design Recommendations)</div>
+          <p class="step-desc">각 문제에 대해 구체적인 디자인 개선안을 제안한다. "레이블을 바꾸세요"보다 "My Account를 '내 정보'로 변경해 직관성을 높이세요"처럼 구체적으로 작성한다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- === SECTION 8: 핵심 용어 카드 === -->
+    <h2>8. 핵심 용어 정리</h2>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-en">Usability Testing</div>
+        <div class="term-ko">사용성 테스트</div>
+        <div class="term-def">실제 사용자가 제품을 사용하는 과정을 관찰해 UX 문제를 발견하는 평가 방법.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Think-Aloud Protocol</div>
+        <div class="term-ko">생각 말하기 프로토콜</div>
+        <div class="term-def">사용자가 과업 수행 중 머릿속 생각을 실시간으로 소리 내어 말하게 하는 기법. 내면 상태를 직접 관찰할 수 있는 가장 효과적인 방법이다.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Moderated Testing</div>
+        <div class="term-ko">진행자 있는 테스트</div>
+        <div class="term-def">연구자가 실시간으로 참여해 탐색 질문을 할 수 있는 사용성 테스트 방식. 정성적 인사이트 도출에 강점이 있다.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Unmoderated Testing</div>
+        <div class="term-ko">진행자 없는 테스트</div>
+        <div class="term-def">참가자가 혼자 과업을 수행하고 자동으로 기록되는 방식. 대규모 정량 데이터 수집에 적합하다.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Task Success Rate</div>
+        <div class="term-ko">과업 성공률</div>
+        <div class="term-def">사용성 테스트 참가자 중 주어진 과업을 성공적으로 완료한 비율. 효과성(Effectiveness)의 핵심 지표.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Time on Task</div>
+        <div class="term-ko">과업 소요 시간</div>
+        <div class="term-def">과업 시작부터 완료까지 걸린 시간. 제품의 효율성(Efficiency)을 측정하는 지표로, 짧을수록 사용하기 쉬운 제품이다.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">SUS (System Usability Scale)</div>
+        <div class="term-ko">시스템 사용성 척도</div>
+        <div class="term-def">10개 문항으로 사용성을 0~100점으로 수치화하는 표준 설문. 68점이 업계 평균이며 85점 이상이 탁월 수준이다.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Screener</div>
+        <div class="term-ko">참가자 선별 설문</div>
+        <div class="term-def">테스트 참가자 모집 시 목표 사용자 조건에 맞는지 사전에 필터링하기 위해 사용하는 설문지.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Task Scenario</div>
+        <div class="term-ko">과업 시나리오</div>
+        <div class="term-def">사용성 테스트 참가자에게 주어지는 현실적인 상황 설명. 정답을 내포하지 않고 목표만 제시해야 유효한 테스트가 된다.</div>
+      </div>
+      <div class="term-card">
+        <div class="term-en">Severity Rating</div>
+        <div class="term-ko">심각도 분류</div>
+        <div class="term-def">발견된 사용성 문제를 영향도와 발생 빈도에 따라 0(문제 없음)~4(사용 불가) 척도로 분류하는 방법.</div>
+      </div>
+    </div>
+
+    <!-- === Primary source === -->
+    <div class="primary-source">
+      <div class="label">추천 1차 출처</div>
+      <a href="https://www.nngroup.com/articles/usability-testing-101/" target="_blank" rel="noopener">
+        Usability Testing 101 — Nielsen Norman Group
+      </a>
+      <p style="margin-top:0.4rem; color:var(--color-text-muted);">
+        Think-Aloud Protocol 심화 내용은
+        <a href="https://www.nngroup.com/articles/thinking-aloud-the-1-usability-tool/" target="_blank" rel="noopener">Thinking Aloud: The #1 Usability Tool (NN/g)</a>를,
+        SUS 점수 해석은
+        <a href="https://www.usability.gov/how-to-and-tools/methods/system-usability-scale.html" target="_blank" rel="noopener">System Usability Scale (SUS) — usability.gov</a>를 참고하자.
+      </p>
+    </div>
+
+    <!-- === QUIZ === -->
+    <h2>9. 확인 퀴즈</h2>
+    <p style="font-size:0.9rem; color:var(--color-text-muted); margin-bottom:1.5rem;">
+      답을 보기 전에 먼저 스스로 생각해 보자.
+    </p>
+
+    <!-- Q1 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q1. "사용자가 장바구니 기능을 찾는 데 얼마나 걸리는가?"를 측정하는 지표는?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this,'q1',false)">A. Task Success Rate</button></li>
+        <li><button onclick="answer(this,'q1',true)">B. Time on Task</button></li>
+        <li><button onclick="answer(this,'q1',false)">C. SUS 점수</button></li>
+        <li><button onclick="answer(this,'q1',false)">D. Error Rate</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q1"></p>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q2. SUS 점수 68점의 의미는?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this,'q2',false)">A. 사용 불가 수준이다</button></li>
+        <li><button onclick="answer(this,'q2',true)">B. 업계 평균 수준이다</button></li>
+        <li><button onclick="answer(this,'q2',false)">C. 탁월한 사용성이다</button></li>
+        <li><button onclick="answer(this,'q2',false)">D. 즉각 개선이 필요한 수준이다</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q2"></p>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q3. 다음 중 Think-Aloud Protocol을 가장 잘 설명한 것은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this,'q3',false)">A. 사용자에게 제품 개선 아이디어를 요청하는 인터뷰 기법</button></li>
+        <li><button onclick="answer(this,'q3',false)">B. 진행자가 화면을 대신 클릭하며 시연하는 기법</button></li>
+        <li><button onclick="answer(this,'q3',true)">C. 사용자가 과업 수행 중 머릿속 생각을 실시간으로 소리 내어 말하게 하는 기법</button></li>
+        <li><button onclick="answer(this,'q3',false)">D. 참가자 없이 전문가가 혼자 평가하는 기법</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q3"></p>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q4. Moderated Testing이 Unmoderated Testing보다 유리한 경우는?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this,'q4',false)">A. 100명 이상의 대규모 정량 데이터가 필요할 때</button></li>
+        <li><button onclick="answer(this,'q4',false)">B. 예산이 매우 제한적일 때</button></li>
+        <li><button onclick="answer(this,'q4',true)">C. 예상치 못한 사용자 행동의 이유를 즉시 탐색해야 할 때</button></li>
+        <li><button onclick="answer(this,'q4',false)">D. 글로벌 다국어 참가자를 동시에 모집해야 할 때</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q4"></p>
+    </div>
+
+    <!-- Q5 -->
+    <div class="quiz-section">
+      <p class="quiz-question">Q5. 다음 Task Scenario 중 사용성 테스트에 적합한 것은?</p>
+      <ul class="quiz-options">
+        <li><button onclick="answer(this,'q5',false)">A. "'검색' 버튼을 클릭해 '블루투스 이어폰'을 검색하세요"</button></li>
+        <li><button onclick="answer(this,'q5',false)">B. "상품 상세 페이지에서 '장바구니 담기' 버튼을 눌러 주세요"</button></li>
+        <li><button onclick="answer(this,'q5',true)">C. "친구에게 선물할 블루투스 이어폰을 사고 싶습니다. 원하는 제품을 찾아 주문을 완료해 주세요"</button></li>
+        <li><button onclick="answer(this,'q5',false)">D. "이 앱이 사용하기 쉬운지 평가해 주세요"</button></li>
+      </ul>
+      <p class="quiz-feedback" id="fb-q5"></p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="lesson-nav">
+      <a href="0008-prototyping-techniques.html">← Day 8 — 프로토타이핑 기법</a>
+      <a href="index.html">목록으로 →</a>
+    </nav>
+
+    <!-- Ask teacher nudge -->
+    <div class="ask-teacher">
+      궁금한 점이 생겼나요? 에이전트에게 바로 물어보세요. 이 워크스페이스의 맥락을 유지한 채로 이어서 설명해 드립니다.
+    </div>
+
+  </div>
+
+  <script>
+    const answered = {};
+
+    function answer(btn, qid, isCorrect) {
+      if (answered[qid]) return;
+      answered[qid] = true;
+
+      const options = btn.closest('.quiz-options');
+      const fb = document.getElementById('fb-' + qid);
+
+      options.querySelectorAll('button').forEach(b => b.disabled = true);
+
+      if (isCorrect) {
+        btn.classList.add('correct');
+        fb.textContent = '정답입니다! ✓';
+        fb.className = 'quiz-feedback correct';
+      } else {
+        btn.classList.add('wrong');
+        fb.textContent = '오답입니다. 위 내용을 다시 읽고 정답을 찾아보세요.';
+        fb.className = 'quiz-feedback wrong';
+      }
+    }
+  </script>
+</body>
+</html>
