@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — 힙 (Heap)</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<h1>힙 (Heap)</h1>
+<div class="lesson-meta">
+  <span class="day-badge">Day 8</span>
+  <span class="lesson-date">2026-06-29</span>
+  &nbsp;·&nbsp; 최대힙·최소힙, 배열 표현, 힙 정렬, 우선순위 큐
+</div>
+
+<!-- ─── 진행 상황 ─── -->
+<div class="progress-section">
+  <h3>학습 진행 상황 (Day 8 / 20)</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 40%;"></div>
+  </div>
+  <span class="progress-label">40% 완료 — 다음: 균형 이진 트리 (AVL / Red-Black)</span>
+</div>
+
+<!-- ─── 학습 목표 ─── -->
+<h2>학습 목표</h2>
+<p>이 레슨을 마치면 다음을 할 수 있다:</p>
+<ul>
+  <li>힙의 두 가지 성질(구조 성질·힙 성질)을 설명할 수 있다.</li>
+  <li>완전 이진 트리를 배열로 표현하고, 인덱스 공식으로 부모·자식을 계산할 수 있다.</li>
+  <li><code>heapify-up</code>(삽입)과 <code>heapify-down</code>(삭제)의 동작을 손으로 추적할 수 있다.</li>
+  <li>힙 정렬의 원리를 설명하고 O(n log n) 시간·O(1) 공간 복잡도를 이해한다.</li>
+  <li>우선순위 큐(Priority Queue)의 개념과 파이썬 <code>heapq</code> 모듈 사용법을 안다.</li>
+</ul>
+
+<!-- ─── 1. 힙이란? ─── -->
+<h2>1. 힙(Heap)이란?</h2>
+<p>
+  <strong>힙</strong>은 <em>완전 이진 트리(complete binary tree)</em>에
+  <em>힙 성질(heap property)</em>을 추가한 자료구조다.
+  두 조건이 모두 만족되어야 힙이다:
+</p>
+<ol>
+  <li><strong>구조 성질</strong> — 완전 이진 트리: 마지막 레벨을 제외한 모든 레벨이 꽉 차 있고,
+      마지막 레벨은 왼쪽부터 채워진다.</li>
+  <li><strong>힙 성질</strong> — 부모 노드의 값이 항상 자식보다 크거나 같다(최대힙)
+      또는 작거나 같다(최소힙).</li>
+</ol>
+
+<div class="callout">
+  <div class="callout-title">최대힙 vs 최소힙</div>
+  <ul>
+    <li><strong>최대힙(Max-Heap)</strong>: 부모 ≥ 자식 → 루트에 최댓값이 위치</li>
+    <li><strong>최소힙(Min-Heap)</strong>: 부모 ≤ 자식 → 루트에 최솟값이 위치</li>
+  </ul>
+  <p>BST와 달리 왼쪽·오른쪽 자식 간에 순서 제약이 없다. 오직 <em>부모-자식</em> 관계만 규정된다.</p>
+</div>
+
+<div class="diagram">
+최대힙 예시:
+
+           16
+          /   \
+        14      10
+       /  \    /  \
+      8    7  9    3
+     / \  /
+    2   4 1
+
+  부모 ≥ 자식 조건이 모든 노드에서 성립:
+  16 ≥ 14, 16 ≥ 10
+  14 ≥ 8,  14 ≥ 7
+  10 ≥ 9,  10 ≥ 3  ✓
+</div>
+<p class="diagram-caption">최대힙 — 루트(16)가 전체 최댓값이며, 각 부모는 자식보다 크거나 같다.</p>
+
+<!-- ─── 2. 배열 표현 ─── -->
+<h2>2. 배열로 표현하기</h2>
+<p>
+  힙은 <em>완전 이진 트리</em>이기 때문에 포인터 없이 <strong>배열 하나</strong>로 완벽하게 표현된다.
+  인덱스 <code>i</code>의 노드에 대해:
+</p>
+<ul>
+  <li><strong>부모</strong>: <code>⌊(i - 1) / 2⌋</code></li>
+  <li><strong>왼쪽 자식</strong>: <code>2i + 1</code></li>
+  <li><strong>오른쪽 자식</strong>: <code>2i + 2</code></li>
+</ul>
+
+<div class="diagram">
+트리:                  배열 표현 (인덱스 0 기반):
+
+         16             인덱스:  0   1   2   3   4   5   6   7   8   9
+        /   \           값:     16  14  10   8   7   9   3   2   4   1
+      14      10
+     /  \    /  \        16의 자식: 인덱스 1(14), 2(10)
+    8    7  9    3       14의 자식: 인덱스 3(8),  4(7)
+   / \  /                8의 부모:  인덱스 ⌊(3-1)/2⌋ = 1 → 14 ✓
+  2   4 1
+</div>
+<p class="diagram-caption">완전 이진 트리는 배열에 빈자리 없이 담긴다. 포인터가 불필요하다.</p>
+
+<p>배열 표현의 장점:</p>
+<ul>
+  <li>메모리 오버헤드 없음 (포인터 불필요)</li>
+  <li>캐시 친화적 — 연속 메모리 접근</li>
+  <li>인덱스 산술만으로 부모·자식 이동 O(1)</li>
+</ul>
+
+<!-- ─── 3. 삽입 ─── -->
+<h2>3. 삽입 — Heapify-Up (Bubble-Up)</h2>
+<p>
+  새 원소를 배열 끝(트리의 마지막 위치)에 추가한 뒤,
+  힙 성질이 만족될 때까지 부모와 교환하며 위로 올린다.
+</p>
+
+<pre>def push(heap, value):
+    heap.append(value)          # 1. 끝에 추가
+    i = len(heap) - 1
+    while i > 0:                # 2. 부모와 비교하며 올리기
+        parent = (i - 1) // 2
+        if heap[parent] < heap[i]:   # 최대힙: 부모가 더 작으면 교환
+            heap[parent], heap[i] = heap[i], heap[parent]
+            i = parent
+        else:
+            break               # 힙 성질 만족 → 종료
+</pre>
+
+<div class="diagram">
+최대힙에 15 삽입:
+
+초기:   [16, 14, 10, 8, 7, 9, 3, 2, 4, 1]
+Step 1  끝에 추가: [..., 1, 15]   i=10
+Step 2  parent=4 (값 7) < 15 → 교환:  [..., 15, 7, ..., 1]  i=4
+Step 3  parent=1 (값 14) < 15 → 교환:  [..., 15, 14, ...] i=1
+Step 4  parent=0 (값 16) ≥ 15 → 종료
+
+결과: [16, 15, 10, 8, 14, 9, 3, 2, 4, 1, 7]
+</div>
+<p class="diagram-caption">Heapify-Up — 새 원소가 제자리를 찾을 때까지 부모와 교환하며 올라간다.</p>
+
+<div class="callout">
+  <div class="callout-title">시간 복잡도</div>
+  <p>트리의 높이 = O(log n) → 삽입은 <strong>O(log n)</strong></p>
+</div>
+
+<!-- ─── 4. 최솟값/최댓값 추출 ─── -->
+<h2>4. 루트 추출 — Heapify-Down (Sift-Down)</h2>
+<p>
+  힙의 루트(최대힙의 최댓값, 최소힙의 최솟값)를 꺼낼 때:
+</p>
+<ol>
+  <li>루트를 결과로 저장한다.</li>
+  <li>배열 <em>마지막 원소</em>를 루트 자리로 이동하고 배열 크기를 줄인다.</li>
+  <li>새 루트를 자식과 비교하며 힙 성질이 만족될 때까지 아래로 내린다.</li>
+</ol>
+
+<pre>def pop(heap):
+    if not heap:
+        return None
+    root = heap[0]
+    heap[0] = heap.pop()        # 마지막 원소를 루트로
+    i, n = 0, len(heap)
+    while True:                 # Heapify-Down
+        left, right = 2*i+1, 2*i+2
+        largest = i
+        if left < n and heap[left] > heap[largest]:
+            largest = left
+        if right < n and heap[right] > heap[largest]:
+            largest = right
+        if largest == i:
+            break               # 힙 성질 만족
+        heap[i], heap[largest] = heap[largest], heap[i]
+        i = largest
+    return root
+</pre>
+
+<div class="diagram">
+최대힙에서 루트(16) 추출:
+
+초기:   [16, 15, 10, 8, 14, 9, 3, 2, 4, 1, 7]
+Step 1  루트(16) 저장, 끝(7)을 루트로: [7, 15, 10, 8, 14, 9, 3, 2, 4, 1]
+Step 2  i=0: left=1(15), right=2(10) → largest=1 → 교환(7↔15): [15, 7, 10, ...]
+Step 3  i=1: left=3(8), right=4(14) → largest=4 → 교환(7↔14): [..., 14, 8, ..., 7, ...]
+Step 4  i=4: left=9(1), right=없음 → 1 < 7 → 종료
+
+결과: [15, 14, 10, 8, 7, 9, 3, 2, 4, 1]  반환값: 16
+</div>
+<p class="diagram-caption">Heapify-Down — 마지막 원소가 루트에서 내려가며 제자리를 찾는다.</p>
+
+<!-- ─── 5. 힙 구축 ─── -->
+<h2>5. 힙 구축 — Build-Heap</h2>
+<p>
+  임의의 배열을 힙으로 변환할 때 원소를 하나씩 삽입하면 O(n log n)이 걸린다.
+  더 효율적인 방법은 <strong>Floyd's Build-Heap</strong>으로, O(n)에 완성된다.
+</p>
+
+<pre>def build_heap(arr):
+    n = len(arr)
+    # 마지막 내부 노드(leaf가 아닌 노드)부터 역순으로 heapify-down
+    for i in range(n // 2 - 1, -1, -1):
+        _sift_down(arr, i, n)
+</pre>
+
+<div class="callout">
+  <div class="callout-title">왜 O(n)인가?</div>
+  <p>
+    높이 <code>h</code>인 노드는 최대 <code>h</code>번 교환이 필요하다.
+    높이별 노드 수의 합이 기하급수적으로 감소하여, 전체 비용의 합이 O(n)으로 수렴한다.
+  </p>
+</div>
+
+<!-- ─── 6. 힙 정렬 ─── -->
+<h2>6. 힙 정렬 (Heap Sort)</h2>
+<p>
+  힙 정렬은 두 단계로 이루어진다:
+</p>
+<ol>
+  <li><strong>Build-Heap</strong>: 배열을 최대힙으로 변환 — O(n)</li>
+  <li><strong>반복 추출</strong>: 루트(최댓값)를 배열 끝과 교환하고,
+      힙 크기를 1씩 줄이며 Heapify-Down 수행 — O(n log n)</li>
+</ol>
+
+<pre>def heap_sort(arr):
+    n = len(arr)
+    # 1단계: 최대힙 구축
+    for i in range(n // 2 - 1, -1, -1):
+        _sift_down(arr, i, n)
+    # 2단계: 정렬
+    for end in range(n - 1, 0, -1):
+        arr[0], arr[end] = arr[end], arr[0]   # 최댓값을 뒤로
+        _sift_down(arr, 0, end)               # 줄어든 힙 재정렬
+
+def _sift_down(arr, i, n):
+    while True:
+        left, right, largest = 2*i+1, 2*i+2, i
+        if left < n and arr[left] > arr[largest]:   largest = left
+        if right < n and arr[right] > arr[largest]: largest = right
+        if largest == i: break
+        arr[i], arr[largest] = arr[largest], arr[i]
+        i = largest
+
+# 사용 예시
+data = [3, 1, 4, 1, 5, 9, 2, 6]
+heap_sort(data)
+print(data)  # [1, 1, 2, 3, 4, 5, 6, 9]
+</pre>
+
+<table>
+  <thead>
+    <tr><th>항목</th><th>값</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>시간 복잡도 (평균·최악)</td><td>O(n log n)</td></tr>
+    <tr><td>공간 복잡도</td><td>O(1) — 제자리 정렬</td></tr>
+    <tr><td>안정 정렬 여부</td><td>✗ (불안정)</td></tr>
+    <tr><td>비교 기반 정렬</td><td>✓</td></tr>
+  </tbody>
+</table>
+
+<!-- ─── 7. 우선순위 큐 ─── -->
+<h2>7. 우선순위 큐 (Priority Queue)</h2>
+<p>
+  <strong>우선순위 큐</strong>는 각 원소에 우선순위가 있고,
+  항상 <em>우선순위가 가장 높은 원소</em>가 먼저 꺼내지는 자료구조다.
+  힙은 우선순위 큐의 가장 일반적인 구현 방법이다.
+</p>
+
+<div class="callout">
+  <div class="callout-title">실전 응용</div>
+  <ul>
+    <li>운영체제 <strong>프로세스 스케줄링</strong> — 높은 우선순위 프로세스 먼저 실행</li>
+    <li><strong>다익스트라(Dijkstra) 최단경로</strong> — 최소 비용 정점 선택</li>
+    <li><strong>이벤트 시뮬레이션</strong> — 가장 이른 시각 이벤트 처리</li>
+    <li><strong>미디언(Median) 유지</strong> — 최대힙 + 최소힙 조합</li>
+  </ul>
+</div>
+
+<h3>파이썬 <code>heapq</code> 모듈</h3>
+<p>파이썬의 <code>heapq</code>는 <strong>최소힙</strong>을 기본으로 제공한다.</p>
+
+<pre>import heapq
+
+# 최소힙 (기본)
+pq = []
+heapq.heappush(pq, 5)
+heapq.heappush(pq, 1)
+heapq.heappush(pq, 3)
+print(heapq.heappop(pq))   # 1  (최솟값)
+
+# 최대힙: 값에 -1을 곱해서 저장
+max_pq = []
+for v in [5, 1, 3]:
+    heapq.heappush(max_pq, -v)
+print(-heapq.heappop(max_pq))   # 5  (최댓값)
+
+# 리스트를 힙으로 변환 (O(n))
+data = [3, 1, 4, 1, 5, 9, 2, 6]
+heapq.heapify(data)
+print(data[0])   # 1 (최솟값)
+
+# (우선순위, 값) 튜플 사용 — 우선순위 큐 패턴
+tasks = []
+heapq.heappush(tasks, (2, "low-priority task"))
+heapq.heappush(tasks, (0, "critical task"))
+heapq.heappush(tasks, (1, "normal task"))
+print(heapq.heappop(tasks))   # (0, 'critical task')
+</pre>
+
+<!-- ─── 8. 성능 요약 ─── -->
+<h2>8. 성능 요약</h2>
+<table>
+  <thead>
+    <tr><th>연산</th><th>시간 복잡도</th><th>비고</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>삽입 (push)</td><td>O(log n)</td><td>heapify-up</td></tr>
+    <tr><td>루트 추출 (pop)</td><td>O(log n)</td><td>heapify-down</td></tr>
+    <tr><td>루트 조회 (peek)</td><td>O(1)</td><td>배열[0]</td></tr>
+    <tr><td>힙 구축 (build-heap)</td><td>O(n)</td><td>Floyd 알고리즘</td></tr>
+    <tr><td>힙 정렬</td><td>O(n log n)</td><td>공간 O(1)</td></tr>
+    <tr><td>임의 원소 검색</td><td>O(n)</td><td>힙은 탐색에 최적화되지 않음</td></tr>
+  </tbody>
+</table>
+
+<div class="callout warning">
+  <div class="callout-title">BST와 힙의 차이</div>
+  <ul>
+    <li><strong>힙</strong>: 루트에서 최대/최솟값을 O(1)에 조회, 임의 탐색은 O(n). 항상 완전 이진 트리 형태 유지.</li>
+    <li><strong>BST</strong>: 임의 값 탐색 O(log n), 루트가 최대/최솟값임을 보장하지 않음. 삽입 순서에 따라 편향될 수 있음.</li>
+  </ul>
+</div>
+
+<!-- ─── 퀴즈 ─── -->
+<h2>지식 확인 퀴즈</h2>
+<script src="../assets/quiz.js"></script>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. 최대힙에서 루트 원소를 추출(pop)할 때 시간 복잡도는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="a"> O(1)</label></li>
+    <li><label><input type="radio" name="q1" value="b"> O(log n)</label></li>
+    <li><label><input type="radio" name="q1" value="c"> O(n)</label></li>
+    <li><label><input type="radio" name="q1" value="d"> O(n log n)</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="checkQuiz('q1','b','루트를 제거한 뒤 마지막 원소를 루트로 올리고 heapify-down을 수행합니다. 힙의 높이는 O(log n)이므로 추출도 O(log n)입니다.')">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. 힙에서 임의의 값(예: 중간값)을 탐색하는 시간 복잡도는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="a"> O(1)</label></li>
+    <li><label><input type="radio" name="q2" value="b"> O(log n)</label></li>
+    <li><label><input type="radio" name="q2" value="c"> O(n)</label></li>
+    <li><label><input type="radio" name="q2" value="d"> O(n log n)</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="checkQuiz('q2','c','힙은 루트(최대/최솟값)에만 O(1) 접근을 보장합니다. BST와 달리 왼쪽·오른쪽 자식 간 순서 제약이 없으므로 임의 탐색은 모든 원소를 확인해야 하는 O(n)입니다.')">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. n개 원소를 하나씩 삽입하지 않고 임의 배열에서 힙을 만드는 Floyd Build-Heap의 시간 복잡도는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="a"> O(n log n)</label></li>
+    <li><label><input type="radio" name="q3" value="b"> O(n)</label></li>
+    <li><label><input type="radio" name="q3" value="c"> O(log n)</label></li>
+    <li><label><input type="radio" name="q3" value="d"> O(n²)</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="checkQuiz('q3','b','Floyd Build-Heap은 마지막 내부 노드부터 역순으로 heapify-down을 수행합니다. 높이별 노드 수가 기하급수적으로 감소하여 전체 비용이 O(n)으로 수렴합니다.')">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. 파이썬 <code>heapq</code> 모듈은 기본적으로 어떤 힙을 제공하는가?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="a"> 최대힙 (Max-Heap)</label></li>
+    <li><label><input type="radio" name="q4" value="b"> 최소힙 (Min-Heap)</label></li>
+    <li><label><input type="radio" name="q4" value="c"> 이진 탐색 트리 (BST)</label></li>
+    <li><label><input type="radio" name="q4" value="d"> 균형 힙 (Balanced Heap)</label></li>
+  </ul>
+  <button class="quiz-submit" onclick="checkQuiz('q4','b','파이썬 heapq는 최소힙입니다. 최대힙이 필요하면 값에 -1을 곱해서 저장하는 패턴을 사용합니다.')">확인</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ─── 참고 자료 ─── -->
+<div class="primary-source">
+  <div class="ps-label">권장 학습 자료</div>
+  <p>
+    <strong>CLRS — Introduction to Algorithms, 4th ed., Chapter 6 (Heapsort)</strong>:
+    힙 정렬과 우선순위 큐의 정형적 분석이 담긴 표준 교재.
+    <a href="https://mitpress.mit.edu/9780262046305/introduction-to-algorithms/" target="_blank" rel="noopener">MIT Press 도서 페이지</a>
+  </p>
+  <p style="margin-top:0.5rem;">
+    <strong>Visualgo Heap</strong>: 삽입·삭제·힙 정렬 과정을 단계별로 시각화.
+    <a href="https://visualgo.net/en/heap" target="_blank" rel="noopener">visualgo.net/en/heap</a>
+  </p>
+  <p style="margin-top:0.5rem;">
+    <strong>파이썬 공식 문서 — heapq</strong>: 모듈 사용법과 내부 알고리즘 설명.
+    <a href="https://docs.python.org/3/library/heapq.html" target="_blank" rel="noopener">docs.python.org/3/library/heapq.html</a>
+  </p>
+</div>
+
+<!-- ─── 다음 레슨 안내 ─── -->
+<div class="callout success">
+  <div class="callout-title">다음 레슨 예고</div>
+  <p>
+    <strong>Day 9 — 균형 이진 트리 (AVL / Red-Black)</strong>:
+    BST의 편향 문제를 해결하는 자동 균형 트리를 배운다.
+    AVL 트리의 회전 연산과 Red-Black 트리의 색상 규칙으로 최악에서도 O(log n)을 보장하는 방법을 다룬다.
+    이전 레슨 → <a href="./0007-bst.html">Day 7 — 이진 탐색 트리 (BST)</a>
+  </p>
+</div>
+
+<!-- ─── 질문 배너 ─── -->
+<div class="ask-teacher">
+  ✏️ 궁금한 점이 있으면 언제든지 질문하세요. 힙 구현, 최대/최소힙 변환, 다익스트라 연결 등 무엇이든 물어볼 수 있습니다.
+</div>
+
+<!-- ─── 관련 참고 자료 ─── -->
+<h2>관련 참고 자료</h2>
+<ul>
+  <li><a href="../reference/glossary.html">용어 사전 (Glossary)</a></li>
+  <li><a href="./0006-tree-basics.html">Day 6 — 트리 기초</a> (선수 학습)</li>
+  <li><a href="./0007-bst.html">Day 7 — 이진 탐색 트리 (BST)</a> (선수 학습)</li>
+  <li><a href="./index.html">전체 레슨 목록</a></li>
+</ul>
+
+<div class="lesson-footer">
+  <div>자료구조 학습 워크스페이스 · Day 8</div>
+  <div class="lesson-nav">
+    <a href="./0007-bst.html">← Day 7 BST</a>
+    <a href="./index.html">레슨 목록</a>
+  </div>
+</div>
+
+</body>
+</html>
