@@ -1,6 +1,6 @@
 ---
 name: study-track
-description: Use this skill when the user wants to create or continue a subject-specific IT learning workspace, avoid repeating completed topics, record completed lessons, or periodically commit and push learning progress. Trigger for Korean or English requests such as "IT 과목 학습 폴더 만들어줘", "컴퓨터 구조 이어서 학습", "완료한 부분 중복 없이 다음 학습", "학습 진행상황 저장", "git push로 업데이트", "continue my OS study", or any request to track a course-like learning path over multiple sessions.
+description: Use this skill when the user wants to create or continue a subject-specific IT learning workspace, continue beyond an exhausted plan, avoid repeating completed topics, record completed lessons, or periodically commit and push learning progress. Trigger for Korean or English requests such as "IT 과목 학습 폴더 만들어줘", "컴퓨터 구조 이어서 학습", "완료한 부분 중복 없이 다음 학습", "Day30 이후 계속 진행", "학습 진행상황 저장", "git push로 업데이트", "continue my OS study", or any request to track a course-like learning path over multiple sessions.
 disable-model-invocation: true
 argument-hint: "Which IT subject should be created or continued?"
 ---
@@ -79,6 +79,19 @@ Do not start these tracks with basic Python syntax. Start with the first practic
 
 For senior backend interview subjects, focus on 10+ year practitioner expectations: architecture trade-offs, system design, scale, reliability, data modeling, transactions, concurrency, distributed systems, APIs, security, observability, incident response, deployment, technical leadership, and communication. Include mock interview questions, answer frameworks, senior-level follow-ups, strong/weak answer examples, and self-check rubrics. Do not turn the track into junior CS trivia unless the topic is used to evaluate production reasoning.
 
+Senior backend interview lessons must be detailed enough for a learner who finds the interview question difficult. Do not only list definitions, answer bullets, or comparison tables. For each hard concept or interview question, explain:
+
+- the real production situation behind the question
+- the prerequisite concept in plain Korean before using senior-level terms
+- why interviewers ask it and what signal they are evaluating
+- a step-by-step reasoning path from problem constraints to answer
+- trade-offs, failure modes, and when the preferred answer changes
+- strong answer, weak answer, and why the weak answer is weak
+- follow-up questions with model reasoning, not just final answers
+- common misconceptions and how to correct them
+
+Quiz and self-check feedback must explain why each wrong option is wrong and why the correct answer is better. Avoid short feedback like "오답입니다. 다시 읽어보세요." for senior backend interview lessons.
+
 ## New subject workflow
 
 When the subject folder does not exist:
@@ -123,13 +136,27 @@ Use this `PROGRESS.md` structure:
 When the subject folder already exists:
 
 1. Read `PROGRESS.md` and identify the highest completed Day.
-2. Read the planned learning path and find the next uncompleted Day.
+2. Read the planned learning path and find the next uncompleted Day. If the planned learning path is exhausted, extend it before creating the lesson.
 3. Check `lessons/` and `learning-records/` numbering to choose the next sequential file number.
 4. Create exactly one next lesson unless the user explicitly asks for more. Lesson files must be self-contained `.html` files under `lessons/`; do not create Markdown lesson files in `lessons/`, even if older lessons used `.md`.
 5. Reuse existing `assets/` before creating new assets.
 6. Update `lessons/index.html` so GitHub Pages can show the lesson list for the folder URL.
 7. Update `PROGRESS.md` immediately after completing the lesson.
 8. Add or update learning records only for demonstrated understanding, corrected misconceptions, prior knowledge, or mission changes.
+
+## Continuing after the planned path is exhausted
+
+Do not treat Day 30, the last planned Day, or an empty `## 다음 예정 학습` table as course completion unless the user explicitly asks to stop.
+
+When all planned Days are completed:
+
+1. Set the next Day to one greater than the highest completed Day.
+2. Choose a new topic that advances the subject mission without duplicating completed material.
+3. Prefer deeper treatment of completed foundations when that is the next useful step, but do not limit continuation to the same topic. Add adjacent or newly needed topics when they better serve the learner.
+4. Base the topic choice on `MISSION.md`, `RESOURCES.md`, completed lesson titles, learning records, and gaps implied by the current path.
+5. Good continuation topics include advanced theory, production application, design trade-offs, debugging and failure analysis, performance, security, reliability, case studies, interview follow-ups, and project-style synthesis.
+6. Add the new Day to `## 다음 예정 학습`, then create the lesson and update `PROGRESS.md` using the normal completion workflow.
+7. Ask the user only when the next useful topic would change the subject mission or create a separate subject workspace.
 
 If the user asks for a specific topic:
 
