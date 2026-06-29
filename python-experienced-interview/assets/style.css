@@ -1,0 +1,268 @@
+/* Python Experienced Interview — 공유 스타일시트 */
+
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #232636;
+  --border: #2e3150;
+  --accent: #7c83fd;
+  --accent2: #56cfb2;
+  --warn: #f4c430;
+  --danger: #e06c75;
+  --success: #98c379;
+  --text: #e0e4f0;
+  --text-muted: #8891b4;
+  --code-bg: #12141f;
+  --radius: 8px;
+  --font-sans: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.75;
+  padding: 2rem 1rem 6rem;
+}
+
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+.lesson-header {
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+.lesson-tag {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.2em 0.75em;
+  border-radius: 99px;
+  margin-bottom: 0.75rem;
+}
+.lesson-header h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #fff;
+}
+.lesson-meta {
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* ── Sections ── */
+section { margin-bottom: 3rem; }
+h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--accent);
+  border-left: 4px solid var(--accent);
+  padding-left: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent2);
+  margin: 1.5rem 0 0.75rem;
+}
+h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--warn);
+  margin: 1.25rem 0 0.5rem;
+}
+p { margin-bottom: 0.85rem; }
+ul, ol { margin: 0.5rem 0 0.85rem 1.5rem; }
+li { margin-bottom: 0.35rem; }
+strong { color: #fff; font-weight: 700; }
+em { color: var(--accent2); font-style: normal; font-weight: 600; }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.card.accent { border-color: var(--accent); }
+.card.warn   { border-color: var(--warn); }
+.card.danger { border-color: var(--danger); }
+.card.success{ border-color: var(--success); }
+
+.card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+.card.accent .card-label { color: var(--accent); }
+.card.warn   .card-label { color: var(--warn); }
+.card.danger .card-label { color: var(--danger); }
+.card.success .card-label { color: var(--success); }
+
+/* ── Interview Question Box ── */
+.interview-q {
+  background: var(--surface2);
+  border-left: 5px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 1rem 1.25rem;
+  margin: 1.25rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+.interview-q::before {
+  content: "면접 질문";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+
+/* ── Code blocks ── */
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  overflow-x: auto;
+  margin: 0.85rem 0 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  tab-size: 4;
+}
+code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  color: #abb2bf;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* Syntax highlight classes */
+.kw { color: #c678dd; }
+.fn { color: #61afef; }
+.st { color: #98c379; }
+.cm { color: #5c6370; font-style: italic; }
+.num{ color: #d19a66; }
+.cls{ color: #e5c07b; }
+.op { color: #56b6c2; }
+
+/* ── Answer blocks ── */
+.answer-block {
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin: 0.85rem 0;
+}
+.answer-block.strong {
+  background: rgba(152, 195, 121, 0.08);
+  border: 1px solid rgba(152, 195, 121, 0.35);
+}
+.answer-block.weak {
+  background: rgba(224, 108, 117, 0.08);
+  border: 1px solid rgba(224, 108, 117, 0.35);
+}
+.answer-block .ab-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+.answer-block.strong .ab-label { color: var(--success); }
+.answer-block.weak   .ab-label { color: var(--danger); }
+
+/* ── Rubric table ── */
+.rubric {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin-top: 0.75rem;
+}
+.rubric th {
+  background: var(--surface2);
+  color: var(--accent);
+  text-align: left;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--border);
+}
+.rubric td {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.rubric tr:last-child td { border-bottom: none; }
+.rubric tr:hover td { background: var(--surface2); }
+.badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15em 0.6em;
+  border-radius: 99px;
+}
+.badge.high   { background: rgba(152,195,121,0.2); color: var(--success); }
+.badge.mid    { background: rgba(244,196,48,0.18); color: var(--warn); }
+.badge.low    { background: rgba(224,108,117,0.2); color: var(--danger); }
+
+/* ── Callout ── */
+.callout {
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  margin: 1rem 0;
+  font-size: 0.92rem;
+}
+.callout.info  { background: rgba(86,207,178,0.09); border-left: 4px solid var(--accent2); }
+.callout.warn  { background: rgba(244,196,48,0.08); border-left: 4px solid var(--warn); }
+.callout.tip   { background: rgba(124,131,253,0.09); border-left: 4px solid var(--accent); }
+.callout-title { font-weight: 700; margin-bottom: 0.3rem; }
+.callout.info .callout-title  { color: var(--accent2); }
+.callout.warn .callout-title  { color: var(--warn); }
+.callout.tip  .callout-title  { color: var(--accent); }
+
+/* ── Nav ── */
+.lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 1.5rem;
+  margin-top: 3rem;
+  font-size: 0.88rem;
+}
+.lesson-nav a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.lesson-nav a:hover { text-decoration: underline; }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  body { font-size: 15px; }
+  .lesson-header h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.15rem; }
+}

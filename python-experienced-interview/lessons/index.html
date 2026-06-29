@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>파이썬 경력자 Interview 학습 목록</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .lesson-list { list-style: none; padding: 0; margin: 1.5rem 0; }
+    .lesson-list li {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 0.9rem 1.1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 0.6rem;
+      background: var(--surface);
+      transition: border-color 0.15s;
+    }
+    .lesson-list li:hover { border-color: var(--accent); }
+    .lesson-list a { color: var(--text); text-decoration: none; font-weight: 600; flex: 1; }
+    .lesson-list a:hover { color: var(--accent); }
+    .day-badge {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .status-done { color: var(--success); font-size: 0.8rem; }
+    .status-todo { color: var(--text-muted); font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header class="lesson-header">
+    <span class="lesson-tag">학습 목록</span>
+    <h1>파이썬 경력자 Interview</h1>
+    <p class="lesson-meta">Python 이해도 · 실무 판단력 · 인터뷰 답변 훈련</p>
+  </header>
+
+  <section>
+    <h2>완료한 레슨</h2>
+    <ul class="lesson-list">
+      <li>
+        <span class="day-badge">Day 1</span>
+        <a href="./0001-python-data-model.html">Python Data Model — __dunder__ 메서드와 객체 프로토콜</a>
+        <span class="status-done">완료</span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>예정 레슨</h2>
+    <ul class="lesson-list">
+      <li><span class="day-badge">Day 2</span><span style="color:var(--text-muted);flex:1">메모리 관리 — 레퍼런스 카운팅과 가비지 컬렉션</span><span class="status-todo">예정</span></li>
+      <li><span class="day-badge">Day 3</span><span style="color:var(--text-muted);flex:1">GIL — 동시성 한계와 우회 전략</span><span class="status-todo">예정</span></li>
+      <li><span class="day-badge">Day 4</span><span style="color:var(--text-muted);flex:1">Iterator/Generator 프로토콜과 lazy evaluation</span><span class="status-todo">예정</span></li>
+      <li><span class="day-badge">Day 5</span><span style="color:var(--text-muted);flex:1">asyncio와 이벤트 루프</span><span class="status-todo">예정</span></li>
+      <li><span class="day-badge">Day 6</span><span style="color:var(--text-muted);flex:1">Context Manager — 리소스 관리 패턴</span><span class="status-todo">예정</span></li>
+      <li><span class="day-badge">Day 7</span><span style="color:var(--text-muted);flex:1">Descriptor 프로토콜</span><span class="status-todo">예정</span></li>
+      <li><span class="day-badge">Day 8</span><span style="color:var(--text-muted);flex:1">Decorator — 함수형 패턴과 실무 활용</span><span class="status-todo">예정</span></li>
+      <li><span class="day-badge">Day 9</span><span style="color:var(--text-muted);flex:1">Python 실행 모델 — 바이트코드, 네임스페이스, LEGB</span><span class="status-todo">예정</span></li>
+      <li><span class="day-badge">Day 10</span><span style="color:var(--text-muted);flex:1">Typing 심화 — Protocol, Generic, TypeVar</span><span class="status-todo">예정</span></li>
+      <li><span class="day-badge">Day 11</span><span style="color:var(--text-muted);flex:1">Testing 전략 — pytest 심화, mock, 격리</span><span class="status-todo">예정</span></li>
+      <li><span class="day-badge">Day 12</span><span style="color:var(--text-muted);flex:1">Debugging과 Profiling</span><span class="status-todo">예정</span></li>
+      <li><span class="day-badge">Day 13</span><span style="color:var(--text-muted);flex:1">패키징과 의존성 관리</span><span class="status-todo">예정</span></li>
+      <li><span class="day-badge">Day 14</span><span style="color:var(--text-muted);flex:1">표준 라이브러리 심화</span><span class="status-todo">예정</span></li>
+      <li><span class="day-badge">Day 15</span><span style="color:var(--text-muted);flex:1">유지보수성과 코드 품질</span><span class="status-todo">예정</span></li>
+    </ul>
+  </section>
+
+  <footer style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);color:var(--text-muted);font-size:0.82rem">
+    파이썬 경력자 Interview 학습 워크스페이스 · <a href="../PROGRESS.md" style="color:var(--accent)">PROGRESS.md</a>
+  </footer>
+</div>
+</body>
+</html>

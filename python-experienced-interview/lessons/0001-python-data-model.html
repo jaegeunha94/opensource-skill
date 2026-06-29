@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — Python Data Model | 파이썬 경력자 Interview</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="lesson-header">
+    <span class="lesson-tag">Day 1</span>
+    <h1>Python Data Model<br><span style="font-size:0.7em;color:var(--text-muted)">__dunder__ 메서드와 객체 프로토콜</span></h1>
+    <p class="lesson-meta">파이썬 경력자 Interview · 2026-06-29 · 약 45–60분 소요</p>
+  </header>
+
+  <!-- ── 왜 이 주제인가 ── -->
+  <section>
+    <h2>왜 면접에서 Python Data Model을 묻는가</h2>
+    <p>
+      Python data model은 Python의 <strong>"철학이 언어에 어떻게 구현되었는가"</strong>를 드러낸다.
+      인터뷰어가 data model을 묻는 이유는 단순히 API 암기 여부를 테스트하는 것이 아니라,
+      지원자가 <em>Python이 어떻게 동작하는지를 내부부터 이해하는가</em>를 평가하기 위해서다.
+    </p>
+    <p>
+      경력자라면 커스텀 클래스를 설계할 때 Python의 내장 기능(연산자, <code>len()</code>, <code>in</code>,
+      <code>for</code>, <code>with</code>)을 자연스럽게 통합해야 한다.
+      이 통합의 핵심 메커니즘이 data model이다.
+    </p>
+    <div class="callout tip">
+      <div class="callout-title">실무 연결</div>
+      커스텀 컨테이너, ORMs, API 응답 래퍼, 설정 객체, 수학적 타입(벡터, 행렬)을 직접 만들 때
+      data model을 모르면 Python답지 않은 코드가 된다. 예: <code>len(my_obj)</code> 대신
+      <code>my_obj.size()</code>를 써서 언어 관용구를 깨는 코드.
+    </div>
+  </section>
+
+  <!-- ── 전제 개념 ── -->
+  <section>
+    <h2>전제 개념부터 — Python Data Model이란 무엇인가</h2>
+    <p>
+      Python의 모든 것은 객체다. 그리고 Python 인터프리터는 특정 상황에서 객체의 <strong>특별한 이름을 가진 메서드</strong>를 자동으로 호출한다.
+      이 메서드들의 이름은 앞뒤에 이중 언더스코어(<code>__</code>)가 붙어 있어서
+      "<strong>dunder(double underscore) 메서드</strong>" 또는 "magic method"라고 부른다.
+    </p>
+    <p>
+      Python Data Model = <strong>Python 인터프리터와 사용자 클래스 사이의 계약(contract)</strong>이다.
+      이 계약을 구현하면 내장 함수·연산자·문법이 커스텀 클래스에서도 동일하게 동작한다.
+    </p>
+    <div class="card accent">
+      <div class="card-label">핵심 정의</div>
+      <p>
+        Python Data Model은 Python 언어가 제공하는 <strong>객체 프로토콜 명세</strong>다.
+        <code>__init__</code>, <code>__repr__</code>, <code>__len__</code>, <code>__getitem__</code> 등의
+        dunder 메서드를 구현함으로써 객체가 Python 내장 연산과 통합된다.
+      </p>
+      <p style="margin-bottom:0">
+        공식 참조: <em>Python Language Reference → Data Model</em>
+        (<a href="https://docs.python.org/3/reference/datamodel.html" style="color:var(--accent)">docs.python.org</a>)
+      </p>
+    </div>
+
+    <h3>인터프리터가 dunder를 호출하는 방식</h3>
+    <p>
+      중요한 점: Python은 <strong>항상 클래스에서 dunder를 찾는다</strong>, 인스턴스에서 찾지 않는다.
+      이는 메타클래스와 descriptor 프로토콜과 연결되는 핵심 구현 세부 사항이다.
+    </p>
+    <pre><span class="cm"># 사용자가 쓰는 코드</span>
+<span class="fn">len</span>(my_list)
+
+<span class="cm"># 인터프리터가 실제로 하는 일 (단순화)</span>
+<span class="fn">type</span>(my_list).__len__(my_list)  <span class="cm"># 인스턴스 아닌 클래스에서 찾는다</span></pre>
+
+    <div class="callout warn">
+      <div class="callout-title">흔한 오해</div>
+      "dunder를 인스턴스에 monkey-patch해도 동작한다"고 생각하는 경우가 있다.
+      특수 메서드(special method)에 한해서는 <strong>클래스 레벨에서 정의된 것만 인터프리터가 인식한다.</strong>
+      인스턴스 <code>__dict__</code>에 직접 넣어도 무시된다.
+    </div>
+  </section>
+
+  <!-- ── 면접 Q1 ── -->
+  <section>
+    <h2>면접 질문 ① — <code>__repr__</code>과 <code>__str__</code>의 차이</h2>
+    <div class="interview-q">
+      Python에서 <code>__repr__</code>과 <code>__str__</code>의 차이를 설명하고,
+      커스텀 클래스를 만들 때 어떻게 구현해야 하는지 말해보세요.
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li><code>str()</code>과 <code>repr()</code>이 언제 각각 호출되는지 아는가</li>
+      <li><code>__repr__</code>의 목적(디버깅/재현)과 <code>__str__</code>의 목적(사용자 표시)을 구분하는가</li>
+      <li>Fall-back 관계를 아는가 (<code>__str__</code>이 없으면 <code>__repr__</code> 사용)</li>
+    </ul>
+
+    <h3>전제 개념 — 언제 무엇이 호출되는가</h3>
+    <table class="rubric" style="margin-bottom:1rem">
+      <thead><tr><th>호출 방식</th><th>사용 메서드</th><th>기본값 (미구현 시)</th></tr></thead>
+      <tbody>
+        <tr><td><code>str(obj)</code>, <code>print(obj)</code>, f-string <code>f"{obj}"</code></td><td><code>__str__</code></td><td><code>__repr__</code>로 fall-back</td></tr>
+        <tr><td><code>repr(obj)</code>, REPL 출력, <code>f"{obj!r}"</code></td><td><code>__repr__</code></td><td><code>object.__repr__</code> (메모리 주소 포함 기본값)</td></tr>
+        <tr><td>컨테이너 안 요소 출력 (list, dict 등)</td><td><code>__repr__</code></td><td>—</td></tr>
+      </tbody>
+    </table>
+    <div class="callout info">
+      <div class="callout-title">왜 컨테이너는 항상 __repr__인가</div>
+      <code>[1, "hello", my_obj]</code>를 출력할 때, Python은 각 요소에 <code>repr()</code>을 쓴다.
+      이는 컨테이너 내 출력이 항상 "재현 가능한 표현"이어야 한다는 Python 철학 때문이다.
+      <code>__str__</code>만 정의하면 리스트 안에서 사람이 읽기 불편한 기본 repr이 나온다.
+    </div>
+
+    <h3>모범 답변 구조</h3>
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변 예시</div>
+      <p>
+        "<code>__repr__</code>은 개발자를 위한 표현으로, 가능하면 해당 객체를 재현할 수 있는 Python 표현식처럼 작성합니다.
+        REPL에서 표시되거나 디버깅에 쓰입니다.
+        <code>__str__</code>은 최종 사용자를 위한 표현으로, 읽기 편한 문자열을 반환합니다.
+        <code>__str__</code>이 정의되지 않으면 Python은 <code>__repr__</code>로 fall-back하지만,
+        역방향 fall-back은 없습니다.
+      </p>
+      <p>
+        실무에서는 최소한 <code>__repr__</code>은 항상 구현합니다.
+        <code>@dataclass</code>는 자동으로 repr을 생성하지만, 커스텀 클래스에서는 직접 작성해야
+        로그와 디버거에서 의미있는 정보를 볼 수 있습니다.
+        또한 <code>eval(repr(obj)) == obj</code>를 만족시키도록 설계하는 것이 이상적이지만,
+        이 계약은 강제되지 않으며 복잡한 클래스에서는 현실적으로 어렵습니다."
+      </p>
+    </div>
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변 예시 (왜 약한가)</div>
+      <p>
+        "<code>__str__</code>은 문자열 변환이고 <code>__repr__</code>은 객체 정보를 보여줍니다."
+      </p>
+      <p style="color:var(--danger);font-size:0.88rem;margin-bottom:0">
+        ✗ Fall-back 관계를 모른다. 언제 어느 것이 호출되는지 설명 없음.
+        컨테이너에서 repr이 쓰인다는 것을 모른다.
+        실무 적용(로깅, 디버깅, eval 계약)에 대한 언급이 없다.
+      </p>
+    </div>
+
+    <h3>코드 예시</h3>
+    <pre><span class="kw">class</span> <span class="cls">Point</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="fn">self</span>, x: <span class="cls">float</span>, y: <span class="cls">float</span>) <span class="op">-&gt;</span> <span class="kw">None</span>:
+        <span class="fn">self</span>.x <span class="op">=</span> x
+        <span class="fn">self</span>.y <span class="op">=</span> y
+
+    <span class="kw">def</span> <span class="fn">__repr__</span>(<span class="fn">self</span>) <span class="op">-&gt;</span> <span class="cls">str</span>:
+        <span class="cm"># eval(repr(p)) == p 가 성립하도록 작성</span>
+        <span class="kw">return</span> <span class="st">f"Point(x=</span><span class="op">{</span><span class="fn">self</span>.x<span class="op">!r}</span><span class="st">, y=</span><span class="op">{</span><span class="fn">self</span>.y<span class="op">!r}</span><span class="st">)"</span>
+
+    <span class="kw">def</span> <span class="fn">__str__</span>(<span class="fn">self</span>) <span class="op">-&gt;</span> <span class="cls">str</span>:
+        <span class="cm"># 사람이 읽기 쉬운 형식</span>
+        <span class="kw">return</span> <span class="st">f"(</span><span class="op">{</span><span class="fn">self</span>.x<span class="op">}</span><span class="st">, </span><span class="op">{</span><span class="fn">self</span>.y<span class="op">}</span><span class="st">)"</span>
+
+p <span class="op">=</span> <span class="cls">Point</span>(<span class="num">1.0</span>, <span class="num">2.0</span>)
+<span class="fn">print</span>(<span class="fn">repr</span>(p))    <span class="cm"># Point(x=1.0, y=2.0)</span>
+<span class="fn">print</span>(<span class="fn">str</span>(p))     <span class="cm"># (1.0, 2.0)</span>
+<span class="fn">print</span>([p])        <span class="cm"># [Point(x=1.0, y=2.0)]  ← repr 사용</span></pre>
+
+    <h3>Senior-level follow-up</h3>
+    <div class="card">
+      <p><strong>Q: <code>__format__</code>은 무엇이고 언제 필요한가?</strong></p>
+      <p>
+        <code>f"{obj:.2f}"</code>처럼 포맷 스펙을 줄 때 호출된다.
+        <code>__format__(self, format_spec: str)</code>을 구현하지 않으면
+        <code>format_spec</code>이 있을 때 기본 <code>__str__</code>에서 오류가 발생할 수 있다.
+        수치 타입이나 날짜 타입 등 포맷이 중요한 클래스에서 구현한다.
+      </p>
+      <p style="margin-bottom:0"><strong>Q: <code>logging</code> 모듈에서 lazy evaluation을 위해 어떤 dunder가 중요한가?</strong></p>
+      <p style="margin-bottom:0">
+        <code>logging.debug("%s", obj)</code>는 DEBUG 레벨이 비활성화면 <code>str(obj)</code>를
+        호출하지 않는다. 반면 <code>logging.debug(f"{obj}")</code>는 항상 <code>__str__</code>을 호출한다.
+        대형 객체나 연산 비용이 있는 <code>__str__</code>이 있을 때 성능 차이로 이어진다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── 면접 Q2 ── -->
+  <section>
+    <h2>면접 질문 ② — <code>__eq__</code>와 <code>__hash__</code>의 계약</h2>
+    <div class="interview-q">
+      Python에서 <code>__eq__</code>를 오버라이드할 때 <code>__hash__</code>를 함께 정의해야 하는 이유를 설명하세요.
+      어떤 규칙을 따라야 하며, 잘못 구현하면 어떤 문제가 생기나요?
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li><code>dict</code>와 <code>set</code>의 내부 동작(해시 테이블)을 이해하는가</li>
+      <li><code>__eq__</code>만 정의했을 때 Python이 <code>__hash__</code>를 <code>None</code>으로 만드는 이유를 아는가</li>
+      <li>해시 불변성(hash invariant) 계약을 설명할 수 있는가</li>
+      <li>가변 객체의 해시 가능성 문제를 인식하는가</li>
+    </ul>
+
+    <h3>전제 개념 — 해시 테이블이란</h3>
+    <p>
+      Python의 <code>dict</code>와 <code>set</code>은 내부적으로 <strong>해시 테이블</strong>로 구현된다.
+      키를 찾을 때는 먼저 <code>hash(key)</code>로 버킷을 찾고,
+      그 버킷 안에서 <code>==</code>으로 정확한 키를 찾는다.
+    </p>
+    <p>
+      이 때문에 <strong>핵심 불변식(invariant)</strong>이 생긴다:
+    </p>
+    <div class="card accent">
+      <div class="card-label">해시 계약 (Hash Contract)</div>
+      <p><strong>a == b 이면 반드시 hash(a) == hash(b) 이어야 한다.</strong></p>
+      <p style="margin-bottom:0">
+        역은 성립하지 않는다: <code>hash(a) == hash(b)</code>여도 <code>a != b</code>일 수 있다(해시 충돌).
+        하지만 <code>a == b</code>인데 <code>hash(a) != hash(b)</code>라면
+        dict/set이 같은 키를 다른 버킷에서 찾으므로 찾지 못한다.
+      </p>
+    </div>
+
+    <h3>Python의 자동 동작 — 왜 <code>__hash__</code>가 None이 되는가</h3>
+    <pre><span class="kw">class</span> <span class="cls">BadPoint</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="fn">self</span>, x, y):
+        <span class="fn">self</span>.x, <span class="fn">self</span>.y <span class="op">=</span> x, y
+
+    <span class="kw">def</span> <span class="fn">__eq__</span>(<span class="fn">self</span>, other):
+        <span class="kw">return</span> (<span class="fn">self</span>.x, <span class="fn">self</span>.y) <span class="op">==</span> (other.x, other.y)
+    <span class="cm"># __hash__ 미정의!</span>
+
+p <span class="op">=</span> <span class="cls">BadPoint</span>(<span class="num">1</span>, <span class="num">2</span>)
+<span class="fn">hash</span>(p)     <span class="cm"># TypeError: unhashable type: 'BadPoint'</span>
+{p}         <span class="cm"># TypeError: unhashable type: 'BadPoint'</span></pre>
+
+    <div class="callout info">
+      <div class="callout-title">Python 규칙 (Python Language Reference)</div>
+      클래스에서 <code>__eq__</code>를 정의하면,
+      Python은 자동으로 <code>__hash__</code>를 <code>None</code>으로 설정한다.
+      이는 의도적이다: <code>__eq__</code>를 바꿨는데 <code>__hash__</code>를 그대로 두면
+      계약이 깨질 수 있으므로, Python이 강제로 "hashable 아님"을 만든다.
+    </div>
+
+    <h3>올바른 구현</h3>
+    <pre><span class="kw">class</span> <span class="cls">Point</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="fn">self</span>, x: <span class="cls">float</span>, y: <span class="cls">float</span>) <span class="op">-&gt;</span> <span class="kw">None</span>:
+        <span class="fn">self</span>.x <span class="op">=</span> x
+        <span class="fn">self</span>.y <span class="op">=</span> y
+
+    <span class="kw">def</span> <span class="fn">__eq__</span>(<span class="fn">self</span>, other: <span class="cls">object</span>) <span class="op">-&gt;</span> <span class="cls">bool</span>:
+        <span class="kw">if not</span> <span class="fn">isinstance</span>(other, <span class="cls">Point</span>):
+            <span class="kw">return</span> <span class="kw">NotImplemented</span>  <span class="cm"># bool 아닌 NotImplemented 반환</span>
+        <span class="kw">return</span> (<span class="fn">self</span>.x, <span class="fn">self</span>.y) <span class="op">==</span> (other.x, other.y)
+
+    <span class="kw">def</span> <span class="fn">__hash__</span>(<span class="fn">self</span>) <span class="op">-&gt;</span> <span class="cls">int</span>:
+        <span class="cm"># __eq__에서 비교하는 필드를 tuple로 묶어 hash</span>
+        <span class="kw">return</span> <span class="fn">hash</span>((<span class="fn">self</span>.x, <span class="fn">self</span>.y))
+
+p1 <span class="op">=</span> <span class="cls">Point</span>(<span class="num">1.0</span>, <span class="num">2.0</span>)
+p2 <span class="op">=</span> <span class="cls">Point</span>(<span class="num">1.0</span>, <span class="num">2.0</span>)
+<span class="fn">print</span>(p1 <span class="op">==</span> p2)           <span class="cm"># True</span>
+<span class="fn">print</span>(<span class="fn">hash</span>(p1) <span class="op">==</span> <span class="fn">hash</span>(p2))  <span class="cm"># True — 계약 만족</span>
+<span class="fn">print</span>({p1, p2})           <span class="cm"># {Point(x=1.0, y=2.0)} — 중복 제거됨</span></pre>
+
+    <h3>가변 객체의 딜레마</h3>
+    <p>
+      가변 객체(필드가 바뀔 수 있는 클래스)는 원칙적으로 해시 불가능하게 만들어야 한다.
+      필드가 바뀌면 <code>hash</code> 값이 바뀌어 dict/set에서 영구히 찾을 수 없게 되기 때문이다.
+    </p>
+    <pre><span class="kw">class</span> <span class="cls">MutablePoint</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="fn">self</span>, x, y):
+        <span class="fn">self</span>.x, <span class="fn">self</span>.y <span class="op">=</span> x, y
+
+    <span class="kw">def</span> <span class="fn">__eq__</span>(<span class="fn">self</span>, other):
+        <span class="kw">return</span> (<span class="fn">self</span>.x, <span class="fn">self</span>.y) <span class="op">==</span> (other.x, other.y)
+
+    <span class="cm"># 가변이므로 명시적으로 unhashable 선언</span>
+    __hash__ <span class="op">=</span> <span class="kw">None</span></pre>
+
+    <div class="card warn">
+      <div class="card-label">Trade-off</div>
+      <p>
+        가변 객체를 hashable로 만들고 싶다면 <strong>identity 기반 hash</strong>를 쓸 수 있다:
+        <code>hash(id(self))</code>. 이 경우 <code>__eq__</code>도 identity 비교여야 일관성이 유지된다.
+        즉 내용이 같아도 다른 객체면 hash가 다르다. 이는 list가 아닌 dict처럼 참조로 식별해야 하는
+        객체에 적합하다.
+      </p>
+      <p style="margin-bottom:0">
+        Python의 기본 <code>object</code>가 바로 이 방식이다:
+        기본 <code>__eq__</code>는 identity, 기본 <code>__hash__</code>는 <code>id()</code> 기반.
+      </p>
+    </div>
+
+    <h3>모범 답변 구조</h3>
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변 예시</div>
+      <p>
+        "Python의 <code>dict</code>와 <code>set</code>은 해시 테이블로 구현되어 있어서
+        키를 조회할 때 먼저 <code>hash(key)</code>로 버킷을 찾고,
+        그 버킷에서 <code>==</code>으로 정확한 키를 찾습니다.
+        이 때문에 '<code>a == b</code>이면 반드시 <code>hash(a) == hash(b)</code>'라는 계약이 있습니다.
+      </p>
+      <p>
+        <code>__eq__</code>를 정의하면 Python이 자동으로 <code>__hash__</code>를 <code>None</code>으로
+        설정해서 이 클래스를 unhashable로 만듭니다.
+        계약이 깨질 수 있는 상황을 언어가 강제 방지하는 것입니다.
+      </p>
+      <p>
+        올바른 구현은 <code>__eq__</code>에서 비교하는 필드와 동일한 필드를 tuple로 묶어
+        <code>hash()</code>에 넘기는 것입니다.
+        가변 객체는 <code>__hash__ = None</code>으로 명시적으로 unhashable로 선언하거나,
+        identity 기반 해시를 써야 합니다."
+      </p>
+    </div>
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변 예시 (왜 약한가)</div>
+      <p>"<code>__eq__</code>를 쓰면 <code>__hash__</code>도 구현해야 한다고 들었습니다."</p>
+      <p style="color:var(--danger);font-size:0.88rem;margin-bottom:0">
+        ✗ 왜 그래야 하는지 설명이 없다. 해시 테이블 동작 원리 모름.
+        계약 위반시 실제 버그(dict에서 키를 못 찾는 상황)를 설명하지 못한다.
+        NotImplemented를 반환해야 하는 이유도 모른다.
+      </p>
+    </div>
+
+    <h3>Senior-level follow-up</h3>
+    <div class="card">
+      <p><strong>Q: <code>__eq__</code>에서 <code>False</code>가 아닌 <code>NotImplemented</code>를 반환하는 이유는?</strong></p>
+      <p>
+        <code>NotImplemented</code>를 반환하면 Python이 반대쪽 객체의 <code>__eq__</code>를 시도한다
+        (reflected operation). 예: <code>a == b</code>에서 <code>a.__eq__(b)</code>가
+        <code>NotImplemented</code>를 반환하면, Python은 <code>b.__eq__(a)</code>를 시도한다.
+        <code>False</code>를 반환하면 이 기회가 없다.
+        다른 라이브러리 타입(예: numpy 배열)과 비교할 때 올바른 결과를 얻으려면
+        <code>NotImplemented</code>를 써야 한다.
+      </p>
+      <p style="margin-bottom:0"><strong>Q: <code>@dataclass(eq=True, frozen=True)</code>는 무엇을 해주는가?</strong></p>
+      <p style="margin-bottom:0">
+        <code>frozen=True</code>면 dataclass의 필드를 수정할 수 없게 하고
+        자동으로 <code>__hash__</code>를 생성한다.
+        <code>eq=True</code>(기본값)만 쓰면 <code>__hash__ = None</code>이 된다.
+        불변 값 객체(value object) 패턴을 만들 때 <code>frozen=True</code>가 핵심이다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── 면접 Q3 ── -->
+  <section>
+    <h2>면접 질문 ③ — 시퀀스 프로토콜과 <code>__len__</code> / <code>__getitem__</code></h2>
+    <div class="interview-q">
+      커스텀 클래스를 Python의 시퀀스처럼 동작하게 만들려면 어떤 메서드를 구현해야 하나요?
+      <code>__len__</code>과 <code>__getitem__</code>만 구현해도 충분한가요?
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li>시퀀스 프로토콜의 최소 요구사항을 아는가</li>
+      <li><code>__getitem__</code>만 있어도 iteration이 가능한 이유를 아는가</li>
+      <li><code>__contains__</code>, <code>__reversed__</code> 등 선택적 메서드를 아는가</li>
+      <li><code>collections.abc.Sequence</code>를 활용하는 방법을 아는가</li>
+    </ul>
+
+    <h3>상세 설명</h3>
+    <p>
+      Python의 iteration 메커니즘은 두 가지 프로토콜 중 하나를 찾는다:
+    </p>
+    <ol>
+      <li><strong>Iterator 프로토콜</strong>: <code>__iter__</code> (→ iterator 객체 반환)</li>
+      <li><strong>구식 시퀀스 프로토콜</strong>: <code>__getitem__</code>만 있어도 Python이 0부터 시작해서 <code>IndexError</code>가 날 때까지 반복</li>
+    </ol>
+    <pre><span class="kw">class</span> <span class="cls">SquareSequence</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="fn">self</span>, n: <span class="cls">int</span>) <span class="op">-&gt;</span> <span class="kw">None</span>:
+        <span class="fn">self</span>.n <span class="op">=</span> n
+
+    <span class="kw">def</span> <span class="fn">__len__</span>(<span class="fn">self</span>) <span class="op">-&gt;</span> <span class="cls">int</span>:
+        <span class="kw">return</span> <span class="fn">self</span>.n
+
+    <span class="kw">def</span> <span class="fn">__getitem__</span>(<span class="fn">self</span>, index: <span class="cls">int</span>) <span class="op">-&gt;</span> <span class="cls">int</span>:
+        <span class="kw">if</span> index <span class="op">&gt;=</span> <span class="fn">self</span>.n:
+            <span class="kw">raise</span> <span class="cls">IndexError</span>(<span class="st">"index out of range"</span>)
+        <span class="kw">return</span> index <span class="op">**</span> <span class="num">2</span>
+
+sq <span class="op">=</span> <span class="cls">SquareSequence</span>(<span class="num">5</span>)
+<span class="fn">print</span>(<span class="fn">list</span>(sq))       <span class="cm"># [0, 1, 4, 9, 16] — __iter__ 없이도 됨</span>
+<span class="fn">print</span>(<span class="num">3</span> <span class="kw">in</span> sq)         <span class="cm"># True — __contains__ 없이 선형 탐색으로 fallback</span>
+<span class="fn">print</span>(<span class="fn">len</span>(sq))        <span class="cm"># 5</span></pre>
+
+    <div class="callout warn">
+      <div class="callout-title">성능 함정</div>
+      <code>__iter__</code>를 구현하지 않으면 <code>in</code> 연산자가 선형 탐색을 한다.
+      정렬된 시퀀스나 해시 기반 컬렉션이라면 <code>__contains__</code>를 별도 구현해서
+      O(log n) 또는 O(1) 탐색을 제공해야 한다.
+    </div>
+
+    <h3><code>collections.abc.Sequence</code> 활용</h3>
+    <pre><span class="kw">from</span> collections.abc <span class="kw">import</span> <span class="cls">Sequence</span>
+
+<span class="kw">class</span> <span class="cls">MySeq</span>(<span class="cls">Sequence</span>):
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="fn">self</span>, data):
+        <span class="fn">self</span>._data <span class="op">=</span> data
+
+    <span class="kw">def</span> <span class="fn">__getitem__</span>(<span class="fn">self</span>, index):
+        <span class="kw">return</span> <span class="fn">self</span>._data[index]
+
+    <span class="kw">def</span> <span class="fn">__len__</span>(<span class="fn">self</span>):
+        <span class="kw">return</span> <span class="fn">len</span>(<span class="fn">self</span>._data)
+    <span class="cm"># Sequence ABC가 count(), index(), __contains__(), __iter__(), __reversed__() 자동 제공</span></pre>
+
+    <p>
+      <code>collections.abc.Sequence</code>를 상속하면 <code>__getitem__</code>과 <code>__len__</code>만
+      구현해도 나머지 시퀀스 메서드가 자동으로 구현된다. 경력자라면 이 ABC를 활용할 줄 알아야 한다.
+    </p>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변 예시</div>
+      <p>
+        "<code>__getitem__</code>과 <code>__len__</code>을 구현하면 Python이 시퀀스처럼 취급합니다.
+        <code>__iter__</code> 없이도 Python이 0부터 <code>IndexError</code>까지 반복해서
+        iteration을 지원합니다. 하지만 <code>in</code> 연산자는 <code>__contains__</code>가 없으면
+        선형 탐색으로 fallback되어 성능 문제가 생길 수 있습니다.
+      </p>
+      <p>
+        실무에서는 <code>collections.abc.Sequence</code>를 상속해서
+        <code>__getitem__</code>과 <code>__len__</code>만 구현하는 것이 권장됩니다.
+        나머지 메서드를 ABC가 자동으로 제공하고, 타입 체커에서도 올바르게 인식됩니다."
+      </p>
+    </div>
+
+    <h3>Senior-level follow-up</h3>
+    <div class="card">
+      <p><strong>Q: <code>__getitem__</code>이 슬라이싱을 지원하려면 무엇을 해야 하는가?</strong></p>
+      <p>
+        <code>__getitem__</code>의 <code>index</code> 인자가 <code>slice</code> 객체일 수 있다.
+        <code>isinstance(index, slice)</code>로 분기해서 처리하거나,
+        내부 list에 위임하면 자동으로 처리된다.
+        <code>slice.indices(len(self))</code>로 start, stop, step을 정규화할 수 있다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── 면접 Q4 ── -->
+  <section>
+    <h2>면접 질문 ④ — <code>__bool__</code>과 암묵적 진리값 평가</h2>
+    <div class="interview-q">
+      Python에서 <code>if my_obj:</code>가 어떻게 동작하는지 설명하세요.
+      어떤 우선순위로 메서드가 호출되나요?
+    </div>
+
+    <h3>상세 설명</h3>
+    <p>Python의 진리값 평가(truthiness) 우선순위:</p>
+    <ol>
+      <li><code>__bool__</code>이 있으면 호출 — <code>True</code>/<code>False</code> 반환</li>
+      <li><code>__bool__</code>이 없고 <code>__len__</code>이 있으면 — <code>len() != 0</code>이면 <code>True</code></li>
+      <li>둘 다 없으면 — 항상 <code>True</code> (기본 object 동작)</li>
+    </ol>
+    <pre><span class="kw">class</span> <span class="cls">Container</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="fn">self</span>, items):
+        <span class="fn">self</span>.items <span class="op">=</span> items
+
+    <span class="kw">def</span> <span class="fn">__len__</span>(<span class="fn">self</span>):
+        <span class="kw">return</span> <span class="fn">len</span>(<span class="fn">self</span>.items)
+
+c <span class="op">=</span> <span class="cls">Container</span>([])
+<span class="fn">print</span>(<span class="fn">bool</span>(c))    <span class="cm"># False — __bool__ 없으므로 __len__ 기반</span>
+
+<span class="kw">class</span> <span class="cls">AlwaysFalse</span>:
+    <span class="kw">def</span> <span class="fn">__bool__</span>(<span class="fn">self</span>):
+        <span class="kw">return</span> <span class="kw">False</span>
+
+    <span class="kw">def</span> <span class="fn">__len__</span>(<span class="fn">self</span>):
+        <span class="kw">return</span> <span class="num">100</span>  <span class="cm"># __bool__이 있으므로 이 값은 무시됨</span>
+
+<span class="fn">print</span>(<span class="fn">bool</span>(<span class="cls">AlwaysFalse</span>()))  <span class="cm"># False</span></pre>
+
+    <div class="callout info">
+      <div class="callout-title">실무 함정</div>
+      ORM 쿼리셋(Django QuerySet 등)은 <code>__len__</code>을 호출하면 즉시 DB 쿼리가 실행된다.
+      <code>if queryset:</code>은 <code>__bool__</code>이 없으면 <code>len(queryset)</code>을 호출해서
+      전체 결과를 메모리에 올린다. Django는 이를 위해 <code>__bool__</code>을 별도 구현해
+      <code>__len__</code>과 다른 경로로 최적화한다.
+    </div>
+  </section>
+
+  <!-- ── 전체 개요 ── -->
+  <section>
+    <h2>핵심 dunder 메서드 개요표</h2>
+    <table class="rubric">
+      <thead>
+        <tr><th>카테고리</th><th>메서드</th><th>트리거</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>표현</td><td><code>__repr__</code>, <code>__str__</code>, <code>__format__</code></td><td><code>repr()</code>, <code>str()</code>, f-string</td></tr>
+        <tr><td>비교</td><td><code>__eq__</code>, <code>__lt__</code>, <code>__le__</code>, <code>__gt__</code>, <code>__ge__</code>, <code>__ne__</code></td><td><code>==</code>, <code>&lt;</code> 등 비교 연산자</td></tr>
+        <tr><td>해시</td><td><code>__hash__</code></td><td><code>hash()</code>, dict/set 키</td></tr>
+        <tr><td>진리값</td><td><code>__bool__</code>, <code>__len__</code></td><td><code>if obj:</code>, <code>bool()</code></td></tr>
+        <tr><td>산술</td><td><code>__add__</code>, <code>__mul__</code>, <code>__radd__</code> 등</td><td><code>+</code>, <code>*</code> 등</td></tr>
+        <tr><td>컨테이너</td><td><code>__len__</code>, <code>__getitem__</code>, <code>__setitem__</code>, <code>__contains__</code></td><td><code>len()</code>, <code>[]</code>, <code>in</code></td></tr>
+        <tr><td>이터레이션</td><td><code>__iter__</code>, <code>__next__</code></td><td><code>for</code>, <code>iter()</code></td></tr>
+        <tr><td>컨텍스트</td><td><code>__enter__</code>, <code>__exit__</code></td><td><code>with</code></td></tr>
+        <tr><td>속성 접근</td><td><code>__getattr__</code>, <code>__setattr__</code>, <code>__getattribute__</code></td><td><code>.</code> 속성 접근</td></tr>
+        <tr><td>호출 가능</td><td><code>__call__</code></td><td><code>obj()</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── Self-check Rubric ── -->
+  <section>
+    <h2>자기 점검 Rubric</h2>
+    <table class="rubric">
+      <thead>
+        <tr><th>평가 항목</th><th>상</th><th>중</th><th>하</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>__repr__</code> vs <code>__str__</code></td>
+          <td><span class="badge high">상</span> fall-back 관계, 컨테이너 repr, eval 계약, logging lazy eval까지 설명</td>
+          <td><span class="badge mid">중</span> 각 메서드 역할과 fall-back 방향 설명</td>
+          <td><span class="badge low">하</span> "문자열 반환"만 아는 수준</td>
+        </tr>
+        <tr>
+          <td><code>__eq__</code> + <code>__hash__</code> 계약</td>
+          <td><span class="badge high">상</span> 해시 테이블 원리, 자동 None 이유, NotImplemented 용도, 가변 객체 딜레마까지</td>
+          <td><span class="badge mid">중</span> 계약(a==b → hash 같음), __hash__=None 이유 설명</td>
+          <td><span class="badge low">하</span> "같이 써야 한다"만 아는 수준</td>
+        </tr>
+        <tr>
+          <td>시퀀스 프로토콜</td>
+          <td><span class="badge high">상</span> ABC 활용, __contains__ 성능, 슬라이스 처리까지</td>
+          <td><span class="badge mid">중</span> __getitem__만으로 iteration 가능 이유 설명</td>
+          <td><span class="badge low">하</span> __len__, __getitem__ 이름만 아는 수준</td>
+        </tr>
+        <tr>
+          <td>진리값 평가 우선순위</td>
+          <td><span class="badge high">상</span> __bool__ → __len__ 순서, ORM lazy eval 함정까지</td>
+          <td><span class="badge mid">중</span> __bool__과 __len__ 우선순위 설명</td>
+          <td><span class="badge low">하</span> __bool__ 존재만 아는 수준</td>
+        </tr>
+        <tr>
+          <td>특수 메서드 클래스 탐색</td>
+          <td><span class="badge high">상</span> "인터프리터는 클래스에서 찾는다" + 인스턴스 monkey-patch 무의미 이유</td>
+          <td><span class="badge mid">중</span> 인스턴스 아닌 클래스에서 찾는다는 것을 안다</td>
+          <td><span class="badge low">하</span> 모르는 수준</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── 추천 자료 ── -->
+  <section>
+    <h2>이 레슨의 추천 1차 자료</h2>
+    <div class="card accent">
+      <div class="card-label">필독</div>
+      <p>
+        <strong>Fluent Python (2nd ed.) — Chapter 1: The Python Data Model</strong><br>
+        저자: Luciano Ramalho<br>
+        data model의 핵심을 FrenchDeck 예제로 단계적으로 설명하는 가장 좋은 입문 자료.
+      </p>
+      <p style="margin-bottom:0">
+        <strong>Python 공식 문서 — Data Model</strong><br>
+        <a href="https://docs.python.org/3/reference/datamodel.html" style="color:var(--accent)">docs.python.org/3/reference/datamodel.html</a><br>
+        모든 dunder 메서드의 공식 명세. 인터뷰 답변의 근거 자료로 활용.
+      </p>
+    </div>
+    <p style="color:var(--text-muted);font-size:0.88rem">
+      이 레슨에서 불분명한 부분이 있으면 위 공식 문서의 해당 섹션을 찾아 읽는 것을 권장합니다.
+      AI 튜터(Claude)에게 추가 질문을 해도 됩니다.
+    </p>
+  </section>
+
+  <!-- ── Nav ── -->
+  <nav class="lesson-nav">
+    <span style="color:var(--text-muted)">← 이전 레슨 없음</span>
+    <a href="./index.html">목록으로</a>
+    <span style="color:var(--text-muted)">Day 2: 메모리 관리 →</span>
+  </nav>
+
+</div>
+</body>
+</html>
