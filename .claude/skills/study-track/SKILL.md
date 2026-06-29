@@ -46,6 +46,9 @@ Examples:
 - `database-systems`
 - `networking`
 - `data-structures`
+- `python-backend-engineering`
+- `professional-python`
+- `senior-backend-interview`
 
 If the user gives a Korean subject name, map it to a stable English slug. Prefer common CS course names:
 
@@ -55,8 +58,26 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `네트워크` -> `computer-networking`
 - `자료구조` -> `data-structures`
 - `알고리즘` -> `algorithms`
+- `Python 백엔드` -> `python-backend-engineering`
+- `파이썬 백엔드` -> `python-backend-engineering`
+- `Backend 구성을 위한 Python 실무자 기준 학습` -> `python-backend-engineering`
+- `실무 파이썬` -> `professional-python`
+- `파이썬 실무` -> `professional-python`
+- `파이썬 Syntax 기초 아닌 실무자 기준` -> `professional-python`
+- `백엔드 10년차 이상 개발자 Interview` -> `senior-backend-interview`
+- `백엔드 시니어 인터뷰` -> `senior-backend-interview`
+- `Senior Backend Developer Interview` -> `senior-backend-interview`
 
 If the slug is ambiguous, ask one short clarifying question before creating the folder.
+
+For practitioner-focused Python subjects, assume the learner already knows basic syntax unless they explicitly ask for beginner review:
+
+- `python-backend-engineering`: Python backend construction for practitioners, including backend architecture, API design, service boundaries, persistence, transactions, authentication, background jobs, observability, deployment, and design concepts.
+- `professional-python`: practical Python beyond syntax, including idioms, project structure, packaging, dependency management, typing, errors and exceptions, testing, debugging, profiling, standard library depth, concurrency, maintainability, and production code quality.
+
+Do not start these tracks with basic Python syntax. Start with the first practical foundation needed for the subject and mention the assumed prerequisite in `MISSION.md`.
+
+For senior backend interview subjects, focus on 10+ year practitioner expectations: architecture trade-offs, system design, scale, reliability, data modeling, transactions, concurrency, distributed systems, APIs, security, observability, incident response, deployment, technical leadership, and communication. Include mock interview questions, answer frameworks, senior-level follow-ups, strong/weak answer examples, and self-check rubrics. Do not turn the track into junior CS trivia unless the topic is used to evaluate production reasoning.
 
 ## New subject workflow
 

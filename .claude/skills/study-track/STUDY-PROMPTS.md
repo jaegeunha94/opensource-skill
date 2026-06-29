@@ -107,3 +107,55 @@
 - 폴더가 있으면 `PROGRESS.md`를 읽고 완료한 내용은 중복하지 말고 다음 미완료 Day 레슨 하나를 생성해줘.
 - 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/ui-ux-terms` 브랜치에 push해줘. `main`에는 직접 push하지 마.
 ```
+
+## Python 백엔드 실무
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 Backend 구성을 위한 Python 실무자 기준 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: Backend 구성을 위한 Python 실무자 기준 학습
+폴더 slug: `python-backend-engineering`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- Python 기본 Syntax 학습부터 시작하지 말고, Python으로 백엔드를 구성하는 실무자 기준으로 진행해줘.
+- 설계 개념을 포함해서 API 설계, 서비스 경계, 데이터 저장소, 트랜잭션, 인증, 백그라운드 작업, 관측성, 배포까지 다뤄줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `PROGRESS.md`를 읽고 완료한 내용은 중복하지 말고 다음 미완료 Day 레슨 하나를 생성해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/python-backend-engineering` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## Python 실무
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 파이썬 Syntax 기초가 아닌 실무자 기준 Python 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: 파이썬 Syntax 기초 아닌 실무자 기준
+폴더 slug: `professional-python`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- Python 기본 Syntax 학습부터 시작하지 말고, 이미 기초 문법을 아는 실무자 기준으로 진행해줘.
+- Pythonic idiom, 프로젝트 구조, 패키징, 의존성 관리, 타입 힌트, 예외 처리, 테스트, 디버깅, 프로파일링, 표준 라이브러리, 동시성, 유지보수성을 중심으로 다뤄줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `PROGRESS.md`를 읽고 완료한 내용은 중복하지 말고 다음 미완료 Day 레슨 하나를 생성해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/professional-python` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## 백엔드 시니어 Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 백엔드 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: 백엔드 10년차 이상 개발자 Interview
+폴더 slug: `senior-backend-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 CS 암기나 주니어 문답이 아니라, 10년차 이상 백엔드 개발자 인터뷰에서 평가하는 실무 판단력 중심으로 진행해줘.
+- 시스템 설계, 아키텍처 trade-off, 확장성, 신뢰성, 데이터 모델링, 트랜잭션, 동시성, 분산 시스템, API 설계, 보안, 관측성, 장애 대응, 배포, 기술 리딩, 커뮤니케이션을 다뤄줘.
+- 각 레슨에는 면접 질문, 답변 구조, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `PROGRESS.md`를 읽고 완료한 내용은 중복하지 말고 다음 미완료 Day 레슨 하나를 생성해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-backend-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
