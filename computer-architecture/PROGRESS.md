@@ -12,13 +12,14 @@
 | 6 | 2026-06-26 | 메모리 계층 1 (Memory Hierarchy) | [0006-memory-hierarchy-1.html](lessons/0006-memory-hierarchy-1.html) |
 | 7 | 2026-06-27 | 메모리 계층 2 — 캐시 구조 (Cache Structures) | [0007-cache-structures.html](lessons/0007-cache-structures.html) |
 | 8 | 2026-06-28 | 메모리 계층 3 — 캐시 쓰기 정책 & 다단 캐시 | [0008-cache-write-policy.html](lessons/0008-cache-write-policy.html) |
+| 9 | 2026-06-29 | 명령어 집합 아키텍처 (ISA) — RISC vs CISC, 명령어 형식, 어드레싱 모드 | [0009-isa.html](lessons/0009-isa.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
 | ~~8~~ | ~~메모리 계층 3 (Cache 심화)~~ | ~~완료~~ |
-| 9 | 명령어 집합 아키텍처 (ISA) | RISC vs CISC, 명령어 형식, 어드레싱 모드 |
+| ~~9~~ | ~~명령어 집합 아키텍처 (ISA)~~ | ~~완료~~ |
 | 10 | 단순 프로세서 설계 (Simple CPU) | 단일 사이클 데이터패스, 제어 신호 |
 | 11 | 파이프라이닝 1 (Pipelining) | 5단계 파이프라인, 처리량 vs 지연 시간 |
 | 12 | 파이프라이닝 2 (Hazards) | 데이터 해저드, 제어 해저드, 구조 해저드 |
@@ -33,7 +34,7 @@
 
 ## 현재 학습 위치
 
-**Day 8 완료** — Write-Through/Write-Back 쓰기 정책, Write-Allocate/No-Write-Allocate, 다단 캐시(L1→L2→L3) AMAT 계산, Inclusive·Exclusive·NINE 포함 정책 학습 완료. 다음은 명령어 집합 아키텍처(ISA) — RISC vs CISC, 명령어 형식, 어드레싱 모드.
+**Day 9 완료** — ISA 개념, RISC vs CISC 설계 철학, RISC-V 6가지 명령어 형식(R/I/S/B/U/J), x86 가변 길이 명령어 형식, 7가지 어드레싱 모드(즉시·레지스터·직접·간접·베이스+오프셋·스케일인덱스·PC상대), RISC-V 레지스터 파일 ABI 학습 완료. 다음은 단순 프로세서 설계(Simple CPU) — 단일 사이클 데이터패스와 제어 신호.
 
 ## 습득한 핵심 개념
 
@@ -47,6 +48,6 @@
 - [x] 메모리 계층 구조 / SRAM vs DRAM (✓ Day 6)
 - [x] 캐시 구조 / Tag·Index·Offset·집합 연관 (✓ Day 7)
 - [x] 캐시 쓰기 정책 / 다단 캐시 / 포함 정책 (✓ Day 8)
-- [ ] ISA 개념 (예정 Day 9)
+- [x] ISA 개념 (✓ Day 9)
 - [ ] 파이프라이닝 (예정 Day 11-12)
 - [ ] 가상 메모리 (예정 Day 15-16)

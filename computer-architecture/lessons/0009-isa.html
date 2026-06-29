@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 9 — 명령어 집합 아키텍처 (ISA)</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 9</span>
+  <strong>명령어 집합 아키텍처 (ISA) — RISC vs CISC, 명령어 형식, 어드레싱 모드</strong>
+  <span class="lesson-date">· 2026-06-29</span>
+</div>
+
+<h1>CPU가 이해하는 언어 — 명령어 집합 아키텍처(ISA)의 모든 것</h1>
+
+<div class="progress-section">
+  <h3>학습 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 30%"></div>
+  </div>
+  <span class="progress-label">전체 커리큘럼의 약 30% 완료 · Day 9 / 30</span>
+</div>
+
+<h2>오늘 배울 것</h2>
+<ul>
+  <li>ISA가 무엇인지, 왜 소프트웨어와 하드웨어 사이의 계약이라 불리는지 이해한다</li>
+  <li>RISC와 CISC 설계 철학의 차이와 현실적 수렴 현상을 파악한다</li>
+  <li>RISC-V 명령어 형식(R/I/S/B/U/J)의 필드 구조를 분석한다</li>
+  <li>x86의 대표 명령어 형식과 RISC-V와의 차이를 비교한다</li>
+  <li>주소 지정 모드(Addressing Mode) 6가지를 이해하고 언제 사용하는지 안다</li>
+</ul>
+
+<!-- ============================================================
+     섹션 1: ISA란 무엇인가
+     ============================================================ -->
+<h2>1. ISA — 소프트웨어와 하드웨어 사이의 계약</h2>
+
+<p>
+  컴퓨터가 이해하는 유일한 언어는 기계어(Machine Code)입니다.
+  <strong>명령어 집합 아키텍처(ISA, Instruction Set Architecture)</strong>는
+  "어떤 명령어가 존재하며, 각 명령어가 어떤 비트 패턴으로 인코딩되고, 어떤 동작을 수행하는가"를 정의하는
+  공식 명세입니다.
+</p>
+
+<div class="callout">
+  <div class="callout-title">ISA의 핵심 역할</div>
+  ISA는 소프트웨어(컴파일러, OS, 프로그램)가 하드웨어(CPU 마이크로아키텍처)에 의존하지 않고도 동작하게 해주는 추상화 계층입니다.<br>
+  같은 ISA를 구현한 CPU라면 — 설계 세부 사항이 달라도 — 동일한 바이너리가 실행됩니다.
+</div>
+
+<div class="diagram">
+프로그램 (C/Python/Java)
+  │  컴파일 / JIT 컴파일
+  ▼
+기계어 바이너리  ← ISA가 정의하는 명령어들
+  │  CPU가 해석·실행 (마이크로아키텍처)
+  ▼
+하드웨어 (트랜지스터, 배선)
+
+ISA 예시:
+  x86-64  — Intel / AMD 데스크톱·서버 (CISC)
+  ARMv8   — 스마트폰, Apple M시리즈 (RISC)
+  RISC-V  — 오픈소스 표준 ISA (RISC)
+  MIPS    — 교육용, 임베디드 (RISC)
+</div>
+
+<p>ISA가 정의하는 내용:</p>
+<table>
+  <thead>
+    <tr><th>구성 요소</th><th>내용</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>레지스터 세트</td><td>개수, 크기, 용도(범용/특수)</td></tr>
+    <tr><td>명령어 집합</td><td>연산 종류(산술·논리·메모리·분기·시스템)</td></tr>
+    <tr><td>명령어 인코딩</td><td>고정 길이 vs 가변 길이, 필드 배치</td></tr>
+    <tr><td>데이터 타입</td><td>정수 폭(8/16/32/64 bit), 부동소수점</td></tr>
+    <tr><td>메모리 모델</td><td>주소 공간, 정렬 규칙, 엔디안</td></tr>
+    <tr><td>어드레싱 모드</td><td>피연산자를 어떻게 지정하는가</td></tr>
+    <tr><td>예외·인터럽트</td><td>트리거 조건, 핸들러 호출 방식</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================
+     섹션 2: RISC vs CISC
+     ============================================================ -->
+<h2>2. RISC vs CISC — 두 가지 설계 철학</h2>
+
+<h3>2-1. CISC (Complex Instruction Set Computer)</h3>
+
+<div class="diagram">
+탄생 배경 (1970–80년대):
+  · 메모리가 비싸고 느렸음 → 명령어 한 개에 복잡한 연산을 압축
+  · 컴파일러 기술이 미성숙 → 어셈블리 프로그래머가 직접 고수준 명령어 사용
+
+대표: x86 (Intel 8086 → Pentium → Core → Xeon)
+
+특징:
+  · 가변 길이 명령어 (x86: 1~15 바이트)
+  · 메모리 피연산자 직접 사용 가능  예) ADD AX, [0x1234]
+  · 수백 ~ 수천 개의 명령어
+  · 복잡한 명령어 → 마이크로코드(microcode)로 내부 분해·실행
+
+예시 (x86-64 어셈블리):
+  MOVSX RAX, WORD PTR [RBX + RCX*4 + 8]   ; 복잡한 어드레싱 + 부호 확장 로드
+  IMUL  RAX, RCX                           ; 64비트 곱셈
+  IDIV  RBX                                ; 나눗셈 (몫·나머지 동시 계산)
+</div>
+
+<h3>2-2. RISC (Reduced Instruction Set Computer)</h3>
+
+<div class="diagram">
+탄생 배경 (1980년대 IBM/Stanford/Berkeley 연구):
+  · 실제 프로그램을 분석하니 단순 명령어 몇 종류가 80% 이상 사용됨
+  · 복잡한 명령어를 하드웨어로 구현하면 파이프라인이 복잡해짐
+  → 단순·고정 길이 명령어로 클록 당 처리 효율 극대화
+
+대표: MIPS, ARM, RISC-V, SPARC, PowerPC
+
+특징:
+  · 고정 길이 명령어 (보통 32 bit)
+  · Load/Store 아키텍처: 메모리 접근은 Load·Store 명령어만
+  · 레지스터 간 연산만 허용 (예외: x86 같은 메모리 피연산자 없음)
+  · 명령어 수 적음 (수십 ~ 수백 개)
+  · 하드와이어드(hardwired) 컨트롤 → 파이프라인 단순화
+
+예시 (RISC-V 어셈블리):
+  lw   t0, 8(s1)        ; 메모리 → 레지스터 (Load)
+  mul  t1, t0, t2       ; 레지스터 × 레지스터
+  div  t3, t1, t4       ; 레지스터 ÷ 레지스터
+  sw   t3, 0(s2)        ; 레지스터 → 메모리 (Store)
+  ; 복잡한 어드레싱? → 별도 산술 명령어로 주소 계산 후 Load/Store
+</div>
+
+<h3>2-3. RISC vs CISC 비교</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>항목</th>
+      <th>CISC (x86)</th>
+      <th>RISC (ARM / RISC-V)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>명령어 길이</td><td>가변 (1–15 B)</td><td>고정 (32 bit)</td></tr>
+    <tr><td>명령어 수</td><td>수백~수천</td><td>수십~수백</td></tr>
+    <tr><td>메모리 피연산자</td><td>허용</td><td>Load/Store만</td></tr>
+    <tr><td>레지스터 수</td><td>적음 (범용 16개)</td><td>많음 (32개)</td></tr>
+    <tr><td>마이크로코드</td><td>일반적으로 사용</td><td>없거나 최소</td></tr>
+    <tr><td>파이프라인 설계</td><td>복잡 (가변 길이 파싱)</td><td>단순 (고정 길이 파싱)</td></tr>
+    <tr><td>전력 효율</td><td>상대적 낮음</td><td>높음 (모바일에 유리)</td></tr>
+    <tr><td>대표 프로세서</td><td>Intel Core, AMD Ryzen</td><td>Apple M4, ARM Cortex-A</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <div class="callout-title">현실에서의 수렴 — 경계가 흐려지다</div>
+  <strong>CISC의 RISC화:</strong> 현대 x86 CPU(Intel Core, AMD Zen)는 내부적으로 복잡한 x86 명령어를 단순한
+  <em>마이크로-op</em>(micro-operation)으로 분해한 뒤 RISC와 유사한 파이프라인에서 실행합니다.<br><br>
+  <strong>RISC의 CISC화:</strong> ARM과 RISC-V는 SIMD, 암호화, 압축 등 복잡한 특수 명령어 확장을 추가했습니다.<br><br>
+  결론: 설계 철학의 구분은 여전히 유효하지만, 성능 경쟁이 두 진영을 서로 닮게 만들고 있습니다.
+</div>
+
+<!-- ============================================================
+     섹션 3: 명령어 형식 — RISC-V
+     ============================================================ -->
+<h2>3. 명령어 형식 — RISC-V의 6가지 인코딩 타입</h2>
+
+<p>
+  RISC-V는 모든 명령어가 정확히 32비트입니다. 그 32비트를 어떤 필드로 나누느냐에 따라
+  6개 타입으로 분류됩니다.
+</p>
+
+<h3>3-1. 필드 구성 공통 요소</h3>
+
+<div class="diagram">
+비트 위치:  31       25 24   20 19   15 14  12 11   7 6     0
+
+공통 필드:  funct7    rs2    rs1    funct3  rd      opcode
+
+funct7 (7 bit): 연산 세부 구분 (예: ADD vs SUB)
+rs2    (5 bit): 소스 레지스터 2 번호 (0–31)
+rs1    (5 bit): 소스 레지스터 1 번호 (0–31)
+funct3 (3 bit): 연산 종류 세분화 (예: ADD vs XOR)
+rd     (5 bit): 목적지 레지스터 번호 (0–31)
+opcode (7 bit): 명령어 종류 대분류
+</div>
+
+<h3>3-2. R 타입 (Register — 레지스터 간 연산)</h3>
+
+<div class="diagram">
+비트:  31     25 | 24  20 | 19  15 | 14  12 | 11   7 | 6     0
+필드: [ funct7  ] [ rs2  ] [ rs1  ] [funct3] [  rd  ] [opcode]
+       7 bit      5 bit    5 bit    3 bit    5 bit    7 bit
+
+사용: 레지스터 ← 레지스터 op 레지스터
+
+예시:
+  add  t0, t1, t2     ; t0 = t1 + t2
+  sub  a0, a0, a1     ; a0 = a0 - a1
+  and  s0, s1, s2     ; s0 = s1 & s2
+  srl  t3, t4, t5     ; t3 = t4 >> t5 (논리 우시프트)
+
+opcode = 0110011 (OP)
+funct3 + funct7 가 연산 종류 결정:
+  ADD: funct7=0000000, funct3=000
+  SUB: funct7=0100000, funct3=000
+  AND: funct7=0000000, funct3=111
+  XOR: funct7=0000000, funct3=100
+</div>
+
+<h3>3-3. I 타입 (Immediate — 즉시값 포함)</h3>
+
+<div class="diagram">
+비트:  31          20 | 19  15 | 14  12 | 11   7 | 6     0
+필드: [   imm[11:0]  ] [ rs1  ] [funct3] [  rd  ] [opcode]
+       12 bit            5 bit    3 bit    5 bit    7 bit
+
+사용: 레지스터 ← 레지스터 op 즉시값 (12비트 부호 있는 정수)
+     또는: 메모리 Load (rd ← Mem[rs1 + imm])
+
+예시:
+  addi t0, t1, 10     ; t0 = t1 + 10
+  lw   a0, 8(sp)      ; a0 = Mem[sp + 8]    (4 바이트 로드)
+  lb   t2, -4(s0)     ; t2 = Mem[s0 - 4]   (1 바이트, 부호 확장)
+  jalr ra, 0(t0)      ; ra = PC+4; PC = t0 + 0  (간접 점프)
+
+imm 범위: -2048 ~ 2047 (12비트 부호 확장)
+</div>
+
+<h3>3-4. S 타입 (Store — 메모리 저장)</h3>
+
+<div class="diagram">
+비트:  31     25 | 24  20 | 19  15 | 14  12 | 11   7 | 6     0
+필드: [imm[11:5]] [ rs2  ] [ rs1  ] [funct3] [imm[4:0]] [opcode]
+       7 bit        5 bit    5 bit    3 bit    5 bit       7 bit
+
+사용: Mem[rs1 + imm] ← rs2  (메모리에 저장)
+
+imm이 두 조각으로 쪼개진 이유:
+  rd 자리(비트 11:7)를 재사용하여 rs2 소스 레지스터 필드를 확보하기 위함
+  디코더 하드웨어가 rs1·rs2 위치를 모든 타입에서 동일하게 유지 → 단순화
+
+예시:
+  sw   t0, 0(sp)      ; Mem[sp + 0] = t0  (4 바이트 저장)
+  sb   a1, -1(s3)     ; Mem[s3 - 1] = a1  (1 바이트 저장)
+</div>
+
+<h3>3-5. B 타입 (Branch — 조건 분기)</h3>
+
+<div class="diagram">
+비트:  31 | 30   25 | 24  20 | 19  15 | 14  12 | 11  8 | 7 | 6   0
+필드: [12] [10:5 ] [ rs2  ] [ rs1  ] [funct3] [ 4:1 ] [11] [opcode]
+      1b    6 bit    5 bit    5 bit    3 bit    4 bit   1b   7 bit
+
+사용: if (rs1 op rs2) { PC ← PC + imm*2 }
+
+imm 비트가 분산된 이유: 12비트 2의 보수 오프셋 (범위: ±4 KB)
+  비트 0은 항상 0 (명령어는 4 바이트 정렬) → 저장하지 않고 0으로 가정
+
+예시:
+  beq  t0, t1, label  ; if t0 == t1 jump
+  bne  a0, zero, done ; if a0 ≠ 0 jump
+  blt  s0, s1, less   ; if s0 < s1 jump (부호 있는 비교)
+  bltu s2, s3, below  ; if s2 < s3 jump (부호 없는 비교)
+</div>
+
+<h3>3-6. U 타입 (Upper Immediate — 상위 20비트)</h3>
+
+<div class="diagram">
+비트:  31              12 | 11   7 | 6     0
+필드: [    imm[31:12]    ] [  rd  ] [opcode]
+       20 bit               5 bit    7 bit
+
+사용: 32비트 상수를 두 명령어로 로드할 때 상위 20비트 처리
+
+예시:
+  lui  t0, 0x12345    ; t0 = 0x12345000  (상위 20비트 설정, 하위 12비트=0)
+  addi t0, t0, 0x678  ; t0 = 0x12345678  (하위 12비트 추가 → 32비트 상수 완성)
+
+  auipc a0, 1         ; a0 = PC + (1 << 12)  (PC 상대 주소 계산용)
+</div>
+
+<h3>3-7. J 타입 (Jump — 무조건 점프)</h3>
+
+<div class="diagram">
+비트:  31 | 30  21 | 20 | 19  12 | 11   7 | 6     0
+필드: [20] [10:1 ] [11] [19:12 ] [  rd  ] [opcode]
+      1b    10 bit   1b   8 bit    5 bit    7 bit
+
+사용: rd ← PC+4;  PC ← PC + imm*2   (함수 호출 또는 무조건 점프)
+     범위: ±1 MB
+
+예시:
+  jal  ra, func       ; ra = 반환 주소, PC = func 주소로 점프  (함수 호출)
+  jal  zero, loop     ; 반환 없이 loop 레이블로 무조건 점프
+</div>
+
+<h3>3-8. 6가지 타입 한눈에 비교</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>타입</th>
+      <th>주요 용도</th>
+      <th>즉시값 크기</th>
+      <th>대표 명령어</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>R</td><td>레지스터 ↔ 레지스터 연산</td><td>없음</td><td>add, sub, and, or, sll</td></tr>
+    <tr><td>I</td><td>즉시값 연산, Load, jalr</td><td>12 bit</td><td>addi, lw, lb, jalr</td></tr>
+    <tr><td>S</td><td>메모리 Store</td><td>12 bit (분산)</td><td>sw, sh, sb</td></tr>
+    <tr><td>B</td><td>조건 분기</td><td>13 bit (PC 상대)</td><td>beq, bne, blt, bge</td></tr>
+    <tr><td>U</td><td>상위 20비트 즉시값</td><td>20 bit</td><td>lui, auipc</td></tr>
+    <tr><td>J</td><td>무조건 점프 (함수 호출)</td><td>21 bit (PC 상대)</td><td>jal</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================
+     섹션 4: x86 명령어 형식 비교
+     ============================================================ -->
+<h2>4. x86 명령어 형식 — 가변 길이의 복잡함</h2>
+
+<div class="diagram">
+x86-64 명령어 구조 (최대 15 바이트):
+
+[Legacy Prefix] [REX Prefix] [Opcode] [ModR/M] [SIB] [Disp] [Imm]
+  0~4 바이트      0~1 바이트  1~3 B    0~1 B    0~1B  0~4B   0~8B
+
+각 필드 설명:
+  Legacy Prefix: 세그먼트 오버라이드, 피연산자 크기 변경 (선택)
+  REX Prefix:    64비트 확장 (R=확장 레지스터, W=64비트 폭, X=SIB 확장, B=기본 레지스터 확장)
+  Opcode:        명령어 종류 (1–3바이트)
+  ModR/M:        피연산자 지정 (mod 2b + reg 3b + r/m 3b)
+                 mod=11: 레지스터, mod=00~10: 메모리 모드
+  SIB:           Scale-Index-Base (복잡한 메모리 주소 계산)
+                 [Base + Index × Scale + Displacement]
+  Disp:          변위(0/1/2/4 바이트)
+  Imm:           즉시값(0/1/2/4/8 바이트)
+
+예시: ADD RAX, [RBX + RCX*4 + 8]
+  REX.W + 03 /r + ModR/M(base=RBX, index=RCX, scale=4, disp=8)
+  → 총 7 바이트 정도
+
+RISC-V add t0, t1, t2: 정확히 4 바이트
+</div>
+
+<div class="callout">
+  <div class="callout-title">x86의 복잡한 디코딩 비용</div>
+  x86 CPU는 Fetch된 바이트 스트림에서 각 명령어의 경계를 찾는 것 자체가 비자명합니다.
+  Intel Core의 프론트엔드에는 가변 길이 명령어 파싱 전용 하드웨어(Length Decoder)가 있으며,
+  이것이 다이 면적과 전력을 상당 부분 차지합니다.
+  RISC-V는 모든 명령어가 4바이트 정렬이므로 디코드가 1 사이클에 완료됩니다.
+</div>
+
+<!-- ============================================================
+     섹션 5: 어드레싱 모드
+     ============================================================ -->
+<h2>5. 어드레싱 모드 — 피연산자를 어떻게 지정하는가</h2>
+
+<p>
+  명령어의 피연산자(소스·목적지)가 어디에 있는지를 표현하는 방법을
+  <strong>어드레싱 모드(Addressing Mode)</strong>라고 합니다.
+</p>
+
+<h3>5-1. 즉시 어드레싱 (Immediate)</h3>
+
+<div class="diagram">
+개념: 피연산자 값이 명령어 안에 직접 포함
+     → 메모리·레지스터 접근 없이 디코드 시 즉시 사용 가능
+
+RISC-V 예시:
+  addi t0, zero, 42   ; t0 = 42   (즉시값 42가 명령어 비트에 포함)
+
+x86 예시:
+  MOV RAX, 100        ; RAX = 100
+
+장점: 추가 메모리 접근 없음 → 빠름
+단점: 표현할 수 있는 값의 크기 제한 (RISC-V I타입 12비트 → ±2047)
+</div>
+
+<h3>5-2. 레지스터 어드레싱 (Register)</h3>
+
+<div class="diagram">
+개념: 피연산자가 레지스터에 있음
+
+RISC-V 예시:
+  add t0, t1, t2      ; t0 = t1 + t2  (모두 레지스터)
+
+x86 예시:
+  ADD RAX, RBX        ; RAX = RAX + RBX
+
+장점: 레지스터 접근은 클록 1사이클 내 완료 → 가장 빠름
+단점: 레지스터 개수가 제한적 (RISC-V 32개, x86 16개)
+</div>
+
+<h3>5-3. 직접 어드레싱 (Direct / Absolute)</h3>
+
+<div class="diagram">
+개념: 명령어에 메모리 절대 주소가 명시됨
+     유효 주소(EA) = 명령어에 포함된 주소
+
+x86 예시:
+  MOV RAX, [0x0040A000]   ; RAX = Mem[0x0040A000]
+
+RISC-V: 32비트 절대 주소는 두 명령어로 표현
+  lui  t0, 0x40A           ; t0 = 0x40A000
+  lw   a0, 0(t0)           ; a0 = Mem[0x40A000]
+
+장점: 전역 변수, 정적 데이터 접근에 적합
+단점: 주소 변경 시 코드 수정 필요, 위치 독립 코드(PIC) 작성 어려움
+</div>
+
+<h3>5-4. 레지스터 간접 어드레싱 (Register Indirect)</h3>
+
+<div class="diagram">
+개념: 레지스터에 저장된 값이 메모리 주소
+     유효 주소(EA) = 레지스터 값
+
+RISC-V 예시:
+  lw   a0, 0(t0)      ; a0 = Mem[t0]   (변위=0)
+
+x86 예시:
+  MOV RAX, [RBX]      ; RAX = Mem[RBX]
+
+사용 예:
+  포인터 역참조: C의 *ptr  →  lw a0, 0(ptr_reg)
+  배열 첫 원소 접근
+</div>
+
+<h3>5-5. 베이스+오프셋 어드레싱 (Base + Displacement)</h3>
+
+<div class="diagram">
+개념: 유효 주소(EA) = 베이스 레지스터 + 부호 있는 상수 오프셋
+
+RISC-V 예시:
+  lw   a0, 12(sp)     ; a0 = Mem[sp + 12]   (스택 프레임 변수 접근)
+  sw   t0, -8(s0)     ; Mem[s0 - 8] = t0
+
+x86 예시:
+  MOV RAX, [RBX + 16] ; RAX = Mem[RBX + 16]
+
+사용 예:
+  · 스택 프레임의 지역 변수 (sp나 fp 기준 오프셋)
+  · 구조체(struct) 멤버 접근 (구조체 포인터 + 멤버 오프셋)
+  · 배열 원소 (배열 베이스 포인터 + 원소 크기 × 인덱스를 미리 계산)
+
+RISC-V의 L타입(I타입)과 S타입이 이 모드를 직접 지원:
+  lw rd, imm(rs1)   : EA = rs1 + imm
+  sw rs2, imm(rs1)  : EA = rs1 + imm
+</div>
+
+<h3>5-6. 베이스+인덱스×스케일+변위 (Scaled Index) — x86 전용</h3>
+
+<div class="diagram">
+개념: EA = Base + Index × Scale + Displacement
+     Scale ∈ {1, 2, 4, 8}  (바이트·하프워드·워드·더블워드 배열)
+
+x86 예시:
+  MOV EAX, [RBX + RCX*4 + 8]
+  ; RBX=배열 시작 주소, RCX=인덱스, 4=int 크기, 8=헤더 오프셋
+
+C 코드 대응:
+  struct { int header[2]; int data[N]; } s;
+  EAX = s.data[i];   →   MOV EAX, [&s + RCX*4 + 8]
+
+RISC-V에서 동일 효과:
+  slli t1, t1, 2       ; t1 = i * 4   (시프트로 스케일)
+  add  t1, t1, t0      ; t1 = base + i*4
+  lw   a0, 8(t1)       ; a0 = Mem[base + i*4 + 8]
+  → 3 명령어 필요 (CISC의 1 명령어 vs RISC의 3 명령어)
+</div>
+
+<h3>5-7. PC 상대 어드레싱 (PC-Relative)</h3>
+
+<div class="diagram">
+개념: EA = PC (현재 명령어 주소) + 부호 있는 오프셋
+
+RISC-V 예시:
+  beq  t0, t1, +20    ; 조건 참 시 PC = PC + 20
+  jal  ra, -200       ; ra = PC+4, PC = PC - 200  (함수 호출)
+  auipc a0, 1         ; a0 = PC + 4096  (데이터 PC 상대 주소 계산)
+
+x86 예시:
+  JMP short 0x10      ; PC = PC + 0x10 + 명령어 길이  (단 x86은 암묵적)
+
+장점:
+  · 위치 독립 코드(PIC, Position-Independent Code) 작성 가능
+  · 공유 라이브러리(.so / .dll)가 로드 주소와 무관하게 동작
+  · 코드가 메모리 어디에 올라가도 상대 거리는 불변
+
+단점: 오프셋 범위 제한 (RISC-V B타입: ±4 KB, J타입: ±1 MB)
+     → 원거리 점프는 레지스터 간접 방식(jalr) 필요
+</div>
+
+<h3>5-8. 어드레싱 모드 비교 요약</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>모드</th>
+      <th>유효 주소 (EA)</th>
+      <th>주요 사용처</th>
+      <th>RISC-V 지원</th>
+      <th>x86 지원</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>즉시(Immediate)</td><td>명령어 내 상수값</td><td>상수 연산</td><td>✓ I타입</td><td>✓</td></tr>
+    <tr><td>레지스터(Register)</td><td>레지스터</td><td>ALU 연산</td><td>✓ R타입</td><td>✓</td></tr>
+    <tr><td>직접(Direct)</td><td>절대 주소</td><td>전역 변수</td><td>△ 2명령어</td><td>✓</td></tr>
+    <tr><td>레지스터 간접(Reg Indirect)</td><td>rs1</td><td>포인터 참조</td><td>✓ imm=0</td><td>✓</td></tr>
+    <tr><td>베이스+오프셋(Base+Disp)</td><td>rs1 + imm</td><td>스택·구조체</td><td>✓ I/S타입</td><td>✓</td></tr>
+    <tr><td>스케일 인덱스(Scaled Index)</td><td>Base+Idx×Scale+Disp</td><td>배열</td><td>△ 3명령어</td><td>✓ SIB</td></tr>
+    <tr><td>PC 상대(PC-Relative)</td><td>PC + imm</td><td>분기·점프·PIC</td><td>✓ B/J/auipc</td><td>✓ (암묵)</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================
+     섹션 6: RISC-V 레지스터 관례
+     ============================================================ -->
+<h2>6. RISC-V 레지스터 파일과 호출 관례</h2>
+
+<div class="diagram">
+RISC-V에는 32개의 범용 정수 레지스터 x0–x31이 있습니다.
+어셈블리에서는 ABI 이름으로 참조합니다.
+
+레지스터  ABI 이름  역할                         호출 보존?
+──────────────────────────────────────────────────────────
+x0        zero      항상 0, 쓰기 무시            —
+x1        ra        반환 주소 (Return Address)   Caller 저장
+x2        sp        스택 포인터 (Stack Pointer)  Callee 저장
+x3        gp        전역 포인터 (Global Pointer)  —
+x4        tp        스레드 포인터 (Thread Pointer) —
+x5–x7     t0–t2     임시 레지스터                Caller 저장
+x8–x9     s0–s1     저장 레지스터 (s0 = fp)      Callee 저장
+x10–x17   a0–a7     인수/반환값                  Caller 저장
+x18–x27   s2–s11    저장 레지스터                Callee 저장
+x28–x31   t3–t6     임시 레지스터                Caller 저장
+
+Caller 저장: 함수 호출 전에 값이 필요하면 호출자가 스택에 백업
+Callee 저장: 함수 내부에서 사용하면 반드시 복원 후 반환
+
+zero 레지스터 활용 예:
+  add  a0, a0, zero    ; a0 = a0 (no-op, 이동이 아님)
+  sub  t0, zero, t1    ; t0 = -t1  (2의 보수 부정)
+  beq  a0, zero, exit  ; if a0 == 0 exit
+</div>
+
+<!-- ============================================================
+     섹션 7: 실제 C 코드 컴파일
+     ============================================================ -->
+<h2>7. C 코드 → RISC-V 어셈블리 예시</h2>
+
+<div class="diagram">
+C 코드:
+  int sum_array(int *arr, int n) {
+      int sum = 0;
+      for (int i = 0; i &lt; n; i++) {
+          sum += arr[i];
+      }
+      return sum;
+  }
+
+RISC-V 어셈블리 (주석 포함):
+
+sum_array:
+    # a0 = arr (배열 포인터), a1 = n (원소 수)
+    # 반환값은 a0에 저장
+    li   t0, 0          # sum = 0  (li는 addi t0,zero,0 의 의사 명령어)
+    li   t1, 0          # i = 0
+    j    check          # 루프 조건 먼저 확인 (jal zero, check)
+
+loop:
+    slli t2, t1, 2      # t2 = i * 4  (int = 4 바이트)
+    add  t3, a0, t2     # t3 = &arr[i]
+    lw   t4, 0(t3)      # t4 = arr[i]  ← Load Word (I타입)
+    add  t0, t0, t4     # sum += arr[i]
+    addi t1, t1, 1      # i++
+
+check:
+    blt  t1, a1, loop   # if i &lt; n goto loop  ← B타입 분기
+    mv   a0, t0         # return sum  (mv는 addi a0,t0,0)
+    ret                 # return  (jalr zero, ra, 0)
+
+사용된 타입:
+  addi, li → I타입
+  slli, add → R타입
+  lw       → I타입 (Load)
+  blt      → B타입 (분기)
+</div>
+
+<!-- ============================================================
+     퀴즈
+     ============================================================ -->
+<h2>이해 확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. RISC 설계 원칙 중 "Load/Store 아키텍처"의 의미로 가장 적절한 것은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> 모든 연산을 메모리에서 직접 수행한다</label></li>
+    <li><label><input type="radio" name="q1" value="1"> 메모리 접근은 Load와 Store 명령어만 허용하고, 산술·논리 연산은 레지스터 간에만 수행한다</label></li>
+    <li><label><input type="radio" name="q1" value="2"> Load·Store 명령어를 최소화하여 메모리 사용을 줄인다</label></li>
+    <li><label><input type="radio" name="q1" value="3"> 레지스터를 사용하지 않고 모든 데이터를 메모리에 저장한다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. RISC-V에서 다음 C 코드 <code>arr[i] = val;</code>를 실행할 때 필요한 명령어 타입 조합으로 옳은 것은? (arr는 레지스터에 있고, i는 0이 아니며, val은 레지스터에 있다고 가정)</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> R타입만 사용</label></li>
+    <li><label><input type="radio" name="q2" value="1"> I타입(lw)만 사용</label></li>
+    <li><label><input type="radio" name="q2" value="2"> R타입(slli, add) + S타입(sw)</label></li>
+    <li><label><input type="radio" name="q2" value="3"> B타입(beq) + U타입(lui)</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. PC 상대 어드레싱(PC-Relative)이 공유 라이브러리(.so)에서 반드시 필요한 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> 절대 주소 방식은 레지스터를 소모하기 때문이다</label></li>
+    <li><label><input type="radio" name="q3" value="1"> 공유 라이브러리는 프로세스마다 다른 메모리 주소에 로드되므로 절대 주소가 바뀌어도 코드 내 상대 오프셋은 불변하기 때문이다</label></li>
+    <li><label><input type="radio" name="q3" value="2"> PC 상대 주소가 캐시 히트율을 높이기 때문이다</label></li>
+    <li><label><input type="radio" name="q3" value="3"> 즉시값이 32비트를 초과할 수 없기 때문이다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. RISC-V에서 S타입 명령어의 즉시값(imm)이 두 부분(imm[11:5]와 imm[4:0])으로 쪼개져 있는 이유로 가장 적절한 것은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> 더 큰 범위의 즉시값을 표현하기 위해서이다</label></li>
+    <li><label><input type="radio" name="q4" value="1"> rd 필드 위치에 rs2(소스 레지스터)를 배치하면서 rs1·rs2 위치를 R타입과 동일하게 유지해 디코더 하드웨어를 단순화하기 위해서이다</label></li>
+    <li><label><input type="radio" name="q4" value="2"> 부호 확장 연산을 줄이기 위해서이다</label></li>
+    <li><label><input type="radio" name="q4" value="3"> 메모리 정렬 요건을 만족하기 위해서이다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================
+     Primary Source
+     ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">오늘의 추천 자료</div>
+  <strong>Computer Organization and Design RISC-V Edition (Patterson &amp; Hennessy) — Chapter 2: Instructions: Language of the Computer</strong><br>
+  RISC-V 명령어 형식, 어드레싱 모드, 어셈블리와 C 코드 대응을 체계적으로 다루는 표준 교재입니다.<br>
+  <br>
+  <strong>RISC-V Instruction Set Manual, Volume I: Unprivileged ISA</strong><br>
+  공식 RISC-V 스펙. 명령어 비트 인코딩, 레지스터 파일, 모든 명령어의 정확한 동작이 명시되어 있습니다.<br>
+  <br>
+  <strong>Computer Architecture: A Quantitative Approach (Hennessy &amp; Patterson) — Appendix A: Instruction Set Principles</strong><br>
+  RISC vs CISC 설계 철학과 ISA 선택이 성능에 미치는 영향을 정량적으로 분석합니다.
+</div>
+
+<!-- ============================================================
+     핵심 요약
+     ============================================================ -->
+<h2>오늘의 핵심 요약</h2>
+
+<ul>
+  <li><strong>ISA</strong>: 소프트웨어와 하드웨어 사이의 계약 — 명령어 집합·인코딩·레지스터·메모리 모델을 정의</li>
+  <li><strong>CISC (x86)</strong>: 가변 길이 명령어, 메모리 피연산자 허용, 마이크로코드로 내부 분해</li>
+  <li><strong>RISC (ARM/RISC-V)</strong>: 고정 32비트, Load/Store 아키텍처, 하드와이어드 컨트롤, 파이프라인 친화적</li>
+  <li><strong>RISC-V 명령어 타입</strong>: R(레지스터), I(즉시·Load), S(Store), B(분기), U(상위 20비트), J(점프)</li>
+  <li><strong>즉시 어드레싱</strong>: 값이 명령어 안에 포함, 범위 제한 있음</li>
+  <li><strong>레지스터 간접</strong>: 레지스터 값이 주소 → 포인터 참조</li>
+  <li><strong>베이스+오프셋</strong>: RISC-V Load/Store의 기본 모드 → 스택·구조체·배열</li>
+  <li><strong>스케일 인덱스</strong>: x86 SIB → 배열 접근 1 명령어. RISC-V는 3 명령어로 동등 표현</li>
+  <li><strong>PC 상대</strong>: 분기·점프·PIC에 사용. 위치 독립 코드 핵심</li>
+  <li><strong>현대 수렴</strong>: x86은 내부적으로 마이크로-op으로 RISC화, ARM/RISC-V는 복잡 확장 추가</li>
+</ul>
+
+<!-- ============================================================
+     다음 수업 예고
+     ============================================================ -->
+<div class="callout">
+  <div class="callout-title">다음 수업 (Day 10)</div>
+  <strong>단순 프로세서 설계 (Simple CPU) — 단일 사이클 데이터패스와 제어 신호</strong><br>
+  오늘 배운 ISA 명령어들이 실제 하드웨어에서 어떻게 실행되는지 알아봅니다.
+  ALU, 레지스터 파일, 메모리를 연결하는 단일 사이클 데이터패스를 설계하고,
+  각 명령어 타입에 따른 제어 신호(ControlUnit 출력)를 결정하는 방법을 학습합니다.
+</div>
+
+<!-- ============================================================
+     선생님께 질문
+     ============================================================ -->
+<div class="ask-teacher">
+  <strong>궁금한 점이 있으신가요?</strong><br>
+  이해가 안 되는 부분, 더 깊이 알고 싶은 내용, 또는 실무와 어떻게 연결되는지
+  Claude에게 바로 질문하세요. 선생님은 항상 여기 있습니다.
+</div>
+
+<div class="lesson-footer">
+  <div class="lesson-nav">
+    <a href="0008-cache-write-policy.html">← Day 8: 캐시 쓰기 정책 &amp; 다단 캐시</a>
+    <a href="0010-simple-cpu.html">Day 10: 단순 프로세서 설계 →</a>
+  </div>
+  컴퓨터 구조 데일리 학습 · <a href="../reference/">참고 자료</a> · <a href="../RESOURCES.md">추천 자료 목록</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1, 'Load/Store 아키텍처는 메모리 접근(Load·Store)과 연산(ALU)을 완전히 분리하는 RISC 원칙입니다. 모든 산술·논리 연산은 레지스터 간에만 수행되며, 메모리에서 값을 읽거나 쓸 때는 반드시 lw/sw 같은 전용 명령어를 사용합니다. 이로 인해 파이프라인 설계가 단순해지고, 각 명령어의 실행 단계가 균일해집니다.');
+  initQuiz('q2', 2, 'arr[i] = val 에서 i가 0이 아니면 우선 i * 4(int 크기)를 계산해야 합니다. slli(R타입 변형)로 i를 2비트 왼쪽 시프트하면 i*4가 되고, add(R타입)로 arr 포인터에 더해 &arr[i]를 구합니다. 그런 다음 sw(S타입)로 val 레지스터를 해당 주소에 저장합니다. 메모리 쓰기는 S타입 명령어만 가능합니다.');
+  initQuiz('q3', 1, '공유 라이브러리는 시스템에 여러 프로세스가 동시에 사용하며, 각 프로세스의 가상 주소 공간에서 서로 다른 위치에 매핑될 수 있습니다. 절대 주소를 사용하면 로드 위치마다 코드를 패치해야 합니다(텍스트 재배치). PC 상대 주소는 코드 내부 참조의 상대 거리가 로드 위치와 무관하게 일정하므로, 한 번 컴파일된 코드를 어디서나 그대로 사용할 수 있어 진정한 공유 라이브러리가 가능합니다.');
+  initQuiz('q4', 1, 'S타입에서 rd 필드 자리를 없애고 대신 rs2(저장할 소스 레지스터)를 비트 24:20에 배치했습니다. 이 위치는 R타입·I타입·B타입·J타입의 rs2 위치와 동일합니다. 즉, 모든 명령어 타입에서 rs1은 비트 19:15, rs2는 비트 24:20으로 고정됩니다. 덕분에 디코더가 opcode를 확인하기 전에 rs1·rs2 필드를 미리 레지스터 파일에서 읽을 수 있어 하드웨어가 단순해집니다. 즉시값 범위(12비트 = ±2047)는 I타입과 동일합니다.');
+</script>
+</body>
+</html>
