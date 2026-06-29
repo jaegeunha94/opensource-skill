@@ -48,6 +48,7 @@ Examples:
 - `data-structures`
 - `python-backend-engineering`
 - `professional-python`
+- `python-experienced-interview`
 - `senior-backend-interview`
 
 If the user gives a Korean subject name, map it to a stable English slug. Prefer common CS course names:
@@ -64,6 +65,9 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `실무 파이썬` -> `professional-python`
 - `파이썬 실무` -> `professional-python`
 - `파이썬 Syntax 기초 아닌 실무자 기준` -> `professional-python`
+- `파이썬 경력자 Interview` -> `python-experienced-interview`
+- `파이썬 경력자 인터뷰` -> `python-experienced-interview`
+- `Python 경력자 Interview` -> `python-experienced-interview`
 - `백엔드 10년차 이상 개발자 Interview` -> `senior-backend-interview`
 - `백엔드 시니어 인터뷰` -> `senior-backend-interview`
 - `Senior Backend Developer Interview` -> `senior-backend-interview`
@@ -79,7 +83,9 @@ Do not start these tracks with basic Python syntax. Start with the first practic
 
 For senior backend interview subjects, focus on 10+ year practitioner expectations: architecture trade-offs, system design, scale, reliability, data modeling, transactions, concurrency, distributed systems, APIs, security, observability, incident response, deployment, technical leadership, and communication. Include mock interview questions, answer frameworks, senior-level follow-ups, strong/weak answer examples, and self-check rubrics. Do not turn the track into junior CS trivia unless the topic is used to evaluate production reasoning.
 
-Senior backend interview lessons must be detailed enough for a learner who finds the interview question difficult. Do not only list definitions, answer bullets, or comparison tables. For each hard concept or interview question, explain:
+For Python experienced interview subjects, assume the learner already knows basic Python syntax. Focus on experienced developer interview expectations: Python data model, object model, execution model, memory management, reference counting and garbage collection, GIL, concurrency, `asyncio`, iterators, generators, context managers, descriptors, decorators, typing, packaging, testing, debugging, profiling, performance, standard library depth, maintainability, and production troubleshooting. Include mock interview questions, answer frameworks, senior-level follow-ups, strong/weak answer examples, and self-check rubrics. Do not turn the track into beginner syntax drills.
+
+Interview lessons for senior backend and Python experienced subjects must be detailed enough for a learner who finds the interview question difficult. Do not only list definitions, answer bullets, or comparison tables. For each hard concept or interview question, explain:
 
 - the real production situation behind the question
 - the prerequisite concept in plain Korean before using senior-level terms
@@ -90,7 +96,7 @@ Senior backend interview lessons must be detailed enough for a learner who finds
 - follow-up questions with model reasoning, not just final answers
 - common misconceptions and how to correct them
 
-Quiz and self-check feedback must explain why each wrong option is wrong and why the correct answer is better. Avoid short feedback like "오답입니다. 다시 읽어보세요." for senior backend interview lessons.
+Quiz and self-check feedback must explain why each wrong option is wrong and why the correct answer is better. Avoid short feedback like "오답입니다. 다시 읽어보세요." for interview lessons.
 
 ## New subject workflow
 

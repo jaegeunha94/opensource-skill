@@ -125,21 +125,23 @@
 - 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/python-backend-engineering` 브랜치에 push해줘. `main`에는 직접 push하지 마.
 ```
 
-## Python 실무
+## 파이썬 경력자 Interview
 
 ```text
-`.claude/skills/study-track` 스킬을 사용해서 파이썬 Syntax 기초가 아닌 실무자 기준 Python 학습 워크스페이스를 생성하거나 재개해줘.
+`.claude/skills/study-track` 스킬을 사용해서 파이썬 경력자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
 
-과목: 파이썬 Syntax 기초 아닌 실무자 기준
-폴더 slug: `professional-python`
+과목: 파이썬 경력자 Interview
+폴더 slug: `python-experienced-interview`
 
 요구사항:
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
-- Python 기본 Syntax 학습부터 시작하지 말고, 이미 기초 문법을 아는 실무자 기준으로 진행해줘.
-- Pythonic idiom, 프로젝트 구조, 패키징, 의존성 관리, 타입 힌트, 예외 처리, 테스트, 디버깅, 프로파일링, 표준 라이브러리, 동시성, 유지보수성을 중심으로 다뤄줘.
+- Python 기본 Syntax 학습부터 시작하지 말고, 경력자 인터뷰에서 평가하는 Python 이해도와 실무 판단력 중심으로 진행해줘.
+- Python data model, object model, 실행 모델, 메모리 관리, GIL, 동시성, `asyncio`, iterator/generator, context manager, descriptor, decorator, typing, packaging, testing, debugging, profiling, 성능, 표준 라이브러리, 유지보수성을 다뤄줘.
+- 각 레슨에는 면접 질문, 답변 구조, 모범 답변, 내가 이해할 수 있는 상세 설명, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 왜 면접에서 묻는지, 어떤 실무 상황과 연결되는지, 답변까지 어떤 순서로 사고해야 하는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
 - 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
 - 폴더가 있으면 `PROGRESS.md`를 읽고 완료한 내용은 중복하지 말고 다음 미완료 Day 레슨 하나를 생성해줘.
-- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/professional-python` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/python-experienced-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
 ```
 
 ## 백엔드 시니어 Interview
