@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 9 — 저장 프로시저·트리거·함수</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --accent: #6c8ef5;
+      --accent2: #56cfaa;
+      --warn: #f5a623;
+      --danger: #f56262;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --border: #2d3250;
+      --code-bg: #12151f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.75; }
+
+    header {
+      background: linear-gradient(135deg, #1e2340 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 2rem 2rem;
+      text-align: center;
+    }
+    header .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      padding: .25rem .75rem;
+      border-radius: 999px;
+      margin-bottom: .75rem;
+    }
+    header h1 { font-size: 2rem; font-weight: 800; margin-bottom: .4rem; }
+    header p { color: var(--text-dim); font-size: .95rem; }
+
+    nav.toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      max-width: 860px;
+      margin: 2rem auto 0;
+    }
+    nav.toc h2 { font-size: .85rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .75rem; }
+    nav.toc ol { padding-left: 1.25rem; }
+    nav.toc li { margin-bottom: .3rem; }
+    nav.toc a { color: var(--text-dim); text-decoration: none; font-size: .9rem; }
+    nav.toc a:hover { color: var(--accent); }
+
+    main { max-width: 860px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+
+    section { margin-bottom: 3rem; }
+    h2 { font-size: 1.5rem; font-weight: 700; color: var(--accent); margin-bottom: 1rem; padding-bottom: .4rem; border-bottom: 2px solid var(--border); }
+    h3 { font-size: 1.1rem; font-weight: 700; color: var(--accent2); margin: 1.5rem 0 .6rem; }
+    h4 { font-size: .95rem; font-weight: 700; color: var(--warn); margin: 1.2rem 0 .5rem; }
+    p { margin-bottom: .85rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: .85rem; }
+    li { margin-bottom: .3rem; }
+    strong { color: #fff; }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      margin: .75rem 0 1rem;
+      font-size: .85rem;
+      line-height: 1.6;
+    }
+    code { font-family: 'Fira Code', 'Cascadia Code', Consolas, monospace; }
+    p code, li code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: .1rem .4rem;
+      font-size: .83rem;
+      color: var(--accent2);
+    }
+
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: var(--surface2);
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+    }
+    .callout.warn { border-left-color: var(--warn); }
+    .callout.danger { border-left-color: var(--danger); }
+    .callout.tip { border-left-color: var(--accent2); }
+    .callout-title { font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: .4rem; }
+    .callout .callout-title { color: var(--accent); }
+    .callout.warn .callout-title { color: var(--warn); }
+    .callout.danger .callout-title { color: var(--danger); }
+    .callout.tip .callout-title { color: var(--accent2); }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .88rem; }
+    th { background: var(--surface2); color: var(--accent); font-weight: 700; padding: .6rem .9rem; text-align: left; border: 1px solid var(--border); }
+    td { padding: .55rem .9rem; border: 1px solid var(--border); }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      font-family: 'Fira Code', monospace;
+      font-size: .82rem;
+      white-space: pre;
+      overflow-x: auto;
+      line-height: 1.5;
+      color: var(--accent2);
+      margin: .75rem 0 1rem;
+    }
+
+    .quiz {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+    }
+    .quiz h3 { margin-top: 0; }
+    details summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: .9rem; margin-top: .5rem; }
+    details[open] summary { margin-bottom: .5rem; }
+    details p { margin-bottom: 0; }
+
+    .concept-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .concept-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .9rem 1rem;
+    }
+    .concept-card .label { font-size: .75rem; font-weight: 700; color: var(--accent2); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .3rem; }
+    .concept-card .value { font-size: .9rem; }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .compare-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .compare-card h4 { margin-top: 0; font-size: .9rem; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: .85rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">DATABASE SYSTEMS · DAY 9</div>
+  <h1>저장 프로시저 · 트리거 · 함수</h1>
+  <p>데이터베이스 서버 측 프로그래밍의 세 가지 핵심 객체</p>
+</header>
+
+<main>
+
+  <nav class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#overview">서버 측 프로그래밍 개요</a></li>
+      <li><a href="#stored-procedure">저장 프로시저 (Stored Procedure)</a></li>
+      <li><a href="#user-defined-function">사용자 정의 함수 (UDF)</a></li>
+      <li><a href="#procedure-vs-function">프로시저 vs 함수 비교</a></li>
+      <li><a href="#trigger">트리거 (Trigger)</a></li>
+      <li><a href="#trigger-types">트리거 종류와 활용</a></li>
+      <li><a href="#variables-control">변수 · 제어 흐름</a></li>
+      <li><a href="#error-handling">예외 처리</a></li>
+      <li><a href="#best-practices">설계 지침과 주의사항</a></li>
+      <li><a href="#quiz">확인 문제</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1. 개요 -->
+  <section id="overview">
+    <h2>1. 서버 측 프로그래밍 개요</h2>
+
+    <p>
+      애플리케이션이 매번 SQL 문을 네트워크로 전송하는 방식은 <strong>왕복 지연(round-trip)</strong>과
+      <strong>파싱·최적화 비용</strong>이 반복됩니다. 데이터베이스 서버 안에 로직을 저장해 두면
+      이 비용을 줄이고, 재사용성과 보안을 높일 수 있습니다.
+    </p>
+
+    <div class="concept-grid">
+      <div class="concept-card">
+        <div class="label">저장 프로시저</div>
+        <div class="value">이름 붙인 SQL + 로직 블록. 반환값 없거나 여러 결과셋 반환 가능.</div>
+      </div>
+      <div class="concept-card">
+        <div class="label">사용자 정의 함수</div>
+        <div class="value">단일 값(스칼라) 또는 테이블 반환. SELECT 절에서 호출 가능.</div>
+      </div>
+      <div class="concept-card">
+        <div class="label">트리거</div>
+        <div class="value">DML 이벤트(INSERT/UPDATE/DELETE)에 자동 반응하는 서버 측 핸들러.</div>
+      </div>
+    </div>
+
+    <div class="diagram">클라이언트                   DB 서버
+  ───────────────────────────────────────────────────
+  CALL get_order_summary(42)  →  [저장 프로시저 실행]
+                                  ├─ 파싱: 1회만 수행
+                                  ├─ 최적화 계획 캐시
+                                  └─ 결과 반환
+  ←────────────────────────────────────────────────</div>
+
+    <div class="callout tip">
+      <div class="callout-title">MySQL vs PostgreSQL 문법 차이</div>
+      <p>이 레슨은 MySQL 8 / MariaDB 기준 문법을 주로 사용합니다.
+      PostgreSQL은 <code>PL/pgSQL</code> 언어로 작성하며 <code>CREATE FUNCTION</code>으로 프로시저 역할까지 수행합니다.
+      핵심 개념은 같으나 키워드가 다를 수 있습니다.</p>
+    </div>
+  </section>
+
+  <!-- 2. 저장 프로시저 -->
+  <section id="stored-procedure">
+    <h2>2. 저장 프로시저 (Stored Procedure)</h2>
+
+    <p>
+      저장 프로시저는 <strong>미리 컴파일되어 DB 서버에 저장</strong>된 SQL 코드 블록입니다.
+      <code>CALL</code> 문으로 호출하며, IN / OUT / INOUT 파라미터를 사용해 값을 주고받습니다.
+    </p>
+
+    <h3>기본 문법</h3>
+    <pre><code>-- 구분자 변경: 프로시저 본문 내 세미콜론과 구분하기 위함
+DELIMITER $$
+
+CREATE PROCEDURE procedure_name (
+    IN  param1 INT,
+    OUT param2 VARCHAR(100),
+    INOUT param3 DECIMAL(10,2)
+)
+BEGIN
+    -- SQL 로직
+    SELECT name INTO param2 FROM products WHERE id = param1;
+    SET param3 = param3 * 1.1;
+END$$
+
+DELIMITER ;
+
+-- 호출
+CALL procedure_name(10, @out_name, @amount);
+SELECT @out_name, @amount;</code></pre>
+
+    <h3>파라미터 종류</h3>
+    <table>
+      <thead>
+        <tr><th>종류</th><th>방향</th><th>설명</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>IN</code></td><td>호출자 → 프로시저</td><td>입력값. 프로시저 내부 변경이 호출자에 반영되지 않음.</td></tr>
+        <tr><td><code>OUT</code></td><td>프로시저 → 호출자</td><td>출력값. 초기값은 NULL.</td></tr>
+        <tr><td><code>INOUT</code></td><td>양방향</td><td>입력과 출력 모두 사용.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>실전 예제 — 주문 처리 프로시저</h3>
+    <pre><code>DELIMITER $$
+
+CREATE PROCEDURE place_order(
+    IN  p_customer_id INT,
+    IN  p_product_id  INT,
+    IN  p_qty         INT,
+    OUT p_order_id    INT,
+    OUT p_message     VARCHAR(200)
+)
+BEGIN
+    DECLARE v_stock INT;
+    DECLARE v_price DECIMAL(10,2);
+
+    -- 재고 확인
+    SELECT stock_qty, price
+    INTO   v_stock, v_price
+    FROM   products
+    WHERE  id = p_product_id
+    FOR UPDATE;    -- 동시성 보호: 행 잠금
+
+    IF v_stock < p_qty THEN
+        SET p_order_id = -1;
+        SET p_message  = '재고 부족';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '재고 부족';
+    END IF;
+
+    -- 주문 생성
+    INSERT INTO orders (customer_id, product_id, qty, total_price, created_at)
+    VALUES (p_customer_id, p_product_id, p_qty, v_price * p_qty, NOW());
+
+    SET p_order_id = LAST_INSERT_ID();
+
+    -- 재고 차감
+    UPDATE products SET stock_qty = stock_qty - p_qty WHERE id = p_product_id;
+
+    SET p_message = CONCAT('주문 완료, ID: ', p_order_id);
+END$$
+
+DELIMITER ;</code></pre>
+
+    <h3>관리 명령어</h3>
+    <pre><code>-- 목록 조회
+SHOW PROCEDURE STATUS WHERE Db = 'mydb';
+
+-- 정의 확인
+SHOW CREATE PROCEDURE place_order;
+
+-- 삭제
+DROP PROCEDURE IF EXISTS place_order;</code></pre>
+  </section>
+
+  <!-- 3. 사용자 정의 함수 -->
+  <section id="user-defined-function">
+    <h2>3. 사용자 정의 함수 (User-Defined Function)</h2>
+
+    <p>
+      함수는 <strong>항상 단일 값을 반환</strong>하며, <code>SELECT</code> 절·<code>WHERE</code> 절
+      등 SQL 표현식 어디서든 호출할 수 있습니다. 반면 부작용(데이터 변경)은 원칙적으로 허용되지 않습니다.
+    </p>
+
+    <h3>스칼라 함수</h3>
+    <pre><code>DELIMITER $$
+
+CREATE FUNCTION format_phone(raw_phone VARCHAR(20))
+RETURNS VARCHAR(13)
+DETERMINISTIC          -- 같은 입력 → 항상 같은 출력
+NO SQL                 -- SQL 문 없음 (순수 로직)
+BEGIN
+    -- 숫자만 남기기
+    DECLARE digits VARCHAR(20);
+    SET digits = REGEXP_REPLACE(raw_phone, '[^0-9]', '');
+
+    -- 010-XXXX-XXXX 형식
+    IF LENGTH(digits) = 11 THEN
+        RETURN CONCAT(
+            SUBSTRING(digits, 1, 3), '-',
+            SUBSTRING(digits, 4, 4), '-',
+            SUBSTRING(digits, 8, 4)
+        );
+    END IF;
+    RETURN raw_phone;   -- 변환 불가 시 원본 반환
+END$$
+
+DELIMITER ;
+
+-- 사용
+SELECT name, format_phone(phone) AS formatted_phone
+FROM customers;</code></pre>
+
+    <h3>특성 지시자 (Characteristic)</h3>
+    <table>
+      <thead>
+        <tr><th>지시자</th><th>의미</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>DETERMINISTIC</code></td><td>동일 입력 → 동일 출력. 쿼리 캐시 최적화 허용.</td></tr>
+        <tr><td><code>NOT DETERMINISTIC</code></td><td>결과가 달라질 수 있음 (기본값).</td></tr>
+        <tr><td><code>NO SQL</code></td><td>SQL 문을 포함하지 않음.</td></tr>
+        <tr><td><code>READS SQL DATA</code></td><td>SELECT만 수행.</td></tr>
+        <tr><td><code>MODIFIES SQL DATA</code></td><td>INSERT/UPDATE/DELETE 포함.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <div class="callout-title">MySQL 보안 설정</div>
+      <p>MySQL에서 UDF를 생성하려면 <code>log_bin_trust_function_creators = 1</code> 설정이 필요하거나
+      <code>SUPER</code> 권한이 있어야 합니다. 복제 환경에서는 바이너리 로그 안전성을 위해 반드시
+      <code>DETERMINISTIC</code> 또는 <code>READS SQL DATA</code>를 명시하세요.</p>
+    </div>
+  </section>
+
+  <!-- 4. 비교 -->
+  <section id="procedure-vs-function">
+    <h2>4. 프로시저 vs 함수 비교</h2>
+
+    <table>
+      <thead>
+        <tr><th>항목</th><th>저장 프로시저</th><th>사용자 정의 함수</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>반환값</td><td>없거나 OUT 파라미터, 여러 결과셋</td><td>반드시 단일 스칼라 값</td></tr>
+        <tr><td>호출 방법</td><td><code>CALL proc()</code></td><td><code>SELECT func()</code> 또는 표현식</td></tr>
+        <tr><td>DML 허용</td><td>가능 (INSERT/UPDATE/DELETE)</td><td>제한적 (READS SQL DATA 이하 권장)</td></tr>
+        <tr><td>트랜잭션 제어</td><td>COMMIT / ROLLBACK 가능</td><td>불가</td></tr>
+        <tr><td>SQL 내 인라인 사용</td><td>불가</td><td>가능 (<code>WHERE col = func(x)</code>)</td></tr>
+        <tr><td>주 용도</td><td>복잡한 비즈니스 로직, 배치 처리</td><td>값 변환, 계산, 포맷팅</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout tip">
+      <div class="callout-title">언제 무엇을 쓸까?</div>
+      <p>
+        데이터를 <strong>변경</strong>하거나 여러 단계 트랜잭션이 필요하면 <strong>프로시저</strong>.
+        <code>SELECT</code> 절에서 컬럼처럼 쓰고 싶은 <strong>변환·계산</strong>은 <strong>함수</strong>.
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. 트리거 -->
+  <section id="trigger">
+    <h2>5. 트리거 (Trigger)</h2>
+
+    <p>
+      트리거는 특정 테이블에 <strong>DML 이벤트가 발생할 때 자동으로 실행</strong>되는 코드 블록입니다.
+      명시적 호출 없이 DB 엔진이 자동 발동시킵니다.
+    </p>
+
+    <h3>기본 문법</h3>
+    <pre><code>DELIMITER $$
+
+CREATE TRIGGER trigger_name
+    {BEFORE | AFTER}
+    {INSERT | UPDATE | DELETE}
+ON table_name
+FOR EACH ROW
+BEGIN
+    -- OLD.column : 변경 전 값 (UPDATE, DELETE)
+    -- NEW.column : 변경 후 값 (INSERT, UPDATE)
+    ...
+END$$
+
+DELIMITER ;</code></pre>
+
+    <h3>OLD / NEW 의사 레코드</h3>
+    <table>
+      <thead>
+        <tr><th>이벤트</th><th>OLD 사용 가능</th><th>NEW 사용 가능</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>INSERT</td><td>❌</td><td>✅ (삽입될 값)</td></tr>
+        <tr><td>UPDATE</td><td>✅ (수정 전 값)</td><td>✅ (수정될 값)</td></tr>
+        <tr><td>DELETE</td><td>✅ (삭제될 값)</td><td>❌</td></tr>
+      </tbody>
+    </table>
+
+    <h3>실전 예제 — 가격 변경 이력 기록</h3>
+    <pre><code>-- 이력 테이블
+CREATE TABLE product_price_log (
+    log_id      INT AUTO_INCREMENT PRIMARY KEY,
+    product_id  INT,
+    old_price   DECIMAL(10,2),
+    new_price   DECIMAL(10,2),
+    changed_by  VARCHAR(50),
+    changed_at  DATETIME
+);
+
+-- AFTER UPDATE 트리거
+DELIMITER $$
+
+CREATE TRIGGER trg_product_price_log
+AFTER UPDATE ON products
+FOR EACH ROW
+BEGIN
+    IF OLD.price <> NEW.price THEN
+        INSERT INTO product_price_log
+            (product_id, old_price, new_price, changed_by, changed_at)
+        VALUES
+            (OLD.id, OLD.price, NEW.price, USER(), NOW());
+    END IF;
+END$$
+
+DELIMITER ;</code></pre>
+
+    <div class="callout">
+      <div class="callout-title">BEFORE vs AFTER</div>
+      <p>
+        <strong>BEFORE</strong>: 실제 행 변경 전 실행. <code>NEW.column</code>을 수정해 입력값 검증·보정 가능.<br>
+        <strong>AFTER</strong>: 행 변경 후 실행. 이력 기록, 연관 테이블 갱신에 적합. <code>NEW.column</code> 수정 불가.
+      </p>
+    </div>
+  </section>
+
+  <!-- 6. 트리거 종류 -->
+  <section id="trigger-types">
+    <h2>6. 트리거 종류와 활용 패턴</h2>
+
+    <h3>BEFORE INSERT — 데이터 검증 및 보정</h3>
+    <pre><code>DELIMITER $$
+
+CREATE TRIGGER trg_orders_before_insert
+BEFORE INSERT ON orders
+FOR EACH ROW
+BEGIN
+    -- 수량이 0 이하이면 오류 발생
+    IF NEW.qty <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = '주문 수량은 1 이상이어야 합니다.';
+    END IF;
+
+    -- 생성 시각 자동 설정
+    SET NEW.created_at = IFNULL(NEW.created_at, NOW());
+END$$
+
+DELIMITER ;</code></pre>
+
+    <h3>AFTER DELETE — 소프트 삭제 이력</h3>
+    <pre><code>DELIMITER $$
+
+CREATE TRIGGER trg_users_after_delete
+AFTER DELETE ON users
+FOR EACH ROW
+BEGIN
+    INSERT INTO deleted_users_log (user_id, email, deleted_at)
+    VALUES (OLD.id, OLD.email, NOW());
+END$$
+
+DELIMITER ;</code></pre>
+
+    <h3>AFTER UPDATE — 파생 컬럼 동기화</h3>
+    <pre><code>-- orders 테이블에 total_amount 파생 컬럼 자동 갱신
+DELIMITER $$
+
+CREATE TRIGGER trg_order_items_sync
+AFTER INSERT ON order_items
+FOR EACH ROW
+BEGIN
+    UPDATE orders
+    SET total_amount = (
+        SELECT SUM(qty * unit_price) FROM order_items WHERE order_id = NEW.order_id
+    )
+    WHERE id = NEW.order_id;
+END$$
+
+DELIMITER ;</code></pre>
+
+    <div class="callout danger">
+      <div class="callout-title">트리거 주의사항</div>
+      <ul>
+        <li><strong>숨겨진 부작용</strong>: 트리거는 DML 실행 시 자동 발동되므로 디버깅이 어렵습니다.</li>
+        <li><strong>연쇄 트리거</strong>: 트리거 내 DML이 다른 트리거를 호출할 수 있어 실행 순서가 복잡해집니다.</li>
+        <li><strong>성능 영향</strong>: 모든 관련 행 변경에 실행되므로 대량 INSERT/UPDATE 시 성능 저하.</li>
+        <li><strong>MySQL 제한</strong>: 같은 테이블의 같은 이벤트에 같은 타이밍(BEFORE/AFTER)을 가진 트리거는 하나만 허용 (MySQL 8.0.1 이전).</li>
+      </ul>
+    </div>
+
+    <h3>트리거 관리</h3>
+    <pre><code>-- 목록 확인
+SHOW TRIGGERS FROM mydb;
+
+-- 특정 테이블 트리거
+SHOW TRIGGERS FROM mydb LIKE 'orders';
+
+-- 삭제
+DROP TRIGGER IF EXISTS trg_product_price_log;</code></pre>
+  </section>
+
+  <!-- 7. 변수와 제어 흐름 -->
+  <section id="variables-control">
+    <h2>7. 변수 · 제어 흐름</h2>
+
+    <p>저장 프로시저와 함수 내에서 사용하는 변수와 제어 구조입니다.</p>
+
+    <h3>변수 선언과 할당</h3>
+    <pre><code>BEGIN
+    -- 로컬 변수: DECLARE는 BEGIN 직후에 위치해야 함
+    DECLARE v_total     INT      DEFAULT 0;
+    DECLARE v_name      VARCHAR(100);
+    DECLARE v_done      BOOLEAN  DEFAULT FALSE;
+
+    -- SET 으로 할당
+    SET v_total = 100;
+
+    -- SELECT INTO 로 할당
+    SELECT COUNT(*) INTO v_total FROM orders WHERE customer_id = 1;
+
+    -- 세션 변수 (@ 접두사, DECLARE 불필요)
+    SET @session_var = 'hello';
+END</code></pre>
+
+    <h3>조건문</h3>
+    <pre><code>-- IF / ELSEIF / ELSE
+IF v_total > 1000 THEN
+    SET v_grade = 'VIP';
+ELSEIF v_total > 500 THEN
+    SET v_grade = 'GOLD';
+ELSE
+    SET v_grade = 'REGULAR';
+END IF;
+
+-- CASE
+CASE v_status
+    WHEN 1 THEN SET v_label = '대기';
+    WHEN 2 THEN SET v_label = '처리중';
+    WHEN 3 THEN SET v_label = '완료';
+    ELSE        SET v_label = '알 수 없음';
+END CASE;</code></pre>
+
+    <h3>반복문</h3>
+    <pre><code>-- WHILE
+SET v_i = 1;
+WHILE v_i <= 10 DO
+    INSERT INTO temp_numbers (n) VALUES (v_i);
+    SET v_i = v_i + 1;
+END WHILE;
+
+-- REPEAT (do-while 형태)
+REPEAT
+    SET v_i = v_i + 1;
+UNTIL v_i > 10
+END REPEAT;
+
+-- LOOP + LEAVE (break)
+my_loop: LOOP
+    IF v_i > 10 THEN
+        LEAVE my_loop;
+    END IF;
+    SET v_i = v_i + 1;
+END LOOP my_loop;</code></pre>
+
+    <h3>커서 (Cursor)</h3>
+    <pre><code>DELIMITER $$
+
+CREATE PROCEDURE process_overdue_orders()
+BEGIN
+    DECLARE v_order_id  INT;
+    DECLARE v_done      BOOLEAN DEFAULT FALSE;
+
+    -- 커서 선언
+    DECLARE cur CURSOR FOR
+        SELECT id FROM orders WHERE status = 'PENDING' AND created_at < NOW() - INTERVAL 7 DAY;
+
+    -- NOT FOUND 핸들러: 커서 끝 감지
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = TRUE;
+
+    OPEN cur;
+
+    read_loop: LOOP
+        FETCH cur INTO v_order_id;
+        IF v_done THEN
+            LEAVE read_loop;
+        END IF;
+
+        UPDATE orders SET status = 'CANCELLED' WHERE id = v_order_id;
+    END LOOP;
+
+    CLOSE cur;
+END$$
+
+DELIMITER ;</code></pre>
+  </section>
+
+  <!-- 8. 예외 처리 -->
+  <section id="error-handling">
+    <h2>8. 예외 처리</h2>
+
+    <h3>DECLARE HANDLER</h3>
+    <pre><code>DELIMITER $$
+
+CREATE PROCEDURE safe_transfer(
+    IN p_from_account INT,
+    IN p_to_account   INT,
+    IN p_amount       DECIMAL(15,2)
+)
+BEGIN
+    DECLARE v_balance DECIMAL(15,2);
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        -- 오류 발생 시 롤백 후 오류 재발생
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    START TRANSACTION;
+
+    SELECT balance INTO v_balance FROM accounts WHERE id = p_from_account FOR UPDATE;
+
+    IF v_balance < p_amount THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '잔액 부족';
+    END IF;
+
+    UPDATE accounts SET balance = balance - p_amount WHERE id = p_from_account;
+    UPDATE accounts SET balance = balance + p_amount WHERE id = p_to_account;
+
+    COMMIT;
+END$$
+
+DELIMITER ;</code></pre>
+
+    <table>
+      <thead>
+        <tr><th>핸들러 종류</th><th>동작</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>EXIT HANDLER</code></td><td>핸들러 실행 후 현재 BEGIN…END 블록 종료.</td></tr>
+        <tr><td><code>CONTINUE HANDLER</code></td><td>핸들러 실행 후 오류 발생 다음 문장부터 계속 실행.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>SIGNAL — 사용자 정의 오류 발생</h3>
+    <pre><code>-- SQLSTATE 값: '45000'은 사용자 정의 오류용 범용 코드
+SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = '유효하지 않은 파라미터',
+        MYSQL_ERRNO  = 1644;</code></pre>
+  </section>
+
+  <!-- 9. 설계 지침 -->
+  <section id="best-practices">
+    <h2>9. 설계 지침과 주의사항</h2>
+
+    <h3>언제 서버 측 로직을 써야 하나?</h3>
+    <div class="concept-grid">
+      <div class="concept-card">
+        <div class="label">적합한 경우</div>
+        <div class="value">
+          <ul style="padding-left:1rem; margin:0;">
+            <li>복수 테이블에 걸친 원자적 처리</li>
+            <li>재사용되는 비즈니스 규칙 강제</li>
+            <li>보안상 직접 테이블 접근 제한</li>
+            <li>복잡한 이력·감사 로그</li>
+          </ul>
+        </div>
+      </div>
+      <div class="concept-card">
+        <div class="label">피해야 하는 경우</div>
+        <div class="value">
+          <ul style="padding-left:1rem; margin:0;">
+            <li>버전 관리가 어려운 복잡한 비즈니스 로직</li>
+            <li>애플리케이션 레이어 테스트가 중요한 경우</li>
+            <li>DB 벤더 이식성이 필요한 경우</li>
+            <li>단순 CRUD (불필요한 복잡성)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <h3>핵심 체크리스트</h3>
+    <ul>
+      <li>프로시저·함수 이름은 동사형으로: <code>get_</code>, <code>create_</code>, <code>process_</code></li>
+      <li>트리거 이름에 테이블·타이밍·이벤트 포함: <code>trg_orders_before_insert</code></li>
+      <li>트리거 내에서 같은 테이블을 UPDATE하지 않기 (무한 루프 위험)</li>
+      <li>프로시저는 단일 책임 원칙: 하나의 목적만 수행</li>
+      <li>커서 대신 집합 연산(SET-based) 우선 고려: 성능 차이 큼</li>
+      <li><code>SHOW CREATE PROCEDURE</code> 또는 <code>information_schema.ROUTINES</code>로 정의 관리</li>
+    </ul>
+
+    <div class="callout tip">
+      <div class="callout-title">PostgreSQL에서의 동등 구조</div>
+      <p>PostgreSQL은 <code>CREATE FUNCTION ... LANGUAGE plpgsql</code>으로 프로시저와 함수 모두 구현합니다.
+      트리거 함수는 <code>RETURNS TRIGGER</code>로 선언하고, <code>CREATE TRIGGER</code>로 연결합니다.
+      <code>NEW</code>/<code>OLD</code> 레코드와 <code>TG_OP</code>로 이벤트 종류를 확인합니다.</p>
+    </div>
+  </section>
+
+  <!-- 10. 확인 문제 -->
+  <section id="quiz">
+    <h2>10. 확인 문제</h2>
+
+    <div class="quiz">
+      <h3>Q1. 저장 프로시저와 함수의 가장 큰 차이점은?</h3>
+      <details>
+        <summary>정답 보기</summary>
+        <p>함수는 <strong>반드시 단일 값을 반환</strong>하며 SQL 표현식 안에서 호출할 수 있습니다.
+        프로시저는 반환값이 없거나 OUT 파라미터와 여러 결과셋을 돌려줄 수 있으며, <code>CALL</code>로만 호출합니다.
+        또한 프로시저는 트랜잭션 제어(<code>COMMIT</code>/<code>ROLLBACK</code>)가 가능하지만 함수는 불가합니다.</p>
+      </details>
+    </div>
+
+    <div class="quiz">
+      <h3>Q2. <code>BEFORE INSERT</code> 트리거에서 <code>NEW.column</code>을 수정하면 어떻게 됩니까?</h3>
+      <details>
+        <summary>정답 보기</summary>
+        <p>BEFORE 트리거에서 <code>NEW.column = 값</code>으로 변경하면, 실제 INSERT되는 행의 값이 해당 값으로 치환됩니다.
+        이를 이용해 입력 전 검증이나 기본값 자동 설정을 구현할 수 있습니다.
+        AFTER 트리거에서는 <code>NEW.column</code>을 수정할 수 없습니다.</p>
+      </details>
+    </div>
+
+    <div class="quiz">
+      <h3>Q3. 커서(Cursor) 사용 시 <code>NOT FOUND</code> 핸들러가 필요한 이유는?</h3>
+      <details>
+        <summary>정답 보기</summary>
+        <p>커서로 마지막 행까지 <code>FETCH</code>한 후 다시 <code>FETCH</code>하면 MySQL은 <code>NOT FOUND</code> 조건을 발생시킵니다.
+        이를 처리하는 <code>CONTINUE HANDLER FOR NOT FOUND</code>가 없으면 루프를 종료할 방법이 없어
+        무한 루프 또는 오류가 발생합니다. 핸들러에서 플래그 변수를 <code>TRUE</code>로 설정하고 루프에서
+        해당 플래그를 확인해 <code>LEAVE</code>로 빠져나옵니다.</p>
+      </details>
+    </div>
+
+    <div class="quiz">
+      <h3>Q4. 다음 중 트리거 사용이 부적절한 상황은? (복수 선택 가능)</h3>
+      <p style="color:var(--text-dim); font-size:.9rem; margin-top:.5rem;">
+        ① 가격 변경 이력 자동 기록<br>
+        ② 주문 수량 음수 방지<br>
+        ③ 복잡한 할인 정책 10단계 계산<br>
+        ④ 회원 탈퇴 시 관련 세션 자동 삭제<br>
+        ⑤ 이메일 발송 API 호출
+      </p>
+      <details>
+        <summary>정답 보기</summary>
+        <p><strong>③과 ⑤</strong>가 부적절합니다.
+        ③은 복잡한 비즈니스 로직을 트리거에 넣으면 디버깅과 유지보수가 매우 어려워집니다.
+        ⑤는 트리거에서 외부 API를 직접 호출하는 것은 표준 SQL 트리거로 불가능하며,
+        설령 UDF 확장으로 구현해도 트랜잭션 실패 시 이미 발송된 이메일을 롤백할 수 없어 치명적인 부작용이 발생합니다.</p>
+      </details>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>
+    <a href="./index.html">← 학습 목록으로</a> &nbsp;|&nbsp;
+    Day 9 — 저장 프로시저·트리거·함수 &nbsp;|&nbsp;
+    <a href="./day-008-index-query-optimization.html">← Day 8</a>
+  </p>
+</footer>
+
+</body>
+</html>
