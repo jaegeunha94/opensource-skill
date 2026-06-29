@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — Pythonic 이디엄: 컴프리헨션 · 제너레이터 · 언패킹 · 컨텍스트 매니저</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<nav class="back"><a href="./index.html">← 실무자 기준 Python 학습 목록</a></nav>
+
+<h1>Day 1 — Pythonic 이디엄<span class="badge">실무 필수</span></h1>
+
+<blockquote>
+  <strong>학습 목표</strong><br>
+  • 리스트·딕셔너리·셋 컴프리헨션을 루프 대신 쓸 수 있다.<br>
+  • 제너레이터 표현식으로 메모리를 아끼는 코드를 작성할 수 있다.<br>
+  • 확장 언패킹 <code>*rest</code>, 중첩 언패킹을 자유롭게 다룰 수 있다.<br>
+  • <code>with</code> 문과 <code>contextlib.contextmanager</code>로 리소스를 안전하게 관리할 수 있다.<br>
+  • <code>enumerate</code>, <code>zip</code>, walrus operator를 실무 코드에 적용할 수 있다.
+</blockquote>
+
+<hr>
+
+<h2>1. 컴프리헨션 (Comprehensions)</h2>
+
+<p>컴프리헨션은 <em>루프를 표현식으로 압축</em>한다. 가독성과 성능 모두 루프보다 우수한 경우가 많다.</p>
+
+<h3>1-1. 리스트 컴프리헨션</h3>
+
+<pre><code># Bad — 명시적 루프
+result = []
+for x in range(10):
+    if x % 2 == 0:
+        result.append(x ** 2)
+
+# Good — 리스트 컴프리헨션
+result = [x ** 2 for x in range(10) if x % 2 == 0]
+# [0, 4, 16, 36, 64]</code></pre>
+
+<div class="tip">
+  <strong>실무 팁:</strong> 중첩이 두 단계를 넘으면 가독성이 급격히 떨어진다. 세 단계 이상이라면 일반 루프나 함수로 분리하는 게 낫다.
+</div>
+
+<h3>1-2. 딕셔너리 · 셋 컴프리헨션</h3>
+
+<pre><code># 딕셔너리 컴프리헨션 — 키·값 역전
+original = {"a": 1, "b": 2, "c": 3}
+inverted = {v: k for k, v in original.items()}
+# {1: 'a', 2: 'b', 3: 'c'}
+
+# 셋 컴프리헨션 — 중복 제거
+words = ["apple", "banana", "apple", "cherry"]
+unique_lengths = {len(w) for w in words}
+# {5, 6}
+
+# 필터 포함 딕셔너리 컴프리헨션
+data = {"Alice": 90, "Bob": 45, "Carol": 80}
+passed = {name: score for name, score in data.items() if score >= 60}
+# {'Alice': 90, 'Carol': 80}</code></pre>
+
+<hr>
+
+<h2>2. 제너레이터 (Generators)</h2>
+
+<p>제너레이터는 값을 <em>요청할 때마다 하나씩</em> 생성한다. 수백만 개 데이터도 메모리 O(1)로 처리 가능하다.</p>
+
+<h3>2-1. 제너레이터 표현식</h3>
+
+<pre><code># 리스트 컴프리헨션 — 즉시 메모리에 전부 생성
+squares_list = [x ** 2 for x in range(10_000_000)]  # ~80 MB
+
+# 제너레이터 표현식 — 값을 즉시 생성하지 않음
+squares_gen = (x ** 2 for x in range(10_000_000))   # ~200 bytes
+
+# 합산할 때는 제너레이터가 충분
+total = sum(x ** 2 for x in range(10_000_000))</code></pre>
+
+<h3>2-2. <code>yield</code>를 사용한 제너레이터 함수</h3>
+
+<pre><code>from pathlib import Path
+
+def iter_log_lines(path: str):
+    """대용량 로그 파일을 한 줄씩 스트리밍."""
+    with open(path) as f:
+        for line in f:
+            stripped = line.strip()
+            if stripped:        # 빈 줄 건너뜀
+                yield stripped
+
+# 사용
+for line in iter_log_lines("/var/log/app.log"):
+    if "ERROR" in line:
+        print(line)</code></pre>
+
+<h3>2-3. <code>yield from</code> — 제너레이터 위임</h3>
+
+<pre><code>def flatten(nested):
+    for item in nested:
+        if isinstance(item, list):
+            yield from flatten(item)   # 재귀적 위임
+        else:
+            yield item
+
+list(flatten([1, [2, [3, 4]], 5]))
+# [1, 2, 3, 4, 5]</code></pre>
+
+<div class="warn">
+  <strong>주의:</strong> 제너레이터는 한 번만 순회할 수 있다. 두 번 순회가 필요하다면 <code>list()</code>로 구체화하거나 <code>itertools.tee()</code>를 사용한다.
+</div>
+
+<hr>
+
+<h2>3. 언패킹 (Unpacking)</h2>
+
+<h3>3-1. 기본 언패킹과 확장 언패킹</h3>
+
+<pre><code># 기본 언패킹
+first, second, third = [10, 20, 30]
+
+# 확장 언패킹 — * 로 나머지 수집
+head, *tail = [1, 2, 3, 4, 5]
+# head = 1, tail = [2, 3, 4, 5]
+
+first, *middle, last = range(1, 6)
+# first = 1, middle = [2, 3, 4], last = 5
+
+# 사용하지 않는 값은 _ 관례
+_, important, *_ = get_header_tuple()
+</code></pre>
+
+<h3>3-2. 중첩 언패킹</h3>
+
+<pre><code>points = [(0, 1), (2, 3), (4, 5)]
+
+# Bad
+for pair in points:
+    x = pair[0]
+    y = pair[1]
+    print(x, y)
+
+# Good
+for x, y in points:
+    print(x, y)
+
+# 딕셔너리 items()와 조합
+inventory = {"apple": 3, "banana": 7}
+for item, count in inventory.items():
+    print(f"{item}: {count}개")</code></pre>
+
+<h3>3-3. 함수 호출 시 언패킹</h3>
+
+<pre><code>def connect(host, port, timeout):
+    ...
+
+config = {"host": "db.local", "port": 5432, "timeout": 30}
+connect(**config)   # 딕셔너리 언패킹
+
+args = ("db.local", 5432, 30)
+connect(*args)      # 튜플 언패킹
+
+# 딕셔너리 병합 (Python 3.9+)
+defaults = {"timeout": 30, "retry": 3}
+overrides = {"timeout": 10}
+merged = {**defaults, **overrides}
+# {'timeout': 10, 'retry': 3}</code></pre>
+
+<hr>
+
+<h2>4. 컨텍스트 매니저 (Context Manager)</h2>
+
+<p><code>with</code> 문은 진입과 퇴장 시 코드를 자동 실행해 리소스 누수를 방지한다.</p>
+
+<h3>4-1. 파일 처리 — 표준 패턴</h3>
+
+<pre><code># Bad — 파일이 닫히지 않을 수 있음
+f = open("data.txt")
+data = f.read()
+f.close()
+
+# Good — 예외 발생 시에도 자동으로 닫힘
+with open("data.txt", encoding="utf-8") as f:
+    data = f.read()
+
+# 여러 리소스 동시에
+with open("src.txt") as src, open("dst.txt", "w") as dst:
+    dst.write(src.read())</code></pre>
+
+<h3>4-2. <code>contextlib.contextmanager</code>로 직접 만들기</h3>
+
+<pre><code>from contextlib import contextmanager
+import time
+
+@contextmanager
+def timer(label: str):
+    start = time.perf_counter()
+    try:
+        yield          # ← with 블록의 본문이 여기서 실행
+    finally:
+        elapsed = time.perf_counter() - start
+        print(f"[{label}] {elapsed:.4f}s")
+
+with timer("데이터 처리"):
+    process_large_dataset()</code></pre>
+
+<h3>4-3. 트랜잭션 패턴</h3>
+
+<pre><code>from contextlib import contextmanager
+
+@contextmanager
+def db_transaction(conn):
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+with db_transaction(conn) as txn:
+    txn.execute("UPDATE ...")</code></pre>
+
+<hr>
+
+<h2>5. 실무 유틸리티 이디엄</h2>
+
+<h3>5-1. <code>enumerate</code> — 인덱스와 값 동시에</h3>
+
+<pre><code>items = ["a", "b", "c"]
+
+# Bad
+for i in range(len(items)):
+    print(i, items[i])
+
+# Good
+for i, item in enumerate(items):
+    print(i, item)
+
+# 시작 번호 지정
+for i, item in enumerate(items, start=1):
+    print(f"{i}. {item}")</code></pre>
+
+<h3>5-2. <code>zip</code> — 두 시퀀스 병렬 순회</h3>
+
+<pre><code>names = ["Alice", "Bob", "Carol"]
+scores = [90, 85, 92]
+
+# Bad
+for i in range(len(names)):
+    print(names[i], scores[i])
+
+# Good
+for name, score in zip(names, scores):
+    print(name, score)
+
+# 길이가 다를 때 — zip_longest
+from itertools import zip_longest
+for a, b in zip_longest(names, scores, fillvalue=0):
+    print(a, b)
+
+# Python 3.10+ strict 모드 — 길이 불일치 시 오류 발생
+for name, score in zip(names, scores, strict=True):
+    print(name, score)</code></pre>
+
+<h3>5-3. Walrus Operator <code>:=</code> (Python 3.8+)</h3>
+
+<pre><code># Bad — chunk를 두 번 계산
+while chunk := f.read(8192):
+    process(chunk)
+# 위의 while은 이미 올바른 예시 — 아래와 비교:
+
+# 조건문에서 중간 값 재사용
+import re
+text = "Error: connection timeout at 13:45"
+if m := re.search(r"Error: (.+)", text):
+    print(m.group(1))   # connection timeout at 13:45
+
+# 리스트 컴프리헨션에서 중간 값 캐싱
+results = [
+    processed
+    for raw in data
+    if (processed := expensive_transform(raw)) is not None
+]</code></pre>
+
+<hr>
+
+<h2>6. 퀴즈</h2>
+
+<div class="quiz-section">
+  <h3>Q1. 다음 중 메모리 효율이 가장 높은 것은?</h3>
+  <div id="q1-btns">
+    <button class="quiz-btn" onclick="answer('q1', this, false)">[x**2 for x in range(1000)]</button>
+    <button class="quiz-btn" onclick="answer('q1', this, true)">(x**2 for x in range(1000))</button>
+    <button class="quiz-btn" onclick="answer('q1', this, false)">list(map(lambda x: x**2, range(1000)))</button>
+    <button class="quiz-btn" onclick="answer('q1', this, false)">{x**2 for x in range(1000)}</button>
+  </div>
+  <p class="quiz-feedback" id="q1-fb"></p>
+</div>
+
+<div class="quiz-section">
+  <h3>Q2. <code>first, *rest = [1, 2, 3, 4]</code> 실행 후 <code>rest</code>의 값은?</h3>
+  <div id="q2-btns">
+    <button class="quiz-btn" onclick="answer('q2', this, false)">(2, 3, 4)</button>
+    <button class="quiz-btn" onclick="answer('q2', this, true)">[2, 3, 4]</button>
+    <button class="quiz-btn" onclick="answer('q2', this, false)">[1, 2, 3, 4]</button>
+    <button class="quiz-btn" onclick="answer('q2', this, false)">2</button>
+  </div>
+  <p class="quiz-feedback" id="q2-fb"></p>
+</div>
+
+<div class="quiz-section">
+  <h3>Q3. <code>contextlib.contextmanager</code> 데코레이터 함수에서 <code>yield</code>는 무엇을 의미하는가?</h3>
+  <div id="q3-btns">
+    <button class="quiz-btn" onclick="answer('q3', this, false)">함수를 제너레이터로 전환한다</button>
+    <button class="quiz-btn" onclick="answer('q3', this, true)">with 블록의 본문이 실행되는 지점이다</button>
+    <button class="quiz-btn" onclick="answer('q3', this, false)">컨텍스트 매니저를 종료한다</button>
+    <button class="quiz-btn" onclick="answer('q3', this, false)">예외를 무시하는 역할이다</button>
+  </div>
+  <p class="quiz-feedback" id="q3-fb"></p>
+</div>
+
+<hr>
+
+<h2>7. 핵심 요약</h2>
+
+<table>
+  <thead><tr><th>이디엄</th><th>언제 쓰나</th><th>주의점</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>리스트 컴프리헨션</td>
+      <td>단순한 필터/변환 시퀀스</td>
+      <td>중첩 2단계 초과 시 가독성 저하</td>
+    </tr>
+    <tr>
+      <td>제너레이터 표현식</td>
+      <td>대용량 데이터, 한 번만 순회</td>
+      <td>두 번 순회 불가 — <code>list()</code>로 구체화</td>
+    </tr>
+    <tr>
+      <td>확장 언패킹 <code>*</code></td>
+      <td>첫/마지막 요소 추출, 나머지 무시</td>
+      <td>중간 <code>*</code>는 하나만 허용</td>
+    </tr>
+    <tr>
+      <td><code>contextmanager</code></td>
+      <td>커스텀 리소스 관리, 타이머, 트랜잭션</td>
+      <td><code>finally</code>로 정리 코드 보장</td>
+    </tr>
+    <tr>
+      <td>Walrus <code>:=</code></td>
+      <td>조건과 할당 동시, 스트리밍 루프</td>
+      <td>과용 시 가독성 해침 — 꼭 필요한 곳만</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2>8. 다음 학습</h2>
+
+<p>Day 2에서는 <strong>타입 힌트 실전</strong>을 다룬다. <code>typing</code> 모듈, <code>TypeVar</code>, <code>Protocol</code>, <code>TypedDict</code>, <code>mypy</code> 정적 분석까지 실무 코드에 바로 적용하는 방법을 배운다.</p>
+
+<p>지금 배운 내용에서 궁금한 점이 있으면 언제든지 질문하세요 — 선생님에게 바로 물어보면 됩니다.</p>
+
+<h2>9. 추천 1차 자료</h2>
+
+<p><a href="https://www.oreilly.com/library/view/fluent-python-2nd/9781492056348/" target="_blank" rel="noopener">
+  <strong>Fluent Python (2nd ed.) — Chapter 2, 4, 15, 17</strong>
+</a> — 컴프리헨션, 제너레이터, 컨텍스트 매니저를 CPython 내부 구조까지 연결해서 설명한다. 이 레슨의 모든 패턴에 대한 권위 있는 출처다.</p>
+
+<script>
+function answer(qId, btn, correct) {
+  const btns = document.querySelectorAll(`#${qId}-btns .quiz-btn`);
+  const fb   = document.getElementById(`${qId}-fb`);
+  btns.forEach(b => b.disabled = true);
+  if (correct) {
+    btn.classList.add('correct');
+    fb.textContent = '✓ 맞습니다!';
+    fb.style.color = '#2e7d32';
+  } else {
+    btn.classList.add('wrong');
+    fb.textContent = '✗ 틀렸습니다. 다시 생각해 보세요.';
+    fb.style.color = '#c62828';
+  }
+}
+</script>
+
+</body>
+</html>
