@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — 타입 힌트 실전 | 실무자 Python</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="wrapper">
+
+<header>
+  <div class="badge">DAY 2</div>
+  <h1>타입 힌트 실전</h1>
+  <p class="subtitle"><code>typing</code> · <code>TypeVar</code> · <code>Protocol</code> · <code>TypedDict</code> · mypy — 실무 코드에 타입 안전성 더하기</p>
+  <div class="meta">
+    <span>📅 2026-06-29</span>
+    <span>⏱ 약 50분</span>
+    <span>📖 실무자 Python 워크스페이스</span>
+  </div>
+</header>
+
+<nav>
+  <a href="./index.html">← 레슨 목록</a>
+  <a href="./0001-pythonic-idioms.html">← Day 1</a>
+</nav>
+
+<!-- ── 도입 ── -->
+<section>
+  <h2>왜 타입 힌트인가</h2>
+  <p>
+    타입 힌트는 Python 런타임에 영향을 주지 않는다. 그렇다면 왜 쓰는가?
+    <strong>mypy / pyright 같은 정적 분석기</strong>가 힌트를 읽어 배포 전에 타입 불일치를 잡아주기 때문이다.
+    런타임에 <code>AttributeError: 'NoneType' object has no attribute 'strip'</code>를 보는 것보다
+    CI에서 에러를 잡는 편이 훨씬 낫다.
+  </p>
+  <div class="callout tip">
+    <strong>💡 이 레슨의 목표</strong>
+    <code>Optional</code>, <code>Union</code>, <code>TypeVar</code>, <code>Generic</code>,
+    <code>Protocol</code>, <code>TypedDict</code>, <code>Literal</code>, <code>Final</code>를
+    실무 맥락에서 언제 쓰는지 판단할 수 있게 된다.
+    mypy를 프로젝트에 적용하는 기본 설정도 다룬다.
+  </div>
+</section>
+
+<!-- ── 1. 기본 힌트 ── -->
+<section>
+  <h2>1. 기본 타입 힌트 — 함수 시그니처부터</h2>
+  <p>타입 힌트는 변수, 함수 인자, 반환값에 붙인다. Python 3.10+부터는 <code>|</code>로 <code>Union</code>을 표현할 수 있다.</p>
+
+  <pre><code># Python 3.9+ 내장 타입을 직접 사용 (typing 임포트 불필요)
+def greet(name: str, times: int = 1) -> str:
+    return (f"Hello, {name}!\n") * times
+
+# 변수 힌트
+count: int = 0
+mapping: dict[str, list[int]] = {}
+
+# Python 3.10+ — Union 대신 | 사용
+def parse_id(raw: str | int) -> int:
+    return int(raw)
+
+# 이전 버전 호환
+from typing import Union
+def parse_id_compat(raw: Union[str, int]) -> int:
+    return int(raw)</code></pre>
+
+  <h3>Optional — None을 허용한다는 명시</h3>
+  <pre><code>from typing import Optional
+
+# Optional[X] == X | None
+def find_user(user_id: int) -> Optional[str]:
+    if user_id == 1:
+        return "Alice"
+    return None
+
+# Python 3.10+
+def find_user_new(user_id: int) -> str | None:
+    ...
+
+# 중요: 힌트를 생략하면 mypy가 Any로 추론 → 타입 안전성 없음
+def bad(x):   # x: Any, 반환: Any
+    return x</code></pre>
+
+  <div class="callout warn">
+    <strong>⚠️ None 반환을 Optional로 명시하지 않는 패턴</strong>
+    <code>-> str</code>로 선언했는데 <code>None</code>을 반환하면 mypy가 에러를 낸다.
+    이 에러가 바로 타입 힌트의 가치 — 런타임 전에 잡아준다.
+  </div>
+</section>
+
+<!-- ── 2. 컬렉션 힌트 ── -->
+<section>
+  <h2>2. 컬렉션 타입 힌트</h2>
+  <pre><code>from collections.abc import Sequence, Mapping, Iterable, Callable
+
+# ✅ 추상 타입 선호 — 더 유연함
+def process(items: Sequence[int]) -> list[int]:
+    return sorted(items)
+
+# 위 함수는 list, tuple, str 모두 받을 수 있다
+process([3, 1, 2])
+process((3, 1, 2))
+
+# ❌ 구체 타입은 불필요하게 제한
+def process_rigid(items: list[int]) -> list[int]:
+    return sorted(items)
+# tuple을 넘기면 mypy 에러
+
+# Callable 힌트 — 함수를 인자로 받을 때
+def apply(func: Callable[[int, int], int], a: int, b: int) -> int:
+    return func(a, b)
+
+apply(lambda x, y: x + y, 3, 4)  # → 7</code></pre>
+
+  <h3>Iterable vs Sequence vs Iterator</h3>
+  <pre><code>from collections.abc import Iterable, Iterator, Sequence
+
+# Iterable — for 루프 가능 (generator, list, tuple, set 모두)
+def total(nums: Iterable[int]) -> int:
+    return sum(nums)
+
+# Iterator — next()를 지원, 한 번만 순회
+def first_even(nums: Iterator[int]) -> int | None:
+    return next((n for n in nums if n % 2 == 0), None)
+
+# Sequence — 인덱스 접근 + len() 필요 (list, tuple, str)
+def last(items: Sequence[int]) -> int:
+    return items[-1]  # 인덱스 접근이 필요하므로 Iterable로는 부족</code></pre>
+</section>
+
+<!-- ── 3. TypeVar & Generic ── -->
+<section>
+  <h2>3. TypeVar & Generic — 타입 매개변수화</h2>
+  <p>
+    같은 로직이 여러 타입에 동작해야 할 때 <code>TypeVar</code>를 쓴다.
+    <code>Any</code>를 쓰면 타입 안전성이 사라지므로 제네릭이 정답이다.
+  </p>
+
+  <pre><code>from typing import TypeVar
+from collections.abc import Sequence
+
+T = TypeVar("T")
+
+# 첫 번째 원소를 반환 — 입력과 출력이 같은 타입
+def first(items: Sequence[T]) -> T:
+    return items[0]
+
+result: int  = first([1, 2, 3])    # T = int
+result: str  = first(["a", "b"])   # T = str
+
+# TypeVar 제약 — 특정 타입만 허용
+Numeric = TypeVar("Numeric", int, float)
+
+def double(x: Numeric) -> Numeric:
+    return x * 2
+
+double(3)    # OK
+double(3.5)  # OK
+double("3")  # mypy 에러</code></pre>
+
+  <h3>Generic 클래스</h3>
+  <pre><code>from typing import Generic, TypeVar
+
+T = TypeVar("T")
+
+class Stack(Generic[T]):
+    def __init__(self) -> None:
+        self._items: list[T] = []
+
+    def push(self, item: T) -> None:
+        self._items.append(item)
+
+    def pop(self) -> T:
+        return self._items.pop()
+
+    def peek(self) -> T | None:
+        return self._items[-1] if self._items else None
+
+stack: Stack[int] = Stack()
+stack.push(1)
+stack.push("oops")  # mypy 에러 — int 스택에 str 삽입</code></pre>
+</section>
+
+<!-- ── 4. Protocol ── -->
+<section>
+  <h2>4. Protocol — 구조적 서브타이핑</h2>
+  <p>
+    <code>Protocol</code>은 "이 메서드들을 가지고 있으면 타입 조건을 만족한다"를 표현한다.
+    상속 없이 duck typing을 정적으로 표현하는 방법이다.
+  </p>
+
+  <div class="compare">
+    <div class="bad">
+      <div class="label">ABC 상속 (명목적 서브타이핑)</div>
+      <pre><code>from abc import ABC, abstractmethod
+
+class Drawable(ABC):
+    @abstractmethod
+    def draw(self) -> None: ...
+
+class Circle(Drawable):
+    def draw(self) -> None:
+        print("○")
+# 서드파티 클래스는 Drawable 상속 불가</code></pre>
+    </div>
+    <div class="good">
+      <div class="label">Protocol (구조적 서브타이핑)</div>
+      <pre><code>from typing import Protocol
+
+class Drawable(Protocol):
+    def draw(self) -> None: ...
+
+class Circle:
+    def draw(self) -> None:
+        print("○")
+
+# Circle은 Drawable을 상속하지 않아도 OK
+def render(obj: Drawable) -> None:
+    obj.draw()
+
+render(Circle())  # mypy 통과 ✅</code></pre>
+    </div>
+  </div>
+
+  <pre><code># 실무 예시: 저장소 패턴에서 Protocol 활용
+from typing import Protocol
+from dataclasses import dataclass
+
+@dataclass
+class User:
+    id: int
+    name: str
+
+class UserRepository(Protocol):
+    def get(self, user_id: int) -> User | None: ...
+    def save(self, user: User) -> None: ...
+
+class PostgresUserRepo:
+    def get(self, user_id: int) -> User | None:
+        # DB 쿼리 로직
+        ...
+    def save(self, user: User) -> None:
+        # INSERT/UPDATE 로직
+        ...
+
+class InMemoryUserRepo:
+    def __init__(self) -> None:
+        self._store: dict[int, User] = {}
+    def get(self, user_id: int) -> User | None:
+        return self._store.get(user_id)
+    def save(self, user: User) -> None:
+        self._store[user.id] = user
+
+def create_user(repo: UserRepository, name: str) -> User:
+    user = User(id=1, name=name)
+    repo.save(user)
+    return user
+
+# 테스트에서는 InMemoryUserRepo, 프로덕션에서는 PostgresUserRepo
+# 둘 다 UserRepository를 상속하지 않아도 됨 ✅</code></pre>
+
+  <div class="callout good">
+    <strong>✅ Protocol을 쓸 때</strong>
+    서드파티 라이브러리 클래스나 기존 코드를 변경하지 않고 타입 안전하게 사용하고 싶을 때.
+    테스트에서 가짜(Fake/Stub)를 쉽게 만들고 싶을 때.
+  </div>
+</section>
+
+<!-- ── 5. TypedDict ── -->
+<section>
+  <h2>5. TypedDict — 딕셔너리 구조를 타입으로</h2>
+  <p>
+    JSON API 응답이나 설정 딕셔너리처럼 구조가 정해진 dict에 TypedDict를 쓰면
+    키 오타나 타입 불일치를 정적으로 잡아낸다.
+  </p>
+
+  <pre><code>from typing import TypedDict, NotRequired
+
+class UserData(TypedDict):
+    id: int
+    name: str
+    email: str
+    role: NotRequired[str]  # 있어도 되고 없어도 됨
+
+def process_user(data: UserData) -> str:
+    return f"{data['id']}: {data['name']}"
+
+# 올바른 사용
+user: UserData = {"id": 1, "name": "Alice", "email": "a@b.com"}
+process_user(user)  # ✅
+
+# mypy가 잡는 오류들
+bad1: UserData = {"id": "1", "name": "Alice", "email": "a@b.com"}  # id: str ❌
+bad2 = {"id": 1, "name": "Alice"}  # email 누락 ❌
+process_user(bad2)
+
+# API 응답 파싱 패턴
+import json
+
+class ApiResponse(TypedDict):
+    status: int
+    data: list[UserData]
+    error: NotRequired[str]
+
+def parse_response(raw: str) -> ApiResponse:
+    return json.loads(raw)  # type: ignore[return-value]  ← JSON 파싱 경계</code></pre>
+
+  <div class="callout warn">
+    <strong>⚠️ TypedDict vs dataclass</strong>
+    TypedDict는 dict 그 자체 — JSON 직렬화가 쉽고 기존 dict API와 호환된다.
+    하지만 메서드를 붙이거나 기본값 로직이 필요하면 <code>@dataclass</code>나 <code>pydantic.BaseModel</code>이 더 적합하다.
+  </div>
+</section>
+
+<!-- ── 6. Literal & Final ── -->
+<section>
+  <h2>6. Literal & Final — 값을 타입으로</h2>
+
+  <pre><code>from typing import Literal, Final
+
+# Literal — 특정 값만 허용
+Direction = Literal["north", "south", "east", "west"]
+
+def move(direction: Direction, steps: int) -> None:
+    print(f"Moving {direction} {steps} steps")
+
+move("north", 3)   # ✅
+move("up", 3)      # mypy 에러 — "up"은 Direction에 없음
+
+# 함수 오버로드와 Literal 조합
+from typing import overload
+
+@overload
+def read_data(mode: Literal["str"]) -> str: ...
+@overload
+def read_data(mode: Literal["bytes"]) -> bytes: ...
+def read_data(mode: str) -> str | bytes:
+    if mode == "str":
+        return "data"
+    return b"data"
+
+result: str   = read_data("str")    # 반환 타입이 str으로 좁혀짐
+result: bytes = read_data("bytes")  # 반환 타입이 bytes로 좁혀짐
+
+# Final — 재할당 불가 상수
+MAX_RETRIES: Final = 3
+MAX_RETRIES = 5  # mypy 에러</code></pre>
+</section>
+
+<!-- ── 7. mypy 설정 ── -->
+<section>
+  <h2>7. mypy 기본 설정 — 프로젝트에 도입하기</h2>
+  <p><code>pyproject.toml</code>에 mypy 설정을 추가하는 것이 현대적인 방식이다.</p>
+
+  <pre><code># pyproject.toml
+[tool.mypy]
+python_version = "3.11"
+strict = false          # 처음 도입 시 strict=false로 시작
+
+# 권장 개별 옵션 (strict의 subset — 선택적으로 켜기)
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true      # 함수에 타입 힌트 강제
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+
+# 서드파티 라이브러리 stubs 없을 때
+[[tool.mypy.overrides]]
+module = ["boto3.*", "botocore.*"]
+ignore_missing_imports = true</code></pre>
+
+  <pre><code># 실행
+mypy src/                      # src 디렉토리 전체 검사
+mypy --strict src/module.py   # 파일 하나를 strict 모드로
+
+# 인라인 ignore (불가피한 경우에만)
+result = json.loads(raw)  # type: ignore[assignment]
+
+# reveal_type — 디버깅용 (실행하면 에러 없이 타입 출력)
+reveal_type(first([1, 2, 3]))  # Revealed type is "builtins.int"</code></pre>
+
+  <div class="callout tip">
+    <strong>💡 기존 코드베이스 도입 전략</strong>
+    <ol style="margin:.5rem 0 0 1rem">
+      <li>먼저 <code>--ignore-missing-imports</code>로 임포트 에러부터 끈다</li>
+      <li><code>disallow_untyped_defs</code>만 켜서 새 함수에 힌트를 강제한다</li>
+      <li>레거시 모듈은 <code>[[tool.mypy.overrides]]</code>로 제외하고 점진적으로 확대한다</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ── 8. 타입 좁히기 ── -->
+<section>
+  <h2>8. 타입 좁히기 (Type Narrowing)</h2>
+  <p>
+    mypy는 제어 흐름을 분석해 타입을 자동으로 좁혀준다.
+    이 동작을 이해하면 불필요한 <code># type: ignore</code>를 줄일 수 있다.
+  </p>
+
+  <pre><code>def process(value: str | None) -> int:
+    if value is None:
+        return 0
+    # 이 시점부터 value는 str로 좁혀짐
+    return len(value.strip())   # mypy 에러 없음
+
+# isinstance로 좁히기
+from typing import reveal_type
+
+def stringify(x: int | list[int]) -> str:
+    if isinstance(x, int):
+        return str(x)   # x: int
+    return ", ".join(str(i) for i in x)  # x: list[int]
+
+# assert로 좁히기 (None 단언)
+def must_have(value: str | None) -> str:
+    assert value is not None, "value must not be None"
+    return value  # mypy가 str로 좁혀줌
+
+# TypeGuard — 커스텀 타입 가드 함수
+from typing import TypeGuard
+
+def is_string_list(val: list[object]) -> TypeGuard[list[str]]:
+    return all(isinstance(x, str) for x in val)
+
+items: list[object] = ["a", "b", "c"]
+if is_string_list(items):
+    print(items[0].upper())  # items: list[str] — mypy 에러 없음</code></pre>
+</section>
+
+<!-- ── 퀴즈 ── -->
+<section>
+  <h2>이해도 확인</h2>
+
+  <div class="quiz" id="q1">
+    <p class="question">Q1. <code>Sequence[int]</code>와 <code>list[int]</code>를 인자 타입으로 선언했을 때 차이점은?</p>
+    <ul class="choices">
+      <li onclick="answer(this,'q1',false)">성능 차이가 발생한다</li>
+      <li onclick="answer(this,'q1',true)"><code>Sequence[int]</code>는 tuple, range도 받고 <code>list[int]</code>는 list만 받는다</li>
+      <li onclick="answer(this,'q1',false)"><code>Sequence</code>는 런타임에 타입을 검사한다</li>
+      <li onclick="answer(this,'q1',false)">mypy에서 둘 다 동일하게 처리된다</li>
+    </ul>
+    <div class="feedback" id="q1-fb"></div>
+  </div>
+
+  <div class="quiz" id="q2">
+    <p class="question">Q2. <code>Protocol</code>을 ABC 상속 대신 쓰는 주된 이유는?</p>
+    <ul class="choices">
+      <li onclick="answer(this,'q2',false)">Protocol이 ABC보다 빠르기 때문에</li>
+      <li onclick="answer(this,'q2',false)">Protocol을 쓰면 런타임 타입 검사가 가능하기 때문에</li>
+      <li onclick="answer(this,'q2',true)">클래스가 Protocol을 상속하지 않아도 구조가 맞으면 타입을 만족하기 때문에</li>
+      <li onclick="answer(this,'q2',false)">Protocol은 Python 표준 라이브러리에 포함되어 있지 않기 때문에</li>
+    </ul>
+    <div class="feedback" id="q2-fb"></div>
+  </div>
+
+  <div class="quiz" id="q3">
+    <p class="question">Q3. TypeVar를 쓰는 대신 <code>Any</code>를 써도 되는 경우는?</p>
+    <ul class="choices">
+      <li onclick="answer(this,'q3',false)">입력과 출력이 같은 타입임을 표현해야 할 때</li>
+      <li onclick="answer(this,'q3',false)">여러 타입을 처리하는 제네릭 함수를 만들 때</li>
+      <li onclick="answer(this,'q3',true)">외부 JSON 파싱처럼 구조를 보장할 수 없는 경계 지점에서만</li>
+      <li onclick="answer(this,'q3',false)">타입 힌트를 빠르게 추가하고 싶을 때</li>
+    </ul>
+    <div class="feedback" id="q3-fb"></div>
+  </div>
+</section>
+
+<!-- ── 추천 자료 ── -->
+<section>
+  <h2>추천 1차 자료</h2>
+  <div class="resource-box">
+    <div class="res-label">📚 공식 PEP 문서</div>
+    <a href="https://peps.python.org/pep-0484/" target="_blank" rel="noopener">PEP 484 — Type Hints</a>
+    &nbsp;|&nbsp;
+    <a href="https://peps.python.org/pep-0544/" target="_blank" rel="noopener">PEP 544 — Protocols</a>
+    <p style="margin-top:.4rem;color:var(--muted)">
+      타입 힌트 시스템 전체 설계 의도가 담긴 근거 문서.
+      "왜 이렇게 설계됐는지"를 이해하면 엣지 케이스에서 판단이 쉬워진다.
+    </p>
+  </div>
+  <div class="resource-box">
+    <div class="res-label">🔧 mypy 공식 문서</div>
+    <a href="https://mypy.readthedocs.io/en/stable/" target="_blank" rel="noopener">mypy — Optional Static Typing for Python</a>
+    <p style="margin-top:.4rem;color:var(--muted)">
+      특히 "Type narrowing"과 "Protocols" 챕터를 읽으면 이 레슨 내용이 완성된다.
+    </p>
+  </div>
+</section>
+
+<!-- ── 다음 예고 ── -->
+<section>
+  <h2>다음 레슨 예고</h2>
+  <p>
+    <strong>Day 3 — 예외 처리 설계</strong><br>
+    커스텀 예외 계층 설계, <code>raise … from</code>으로 예외 연쇄, <code>ExceptionGroup</code>(3.11+),
+    그리고 예외 컨텍스트를 보존하는 실무 패턴을 다룬다.
+  </p>
+</section>
+
+<div class="callout tip" style="margin-top:2rem">
+  <strong>🤖 질문이 있다면 Claude에게 물어보세요</strong>
+  TypeVar 제약이 헷갈리거나, mypy 에러 메시지가 이해되지 않으면 자유롭게 질문하세요.
+</div>
+
+<footer>
+  <a href="./index.html">← 레슨 목록</a> &nbsp;|&nbsp;
+  <a href="./0001-pythonic-idioms.html">← Day 1</a> &nbsp;|&nbsp;
+  <a href="../PROGRESS.md">진행 상황</a>
+</footer>
+
+</div><!-- .wrapper -->
+
+<script>
+function answer(el, qid, correct) {
+  const quiz = document.getElementById(qid);
+  quiz.querySelectorAll('li').forEach(li => {
+    li.onclick = null;
+    li.style.cursor = 'default';
+  });
+  el.classList.add(correct ? 'correct' : 'wrong');
+  const fb = document.getElementById(qid + '-fb');
+  const messages = {
+    q1: {
+      ok: '정답! Sequence는 collections.abc 추상 타입으로 list, tuple, range, str 등 인덱스 접근+len()이 되는 모든 타입을 허용합니다. 함수 인자에는 더 넓은 Sequence를 쓰는 것이 Pythonic입니다.',
+      fail: '아닙니다. 핵심 차이는 허용 타입의 범위입니다. Sequence[int]는 list뿐 아니라 tuple, range도 허용하지만 list[int]는 list만 허용합니다.'
+    },
+    q2: {
+      ok: '정답! 이것이 "구조적 서브타이핑"입니다. 클래스가 Protocol에 선언된 메서드를 가지기만 하면 상속 없이도 타입 조건을 만족합니다. 서드파티 클래스에도 적용할 수 있어서 매우 유연합니다.',
+      fail: '아닙니다. Protocol의 핵심 장점은 명목적 상속 없이 구조만으로 타입을 만족할 수 있다는 점입니다. 서드파티 클래스나 기존 코드를 수정하지 않고도 활용할 수 있습니다.'
+    },
+    q3: {
+      ok: '정답! Any는 타입 시스템을 "끄는" 것이므로 최대한 경계에서만 써야 합니다. JSON 파싱, 외부 API 응답 처리처럼 구조를 런타임 전에 알 수 없는 지점에서만 허용하고, 내부로 넘어오면 TypedDict 등으로 즉시 타입을 부여합니다.',
+      fail: '아닙니다. Any를 쓰면 mypy가 해당 값에 대한 모든 타입 검사를 포기합니다. 제네릭이나 여러 타입 처리가 필요하면 TypeVar를, 빠른 힌트 추가가 목적이라면 Any 대신 Union이나 object를 쓰세요.'
+    }
+  };
+  const m = messages[qid];
+  fb.innerHTML = correct
+    ? `<span style="color:var(--accent2)">✅ ${m.ok}</span>`
+    : `<span style="color:#f56565">❌ ${m.fail}</span>`;
+}
+</script>
+</body>
+</html>
