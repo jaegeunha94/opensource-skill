@@ -17,7 +17,7 @@
 
 | 도서 | 저자 | 핵심 내용 |
 |------|------|-----------|
-| *Architecture Patterns with Python* | Harry Percival, Bob Gregory | DDD, 헥사고날 아키텍처, CQRS를 Python으로 구현. 무료 공개 | 
+| *Architecture Patterns with Python* | Harry Percival, Bob Gregory | DDD, 헥사고날 아키텍처, CQRS를 Python으로 구현. 무료 공개 |
 | *Designing Data-Intensive Applications* | Martin Kleppmann | 데이터 저장소, 트랜잭션, 분산 시스템의 바이블 |
 | *Building Microservices* | Sam Newman | 서비스 경계 설계의 표준 참고서 |
 | *Fluent Python* (2nd ed.) | Luciano Ramalho | Python 내부 동작 이해. async, 데이터 모델 챕터가 핵심 |
