@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-29 | Python Data Model — `__dunder__` 메서드와 객체 프로토콜 | [0001-python-data-model.html](lessons/0001-python-data-model.html) |
+| 2 | 2026-06-30 | 메모리 관리 — 레퍼런스 카운팅, 가비지 컬렉션, 순환 참조, `__del__` | [0002-memory-management.html](lessons/0002-memory-management.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | 메모리 관리 — 레퍼런스 카운팅과 가비지 컬렉션 | `sys.getrefcount`, `gc` 모듈, 순환 참조, `__del__` |
 | 3 | GIL(Global Interpreter Lock) — 동시성 한계와 우회 전략 | GIL 원리, CPU-bound vs I/O-bound, multiprocessing, Cython |
 | 4 | Iterator/Generator 프로토콜과 lazy evaluation | `__iter__`, `__next__`, `yield`, `send()`, `throw()` |
 | 5 | asyncio와 이벤트 루프 — 비동기 프로그래밍의 핵심 | event loop, coroutine, Task, Future, `await`, `gather` |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — Day 2 (메모리 관리)부터 계속.
+**Day 2 완료** — Day 3 (GIL)부터 계속.
 
 ## 습득한 핵심 개념
 
@@ -36,9 +36,14 @@
 - [x] `__eq__`와 `__hash__` 계약(contract) — 왜 함께 정의해야 하는가 (Day 1)
 - [x] `__len__`, `__getitem__`으로 시퀀스 프로토콜 구현 (Day 1)
 - [x] `__bool__` 암묵적 진리값 평가 (Day 1)
-- [ ] 레퍼런스 카운팅 (예정 Day 2)
-- [ ] 순환 참조와 가비지 컬렉션 (예정 Day 2)
+- [x] 레퍼런스 카운팅 — `sys.getrefcount`, 카운트 증감 조건 (Day 2)
+- [x] 순환 참조와 cyclic GC — generation 기반 수집 원리 (Day 2)
+- [x] `weakref` — 순환 참조 해결 패턴, `WeakValueDictionary` (Day 2)
+- [x] `__del__` 위험성 — 시점 불확실, 인터프리터 종료, 예외 묵살 (Day 2)
+- [x] 메모리 진단 도구 — `tracemalloc`, `objgraph`, `gc` (Day 2)
+- [x] `__slots__` — 대규모 인스턴스 메모리 최적화 (Day 2)
 - [ ] GIL 원리 (예정 Day 3)
+
 - [ ] Iterator/Generator 프로토콜 (예정 Day 4)
 - [ ] asyncio 이벤트 루프 (예정 Day 5)
 - [ ] Context Manager 프로토콜 (예정 Day 6)
