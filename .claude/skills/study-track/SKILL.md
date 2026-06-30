@@ -50,6 +50,16 @@ Examples:
 - `professional-python`
 - `python-experienced-interview`
 - `senior-backend-interview`
+- `senior-system-design-interview`
+- `senior-linux-server-operations-interview`
+- `senior-backend-security-interview`
+- `senior-observability-incident-response-interview`
+- `senior-aws-cloud-architecture-interview`
+- `senior-docker-kubernetes-virtualization-interview`
+- `senior-cicd-deployment-strategy-interview`
+- `senior-performance-optimization-interview`
+- `senior-redis-cache-strategy-interview`
+- `senior-message-queue-async-processing-interview`
 
 If the user gives a Korean subject name, map it to a stable English slug. Prefer common CS course names:
 
@@ -71,6 +81,35 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `백엔드 10년차 이상 개발자 Interview` -> `senior-backend-interview`
 - `백엔드 시니어 인터뷰` -> `senior-backend-interview`
 - `Senior Backend Developer Interview` -> `senior-backend-interview`
+- `시스템 설계 Interview` -> `senior-system-design-interview`
+- `시스템 설계 인터뷰` -> `senior-system-design-interview`
+- `System Design Interview` -> `senior-system-design-interview`
+- `Linux 서버 운영` -> `senior-linux-server-operations-interview`
+- `리눅스 서버 운영` -> `senior-linux-server-operations-interview`
+- `Linux Server Operations Interview` -> `senior-linux-server-operations-interview`
+- `백엔드 보안 / Secure Coding` -> `senior-backend-security-interview`
+- `백엔드 보안` -> `senior-backend-security-interview`
+- `Secure Coding Interview` -> `senior-backend-security-interview`
+- `Observability / 장애 대응` -> `senior-observability-incident-response-interview`
+- `옵저버빌리티 장애 대응` -> `senior-observability-incident-response-interview`
+- `Observability Incident Response Interview` -> `senior-observability-incident-response-interview`
+- `AWS / Cloud Architecture` -> `senior-aws-cloud-architecture-interview`
+- `AWS 클라우드 아키텍처` -> `senior-aws-cloud-architecture-interview`
+- `AWS Cloud Architecture Interview` -> `senior-aws-cloud-architecture-interview`
+- `Docker / Kubernetes / 가상화` -> `senior-docker-kubernetes-virtualization-interview`
+- `Docker Kubernetes 가상화` -> `senior-docker-kubernetes-virtualization-interview`
+- `Docker Kubernetes Virtualization Interview` -> `senior-docker-kubernetes-virtualization-interview`
+- `CI/CD와 배포 전략` -> `senior-cicd-deployment-strategy-interview`
+- `CI/CD 배포 전략` -> `senior-cicd-deployment-strategy-interview`
+- `CI/CD Deployment Strategy Interview` -> `senior-cicd-deployment-strategy-interview`
+- `성능 최적화` -> `senior-performance-optimization-interview`
+- `Performance Optimization Interview` -> `senior-performance-optimization-interview`
+- `Redis / 캐시 전략` -> `senior-redis-cache-strategy-interview`
+- `Redis 캐시 전략` -> `senior-redis-cache-strategy-interview`
+- `Redis Cache Strategy Interview` -> `senior-redis-cache-strategy-interview`
+- `메시지 큐 / 비동기 처리` -> `senior-message-queue-async-processing-interview`
+- `메시지 큐 비동기 처리` -> `senior-message-queue-async-processing-interview`
+- `Message Queue Async Processing Interview` -> `senior-message-queue-async-processing-interview`
 
 If the slug is ambiguous, ask one short clarifying question before creating the folder.
 
@@ -83,9 +122,22 @@ Do not start these tracks with basic Python syntax. Start with the first practic
 
 For senior backend interview subjects, focus on 10+ year practitioner expectations: architecture trade-offs, system design, scale, reliability, data modeling, transactions, concurrency, distributed systems, APIs, security, observability, incident response, deployment, technical leadership, and communication. Include mock interview questions, answer frameworks, senior-level follow-ups, strong/weak answer examples, and self-check rubrics. Do not turn the track into junior CS trivia unless the topic is used to evaluate production reasoning.
 
+For specialized senior interview subjects, keep the same 10+ year practitioner interview format as `senior-backend-interview`. Each lesson should connect concepts to production constraints, architecture trade-offs, incident examples, leadership-level communication, and interviewer follow-ups:
+
+- `senior-system-design-interview`: high traffic handling, server scaling, cache, queues, DB sharding, failure isolation, high availability, distributed systems, capacity estimation, consistency trade-offs, and design review communication.
+- `senior-linux-server-operations-interview`: Linux commands, process inspection, port checks, log analysis, CPU/memory/disk diagnosis, systemd, permissions, networking basics, and real server incident response.
+- `senior-backend-security-interview`: authentication, authorization, sessions, JWT, SQL injection, XSS, CSRF, secure file uploads, API security, password storage, secrets handling, threat modeling, and secure coding trade-offs.
+- `senior-observability-incident-response-interview`: logs, metrics, tracing, alerts, dashboards, incident triage, root cause analysis, postmortems, recurrence prevention, SLOs, and stakeholder communication during failures.
+- `senior-aws-cloud-architecture-interview`: EC2, S3, RDS, VPC, IAM, ELB, Auto Scaling, CloudWatch, network boundaries, availability zones, cost/reliability trade-offs, and cloud architecture design.
+- `senior-docker-kubernetes-virtualization-interview`: containers, images, volumes, networks, Dockerfile, Compose, Kubernetes Pod, Deployment, Service, Ingress, rollout behavior, resource limits, and production troubleshooting.
+- `senior-cicd-deployment-strategy-interview`: GitHub Actions, Jenkins, build automation, test automation, artifact management, Blue-Green, Rolling, Canary, rollback strategy, deployment risk control, and release ownership.
+- `senior-performance-optimization-interview`: slow API analysis, DB query tuning, index optimization, caching, asynchronous processing, load testing, bottleneck analysis, profiling, and measurable performance trade-offs.
+- `senior-redis-cache-strategy-interview`: Redis data structures, TTL, cache invalidation, session stores, distributed locks, ranking, Pub/Sub, cache stampede prevention, persistence modes, and failure behavior.
+- `senior-message-queue-async-processing-interview`: Kafka, RabbitMQ, SQS, Celery, asynchronous job design, retries, idempotency, dead-letter queues, ordering, backpressure, failure isolation, and large-scale processing.
+
 For Python experienced interview subjects, assume the learner already knows basic Python syntax. Focus on experienced developer interview expectations: Python data model, object model, execution model, memory management, reference counting and garbage collection, GIL, concurrency, `asyncio`, iterators, generators, context managers, descriptors, decorators, typing, packaging, testing, debugging, profiling, performance, standard library depth, maintainability, and production troubleshooting. Include mock interview questions, answer frameworks, senior-level follow-ups, strong/weak answer examples, and self-check rubrics. Do not turn the track into beginner syntax drills.
 
-Interview lessons for senior backend and Python experienced subjects must be detailed enough for a learner who finds the interview question difficult. Do not only list definitions, answer bullets, or comparison tables. For each hard concept or interview question, explain:
+Interview lessons for senior backend, specialized senior interview, and Python experienced subjects must be detailed enough for a learner who finds the interview question difficult. Do not only list definitions, answer bullets, or comparison tables. For each hard concept or interview question, explain:
 
 - the real production situation behind the question
 - the prerequisite concept in plain Korean before using senior-level terms

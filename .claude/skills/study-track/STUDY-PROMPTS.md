@@ -190,3 +190,203 @@
 - 폴더가 있으면 `PROGRESS.md`를 읽고 완료한 내용은 중복하지 말고 다음 미완료 Day 레슨 하나를 생성해줘.
 - 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-backend-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
 ```
+
+## 시스템 설계 Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 시스템 설계 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: 시스템 설계 Interview
+폴더 slug: `senior-system-design-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 아키텍처 용어 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 요구사항 정리, 규모 산정, trade-off 판단, 장애 격리, 확장성 설계 중심으로 진행해줘.
+- 대용량 트래픽 처리, 서버 확장, 캐시, 큐, DB 샤딩, 장애 격리, 고가용성, 분산 시스템, capacity estimation, consistency trade-off를 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — 시스템 설계 답변 프레임워크와 요구사항 정리부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-system-design-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## Linux 서버 운영 Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 Linux 서버 운영 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: Linux 서버 운영
+폴더 slug: `senior-linux-server-operations-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 명령어 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 서버 장애 대응, 원인 분석, 운영 판단 중심으로 진행해줘.
+- 리눅스 명령어, 프로세스 확인, 포트 확인, 로그 분석, CPU/메모리/디스크 사용량 확인, systemd, 권한 관리, 네트워크 진단을 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — 리눅스 서버 장애 대응 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-linux-server-operations-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## 백엔드 보안 / Secure Coding Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 백엔드 보안 / Secure Coding 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: 백엔드 보안 / Secure Coding
+폴더 slug: `senior-backend-security-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 취약점 정의 암기나 주니어 문답이 아니라, 10년차 이상 백엔드 개발자 인터뷰에서 평가하는 위협 모델링, 방어 설계, 실무 보안 판단 중심으로 진행해줘.
+- 인증, 인가, 세션, JWT, SQL Injection, XSS, CSRF, 파일 업로드 보안, API 보안, 비밀번호 저장 방식, secret 관리, secure coding을 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — 백엔드 보안 사고 프레임워크와 인증/인가부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-backend-security-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## Observability / 장애 대응 Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 Observability / 장애 대응 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: Observability / 장애 대응
+폴더 slug: `senior-observability-incident-response-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 모니터링 도구 설명이나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 장애 탐지, 원인 분석, 재발 방지, 커뮤니케이션 중심으로 진행해줘.
+- 로그, 메트릭, 트레이싱, 알림, 대시보드, 장애 원인 분석, 장애 보고서, postmortem, 재발 방지 대책, SLO를 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — 장애 대응과 관측성 설계 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-observability-incident-response-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## AWS / Cloud Architecture Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 AWS / Cloud Architecture 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: AWS / Cloud Architecture
+폴더 slug: `senior-aws-cloud-architecture-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 AWS 서비스 나열이나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 클라우드 아키텍처 설계, 운영 안정성, 비용/보안 trade-off 중심으로 진행해줘.
+- EC2, S3, RDS, VPC, IAM, ELB, Auto Scaling, CloudWatch, Availability Zone, 네트워크 경계, 권한 설계, 비용 최적화를 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — AWS 아키텍처 설계 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-aws-cloud-architecture-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## Docker / Kubernetes / 가상화 Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 Docker / Kubernetes / 가상화 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: Docker / Kubernetes / 가상화
+폴더 slug: `senior-docker-kubernetes-virtualization-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 명령어 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 컨테이너 배포 구조, 장애 대응, 운영 trade-off 중심으로 진행해줘.
+- 컨테이너, 이미지, 볼륨, 네트워크, Dockerfile, Compose, Kubernetes Pod, Deployment, Service, Ingress, rollout, resource limit, 운영 troubleshooting을 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — 컨테이너와 Kubernetes 운영 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-docker-kubernetes-virtualization-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## CI/CD와 배포 전략 Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 CI/CD와 배포 전략 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: CI/CD와 배포 전략
+폴더 slug: `senior-cicd-deployment-strategy-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 파이프라인 도구 설명이나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 배포 안정성, 자동화 품질, 롤백 판단, release ownership 중심으로 진행해줘.
+- GitHub Actions, Jenkins, 빌드 자동화, 테스트 자동화, artifact 관리, Blue-Green 배포, Rolling 배포, Canary 배포, 롤백 전략을 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — 안정적인 배포 전략과 롤백 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-cicd-deployment-strategy-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## 성능 최적화 Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 성능 최적화 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: 성능 최적화
+폴더 slug: `senior-performance-optimization-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 튜닝 팁 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 병목 분석, 측정 기반 판단, 성능/복잡도 trade-off 중심으로 진행해줘.
+- 느린 API 분석, DB 쿼리 튜닝, 인덱스 최적화, 캐시 적용, 비동기 처리, 부하 테스트, 병목 분석, profiling, 성능 지표 해석을 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — 성능 병목 분석 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-performance-optimization-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## Redis / 캐시 전략 Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 Redis / 캐시 전략 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: Redis / 캐시 전략
+폴더 slug: `senior-redis-cache-strategy-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 Redis 명령어 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 캐시 설계, 무효화 전략, 장애 시 동작, 성능 trade-off 중심으로 진행해줘.
+- Redis 자료구조, TTL, 캐시 무효화, 세션 저장소, 분산 락, 랭킹, Pub/Sub, 캐시 스탬피드, persistence, eviction policy를 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — 캐시 전략과 Redis 사용 판단 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-redis-cache-strategy-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## 메시지 큐 / 비동기 처리 Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 메시지 큐 / 비동기 처리 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: 메시지 큐 / 비동기 처리
+폴더 slug: `senior-message-queue-async-processing-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 큐 제품 비교나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 비동기 설계, 재시도, 장애 격리, 대량 처리 판단 중심으로 진행해줘.
+- Kafka, RabbitMQ, SQS, Celery, 비동기 작업 설계, 외부 연동, 재시도, idempotency, dead-letter queue, ordering, backpressure, 장애 격리를 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — 비동기 처리와 메시지 큐 설계 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-message-queue-async-processing-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
