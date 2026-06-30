@@ -1,0 +1,42 @@
+# Linux 서버 운영 인터뷰 학습 진행 상황
+
+## 완료한 내용
+
+| Day | 날짜 | 주제 | 레슨 파일 |
+|-----|------|------|-----------|
+| 1 | 2026-06-30 | 리눅스 서버 장애 대응 프레임워크 | [0001-linux-incident-response-framework.html](lessons/0001-linux-incident-response-framework.html) |
+
+## 다음 예정 학습
+
+| Day | 예정 주제 | 핵심 개념 |
+|-----|-----------|-----------|
+| 2 | 프로세스 & CPU 진단 심화 | ps aux, top 필드 해석, strace, /proc/PID, CPU 바운드 vs I/O 바운드 판단 |
+| 3 | 메모리 진단 & OOM | free available vs used, vmstat si/so, /proc/meminfo, OOM Killer 로그 해석, swap 정책 |
+| 4 | 디스크 I/O 진단 | iostat util, await, iotop, lsof 열린 파일, inode 고갈, df vs du 차이 |
+| 5 | 로그 분석 & journalctl | journalctl 필터 옵션, rsyslog, /var/log 구조, grep/awk/sed 조합, 로그 로테이션 |
+| 6 | systemd 서비스 관리 | systemctl start/stop/enable/status, unit 파일 구조, ExecStart, Restart 정책, 의존성 After= |
+| 7 | 네트워크 진단 | ss -tuln, netstat, LISTEN/ESTABLISHED/TIME_WAIT, tcpdump 기초, ip route, 방화벽(firewalld/ufw) |
+| 8 | 권한 & 보안 관리 | chmod/chown 숫자/문자 표기, umask, sudo/sudoers, setuid/setgid, SELinux context, capability |
+| 9 | 종합 장애 시나리오 실습 | Day 1~8 개념 종합. 실전 시나리오 3개 — CPU 폭식, 디스크 풀, 서비스 재시작 반복 |
+
+## 현재 학습 위치
+
+**Day 1 완료** — Day 2: 프로세스 & CPU 진단 심화 예정.
+
+## 습득한 핵심 개념
+
+- [x] 서버 장애 대응 5단계 프레임워크 (영향 범위 → 스냅샷 → 병목 범주 → 원인 특정 → 조치+재발 방지) (Day 1)
+- [x] Load average 해석 (코어 수 대비, 1/5/15분 트렌드로 악화/회복 판단) (Day 1)
+- [x] CPU 사용률 분류 (us/sy/wa/id 차이, iowait는 CPU 대기가 아닌 I/O 대기) (Day 1)
+- [x] 프로세스 상태 (R/D/S/Z, D 상태가 많으면 I/O 병목) (Day 1)
+- [x] USE 방법론 (Utilization / Saturation / Errors 체계적 진단) (Day 1)
+- [x] 즉각 조치 vs 데이터 확보의 trade-off (kill 전 스택 트레이스 확보) (Day 1)
+- [x] Senior 답변 구조: 영향 범위 → 데이터 → 가설 → 조치 → 재발 방지 + 소통 (Day 1)
+- [ ] 프로세스 상태 심화, strace, /proc (예정 Day 2)
+- [ ] 메모리 진단 & OOM Killer (예정 Day 3)
+- [ ] 디스크 I/O 진단 심화 (예정 Day 4)
+- [ ] 로그 분석 & journalctl (예정 Day 5)
+- [ ] systemd 서비스 관리 (예정 Day 6)
+- [ ] 네트워크 진단 (예정 Day 7)
+- [ ] 권한 & 보안 관리 (예정 Day 8)
+- [ ] 종합 시나리오 실습 (예정 Day 9)

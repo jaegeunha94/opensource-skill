@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linux 서버 운영 인터뷰 — 학습 목록</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <style>
+    main { max-width: 720px; }
+    .lesson-list { list-style: none; padding: 0; }
+    .lesson-list li {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      margin-bottom: 0.75rem;
+      transition: box-shadow 0.15s;
+    }
+    .lesson-list li:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+    .lesson-list a {
+      display: block;
+      padding: 1.1rem 1.4rem;
+      text-decoration: none;
+      color: #1e293b;
+    }
+    .lesson-list .day-badge {
+      display: inline-block;
+      background: #2563eb;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      margin-bottom: 0.4rem;
+    }
+    .lesson-list .title { font-weight: 600; font-size: 1rem; }
+    .lesson-list .tags { margin-top: 0.3rem; }
+    .planned { opacity: 0.5; pointer-events: none; }
+    .planned .day-badge { background: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<header class="lesson-header">
+  <div class="header-inner">
+    <span class="subject-label">학습 워크스페이스</span>
+    <h1>Linux 서버 운영 인터뷰</h1>
+    <p class="subtitle">10년차 이상 개발자 면접 대비 — 서버 장애 대응, 원인 분석, 운영 판단 중심</p>
+  </div>
+</header>
+
+<main style="padding-top: 2rem;">
+  <h2 style="border: none; padding: 0; margin-bottom: 1rem; font-size: 1rem; color: #64748b; font-weight: 500;">완료한 레슨</h2>
+  <ul class="lesson-list">
+    <li>
+      <a href="./0001-linux-incident-response-framework.html">
+        <span class="day-badge">Day 1</span>
+        <div class="title">리눅스 서버 장애 대응 프레임워크</div>
+        <div class="tags">
+          <span class="tag">USE Method</span>
+          <span class="tag">load average</span>
+          <span class="tag">iowait</span>
+          <span class="tag">triage</span>
+          <span class="tag">5단계 장애 대응</span>
+        </div>
+      </a>
+    </li>
+  </ul>
+
+  <h2 style="border: none; padding: 0; margin: 2rem 0 1rem; font-size: 1rem; color: #64748b; font-weight: 500;">예정 레슨</h2>
+  <ul class="lesson-list">
+    <li class="planned">
+      <a href="#">
+        <span class="day-badge">Day 2</span>
+        <div class="title">프로세스 &amp; CPU 진단 심화</div>
+        <div class="tags">
+          <span class="tag">ps</span>
+          <span class="tag">strace</span>
+          <span class="tag">/proc</span>
+          <span class="tag">CPU 바운드 vs I/O 바운드</span>
+        </div>
+      </a>
+    </li>
+    <li class="planned">
+      <a href="#">
+        <span class="day-badge">Day 3</span>
+        <div class="title">메모리 진단 &amp; OOM</div>
+        <div class="tags">
+          <span class="tag">free</span>
+          <span class="tag">vmstat</span>
+          <span class="tag">OOM Killer</span>
+          <span class="tag">swap</span>
+        </div>
+      </a>
+    </li>
+    <li class="planned">
+      <a href="#">
+        <span class="day-badge">Day 4</span>
+        <div class="title">디스크 I/O 진단</div>
+        <div class="tags">
+          <span class="tag">iostat</span>
+          <span class="tag">iotop</span>
+          <span class="tag">lsof</span>
+          <span class="tag">inode</span>
+        </div>
+      </a>
+    </li>
+    <li class="planned">
+      <a href="#">
+        <span class="day-badge">Day 5</span>
+        <div class="title">로그 분석 &amp; journalctl</div>
+        <div class="tags">
+          <span class="tag">journalctl</span>
+          <span class="tag">rsyslog</span>
+          <span class="tag">grep</span>
+          <span class="tag">awk</span>
+        </div>
+      </a>
+    </li>
+    <li class="planned">
+      <a href="#">
+        <span class="day-badge">Day 6</span>
+        <div class="title">systemd 서비스 관리</div>
+        <div class="tags">
+          <span class="tag">systemctl</span>
+          <span class="tag">unit 파일</span>
+          <span class="tag">재시작 정책</span>
+        </div>
+      </a>
+    </li>
+    <li class="planned">
+      <a href="#">
+        <span class="day-badge">Day 7</span>
+        <div class="title">네트워크 진단</div>
+        <div class="tags">
+          <span class="tag">ss</span>
+          <span class="tag">tcpdump</span>
+          <span class="tag">포트 확인</span>
+          <span class="tag">방화벽</span>
+        </div>
+      </a>
+    </li>
+    <li class="planned">
+      <a href="#">
+        <span class="day-badge">Day 8</span>
+        <div class="title">권한 &amp; 보안 관리</div>
+        <div class="tags">
+          <span class="tag">chmod</span>
+          <span class="tag">sudo</span>
+          <span class="tag">SELinux</span>
+          <span class="tag">sudoers</span>
+        </div>
+      </a>
+    </li>
+    <li class="planned">
+      <a href="#">
+        <span class="day-badge">Day 9</span>
+        <div class="title">종합 장애 시나리오 실습</div>
+        <div class="tags">
+          <span class="tag">종합</span>
+          <span class="tag">실전 시나리오</span>
+        </div>
+      </a>
+    </li>
+  </ul>
+</main>
+
+<footer>
+  <p>Linux 서버 운영 인터뷰 학습 워크스페이스 ·
+    <a href="../RESOURCES.md">참고 자료</a> ·
+    <a href="../PROGRESS.md">진행 현황</a>
+  </p>
+</footer>
+
+</body>
+</html>
