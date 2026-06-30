@@ -13,6 +13,7 @@
 | 7 | 2026-06-27 | 트랜잭션과 동시성 제어 | [day-007-transactions.html](lessons/day-007-transactions.html) |
 | 8 | 2026-06-28 | 인덱스 구조와 쿼리 최적화 | [day-008-index-query-optimization.html](lessons/day-008-index-query-optimization.html) |
 | 9 | 2026-06-29 | 저장 프로시저·트리거·함수 | [day-009-stored-procedures-triggers.html](lessons/day-009-stored-procedures-triggers.html) |
+| 10 | 2026-06-30 | NoSQL 데이터베이스 | [day-010-nosql.html](lessons/day-010-nosql.html) |
 
 ## 다음 예정 학습
 
@@ -22,11 +23,12 @@
 | ~~7~~ | ~~트랜잭션과 동시성 제어~~ | ~~완료~~ |
 | ~~8~~ | ~~인덱스 구조와 쿼리 최적화~~ | ~~완료~~ |
 | ~~9~~ | ~~저장 프로시저·트리거·함수~~ | ~~완료~~ |
-| 10 | NoSQL 데이터베이스 | Document·Key-Value·Column·Graph, CAP 정리, 사용 사례 비교 |
+| ~~10~~ | ~~NoSQL 데이터베이스~~ | ~~완료~~ |
+| 11 | 데이터베이스 복제와 고가용성 | Primary-Replica, 장애 조치, 읽기 분산, 동기/비동기 복제 |
 
 ## 현재 학습 위치
 
-**Day 9 완료** — Day 10 (NoSQL 데이터베이스)부터 시작.
+**Day 10 완료** — Day 11 (데이터베이스 복제와 고가용성)부터 시작.
 
 ## 습득한 핵심 개념
 
@@ -66,4 +68,7 @@
 - [x] 슬로우 쿼리 로그 설정 및 튜닝 프로세스 (Day 8)
 - [x] 인덱스 안티패턴 (함수 적용 무력화, 선행 와일드카드, OR 조건, UUID PK) (Day 8)
 - [x] 저장 프로시저·트리거·함수 (Day 9)
-- [ ] NoSQL 데이터베이스 (예정 Day 10)
+- [x] NoSQL 유형: Key-Value·Document·Column-Family·Graph (Day 10)
+- [x] CAP 정리: CP vs AP 선택 (Day 10)
+- [x] Polyglot Persistence 개념 (Day 10)
+- [ ] 데이터베이스 복제와 고가용성 (예정 Day 11)

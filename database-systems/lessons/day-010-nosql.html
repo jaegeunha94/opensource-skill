@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 — NoSQL 데이터베이스</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem; line-height: 1.7; color: #222; }
+    h1 { border-bottom: 3px solid #3b82f6; padding-bottom: .5rem; }
+    h2 { color: #1d4ed8; margin-top: 2.5rem; }
+    h3 { color: #374151; margin-top: 1.8rem; }
+    pre { background: #1e293b; color: #e2e8f0; padding: 1rem 1.2rem; border-radius: .5rem; overflow-x: auto; font-size: .9rem; }
+    code { background: #f1f5f9; padding: .15rem .35rem; border-radius: .25rem; font-size: .9rem; }
+    pre code { background: none; padding: 0; }
+    .tip   { background: #eff6ff; border-left: 4px solid #3b82f6; padding: .8rem 1.2rem; border-radius: 0 .5rem .5rem 0; margin: 1rem 0; }
+    .warn  { background: #fff7ed; border-left: 4px solid #f97316; padding: .8rem 1.2rem; border-radius: 0 .5rem .5rem 0; margin: 1rem 0; }
+    .good  { background: #f0fdf4; border-left: 4px solid #22c55e; padding: .8rem 1.2rem; border-radius: 0 .5rem .5rem 0; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #cbd5e1; padding: .6rem .9rem; text-align: left; }
+    th { background: #f1f5f9; }
+    .quiz { background: #faf5ff; border: 1px solid #c084fc; border-radius: .5rem; padding: 1rem 1.4rem; margin: 1.5rem 0; }
+    .quiz details { margin-top: .6rem; }
+    .quiz summary { cursor: pointer; font-weight: 600; color: #7c3aed; }
+    nav { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; display: flex; gap: 1rem; flex-wrap: wrap; }
+    nav a { color: #3b82f6; text-decoration: none; }
+    nav a:hover { text-decoration: underline; }
+    .badge { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 700; margin-left: .4rem; }
+    .badge-rdb  { background:#dbeafe; color:#1e40af; }
+    .badge-nosql{ background:#fef3c7; color:#92400e; }
+    .badge-cap  { background:#fce7f3; color:#9d174d; }
+  </style>
+</head>
+<body>
+
+<h1>Day 10 — NoSQL 데이터베이스</h1>
+<p><em>데이터베이스 학습 · 2026-06-30</em></p>
+
+<div class="tip">
+  <strong>학습 목표</strong><br>
+  ① NoSQL이 등장한 이유와 관계형 DB와의 근본적 차이를 설명할 수 있다.<br>
+  ② 4가지 NoSQL 유형(Document·Key-Value·Column-Family·Graph)의 구조와 사용 사례를 구분할 수 있다.<br>
+  ③ CAP 정리를 이해하고 각 DB가 어떤 두 속성을 선택하는지 말할 수 있다.<br>
+  ④ "어떤 DB를 고를 것인가?"를 상황에 따라 근거 있게 답할 수 있다.
+</div>
+
+<!-- ==========================================
+     1. NoSQL 등장 배경
+=========================================== -->
+<h2>1. NoSQL이 왜 필요했는가?</h2>
+<p>관계형 데이터베이스(RDBMS)는 1970년대 설계 원칙을 지금까지 이어온 매우 성숙한 기술이다.
+그러나 2000년대 중반부터 인터넷 서비스 규모가 급격히 커지면서 세 가지 문제가 부각됐다.</p>
+
+<table>
+  <thead><tr><th>문제</th><th>RDBMS의 한계</th><th>NoSQL이 내놓은 답</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>수평 확장(Scale-out)</td>
+      <td>JOIN·트랜잭션을 여러 서버에 걸쳐 실행하기 어렵다</td>
+      <td>데이터를 키 단위로 분산, 노드 추가만으로 용량 확장</td>
+    </tr>
+    <tr>
+      <td>유연한 스키마</td>
+      <td>ALTER TABLE은 수억 행 테이블에서 수 시간 걸린다</td>
+      <td>스키마리스(Schemaless) — 문서마다 다른 필드 허용</td>
+    </tr>
+    <tr>
+      <td>다양한 데이터 모델</td>
+      <td>그래프·시계열·반정형 데이터를 테이블로 표현하면 쿼리가 복잡해진다</td>
+      <td>목적에 맞는 모델(Document, Graph …)을 골라 쓴다</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <strong>NoSQL = "Not Only SQL"</strong><br>
+  NoSQL은 RDBMS를 대체하는 것이 아니라 <em>상황에 맞게 같이 쓰는</em> 도구다.
+  대부분의 대규모 서비스는 RDBMS(주요 데이터) + NoSQL(캐시·세션·로그 등)를 함께 운영한다.
+</div>
+
+<!-- ==========================================
+     2. 4가지 유형
+=========================================== -->
+<h2>2. NoSQL의 4가지 유형</h2>
+
+<!-- 2-1. Key-Value -->
+<h3>2-1. Key-Value 스토어</h3>
+<p>가장 단순한 모델. 사전(dictionary)처럼 <strong>key → value</strong> 쌍만 저장한다.
+value는 DB가 내용을 알 필요가 없는 불투명한 blob이거나 단순 문자열이다.</p>
+
+<pre><code># Redis 예시 (CLI)
+SET session:user:42 '{"name":"홍길동","role":"admin"}'  EX 3600
+GET session:user:42</code></pre>
+
+<table>
+  <thead><tr><th></th><th>내용</th></tr></thead>
+  <tbody>
+    <tr><td>대표 DB</td><td>Redis, DynamoDB (기본 모드), Memcached</td></tr>
+    <tr><td>장점</td><td>읽기/쓰기 O(1), 극단적으로 빠름, 수평 확장 쉬움</td></tr>
+    <tr><td>단점</td><td>key를 알아야만 조회 가능, 범위·필터 쿼리 불가(Redis는 자료구조로 보완)</td></tr>
+    <tr><td>적합한 사용 사례</td><td>세션 저장, 캐시, 실시간 순위표, 속도 제한(Rate Limiting)</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <strong>Redis는 단순 Key-Value 이상이다</strong><br>
+  String·List·Hash·Set·Sorted Set·Stream·JSON 등 풍부한 자료구조를 지원한다.
+  Sorted Set을 쓰면 <code>ZADD leaderboard 9800 user:42</code>처럼 정렬된 순위를 O(log n)에 유지할 수 있다.
+</div>
+
+<!-- 2-2. Document -->
+<h3>2-2. Document 스토어</h3>
+<p>Key-Value 스토어를 발전시킨 모델. value가 구조화된 <strong>문서(JSON·BSON·XML)</strong>이며,
+DB가 문서 내부 필드를 인식하고 인덱싱할 수 있다.</p>
+
+<pre><code>// MongoDB 문서 예시
+{
+  "_id": ObjectId("64ab12..."),
+  "title": "데이터베이스 완전정복",
+  "author": { "name": "김철수", "email": "cs@example.com" },
+  "tags": ["SQL", "NoSQL", "index"],
+  "published": true,
+  "views": 4200
+}</code></pre>
+
+<pre><code>// MongoDB 쿼리 예시
+db.books.find({ tags: "NoSQL", views: { $gt: 1000 } })
+        .sort({ views: -1 })
+        .limit(10)</code></pre>
+
+<table>
+  <thead><tr><th></th><th>내용</th></tr></thead>
+  <tbody>
+    <tr><td>대표 DB</td><td>MongoDB, Couchbase, Firestore</td></tr>
+    <tr><td>장점</td><td>스키마 유연성, 중첩 구조로 JOIN 없이 관련 데이터 한 번에 읽기, 개발 속도 빠름</td></tr>
+    <tr><td>단점</td><td>문서 간 관계(참조)는 별도 처리, 트랜잭션은 단일 문서 범위가 기본(MongoDB 4.0+ 멀티 문서 트랜잭션 지원)</td></tr>
+    <tr><td>적합한 사용 사례</td><td>콘텐츠 관리(CMS), 카탈로그·상품 DB, 사용자 프로파일, 이벤트 로그</td></tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <strong>Document DB ≠ "조인 필요 없음"</strong><br>
+  <code>$lookup</code>(MongoDB)으로 컬렉션 간 조인이 가능하지만 RDBMS JOIN보다 비용이 크다.
+  관계가 복잡하다면 RDBMS나 Graph DB를 검토하자.
+</div>
+
+<!-- 2-3. Column-Family -->
+<h3>2-3. Column-Family (와이드 컬럼) 스토어</h3>
+<p>행(row)마다 서로 다른 컬럼을 가질 수 있는 구조. RDBMS의 테이블과 비슷해 보이지만
+<strong>행 키(Row Key)로만 분산</strong>하며, 한 행 안에 수천 개의 컬럼을 동적으로 추가할 수 있다.</p>
+
+<p>BigTable(Google) 논문에서 시작됐으며, Apache HBase와 Apache Cassandra가 이 모델을 따른다.</p>
+
+<pre><code>-- Cassandra CQL 예시
+CREATE TABLE user_events (
+    user_id  UUID,
+    event_ts TIMESTAMP,
+    event    TEXT,
+    payload  TEXT,
+    PRIMARY KEY (user_id, event_ts)
+) WITH CLUSTERING ORDER BY (event_ts DESC);
+
+INSERT INTO user_events (user_id, event_ts, event, payload)
+VALUES (uuid(), toTimestamp(now()), 'login', '{"ip":"1.2.3.4"}');
+
+SELECT * FROM user_events
+WHERE user_id = ... AND event_ts > '2026-06-01';</code></pre>
+
+<table>
+  <thead><tr><th></th><th>내용</th></tr></thead>
+  <tbody>
+    <tr><td>대표 DB</td><td>Apache Cassandra, HBase, Google Bigtable, ScyllaDB</td></tr>
+    <tr><td>장점</td><td>쓰기 처리량 매우 높음, 시계열·이벤트 데이터에 최적, 선형 수평 확장</td></tr>
+    <tr><td>단점</td><td>쿼리 패턴을 스키마 설계에 반영해야 함(RDBMS처럼 임의 쿼리 불가), 조인 없음</td></tr>
+    <tr><td>적합한 사용 사례</td><td>IoT 센서 데이터, 사용자 이벤트 로그, 추천 시스템 피처 스토어, 채팅 메시지 히스토리</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <strong>Cassandra 파티션 키 설계가 핵심</strong><br>
+  <code>PRIMARY KEY (user_id, event_ts)</code>에서 <code>user_id</code>가 파티션 키다.
+  같은 <code>user_id</code>의 데이터는 같은 노드에 모여 있어 <code>WHERE user_id = ?</code>가 빠르다.
+  <code>user_id</code> 없이 <code>event_ts</code>만으로 조회하면 <em>전체 클러스터를 스캔(Full Scan)</em>해야 한다.
+</div>
+
+<!-- 2-4. Graph -->
+<h3>2-4. Graph 데이터베이스</h3>
+<p>데이터를 <strong>노드(Node)</strong>와 <strong>엣지(Edge, 관계)</strong>로 표현한다.
+소셜 네트워크·추천 엔진처럼 "<em>A와 B의 관계</em>"를 탐색하는 데 특화됐다.</p>
+
+<pre><code>// Neo4j Cypher 예시 — 친구의 친구 추천
+MATCH (me:Person {name: "홍길동"})-[:FRIEND]->(friend)-[:FRIEND]->(fof)
+WHERE NOT (me)-[:FRIEND]->(fof) AND fof <> me
+RETURN fof.name, COUNT(*) AS mutualFriends
+ORDER BY mutualFriends DESC
+LIMIT 5</code></pre>
+
+<table>
+  <thead><tr><th></th><th>내용</th></tr></thead>
+  <tbody>
+    <tr><td>대표 DB</td><td>Neo4j, Amazon Neptune, ArangoDB, TigerGraph</td></tr>
+    <tr><td>장점</td><td>다단계 관계 탐색(k-hop)이 RDBMS Self-JOIN 대비 비교할 수 없이 빠름</td></tr>
+    <tr><td>단점</td><td>대규모 그래프를 여러 서버에 분산하기 어렵고, 집계·통계 쿼리는 느림</td></tr>
+    <tr><td>적합한 사용 사례</td><td>소셜 그래프, 지식 그래프, 사기 탐지(이상 관계 탐지), 추천 시스템, 네트워크 토폴로지</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <strong>RDBMS와 비교: 친구의 친구 5단계</strong><br>
+  RDBMS에서는 <code>friends</code> 테이블을 5번 Self-JOIN해야 한다. 행이 1억 개면 현실적으로 불가능하다.
+  Graph DB는 포인터를 따라가는 방식이라 홉 수가 늘어도 성능 저하가 상대적으로 적다.
+</div>
+
+<!-- ==========================================
+     3. CAP 정리
+=========================================== -->
+<h2>3. CAP 정리</h2>
+<p>2000년에 Eric Brewer가 제안한 정리. 분산 시스템에서 다음 세 가지를 <strong>동시에 모두 보장할 수 없다</strong>는 원칙이다.</p>
+
+<table>
+  <thead><tr><th>속성</th><th>약자</th><th>의미</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Consistency <span class="badge badge-cap">C</span></td>
+      <td>일관성</td>
+      <td>모든 읽기가 가장 최근에 쓴 값을 반환한다</td>
+    </tr>
+    <tr>
+      <td>Availability <span class="badge badge-cap">A</span></td>
+      <td>가용성</td>
+      <td>모든 요청에 (최신이 아닐 수 있더라도) 응답을 반환한다</td>
+    </tr>
+    <tr>
+      <td>Partition Tolerance <span class="badge badge-cap">P</span></td>
+      <td>파티션 내성</td>
+      <td>네트워크 분리(파티션)가 발생해도 시스템이 계속 동작한다</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <strong>왜 셋 다 가질 수 없는가?</strong><br>
+  실제 분산 시스템에서 네트워크 분리(P)는 언제든 발생할 수 있다. P를 포기하면 단일 노드가 되어 분산의 의미가 없다.
+  따라서 실질적 선택은 <strong>CP vs AP</strong>다 — 분리 상황에서 "일관성을 지키기 위해 일부 요청을 거부할 것이냐(CP)"
+  아니면 "응답은 주되 최신값이 아닐 수 있음을 허용할 것이냐(AP)"다.
+</div>
+
+<h3>3-1. CP 시스템 — 일관성 우선</h3>
+<p>네트워크 분리 시 일관성을 유지하기 위해 가용성을 포기(일부 노드가 응답 거부)한다.</p>
+<ul>
+  <li><strong>HBase</strong> — HDFS 기반, Strong Consistency 보장, Master 노드 장애 시 일시적으로 쓰기 불가</li>
+  <li><strong>Zookeeper</strong> — 분산 코디네이션, 리더 선출 중 응답 거부</li>
+  <li><strong>MongoDB (기본 설정)</strong> — Primary-Secondary 구조에서 Primary 장애 시 재선거 동안 쓰기 불가</li>
+</ul>
+
+<h3>3-2. AP 시스템 — 가용성 우선</h3>
+<p>네트워크 분리 시에도 응답을 주지만, 최신 값이 아닐 수 있다(Eventual Consistency).</p>
+<ul>
+  <li><strong>Cassandra</strong> — 모든 노드가 동등, 분리 상황에서도 읽기/쓰기 허용, 나중에 충돌 해소</li>
+  <li><strong>DynamoDB</strong> — 기본은 Eventually Consistent, 옵션으로 Strongly Consistent 읽기 가능</li>
+  <li><strong>CouchDB</strong> — Multi-Master 복제, 충돌은 앱이 해소</li>
+</ul>
+
+<div class="good">
+  <strong>PACELC 모델 (더 현실적인 확장)</strong><br>
+  네트워크 분리가 없을 때도 <strong>지연(Latency) vs 일관성</strong> 트레이드오프가 존재한다.
+  PACELC = Partition → {A, C}, Else → {L, C}. 실무에서는 CAP보다 더 세밀한 판단 기준이 된다.
+</div>
+
+<!-- ==========================================
+     4. 유형별 비교
+=========================================== -->
+<h2>4. 유형별 종합 비교</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>유형</th>
+      <th>대표 DB</th>
+      <th>데이터 구조</th>
+      <th>CAP</th>
+      <th>최적 사용 사례</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Key-Value</td>
+      <td>Redis, Memcached</td>
+      <td>key → 불투명한 value</td>
+      <td>AP (Redis Cluster)</td>
+      <td>캐시, 세션, 순위표</td>
+    </tr>
+    <tr>
+      <td>Document</td>
+      <td>MongoDB, Firestore</td>
+      <td>JSON 문서 컬렉션</td>
+      <td>CP (기본)</td>
+      <td>콘텐츠, 카탈로그, 프로파일</td>
+    </tr>
+    <tr>
+      <td>Column-Family</td>
+      <td>Cassandra, HBase</td>
+      <td>행 키 + 동적 컬럼</td>
+      <td>AP (Cassandra) / CP (HBase)</td>
+      <td>이벤트 로그, 시계열, IoT</td>
+    </tr>
+    <tr>
+      <td>Graph</td>
+      <td>Neo4j, Neptune</td>
+      <td>노드 + 엣지</td>
+      <td>보통 CP</td>
+      <td>소셜, 사기 탐지, 추천</td>
+    </tr>
+    <tr>
+      <td><em>RDBMS (참고)</em></td>
+      <td><em>PostgreSQL, MySQL</em></td>
+      <td><em>테이블·행·열</em></td>
+      <td><em>CA (단일 노드)</em></td>
+      <td><em>트랜잭션, 복잡한 관계, 재무</em></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ==========================================
+     5. 어떤 DB를 고를까?
+=========================================== -->
+<h2>5. 실무 선택 가이드</h2>
+
+<h3>질문 1 — 데이터 구조가 얼마나 규칙적인가?</h3>
+<p>모든 항목이 같은 속성을 가진다면 RDBMS가 정직하고 강력하다.
+항목마다 속성이 다르거나 자주 바뀐다면 Document DB를 고려한다.</p>
+
+<h3>질문 2 — 쿼리 패턴이 관계 탐색인가?</h3>
+<p>"A가 팔로우하는 사람 중 B도 팔로우하는 사람"처럼 다단계 관계가 핵심이라면 Graph DB가 압도적이다.</p>
+
+<h3>질문 3 — 쓰기 처리량이 극단적으로 높은가?</h3>
+<p>초당 수십만 건의 이벤트·로그·센서 데이터라면 Cassandra 계열이 적합하다.</p>
+
+<h3>질문 4 — 응답 시간이 1ms 미만이어야 하는가?</h3>
+<p>세션, 캐시, 속도 제한(Rate Limiting)처럼 극도의 저지연이 필요하면 Redis.</p>
+
+<h3>질문 5 — ACID 트랜잭션이 필요한가?</h3>
+<p>금융·재고·주문처럼 데이터 정합성이 절대적이라면 RDBMS 또는 NewSQL(TiDB, CockroachDB)을 선택한다.</p>
+
+<div class="tip">
+  <strong>Polyglot Persistence</strong><br>
+  현대 대규모 서비스는 단일 DB로 모든 것을 처리하지 않는다.<br>
+  예) 주문·결제 → PostgreSQL / 세션·캐시 → Redis / 사용자 피드 → Cassandra / 상품 추천 → Neo4j
+</div>
+
+<!-- ==========================================
+     6. 실습 예시
+=========================================== -->
+<h2>6. 실습 예시</h2>
+
+<h3>6-1. Redis — 세션 + TTL</h3>
+<pre><code># 세션 저장 (3600초 TTL)
+SET session:abc123 '{"userId":42,"role":"admin"}' EX 3600
+
+# 조회
+GET session:abc123
+
+# TTL 확인
+TTL session:abc123
+
+# 삭제 (로그아웃)
+DEL session:abc123</code></pre>
+
+<h3>6-2. MongoDB — 상품 카탈로그</h3>
+<pre><code>// 상품 삽입 (스키마 자유 — 전자제품은 voltage 필드 추가)
+db.products.insertMany([
+  { name: "키보드", price: 89000, tags: ["입력장치"], stock: 150 },
+  { name: "모니터", price: 320000, tags: ["디스플레이"], voltage: 220, stock: 40 }
+]);
+
+// 태그 기반 조회 + 인덱스
+db.products.createIndex({ tags: 1 });
+db.products.find({ tags: "디스플레이", price: { $lte: 500000 } });
+
+// 재고 감소 (원자적 업데이트)
+db.products.updateOne(
+  { name: "모니터", stock: { $gt: 0 } },
+  { $inc: { stock: -1 } }
+);</code></pre>
+
+<h3>6-3. Cassandra — 시계열 이벤트</h3>
+<pre><code>-- 테이블 설계: user_id로 파티션, event_ts로 클러스터링
+CREATE TABLE events (
+    user_id UUID,
+    event_ts TIMESTAMP,
+    type TEXT,
+    data TEXT,
+    PRIMARY KEY (user_id, event_ts)
+) WITH CLUSTERING ORDER BY (event_ts DESC);
+
+-- 최근 10개 이벤트 조회
+SELECT * FROM events
+WHERE user_id = 550e8400-e29b-41d4-a716-446655440000
+LIMIT 10;</code></pre>
+
+<!-- ==========================================
+     7. 퀴즈
+=========================================== -->
+<h2>7. 자기 점검 퀴즈</h2>
+
+<div class="quiz">
+  <p><strong>Q1.</strong> 소셜 네트워크 서비스에서 "나의 친구의 친구 추천"을 구현하려 한다. 가장 적합한 DB 유형은?</p>
+  <p>① Key-Value &nbsp;&nbsp; ② Document &nbsp;&nbsp; ③ Column-Family &nbsp;&nbsp; ④ Graph</p>
+  <details>
+    <summary>정답 보기</summary>
+    <p><strong>④ Graph</strong><br>
+    다단계 관계 탐색(k-hop)은 Graph DB의 핵심 강점이다. RDBMS나 Document DB로 구현하면
+    깊이가 깊어질수록 조인/참조 비용이 폭발적으로 증가한다.
+    Graph DB는 엣지를 포인터로 저장하므로 홉을 따라가는 비용이 레코드 수가 아니라 관계 수에 비례한다.</p>
+  </details>
+</div>
+
+<div class="quiz">
+  <p><strong>Q2.</strong> CAP 정리에서 Cassandra는 어떤 두 속성을 선택한 AP 시스템인가? 이때 포기하는 속성은?</p>
+  <details>
+    <summary>정답 보기</summary>
+    <p><strong>Availability + Partition Tolerance를 선택, Consistency를 포기</strong><br>
+    Cassandra는 네트워크 분리가 발생해도 모든 노드가 읽기/쓰기 요청을 수락한다.
+    단, 분리 기간 동안 쓴 값이 다른 노드에 전파되지 않아 일시적으로 다른 값을 읽을 수 있다(Eventual Consistency).
+    <code>CONSISTENCY QUORUM</code> 설정으로 읽기/쓰기 일관성을 높일 수 있지만, 그만큼 가용성이 줄어든다.</p>
+  </details>
+</div>
+
+<div class="quiz">
+  <p><strong>Q3.</strong> 다음 중 Redis를 사용하기에 가장 부적합한 시나리오는?</p>
+  <p>① 사용자 세션 저장 (TTL 1시간)<br>
+  ② 실시간 랭킹 보드<br>
+  ③ 금융 이중 지불 방지 트랜잭션<br>
+  ④ 최근 방문 상품 목록 캐싱</p>
+  <details>
+    <summary>정답 보기</summary>
+    <p><strong>③ 금융 이중 지불 방지 트랜잭션</strong><br>
+    Redis는 단일 명령어 수준의 원자성을 제공하고 MULTI/EXEC 트랜잭션도 있지만,
+    RDBMS의 ACID 트랜잭션처럼 복잡한 다단계 롤백·격리 수준을 보장하지 않는다.
+    금융 정합성이 핵심인 시나리오에는 PostgreSQL·MySQL처럼 ACID를 완전히 지원하는 RDBMS가 적합하다.
+    나머지 ①②④는 Redis가 가장 빠르고 간단하게 처리할 수 있는 패턴이다.</p>
+  </details>
+</div>
+
+<div class="quiz">
+  <p><strong>Q4.</strong> Cassandra 테이블에서 <code>PRIMARY KEY (user_id, event_ts)</code>로 설계했다.
+  <code>WHERE event_ts &gt; '2026-06-01'</code>만 사용하는 쿼리를 실행하면 어떤 문제가 생기는가?</p>
+  <details>
+    <summary>정답 보기</summary>
+    <p><strong>전체 클러스터 Full Scan 발생</strong><br>
+    <code>user_id</code>가 파티션 키이므로 데이터가 <code>user_id</code>를 기준으로 각 노드에 분산되어 있다.
+    파티션 키 없이 클러스터링 컬럼(<code>event_ts</code>)만으로 조회하면
+    Cassandra는 모든 노드의 모든 파티션을 스캔해야 한다 → <code>ALLOW FILTERING</code> 경고 또는 성능 재앙.
+    Cassandra는 쿼리 패턴을 테이블 설계에 반영하는 "Query-Driven Design"이 필수다.</p>
+  </details>
+</div>
+
+<!-- ==========================================
+     8. 핵심 요약
+=========================================== -->
+<h2>8. 핵심 요약</h2>
+
+<ul>
+  <li><strong>NoSQL</strong>은 RDBMS를 대체하는 것이 아니라 수평 확장·유연한 스키마·특수 데이터 모델이 필요한 상황에서 선택하는 보완적 도구다.</li>
+  <li><strong>Key-Value</strong>(Redis): 극단적 저지연, 캐시·세션·순위표.</li>
+  <li><strong>Document</strong>(MongoDB): 유연한 스키마, 콘텐츠·카탈로그·프로파일.</li>
+  <li><strong>Column-Family</strong>(Cassandra): 고쓰기 처리량, 시계열·이벤트 로그.</li>
+  <li><strong>Graph</strong>(Neo4j): 다단계 관계 탐색, 소셜·추천·사기 탐지.</li>
+  <li><strong>CAP 정리</strong>: 분산 시스템에서 C·A·P를 동시에 만족할 수 없다. 실질 선택은 CP vs AP.</li>
+  <li>올바른 선택은 "가장 유행하는 DB"가 아니라 <em>쿼리 패턴·일관성 요구·확장 방식·팀 역량</em>을 고려한 것이다.</li>
+</ul>
+
+<nav>
+  <a href="./day-009-stored-procedures-triggers.html">← Day 9: 저장 프로시저·트리거·함수</a>
+  <a href="./index.html">목록으로</a>
+</nav>
+
+</body>
+</html>
