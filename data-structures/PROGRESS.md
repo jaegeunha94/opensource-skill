@@ -10,8 +10,7 @@
 
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
-
-아직 완료한 인터뷰 레슨이 없다.
+| 1 | 2026-06-30 | 자료구조 선택 프레임워크 | [interview-day01-data-structure-selection-framework.html](lessons/interview-day01-data-structure-selection-framework.html) |
 
 ## 다음 예정 학습
 
@@ -30,14 +29,24 @@
 
 ## 현재 학습 위치
 
-**Day 1 시작 전** — 자료구조 선택 프레임워크부터 시작한다.
+**Day 1 완료** — 다음은 Day 2: 배열과 연결 리스트 (Big-O만 보면 놓치는 실무 성능 차이).
 
 ## Interview 답변 체크리스트
 
-- [ ] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다.
-- [ ] 왜 면접에서 이 질문을 묻는지 설명한다.
-- [ ] 실제 운영 상황과 연결한다.
-- [ ] 답변 순서를 단계적으로 제시한다.
-- [ ] trade-off를 최소 2개 이상 비교한다.
-- [ ] 흔한 오해와 약한 답변을 구분한다.
-- [ ] follow-up 질문까지 대비한다.
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다.
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다.
+- [x] 실제 운영 상황과 연결한다.
+- [x] 답변 순서를 단계적으로 제시한다.
+- [x] trade-off를 최소 2개 이상 비교한다.
+- [x] 흔한 오해와 약한 답변을 구분한다.
+- [x] follow-up 질문까지 대비한다.
+
+## 습득한 핵심 개념
+
+- [x] 자료구조 선택 4축 프레임워크 (연산 패턴, 입력 규모, 메모리/locality, 운영 비용) — Day 1
+- [x] Big-O vs 실무 성능 차이 (상수 인자, 최악 케이스, amortized cost, locality) — Day 1
+- [x] 메모리 locality와 CPU 캐시 효율 — Day 1
+- [x] amortized O(1) vs worst-case O(1) 구분 — Day 1
+- [ ] 배열 vs 연결 리스트 실무 성능 차이 (예정 Day 2)
+- [ ] 해시 테이블 충돌, load factor, resize (예정 Day 4)
+- [ ] 균형 트리 rebalancing 비용 (예정 Day 5)
