@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — 백엔드 보안 사고 프레임워크와 인증/인가</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #252836;
+      --border: #2e3147;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --blue: #3b82f6;
+      --cyan: #06b6d4;
+      --orange: #f97316;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 0 2rem;
+      margin-bottom: 3rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      margin-bottom: 1rem;
+    }
+    h1 { font-size: 2rem; font-weight: 800; line-height: 1.25; margin-bottom: 0.75rem; }
+    .subtitle { color: var(--muted); font-size: 1rem; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 3rem 0 1.25rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--accent-light);
+    }
+    h3 { font-size: 1.1rem; font-weight: 700; margin: 2rem 0 0.75rem; color: var(--cyan); }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--yellow); }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.4rem; }
+    strong { color: #fff; font-weight: 700; }
+    code {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.88em;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      color: var(--cyan);
+    }
+    pre {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    pre code { background: none; border: none; padding: 0; color: var(--text); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin: 1.25rem 0;
+    }
+    .card-accent { border-left: 4px solid var(--accent); }
+    .card-green { border-left: 4px solid var(--green); }
+    .card-red { border-left: 4px solid var(--red); }
+    .card-yellow { border-left: 4px solid var(--yellow); }
+    .card-blue { border-left: 4px solid var(--blue); }
+    .card-cyan { border-left: 4px solid var(--cyan); }
+    .card-orange { border-left: 4px solid var(--orange); }
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+    .card-title.green { color: var(--green); }
+    .card-title.red { color: var(--red); }
+    .card-title.yellow { color: var(--yellow); }
+    .card-title.blue { color: var(--blue); }
+    .card-title.accent { color: var(--accent-light); }
+    .card-title.cyan { color: var(--cyan); }
+    .card-title.orange { color: var(--orange); }
+    .interview-q {
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin: 2rem 0 1rem;
+    }
+    .interview-q .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent-light);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q .q-text {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.4;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+    .step-list { counter-reset: steps; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .step-list li::before {
+      content: counter(steps);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .rubric-table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    .rubric-table th, .rubric-table td {
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    .rubric-table th { background: var(--surface2); font-size: 0.85rem; color: var(--muted); }
+    .rubric-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .tag {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 0.1rem;
+    }
+    .tag-purple { background: rgba(99,102,241,0.2); color: var(--accent-light); border: 1px solid rgba(99,102,241,0.3); }
+    .tag-green { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    .tag-red { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .toc h2 { margin: 0 0 1rem; border: none; font-size: 1rem; color: var(--muted); }
+    .toc ol { margin: 0; }
+    .toc a { color: var(--accent-light); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
+    .misconception {
+      background: rgba(239,68,68,0.05);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-left: 4px solid var(--red);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin: 1rem 0;
+    }
+    .misconception .label { color: var(--red); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="day-badge">DAY 1</div>
+  <h1>백엔드 보안 사고 프레임워크와<br>인증 / 인가</h1>
+  <p class="subtitle">백엔드 보안 / Secure Coding — 10년차 이상 개발자 Interview 대비</p>
+</header>
+
+<nav class="toc">
+  <h2>목차</h2>
+  <ol>
+    <li><a href="#why-security-thinking">보안을 "사고 방식"으로 접근하는 이유</a></li>
+    <li><a href="#threat-modeling">위협 모델링 — STRIDE 프레임워크</a></li>
+    <li><a href="#authn-vs-authz">인증(Authentication) vs 인가(Authorization)</a></li>
+    <li><a href="#rbac-abac">RBAC vs ABAC — 권한 모델 선택</a></li>
+    <li><a href="#defense-in-depth">Defense in Depth — 계층 방어 원칙</a></li>
+    <li><a href="#interview-q1">면접 질문 1 — 보안 사고 프레임워크</a></li>
+    <li><a href="#interview-q2">면접 질문 2 — 인증과 인가의 실무 구현</a></li>
+    <li><a href="#interview-q3">면접 질문 3 — 위협 모델링 경험</a></li>
+    <li><a href="#rubric">자기 점검 Rubric</a></li>
+  </ol>
+</nav>
+
+<!-- ===== SECTION 1 ===== -->
+<section id="why-security-thinking">
+  <h2>1. 보안을 "사고 방식"으로 접근하는 이유</h2>
+
+  <p>
+    면접관이 시니어 개발자에게 보안 질문을 할 때, <strong>정답을 외웠는지</strong>를 보는 게 아닙니다.
+    "<strong>이 사람은 새로운 기능을 만들 때 보안 위협을 먼저 생각하는가?</strong>"를 보는 겁니다.
+  </p>
+
+  <div class="card card-yellow">
+    <div class="card-title yellow">실무 상황</div>
+    <p>
+      팀에서 주문 API를 새로 만든다고 하자. 주니어는 "기능부터 만들고 나중에 보안 점검한다"고 말한다.
+      시니어는 설계 단계에서 이미 "이 API에서 어떤 공격이 가능한가?"를 생각한다.
+    </p>
+    <p>
+      이 차이가 면접에서 그대로 드러난다. 보안 사고 프레임워크란 <strong>기능 설계와 동시에 위협을 식별하는 습관</strong>이다.
+    </p>
+  </div>
+
+  <h3>보안의 3가지 핵심 목표 (CIA Triad)</h3>
+
+  <div class="two-col">
+    <div class="card card-blue">
+      <div class="card-title blue">Confidentiality — 기밀성</div>
+      <p>허가된 사람만 데이터를 볼 수 있어야 한다.</p>
+      <p><strong>실무:</strong> 암호화, 접근 제어, 최소 권한</p>
+    </div>
+    <div class="card card-green">
+      <div class="card-title green">Integrity — 무결성</div>
+      <p>데이터가 허가 없이 변조되지 않아야 한다.</p>
+      <p><strong>실무:</strong> 서명, 체크섬, 감사 로그</p>
+    </div>
+  </div>
+  <div class="card card-orange">
+    <div class="card-title orange">Availability — 가용성</div>
+    <p>시스템이 필요할 때 작동해야 한다.</p>
+    <p><strong>실무:</strong> Rate Limiting, DDoS 방어, 이중화</p>
+  </div>
+
+  <div class="misconception">
+    <div class="label">흔한 오해</div>
+    <p>
+      "보안 = 해킹 방어"라고 생각하는 개발자가 많다. 하지만 가용성 침해(서비스 장애)도 보안 문제다.
+      Rate Limiting 없이 API를 노출하거나, 단일 장애점을 방치하는 것도 보안 설계 실패다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 2 ===== -->
+<section id="threat-modeling">
+  <h2>2. 위협 모델링 — STRIDE 프레임워크</h2>
+
+  <h3>위협 모델링이란?</h3>
+  <p>
+    <strong>위협 모델링(Threat Modeling)</strong>은 "어떤 공격이 가능한가?"를 체계적으로 분석하는 과정이다.
+    설계 단계에서 하면 구현 후 고치는 것보다 10~100배 저렴하다.
+  </p>
+
+  <h3>STRIDE 분류</h3>
+  <p>Microsoft가 만든 위협 분류 체계. 6가지 공격 유형을 기억하기 위한 약어다.</p>
+
+  <table class="rubric-table">
+    <thead>
+      <tr>
+        <th>약어</th>
+        <th>위협 유형</th>
+        <th>CIA 침해</th>
+        <th>백엔드 예시</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>S</strong>poofing</td>
+        <td>신원 위장</td>
+        <td>기밀성</td>
+        <td>타인의 JWT 토큰 도용, 피싱으로 자격증명 탈취</td>
+      </tr>
+      <tr>
+        <td><strong>T</strong>ampering</td>
+        <td>데이터 변조</td>
+        <td>무결성</td>
+        <td>요청 파라미터 조작, 가격 변조, SQL Injection</td>
+      </tr>
+      <tr>
+        <td><strong>R</strong>epudiation</td>
+        <td>행위 부인</td>
+        <td>무결성</td>
+        <td>"내가 그 요청 한 적 없다" — 감사 로그 없으면 증명 불가</td>
+      </tr>
+      <tr>
+        <td><strong>I</strong>nformation Disclosure</td>
+        <td>정보 노출</td>
+        <td>기밀성</td>
+        <td>스택 트레이스 노출, 과도한 API 응답, 디렉토리 목록</td>
+      </tr>
+      <tr>
+        <td><strong>D</strong>enial of Service</td>
+        <td>서비스 거부</td>
+        <td>가용성</td>
+        <td>Rate Limit 없는 API, 메모리 폭탄 업로드</td>
+      </tr>
+      <tr>
+        <td><strong>E</strong>levation of Privilege</td>
+        <td>권한 상승</td>
+        <td>기밀성/무결성</td>
+        <td>일반 유저가 관리자 API 호출, IDOR 취약점</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>위협 모델링 4단계 프로세스</h3>
+
+  <ol class="step-list">
+    <li>
+      <div>
+        <strong>시스템 분해 (Decompose)</strong><br>
+        데이터 흐름도(DFD)를 그린다. "데이터가 어디서 오고, 어디로 가고, 어디에 저장되는가?"를 시각화한다.
+        신뢰 경계(Trust Boundary)를 표시한다 — 인터넷 ↔ DMZ, DMZ ↔ 내부 네트워크.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>위협 식별 (Identify)</strong><br>
+        STRIDE를 각 컴포넌트와 데이터 흐름에 적용한다. "이 API 엔드포인트에서 Spoofing이 가능한가? Tampering은?"
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>위협 평가 (Rank)</strong><br>
+        DREAD 점수 또는 간단히 <code>위험도 = 발생 가능성 × 피해 규모</code>로 우선순위를 매긴다.
+        모든 위협을 동시에 잡을 수 없으므로 우선순위가 핵심이다.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>대응 방안 (Mitigate)</strong><br>
+        각 위협에 대응 방안을 결정한다: 제거, 완화, 전가(보험/외주), 수용(낮은 위험).
+      </div>
+    </li>
+  </ol>
+
+  <div class="card card-accent">
+    <div class="card-title accent">실무 연결</div>
+    <p>
+      결제 시스템을 설계할 때 STRIDE를 적용하면:<br>
+      • <strong>Spoofing</strong> → 결제 요청자가 정말 본인인가? → 2FA, 세션 재확인<br>
+      • <strong>Tampering</strong> → 결제 금액을 변조할 수 있는가? → 서버사이드 금액 계산, HMAC 서명<br>
+      • <strong>Repudiation</strong> → "나는 결제 안 했다"를 증명할 수 없는가? → 불변 감사 로그<br>
+      • <strong>Information Disclosure</strong> → 타인의 결제 내역이 노출되는가? → IDOR 방지, Row-level 접근 제어<br>
+      • <strong>DoS</strong> → 결제 API가 DDoS에 다운되는가? → Rate Limiting, 큐잉<br>
+      • <strong>Elevation</strong> → 일반 유저가 환불을 임의로 처리하는가? → 역할 기반 인가 확인
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 3 ===== -->
+<section id="authn-vs-authz">
+  <h2>3. 인증(Authentication) vs 인가(Authorization)</h2>
+
+  <h3>전제 개념: 왜 구분이 필요한가?</h3>
+
+  <p>
+    인증과 인가는 <strong>순서가 있는 별개의 관문</strong>이다. 이를 혼용하거나 한 레이어에서 처리하려 하면
+    보안 취약점이 생긴다.
+  </p>
+
+  <div class="two-col">
+    <div class="card card-blue">
+      <div class="card-title blue">Authentication — 인증</div>
+      <p>"<strong>당신은 누구인가?</strong>"</p>
+      <p>자격증명(비밀번호, 토큰, 인증서)으로 신원을 확인한다.</p>
+      <br>
+      <p><strong>예:</strong> 로그인, JWT 검증, API Key 확인</p>
+      <p><strong>실패 시 HTTP:</strong> <code>401 Unauthorized</code></p>
+    </div>
+    <div class="card card-green">
+      <div class="card-title green">Authorization — 인가</div>
+      <p>"<strong>당신은 무엇을 할 수 있는가?</strong>"</p>
+      <p>신원이 확인된 주체가 특정 자원/행위에 접근할 수 있는지 검사한다.</p>
+      <br>
+      <p><strong>예:</strong> 관리자 페이지 접근, 타인 데이터 수정</p>
+      <p><strong>실패 시 HTTP:</strong> <code>403 Forbidden</code></p>
+    </div>
+  </div>
+
+  <div class="misconception">
+    <div class="label">흔한 오해 — 401 vs 403을 반대로 쓰는 경우</div>
+    <p>
+      <code>401</code>은 "인증이 안 됐다 — 다시 로그인하라"는 뜻이다.
+      <code>403</code>은 "인증은 됐지만 권한이 없다 — 접근 불가"다.
+      많은 코드베이스에서 이를 뒤바꿔 쓴다. 면접에서 정확히 구분해서 말하면 점수가 오른다.
+    </p>
+  </div>
+
+  <h3>인증의 3가지 요소 (Multi-Factor)</h3>
+
+  <div class="card card-accent">
+    <div class="card-title accent">인증 요소</div>
+    <ul>
+      <li><strong>지식 (Something you know)</strong> — 비밀번호, PIN, 보안 질문</li>
+      <li><strong>소유 (Something you have)</strong> — OTP 앱, SMS, 하드웨어 키 (YubiKey)</li>
+      <li><strong>존재 (Something you are)</strong> — 지문, 얼굴, 망막 (생체인식)</li>
+    </ul>
+    <br>
+    <p>MFA(다중 요소 인증)는 서로 다른 요소를 결합한다. 같은 요소를 두 번 쓰는 건 MFA가 아니다.</p>
+  </div>
+
+  <h3>인증 흐름의 핵심 취약점</h3>
+
+  <table class="rubric-table">
+    <thead>
+      <tr>
+        <th>취약점</th>
+        <th>발생 원인</th>
+        <th>방어 방법</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Credential Stuffing</td>
+        <td>다른 사이트 유출 자격증명으로 대입</td>
+        <td>Rate Limiting, CAPTCHA, Breached Password Check</td>
+      </tr>
+      <tr>
+        <td>Brute Force</td>
+        <td>무차별 비밀번호 시도</td>
+        <td>계정 잠금, 지수 백오프, MFA</td>
+      </tr>
+      <tr>
+        <td>Session Fixation</td>
+        <td>로그인 전 세션 ID를 로그인 후에도 유지</td>
+        <td>로그인 성공 시 새 세션 ID 발급</td>
+      </tr>
+      <tr>
+        <td>Token Leakage</td>
+        <td>URL에 토큰 포함, 로그에 기록</td>
+        <td>토큰은 헤더/쿠키로만, 로그 마스킹</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>IDOR — 인가 실패의 대표 사례</h3>
+
+  <p>
+    <strong>IDOR (Insecure Direct Object Reference)</strong>는 인가 확인 없이 리소스 ID를 직접 노출할 때 발생한다.
+  </p>
+
+  <pre><code># 취약한 코드 — 인가 없이 ID만으로 접근
+GET /api/orders/12345  → 내 주문 조회
+GET /api/orders/12346  → 타인 주문도 조회됨 (취약!)
+
+# 안전한 코드 — 리소스 소유자 확인
+def get_order(order_id, current_user):
+    order = db.get_order(order_id)
+    if order.user_id != current_user.id:
+        raise Forbidden("접근 권한이 없습니다")
+    return order</code></pre>
+
+  <div class="card card-red">
+    <div class="card-title red">IDOR는 OWASP Top 10의 "Broken Access Control" 1위</div>
+    <p>
+      2021년 기준 가장 흔한 취약점이다. API를 만들 때마다 "이 엔드포인트에서 다른 사용자의 데이터에 접근할 수 있는가?"를 반드시 물어봐야 한다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 4 ===== -->
+<section id="rbac-abac">
+  <h2>4. RBAC vs ABAC — 권한 모델 선택</h2>
+
+  <h3>전제 개념: 왜 권한 모델을 구분해서 배우는가?</h3>
+  <p>
+    "관리자만 이 기능을 쓸 수 있게 해주세요"라는 요구사항을 구현할 방법은 여러 가지다.
+    어떤 모델을 선택하느냐가 시스템의 복잡도와 유지보수성에 큰 영향을 준다.
+    면접에서 "어떻게 권한을 설계했나요?"라고 물을 때 이 선택을 설명할 수 있어야 한다.
+  </p>
+
+  <div class="two-col">
+    <div class="card card-blue">
+      <div class="card-title blue">RBAC — Role-Based Access Control</div>
+      <p><strong>원리:</strong> 사용자에게 역할(Role)을 부여하고, 역할에 권한을 매핑한다.</p>
+      <br>
+      <p><strong>예:</strong></p>
+      <ul>
+        <li>user → 자신의 데이터 조회</li>
+        <li>editor → 콘텐츠 작성/수정</li>
+        <li>admin → 전체 관리</li>
+      </ul>
+      <br>
+      <p><strong>장점:</strong> 이해하기 쉽고 구현이 단순</p>
+      <p><strong>단점:</strong> "영업팀 직원이 자기 지역 데이터만 볼 수 있어야 한다"는 조건 처리가 어려움</p>
+    </div>
+    <div class="card card-cyan">
+      <div class="card-title cyan">ABAC — Attribute-Based Access Control</div>
+      <p><strong>원리:</strong> 사용자, 리소스, 환경의 속성(Attribute)을 조합한 정책으로 접근을 결정한다.</p>
+      <br>
+      <p><strong>예 정책:</strong></p>
+      <ul>
+        <li>사용자 부서 = 리소스 부서</li>
+        <li>AND 접근 시간 = 업무 시간</li>
+        <li>AND 요청 IP = 내부망</li>
+      </ul>
+      <br>
+      <p><strong>장점:</strong> 세밀한 조건 처리 가능</p>
+      <p><strong>단점:</strong> 구현 복잡, 정책 관리 어려움, 성능 오버헤드</p>
+    </div>
+  </div>
+
+  <h3>선택 기준</h3>
+
+  <table class="rubric-table">
+    <thead>
+      <tr>
+        <th>상황</th>
+        <th>추천 모델</th>
+        <th>이유</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>역할이 명확하고 단순 (관리자, 사용자, 게스트)</td>
+        <td>RBAC</td>
+        <td>구현 단순, 이해 쉬움, 감사 쉬움</td>
+      </tr>
+      <tr>
+        <td>조직/지역/시간 기반 세밀한 접근 제어</td>
+        <td>ABAC</td>
+        <td>복잡한 조건을 정책 언어로 표현 가능</td>
+      </tr>
+      <tr>
+        <td>API Gateway, 마이크로서비스 간 권한</td>
+        <td>RBAC + Scope</td>
+        <td>OAuth 2.0 Scope와 자연스럽게 결합</td>
+      </tr>
+      <tr>
+        <td>의료/금융 등 고규제 환경</td>
+        <td>ABAC (또는 PBAC)</td>
+        <td>컴플라이언스 정책을 코드로 표현해야 함</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card card-yellow">
+    <div class="card-title yellow">실무 팁 — 대부분의 서비스는 RBAC으로 시작한다</div>
+    <p>
+      초기에는 RBAC로 시작하고, "특정 사용자가 특정 리소스만 접근 가능해야 한다"는 복잡한 요구사항이 생기면 ABAC로 전환하거나 RBAC에 추가 조건을 붙인다.
+      처음부터 ABAC를 도입하면 복잡도가 너무 높아진다.
+    </p>
+  </div>
+
+  <h3>RBAC 구현 패턴</h3>
+
+  <pre><code># Django/FastAPI 스타일 RBAC 예시
+
+class User:
+    roles: list[str]  # ["editor", "publisher"]
+
+class Permission:
+    role: str
+    action: str   # "read", "write", "delete"
+    resource: str  # "article", "comment"
+
+def check_permission(user: User, action: str, resource: str) -> bool:
+    for role in user.roles:
+        perm = db.get_permission(role=role, action=action, resource=resource)
+        if perm:
+            return True
+    return False
+
+# 사용
+@app.route("/articles", methods=["POST"])
+@require_permission("write", "article")
+def create_article():
+    ...</code></pre>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 5 ===== -->
+<section id="defense-in-depth">
+  <h2>5. Defense in Depth — 계층 방어 원칙</h2>
+
+  <p>
+    <strong>Defense in Depth(계층 방어)</strong>는 단일 보안 레이어가 실패해도 다음 레이어가 막아주도록 여러 계층에 보안 통제를 배치하는 원칙이다.
+    군사에서 유래했다 — 성벽 하나만 믿지 않고, 해자(垓子) + 성벽 + 내성 + 근위대를 모두 둔다.
+  </p>
+
+  <div class="card card-accent">
+    <div class="card-title accent">웹 애플리케이션의 방어 계층</div>
+    <ol>
+      <li><strong>네트워크 계층</strong> — WAF, DDoS 방어, IP 차단, TLS</li>
+      <li><strong>애플리케이션 게이트웨이</strong> — Rate Limiting, Bot 탐지, 요청 검증</li>
+      <li><strong>인증 계층</strong> — JWT/세션 검증, MFA</li>
+      <li><strong>인가 계층</strong> — RBAC/ABAC, IDOR 방어</li>
+      <li><strong>입력 검증</strong> — SQL Injection, XSS 방지, 화이트리스트 검증</li>
+      <li><strong>데이터 계층</strong> — 암호화, 최소 권한 DB 계정, 감사 로그</li>
+      <li><strong>모니터링</strong> — 이상 탐지, 보안 알림, 로그 분석</li>
+    </ol>
+  </div>
+
+  <div class="misconception">
+    <div class="label">흔한 오해 — "방화벽이 있으니 괜찮다"</div>
+    <p>
+      방화벽(네트워크 레이어)만 믿는 개발자가 많다. 하지만 웹 애플리케이션 공격(SQL Injection, XSS, IDOR)은 정상 포트(443)로 들어온다 — 방화벽이 차단할 수 없다. 각 계층이 독립적으로 방어해야 한다.
+    </p>
+  </div>
+
+  <h3>Principle of Least Privilege (최소 권한 원칙)</h3>
+  <p>
+    "필요한 것만 줘라." 애플리케이션 DB 계정이 <code>DROP TABLE</code> 권한을 가질 이유가 없다.
+    배포 스크립트가 프로덕션 DB에 직접 접근할 이유가 없다.
+  </p>
+
+  <div class="two-col">
+    <div class="card card-red">
+      <div class="card-title red">나쁜 예</div>
+      <pre style="margin:0"><code># DB 계정에 모든 권한 부여
+GRANT ALL PRIVILEGES ON *.* TO 'app_user';</code></pre>
+    </div>
+    <div class="card card-green">
+      <div class="card-title green">좋은 예</div>
+      <pre style="margin:0"><code># 필요한 권한만 부여
+GRANT SELECT, INSERT, UPDATE
+  ON app_db.*
+  TO 'app_user';</code></pre>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== INTERVIEW Q1 ===== -->
+<section id="interview-q1">
+  <h2>6. 면접 질문 1 — 보안 사고 프레임워크</h2>
+
+  <div class="interview-q">
+    <div class="label">면접 질문</div>
+    <div class="q-text">
+      "새로운 기능을 개발할 때 보안을 어떻게 고려하시나요? 구체적인 프로세스를 설명해주세요."
+    </div>
+  </div>
+
+  <h3>왜 면접에서 묻는가?</h3>
+  <p>
+    이 질문은 "보안을 아는가"가 아니라 <strong>"보안을 개발 프로세스에 통합하는가"</strong>를 평가한다.
+    시니어 개발자에게는 설계 단계부터 보안을 고려하는 습관이 있어야 한다.
+    "기능 다 만들고 나서 보안 점검"이라는 답변은 시니어 수준이 아니다.
+  </p>
+
+  <h3>답변 사고 순서</h3>
+
+  <ol class="step-list">
+    <li>
+      <div>
+        <strong>요구사항 분석 단계에서 위협 식별</strong><br>
+        새 기능의 데이터 흐름을 파악한다. "어떤 데이터가 누구에게 노출되는가?"
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>STRIDE로 위협 분류</strong><br>
+        각 컴포넌트에 STRIDE를 적용해 위협을 열거한다.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>우선순위 결정 (위험도 = 가능성 × 피해)</strong><br>
+        모든 위협을 동시에 잡을 수 없다. 높은 위험부터 처리한다.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>방어 계층 설계 (Defense in Depth)</strong><br>
+        단일 레이어가 아니라 여러 계층에 통제를 배치한다.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>코드 리뷰 체크리스트 적용</strong><br>
+        OWASP Secure Coding 체크리스트로 구현 단계에서 검증한다.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>보안 테스트</strong><br>
+        SAST(정적 분석), DAST(동적 테스트), 수동 침투 테스트를 조합한다.
+      </div>
+    </li>
+  </ol>
+
+  <div class="card card-green">
+    <div class="card-title green">강한 답변 예시</div>
+    <p>
+      "저는 기능 설계 단계에서 데이터 흐름도를 그리고 STRIDE 프레임워크로 위협을 먼저 식별합니다.
+      예를 들어 파일 업로드 기능을 추가할 때, Tampering(악성 파일 업로드), Information Disclosure(다른 사용자 파일 접근), DoS(대용량 파일로 서버 과부하) 위협을 나열하고 각각에 방어 레이어를 설계했습니다.
+      구현할 때는 OWASP의 파일 업로드 체크리스트를 참고하고, 배포 전 SAST 도구로 정적 분석을 돌립니다.
+      또한 각 위협에 대한 테스트 케이스를 CI에 포함시켜 회귀를 방지합니다."
+    </p>
+  </div>
+
+  <div class="card card-red">
+    <div class="card-title red">약한 답변 예시</div>
+    <p>
+      "OWASP Top 10을 참고해서 XSS, SQL Injection 같은 취약점을 막습니다. 코드 리뷰할 때 보안도 같이 확인합니다."
+    </p>
+    <p><strong>왜 약한가?</strong> 수동적이고 반응적이다. 설계 단계의 사고 과정이 없고, 구체적인 프로세스가 없다. "같이 확인합니다"는 체계가 아니다.</p>
+  </div>
+
+  <h3>Senior-level Follow-up 질문들</h3>
+
+  <div class="card card-accent">
+    <div class="card-title accent">Follow-up: "위협 모델링을 팀 전체가 하려면 어떻게 하겠습니까?"</div>
+    <p>
+      <strong>모범 답변 방향:</strong> "모든 팀원이 위협 모델링 전문가가 될 필요는 없습니다.
+      대신 위협 모델링을 스프린트 플래닝의 일부로 만들어, 설계 리뷰 때 간단한 STRIDE 체크리스트를 같이 보는 문화를 만들었습니다.
+      보안 챔피언을 팀에 한 명 지정해 더 깊은 검토가 필요할 때 리드하게 했습니다."
+    </p>
+  </div>
+
+  <div class="card card-accent">
+    <div class="card-title accent">Follow-up: "보안과 개발 속도 사이에서 trade-off를 어떻게 결정하나요?"</div>
+    <p>
+      <strong>모범 답변 방향:</strong> "위험도에 따라 결정합니다.
+      공개 API에서 사용자 데이터를 다루는 기능이라면 보안 검토를 출시 조건으로 넣습니다.
+      반면 내부 관리 도구처럼 소수만 접근하고 피해가 제한적이라면 빠르게 출시 후 보완합니다.
+      중요한 건 이 trade-off를 팀과 명시적으로 논의하고 기록으로 남기는 것입니다."
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== INTERVIEW Q2 ===== -->
+<section id="interview-q2">
+  <h2>7. 면접 질문 2 — 인증과 인가의 실무 구현</h2>
+
+  <div class="interview-q">
+    <div class="label">면접 질문</div>
+    <div class="q-text">
+      "백엔드에서 인증과 인가를 어떻게 구현하셨나요? 설계 결정과 그 이유를 설명해주세요."
+    </div>
+  </div>
+
+  <h3>왜 면접에서 묻는가?</h3>
+  <p>
+    이 질문은 두 가지를 평가한다.
+    첫째, 인증/인가의 기술적 구현을 알고 있는가.
+    둘째, <strong>"왜 그렇게 구현했는가"</strong> — 설계 결정의 근거가 있는가.
+    세션 vs JWT, 어떤 권한 모델, 어디서 검증하는가를 설명할 수 있어야 한다.
+  </p>
+
+  <h3>답변 사고 순서</h3>
+
+  <ol class="step-list">
+    <li>
+      <div>
+        <strong>인증 메커니즘 선택 설명</strong><br>
+        세션 기반인지 토큰 기반(JWT)인지, 왜 그 선택을 했는지 trade-off와 함께 설명한다.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>인가 모델 설명</strong><br>
+        RBAC인지 ABAC인지, 어느 레이어에서 인가 검사를 하는지 설명한다.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>미들웨어/가드 구조 설명</strong><br>
+        어떤 요청이 어떤 경로로 검증을 거치는지 데이터 흐름을 설명한다.
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>엣지 케이스 처리</strong><br>
+        토큰 만료, 로그아웃, 권한 변경 시 즉각 반영 등을 어떻게 처리하는지 설명한다.
+      </div>
+    </li>
+  </ol>
+
+  <h3>인증/인가 미들웨어 구조 예시</h3>
+
+  <pre><code># FastAPI 기반 인증/인가 레이어 예시
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer
+
+security = HTTPBearer()
+
+async def get_current_user(token = Depends(security)) -> User:
+    """인증 레이어: JWT 토큰 검증 → User 객체 반환"""
+    try:
+        payload = jwt.decode(token.credentials, SECRET_KEY, algorithms=["HS256"])
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="유효하지 않은 토큰")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="토큰이 만료됨")
+    except jwt.JWTError:
+        raise HTTPException(status_code=401, detail="토큰 검증 실패")
+
+    user = await db.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="사용자를 찾을 수 없음")
+    return user
+
+def require_role(role: str):
+    """인가 레이어: 역할 확인 데코레이터"""
+    async def role_checker(user: User = Depends(get_current_user)):
+        if role not in user.roles:
+            raise HTTPException(status_code=403, detail="접근 권한이 없습니다")
+        return user
+    return role_checker
+
+# 엔드포인트에서 사용
+@app.delete("/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    current_user: User = Depends(require_role("admin"))  # 인가 + 인증 자동 처리
+):
+    ...</code></pre>
+
+  <div class="card card-green">
+    <div class="card-title green">강한 답변 예시</div>
+    <p>
+      "저희 서비스는 JWT 기반 인증을 사용했습니다. 세션 대신 JWT를 선택한 이유는 수평 확장 시 세션 공유 문제가 없고, 마이크로서비스 간 토큰 전파가 편리하기 때문입니다.
+      대신 JWT의 단점인 토큰 취소 불가 문제는 Redis에 블랙리스트를 두거나, 짧은 만료 시간(15분)과 Refresh Token 조합으로 완화했습니다.
+      인가는 RBAC로 구현했고, FastAPI 미들웨어에서 인증 후 역할을 확인합니다.
+      IDOR 방지를 위해 리소스 소유자 확인 로직을 서비스 레이어에서 별도로 처리했습니다."
+    </p>
+  </div>
+
+  <div class="card card-red">
+    <div class="card-title red">약한 답변 예시</div>
+    <p>
+      "JWT 토큰을 발급하고, 요청마다 미들웨어에서 검증합니다. 관리자 역할이 있는 사용자만 관리자 API를 쓸 수 있게 했습니다."
+    </p>
+    <p><strong>왜 약한가?</strong> 구현은 맞지만 "왜"가 없다. JWT를 왜 선택했는지, 취소 문제를 어떻게 다뤘는지, IDOR는 어떻게 방지했는지 — 시니어가 마주하는 실제 문제들에 대한 답이 없다.</p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== INTERVIEW Q3 ===== -->
+<section id="interview-q3">
+  <h2>8. 면접 질문 3 — 위협 모델링 경험</h2>
+
+  <div class="interview-q">
+    <div class="label">면접 질문</div>
+    <div class="q-text">
+      "실무에서 보안 취약점을 발견하거나, 보안 설계를 주도해본 경험이 있나요? 어떻게 접근했나요?"
+    </div>
+  </div>
+
+  <h3>왜 면접에서 묻는가?</h3>
+  <p>
+    이론 지식이 아니라 <strong>실제로 보안을 실무에서 고려했는지</strong>를 확인한다.
+    "교과서 지식"과 "현장 판단"의 차이를 드러내는 질문이다.
+    경험이 없더라도 가상의 설계 결정으로 답변할 수 있다.
+  </p>
+
+  <h3>STAR 구조로 답변하기</h3>
+
+  <div class="card card-accent">
+    <div class="card-title accent">STAR 답변 프레임워크</div>
+    <ul>
+      <li><strong>S (Situation):</strong> 어떤 상황이었나? (서비스, 규모, 맥락)</li>
+      <li><strong>T (Task):</strong> 내 역할과 해결해야 할 문제는?</li>
+      <li><strong>A (Action):</strong> 구체적으로 무엇을 했나? (기술 결정 포함)</li>
+      <li><strong>R (Result):</strong> 결과는? (정량화하면 더 좋음)</li>
+    </ul>
+  </div>
+
+  <h3>경험이 없을 때 답변하는 방법</h3>
+
+  <div class="card card-yellow">
+    <div class="card-title yellow">경험이 없을 때 정직하게 답변하는 방법</div>
+    <p>
+      "실무에서 대규모 침해를 직접 대응한 경험은 없지만, 설계 리뷰에서 잠재적 취약점을 발견한 경험은 있습니다.
+      [예시: 파일 업로드 기능 코드 리뷰 중 MIME 타입 검증이 클라이언트 헤더만 보는 것을 발견하고, 서버에서 magic bytes를 직접 확인하도록 수정했습니다.]
+      현재 [OWASP WebGoat]로 취약점 실습을 하고 있으며, 새 기능 설계 시 STRIDE를 적용하는 습관을 들이고 있습니다."
+    </p>
+    <p>정직함 + 학습 의지 + 구체적인 행동이 핵심이다.</p>
+  </div>
+
+  <h3>Senior-level Follow-up 질문들</h3>
+
+  <div class="card card-accent">
+    <div class="card-title accent">Follow-up: "IDOR 취약점을 발견했는데, 즉시 수정하면 영향이 크다면 어떻게 하겠습니까?"</div>
+    <p>
+      <strong>모범 답변 방향:</strong>
+      "먼저 취약점의 실제 피해 범위를 파악합니다 — 현재 악용되고 있는지 로그를 확인합니다.
+      영향도가 크다면 임시 방편(해당 엔드포인트 임시 비활성화 또는 IP 제한)을 즉시 적용하면서 올바른 수정을 병행합니다.
+      수정 후 유사 패턴이 다른 곳에 없는지 코드베이스 전체를 스캔합니다.
+      최종적으로 재발 방지를 위해 인가 로직을 공통 유틸리티로 추출해 테스트를 추가합니다."
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== RUBRIC ===== -->
+<section id="rubric">
+  <h2>9. 자기 점검 Rubric</h2>
+
+  <p>아래 기준으로 오늘 학습한 내용을 점검한다. 각 항목을 스스로 말로 설명할 수 있어야 한다.</p>
+
+  <table class="rubric-table">
+    <thead>
+      <tr>
+        <th>점검 항목</th>
+        <th>미달 (주니어 수준)</th>
+        <th>달성 (시니어 수준)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>보안 사고 프레임워크</td>
+        <td>"기능 만들고 나서 보안 점검한다"</td>
+        <td>설계 단계에서 STRIDE로 위협을 먼저 식별하고 우선순위를 매긴다</td>
+      </tr>
+      <tr>
+        <td>인증 vs 인가 구분</td>
+        <td>혼용하거나 401/403 구분 못함</td>
+        <td>인증은 신원 확인(401), 인가는 권한 확인(403)으로 명확히 구분하고 각각 다른 레이어에서 처리</td>
+      </tr>
+      <tr>
+        <td>RBAC vs ABAC 선택</td>
+        <td>"RBAC이 더 좋다"고만 말함</td>
+        <td>단순 역할 구조라면 RBAC, 세밀한 조건이 필요하면 ABAC — trade-off와 함께 선택 기준 설명 가능</td>
+      </tr>
+      <tr>
+        <td>IDOR 방어</td>
+        <td>리소스 ID 노출이 취약점인지 모름</td>
+        <td>모든 리소스 접근 시 소유자 확인 로직 필수, 테스트 케이스 포함</td>
+      </tr>
+      <tr>
+        <td>Defense in Depth</td>
+        <td>"방화벽/WAF로 충분하다"</td>
+        <td>네트워크 → 게이트웨이 → 인증 → 인가 → 입력검증 → DB 계층 각각 독립 방어</td>
+      </tr>
+      <tr>
+        <td>면접 답변 구조</td>
+        <td>정의만 나열함</td>
+        <td>실무 상황 + 설계 결정 + 근거(trade-off) + 결과 순서로 답변</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card card-green">
+    <div class="card-title green">다음 레슨 예고 — Day 2: 세션 관리와 JWT</div>
+    <p>
+      오늘 인증 레이어를 배웠으니, 다음은 인증 토큰/세션을 실제로 어떻게 관리하는가를 깊이 다룬다.
+      "세션 vs JWT의 trade-off를 구체적으로 설명해주세요"는 시니어 면접의 단골 질문이다.
+    </p>
+    <ul>
+      <li>세션 기반 vs JWT 기반 — 언제 무엇을 선택하는가</li>
+      <li>JWT 저장 위치 (localStorage vs httpOnly cookie) — 각각의 보안 위험</li>
+      <li>토큰 갱신 전략 — Access Token + Refresh Token 패턴</li>
+      <li>JWT 취소 문제 — 블랙리스트, 짧은 TTL, Refresh Token 회전</li>
+      <li>세션 탈취 방어 — httpOnly, Secure, SameSite 쿠키 속성</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
