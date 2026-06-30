@@ -1,0 +1,183 @@
+/* Senior System Design Interview — Shared Stylesheet */
+
+:root {
+  --bg: #fafaf8;
+  --text: #1a1a1a;
+  --muted: #555;
+  --border: #ddd;
+  --accent: #1a56db;
+  --accent-light: #e8f0fe;
+  --green: #166534;
+  --green-bg: #dcfce7;
+  --red: #991b1b;
+  --red-bg: #fee2e2;
+  --amber: #78350f;
+  --amber-bg: #fef3c7;
+  --blue: #1e3a5f;
+  --blue-bg: #dbeafe;
+  --purple: #4c1d95;
+  --purple-bg: #ede9fe;
+  --code-bg: #f1f5f9;
+  --radius: 6px;
+  --max-width: 860px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text);
+  background: var(--bg);
+  padding: 2rem 1rem 4rem;
+}
+
+.container { max-width: var(--max-width); margin: 0 auto; }
+
+/* ── Typography ── */
+h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.5rem; }
+h2 { font-size: 1.4rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 0.75rem; border-bottom: 2px solid var(--border); padding-bottom: 0.4rem; }
+h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.5rem; color: var(--blue); }
+h4 { font-size: 1rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.4rem; }
+p { margin-bottom: 1rem; }
+ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+li { margin-bottom: 0.3rem; }
+strong { color: var(--text); }
+code { font-family: "SF Mono", "Cascadia Code", Consolas, monospace; font-size: 0.875em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 3px; }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; overflow-x: auto; margin: 1rem 0; font-size: 0.875rem; }
+pre code { background: none; padding: 0; }
+hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+/* ── Header band ── */
+.lesson-header {
+  background: linear-gradient(135deg, #1a3a6b 0%, #1a56db 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: var(--radius);
+  margin-bottom: 2rem;
+}
+.lesson-header .day-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.8;
+  margin-bottom: 0.4rem;
+}
+.lesson-header h1 { color: white; margin-bottom: 0.5rem; }
+.lesson-header .subtitle { opacity: 0.85; font-size: 1rem; }
+
+/* ── Callout boxes ── */
+.callout {
+  border-left: 4px solid;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 1rem 1.25rem;
+  margin: 1.25rem 0;
+}
+.callout-title { font-weight: 700; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.4rem; }
+
+.callout-interview  { border-color: var(--accent);  background: var(--accent-light); }
+.callout-interview .callout-title { color: var(--accent); }
+
+.callout-prereq     { border-color: #7c3aed; background: var(--purple-bg); }
+.callout-prereq .callout-title { color: var(--purple); }
+
+.callout-why        { border-color: #0891b2; background: #e0f2fe; }
+.callout-why .callout-title { color: #0c4a6e; }
+
+.callout-realworld  { border-color: #059669; background: var(--green-bg); }
+.callout-realworld .callout-title { color: var(--green); }
+
+.callout-thinking   { border-color: #d97706; background: var(--amber-bg); }
+.callout-thinking .callout-title { color: var(--amber); }
+
+.callout-followup   { border-color: #7c3aed; background: #f5f3ff; }
+.callout-followup .callout-title { color: #5b21b6; }
+
+.callout-warning    { border-color: #dc2626; background: var(--red-bg); }
+.callout-warning .callout-title { color: var(--red); }
+
+.callout-tip        { border-color: #16a34a; background: var(--green-bg); }
+.callout-tip .callout-title { color: var(--green); }
+
+/* ── Strong vs Weak answer ── */
+.answer-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.25rem 0; }
+@media (max-width: 640px) { .answer-compare { grid-template-columns: 1fr; } }
+
+.answer-box { border-radius: var(--radius); padding: 1rem 1.25rem; border: 1px solid; }
+.answer-box .answer-label { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.5rem; }
+
+.answer-strong { background: var(--green-bg); border-color: #86efac; }
+.answer-strong .answer-label { color: var(--green); }
+
+.answer-weak   { background: var(--red-bg);   border-color: #fca5a5; }
+.answer-weak   .answer-label { color: var(--red); }
+
+/* ── Framework steps ── */
+.steps { counter-reset: step; list-style: none; margin-left: 0; }
+.steps li {
+  counter-increment: step;
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  align-items: flex-start;
+}
+.steps li::before {
+  content: counter(step);
+  flex-shrink: 0;
+  width: 2rem; height: 2rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.15rem;
+}
+
+/* ── Rubric table ── */
+.rubric-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+.rubric-table th { background: #1a3a6b; color: white; text-align: left; padding: 0.6rem 0.8rem; }
+.rubric-table td { padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.rubric-table tr:nth-child(even) td { background: #f8f9fa; }
+.rubric-table .level { font-weight: 600; white-space: nowrap; }
+.level-senior  { color: var(--green); }
+.level-mid     { color: #1d4ed8; }
+.level-junior  { color: var(--red); }
+
+/* ── Quiz section ── */
+.quiz-section { background: #f8faff; border: 1px solid #c3d4f7; border-radius: var(--radius); padding: 1.5rem; margin: 2rem 0; }
+.quiz-section h3 { color: #1a3a6b; margin-top: 0; }
+.quiz-q { margin-bottom: 1.25rem; }
+.quiz-q p { font-weight: 600; margin-bottom: 0.5rem; }
+.quiz-options { list-style: none; margin-left: 0; }
+.quiz-options li { margin-bottom: 0.4rem; }
+.quiz-options label { cursor: pointer; display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.4rem 0.6rem; border-radius: 4px; transition: background 0.15s; }
+.quiz-options label:hover { background: #e8f0fe; }
+.quiz-options input[type=radio] { margin-top: 0.2rem; }
+.quiz-feedback { margin-top: 0.6rem; padding: 0.75rem 1rem; border-radius: 4px; display: none; font-size: 0.9rem; }
+.quiz-feedback.correct { background: var(--green-bg); color: var(--green); border: 1px solid #86efac; display: block; }
+.quiz-feedback.wrong   { background: var(--red-bg);   color: var(--red);   border: 1px solid #fca5a5; display: block; }
+.check-btn { margin-top: 0.5rem; background: var(--accent); color: white; border: none; padding: 0.5rem 1.2rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+.check-btn:hover { background: #1340a8; }
+
+/* ── Time badge ── */
+.time-badge { display: inline-flex; align-items: center; gap: 0.3rem; background: #e8f0fe; color: #1a56db; border-radius: 20px; padding: 0.2rem 0.75rem; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem; }
+
+/* ── Nav footer ── */
+.lesson-nav { display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-size: 0.9rem; }
+.lesson-nav a { color: var(--accent); text-decoration: none; }
+.lesson-nav a:hover { text-decoration: underline; }
+
+/* ── Misc ── */
+.tag { display: inline-block; background: var(--accent-light); color: var(--accent); border-radius: 20px; padding: 0.15rem 0.6rem; font-size: 0.75rem; font-weight: 600; margin: 0.15rem; }
+.section-intro { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.25rem; }
+
+@media print {
+  body { background: white; padding: 0; }
+  .lesson-header { background: #1a3a6b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .quiz-section { display: none; }
+}
