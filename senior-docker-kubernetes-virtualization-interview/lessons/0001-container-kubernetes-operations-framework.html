@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — 컨테이너와 Kubernetes 운영 프레임워크</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3347;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #3ecf8e;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --code-bg: #141824;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 16px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 2rem 2rem;
+      text-align: center;
+    }
+    .hero .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .hero h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .hero p { color: var(--muted); max-width: 600px; margin: 0 auto; }
+    .container { max-width: 860px; margin: 0 auto; padding: 2rem; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--accent);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--text); }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      color: #93c5fd;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.88em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.2rem;
+    }
+    pre code { background: none; padding: 0; color: #a5f3fc; font-size: 0.85rem; }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-accent { border-left: 4px solid var(--accent); }
+    .card-green { border-left: 4px solid var(--green); }
+    .card-red { border-left: 4px solid var(--red); }
+    .card-yellow { border-left: 4px solid var(--yellow); }
+    .card-purple { border-left: 4px solid var(--accent2); }
+
+    /* Question box */
+    .question-box {
+      background: var(--surface2);
+      border: 1px solid var(--accent2);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1.5rem 0;
+    }
+    .question-box .q-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+    .question-box .q-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* Compare table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.4rem;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--accent);
+      text-align: left;
+      padding: 0.65rem 1rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+    }
+    td {
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    /* Answer comparison */
+    .answer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0 1.4rem;
+    }
+    @media (max-width: 640px) { .answer-grid { grid-template-columns: 1fr; } }
+    .answer-good {
+      background: #0d2b1e;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-bad {
+      background: #2b0d0d;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-good .label { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .answer-bad .label { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+
+    /* Rubric */
+    .rubric {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-item .check { color: var(--green); font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .rubric-item .text { font-size: 0.9rem; }
+
+    /* Section tags */
+    .section-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+    .tag-why { background: #1a2840; color: var(--accent); }
+    .tag-concept { background: #1a1a2e; color: var(--accent2); }
+    .tag-answer { background: #0d2b1e; color: var(--green); }
+    .tag-followup { background: #2b1a00; color: var(--orange); }
+    .tag-rubric { background: #2b2000; color: var(--yellow); }
+
+    /* Nav */
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+      font-size: 0.85rem;
+    }
+    .nav-bar a { color: var(--accent); text-decoration: none; }
+    .nav-bar a:hover { text-decoration: underline; }
+
+    /* highlight helpers */
+    .hl-green { color: var(--green); font-weight: 600; }
+    .hl-red { color: var(--red); font-weight: 600; }
+    .hl-yellow { color: var(--yellow); font-weight: 600; }
+    .hl-accent { color: var(--accent); font-weight: 600; }
+    .hl-orange { color: var(--orange); font-weight: 600; }
+
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem 1.6rem; margin-bottom: 2rem; }
+    .toc h3 { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.7rem; }
+    .toc ol { margin-bottom: 0; }
+    .toc li { font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="day-badge">Day 1</div>
+  <h1>컨테이너와 Kubernetes 운영 프레임워크</h1>
+  <p>10년차 이상 개발자가 면접에서 평가받는 사고 구조 — "어떻게 동작하는가"가 아니라 "왜 이 선택을 했는가"</p>
+</div>
+
+<div class="container">
+
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#why-hard">왜 이 주제가 시니어 면접에서 어려운가</a></li>
+      <li><a href="#question1">면접 질문 1 — 컨테이너와 VM의 차이</a></li>
+      <li><a href="#question2">면접 질문 2 — Kubernetes를 쓰는 이유</a></li>
+      <li><a href="#question3">면접 질문 3 — 프로덕션 클러스터 설계 시 가장 먼저 고려하는 것</a></li>
+      <li><a href="#mental-model">시니어의 정신 모델 — 컨트롤 플레인과 데이터 플레인</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- ========== SECTION 1 ========== -->
+  <h2 id="why-hard">1. 왜 이 주제가 시니어 면접에서 어려운가</h2>
+
+  <p>Docker / Kubernetes 면접에서 주니어와 시니어를 구분하는 기준은 단 하나다.</p>
+
+  <div class="card card-accent">
+    <p><strong>주니어:</strong> "컨테이너는 경량 VM입니다. <code>docker run</code>으로 실행하고, <code>kubectl apply</code>로 배포합니다."</p>
+    <p style="margin-top:0.7rem;"><strong>시니어:</strong> "컨테이너는 VM이 아닙니다. 커널을 공유하고 네임스페이스로 격리합니다. 그래서 VM보다 시작이 빠르지만, 커널 취약점이 공유된다는 보안 trade-off가 있습니다. 우리 팀은 그래서 이미지에 non-root 유저를 강제하고 seccomp 프로파일을 적용했습니다."</p>
+  </div>
+
+  <p>면접관이 평가하는 것은 다음 세 가지 능력이다:</p>
+  <ol>
+    <li><strong>원리 이해:</strong> "왜 이렇게 동작하는가" — 단순 명령어 지식이 아니라 내부 메커니즘</li>
+    <li><strong>Trade-off 판단:</strong> "어떤 상황에서 이 선택이 맞는가, 반대 선택은 언제 맞는가"</li>
+    <li><strong>운영 경험:</strong> "실제 프로덕션에서 어떤 문제를 겪었고 어떻게 해결했는가"</li>
+  </ol>
+
+  <p>이 커리큘럼은 그 세 가지를 균형 있게 준비시키는 것이 목표다.</p>
+
+  <!-- ========== SECTION 2 ========== -->
+  <h2 id="question1">2. 면접 질문 1 — 컨테이너와 VM의 차이</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"컨테이너와 VM의 차이점을 설명해주세요. 그리고 언제 VM이 더 나은 선택인지도 말씀해주세요."</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문으로 면접관은 두 가지를 확인한다:</p>
+  <ul>
+    <li>컨테이너를 "마법의 도구"로 아는지, 아니면 Linux 커널의 기능을 활용하는 격리 메커니즘으로 이해하는지</li>
+    <li>컨테이너가 만능이 아님을 알고, VM이 필요한 상황을 설명할 수 있는지 (시니어는 "항상 컨테이너"를 말하지 않는다)</li>
+  </ul>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>VM이란?</h3>
+    <p>VM(Virtual Machine)은 하드웨어를 소프트웨어로 흉내 낸 완전한 컴퓨터다. 물리 서버 위에 <strong>하이퍼바이저(Hypervisor)</strong>가 올라가고, 그 위에 각각의 VM이 <strong>자신만의 운영체제 커널</strong>을 갖는다.</p>
+    <ul>
+      <li>VMware ESXi, KVM, Hyper-V가 대표적인 하이퍼바이저</li>
+      <li>VM은 하드웨어를 에뮬레이트하므로 부팅에 수십 초~수 분이 걸린다</li>
+      <li>커널이 분리되므로 격리가 완전하다 — 한 VM의 커널이 크래시해도 다른 VM에 영향 없음</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>컨테이너란?</h3>
+    <p>컨테이너는 Linux 커널의 두 가지 기능을 조합해 만든 격리된 프로세스 그룹이다:</p>
+    <ul>
+      <li><strong>네임스페이스(Namespace):</strong> 프로세스, 네트워크, 파일시스템, 사용자 ID를 격리. 컨테이너 안의 PID 1이 호스트에서는 다른 PID로 보인다.</li>
+      <li><strong>cgroup(Control Group):</strong> CPU, 메모리, I/O 자원 사용량을 제한. 컨테이너가 host의 자원을 독점하지 못하게 한다.</li>
+    </ul>
+    <p>컨테이너는 <strong>커널을 공유</strong>한다. Host OS의 커널 위에서 격리된 프로세스로 실행될 뿐이다. 별도의 OS 부팅이 없으므로 밀리초 단위로 시작할 수 있다.</p>
+  </div>
+
+  <h3>구조 비교</h3>
+  <table>
+    <tr>
+      <th>항목</th>
+      <th>VM</th>
+      <th>컨테이너</th>
+    </tr>
+    <tr>
+      <td>커널</td>
+      <td>VM마다 독립 커널 (GuestOS)</td>
+      <td>Host 커널 공유</td>
+    </tr>
+    <tr>
+      <td>격리 수준</td>
+      <td>하드웨어 수준 (강함)</td>
+      <td>프로세스 수준 (더 약함)</td>
+    </tr>
+    <tr>
+      <td>시작 시간</td>
+      <td>수십 초 ~ 수 분</td>
+      <td>밀리초 ~ 수 초</td>
+    </tr>
+    <tr>
+      <td>이미지 크기</td>
+      <td>수 GB</td>
+      <td>수십 MB ~ 수백 MB</td>
+    </tr>
+    <tr>
+      <td>오버헤드</td>
+      <td>높음 (하이퍼바이저 + GuestOS)</td>
+      <td>낮음 (네임스페이스 + cgroup)</td>
+    </tr>
+    <tr>
+      <td>커널 취약점 공유</td>
+      <td>없음</td>
+      <td>있음 (커널 공유)</td>
+    </tr>
+    <tr>
+      <td>OS 선택</td>
+      <td>Host와 무관 (Windows VM on Linux)</td>
+      <td>Host 커널과 같아야 함</td>
+    </tr>
+    <tr>
+      <td>밀도 (같은 서버에 몇 개)</td>
+      <td>낮음 (수십 개)</td>
+      <td>높음 (수백~수천 개)</td>
+    </tr>
+  </table>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>격리 메커니즘부터:</strong> VM은 하이퍼바이저 + GuestOS로 커널이 분리되고, 컨테이너는 Linux 네임스페이스 + cgroup으로 프로세스를 격리한다는 사실부터 시작한다.</li>
+    <li><strong>결과적 차이 나열:</strong> 시작 시간, 자원 오버헤드, 밀도, 격리 강도</li>
+    <li><strong>Trade-off로 마무리:</strong> 컨테이너가 항상 좋은 게 아니라, 커널 공유라는 보안 제약이 있고, Windows 컨테이너를 Linux에서 네이티브로 실행할 수 없다는 한계가 있다.</li>
+    <li><strong>VM이 더 나은 케이스로 보강:</strong> 강한 격리가 필요한 멀티테넌트, OS가 다른 경우, 레거시 소프트웨어.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"VM은 하이퍼바이저가 하드웨어를 가상화하고 각 VM이 자신만의 GuestOS 커널을 가집니다. 완전한 격리지만 GuestOS 오버헤드로 부팅에 분이 걸리고, 동일 서버에서 수십 개가 한계입니다.</p>
+    <p style="margin-top:0.6rem;">컨테이너는 Linux 커널의 네임스페이스로 파일시스템·네트워크·PID를 격리하고, cgroup으로 CPU/메모리 사용량을 제한합니다. 커널은 Host와 공유하기 때문에 수백 밀리초 안에 시작하고, 동일 서버에서 수백 개를 실행할 수 있습니다.</p>
+    <p style="margin-top:0.6rem;">그러나 컨테이너는 커널을 공유하므로 커널 취약점은 모든 컨테이너에 영향을 미칩니다. 강한 멀티테넌트 격리가 필요하거나 Windows 서비스를 Linux 인프라에서 실행해야 한다면 VM이 더 나은 선택입니다. 우리 팀에서는 그런 이유로 멀티테넌트 SaaS 고객의 Heavy isolation이 필요한 작업은 VM 기반 워커를 별도로 유지했습니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>격리 메커니즘(네임스페이스, cgroup) 언급</li>
+        <li>컨테이너의 보안 제약 (커널 공유) 명시</li>
+        <li>VM이 더 나은 케이스를 구체적으로 제시</li>
+        <li>실무 경험으로 연결 ("우리 팀에서는...")</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"컨테이너는 경량 VM입니다" — 기술적으로 틀림</li>
+        <li>시작 시간만 나열하고 trade-off 없음</li>
+        <li>VM이 필요한 상황을 설명 못함</li>
+        <li>실무 연결이 전혀 없음</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "gVisor나 Kata Containers 같은 기술을 들어보셨나요? 왜 생겼을까요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "컨테이너의 커널 공유 보안 문제를 해결하기 위한 시도입니다. gVisor는 컨테이너의 시스템 콜을 사용자 공간에서 인터셉트해 커널 공격면을 줄이고, Kata Containers는 경량 VM을 컨테이너처럼 사용해 커널을 분리합니다. VM의 격리 강도와 컨테이너의 빠른 시작을 동시에 얻으려는 접근입니다. 실제 AWS Fargate가 이 방식을 씁니다."</p>
+  </div>
+
+  <!-- ========== SECTION 3 ========== -->
+  <h2 id="question2">3. 면접 질문 2 — Kubernetes를 쓰는 이유</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"Docker만으로 운영하는 것과 Kubernetes를 도입하는 것의 차이는 무엇인가요? 팀에 Kubernetes 도입을 제안한다면 어떤 기준으로 판단하시겠습니까?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 기술 도입의 판단력을 테스트한다. "Kubernetes는 당연히 써야 한다"고 대답하면 감점이다. 면접관은 아래를 확인한다:</p>
+  <ul>
+    <li>Docker 단독 운영의 한계를 실제로 경험했는가</li>
+    <li>Kubernetes가 해결하는 문제를 정확히 알고 있는가</li>
+    <li>Kubernetes가 오히려 과잉(over-engineering)인 케이스를 알고 있는가</li>
+  </ul>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — Docker 단독 운영의 한계</span></h3>
+
+  <div class="card">
+    <p>Docker만으로 여러 서비스를 운영하면 다음 문제들이 수동으로 남는다:</p>
+    <ul>
+      <li><strong>컨테이너 다운 시 자동 재시작:</strong> <code>--restart=always</code>로 단일 호스트에서는 되지만, 호스트가 죽으면 다른 호스트로 컨테이너를 옮겨줄 오케스트레이터가 없다.</li>
+      <li><strong>트래픽 배분:</strong> 같은 서비스 컨테이너가 3개 뜨면 앞에 직접 로드밸런서를 구성해야 한다.</li>
+      <li><strong>무중단 배포:</strong> 신버전을 구버전 종료 없이 교체하는 롤링 업데이트를 직접 스크립트로 구현해야 한다.</li>
+      <li><strong>상태 확인 후 트래픽 전환:</strong> 새 컨테이너가 실제로 준비됐을 때만 트래픽을 받아야 하는데, 이를 healthcheck와 연동하는 로직이 필요하다.</li>
+      <li><strong>자원 배치:</strong> 어떤 서버에 어떤 컨테이너를 배치할지 결정하는 스케줄러가 없다.</li>
+      <li><strong>Secret 관리:</strong> 환경변수로 직접 주입하거나, 각 서버에 .env 파일을 배포해야 한다.</li>
+    </ul>
+    <p>Kubernetes는 이 모든 것을 선언적으로 관리해주는 플랫폼이다.</p>
+  </div>
+
+  <h3>Kubernetes가 제공하는 것</h3>
+  <table>
+    <tr>
+      <th>Docker 단독의 문제</th>
+      <th>Kubernetes의 해결</th>
+    </tr>
+    <tr>
+      <td>컨테이너 크래시 후 수동 재시작</td>
+      <td>ReplicaSet이 원하는 수를 유지</td>
+    </tr>
+    <tr>
+      <td>새 서버에 컨테이너 수동 배치</td>
+      <td>Scheduler가 자원 여유 있는 Node에 자동 배치</td>
+    </tr>
+    <tr>
+      <td>로드밸런싱 수동 구성</td>
+      <td>Service 리소스가 kube-proxy로 자동 처리</td>
+    </tr>
+    <tr>
+      <td>롤링 업데이트 스크립트 작성</td>
+      <td>Deployment의 RollingUpdate 전략</td>
+    </tr>
+    <tr>
+      <td>서비스 디스커버리 수동 구성</td>
+      <td>CoreDNS + Service IP로 자동 DNS 등록</td>
+    </tr>
+    <tr>
+      <td>Secret 수동 배포</td>
+      <td>Secret 리소스 + RBAC</td>
+    </tr>
+    <tr>
+      <td>노드 장애 시 수동 대응</td>
+      <td>컨트롤러가 다른 노드에 Pod 재스케줄</td>
+    </tr>
+  </table>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서 — 도입 판단 기준</span></h3>
+  <ol>
+    <li><strong>서비스 수와 트래픽 규모:</strong> 단일 서비스, 트래픽 적음 → Docker Compose면 충분. 10개 이상 서비스, 트래픽 변동 큼 → K8s 도입 검토.</li>
+    <li><strong>배포 빈도:</strong> 하루에 수십 번 배포하고 무중단이 필요하면 K8s의 RollingUpdate가 큰 가치를 준다.</li>
+    <li><strong>팀 역량:</strong> K8s 자체가 복잡하다. etcd, 컨트롤 플레인, RBAC, 네트워크 정책까지 관리해야 한다. 팀에 K8s를 운영할 인력이 없으면 오히려 부담이다.</li>
+    <li><strong>관리형 서비스 여부:</strong> EKS, GKE, AKS 같은 관리형 K8s를 쓰면 컨트롤 플레인 관리 부담이 줄어든다. 이 경우 도입 임계점이 낮아진다.</li>
+    <li><strong>비용:</strong> K8s는 최소 3개 마스터 노드 + N개 워커 노드가 필요하다. 소규모 팀에서 이 비용을 감당할 수 있는지 확인해야 한다.</li>
+  </ol>
+
+  <div class="card card-green">
+    <p><strong>핵심 답변 예시:</strong></p>
+    <p>"Docker만으로 운영할 때의 핵심 문제는 오케스트레이션이 없다는 겁니다. 컨테이너가 죽으면 자동으로 다시 뜨게 하고, 배포 중 트래픽을 끊지 않고, 여러 서버에 걸쳐 컨테이너를 분산시키는 로직을 전부 직접 구현해야 합니다.</p>
+    <p style="margin-top:0.6rem;">Kubernetes는 이 오케스트레이션을 선언적으로 처리합니다. 'Deployment 3개를 항상 유지하고, 배포 시 maxSurge 1, maxUnavailable 0으로 교체하라'고 선언하면 나머지는 K8s가 합니다.</p>
+    <p style="margin-top:0.6rem;">도입 기준은 상황에 따라 달라집니다. 서비스가 5개 이하, 배포 빈도가 낮다면 Docker Compose + 간단한 배포 스크립트로 충분합니다. K8s를 도입하면 YAML 관리, RBAC, 네트워크 정책, 업그레이드 등 운영 복잡도가 상당히 올라갑니다. 팀에 K8s를 운영할 인력과 시간이 있는지가 핵심 판단 기준입니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>Docker 단독의 구체적 한계 나열</li>
+        <li>K8s가 해결하는 것을 선언적 관리로 연결</li>
+        <li>"무조건 K8s" 대신 도입 기준을 제시</li>
+        <li>K8s의 복잡도 비용을 언급</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"K8s는 컨테이너 오케스트레이터입니다" — 설명 없는 정의</li>
+        <li>"규모가 크면 K8s 써야죠" — 구체적 기준 없음</li>
+        <li>K8s 도입 비용(복잡도, 인력) 무시</li>
+        <li>Docker Compose가 적합한 경우를 모름</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "Kubernetes 없이 컨테이너 오케스트레이션을 할 수 있는 다른 방법은 무엇이 있나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "Docker Swarm은 K8s보다 훨씬 단순한 오케스트레이션을 제공합니다. 소규모 팀에서 빠르게 시작하기 좋지만, 생태계와 기능이 K8s에 비해 부족합니다. AWS ECS는 AWS 인프라에 묶이지만 운영 부담이 낮고 비용이 예측하기 쉽습니다. Nomad는 HashiCorp의 오케스트레이터로 컨테이너 외 VM, 바이너리도 스케줄링합니다. 각각 trade-off가 있고, '무조건 K8s'가 아니라 팀 규모와 인프라 의존성에 따라 선택이 달라집니다."</p>
+  </div>
+
+  <!-- ========== SECTION 4 ========== -->
+  <h2 id="question3">4. 면접 질문 3 — 프로덕션 클러스터 설계 시 가장 먼저 고려하는 것</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"프로덕션 Kubernetes 클러스터를 새로 구성한다면 가장 먼저 고려해야 할 것들은 무엇인가요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 클러스터 전체를 시스템적으로 볼 수 있는지를 테스트한다. "Pod에 liveness probe 넣어야죠"처럼 파편화된 답변이 아니라, 가용성, 보안, 관측성, 운영성을 균형 있게 고려하는지 본다.</p>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서 — 7가지 설계 축</span></h3>
+
+  <div class="card card-accent">
+    <h3>① 컨트롤 플레인 가용성</h3>
+    <p>etcd와 API 서버를 3개 이상의 마스터 노드에 분산해야 한다. etcd는 홀수 노드로 쿼럼을 유지한다. 마스터가 하나면 컨트롤 플레인 장애 시 배포 불가능 (기존 Pod는 살아있지만 관리 불가).</p>
+    <p><strong>흔한 오해:</strong> "Pod가 살아있으면 장애가 아니다"라고 생각하지만, 컨트롤 플레인이 죽으면 신규 배포, 스케일아웃, 롤백이 모두 막힌다.</p>
+  </div>
+
+  <div class="card card-accent">
+    <h3>② 노드 설계</h3>
+    <p>워커 노드는 여러 가용 영역(AZ)에 분산한다. 단일 AZ 장애 시 서비스가 살아있어야 하므로. Pod Anti-Affinity Rule로 같은 서비스의 Pod가 동일 노드나 AZ에 집중되지 않게 해야 한다.</p>
+  </div>
+
+  <div class="card card-accent">
+    <h3>③ 네임스페이스 분리와 RBAC</h3>
+    <p>팀/서비스/환경(dev/staging/prod)별로 네임스페이스를 분리하고, RBAC으로 최소 권한을 부여한다. "개발자가 prod 네임스페이스에서 kubectl delete pod를 실행할 수 없어야 한다".</p>
+  </div>
+
+  <div class="card card-accent">
+    <h3>④ Resource Requests/Limits</h3>
+    <p>모든 Pod에 CPU/메모리 requests와 limits를 설정해야 한다. limits 없는 Pod는 같은 노드의 다른 Pod를 OOM으로 죽일 수 있다. requests는 스케줄러가 노드를 선택하는 기준이 된다.</p>
+  </div>
+
+  <div class="card card-accent">
+    <h3>⑤ 이미지 보안</h3>
+    <p>신뢰할 수 있는 레지스트리(ECR, GCR, private registry)에서만 이미지를 Pull하도록 제한한다. 이미지 취약점 스캐닝(Trivy, Snyk)을 CI에 넣어 배포 전 검사한다. latest 태그 금지 — 재현 불가능한 배포의 원인이 된다.</p>
+  </div>
+
+  <div class="card card-accent">
+    <h3>⑥ 관측성 기반 마련</h3>
+    <p>클러스터부터 애플리케이션까지 모든 레이어의 메트릭, 로그, 트레이싱을 처음부터 구성한다. Prometheus + Grafana, Loki, Jaeger / OpenTelemetry. 나중에 추가하려면 비용이 크다.</p>
+  </div>
+
+  <div class="card card-accent">
+    <h3>⑦ 배포 전략 정의</h3>
+    <p>서비스별로 RollingUpdate 전략과 롤백 기준을 정의한다. maxSurge/maxUnavailable, readinessProbe 연동, 롤백 발동 조건. 프로덕션에서 처음 배포할 때 이게 없으면 장애가 나고서야 생각하게 된다.</p>
+  </div>
+
+  <div class="card card-green">
+    <p><strong>핵심 답변 예시 (간결 버전):</strong></p>
+    <p>"가장 먼저는 컨트롤 플레인 가용성입니다. etcd를 3개 이상으로 구성하고 마스터를 다중화합니다. 그다음 노드를 여러 AZ에 분산하고 Pod Anti-Affinity로 같은 서비스가 한 AZ에 몰리지 않게 합니다.</p>
+    <p style="margin-top:0.6rem;">기술적으로는 모든 Pod에 resource requests/limits을 강제하는 것과 RBAC으로 최소 권한을 부여하는 것을 초기부터 해야 합니다. 나중에 수백 개의 Pod에 retroactively 추가하는 건 매우 어렵습니다. 관측성도 마찬가지로 처음부터 Prometheus + 중앙 로깅을 구성하지 않으면 첫 장애 때 눈이 멉니다."</p>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "etcd가 장애나면 어떤 일이 일어납니까? 서비스 중단이 발생하나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "etcd는 클러스터의 상태 저장소입니다. etcd가 죽으면 API 서버가 상태를 읽고 쓸 수 없어서 새 Pod 생성, 스케일링, 배포가 불가능합니다. 하지만 이미 실행 중인 Pod는 계속 작동합니다. kubelet이 로컬에서 Pod를 유지하기 때문입니다. 즉, 유저는 서비스를 이용할 수 있지만 운영팀은 아무것도 변경할 수 없는 상태가 됩니다. 이것이 가장 위험한 이유입니다 — 장애는 안 난 것 같지만 사실 손발이 묶인 상태이기 때문입니다."</p>
+  </div>
+
+  <!-- ========== SECTION 5 ========== -->
+  <h2 id="mental-model">5. 시니어의 정신 모델 — 컨트롤 플레인과 데이터 플레인</h2>
+
+  <p>Kubernetes를 다루는 시니어 개발자의 가장 중요한 멘탈 모델은 <strong>컨트롤 플레인과 데이터 플레인의 분리</strong>다. 이 구분 없이는 장애 상황에서 올바른 진단을 할 수 없다.</p>
+
+  <div class="card card-purple">
+    <h3>컨트롤 플레인 (Control Plane)</h3>
+    <p>클러스터의 두뇌. "원하는 상태(desired state)"를 정의하고 현재 상태를 그것에 맞추는 역할.</p>
+    <ul>
+      <li><strong>kube-apiserver:</strong> 모든 클러스터 조작의 진입점. <code>kubectl</code>, 컨트롤러, 스케줄러가 모두 API 서버를 통해 통신.</li>
+      <li><strong>etcd:</strong> 클러스터 전체 상태를 저장하는 분산 key-value 스토어. 이게 없으면 클러스터가 현재 상태를 모른다.</li>
+      <li><strong>kube-scheduler:</strong> 새 Pod가 어느 노드에서 실행될지 결정. CPU/메모리 요청량, taint/toleration, affinity 규칙 등을 고려.</li>
+      <li><strong>kube-controller-manager:</strong> ReplicaSet Controller, Deployment Controller 등 다양한 컨트롤러의 집합. 현재 상태와 원하는 상태의 차이를 지속적으로 보정(reconciliation loop).</li>
+    </ul>
+  </div>
+
+  <div class="card card-purple">
+    <h3>데이터 플레인 (Data Plane)</h3>
+    <p>실제 워크로드가 실행되는 워커 노드들. 컨트롤 플레인의 지시를 받아 실행.</p>
+    <ul>
+      <li><strong>kubelet:</strong> 각 노드에서 실행. API 서버로부터 Pod spec을 받아 컨테이너 런타임(containerd, Docker)을 통해 컨테이너를 실행하고 상태를 API 서버에 보고.</li>
+      <li><strong>kube-proxy:</strong> 각 노드에서 Service의 네트워크 규칙을 관리. iptables 또는 IPVS로 Service IP → Pod IP 라우팅을 처리.</li>
+      <li><strong>컨테이너 런타임:</strong> containerd, CRI-O. 실제 컨테이너를 실행하는 엔진.</li>
+    </ul>
+  </div>
+
+  <div class="card card-yellow">
+    <h3>왜 이 구분이 중요한가 — 장애 진단 예시</h3>
+    <p><strong>상황:</strong> "새 배포를 했는데 Pod가 Pending 상태로 계속 있다."</p>
+    <ul>
+      <li><strong>컨트롤 플레인 문제라면:</strong> 스케줄러가 Pod를 어느 노드에 배치할지 결정 못하는 것. <code>kubectl describe pod</code>에서 "no nodes available" 또는 "insufficient cpu" 같은 메시지.</li>
+      <li><strong>데이터 플레인 문제라면:</strong> 노드에 스케줄됐지만 kubelet이 컨테이너를 시작하지 못하는 것. ImagePullBackOff (이미지를 못 받아옴), 볼륨 마운트 실패 등.</li>
+    </ul>
+    <p style="margin-top:0.6rem;">이 구분을 모르면 "Pod가 안 뜬다"는 현상만 보고 랜덤하게 디버깅한다. 컨트롤 플레인/데이터 플레인을 아는 시니어는 첫 번째 명령어부터 정확한 곳을 본다.</p>
+  </div>
+
+  <!-- ========== SECTION 6 ========== -->
+  <h2 id="rubric">6. 자기 점검 Rubric</h2>
+
+  <div class="rubric">
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">컨테이너가 VM이 아닌 이유를 "Linux 네임스페이스 + cgroup"으로 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">컨테이너의 보안 제약(커널 공유)을 명시하고, VM이 더 나은 케이스를 2가지 이상 말할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Docker 단독 운영의 한계를 5가지 이상 나열하고, K8s가 각각 어떻게 해결하는지 연결할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">K8s 도입이 오히려 과잉인 케이스를 구체적으로 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">컨트롤 플레인의 4가지 컴포넌트(api-server, etcd, scheduler, controller-manager)의 역할을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">etcd 장애 시 서비스는 살아있지만 운영이 불가능한 이유를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">프로덕션 클러스터 설계 시 7가지 축(가용성, 노드, RBAC, 리소스, 보안, 관측성, 배포전략)을 언급할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Pod가 Pending인 경우 컨트롤 플레인 문제와 데이터 플레인 문제를 구분해 진단 방향을 말할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">실무 경험과 연결해 "우리 팀에서는..." 또는 "실제로 겪었던 상황은..."으로 답변을 마무리할 수 있다</span>
+    </div>
+  </div>
+
+  <div class="card card-accent" style="margin-top: 2rem;">
+    <h3>다음 Day 예고</h3>
+    <p><strong>Day 2 — 컨테이너 격리 원리:</strong> 네임스페이스의 종류(pid, net, mnt, user, uts, ipc)와 실제 격리 범위, cgroup으로 메모리/CPU를 제한하는 방법, 이미지 레이어(union filesystem)의 동작 원리, 그리고 이것이 면접에서 어떻게 나오는지 — "왜 컨테이너 안에서 ps 명령을 치면 Host의 프로세스가 안 보이는가?" 같은 질문을 중심으로 다룹니다.</p>
+  </div>
+
+</div>
+
+<div class="nav-bar">
+  <span style="color: var(--muted);">← 시작</span>
+  <a href="../PROGRESS.md">PROGRESS.md</a>
+  <a href="./index.html">레슨 목록</a>
+  <a href="./0002-container-isolation-namespace-cgroup.html">Day 2 →</a>
+</div>
+
+</body>
+</html>
