@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — 캐시 전략과 Redis 사용 판단 프레임워크</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 1 · Redis / 캐시 전략 Interview</div>
+    <h1>캐시 전략과 Redis 사용 판단 프레임워크</h1>
+    <div class="subtitle">언제 캐시를 도입하고, 어떤 전략을 선택하며, Redis가 적합한 이유를 구조적으로 설명하는 능력</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "새로운 서비스의 상품 목록 조회 API가 DB 부하로 느려지고 있습니다. 캐시를 도입해야 할까요? 도입한다면 어떻게 설계하시겠습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "캐시가 항상 성능을 개선한다고 생각하십니까? 캐시가 오히려 문제가 되는 상황은 어떤 경우인가요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "Cache-aside, Write-through, Write-behind 패턴의 차이와 각각 언제 쓰는지 설명해주세요."
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>캐시가 존재하는 이유부터 이해하기</h2>
+
+    <h3>캐시란 무엇인가?</h3>
+    <p>
+      캐시(Cache)는 <strong>느린 저장소의 데이터를 빠른 저장소에 임시로 복사해두는 기술</strong>이다.
+      예를 들어 DB에서 상품 목록을 조회하면 디스크 I/O가 발생하고 네트워크도 탄다.
+      같은 상품 목록을 초당 1,000번 조회하면 DB에 1,000번의 쿼리가 나간다.
+      캐시를 쓰면 첫 번째 조회 때만 DB에서 가져오고, 이후 999번은 메모리에서 바로 돌려준다.
+    </p>
+
+    <div class="callout callout-info">
+      <strong>핵심 전제:</strong> 캐시가 효과를 내려면 두 가지 조건이 필요하다.<br>
+      1. <strong>같은 데이터를 반복해서 읽는다</strong> (읽기 중심 패턴)<br>
+      2. <strong>약간 오래된 데이터를 보여줘도 괜찮다</strong> (일관성 허용 범위)
+    </div>
+
+    <h3>캐시 히트(Cache Hit)와 캐시 미스(Cache Miss)</h3>
+    <p>
+      캐시에서 데이터를 찾으면 <strong>캐시 히트</strong>, 없으면 <strong>캐시 미스</strong>라고 한다.
+      캐시 히트가 많을수록 DB 부하가 줄어든다. 캐시 히트율이 낮은데 캐시를 도입하면
+      오히려 캐시 레이어만 추가된 복잡한 시스템이 된다.
+    </p>
+
+    <h3>주요 캐시 전략 3가지</h3>
+
+    <h3>① Cache-aside (Lazy Loading)</h3>
+    <p>
+      앱이 데이터를 읽을 때, 먼저 캐시를 확인한다. 없으면(캐시 미스) DB에서 읽어온 다음
+      캐시에 저장하고 반환한다. 가장 많이 쓰이는 패턴이다.
+    </p>
+    <pre><code><span class="comment"># Cache-aside 흐름</span>
+<span class="func">def</span> get_product_list(category_id):
+    cache_key = <span class="string">f"products:{category_id}"</span>
+
+    <span class="comment"># 1. 캐시 먼저 확인</span>
+    cached = redis.get(cache_key)
+    <span class="keyword">if</span> cached:
+        <span class="keyword">return</span> json.loads(cached)  <span class="comment"># 캐시 히트</span>
+
+    <span class="comment"># 2. 캐시 미스 → DB 조회</span>
+    products = db.query(<span class="string">"SELECT * FROM products WHERE category=?"</span>, category_id)
+
+    <span class="comment"># 3. 캐시에 저장 (TTL 5분)</span>
+    redis.setex(cache_key, <span class="number">300</span>, json.dumps(products))
+
+    <span class="keyword">return</span> products</code></pre>
+
+    <table>
+      <tr>
+        <th>장점</th>
+        <th>단점</th>
+        <th>언제 쓰나</th>
+      </tr>
+      <tr>
+        <td>실제 읽는 데이터만 캐시됨 (메모리 효율)</td>
+        <td>첫 요청은 항상 느림 (cold start)</td>
+        <td>읽기 중심, 다양한 키가 산발적으로 조회될 때</td>
+      </tr>
+      <tr>
+        <td>DB 장애 시 캐시로 일부 서빙 가능</td>
+        <td>캐시와 DB 간 일시적 불일치 발생 가능</td>
+        <td>쇼핑몰 상품 목록, 뉴스 피드, 설정값</td>
+      </tr>
+    </table>
+
+    <h3>② Write-through</h3>
+    <p>
+      데이터를 저장할 때 캐시와 DB를 <strong>동시에</strong> 업데이트한다.
+      항상 캐시와 DB가 동기화되어 있어서 읽기 시 캐시 미스가 거의 없다.
+    </p>
+    <pre><code><span class="comment"># Write-through 흐름</span>
+<span class="func">def</span> update_product(product_id, data):
+    <span class="comment"># 1. DB 먼저 저장</span>
+    db.update(<span class="string">"UPDATE products SET ... WHERE id=?"</span>, product_id, data)
+
+    <span class="comment"># 2. 캐시도 즉시 갱신</span>
+    cache_key = <span class="string">f"product:{product_id}"</span>
+    redis.setex(cache_key, <span class="number">300</span>, json.dumps(data))</code></pre>
+
+    <table>
+      <tr>
+        <th>장점</th>
+        <th>단점</th>
+        <th>언제 쓰나</th>
+      </tr>
+      <tr>
+        <td>데이터 일관성 보장</td>
+        <td>쓸 때마다 캐시도 갱신 → 쓰기 비용 증가</td>
+        <td>자주 읽고 가끔 쓰는 데이터</td>
+      </tr>
+      <tr>
+        <td>캐시 미스 발생 확률 낮음</td>
+        <td>읽히지 않는 데이터도 캐시에 올라감</td>
+        <td>세션, 사용자 프로필, 설정값</td>
+      </tr>
+    </table>
+
+    <h3>③ Write-behind (Write-back)</h3>
+    <p>
+      데이터를 <strong>캐시에만 먼저 쓰고</strong>, 일정 시간 후에 비동기로 DB에 반영한다.
+      쓰기 성능이 매우 높지만, 데이터 유실 위험이 있다.
+    </p>
+
+    <div class="callout callout-danger">
+      <strong>주의:</strong> Write-behind는 Redis가 다운되면 캐시에만 있던 데이터가 유실될 수 있다.
+      금융 거래, 주문 등 <strong>데이터 손실이 용납되지 않는 영역에는 절대 사용하지 않는다.</strong>
+    </div>
+
+    <table>
+      <tr>
+        <th>장점</th>
+        <th>단점</th>
+        <th>언제 쓰나</th>
+      </tr>
+      <tr>
+        <td>쓰기 성능 극대화</td>
+        <td>Redis 장애 시 데이터 유실 가능</td>
+        <td>조회수, 좋아요 수, 게임 점수 (비중요 집계)</td>
+      </tr>
+      <tr>
+        <td>DB 부하 크게 감소</td>
+        <td>구현 복잡도 높음</td>
+        <td>유실 허용 가능한 임시 집계</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <p>
+      이 질문은 <strong>"Redis 명령어를 아느냐"</strong>가 아니라
+      <strong>"성능 문제를 어떻게 구조화해서 해결하느냐"</strong>를 본다.
+    </p>
+
+    <ul>
+      <li>
+        <strong>판단 근거가 있는가:</strong> "느리니까 캐시 붙인다"가 아니라,
+        읽기 빈도·데이터 변경 주기·허용 TTL을 따져서 결정하는가
+      </li>
+      <li>
+        <strong>부작용을 아는가:</strong> 캐시를 붙이면 데이터 일관성 문제, cold start,
+        캐시 스탬피드 등의 새로운 문제가 생긴다는 것을 아는가
+      </li>
+      <li>
+        <strong>운영을 생각하는가:</strong> 히트율 모니터링, 메모리 한도, 장애 시 동작을 설계에 포함하는가
+      </li>
+      <li>
+        <strong>Trade-off를 언어화하는가:</strong> "A를 선택하면 B가 희생된다"를 명확히 설명할 수 있는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      Senior 개발자는 "캐시를 쓴다/안 쓴다" 수준이 아니라,
+      <strong>어떤 캐시 전략을 / 어느 데이터에 / 어떤 TTL로 / 무효화는 어떻게 / 장애 시엔 어떻게</strong>를
+      한 번에 설명할 수 있어야 한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 쇼핑몰 상품 목록 API (일 PV 1,000만)</h3>
+    <p>
+      상품 목록은 하루에도 수십 번 업데이트되지만, 조회는 수백만 번이다.
+      10초~1분 오래된 데이터를 보여줘도 사용자가 눈치채지 못한다.
+      → <strong>Cache-aside + TTL 60초</strong>가 적합하다.
+    </p>
+
+    <h3>상황 2: 실시간 재고 수량</h3>
+    <p>
+      재고가 0인데 1로 보여서 주문이 들어오면 문제가 생긴다.
+      일관성이 매우 중요하다.
+      → <strong>캐시 미사용 또는 Write-through + 짧은 TTL</strong>.
+      혹은 캐시는 쓰되 재고 감소 시 즉시 무효화하는 전략을 쓴다.
+    </p>
+
+    <h3>상황 3: 사용자 세션</h3>
+    <p>
+      로그인 후 세션 데이터를 매 요청마다 DB에서 읽으면 부하가 크다.
+      세션은 자주 읽히고, 로그아웃 시에만 지우면 된다.
+      → <strong>Write-through + TTL 30분</strong> (세션 만료 시간과 맞춤).
+    </p>
+
+    <h3>상황 4: 오늘의 조회수 집계</h3>
+    <p>
+      게시글 조회수를 매 조회마다 DB에 UPDATE하면 부하가 크다.
+      조회수는 약간 부정확해도 허용된다.
+      → <strong>Write-behind</strong>: Redis에 INCR로 카운트 후, 배치로 DB에 저장.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>캐시 도입 여부 판단 기준 먼저 말하기</strong>
+        "저는 세 가지를 먼저 봅니다: 읽기 빈도가 높은지, 데이터 변경 주기가 느린지,
+        약간 오래된 데이터를 보여줘도 되는지입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>지금 상황에 대입하기</strong>
+        "상품 목록은 하루 10번 업데이트되지만 초당 수천 번 조회됩니다. TTL 60초 정도의
+        불일치는 허용되므로 캐시를 도입하기 좋은 케이스입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>캐시 전략 선택 및 이유 설명</strong>
+        "Cache-aside 전략을 쓰겠습니다. 여러 카테고리가 있고 카테고리별로 읽히는
+        빈도가 다르기 때문에, 실제로 조회되는 데이터만 캐시에 올리는 게 메모리 효율이
+        높습니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>TTL과 무효화 전략 언급</strong>
+        "TTL은 60초로 설정하고, 상품이 업데이트되면 해당 카테고리 캐시 키를 즉시
+        삭제(del)해서 다음 요청 시 최신 데이터를 DB에서 가져오게 합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>장애 시나리오 언급 (Senior 포인트)</strong>
+        "Redis가 다운되면 캐시 미스가 발생하고 모든 요청이 DB로 직접 가게 됩니다.
+        이를 대비해서 Circuit Breaker 패턴이나 fallback 로직을 앱 레이어에 추가하거나,
+        Redis Sentinel 구성으로 장애 시 자동 페일오버를 준비하겠습니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>모니터링 언급 (운영 관점)</strong>
+        "도입 후엔 히트율(hit ratio)을 모니터링합니다. 히트율이 80% 이하라면
+        TTL이 너무 짧거나 키 설계가 잘못된 것이므로 재검토합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "캐시 도입 전에 저는 세 가지를 먼저 확인합니다. 첫째, 같은 데이터를 반복해서 읽는지(읽기 편향),
+        둘째, 데이터 변경 주기가 조회 빈도보다 훨씬 낮은지, 셋째, 수 초~수 분 오래된 데이터를
+        보여줘도 비즈니스상 괜찮은지입니다.
+      </p>
+      <p>
+        상품 목록의 경우, 조회는 초당 수천 번이지만 업데이트는 하루 수십 번이고, 1분 전 데이터를
+        보여줘도 사용자 경험에 영향이 없습니다. 세 조건 모두 충족하므로 캐시 적합 케이스입니다.
+      </p>
+      <p>
+        전략은 Cache-aside를 선택합니다. 카테고리별 트래픽이 달라서 인기 있는 카테고리만
+        메모리에 올리는 게 효율적이고, DB 장애 시에도 캐시에 데이터가 남아 있으면 일부 서빙이
+        가능합니다. TTL은 60초, 상품 변경 시 해당 키를 즉시 삭제(Event-based invalidation)하는
+        방식으로 무효화합니다.
+      </p>
+      <p>
+        Redis 다운 시를 대비해서 앱 레이어에서 캐시 오류를 잡아 DB로 fallback하는 로직을 넣고,
+        운영 중에는 keyspace hit ratio를 지표로 모니터링합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "Redis가 다운되면 어떻게 됩니까?"</h3>
+    <p><strong>약한 답변:</strong> "서비스가 느려집니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "Cache-aside에서 Redis가 다운되면 캐시 미스가 100%가 되어 모든 요청이 DB로 직접 가게 됩니다.
+      DB가 이 부하를 감당하면 서비스는 느려지지만 동작합니다. 감당 못 하면 DB도 다운되는
+      cascade failure가 발생합니다. 이를 막기 위해 세 가지를 준비합니다:
+      (1) Redis 연결 오류 시 캐시 없이 DB를 직접 조회하는 fallback 경로,
+      (2) DB Connection Pool 한도를 적절히 제한해서 burst를 흡수,
+      (3) Redis Sentinel 또는 Cluster 구성으로 장애 시 자동 페일오버."
+    </p>
+
+    <h3>F2. "캐시 히트율이 40%밖에 안 나오면 어떻게 하시겠어요?"</h3>
+    <p><strong>약한 답변:</strong> "TTL을 늘리겠습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "히트율이 낮은 원인부터 파악합니다. 주로 세 가지입니다:
+      (1) <strong>키 설계 문제</strong>: 캐시 키가 너무 세분화되어 있어 같은 데이터도 다른 키로 조회되는 경우.
+      예를 들어 정렬 기준이나 페이지 번호가 키에 포함되면 히트율이 낮아집니다.
+      (2) <strong>TTL이 너무 짧음</strong>: 데이터 변경 주기보다 TTL이 짧으면 자주 만료됩니다.
+      (3) <strong>데이터가 캐시 대상이 아님</strong>: 사용자마다 다른 개인화 데이터는 공유 캐시 효과가 없습니다.
+      진단 후 원인에 맞게 키 구조 개선, TTL 조정, 또는 캐시 대상에서 제외하는 결정을 합니다."
+    </p>
+
+    <h3>F3. "캐시를 쓰면 안 되는 경우는 무엇인가요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "세 가지 경우에는 캐시가 오히려 독이 됩니다.
+      첫째, <strong>높은 일관성이 필요한 데이터</strong>: 결제 잔액, 재고 수량처럼 조금이라도 틀리면
+      비즈니스 오류가 나는 데이터.
+      둘째, <strong>쓰기가 읽기보다 많은 데이터</strong>: 캐시 무효화가 너무 자주 일어나서 히트율이 0에 가까움.
+      셋째, <strong>캐시 미스 시 DB 부하가 캐시 없을 때보다 클 경우</strong>:
+      캐시 스탬피드(한꺼번에 만료) 상황에서는 DB에 트래픽이 한 번에 몰려 장애로 이어질 수 있습니다."
+    </p>
+
+    <h3>F4. "Redis와 Memcached 중 무엇을 선택하시겠어요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "단순 키-값 캐싱만 필요하면 Memcached가 더 빠르고 가볍습니다.
+      하지만 실무에서 Redis를 주로 선택하는 이유는 세 가지입니다:
+      (1) <strong>자료구조 다양성</strong>: List, Hash, Set, Sorted Set을 활용한 랭킹, 세션, 분산 락 구현 가능,
+      (2) <strong>Persistence 옵션</strong>: RDB/AOF로 재시작 후 데이터 복구 가능,
+      (3) <strong>Pub/Sub과 Lua 스크립팅</strong>: 단순 캐시 이상의 용도로 확장 가능.
+      프로젝트 요구사항이 정말 단순한 캐시라면 Memcached도 좋지만, 대부분의 서비스에서는
+      Redis의 확장성이 장기적으로 유리합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>도입 <strong>판단 기준</strong>을 먼저 말한다 ("세 가지를 확인합니다")</li>
+          <li>전략 선택에 <strong>이유</strong>가 있다 ("트래픽 분포가 다르므로 Cache-aside")</li>
+          <li>TTL을 임의로 정하지 않고 <strong>데이터 변경 주기와 비즈니스 허용치</strong>로 설명한다</li>
+          <li><strong>장애 시나리오</strong>를 먼저 생각한다</li>
+          <li>도입 후 <strong>히트율 모니터링</strong>을 언급한다</li>
+          <li>무효화 전략을 <strong>구체적</strong>으로 말한다 (TTL + event-based)</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"느리니까 Redis 붙이면 됩니다" — <strong>판단 기준 없음</strong></li>
+          <li>"TTL을 적당히 설정합니다" — <strong>근거 없는 설정</strong></li>
+          <li>캐시 전략 이름을 몰라서 설명이 두루뭉술함</li>
+          <li>Redis 다운 시 어떻게 되는지 생각 안 함</li>
+          <li>캐시 무효화를 TTL에만 의존 ("알아서 만료됩니다")</li>
+          <li>메모리 한도나 eviction을 전혀 언급 안 함</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 "Redis를 안다"가 아니라
+      <strong>"문제를 어떻게 분석하고 설계 결정을 내리는가"</strong>를 보여준다.
+      면접관은 Redis 명령어 전문가를 찾는 게 아니라, 시스템 설계 판단력을 가진 사람을 찾는다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "Redis는 DB 앞에 항상 붙이면 좋다"</h3>
+    <p>
+      <strong>사실:</strong> 캐시 히트율이 낮거나 데이터 일관성이 중요한 케이스에서는
+      오히려 복잡도만 늘어난다. 캐시를 잘못 쓰면 사용자에게 잘못된 데이터를 보여주는
+      버그의 원인이 된다.
+    </p>
+
+    <h3>오해 2: "TTL만 잘 설정하면 무효화는 자동으로 된다"</h3>
+    <p>
+      <strong>사실:</strong> TTL은 최후의 안전망이지 주 무효화 전략이 아니다.
+      데이터가 변경될 때 해당 캐시 키를 명시적으로 삭제하거나 갱신하지 않으면,
+      TTL이 만료되기 전까지 잘못된 데이터가 계속 서빙된다.
+    </p>
+
+    <h3>오해 3: "Redis가 빠르니까 DB 대신 Redis만 써도 된다"</h3>
+    <p>
+      <strong>사실:</strong> Redis는 <strong>메모리</strong>에 데이터를 저장한다.
+      메모리는 비싸고 한정적이다. 또한 기본 설정에서는 재시작하면 데이터가 날아간다.
+      Redis는 DB를 대체하는 게 아니라 DB 앞에서 부하를 줄이는 계층이다.
+    </p>
+
+    <h3>오해 4: "캐시 미스는 나쁘다"</h3>
+    <p>
+      <strong>사실:</strong> 캐시 미스 자체가 문제는 아니다.
+      히트율 100%를 목표로 TTL을 너무 길게 잡으면 데이터 신선도가 떨어진다.
+      비즈니스 허용 범위 안에서 적절한 히트율을 목표로 삼아야 한다 (보통 80~95%).
+    </p>
+  </div>
+
+  <!-- 캐시 도입 판단 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>캐시 도입 전 판단 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>항목</th>
+        <th>캐시 적합</th>
+        <th>캐시 부적합</th>
+      </tr>
+      <tr>
+        <td>읽기 vs 쓰기 비율</td>
+        <td><span class="badge badge-green">읽기 80% 이상</span></td>
+        <td><span class="badge badge-red">쓰기 빈번</span></td>
+      </tr>
+      <tr>
+        <td>데이터 변경 주기</td>
+        <td><span class="badge badge-green">분 단위 이상</span></td>
+        <td><span class="badge badge-red">초 단위 이하</span></td>
+      </tr>
+      <tr>
+        <td>데이터 일관성 요구</td>
+        <td><span class="badge badge-green">수 초~분 불일치 허용</span></td>
+        <td><span class="badge badge-red">즉각 일관성 필요</span></td>
+      </tr>
+      <tr>
+        <td>데이터 크기</td>
+        <td><span class="badge badge-green">수 KB 이하</span></td>
+        <td><span class="badge badge-yellow">수 MB 이상 (메모리 주의)</span></td>
+      </tr>
+      <tr>
+        <td>데이터 접근 패턴</td>
+        <td><span class="badge badge-green">소수 키에 집중 (hot data)</span></td>
+        <td><span class="badge badge-red">균등 분산 (히트율 낮아짐)</span></td>
+      </tr>
+      <tr>
+        <td>DB 조회 비용</td>
+        <td><span class="badge badge-green">복잡한 JOIN, 집계 쿼리</span></td>
+        <td><span class="badge badge-yellow">단순 PK 조회 (DB도 빠름)</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"Redis를 쓰면 빠릅니다"만 말하고, 왜 쓰는지, 어떤 전략인지 설명 못 함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>Cache-aside 개념을 알고, GET → DB → SET 흐름을 설명할 수 있음. TTL 언급 가능</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>Cache-aside / Write-through / Write-behind 차이를 상황별로 선택할 수 있음.
+      무효화 전략(TTL + 명시적 삭제)을 설명할 수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>도입 판단 기준(읽기 편향 / 변경 주기 / 허용 불일치)을 먼저 제시하고,
+      전략 선택 이유, TTL 근거, 장애 시 동작, 히트율 모니터링까지 자연스럽게 연결해서 답변함.
+      캐시가 적합하지 않은 경우도 명확히 설명할 수 있음</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. 캐시 도입이 적합한지 판단하는 기준 3가지를 즉시 말할 수 있는가?<br>
+      2. Cache-aside와 Write-through를 언제 선택하는지 이유와 함께 설명할 수 있는가?<br>
+      3. Redis가 다운됐을 때 어떤 일이 벌어지고, 어떻게 대비하는지 설명할 수 있는가?<br>
+      4. 캐시 히트율이 낮을 때 어떻게 진단하는지 말할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>캐시 = 빠른 저장소에 복사.</strong> 읽기 편향 + 허용 불일치 + 반복 조회가 전제 조건이다.</li>
+      <li><strong>Cache-aside</strong>: 실제 조회된 것만 캐시. 가장 범용적. 첫 요청은 느림.</li>
+      <li><strong>Write-through</strong>: 쓸 때 캐시도 동시 갱신. 일관성 높음. 쓰기 비용 증가.</li>
+      <li><strong>Write-behind</strong>: 캐시에 먼저 쓰고 DB는 나중에. 쓰기 성능 최고. 데이터 유실 위험.</li>
+      <li><strong>TTL만으로는 부족하다.</strong> 데이터 변경 시 명시적 무효화(삭제/갱신)가 병행되어야 한다.</li>
+      <li><strong>Redis가 다운되면</strong> 모든 요청이 DB로 가는 cascade failure 위험이 있다. 대비책을 설계해야 한다.</li>
+      <li><strong>히트율이 80% 이하</strong>면 키 설계나 TTL을 재검토해야 한다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 1 완료 · 다음: Day 2 — TTL 설계와 캐시 무효화 전략</span>
+  </div>
+
+</div>
+</body>
+</html>
