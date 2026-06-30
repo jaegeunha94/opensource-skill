@@ -1,0 +1,1069 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — 저장장치와 접근 패턴 프레임워크 | 파일구조 면접 준비</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222535;
+      --border: #2e3147;
+      --accent: #5b8dee;
+      --accent2: #7c5cbf;
+      --green: #3ecf8e;
+      --red: #e25c5c;
+      --yellow: #f5a623;
+      --text: #e2e4f0;
+      --muted: #8b90a8;
+      --code-bg: #12141f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1f3c 0%, #12141f 100%);
+      border-bottom: 2px solid var(--accent2);
+      padding: 2.5rem 2rem;
+      margin: 0 -1rem 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    /* Section styles */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .icon-q  { background: #2b1f4a; color: var(--accent2); }
+    .icon-pre { background: #1a2f3a; color: var(--accent); }
+    .icon-why { background: #2a2010; color: var(--yellow); }
+    .icon-real { background: #112a1f; color: var(--green); }
+    .icon-think { background: #1f2a3a; color: #a8c5f0; }
+    .icon-ans  { background: #1a2a1a; color: var(--green); }
+    .icon-trade { background: #2a1a1a; color: var(--red); }
+    .icon-myth  { background: #2a1f10; color: var(--yellow); }
+    .icon-follow { background: #1a1a2a; color: var(--accent2); }
+    .icon-diff  { background: #202020; color: #c0c0c0; }
+    .icon-rub  { background: #0e1e1a; color: var(--green); }
+
+    h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 1.25rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    li { margin-bottom: 0.35rem; }
+
+    /* Interview question box */
+    .interview-q {
+      background: linear-gradient(135deg, #2b1f4a 0%, #1a1d27 100%);
+      border: 1.5px solid var(--accent2);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #d4c8f5;
+      margin-bottom: 0.75rem;
+    }
+    .interview-sub {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    /* Code blocks */
+    code {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.88rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+      font-size: 0.87rem;
+      line-height: 1.6;
+    }
+    pre code { background: none; border: none; padding: 0; }
+
+    /* Concept table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.85rem 0;
+      font-size: 0.92rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+    /* Answer blocks */
+    .answer-block {
+      border-left: 3px solid;
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 0.85rem 0;
+    }
+    .answer-strong { border-color: var(--green); background: rgba(62,207,142,0.06); }
+    .answer-weak   { border-color: var(--red);   background: rgba(226,92,92,0.06); }
+    .answer-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+    .label-strong { color: var(--green); }
+    .label-weak   { color: var(--red); }
+
+    /* Step list */
+    .step-list { counter-reset: step; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-list li:last-child { border-bottom: none; }
+    .step-list li::before {
+      content: counter(step);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+
+    /* Follow-up questions */
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0;
+    }
+    .followup-q {
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+
+    /* Rubric */
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .score-high { background: rgba(62,207,142,0.2); color: var(--green); }
+    .score-mid  { background: rgba(245,166,35,0.2); color: var(--yellow); }
+    .score-low  { background: rgba(226,92,92,0.2);  color: var(--red); }
+
+    /* Callout */
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.85rem 0;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+    .callout-info { background: rgba(91,141,238,0.08); border-left: 3px solid var(--accent); }
+    .callout-warn { background: rgba(245,166,35,0.08); border-left: 3px solid var(--yellow); }
+    .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin: 0.1rem;
+    }
+    .tag-blue { background: rgba(91,141,238,0.15); color: var(--accent); }
+    .tag-green { background: rgba(62,207,142,0.15); color: var(--green); }
+    .tag-yellow { background: rgba(245,166,35,0.15); color: var(--yellow); }
+
+    .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+
+    /* Diagram */
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      color: #c9d0e8;
+      margin: 0.85rem 0;
+      white-space: pre;
+    }
+
+    nav.breadcrumb {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    nav.breadcrumb a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <nav class="breadcrumb">
+      <a href="../">파일구조 면접 준비</a> › <a href="./index.html">레슨 목록</a>
+    </nav>
+    <div class="day-badge">Interview Day 1</div>
+    <h1>저장장치와 접근 패턴 프레임워크</h1>
+    <p class="subtitle">왜 메모리 자료구조를 디스크에 그대로 쓰면 안 되는가 — 10년차 면접 답변 완성하기</p>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-q">Q</div>
+      <h2>면접 질문</h2>
+    </div>
+    <div class="interview-q">
+      "메모리 자료구조를 디스크 파일에 그대로 저장하면 왜 문제가 생깁니까?
+      실제 대용량 데이터 저장 구조를 설계할 때 가장 먼저 고려하는 것은 무엇입니까?"
+    </div>
+    <p class="interview-sub">변형 질문 유형</p>
+    <ul>
+      <li>"왜 DB 인덱스는 이진탐색트리(BST)가 아니라 B+Tree로 구현합니까?"</li>
+      <li>"디스크 기반 시스템에서 랜덤 접근이 비싼 이유가 무엇입니까?"</li>
+      <li>"파일 시스템에서 block이라는 단위를 왜 씁니까?"</li>
+      <li>"SSD가 HDD를 대부분 대체했는데, 여전히 접근 패턴이 중요한 이유가 있습니까?"</li>
+    </ul>
+  </div>
+
+  <!-- 2. 전제 개념 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">📖</div>
+      <h2>전제 개념 — 쉬운 한국어로 먼저 이해하기</h2>
+    </div>
+
+    <h3>2-1. 저장 계층 (Storage Hierarchy)</h3>
+    <p>
+      컴퓨터는 속도와 비용이 다른 여러 저장장치를 계층으로 씁니다.
+      CPU 레지스터가 가장 빠르고, 그 아래 L1/L2/L3 캐시, 메인 메모리(RAM), SSD, HDD, 네트워크 스토리지 순으로 느려집니다.
+      그리고 느려질수록 단위 저장 비용이 싸집니다.
+    </p>
+    <div class="diagram">저장 계층 (위 = 빠르고 비싸고 작음, 아래 = 느리고 싸고 큼)
+
+┌─────────────────────────────────────────┐
+│  CPU 레지스터       ~0.3ns    수십 KB    │  ← 가장 빠름
+├─────────────────────────────────────────┤
+│  L1 캐시           ~1ns      32~64 KB   │
+├─────────────────────────────────────────┤
+│  L2 캐시           ~4ns      256 KB~1MB │
+├─────────────────────────────────────────┤
+│  L3 캐시           ~10ns     4~64 MB    │
+├─────────────────────────────────────────┤
+│  메인 메모리(RAM)   ~100ns    수십 GB    │
+├─────────────────────────────────────────┤
+│  NVMe SSD          ~100μs    수 TB      │
+├─────────────────────────────────────────┤
+│  SATA SSD / HDD    ~1~10ms   수십 TB    │  ← 가장 느림 (상대적)
+└─────────────────────────────────────────┘
+
+  접근 시간 차이 직관: RAM과 NVMe SSD의 차이는 약 1000배,
+  RAM과 HDD의 차이는 약 10만 배</div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span><strong>핵심 직관:</strong> RAM은 나노초, SSD는 마이크로초, HDD는 밀리초 단위입니다.
+      코드 한 줄이 RAM에 접근하는 동안 HDD는 시작도 못 합니다.
+      10년차 면접에서는 이 차이를 '느낌'이 아닌 '설계 결정의 근거'로 설명해야 합니다.</span>
+    </div>
+
+    <div class="divider"></div>
+    <h3>2-2. Block I/O — 디스크는 바이트 단위로 읽지 않는다</h3>
+    <p>
+      메모리에서는 임의의 주소 하나를 1바이트 단위로 읽을 수 있습니다.
+      하지만 디스크(HDD, SSD)는 구조적으로 한 번에 <strong>block(또는 page)</strong>이라는 고정 크기 단위로 읽고 씁니다.
+    </p>
+    <ul>
+      <li>디스크 블록 크기: 보통 <strong>512B~4KB</strong> (HDD sector)</li>
+      <li>파일시스템 블록 크기: 보통 <strong>4KB~64KB</strong></li>
+      <li>DB 페이지 크기: 보통 <strong>4KB~16KB</strong> (MySQL InnoDB: 16KB 기본)</li>
+    </ul>
+    <p>
+      즉, 1바이트를 읽으려 해도 해당 1바이트가 속한 블록 전체 (예: 4KB)를 읽어와야 합니다.
+      이것이 <strong>Block I/O</strong>입니다.
+    </p>
+    <div class="diagram">[ 디스크 블록 구조 ]
+
+Block 0         Block 1         Block 2
+┌──────────────┬──────────────┬──────────────┐
+│ Record A     │ Record E     │ Record I     │
+│ Record B     │ Record F     │ Record J     │
+│ Record C     │ Record G     │ Record K     │
+│ Record D     │ Record H     │ Record L     │
+└──────────────┴──────────────┴──────────────┘
+  4KB              4KB              4KB
+
+→ Record B를 읽으면 Block 0 전체(4KB)를 메모리로 올린다
+→ Record B 하나만(수십 바이트) 읽는 것이 아님</div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span><strong>면접관이 보는 것:</strong> "block 단위"를 모르면 "왜 이진탐색트리가 아니라 B+Tree냐"는 질문에
+      근본 이유를 설명할 수 없습니다. Block I/O가 모든 디스크 기반 자료구조 설계의 출발점입니다.</span>
+    </div>
+
+    <div class="divider"></div>
+    <h3>2-3. Sequential Access vs Random Access</h3>
+    <p>
+      저장장치 접근에는 두 가지 패턴이 있습니다.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>패턴</th>
+          <th>설명</th>
+          <th>HDD 비용</th>
+          <th>SSD 비용</th>
+          <th>예시</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>순차 접근</strong><br>(Sequential)</td>
+          <td>블록을 연속으로 읽음</td>
+          <td>빠름<br>(헤드 이동 최소)</td>
+          <td>빠름</td>
+          <td>전체 테이블 스캔, 로그 파일 읽기, 파일 백업</td>
+        </tr>
+        <tr>
+          <td><strong>랜덤 접근</strong><br>(Random)</td>
+          <td>다른 위치 블록을 각각 읽음</td>
+          <td>매우 느림<br>(seek + rotate)</td>
+          <td>느림<br>(flash erase penalty)</td>
+          <td>인덱스 탐색, 다수 레코드 개별 조회</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      HDD에서 <strong>seek time(헤드 이동 시간)</strong>과 <strong>rotational latency(원판 회전 대기)</strong>가 랜덤 접근 비용의 핵심입니다.
+      HDD 랜덤 I/O는 순차 I/O보다 <strong>수십~수백 배 느립니다.</strong>
+    </p>
+    <p>
+      SSD는 기계적 움직임이 없어 랜덤 접근이 훨씬 빠르지만, 내부적으로 <strong>flash cell 특성</strong>상 쓰기 전 erase가 필요하고,
+      wear leveling으로 인해 여전히 쓰기 패턴 최적화가 중요합니다.
+      또한 대규모 서비스에서 SSD도 I/O 비용이 누적되면 성능 병목이 됩니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>2-4. Buffer Pool / Page Cache</h3>
+    <p>
+      디스크에서 블록을 읽을 때마다 디스크에 접근하면 너무 느립니다.
+      그래서 OS와 DBMS는 <strong>buffer pool(버퍼 풀)</strong> 또는 <strong>page cache</strong>를 메모리에 유지합니다.
+      한 번 읽은 블록은 메모리에 캐싱해두고, 같은 블록이 다시 필요하면 메모리에서 바로 읽습니다.
+    </p>
+    <ul>
+      <li>MySQL InnoDB의 <code>innodb_buffer_pool_size</code>가 이 역할</li>
+      <li>PostgreSQL은 OS의 page cache를 활용</li>
+      <li>이 덕분에 Hot data(자주 접근하는 데이터)는 사실상 메모리 속도로 동작</li>
+    </ul>
+
+    <div class="divider"></div>
+    <h3>2-5. I/O 비용 모델</h3>
+    <p>
+      파일구조 이론에서 알고리즘 성능은 <strong>I/O 횟수</strong>로 측정합니다.
+      메모리 알고리즘은 비교 횟수(O(n log n))로 측정하지만,
+      디스크 기반에서는 비교보다 <strong>몇 번 디스크를 읽었는가</strong>가 훨씬 중요합니다.
+    </p>
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span>
+        RAM에서 비교 1억 번 ≈ 0.1초<br>
+        HDD에서 랜덤 읽기 1000번 ≈ 10초 (seek 10ms × 1000)<br>
+        → 비교보다 I/O 최소화가 훨씬 중요
+      </span>
+    </div>
+  </div>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-why">?</div>
+      <h2>왜 면접에서 이 질문을 묻는가</h2>
+    </div>
+    <p>
+      이 질문은 단순한 저장장치 지식 확인이 아닙니다. 면접관이 실제로 평가하려는 것은 다음입니다.
+    </p>
+    <ol>
+      <li>
+        <strong>저장장치 비용 모델을 설계 결정의 근거로 쓸 수 있는가</strong><br>
+        "B+Tree가 더 빠릅니다"가 아니라, "I/O 횟수를 줄이기 위해 fanout을 높이는 설계를 선택합니다"라고 말할 수 있어야 합니다.
+      </li>
+      <li>
+        <strong>메모리 알고리즘과 디스크 알고리즘의 차이를 체화했는가</strong><br>
+        메모리에서 최적인 자료구조(e.g., BST, hash table)가 디스크에서 왜 비효율적인지 설명할 수 있어야 합니다.
+      </li>
+      <li>
+        <strong>실제 대용량 시스템 경험과 연결되는가</strong><br>
+        DB 인덱스 선택, 배치 작업 설계, 로그 시스템 구조 같은 실무 결정이 이 원리에서 나온다는 것을 알아야 합니다.
+      </li>
+    </ol>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span>
+        주니어 수준 답변: "디스크는 느리니까 캐시해야 합니다."<br>
+        10년차 기대 답변: "저장장치마다 접근 비용 모델이 다르고, 그 모델에 맞는 접근 패턴을 가진 자료구조를 선택해야 합니다.
+        특히 block I/O 특성에서 I/O 횟수 최소화와 locality 확보가 핵심 설계 기준이 됩니다."
+      </span>
+    </div>
+  </div>
+
+  <!-- 4. 실무 연결 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-real">⚙</div>
+      <h2>실무 연결</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>실무 상황</th>
+          <th>이 원리가 적용되는 이유</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>DB 인덱스 선택</strong></td>
+          <td>
+            B+Tree 인덱스는 한 번의 디스크 I/O로 많은 키를 비교(높은 fanout) 할 수 있어
+            I/O 횟수를 O(log<sub>B</sub> N)으로 줄입니다.
+            이진탐색트리(BST)는 노드 하나에 키 하나라 fanout이 낮아 I/O 낭비가 심합니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>배치 ETL 설계</strong></td>
+          <td>
+            랜덤 읽기 수백만 번 대신 순차 읽기 + 외부 정렬로 전체 데이터를 처리하면
+            I/O 비용이 수십 배 줄어듭니다.
+            Spark, Hive가 내부적으로 이 원리를 씁니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>로그 시스템 (Kafka, WAL)</strong></td>
+          <td>
+            쓰기를 항상 append-only(순차 쓰기)로 설계하면 디스크 쓰기 성능을 최대화합니다.
+            Kafka의 log segment, PostgreSQL/MySQL의 WAL이 이 이유입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>대용량 파일 처리 (MapReduce, Parquet)</strong></td>
+          <td>
+            Parquet 같은 columnar format은 필요한 칼럼 데이터를 연속 블록으로 모아서 저장해
+            원하는 칼럼을 읽을 때 순차 I/O만으로 처리할 수 있게 합니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>SSD TBW (Total Bytes Written) 관리</strong></td>
+          <td>
+            SSD는 각 셀의 쓰기 수명이 있습니다. 랜덤 쓰기를 많이 하면 wear leveling 비용과
+            write amplification이 늘어 SSD 수명이 줄고 성능이 저하됩니다.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-think">→</div>
+      <h2>답변 사고 순서 — 면접에서 이렇게 생각하면서 말한다</h2>
+    </div>
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>저장 계층 차이 언급</strong><br>
+          메모리와 디스크는 접근 속도와 단위가 근본적으로 다릅니다.
+          RAM은 임의 주소를 나노초 단위로 접근하지만, 디스크는 block 단위로 마이크로초~밀리초가 걸립니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Block I/O 특성 설명</strong><br>
+          디스크는 최소 접근 단위가 block(보통 4KB)입니다.
+          1바이트를 읽어도 block 전체를 읽어야 해서, 데이터 locality가 없으면 I/O 낭비가 생깁니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>메모리 자료구조의 문제 지적</strong><br>
+          메모리용 BST(이진탐색트리)는 노드 하나에 포인터가 포함되어 있고,
+          자식 노드가 메모리 어디든 있을 수 있습니다.
+          디스크에 저장하면 탐색마다 랜덤 디스크 I/O가 발생합니다.
+          100만 레코드 BST 탐색은 O(log 100만) ≈ 20회 랜덤 I/O → HDD에서 200ms.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>디스크 최적 자료구조 원리</strong><br>
+          디스크에 맞는 구조는 (1) 한 block에 최대한 많은 데이터를 담고 (high fanout),
+          (2) 연속 블록을 활용해 순차 I/O를 유도하며,
+          (3) 필요한 I/O 횟수 자체를 줄이는 방향으로 설계합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>실무 사례로 연결</strong><br>
+          B+Tree 인덱스, append-only 로그(WAL, Kafka), 외부 정렬,
+          columnar storage가 이 원리에서 나온 설계라는 것을 언급합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>SSD에서도 여전히 중요한 이유 추가</strong><br>
+          SSD는 HDD보다 훨씬 빠르지만, 대규모 I/O가 축적되면 여전히 병목입니다.
+          또한 쓰기 패턴에 따라 write amplification이 달라져 SSD 수명과 성능에 영향을 줍니다.
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-ans">✓</div>
+      <h2>핵심 답변 예시</h2>
+    </div>
+
+    <h3>짧은 버전 (1~2분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Short)</div>
+      <p>
+        메모리 자료구조를 디스크에 그대로 쓰면 랜덤 I/O가 폭발합니다.
+        디스크는 최소 접근 단위가 block(보통 4KB)이고, 랜덤 접근 한 번이 수십~수백 밀리초입니다.
+        메모리용 이진탐색트리는 탐색 한 번에 log N번 랜덤 I/O를 유발하는데,
+        100만 레코드라면 약 20번 × 수밀리초, 초당 수백 번 조회에서 이미 병목입니다.
+      </p>
+      <p>
+        대용량 파일 저장 구조를 설계할 때 가장 먼저 보는 것은 <strong>접근 패턴</strong>입니다.
+        조회 위주인지, 쓰기 위주인지, 범위 검색이 필요한지에 따라
+        sequential file, B+Tree 인덱스, hash file, append-only log 중 적합한 구조가 달라집니다.
+        이 판단의 기준은 항상 "I/O 횟수를 얼마나 줄일 수 있는가"입니다.
+      </p>
+    </div>
+
+    <h3>깊이 있는 버전 (3~5분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Deep)</div>
+      <p>
+        근본 원인은 저장 계층마다 접근 비용 모델이 완전히 다르다는 점입니다.
+        메모리는 임의 주소 접근이 나노초 수준이고, 비용이 주소 계산에서 나옵니다.
+        반면 HDD는 seek + rotational latency로 밀리초가 걸리고, SSD도 flash erase 때문에
+        랜덤 쓰기는 순차 쓰기보다 훨씬 비쌉니다.
+        더 중요한 것은 디스크가 byte 단위가 아닌 block(4~16KB) 단위로 I/O를 한다는 점입니다.
+      </p>
+      <p>
+        메모리용 BST를 디스크에 두면 탐색마다 왼쪽/오른쪽 자식 노드가 다른 block에 있을 가능성이 높습니다.
+        N개 레코드에서 O(log₂ N)번 랜덤 block read가 발생합니다.
+        반면 B+Tree는 하나의 node에 수백 개 키를 담아(block 크기를 꽉 채워) fanout을 극대화합니다.
+        같은 N에서 O(log_B N)번 I/O, B가 수백이면 탐색 깊이가 2~4 수준으로 떨어집니다.
+      </p>
+      <p>
+        이 원리가 실무에서 나타나는 것이 여럿 있습니다.
+        Kafka는 메시지를 append-only log segment로 쌓아 순차 쓰기 성능을 극대화합니다.
+        MySQL InnoDB의 clustered index는 PK 순서로 레코드를 물리적으로 배치해 range scan이 순차 I/O가 되게 합니다.
+        Spark의 외부 정렬은 메모리에서 run을 만들고 병합해 I/O pass 수를 최소화합니다.
+      </p>
+      <p>
+        SSD가 보편화된 지금도 이 원리가 중요한 이유는,
+        쓰기 패턴에 따라 write amplification이 달라져 SSD 수명과 성능에 영향을 주고,
+        대규모 서비스에서는 I/O 누적 비용 자체가 여전히 성능 병목이 되기 때문입니다.
+        더 나아가 Object Storage나 distributed file system 에서도
+        block 또는 chunk 단위로 데이터를 묶는 원리는 같습니다.
+      </p>
+    </div>
+
+    <div class="answer-block answer-weak">
+      <div class="answer-label label-weak">약한 답변</div>
+      <p>
+        "디스크는 느리니까 많이 읽으면 느려집니다. 그래서 캐시를 써야 합니다."
+      </p>
+      <p>
+        <strong>왜 약한가:</strong> block I/O, 랜덤 vs 순차, fanout, I/O 횟수 같은 설계 언어가 없습니다.
+        실무 결정에 왜 이 지식이 필요한지 연결이 없습니다.
+        캐시를 쓴다는 것은 맞지만, 그게 없을 때 왜 문제인지를 설명 못합니다.
+        면접관 입장에서는 "그냥 상식은 아는데 원리를 모른다"는 신호입니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 7. Trade-off -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-trade">⇄</div>
+      <h2>Trade-off 정리</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>메모리 최적 구조</th>
+          <th>디스크 최적 구조</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>접근 단위</td>
+          <td>byte (임의 주소)</td>
+          <td>block (고정 크기)</td>
+        </tr>
+        <tr>
+          <td>접근 비용 기준</td>
+          <td>비교 횟수, 포인터 추적</td>
+          <td>I/O 횟수, 랜덤 vs 순차</td>
+        </tr>
+        <tr>
+          <td>최적 트리 구조</td>
+          <td>BST, AVL (fanout 2)</td>
+          <td>B+Tree (fanout 수백)</td>
+        </tr>
+        <tr>
+          <td>쓰기 패턴</td>
+          <td>임의 위치 쓰기 OK</td>
+          <td>순차 쓰기 선호, 랜덤 쓰기 비쌈</td>
+        </tr>
+        <tr>
+          <td>공간 활용</td>
+          <td>포인터 오버헤드 허용</td>
+          <td>block을 꽉 채워야 효율적</td>
+        </tr>
+        <tr>
+          <td>지역성(locality)</td>
+          <td>캐시 라인 수준</td>
+          <td>block 수준 (4KB~16KB 단위)</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="divider"></div>
+    <h3>HDD vs SSD 접근 패턴 비교</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>특성</th>
+          <th>HDD</th>
+          <th>NVMe SSD</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>순차 읽기</td>
+          <td>100~200 MB/s</td>
+          <td>3,000~7,000 MB/s</td>
+        </tr>
+        <tr>
+          <td>랜덤 읽기 (4KB)</td>
+          <td>0.5~2 MB/s (seek 병목)</td>
+          <td>500~1,000 MB/s</td>
+        </tr>
+        <tr>
+          <td>랜덤 읽기 IOPS</td>
+          <td>~200 IOPS</td>
+          <td>~500,000 IOPS</td>
+        </tr>
+        <tr>
+          <td>랜덤 쓰기 특이점</td>
+          <td>seek + rotation 비용</td>
+          <td>write amplification, wear</td>
+        </tr>
+        <tr>
+          <td>설계 시 주의점</td>
+          <td>랜덤 I/O 절대 최소화</td>
+          <td>쓰기 패턴, TBW 관리</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 8. 흔한 오해 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-myth">✗</div>
+      <h2>흔한 오해와 바로잡기</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 1: "SSD가 다 대체했으니 파일 접근 패턴은 이제 덜 중요하다"</div>
+      <p>
+        SSD는 HDD보다 월등히 빠르지만, 여전히 RAM보다 1000배 이상 느립니다.
+        대규모 데이터에서 수백만 번 랜덤 I/O가 쌓이면 SSD도 병목이 됩니다.
+        또한 SSD의 write amplification 문제로 쓰기 패턴 최적화는 오히려 더 중요해질 수 있습니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 2: "파일은 그냥 바이트 배열이라 어디서든 같은 비용으로 읽을 수 있다"</div>
+      <p>
+        OS와 디스크 모두 block 단위로 동작합니다.
+        "바이트 3번 위치"를 읽으면 내부적으로 block 0 전체를 읽습니다.
+        따라서 어떤 바이트를 읽든 최소 비용은 block 하나 읽기입니다.
+        접근 위치가 중요한 이유입니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 3: "메모리에서 가장 빠른 알고리즘은 디스크에서도 가장 빠르다"</div>
+      <p>
+        전혀 다릅니다. QuickSort는 메모리에서 최적이지만,
+        디스크에서 대용량 정렬에는 외부 정렬(External Sort)이 필요합니다.
+        BST는 메모리에서 O(log N)이지만 디스크에서는 O(log N)번 랜덤 I/O = 실용 불가.
+        B+Tree는 메모리에서 BST보다 느리지만 디스크에서는 압도적으로 빠릅니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 4: "버퍼 풀이 있으면 I/O 비용은 무시해도 된다"</div>
+      <p>
+        버퍼 풀은 hot data에 효과적이지만,
+        cold data 조회, 대규모 full scan, 쓰기 작업에서는 디스크 I/O가 직접 발생합니다.
+        buffer pool이 데이터보다 작으면(대부분의 대용량 시스템) 상당 부분은 디스크에서 읽어야 합니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- 9. Follow-up 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-follow">↓</div>
+      <h2>Senior-Level Follow-up 질문과 답변 방향</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "B+Tree의 fanout이 실제로 얼마나 되고, 그게 왜 중요합니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        페이지 크기 16KB, 키 8바이트, 포인터 8바이트면 한 페이지에 약 16KB / 16B ≈ 1000개 항목이 들어갑니다.
+        fanout ≈ 1000이면 1억 개 레코드도 depth 3 이하(1000³ = 10억)로 커버합니다.
+        즉, 최대 3~4번의 I/O로 어떤 레코드든 찾을 수 있습니다.
+        이 fanout이 BST의 fanout 2와 비교해 디스크 I/O 횟수를 얼마나 줄이는지가 핵심입니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "write-heavy 워크로드에서 B+Tree 대신 고려할 수 있는 구조가 있습니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        LSM-Tree(Log-Structured Merge-Tree)를 언급합니다.
+        쓰기를 메모리(memtable)에 먼저 쌓고, 나중에 순차 쓰기로 디스크에 내려서
+        랜덤 쓰기를 순차 쓰기로 바꿉니다.
+        읽기 성능은 B+Tree보다 떨어질 수 있지만(Bloom filter로 보완),
+        쓰기 처리량이 훨씬 높습니다.
+        Cassandra, LevelDB, RocksDB가 이 방식을 사용합니다.
+        (이 내용은 이후 레슨에서 자세히 다룹니다.)
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "클라우드 오브젝트 스토리지(S3)에서는 이 접근 패턴 원리가 어떻게 바뀝니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        S3 같은 오브젝트 스토리지는 로컬 디스크와 다르게, GET 요청 자체의 latency(보통 10~100ms)가 지배적입니다.
+        따라서 더 큰 단위로 묶어 한 번에 읽는 것이 유리합니다.
+        Parquet의 row group(128MB), Parquet 칼럼 chunk가 이런 이유로 설계되었습니다.
+        또한 S3는 byte-range GET을 지원해 특정 offset을 읽을 수 있지만, 여전히 최소 요청 비용이 있어
+        너무 작은 단위로 쪼개면 요청 수가 늘어 비용과 latency가 증가합니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "장애 복구 관점에서 순차 쓰기 구조(WAL, append-only)가 왜 유리합니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        append-only 구조는 마지막으로 성공한 쓰기 위치만 알면 복구 지점을 특정할 수 있습니다.
+        (마지막 완전한 레코드 다음이 복구 시작점)
+        반면 랜덤 쓰기 구조는 쓰다 중단되면 어느 페이지가 부분 쓰기 상태인지 전체 스캔이 필요합니다.
+        WAL(Write-Ahead Log)은 데이터 페이지에 직접 쓰기 전에 로그를 먼저 순차 기록해
+        장애 시 로그 replay로 복구합니다.
+        이것이 ACID의 Durability를 구현하는 핵심 메커니즘입니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 10. 좋은 답변과 약한 답변 차이 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-diff">≠</div>
+      <h2>좋은 답변과 약한 답변의 차이</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>약한 답변 (5년차 이하)</th>
+          <th>강한 답변 (10년차 이상)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>비용 모델</td>
+          <td>"디스크는 느리다"</td>
+          <td>"block I/O 한 번에 수ms, 랜덤 vs 순차 차이 수십~수백 배"</td>
+        </tr>
+        <tr>
+          <td>설계 원리</td>
+          <td>"캐시를 쓴다", "인덱스를 만든다"</td>
+          <td>"fanout 극대화로 I/O 횟수 최소화", "locality 확보로 순차 I/O 유도"</td>
+        </tr>
+        <tr>
+          <td>구조 선택 근거</td>
+          <td>"B+Tree가 빠르니까요"</td>
+          <td>"범위 검색이 필요하고 write도 감당해야 하면 B+Tree, write 압도적이면 LSM-Tree"</td>
+        </tr>
+        <tr>
+          <td>실무 연결</td>
+          <td>이론만 말함</td>
+          <td>MySQL InnoDB 페이지, Kafka 로그 세그먼트, WAL 등 실제 사례 언급</td>
+        </tr>
+        <tr>
+          <td>SSD 언급</td>
+          <td>"SSD니까 상관없다"</td>
+          <td>"SSD도 write amplification과 IOPS 한계가 있어 접근 패턴은 여전히 중요"</td>
+        </tr>
+        <tr>
+          <td>follow-up 대비</td>
+          <td>추가 질문에 막힘</td>
+          <td>fanout 계산, LSM-Tree, WAL, 클라우드 스토리지까지 연결</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 11. Self-check Rubric -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-rub">✓</div>
+      <h2>자기 점검 Rubric</h2>
+    </div>
+    <p>답변 연습 후 아래 기준으로 자신을 평가하세요.</p>
+
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>Block I/O를 설명했다</strong><br>
+        디스크는 byte가 아닌 block(4~16KB) 단위로 읽는다는 것, 그 이유를 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>I/O 횟수 기준으로 비용을 표현했다</strong><br>
+        "느리다"가 아닌 "랜덤 I/O N번 = X ms"처럼 비용을 수치나 비율로 표현했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>BST vs B+Tree 비교를 I/O 관점에서 설명했다</strong><br>
+        BST의 높은 랜덤 I/O와 B+Tree의 낮은 I/O를 fanout 개념으로 연결했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>실무 사례를 1개 이상 언급했다</strong><br>
+        MySQL InnoDB, Kafka, PostgreSQL WAL, Parquet 중 하나 이상을 원리와 연결했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>순차 접근과 랜덤 접근의 비용 차이를 구분했다</strong><br>
+        HDD / SSD 각각에서 sequential vs random의 차이를 설명했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>SSD에서도 접근 패턴이 중요한 이유를 말했다</strong><br>
+        write amplification, IOPS 한계, wear 중 하나 이상을 언급했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>Follow-up 질문에 fanout 계산 또는 LSM-Tree를 언급했다</strong><br>
+        B+Tree depth 계산을 근거로 I/O 횟수를 추정했거나, write-heavy 대안을 제시했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>클라우드 스토리지(S3) 또는 분산 파일시스템까지 연결했다</strong><br>
+        오브젝트 스토리지에서 접근 패턴 원리가 어떻게 달라지는지 설명했다.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="callout callout-info">
+      <span class="callout-icon">📊</span>
+      <span>
+        <strong>자가 평가:</strong>
+        '필수' 3개 모두 → 합격 수준 |
+        '권장' 3개 추가 → 좋은 인상 |
+        '심화' 포함 → 탑티어 후보
+      </span>
+    </div>
+  </div>
+
+  <!-- 12. 다음 레슨 예고 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">→</div>
+      <h2>다음 레슨 예고 — Day 2: 파일 조직 선택</h2>
+    </div>
+    <p>
+      다음 레슨에서는 이 프레임워크를 바탕으로, 실제 파일을 디스크에 어떻게 구성하는지 세 가지 방법을 비교합니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>파일 조직 방식</th><th>면접 핵심 질문</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>순차 파일 (Sequential)</td>
+          <td>언제 유리하고, 삽입/삭제의 비용은?</td>
+        </tr>
+        <tr>
+          <td>인덱스 파일 (Indexed)</td>
+          <td>dense index vs sparse index, 전제 조건은?</td>
+        </tr>
+        <tr>
+          <td>해시 파일 (Hash)</td>
+          <td>O(1) 조회인데 왜 항상 쓰지 않는가?</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <span class="tag tag-blue">Block I/O</span>
+      <span class="tag tag-blue">Sequential Access</span>
+      <span class="tag tag-green">Dense Index</span>
+      <span class="tag tag-green">Sparse Index</span>
+      <span class="tag tag-yellow">Hash Collision</span>
+      개념이 이번 레슨의 기반 위에서 다루어집니다.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

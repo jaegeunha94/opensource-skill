@@ -10,8 +10,7 @@
 
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
-
-아직 완료한 인터뷰 레슨이 없다.
+| 1 | 2026-06-30 | 저장장치와 접근 패턴 프레임워크 | [interview-day01-storage-access-patterns.html](lessons/interview-day01-storage-access-patterns.html) |
 
 ## 다음 예정 학습
 
@@ -30,14 +29,33 @@
 
 ## 현재 학습 위치
 
-**Day 1 시작 전** — 저장장치와 접근 패턴 프레임워크부터 시작한다.
+**Day 1 완료** — 저장장치와 접근 패턴 프레임워크.
+**다음: Day 2** — 파일 조직 선택 (순차 파일, 인덱스 파일, 해시 파일).
 
 ## Interview 답변 체크리스트
 
-- [ ] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다.
-- [ ] 왜 면접에서 이 질문을 묻는지 설명한다.
-- [ ] 실제 운영 상황과 연결한다.
-- [ ] 답변 순서를 단계적으로 제시한다.
-- [ ] trade-off를 최소 2개 이상 비교한다.
-- [ ] 흔한 오해와 약한 답변을 구분한다.
-- [ ] follow-up 질문까지 대비한다.
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. *(Day 1 완료)*
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. *(Day 1 완료)*
+- [x] 실제 운영 상황과 연결한다. *(Day 1 완료)*
+- [x] 답변 순서를 단계적으로 제시한다. *(Day 1 완료)*
+- [x] trade-off를 최소 2개 이상 비교한다. *(Day 1 완료)*
+- [x] 흔한 오해와 약한 답변을 구분한다. *(Day 1 완료)*
+- [x] follow-up 질문까지 대비한다. *(Day 1 완료)*
+
+## 습득한 핵심 개념
+
+- [x] 저장 계층 (Storage Hierarchy) — RAM, SSD, HDD 비용 모델 (Day 1)
+- [x] Block I/O — 디스크 최소 접근 단위, 왜 block인가 (Day 1)
+- [x] Sequential vs Random Access — 비용 차이, HDD/SSD 각각 (Day 1)
+- [x] Buffer Pool / Page Cache — hot data 캐싱 원리 (Day 1)
+- [x] I/O 비용 모델 — 비교 횟수가 아닌 I/O 횟수 기준 성능 평가 (Day 1)
+- [x] BST vs B+Tree — fanout 차이와 I/O 횟수 비교 (Day 1)
+- [ ] Sequential / Indexed / Hash 파일 조직 선택 기준 (예정 Day 2)
+- [ ] Dense Index vs Sparse Index (예정 Day 3)
+- [ ] B-Tree vs B+Tree 상세 구조 (예정 Day 4)
+- [ ] Hash File — collision, overflow, range query 한계 (예정 Day 5)
+- [ ] Clustered vs Secondary Index (예정 Day 6)
+- [ ] External Sort — run generation, k-way merge (예정 Day 7)
+- [ ] inode vs FAT (예정 Day 8)
+- [ ] Append-only 구조 — WAL, LSM-Tree (예정 Day 9)
+- [ ] 종합 설계 모의 면접 (예정 Day 10)
