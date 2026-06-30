@@ -13,16 +13,17 @@
 | 7 | 2026-06-27 | 사용자 조사 — 페르소나·사용자 여정·공감 지도 | [0007-user-research.html](lessons/0007-user-research.html) |
 | 8 | 2026-06-28 | 프로토타이핑 기법 — Lo-Fi·Hi-Fi·인터랙티브 프로토타입 | [0008-prototyping-techniques.html](lessons/0008-prototyping-techniques.html) |
 | 9 | 2026-06-29 | 사용성 테스트 — 계획·진행·결과 분석 | [0009-usability-testing.html](lessons/0009-usability-testing.html) |
+| 10 | 2026-06-30 | 반응형 & 모바일 UX — 용어와 패턴 | [0010-responsive-mobile-ux.html](lessons/0010-responsive-mobile-ux.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 10 | 반응형 & 모바일 UX — 용어와 패턴 | Responsive Design, Breakpoint, Mobile-first, Touch Target, Fluid Layout, Viewport |
+| 11 | UX 글쓰기(UX Writing) — 마이크로카피와 인터페이스 언어 | Microcopy, CTA, Error Message, Voice & Tone, Placeholder, Tooltip |
 
 ## 현재 학습 위치
 
-**Day 9 완료** — Day 10 (반응형 & 모바일 UX — 용어와 패턴) 예정.
+**Day 10 완료** — Day 11 (UX 글쓰기 — 마이크로카피와 인터페이스 언어) 예정.
 
 ## 습득한 핵심 개념
 
@@ -88,7 +89,16 @@
 - [x] Task Scenario (과업 시나리오) — Day 9
 - [x] Screener (참가자 선별 설문) — Day 9
 - [x] Severity Rating (심각도 분류) — Day 9
-- [ ] Responsive Design (반응형 디자인) — 예정 Day 10
-- [ ] Breakpoint (브레이크포인트) — 예정 Day 10
-- [ ] Mobile-first — 예정 Day 10
-- [ ] Touch Target (터치 타겟) — 예정 Day 10
+- [x] Responsive Web Design (반응형 웹 디자인) — Day 10
+- [x] Viewport (뷰포트) — Day 10
+- [x] Breakpoint (브레이크포인트) — Day 10
+- [x] Mobile-first — Day 10
+- [x] Fluid Layout (유동 레이아웃) — Day 10
+- [x] Touch Target (터치 타겟) — Day 10
+- [x] Adaptive Design (적응형 디자인) — Day 10
+- [x] Safe Area (세이프 에어리어) — Day 10
+- [x] Thumb Zone (엄지 영역) — Day 10
+- [x] Content Prioritization (콘텐츠 우선순위 지정) — Day 10
+- [ ] Microcopy (마이크로카피) — 예정 Day 11
+- [ ] CTA (Call-to-Action) — 예정 Day 11
+- [ ] Voice & Tone — 예정 Day 11

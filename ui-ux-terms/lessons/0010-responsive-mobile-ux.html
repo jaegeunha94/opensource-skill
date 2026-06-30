@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 — 반응형 & 모바일 UX: 용어와 패턴</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; font-size: 16px; line-height: 1.7; color: #1a1a2e; background: #f8f9fc; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+    /* header */
+    header { background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%); color: #fff; border-radius: 12px; padding: 2rem 2rem 1.75rem; margin-bottom: 2rem; }
+    header .day-badge { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-bottom: 0.5rem; }
+    header h1 { font-size: 1.7rem; font-weight: 700; line-height: 1.3; }
+    header p.subtitle { margin-top: 0.6rem; opacity: 0.9; font-size: 0.95rem; }
+
+    /* nav breadcrumb */
+    .breadcrumb { font-size: 0.82rem; color: #6c757d; margin-bottom: 1.5rem; }
+    .breadcrumb a { color: #3a7bd5; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* section */
+    section { background: #fff; border-radius: 10px; padding: 1.75rem 2rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    section h2 { font-size: 1.15rem; font-weight: 700; color: #3a7bd5; margin-bottom: 1rem; border-left: 4px solid #3a7bd5; padding-left: 0.75rem; }
+    section h3 { font-size: 1rem; font-weight: 700; color: #2d3436; margin: 1.4rem 0 0.5rem; }
+    section p { margin-bottom: 0.85rem; }
+    section ul, section ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    section ul li, section ol li { margin-bottom: 0.4rem; }
+
+    /* term card */
+    .term-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+    .term-card .term-title { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.25rem; }
+    .term-card .term-eng { font-size: 0.82rem; color: #6c757d; margin-bottom: 0.5rem; font-style: italic; }
+    .term-card .term-body { font-size: 0.93rem; }
+
+    /* table */
+    .table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+    th { background: #f0f4ff; color: #3a7bd5; font-weight: 700; text-align: left; padding: 0.6rem 0.9rem; border-bottom: 2px solid #d0d9f5; }
+    td { padding: 0.55rem 0.9rem; border-bottom: 1px solid #eee; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fbff; }
+
+    /* callout */
+    .callout { border-left: 4px solid #00d2ff; background: #f0faff; border-radius: 0 8px 8px 0; padding: 0.9rem 1.1rem; margin: 1rem 0; font-size: 0.9rem; }
+    .callout.warn { border-color: #f39c12; background: #fffbf0; }
+    .callout.tip  { border-color: #27ae60; background: #f0fff4; }
+
+    /* code */
+    code { background: #f4f4f8; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.85em; font-family: 'Fira Code', monospace; }
+    pre { background: #1e1e2e; color: #cdd6f4; border-radius: 8px; padding: 1.1rem 1.3rem; overflow-x: auto; font-size: 0.85rem; margin: 0.75rem 0; }
+    pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+
+    /* quiz */
+    .quiz { background: #fafbfe; border: 1px solid #d0d9f5; border-radius: 8px; padding: 1.25rem 1.4rem; margin-top: 1.5rem; }
+    .quiz h3 { font-size: 1rem; color: #3a7bd5; margin-bottom: 0.75rem; }
+    .quiz .q { font-weight: 600; margin-bottom: 0.6rem; }
+    .quiz .options li { margin-bottom: 0.3rem; cursor: pointer; padding: 0.3rem 0.5rem; border-radius: 4px; transition: background 0.15s; }
+    .quiz .options li:hover { background: #e8f0ff; }
+    .quiz details { margin-top: 0.75rem; }
+    .quiz details summary { cursor: pointer; color: #3a7bd5; font-size: 0.9rem; }
+    .quiz details p { margin-top: 0.5rem; font-size: 0.9rem; background: #f0fff4; border-left: 3px solid #27ae60; padding: 0.6rem 0.8rem; border-radius: 0 6px 6px 0; }
+
+    /* progress bar example */
+    .bp-visual { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.75rem 0; }
+    .bp-chip { font-size: 0.78rem; background: #e8f0ff; color: #3a7bd5; border-radius: 20px; padding: 0.25rem 0.75rem; font-family: 'Fira Code', monospace; }
+    .bp-chip.active { background: #3a7bd5; color: #fff; }
+
+    /* footer */
+    footer { text-align: center; font-size: 0.82rem; color: #aaa; margin-top: 2.5rem; }
+    footer a { color: #3a7bd5; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="breadcrumb">
+    <a href="./index.html">← UI/UX 용어 학습 목록</a>
+  </div>
+
+  <header>
+    <div class="day-badge">Day 10 · UI/UX 용어</div>
+    <h1>반응형 & 모바일 UX — 용어와 패턴</h1>
+    <p class="subtitle">Responsive Design · Breakpoint · Mobile-first · Touch Target · Fluid Layout · Viewport</p>
+  </header>
+
+  <!-- ───────────────── 1. 왜 이 용어가 중요한가 ───────────────── -->
+  <section>
+    <h2>1. 왜 이 용어들이 중요한가</h2>
+    <p>
+      전 세계 웹 트래픽의 절반 이상이 모바일 기기에서 발생한다.
+      개발자와 디자이너가 <strong>반응형(Responsive)</strong>과 <strong>적응형(Adaptive)</strong>의 차이를 모르거나,
+      브레이크포인트 숫자를 주먹구구로 정하거나, 터치 타겟 크기를 간과하면 실제 사용자 경험은 크게 떨어진다.
+    </p>
+    <p>
+      디자인 리뷰나 스프린트 회의에서 "모바일에서 레이아웃이 무너진다"는 피드백이 나왔을 때,
+      정확한 용어로 근거를 설명하고 개선 방향을 제안할 수 있어야 한다.
+    </p>
+  </section>
+
+  <!-- ───────────────── 2. 핵심 용어 카드 ───────────────── -->
+  <section>
+    <h2>2. 핵심 용어 카드</h2>
+
+    <div class="term-card">
+      <div class="term-title">반응형 디자인</div>
+      <div class="term-eng">Responsive Web Design (RWD)</div>
+      <div class="term-body">
+        하나의 HTML 소스가 뷰포트 너비에 따라 레이아웃을 자동으로 재구성하는 방식.
+        Ethan Marcotte가 2010년 <em>A List Apart</em>에서 처음 정의했으며,
+        <strong>유동 그리드(Fluid Grid) + 유연한 이미지(Flexible Images) + 미디어 쿼리(Media Query)</strong> 세 요소로 이루어진다.
+        별도 모바일 URL 없이 단일 URL로 모든 기기를 지원한다는 점이 핵심이다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">뷰포트</div>
+      <div class="term-eng">Viewport</div>
+      <div class="term-body">
+        브라우저에서 콘텐츠가 실제로 표시되는 영역. 크게 두 가지로 나뉜다:
+        <ul>
+          <li><strong>Layout Viewport</strong> — CSS 계산의 기준이 되는 가상 너비 (기본값: 980 px, 브라우저 기준).</li>
+          <li><strong>Visual Viewport</strong> — 사용자가 실제로 보는 화면 영역. 핀치-줌 후 달라진다.</li>
+        </ul>
+        모바일에서 레이아웃이 제대로 나오려면 <code>&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;</code> 태그가 반드시 필요하다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">브레이크포인트</div>
+      <div class="term-eng">Breakpoint</div>
+      <div class="term-body">
+        뷰포트 너비가 특정 값을 넘을 때 레이아웃 변화가 일어나는 기준점.
+        미디어 쿼리로 정의하며, 예를 들어 <code>@media (min-width: 768px) { ... }</code> 형태다.
+        브레이크포인트는 디바이스(아이폰 X, 갤럭시 S24 등)에 맞추지 말고
+        <strong>콘텐츠가 무너지는 지점</strong>에 맞추는 것이 원칙이다.
+        일반적으로 4~5개 범위(sm / md / lg / xl / 2xl)를 사용한다.
+      </div>
+    </div>
+
+    <div class="bp-visual">
+      <span class="bp-chip active">xs &lt;576 px</span>
+      <span class="bp-chip">sm 576–767 px</span>
+      <span class="bp-chip">md 768–991 px</span>
+      <span class="bp-chip">lg 992–1199 px</span>
+      <span class="bp-chip">xl ≥1200 px</span>
+    </div>
+    <p style="font-size:0.82rem; color:#6c757d; margin-top:-0.5rem; margin-bottom:1rem;">▲ Bootstrap 5 브레이크포인트 예시 (파란색 = 현재 활성 구간)</p>
+
+    <div class="term-card">
+      <div class="term-title">모바일 퍼스트</div>
+      <div class="term-eng">Mobile-first</div>
+      <div class="term-body">
+        가장 작은 화면(모바일)을 기준으로 스타일을 먼저 작성하고,
+        뷰포트가 커질수록 <code>min-width</code> 미디어 쿼리로 레이아웃을 점진적으로 추가하는 설계 전략.
+        반대 개념은 <strong>Desktop-first</strong>로, <code>max-width</code>로 줄여나간다.
+        성능·접근성 측면에서 Mobile-first가 더 권장된다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">유동 레이아웃</div>
+      <div class="term-eng">Fluid Layout / Liquid Layout</div>
+      <div class="term-body">
+        고정 픽셀(px) 대신 비율(%, vw, em, rem, fr 등)로 크기를 지정해
+        뷰포트 변화에 따라 요소가 자연스럽게 늘고 줄어드는 레이아웃.
+        CSS Grid나 Flexbox를 활용할 때 기본적으로 채택하는 방식이다.
+        <code>max-width</code>와 함께 써서 너무 넓어지지 않도록 제한한다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">터치 타겟</div>
+      <div class="term-eng">Touch Target</div>
+      <div class="term-body">
+        사용자가 손가락으로 탭할 수 있는 인터랙티브 영역의 크기.
+        Apple HIG는 <strong>최소 44 × 44 pt</strong>,
+        Google Material Design은 <strong>최소 48 × 48 dp</strong>를 권장한다.
+        버튼 비주얼이 작더라도 패딩으로 히트 영역(hit area)을 늘려 기준을 충족시킬 수 있다.
+        터치 타겟이 작으면 오탭(miss-tap)이 증가해 오류율이 높아진다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">적응형 디자인</div>
+      <div class="term-eng">Adaptive Design</div>
+      <div class="term-body">
+        서버 또는 클라이언트에서 기기 유형을 감지해 미리 준비된 여러 개의 고정 레이아웃 중 하나를 제공하는 방식.
+        RESS(Responsive + Server-Side) 패턴이 대표적이다.
+        반응형과 달리 레이아웃이 스냅처럼 전환되며, 각 기기에 최적화된 경험을 줄 수 있지만
+        유지보수 비용이 높다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">핀치-줌 / 핀치-투-줌</div>
+      <div class="term-eng">Pinch-to-Zoom</div>
+      <div class="term-body">
+        두 손가락을 벌리거나 모아 콘텐츠를 확대·축소하는 제스처.
+        접근성을 위해 <code>user-scalable=no</code>로 핀치-줌을 막는 것은
+        WCAG 1.4.4(텍스트 크기 조절)를 위반할 수 있으므로 지양해야 한다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">세이프 에어리어</div>
+      <div class="term-eng">Safe Area / Safe Area Inset</div>
+      <div class="term-body">
+        노치(notch), 다이내믹 아일랜드, 홈 인디케이터 등 기기 하드웨어로 인해 콘텐츠가 가려질 수 있는 영역을 피하는 여백.
+        CSS 환경 변수 <code>env(safe-area-inset-top)</code> 등으로 처리한다.
+        iOS 개발에서는 <strong>Safe Area Layout Guide</strong>, 웹에서는 <code>viewport-fit=cover</code>와 함께 사용한다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">콘텐츠 우선순위 지정</div>
+      <div class="term-eng">Content Prioritization</div>
+      <div class="term-body">
+        화면이 좁아질 때 어떤 콘텐츠를 먼저 보여주고 어떤 것을 숨기거나 아래로 내릴지 결정하는 과정.
+        "Progressive Disclosure(점진적 공개)"와 함께 쓰이며,
+        모바일 퍼스트 설계에서 가장 먼저 해야 하는 작업이다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────── 3. 반응형 vs 적응형 비교 ───────────────── -->
+  <section>
+    <h2>3. 반응형 vs 적응형 비교</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>항목</th><th>반응형(RWD)</th><th>적응형(Adaptive)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>레이아웃 전환</td><td>유연하게 흘러감</td><td>특정 브레이크포인트에서 스냅</td></tr>
+          <tr><td>HTML/코드 수</td><td>단일 코드베이스</td><td>기기별 분기 로직 필요</td></tr>
+          <tr><td>유지보수</td><td>비교적 쉬움</td><td>복잡해질 수 있음</td></tr>
+          <tr><td>퍼포먼스</td><td>동일 리소스 전송</td><td>기기 최적 리소스 전송 가능</td></tr>
+          <tr><td>SEO</td><td>단일 URL → 유리</td><td>URL 분기 시 불리할 수 있음</td></tr>
+          <tr><td>적합 상황</td><td>콘텐츠 중심 사이트</td><td>기기별 경험 차이가 큰 서비스</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───────────────── 4. 모바일 UX 패턴 ───────────────── -->
+  <section>
+    <h2>4. 모바일 UX 핵심 패턴</h2>
+
+    <h3>① 햄버거 메뉴 (Hamburger Menu)</h3>
+    <p>
+      ☰ 아이콘으로 숨겨진 내비게이션 메뉴를 여는 패턴. 화면 공간을 절약하지만
+      "숨겨진 네비게이션"은 발견 가능성(discoverability)을 낮춘다.
+      메뉴 항목이 5개 이하라면 탭 바(Tab Bar)가 더 효과적이다.
+    </p>
+
+    <h3>② 바텀 내비게이션 바 (Bottom Navigation Bar)</h3>
+    <p>
+      화면 하단에 3~5개 주요 섹션 아이콘을 배치하는 패턴. 엄지 손가락 접근성이 높아
+      Material Design과 iOS HIG 모두 권장한다.
+      "Thumb Zone(엄지 영역)"을 고려해 주요 액션을 화면 하단 중앙에 배치하는 것이 좋다.
+    </p>
+
+    <h3>③ 카드 패턴 (Card Pattern)</h3>
+    <p>
+      콘텐츠 덩어리를 카드 형태로 시각적으로 분리하는 방식. 그리드 뷰와 결합해
+      모바일에서는 1열, 태블릿에서는 2열, 데스크톱에서는 3열로 유연하게 전환할 수 있다.
+    </p>
+
+    <h3>④ 스와이프 제스처 (Swipe Gesture)</h3>
+    <p>
+      좌우 또는 상하 스와이프로 화면 전환, 항목 삭제, 액션 노출 등을 수행.
+      스와이프는 직관적이지만 탐색 불가능(hidden)하므로 반드시 비주얼 힌트(예: 부분 노출)나
+      온보딩 안내를 함께 제공해야 한다.
+    </p>
+
+    <h3>⑤ 풀-투-리프레시 (Pull-to-Refresh)</h3>
+    <p>
+      목록을 아래로 당기면 데이터를 새로 불러오는 패턴. Loren Brichter(Tweetie 앱)가 고안했으며
+      현재 모바일 표준 인터랙션이 됐다. 로딩 스피너와 햅틱 피드백(진동)을 함께 제공한다.
+    </p>
+
+    <div class="callout tip">
+      <strong>Tip — 엄지 영역(Thumb Zone):</strong>
+      세스 프리드먼(Steven Hoober)의 연구에 따르면 스마트폰 사용자의 49%가 한 손으로 폰을 쥐고
+      엄지로 조작한다. 이 때 편하게 닿는 "자연 엄지 영역"은 화면 하단 중앙이다.
+      주요 CTA(Call-to-Action)를 이 영역에 배치하면 사용성이 개선된다.
+    </div>
+  </section>
+
+  <!-- ───────────────── 5. CSS 예시 ───────────────── -->
+  <section>
+    <h2>5. 코드로 보는 핵심 패턴</h2>
+
+    <h3>Mobile-first 미디어 쿼리</h3>
+    <pre><code>/* 기본: 모바일 스타일 */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+/* 태블릿 이상 */
+@media (min-width: 768px) {
+  .card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 데스크톱 이상 */
+@media (min-width: 1200px) {
+  .card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}</code></pre>
+
+    <h3>터치 타겟 최소 크기 보장</h3>
+    <pre><code>/* 비주얼은 24px지만 터치 영역은 44px 확보 */
+.icon-button {
+  width: 24px;
+  height: 24px;
+  padding: 10px; /* 양쪽 10+10 = 44px */
+  /* 또는 */
+  min-width: 44px;
+  min-height: 44px;
+}</code></pre>
+
+    <h3>Safe Area 적용</h3>
+    <pre><code>/* 노치 아래 여백 확보 */
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* viewport-fit=cover 설정 필요 */
+/* &lt;meta name="viewport" content="width=device-width,
+   initial-scale=1, viewport-fit=cover"&gt; */</code></pre>
+
+    <div class="callout warn">
+      <strong>주의 — 브레이크포인트는 기기 모델이 아닌 콘텐츠 기준으로:</strong>
+      "iPhone SE는 375 px이니 375 px에 브레이크포인트를 추가하자"는 잘못된 접근이다.
+      콘텐츠가 어색해지는 지점을 찾아서 그곳에 브레이크포인트를 설정해야 한다.
+    </div>
+  </section>
+
+  <!-- ───────────────── 6. 용어 요약 테이블 ───────────────── -->
+  <section>
+    <h2>6. 용어 요약</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>용어</th><th>한국어</th><th>한 줄 설명</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Responsive Web Design</td><td>반응형 웹 디자인</td><td>뷰포트 크기에 따라 레이아웃이 유연하게 바뀌는 방식</td></tr>
+          <tr><td>Viewport</td><td>뷰포트</td><td>브라우저 콘텐츠 표시 영역; Layout과 Visual로 구분</td></tr>
+          <tr><td>Breakpoint</td><td>브레이크포인트</td><td>레이아웃 변화가 일어나는 뷰포트 너비 기준점</td></tr>
+          <tr><td>Mobile-first</td><td>모바일 퍼스트</td><td>작은 화면 스타일을 먼저 쓰고 min-width로 확장</td></tr>
+          <tr><td>Fluid Layout</td><td>유동 레이아웃</td><td>비율 단위(%, fr)로 자연스럽게 늘고 줄어드는 레이아웃</td></tr>
+          <tr><td>Touch Target</td><td>터치 타겟</td><td>탭 가능한 영역; 최소 44×44 pt / 48×48 dp 권장</td></tr>
+          <tr><td>Adaptive Design</td><td>적응형 디자인</td><td>기기 유형별 고정 레이아웃을 제공하는 방식</td></tr>
+          <tr><td>Safe Area</td><td>세이프 에어리어</td><td>노치·홈 인디케이터를 피하는 여백 영역</td></tr>
+          <tr><td>Thumb Zone</td><td>엄지 영역</td><td>한 손 사용 시 엄지가 편하게 닿는 화면 하단 영역</td></tr>
+          <tr><td>Content Prioritization</td><td>콘텐츠 우선순위 지정</td><td>좁은 화면에서 무엇을 먼저 보여줄지 결정하는 과정</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───────────────── 7. 퀴즈 ───────────────── -->
+  <section>
+    <h2>7. 셀프 체크 퀴즈</h2>
+
+    <div class="quiz">
+      <h3>Q1</h3>
+      <p class="q">모바일 퍼스트(Mobile-first) 방식에서 주로 사용하는 미디어 쿼리 조건은?</p>
+      <ol class="options" type="A">
+        <li>A. <code>@media (max-width: ...)</code></li>
+        <li>B. <code>@media (min-width: ...)</code></li>
+        <li>C. <code>@media (orientation: landscape)</code></li>
+        <li>D. <code>@media screen and (device-width: ...)</code></li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — <code>@media (min-width: ...)</code></strong><br>
+          Mobile-first는 가장 작은 화면의 스타일을 기본으로 두고, 뷰포트가 특정 너비 이상이 될 때 추가 스타일을 적용한다.
+          A(<code>max-width</code>)는 Desktop-first 방식으로, 큰 화면 기준 스타일에서 점점 줄여나가는 방법이다.
+          C는 가로/세로 모드 감지용, D는 오래된 방식으로 현재 잘 쓰이지 않는다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q2</h3>
+      <p class="q">터치 타겟 최소 크기에 대한 설명으로 맞는 것은?</p>
+      <ol class="options" type="A">
+        <li>A. 버튼 비주얼 크기가 44px 이상이어야 한다</li>
+        <li>B. 패딩을 포함한 실제 탭 가능 영역이 최소 44×44 pt이면 된다</li>
+        <li>C. 텍스트 링크는 예외적으로 작아도 된다</li>
+        <li>D. iOS와 Android 기준이 동일하다</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — 패딩을 포함한 탭 가능 영역이 기준</strong><br>
+          비주얼이 작아도 패딩으로 히트 영역을 늘릴 수 있다.
+          A는 비주얼 크기와 탭 영역을 혼동하고 있다.
+          C는 오답 — 텍스트 링크도 터치 타겟 기준을 지켜야 한다.
+          D는 오답 — Apple HIG는 44 pt, Material Design은 48 dp로 다른 기준을 제시한다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q3</h3>
+      <p class="q">브레이크포인트를 정할 때 올바른 기준은?</p>
+      <ol class="options" type="A">
+        <li>A. 주요 기기(아이폰, 갤럭시) 화면 너비에 맞춘다</li>
+        <li>B. 콘텐츠 레이아웃이 무너지거나 어색해지는 지점에 맞춘다</li>
+        <li>C. Bootstrap의 기본 브레이크포인트를 항상 그대로 사용한다</li>
+        <li>D. 320, 480, 768, 1024, 1280 px 다섯 지점을 항상 추가한다</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — 콘텐츠가 무너지는 지점</strong><br>
+          브레이크포인트는 기기 모델이 아니라 콘텐츠 흐름을 기준으로 잡는다.
+          A는 수백 가지 기기 크기를 일일이 대응해야 하므로 비현실적이다.
+          C는 Bootstrap 기본값이 많은 프로젝트에 맞게 설계됐지만 모든 서비스에 맞지 않는다.
+          D는 임의의 숫자 나열로, 콘텐츠를 무시한 접근이다.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ───────────────── 8. 다음 학습 예고 ───────────────── -->
+  <section>
+    <h2>8. 다음 학습 예고 — Day 11</h2>
+    <p>
+      <strong>UX 글쓰기(UX Writing) — 마이크로카피와 인터페이스 언어</strong>
+    </p>
+    <p>
+      버튼 레이블, 오류 메시지, 툴팁, 플레이스홀더 등 인터페이스 텍스트 작성 원칙을 다룬다.
+      "마이크로카피(Microcopy)"의 정의, 좋은 CTA 문구 vs 나쁜 CTA 문구의 차이,
+      오류 메시지 설계 원칙(휴머나이즈드 에러), 보이스&톤(Voice & Tone) 가이드라인을 학습한다.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      <a href="./index.html">← 전체 목록</a> &nbsp;|&nbsp;
+      UI/UX 용어 학습 워크스페이스 · Day 10 · 2026-06-30
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>
