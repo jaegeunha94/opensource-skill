@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — 비동기 처리와 메시지 큐 설계 프레임워크</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    /* Header */
+    .lesson-header {
+      border-left: 4px solid #6366f1;
+      padding: 1rem 1.5rem;
+      background: #1e1f2e;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-header .day-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #818cf8;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .lesson-header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #f1f5f9;
+    }
+    .lesson-header .meta {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-top: 0.4rem;
+    }
+
+    /* Section */
+    .section {
+      background: #1a1b2e;
+      border: 1px solid #2d2e4a;
+      border-radius: 10px;
+      padding: 1.6rem 1.8rem;
+      margin-bottom: 1.8rem;
+    }
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6366f1;
+      margin-bottom: 0.6rem;
+    }
+    .section h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #c7d2fe;
+      margin-bottom: 1rem;
+    }
+    .section p { color: #cbd5e1; margin-bottom: 0.9rem; }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* Interview question box */
+    .interview-q {
+      background: #13141f;
+      border: 2px solid #4f46e5;
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.8rem;
+    }
+    .interview-q .q-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #a5b4fc;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q .q-text {
+      font-size: 1.08rem;
+      font-weight: 600;
+      color: #e0e7ff;
+      line-height: 1.6;
+    }
+
+    /* Callout */
+    .callout {
+      border-left: 3px solid #6366f1;
+      padding: 0.9rem 1.2rem;
+      background: #13141f;
+      border-radius: 0 6px 6px 0;
+      margin: 1rem 0;
+      color: #c7d2fe;
+    }
+    .callout.warn { border-left-color: #f59e0b; background: #1c1a10; color: #fde68a; }
+    .callout.good { border-left-color: #10b981; background: #0d1c16; color: #6ee7b7; }
+    .callout.bad  { border-left-color: #ef4444; background: #1c0d0d; color: #fca5a5; }
+
+    /* Steps */
+    .steps { list-style: none; counter-reset: step-counter; padding: 0; }
+    .steps li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step-counter);
+      min-width: 28px;
+      height: 28px;
+      background: #4f46e5;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .steps li .step-body { color: #cbd5e1; }
+    .steps li .step-body strong { color: #e2e8f0; }
+
+    /* Code block */
+    pre {
+      background: #0d0e1a;
+      border: 1px solid #2d2e4a;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      color: #a5f3fc;
+      line-height: 1.6;
+      margin: 1rem 0;
+    }
+    code { font-family: 'Fira Code', 'Cascadia Code', monospace; }
+
+    /* Comparison table */
+    .compare { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    .compare th {
+      background: #1e1f35;
+      color: #a5b4fc;
+      font-weight: 700;
+      padding: 0.7rem 1rem;
+      text-align: left;
+      border-bottom: 2px solid #3730a3;
+    }
+    .compare td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid #2d2e4a;
+      color: #cbd5e1;
+      vertical-align: top;
+    }
+    .compare tr:last-child td { border-bottom: none; }
+    .compare tr:hover td { background: #1e1f2e; }
+
+    /* Answer blocks */
+    .answer-block {
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .answer-block.strong {
+      background: #0a1f15;
+      border: 1px solid #059669;
+    }
+    .answer-block.weak {
+      background: #1c0e0e;
+      border: 1px solid #dc2626;
+    }
+    .answer-block .ab-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+    .answer-block.strong .ab-label { color: #34d399; }
+    .answer-block.weak .ab-label { color: #f87171; }
+    .answer-block p { font-size: 0.9rem; color: #cbd5e1; margin-bottom: 0.5rem; }
+
+    /* Rubric */
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid #2d2e4a;
+      align-items: flex-start;
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #6366f1;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .rubric-item .rubric-text { color: #cbd5e1; font-size: 0.9rem; }
+    .rubric-item .rubric-text strong { color: #e2e8f0; }
+
+    /* Follow-up */
+    .followup-item {
+      background: #13141f;
+      border: 1px solid #2d2e4a;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-item .fu-q {
+      font-weight: 600;
+      color: #a5b4fc;
+      margin-bottom: 0.5rem;
+      font-size: 0.92rem;
+    }
+    .followup-item .fu-a {
+      color: #94a3b8;
+      font-size: 0.88rem;
+      line-height: 1.65;
+    }
+
+    /* Tag pills */
+    .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
+    .tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.25rem 0.7rem;
+      border-radius: 999px;
+      background: #1e1f35;
+      color: #818cf8;
+      border: 1px solid #3730a3;
+    }
+
+    /* Nav */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #2d2e4a;
+      font-size: 0.85rem;
+    }
+    .nav a { color: #6366f1; text-decoration: none; }
+    .nav a:hover { text-decoration: underline; }
+
+    ul.bullets { list-style: disc; padding-left: 1.4rem; }
+    ul.bullets li { color: #cbd5e1; margin-bottom: 0.4rem; font-size: 0.92rem; }
+    ul.bullets li strong { color: #e2e8f0; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="lesson-header">
+    <div class="day-badge">Day 1 · 메시지 큐 / 비동기 처리 인터뷰</div>
+    <h1>비동기 처리와 메시지 큐 설계 프레임워크</h1>
+    <div class="meta">2026-06-30 · 예상 학습 시간 60분</div>
+    <div class="tags">
+      <span class="tag">비동기 설계</span>
+      <span class="tag">메시지 큐</span>
+      <span class="tag">At-least-once</span>
+      <span class="tag">설계 프레임워크</span>
+      <span class="tag">장애 격리</span>
+    </div>
+  </div>
+
+  <!-- Interview Question -->
+  <div class="interview-q">
+    <div class="q-label">오늘의 면접 질문</div>
+    <div class="q-text">
+      "결제 완료 후 이메일 발송, 재고 차감, 포인트 적립을 처리해야 합니다.
+      동기 처리와 비동기 처리 중 어떻게 결정하시겠습니까?
+      메시지 큐를 도입한다면 설계를 어떻게 하시겠습니까?"
+    </div>
+  </div>
+
+  <!-- 1. 전제 개념 -->
+  <div class="section">
+    <div class="section-label">전제 개념</div>
+    <h2>동기 처리와 비동기 처리 — 근본 차이</h2>
+
+    <p>
+      <strong>동기 처리(Synchronous)</strong>란 요청한 쪽이 결과가 나올 때까지 기다리는 방식이다.
+      고객이 결제 버튼을 누르면, 서버가 이메일 발송 → 재고 차감 → 포인트 적립을 순서대로 모두 완료한 후에야
+      "결제 완료" 응답을 보낸다. 모든 작업이 같은 HTTP 요청-응답 사이클 안에 들어 있다.
+    </p>
+    <p>
+      <strong>비동기 처리(Asynchronous)</strong>란 요청한 쪽이 결과를 기다리지 않고,
+      작업을 다른 대리자에게 위임하는 방식이다.
+      결제 서버는 "결제 완료" 이벤트를 메시지 큐에 넣고 즉시 고객에게 응답을 보낸다.
+      이메일 발송, 재고 차감, 포인트 적립은 별도 Consumer가 나중에 처리한다.
+    </p>
+
+    <table class="compare">
+      <thead>
+        <tr>
+          <th>구분</th>
+          <th>동기 처리</th>
+          <th>비동기 처리 (메시지 큐)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>응답 시간</td>
+          <td>모든 작업 완료까지 대기 → 느릴 수 있음</td>
+          <td>큐에 넣는 시간만 소요 → 빠름</td>
+        </tr>
+        <tr>
+          <td>장애 전파</td>
+          <td>이메일 서버 장애 → 결제 전체 실패</td>
+          <td>이메일 서버 장애가 결제에 영향 없음</td>
+        </tr>
+        <tr>
+          <td>일관성</td>
+          <td>즉시 일관성 보장 가능</td>
+          <td>최종 일관성(Eventual Consistency)</td>
+        </tr>
+        <tr>
+          <td>복잡도</td>
+          <td>단순 — 코드 흐름 직선</td>
+          <td>높음 — 중복 처리, 순서, 장애 복구 고려 필요</td>
+        </tr>
+        <tr>
+          <td>확장성</td>
+          <td>결제 처리량이 이메일 발송 속도에 종속됨</td>
+          <td>결제와 이메일 발송을 독립적으로 스케일</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>핵심 직관:</strong> 동기는 "모두 같이 가야 한다"는 계약이고, 비동기는 "일단 나는 갈게, 너는 나중에 따라와"라는 위임이다.
+      위임을 선택하면 속도와 격리를 얻지만, 위임된 작업이 실패했을 때 어떻게 알고 어떻게 복구하는지를 별도로 설계해야 한다.
+    </div>
+  </div>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label">왜 면접에서 묻는가</div>
+    <h2>이 질문이 평가하는 것</h2>
+
+    <p>
+      이 질문은 단순히 "Kafka 써봤어요?"를 확인하는 것이 아니다.
+      면접관이 보고 싶은 것은 다음 세 가지다.
+    </p>
+
+    <ul class="bullets">
+      <li>
+        <strong>판단 기준이 있는가:</strong>
+        "다 비동기로 처리해야 한다" 또는 "동기면 충분하다"처럼 맥락 없이 한 방향을 고집하면 약하다.
+        어떤 조건에서 비동기가 필요하고, 어떤 조건에서 동기가 더 낫는지를 구분하는가.
+      </li>
+      <li>
+        <strong>장애 시나리오를 먼저 떠올리는가:</strong>
+        메시지 큐를 도입하면 "Consumer가 죽으면 어떻게 되나?", "메시지가 두 번 처리되면?"같은
+        새로운 실패 모드가 생긴다. 이를 먼저 제기하는 사람이 시니어다.
+      </li>
+      <li>
+        <strong>트레이드오프를 말할 수 있는가:</strong>
+        "비동기가 더 좋습니다"가 아니라 "이 시나리오에서는 최종 일관성을 허용할 수 있고,
+        이메일 서버 장애가 결제에 전파되는 것이 더 큰 리스크이므로 비동기를 선택합니다"라고 말하는가.
+      </li>
+    </ul>
+  </div>
+
+  <!-- 3. 실무 연결 -->
+  <div class="section">
+    <div class="section-label">실무 연결</div>
+    <h2>실제 서비스에서 이 선택이 나타나는 상황</h2>
+
+    <p>
+      결제 후처리는 이 판단이 가장 선명하게 드러나는 시나리오다.
+      결제 자체(카드 승인, 금액 차감)는 반드시 동기로 처리해야 한다 —
+      "결제는 됐는데 실제로 승인이 됐는지 모르는" 상태를 허용할 수 없기 때문이다.
+    </p>
+    <p>
+      반면 결제 후 수행하는 작업들은 성격이 다르다:
+    </p>
+
+    <table class="compare">
+      <thead>
+        <tr>
+          <th>후처리 작업</th>
+          <th>동기 허용?</th>
+          <th>판단 이유</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>이메일/SMS 발송</td>
+          <td>비동기 권장</td>
+          <td>발송 지연이 결제 경험에 영향 주면 안 됨. 발송 실패가 결제를 무효화하면 안 됨.</td>
+        </tr>
+        <tr>
+          <td>재고 차감</td>
+          <td>상황에 따라</td>
+          <td>재고가 즉시 일관성이 필요한 경우 동기. 약간의 지연을 허용하면 비동기 가능.</td>
+        </tr>
+        <tr>
+          <td>포인트 적립</td>
+          <td>비동기 권장</td>
+          <td>포인트는 수 초 내 반영이면 충분. 포인트 서버 장애가 결제를 막으면 안 됨.</td>
+        </tr>
+        <tr>
+          <td>정산/회계 기록</td>
+          <td>비동기 권장</td>
+          <td>배치 집계 가능. 실시간 필요 없음.</td>
+        </tr>
+        <tr>
+          <td>사기 탐지 알림</td>
+          <td>비동기 권장</td>
+          <td>탐지가 결제를 막는 구조는 별도 flow로 분리.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <strong>흔한 오해:</strong> "재고는 정확해야 하니까 동기로 처리해야 한다."
+      그러나 재고를 낙관적 잠금(Optimistic Locking)이나 예약 방식으로 설계하면 비동기로도 정확도를 확보할 수 있다.
+      '비동기 = 부정확'이 아니다. 비동기는 '결과를 나중에 확인하는' 것이고, 최종 일관성은 설계로 보장한다.
+    </div>
+  </div>
+
+  <!-- 4. 비동기 도입 판단 프레임워크 -->
+  <div class="section">
+    <div class="section-label">핵심 개념</div>
+    <h2>메시지 큐 도입 결정 — 4가지 판단 축</h2>
+
+    <p>면접에서 "비동기로 가야 한다"고 주장할 때 근거로 사용하는 4가지 판단 기준이다.</p>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <strong>응답 시간 요구사항 (Latency Requirement)</strong><br>
+          사용자가 이 작업의 완료를 기다려야 하는가?
+          이메일 발송은 사용자가 응답 안에서 결과를 볼 필요가 없다 → 비동기 가능.
+          결제 승인은 사용자가 결과를 바로 봐야 한다 → 동기 필요.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>장애 격리 요구사항 (Failure Isolation)</strong><br>
+          이 작업의 실패가 핵심 흐름을 막으면 안 되는가?
+          이메일 서버 장애가 결제를 실패시키면 안 된다 → 비동기로 분리해야 한다.
+          분리하면 이메일 서버가 죽어도 결제는 성공하고, 나중에 이메일만 재처리하면 된다.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>처리량 불균형 (Throughput Mismatch)</strong><br>
+          Producer(이벤트 발생 속도)와 Consumer(처리 속도)의 속도가 다른가?
+          결제는 초당 1,000건인데 포인트 서버 처리 속도가 200건/초라면, 동기 처리 시 결제가 병목에 걸린다.
+          큐를 버퍼로 두면 속도 차이를 흡수할 수 있다.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>최종 일관성 허용 여부 (Eventual Consistency Tolerance)</strong><br>
+          이 데이터는 "결국에는 맞으면 되는가", 아니면 "지금 당장 정확해야 하는가"?
+          포인트 잔액은 수 초 후에 반영돼도 큰 문제가 없다 → 최종 일관성 허용 → 비동기 가능.
+          재고는 초과 판매를 막아야 한다면 즉시 일관성 필요 → 신중한 설계 필요.
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout good">
+      <strong>면접 팁:</strong> 이 4가지를 스스로 언급하면서 각 항목에 시나리오를 대입하면
+      "이 분은 판단 기준이 있다"는 인상을 준다.
+      "비동기가 더 좋습니다"보다 "응답 시간과 장애 격리 관점에서 이 3개는 비동기, 재고는 검토가 필요합니다"가 훨씬 강하다.
+    </div>
+  </div>
+
+  <!-- 5. Producer → Broker → Consumer 흐름 -->
+  <div class="section">
+    <div class="section-label">핵심 개념</div>
+    <h2>메시지 큐 기본 구조 — Producer → Broker → Consumer</h2>
+
+    <p>메시지 큐 설계를 이야기할 때 사용하는 기본 용어다. 면접에서 이 용어를 정확히 사용해야 한다.</p>
+
+    <pre><code>┌─────────────┐        ┌────────────────────┐        ┌──────────────────────┐
+│  Producer   │──────▶ │  Message Broker    │──────▶ │  Consumer            │
+│  (결제 서버) │  메시지  │  (Kafka / RabbitMQ │  메시지  │  (이메일 서비스)       │
+│             │  발행   │   / SQS)           │  소비   │  (재고 서비스)         │
+└─────────────┘        └────────────────────┘        │  (포인트 서비스)        │
+                                                      └──────────────────────┘</code></pre>
+
+    <ul class="bullets">
+      <li><strong>Producer:</strong> 이벤트를 생성하여 큐에 넣는 쪽. 결제 서버가 "결제 완료" 이벤트를 발행.</li>
+      <li><strong>Broker:</strong> 메시지를 받아 저장하고 Consumer에게 전달하는 중간 시스템. Kafka, RabbitMQ, AWS SQS 등.</li>
+      <li><strong>Consumer:</strong> 큐에서 메시지를 꺼내 처리하는 쪽. 이메일 서비스, 재고 서비스 등이 각자 소비.</li>
+      <li><strong>Topic / Queue:</strong> 메시지가 쌓이는 채널. Kafka는 Topic, RabbitMQ는 Queue.</li>
+    </ul>
+
+    <div class="callout">
+      <strong>메시지 전달 보장 수준 3가지 — 반드시 구분해야 함:</strong><br><br>
+      <strong>At-most-once (최대 한 번):</strong> 메시지가 유실될 수 있지만 중복은 없다. 로그 수집 등 유실을 허용하는 경우.<br>
+      <strong>At-least-once (최소 한 번):</strong> 메시지가 반드시 전달되지만 중복 가능. 가장 흔한 설정. Consumer가 처리를 확인(ACK)하기 전에 죽으면 재전달됨 → Consumer가 멱등하게 처리해야 함.<br>
+      <strong>Exactly-once (정확히 한 번):</strong> 중복도 유실도 없음. 구현이 복잡하고 성능 비용이 크다. Kafka 트랜잭션으로 가능하지만 운영 부담이 큼.
+    </div>
+  </div>
+
+  <!-- 6. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label">답변 사고 순서</div>
+    <h2>면접에서 이 질문을 받았을 때 생각하는 순서</h2>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <strong>요구사항 확인부터 시작</strong><br>
+          "우선 각 작업의 요구사항을 정리하겠습니다.
+          이메일 발송과 포인트 적립은 실시간 응답에 포함될 필요가 없고,
+          서비스 장애가 결제에 전파되면 안 됩니다.
+          재고 차감은 초과 판매 가능성이 있어 별도로 검토하겠습니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>비동기 처리 범위 결정 + 이유 명시</strong><br>
+          "이메일과 포인트는 장애 격리와 응답 시간 단축을 위해 비동기로 분리합니다.
+          재고는 즉시 일관성이 필요한지 추가 확인이 필요합니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>메시지 큐 구조 설계</strong><br>
+          "결제 완료 이벤트를 Topic에 발행하고,
+          이메일 Consumer, 포인트 Consumer가 각자 독립적으로 구독합니다.
+          Consumer Group을 분리하면 이메일 처리가 느려도 포인트 처리에 영향이 없습니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>실패 시나리오 먼저 언급</strong><br>
+          "Consumer가 메시지를 처리 도중 죽으면 At-least-once 보장으로 재전달됩니다.
+          이때 이메일이 두 번 발송될 수 있으므로, Consumer는 멱등하게 처리해야 합니다.
+          예를 들어 '이미 이 결제 ID로 이메일을 보냈으면 스킵'하는 로직이 필요합니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>운영 관점 마무리</strong><br>
+          "재처리 실패 시 Dead-Letter Queue로 격리하고 알림을 받습니다.
+          큐 길이와 Consumer 지연(lag)을 모니터링해서 처리량 이슈를 조기에 감지합니다."
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 7. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label">핵심 답변 예시</div>
+    <h2>실제 면접 답변 예시</h2>
+
+    <div class="callout good">
+      <p>
+        "우선 각 작업을 장애 격리 관점에서 분류하겠습니다.
+        이메일 발송과 포인트 적립은 결제 응답에 포함되지 않아도 되고,
+        이 서비스들이 느리거나 장애가 났을 때 결제가 실패해서는 안 됩니다.
+        따라서 이 두 작업은 메시지 큐를 통한 비동기 처리로 분리합니다.
+      </p>
+      <p>
+        설계는 결제 서버가 '결제 완료' 이벤트를 Kafka Topic에 발행하고,
+        이메일 Consumer와 포인트 Consumer가 각자 독립된 Consumer Group으로 구독하는 구조입니다.
+        그러면 이메일 처리가 병목이 되어도 포인트 적립에는 영향을 주지 않습니다.
+      </p>
+      <p>
+        Consumer가 처리 중 죽으면 At-least-once 보장에 의해 메시지가 재전달됩니다.
+        중복 이메일 발송을 막기 위해 Consumer는 결제 ID를 기준으로 멱등하게 처리해야 합니다.
+        처리 실패가 반복되면 Dead-Letter Queue로 격리하고 운영팀 알림을 보냅니다.
+      </p>
+      <p>
+        재고 차감은 초과 판매 허용 여부에 따라 다릅니다.
+        재고 예약(Reserve) 방식을 사용하면 비동기로도 정확도를 유지할 수 있지만,
+        즉시 일관성이 필요하다면 결제 트랜잭션 안에서 동기로 처리하는 게 안전합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- 8. Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label">Senior-Level Follow-up</div>
+    <h2>면접관이 이어서 물어볼 수 있는 질문들</h2>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "Consumer가 메시지를 처리했는데 ACK를 보내기 전에 죽으면 어떻게 됩니까?"</div>
+      <div class="fu-a">
+        At-least-once 보장이 적용됩니다. 브로커는 ACK를 받지 못하면 메시지를 재전달합니다.
+        따라서 Consumer는 같은 메시지를 두 번 받을 수 있다고 가정하고 설계해야 합니다.
+        결제 ID를 처리 완료 테이블에 기록하고, 이미 처리된 ID가 들어오면 스킵하는 방식으로
+        멱등성을 보장합니다. "처리 완료 레코드 삽입"이 트랜잭션 안에 있어야 정합성이 보장됩니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "Consumer가 너무 느려서 큐가 쌓이면 어떻게 됩니까?"</div>
+      <div class="fu-a">
+        Consumer Lag이 증가합니다. 대응책은 두 가지입니다.
+        첫째, Consumer를 수평 확장합니다 — Kafka는 파티션 수만큼 Consumer를 늘릴 수 있습니다.
+        둘째, Consumer의 처리 로직을 최적화합니다 — DB 쿼리 최적화, 배치 처리 도입 등.
+        Backpressure 메커니즘으로 Producer 속도를 조절하는 방법도 있지만,
+        결제처럼 Producer를 늦출 수 없는 경우에는 Consumer 스케일아웃이 우선입니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "Kafka와 RabbitMQ 중 이 시나리오에서는 어떤 걸 선택하시겠습니까?"</div>
+      <div class="fu-a">
+        이 시나리오에서는 두 가지 모두 가능하지만 판단 기준을 먼저 말하겠습니다.
+        메시지를 영구 보관하고 Consumer가 과거 메시지를 재처리해야 한다면 Kafka가 낫습니다.
+        유연한 라우팅과 Priority Queue가 필요하다면 RabbitMQ가 낫습니다.
+        결제 후처리에서 "6개월 전 메시지를 재처리해야 할 경우가 있는가"가 핵심 질문입니다.
+        이미 AWS를 사용한다면 SQS가 운영 부담이 적어 실용적일 수 있습니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "메시지가 순서대로 처리되어야 한다는 요구사항이 생기면 어떻게 하시겠습니까?"</div>
+      <div class="fu-a">
+        순서 보장은 비동기 처리에서 가장 어려운 문제 중 하나입니다.
+        Kafka는 파티션 내에서만 순서를 보장합니다 — 같은 사용자의 이벤트를 같은 파티션으로 보내는 파티션 키 설계가 필요합니다.
+        SQS는 Standard Queue는 순서 미보장, FIFO Queue는 순서 보장하지만 처리량이 제한됩니다.
+        "어느 단위에서 순서가 보장되어야 하는가"를 먼저 확인해야 합니다 —
+        전체 글로벌 순서가 필요한지, 특정 사용자/엔티티 단위 순서인지에 따라 설계가 달라집니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label">답변 품질 비교</div>
+    <h2>좋은 답변과 약한 답변의 차이</h2>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변 — 이렇게 말하면 시니어로 보인다</div>
+      <p>"이메일과 포인트는 장애 격리가 필요해서 비동기로 분리합니다. Consumer가 죽으면 메시지가 재전달되므로, 결제 ID를 멱등 키로 사용해서 중복 처리를 막습니다. 실패가 반복되면 DLQ로 격리하고 모니터링합니다. 재고는 초과 판매 허용 여부를 먼저 확인해야 합니다."</p>
+      <p><em>→ 왜 비동기인지 이유 + 장애 시나리오 선제적 언급 + 구체적 대응 방법 + 재고의 다른 처리 방식 인지</em></p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변 — 이렇게 말하면 주니어로 보인다</div>
+      <p>"메시지 큐를 사용해서 비동기로 처리하면 됩니다. Kafka나 RabbitMQ를 쓰면 빠르게 처리할 수 있습니다."</p>
+      <p><em>→ 왜 비동기인지 판단 기준 없음. 장애 시나리오 언급 없음. "빠르다"만 말하고 트레이드오프 없음.</em></p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변 — 한 방향으로만 고집</div>
+      <p>"모두 다 비동기로 처리하면 됩니다. 동기 처리는 느리니까요."</p>
+      <p><em>→ 재고 차감처럼 즉시 일관성이 필요할 수 있는 작업을 고려하지 않음. 비동기에서 발생하는 복잡도를 모름.</em></p>
+    </div>
+  </div>
+
+  <!-- 10. 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label">자기 점검 Rubric</div>
+    <h2>내 답변을 이 기준으로 점검해보자</h2>
+
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>판단 기준 언급:</strong>
+        "응답 시간, 장애 격리, 처리량 불균형, 최종 일관성 허용 여부" 중 2개 이상을 판단 근거로 제시했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>작업별 차별화:</strong>
+        이메일/포인트 vs 재고를 다르게 처리하는 이유를 설명했는가?
+        "모두 비동기" 또는 "모두 동기"로 뭉개지 않았는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>전달 보장 수준:</strong>
+        At-least-once와 At-most-once 중 어느 것을 사용하는지와 그 이유를 말했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>중복 처리 대응:</strong>
+        Consumer가 메시지를 두 번 받는 경우를 언급하고, 멱등하게 처리하는 방법을 제시했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>장애 격리 설계:</strong>
+        처리 실패 시 DLQ로 격리하거나 재시도 전략을 언급했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>운영 관점:</strong>
+        Consumer Lag 모니터링, 큐 길이 알림 등 운영 체계를 언급했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>트레이드오프 언어:</strong>
+        "비동기가 더 좋다"가 아니라 "이 제약 조건에서 이 선택이 낫다"는 표현을 사용했는가?
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. 오늘 배운 것 -->
+  <div class="section">
+    <div class="section-label">오늘 배운 것 요약</div>
+    <h2>Day 1 핵심 정리</h2>
+    <ul class="bullets">
+      <li>비동기 처리는 "빠르다"가 핵심이 아니라 <strong>장애 격리, 처리량 분리, 최종 일관성</strong>이 핵심이다.</li>
+      <li>비동기 도입 판단은 4가지 축으로: 응답 시간 / 장애 격리 / 처리량 불균형 / 최종 일관성 허용 여부.</li>
+      <li>At-least-once가 가장 흔한 설정이며, Consumer는 <strong>멱등하게 설계</strong>해야 한다.</li>
+      <li>Producer → Broker → Consumer 구조에서 각 역할과 책임이 분리된다.</li>
+      <li>실패는 DLQ로 격리하고, Consumer Lag을 모니터링하는 것이 운영의 기본이다.</li>
+      <li>재고처럼 즉시 일관성이 필요한 작업은 비동기 도입 전에 초과 판매 허용 여부를 먼저 확인해야 한다.</li>
+    </ul>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 2: Kafka 아키텍처와 파티셔닝 →</span>
+  </div>
+
+</div>
+</body>
+</html>
