@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Observability / 장애 대응 인터뷰 — 학습 목록</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2e3250;
+      --accent: #6c8aff;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --green: #34d399;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      padding: 2.5rem 1rem;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #3b4fd8, #6c8aff);
+      color: white;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.25rem 0.7rem;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.9rem;
+    }
+    h1 { font-size: 1.75rem; font-weight: 800; color: #f1f5f9; margin-bottom: 0.4rem; }
+    .desc { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem; }
+    ul { list-style: none; padding: 0; }
+    li {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.15s;
+    }
+    li:hover { border-color: var(--accent); }
+    a {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      text-decoration: none;
+      color: inherit;
+    }
+    .day-num {
+      background: linear-gradient(135deg, #3b4fd8, #6c8aff);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .lesson-title { font-weight: 600; color: #e2e8f0; font-size: 0.97rem; }
+    .lesson-status {
+      margin-left: auto;
+      font-size: 0.75rem;
+      color: var(--green);
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="badge">Observability / 장애 대응 — 시니어 인터뷰</div>
+  <h1>학습 목록</h1>
+  <p class="desc">10년차 이상 개발자 인터뷰 대비 — 장애 탐지, 원인 분석, 재발 방지, SLO, Postmortem</p>
+  <ul>
+    <li>
+      <a href="./0001-observability-incident-response-framework.html">
+        <span class="day-num">Day 1</span>
+        <span class="lesson-title">장애 대응과 관측성 설계 프레임워크</span>
+        <span class="lesson-status">완료</span>
+      </a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>
