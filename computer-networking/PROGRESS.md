@@ -1,77 +1,43 @@
-# 네트워크 학습 진행 상황
+# 네트워크 10년차 이상 개발자 Interview 학습 진행 상황
+
+## 리셋 기준
+
+이 브랜치부터 네트워크 학습은 기존 일반 CS 커리큘럼을 이어가지 않고 **10년차 이상 개발자 기술 면접 형식**으로 Day 1부터 다시 시작한다.
+
+기존 레슨 파일은 참고 자료로 보존하지만, 완료 상태는 새 인터뷰 커리큘럼 기준으로 다시 기록한다.
 
 ## 완료한 내용
 
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
-| 1 | 2026-06-22 | 네트워크 기초 & OSI 모델 | [day-01-network-basics-osi.html](lessons/day-01-network-basics-osi.html) |
-| 2 | 2026-06-22 | TCP/IP 모델과 물리·데이터링크 계층 | [day-02-tcpip-datalink.html](lessons/day-02-tcpip-datalink.html) |
-| 3 | 2026-06-22 | 네트워크 계층 — IP와 라우팅 | [day-03-network-layer-ip-routing.html](lessons/day-03-network-layer-ip-routing.html) |
-| 4 | 2026-06-23 | 전송 계층 — TCP vs UDP | [day-04-transport-tcp-udp.html](lessons/day-04-transport-tcp-udp.html) |
-| 5 | 2026-06-24 | 응용 계층 — DNS와 DHCP | [day-05-application-dns-dhcp.html](lessons/day-05-application-dns-dhcp.html) |
-| 6 | 2026-06-25 | 응용 계층 — HTTP/HTTPS | [day-06-application-http-https.html](lessons/day-06-application-http-https.html) |
-| 7 | 2026-06-26 | 네트워크 보안 기초 | [day-07-network-security.html](lessons/day-07-network-security.html) |
-| 8 | 2026-06-27 | 실습 — Wireshark 패킷 분석 | [day-08-wireshark-analysis.html](lessons/day-08-wireshark-analysis.html) |
-| 9 | 2026-06-28 | 무선 네트워크 & 최신 트렌드 | [day-09-wireless-sdn-cloud.html](lessons/day-09-wireless-sdn-cloud.html) |
-| 10 | 2026-06-29 | 종합 복습 & 실전 문제 | [day-10-final-review.html](lessons/day-10-final-review.html) |
-| 11 | 2026-06-30 | 고급 라우팅 프로토콜: OSPF와 BGP | [day-11-routing-protocols-ospf-bgp.html](lessons/day-11-routing-protocols-ospf-bgp.html) |
+
+아직 완료한 인터뷰 레슨이 없다.
 
 ## 다음 예정 학습
 
-| Day | 예정 주제 | 핵심 개념 |
-|-----|-----------|-----------|
-| ~~5~~ | ~~응용 계층 — DNS와 DHCP~~ | ~~DNS 계층 구조, 재귀 쿼리, DHCP 임대 과정~~ |
-| ~~6~~ | ~~응용 계층 — HTTP/HTTPS~~ | ~~HTTP 메서드, 상태 코드, 쿠키/세션, TLS 핸드셰이크~~ |
-| ~~7~~ | ~~네트워크 보안 기초~~ | ~~방화벽, NAT, VPN, TLS/SSL, 일반적인 공격 유형~~ |
-| ~~8~~ | ~~실습 — Wireshark 패킷 분석~~ | ~~필터링, TCP 스트림 추적, DNS/HTTP 트래픽 분석~~ |
-| ~~9~~ | ~~무선 네트워크 & 최신 트렌드~~ | ~~Wi-Fi 표준, SDN 개념, 클라우드 네트워킹 기초~~ |
-| ~~10~~ | ~~종합 복습 & 실전 문제~~ | ~~전체 개념 연결, 서브넷 계산 실전, 프로토콜 흐름 추적~~ |
-| ~~11~~ | ~~고급 라우팅 프로토콜: OSPF와 BGP~~ | ~~AS, IGP/EGP, LSA/LSDB/SPF, eBGP/iBGP, AS-PATH/LOCAL_PREF/MED~~ |
-| 12 | 네트워크 성능 분석과 최적화 | TCP 처리량 공식, RTT, 병목 진단, netstat/ss/iperf3 |
+| Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
+|-----|-----------|----------------|----------------------|
+| 1 | 네트워크 장애 분석 프레임워크 | "API가 느립니다. 서버 CPU와 DB는 정상입니다. 네트워크 관점에서 무엇부터 보겠습니까?" | 계층별 분해, RTT/패킷 손실/DNS/TLS/TCP 확인 순서 |
+| 2 | OSI/TCP-IP 계층과 캡슐화 | "OSI 7계층을 실무 장애 분석에 어떻게 사용합니까?" | 암기식 계층 설명을 실제 트러블슈팅 흐름으로 전환 |
+| 3 | TCP vs UDP와 연결 관리 | "TCP가 신뢰성을 제공한다는 말은 정확히 무엇을 의미합니까?" | 3-way handshake, 재전송, 흐름/혼잡 제어, 지연 trade-off |
+| 4 | DNS와 서비스 발견 | "DNS 장애와 애플리케이션 장애를 어떻게 구분합니까?" | 캐싱, TTL, 재귀 질의, failover, split-horizon DNS |
+| 5 | HTTP/HTTPS와 TLS | "TLS 핸드셰이크가 성능과 보안에 주는 영향을 설명해보세요." | 인증서 체인, 세션 재사용, HTTP/2/3, 보안 설정 |
+| 6 | 로드밸런싱과 프록시 | "L4와 L7 로드밸런서를 어떤 기준으로 선택합니까?" | 성능, 기능, 관측성, 장애 범위 trade-off |
+| 7 | 클라우드 네트워킹 | "VPC 안에서 외부 API 호출이 실패하면 어떤 순서로 확인합니까?" | subnet, route table, NAT, security group, NACL |
+| 8 | 네트워크 보안 | "방화벽, NAT, VPN, zero trust를 실무 관점에서 비교해보세요." | 경계 보안 vs identity 기반 보안 |
+| 9 | 성능 최적화 | "RTT가 큰 환경에서 API 성능을 어떻게 개선합니까?" | keep-alive, batching, compression, CDN, protocol 선택 |
+| 10 | 종합 모의 면접 | "실제 장애 시나리오를 받아 네트워크 관점 RCA를 수행해보세요." | 구조화된 답변, follow-up 대응, 재발 방지 |
 
 ## 현재 학습 위치
 
-**Day 11 완료** — 고급 라우팅 프로토콜(OSPF & BGP) 완료. 다음: Day 12 네트워크 성능 분석.
+**Day 1 시작 전** — 네트워크 장애 분석 프레임워크부터 시작한다.
 
-## 습득한 핵심 개념
+## Interview 답변 체크리스트
 
-- [x] OSI 7계층 역할 (Day 1 완료)
-- [x] TCP/IP 4계층 구조 (Day 2 완료)
-- [x] 이더넷 프레임 구조 및 MAC 주소 (Day 2 완료)
-- [x] ARP 동작 원리 (Day 2 완료)
-- [x] 스위치 MAC 테이블 학습 과정 (Day 2 완료)
-- [x] IP 주소와 서브넷 계산 (Day 3 완료)
-- [x] CIDR 표기 및 호스트 수 계산 (Day 3 완료)
-- [x] 라우팅 테이블 & Longest Prefix Match (Day 3 완료)
-- [x] IPv6 기본 구조와 단축 표기 (Day 3 완료)
-- [x] ICMP / ping / traceroute 역할 (Day 3 완료)
-- [x] TCP 3-way handshake (Day 4 완료)
-- [x] TCP vs UDP 특성 비교 (Day 4 완료)
-- [x] 포트 번호 및 Well-Known Port (Day 4 완료)
-- [x] 흐름 제어 — 슬라이딩 윈도우 / rwnd (Day 4 완료)
-- [x] 혼잡 제어 — Slow Start / AIMD / Fast Retransmit (Day 4 완료)
-- [x] TCP 4-way handshake 및 TIME_WAIT (Day 4 완료)
-- [x] DNS 계층 구조 및 재귀 쿼리 과정 (Day 5 완료)
-- [x] DNS 레코드 타입 A/AAAA/CNAME/MX/NS/TXT (Day 5 완료)
-- [x] DNS TTL과 캐싱 (Day 5 완료)
-- [x] DHCP DORA 4단계 (Day 5 완료)
-- [x] DHCP 임대(Lease)와 갱신 (Day 5 완료)
-- [x] HTTP 요청/응답 구조 및 메서드 (Day 6 완료)
-- [x] HTTP 상태 코드 계열 1xx~5xx (Day 6 완료)
-- [x] 쿠키 속성 HttpOnly·Secure·SameSite (Day 6 완료)
-- [x] 세션 vs 쿠키 차이와 JWT 개념 (Day 6 완료)
-- [x] HTTPS / TLS 핸드셰이크 (Day 6 완료)
-- [x] TLS 인증서 체인 및 CA 검증 (Day 6 완료)
-- [x] NAT / 방화벽 동작 원리 (Day 7 완료)
-- [x] VPN 터널링 및 프로토콜 비교 (Day 7 완료)
-- [x] 주요 네트워크 공격 유형 DoS/MitM/IP Spoofing/Replay (Day 7 완료)
-- [x] Wireshark 패킷 분석 (Day 8 완료)
-- [x] Wi-Fi 표준(802.11 세대별) 및 CSMA/CA (Day 9 완료)
-- [x] SDN 제어 평면·데이터 평면 분리 및 OpenFlow (Day 9 완료)
-- [x] VPC, NAT Gateway, Security Group, 로드밸런서, CDN, 서비스 메시 (Day 9 완료)
-- [x] 전체 개념 연결 및 서브넷 계산 실전 (Day 10 완료)
-- [x] AS, IGP, EGP 개념 구분 (Day 11 완료)
-- [x] OSPF 링크 상태 라우팅 — LSA/LSDB/SPF/Area 구조 (Day 11 완료)
-- [x] BGP 세션 수립 및 경로 선택 알고리즘 (Day 11 완료)
-- [x] BGP 핵심 속성 — AS-PATH, NEXT-HOP, LOCAL_PREF, MED (Day 11 완료)
-- [x] BGP 라우트 하이재킹과 RPKI (Day 11 완료)
+- [ ] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다.
+- [ ] 왜 면접에서 이 질문을 묻는지 설명한다.
+- [ ] 실제 운영 상황과 연결한다.
+- [ ] 답변 순서를 단계적으로 제시한다.
+- [ ] trade-off를 최소 2개 이상 비교한다.
+- [ ] 흔한 오해와 약한 답변을 구분한다.
+- [ ] follow-up 질문까지 대비한다.

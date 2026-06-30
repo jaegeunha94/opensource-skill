@@ -1,64 +1,43 @@
-# 운영체제 학습 진행 상황
+# 운영체제 10년차 이상 개발자 Interview 학습 진행 상황
+
+## 리셋 기준
+
+이 브랜치부터 운영체제 학습은 기존 일반 CS 커리큘럼을 이어가지 않고 **10년차 이상 개발자 기술 면접 형식**으로 Day 1부터 다시 시작한다.
+
+기존 레슨 파일은 참고 자료로 보존하지만, 완료 상태는 새 인터뷰 커리큘럼 기준으로 다시 기록한다.
 
 ## 완료한 내용
 
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
-| 1 | 2026-06-22 | 운영체제란 무엇인가? — 핵심 역할, 커널·셸·시스템 콜, OS 유형 비교 | [0001-what-is-an-operating-system.html](lessons/0001-what-is-an-operating-system.html) |
-| 2 | 2026-06-22 | 프로세스와 PCB — 상태 전이, Process Control Block, 컨텍스트 스위치 | [0002-process-and-pcb.html](lessons/0002-process-and-pcb.html) |
-| 3 | 2026-06-23 | 스레드 — 스레드 vs 프로세스, 멀티스레딩, 커널 vs 사용자 레벨 스레드, 1:1/N:1/M:N 모델 | [0003-threads.html](lessons/0003-threads.html) |
-| 4 | 2026-06-24 | CPU 스케줄링 — FCFS, SJF, Round-Robin, 우선순위 스케줄링, 성능 지표, 선점 vs 비선점 | [0004-cpu-scheduling.html](lessons/0004-cpu-scheduling.html) |
-| 5 | 2026-06-25 | 프로세스 동기화 기초 — 경쟁 조건, 임계 구역, 뮤텍스, 세마포어 | [0005-process-synchronization.html](lessons/0005-process-synchronization.html) |
-| 6 | 2026-06-26 | 교착 상태 (Deadlock) — 4가지 발생 조건, 예방·회피·탐지·회복, 은행원 알고리즘 | [0006-deadlock.html](lessons/0006-deadlock.html) |
-| 7 | 2026-06-27 | 메모리 관리 기초 — 주소 바인딩(컴파일/적재/실행 시간), 연속 할당, 내부·외부 단편화, 압축 | [0007-memory-management-basics.html](lessons/0007-memory-management-basics.html) |
-| 8 | 2026-06-28 | 가상 메모리와 페이징 — 페이지·프레임·페이지 테이블, TLB, 요구 페이징, 페이지 폴트 | [0008-virtual-memory-and-paging.html](lessons/0008-virtual-memory-and-paging.html) |
-| 9 | 2026-06-29 | 페이지 교체 알고리즘 — FIFO, OPT, LRU, Clock, Belady 이상, 스래싱, 워킹 셋 | [0009-page-replacement-algorithms.html](lessons/0009-page-replacement-algorithms.html) |
-| 10 | 2026-06-30 | 파일 시스템 — 파일 속성·접근 방식, 디렉터리 구조, 연속·연결·인덱스 할당, 빈 공간 관리, 마운트 | [0010-file-system.html](lessons/0010-file-system.html) |
+
+아직 완료한 인터뷰 레슨이 없다.
 
 ## 다음 예정 학습
 
-| Day | 예정 주제 | 핵심 개념 |
-|-----|-----------|-----------|
-| ~~7~~ | ~~메모리 관리 기초~~ | ~~주소 바인딩, 연속 할당, 단편화~~ |
-| ~~8~~ | ~~가상 메모리와 페이징~~ | ~~페이지 테이블, TLB, 요구 페이징~~ |
-| ~~9~~ | ~~페이지 교체 알고리즘~~ | ~~FIFO, OPT, LRU, Clock~~ |
-| ~~10~~ | ~~파일 시스템~~ | ~~파일 구조, 디렉터리, 할당 방식~~ |
-| 11 | 파일 시스템 구현 | inode, FAT, ext4 개요 |
-| 12 | I/O 시스템 | 인터럽트 방식, DMA, I/O 스케줄링 |
-| 13 | 보호와 보안 | 보호 도메인, 접근 제어 리스트, 보안 위협 유형 |
-| 14 | 가상화 (Virtualization) | 하이퍼바이저, VM, 컨테이너 비교 |
-| 15 | 현대 OS 사례 — Linux, Windows | 설계 철학, 커널 구조 비교 |
+| Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
+|-----|-----------|----------------|----------------------|
+| 1 | OS 관점 성능 진단 프레임워크 | "CPU 사용률은 낮은데 API 응답이 느립니다. OS 관점에서 무엇을 보겠습니까?" | load average, I/O wait, thread state, context switch 해석 |
+| 2 | 프로세스와 스레드 | "프로세스와 스레드 차이를 실무 설계 기준으로 설명해보세요." | 주소 공간, 자원 공유, 격리, crash 영향 범위 |
+| 3 | Context Switch와 스케줄링 | "스레드를 늘렸는데 성능이 떨어지는 이유는 무엇일 수 있습니까?" | context switch 비용, CPU-bound/I/O-bound 구분 |
+| 4 | 동시성 제어 | "race condition을 어떻게 발견하고 예방합니까?" | lock, atomic, critical section, 테스트와 관측 |
+| 5 | Deadlock과 Lock Contention | "운영 중 deadlock 또는 lock contention이 의심되면 어떻게 대응합니까?" | dump 분석, lock ordering, timeout, retry |
+| 6 | 가상 메모리와 Page Fault | "메모리가 충분해 보여도 성능이 느릴 수 있는 이유를 설명해보세요." | paging, TLB, swap, major/minor fault |
+| 7 | 파일 시스템과 I/O | "로그 쓰기가 전체 서비스 latency를 올릴 수 있는 이유는 무엇입니까?" | buffer, fsync, page cache, blocking I/O |
+| 8 | 비동기 I/O와 이벤트 루프 | "thread-per-request와 event-driven 방식을 어떻게 선택합니까?" | latency, throughput, backpressure, 디버깅 trade-off |
+| 9 | 컨테이너와 OS 격리 | "컨테이너는 VM과 무엇이 다르고, 운영상 어떤 문제가 생길 수 있습니까?" | namespace, cgroup, resource limit, noisy neighbor |
+| 10 | 종합 모의 면접 | "운영체제 지표를 바탕으로 성능 저하 RCA를 수행해보세요." | 지표 기반 추론, 해결안 비교, 재발 방지 |
 
 ## 현재 학습 위치
 
-**Day 10 완료** — 다음: Day 11 파일 시스템 구현
+**Day 1 시작 전** — OS 관점 성능 진단 프레임워크부터 시작한다.
 
-## 습득한 핵심 개념
+## Interview 답변 체크리스트
 
-- [x] 운영체제의 정의와 역할 (Day 1)
-- [x] 커널, 셸, 시스템 콜의 관계 (Day 1)
-- [x] 모놀리식 커널 vs 마이크로커널 (Day 1)
-- [x] OS 유형: 배치처리, 시분할, 실시간, 분산 (Day 1)
-- [x] 프로세스 상태 전이 및 PCB (Day 2)
-- [x] 스레드와 멀티스레딩 모델 (Day 3)
-- [x] CPU 스케줄링 알고리즘 (Day 4)
-- [x] 세마포어 · 뮤텍스 (Day 5)
-- [x] 경쟁 조건 · 임계 구역 (Day 5)
-- [x] 교착 상태 4가지 발생 조건 (Day 6)
-- [x] 교착 상태 예방·회피·탐지·회복 전략 (Day 6)
-- [x] 은행원 알고리즘 / 안전 상태 (Day 6)
-- [x] 주소 바인딩 — 컴파일/적재/실행 시간 (Day 7)
-- [x] 논리 주소 vs 물리 주소, MMU (Day 7)
-- [x] 연속 메모리 할당 — 고정 분할·가변 분할 (Day 7)
-- [x] 내부 단편화 vs 외부 단편화 (Day 7)
-- [x] 최초·최적·최악 적합 알고리즘 (Day 7)
-- [x] 가상 메모리 · 페이징 (Day 8)
-- [x] 페이지 교체 알고리즘 — FIFO, OPT, LRU, Clock (Day 9)
-- [x] Belady 이상 현상 / 스래싱 / 워킹 셋 (Day 9)
-- [x] 파일 속성 및 접근 방식 — 순차·직접·인덱스 접근 (Day 10)
-- [x] 디렉터리 구조 — 1단계·2단계·트리·비순환 그래프 (Day 10)
-- [x] 블록 할당 방식 — 연속·연결·인덱스 할당, FAT, inode 다단계 인덱스 (Day 10)
-- [x] 빈 공간 관리 — 비트맵, 연결 리스트, 그루핑 (Day 10)
-- [x] 하드 링크 vs 심볼릭 링크 (Day 10)
-- [ ] 파일 시스템 구현 — inode 상세, ext4 저널링, NTFS (예정 Day 11)
-- [ ] I/O 스케줄링 (예정 Day 12)
+- [ ] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다.
+- [ ] 왜 면접에서 이 질문을 묻는지 설명한다.
+- [ ] 실제 운영 상황과 연결한다.
+- [ ] 답변 순서를 단계적으로 제시한다.
+- [ ] trade-off를 최소 2개 이상 비교한다.
+- [ ] 흔한 오해와 약한 답변을 구분한다.
+- [ ] follow-up 질문까지 대비한다.

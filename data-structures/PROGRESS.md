@@ -1,54 +1,43 @@
-# 자료구조 학습 진행 상황
+# 자료구조 10년차 이상 개발자 Interview 학습 진행 상황
+
+## 리셋 기준
+
+이 브랜치부터 자료구조 학습은 기존 일반 CS 커리큘럼을 이어가지 않고 **10년차 이상 개발자 기술 면접 형식**으로 Day 1부터 다시 시작한다.
+
+기존 레슨 파일은 참고 자료로 보존하지만, 완료 상태는 새 인터뷰 커리큘럼 기준으로 다시 기록한다.
 
 ## 완료한 내용
 
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
-| 1 | 2026-06-22 | 자료구조 개요 & 추상 자료형(ADT) | [0001-what-is-data-structure.html](lessons/0001-what-is-data-structure.html) |
-| 2 | 2026-06-23 | 배열과 연결 리스트 (Arrays & Linked Lists) | [0002-arrays-and-linked-lists.html](lessons/0002-arrays-and-linked-lists.html) |
-| 3 | 2026-06-24 | 스택 (Stack) | [0003-stack.html](lessons/0003-stack.html) |
-| 4 | 2026-06-25 | 큐 (Queue) | [0004-queue.html](lessons/0004-queue.html) |
-| 5 | 2026-06-26 | 해시 테이블 (Hash Tables) | [0005-hash-tables.html](lessons/0005-hash-tables.html) |
-| 6 | 2026-06-27 | 트리 기초 (Tree Basics) | [0006-tree-basics.html](lessons/0006-tree-basics.html) |
-| 7 | 2026-06-28 | 이진 탐색 트리 (BST) | [0007-bst.html](lessons/0007-bst.html) |
-| 8 | 2026-06-29 | 힙 (Heap) | [0008-heap.html](lessons/0008-heap.html) |
-| 9 | 2026-06-30 | 균형 이진 트리 (AVL / Red-Black) | [0009-balanced-bst.html](lessons/0009-balanced-bst.html) |
+
+아직 완료한 인터뷰 레슨이 없다.
 
 ## 다음 예정 학습
 
-| Day | 예정 주제 | 핵심 개념 |
-|-----|-----------|-----------|
-| 10 | 트라이 (Trie) | 문자열 탐색, 자동완성 구현 |
-| 11 | 그래프 기초 (Graph Basics) | 방향·무방향, 인접 행렬·리스트, 가중 그래프 |
-| 12 | 그래프 탐색 (BFS / DFS) | 너비 우선·깊이 우선, 연결 요소, 위상 정렬 |
-| 13 | 최단 경로 (Shortest Path) | Dijkstra, Bellman-Ford 개요 |
-| 14 | 정렬 알고리즘 1 (Sorting Basics) | 버블·선택·삽입 정렬, 비교 기반 하한 O(n log n) |
-| 15 | 정렬 알고리즘 2 (Efficient Sorting) | 병합 정렬, 퀵 정렬, 힙 정렬 |
-| 16 | 정렬 알고리즘 3 (Non-Comparison) | 계수·기수·버킷 정렬, 선형 시간 정렬 조건 |
-| 17 | B-트리 & 외부 저장 구조 | 디스크 기반 탐색, 데이터베이스 인덱스 연결 |
-| 18 | 동적 프로그래밍과 자료구조 | 메모이제이션 테이블, DP 상태 설계 |
-| 19 | 고급 주제 — 유니온-파인드 & 세그먼트 트리 | 집합 연산, 구간 쿼리 |
-| 20 | 종합 복습 및 실전 적용 | 코딩 테스트 전략, 자료구조 선택 기준 |
+| Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
+|-----|-----------|----------------|----------------------|
+| 1 | 자료구조 선택 프레임워크 | "요구사항을 받았을 때 어떤 기준으로 자료구조를 선택합니까?" | 연산 패턴, 입력 규모, 시간/공간 복잡도, 운영 비용 |
+| 2 | 배열과 연결 리스트 | "배열과 연결 리스트의 Big-O만 보면 놓치는 실무 성능 차이는 무엇입니까?" | locality, allocation, resize, pointer chasing |
+| 3 | 스택과 큐 | "큐를 직접 구현할 때 어떤 경계 조건과 운영 이슈를 고려합니까?" | bounded/unbounded, backpressure, memory growth |
+| 4 | 해시 테이블 | "해시 테이블이 평균 O(1)이라는 말의 전제와 위험은 무엇입니까?" | collision, resizing, load factor, hash quality |
+| 5 | 트리와 균형 트리 | "정렬된 데이터를 다룰 때 배열, BST, balanced tree를 어떻게 비교합니까?" | range query, update cost, balance, cache |
+| 6 | 힙과 우선순위 큐 | "작업 스케줄러나 top-k 문제에서 힙을 선택하는 이유는 무엇입니까?" | partial ordering, update, memory, alternative |
+| 7 | 트라이와 문자열 검색 | "자동완성을 구현할 때 trie를 쓰면 어떤 비용을 치릅니까?" | prefix search, memory overhead, compression |
+| 8 | 그래프 표현과 탐색 | "인접 행렬과 인접 리스트를 어떤 기준으로 선택합니까?" | sparse/dense graph, traversal, memory |
+| 9 | 실무 자료구조 설계 | "캐시, rate limiter, ranking 시스템에 어떤 자료구조를 조합하겠습니까?" | HashMap+List, Heap, Tree, Queue 조합 |
+| 10 | 종합 모의 면접 | "요구사항이 바뀌는 상황에서 자료구조 선택을 재검토해보세요." | 변경 대응, trade-off, follow-up 대응 |
 
 ## 현재 학습 위치
 
-**Day 9 완료** — 균형 이진 트리(AVL / Red-Black) 학습 완료. 다음은 트라이(Trie).
+**Day 1 시작 전** — 자료구조 선택 프레임워크부터 시작한다.
 
-## 습득한 핵심 개념
+## Interview 답변 체크리스트
 
-- [x] 자료구조의 정의와 필요성 (✓ Day 1)
-- [x] 추상 자료형(ADT) 개념 (✓ Day 1)
-- [x] 선형 vs 비선형 자료구조 분류 (✓ Day 1)
-- [x] Big O 표기법 기초 (✓ Day 1)
-- [x] 배열과 연결 리스트 (✓ Day 2)
-- [x] 스택 (✓ Day 3)
-- [x] 큐 — FIFO, 원형 큐, collections.deque, BFS 응용 (✓ Day 4)
-- [x] 해시 테이블 — 해시 함수, 체이닝, 오픈 어드레싱, 로드 팩터, 리해싱 (✓ Day 5)
-- [x] 트리 기초 — 용어(루트·리프·깊이·높이), 이진 트리 종류, 전위·중위·후위·레벨 순회 (✓ Day 6)
-- [x] 이진 탐색 트리 — BST 성질, 삽입·탐색·삭제 O(log n), 중위 순회 정렬, 편향 트리 문제 (✓ Day 7)
-- [x] 힙 — 최대힙·최소힙, 배열 표현·인덱스 공식, heapify-up·down, Floyd Build-Heap O(n), 힙 정렬 O(n log n), 우선순위 큐 (✓ Day 8)
-- [x] 균형 이진 트리 — AVL 높이 균형 인수(BF), 4가지 회전 케이스(LL/RR/LR/RL), Red-Black 5가지 규칙, 흑색 높이, Recoloring vs Rotation (✓ Day 9)
-- [ ] 트라이 (예정 Day 10)
-- [ ] 트라이 (예정 Day 10)
-- [ ] 그래프 (예정 Day 11–13)
-- [ ] 정렬 알고리즘 (예정 Day 14–16)
+- [ ] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다.
+- [ ] 왜 면접에서 이 질문을 묻는지 설명한다.
+- [ ] 실제 운영 상황과 연결한다.
+- [ ] 답변 순서를 단계적으로 제시한다.
+- [ ] trade-off를 최소 2개 이상 비교한다.
+- [ ] 흔한 오해와 약한 답변을 구분한다.
+- [ ] follow-up 질문까지 대비한다.

@@ -1,74 +1,43 @@
-# 데이터베이스 학습 진행 상황
+# 데이터베이스 10년차 이상 개발자 Interview 학습 진행 상황
+
+## 리셋 기준
+
+이 브랜치부터 데이터베이스 학습은 기존 일반 SQL/DB 커리큘럼을 이어가지 않고 **10년차 이상 개발자 기술 면접 형식**으로 Day 1부터 다시 시작한다.
+
+기존 레슨 파일은 참고 자료로 보존하지만, 완료 상태는 새 인터뷰 커리큘럼 기준으로 다시 기록한다.
 
 ## 완료한 내용
 
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
-| 1 | 2026-06-22 | 데이터베이스 개요 및 관계형 모델 | [day-001-relational-model.html](lessons/day-001-relational-model.html) |
-| 2 | 2026-06-22 | SQL 기초 — DDL | [day-002-sql-ddl.html](lessons/day-002-sql-ddl.html) |
-| 3 | 2026-06-22 | SQL 기초 — DML | [day-003-sql-dml.html](lessons/day-003-sql-dml.html) |
-| 4 | 2026-06-23 | SQL 중급 — JOIN & 집계 | [day-004-sql-join-aggregate.html](lessons/day-004-sql-join-aggregate.html) |
-| 5 | 2026-06-24 | SQL 고급 — 서브쿼리·뷰·인덱스 | [day-005-sql-advanced.html](lessons/day-005-sql-advanced.html) |
-| 6 | 2026-06-26 | 정규화 — 1NF·2NF·3NF·BCNF·역정규화 | [day-006-normalization.html](lessons/day-006-normalization.html) |
-| 7 | 2026-06-27 | 트랜잭션과 동시성 제어 | [day-007-transactions.html](lessons/day-007-transactions.html) |
-| 8 | 2026-06-28 | 인덱스 구조와 쿼리 최적화 | [day-008-index-query-optimization.html](lessons/day-008-index-query-optimization.html) |
-| 9 | 2026-06-29 | 저장 프로시저·트리거·함수 | [day-009-stored-procedures-triggers.html](lessons/day-009-stored-procedures-triggers.html) |
-| 10 | 2026-06-30 | NoSQL 데이터베이스 | [day-010-nosql.html](lessons/day-010-nosql.html) |
+
+아직 완료한 인터뷰 레슨이 없다.
 
 ## 다음 예정 학습
 
-| Day | 예정 주제 | 핵심 개념 |
-|-----|-----------|-----------|
-| ~~6~~ | ~~정규화~~ | ~~완료~~ |
-| ~~7~~ | ~~트랜잭션과 동시성 제어~~ | ~~완료~~ |
-| ~~8~~ | ~~인덱스 구조와 쿼리 최적화~~ | ~~완료~~ |
-| ~~9~~ | ~~저장 프로시저·트리거·함수~~ | ~~완료~~ |
-| ~~10~~ | ~~NoSQL 데이터베이스~~ | ~~완료~~ |
-| 11 | 데이터베이스 복제와 고가용성 | Primary-Replica, 장애 조치, 읽기 분산, 동기/비동기 복제 |
+| Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
+|-----|-----------|----------------|----------------------|
+| 1 | DB 성능 진단 프레임워크 | "특정 API가 느려졌습니다. DB 관점에서 어떤 순서로 확인하시겠습니까?" | 증상 분리, 실행 계획, 인덱스, lock, 데이터량 확인 |
+| 2 | 스키마 설계와 정규화 | "정규화와 역정규화를 실무에서 어떻게 선택합니까?" | 무결성, 중복, 읽기 성능, 변경 비용 trade-off |
+| 3 | 인덱스 설계 | "복합 인덱스 순서는 어떤 기준으로 정합니까?" | selectivity, leftmost prefix, covering, write 비용 |
+| 4 | 트랜잭션과 격리 수준 | "READ COMMITTED와 REPEATABLE READ를 어떻게 선택합니까?" | 이상 현상, MVCC, lock, 정합성 요구사항 |
+| 5 | Lock과 Deadlock | "운영 중 deadlock이 발생하면 어떻게 분석하고 줄입니까?" | lock wait, transaction scope, retry, ordering |
+| 6 | 쿼리 튜닝 | "EXPLAIN에서 rows가 큰데 key가 잡혀 있습니다. 무엇을 의심하겠습니까?" | 실행 계획 해석, 통계, cardinality, rewrite |
+| 7 | 복제와 고가용성 | "Primary-Replica 구조에서 read-after-write 문제를 어떻게 다룹니까?" | replication lag, consistency, failover |
+| 8 | 파티셔닝과 샤딩 | "샤딩은 언제 필요하고 어떤 비용을 치릅니까?" | 라우팅, rebalancing, cross-shard query, 운영 복잡도 |
+| 9 | RDB vs NoSQL | "Document DB를 선택할 때 어떤 위험을 감수합니까?" | 모델 유연성, 트랜잭션, 쿼리 패턴, 확장성 |
+| 10 | 종합 모의 면접 | "주문 시스템 DB 장애 시나리오를 분석하고 개선안을 제시해보세요." | 데이터 정합성, 성능, 복구, 재발 방지 |
 
 ## 현재 학습 위치
 
-**Day 10 완료** — Day 11 (데이터베이스 복제와 고가용성)부터 시작.
+**Day 1 시작 전** — DB 성능 진단 프레임워크부터 시작한다.
 
-## 습득한 핵심 개념
+## Interview 답변 체크리스트
 
-- [x] 데이터베이스 vs DBMS vs 파일 시스템 (Day 1)
-- [x] 관계형 모델: 릴레이션·튜플·속성·도메인 (Day 1)
-- [x] 키의 종류: 슈퍼키·후보키·기본키·외래키 (Day 1)
-- [x] 관계 대수 기초: Selection·Projection·Join·Union (Day 1)
-- [x] ERD 구성 요소: 엔티티·속성·관계·카디널리티 (Day 1)
-- [x] DDL: CREATE TABLE, ALTER TABLE, DROP (Day 2)
-- [x] 무결성 제약조건: PK·FK·UNIQUE·NOT NULL·CHECK (Day 2)
-- [x] DML: SELECT, INSERT, UPDATE, DELETE (Day 3)
-- [x] WHERE 조건 필터링: 비교·논리·LIKE·IN·BETWEEN·IS NULL (Day 3)
-- [x] ORDER BY 정렬, LIMIT/OFFSET 페이지네이션 (Day 3)
-- [x] SELECT 실행 순서: FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT (Day 3)
-- [x] JOIN 종류와 동작 원리: INNER/LEFT/RIGHT/FULL OUTER JOIN (Day 4)
-- [x] 집계 함수: COUNT·SUM·AVG·MAX·MIN 및 NULL 처리 (Day 4)
-- [x] GROUP BY: 그룹별 집계 수행 (Day 4)
-- [x] HAVING: 집계 결과에 대한 그룹 필터링 (Day 4)
-- [x] 서브쿼리·상관 서브쿼리·EXISTS (Day 5)
-- [x] 스칼라·집합·인라인 뷰 서브쿼리 분류 (Day 5)
-- [x] EXISTS vs IN: NULL 안전성 및 Short-circuit (Day 5)
-- [x] CREATE VIEW: 가상 테이블 생성 및 관리 (Day 5)
-- [x] CREATE INDEX: B-Tree 인덱스 생성 및 장단점 (Day 5)
-- [x] 정규화 1NF·2NF·3NF·BCNF (Day 6)
-- [x] 함수적 종속·부분FD·이행적FD (Day 6)
-- [x] 역정규화와 절충점 (Day 6)
-- [x] ACID & 트랜잭션 (Day 7)
-- [x] Commit·Rollback·Savepoint (Day 7)
-- [x] 격리 수준: READ UNCOMMITTED·READ COMMITTED·REPEATABLE READ·SERIALIZABLE (Day 7)
-- [x] Dirty Read·Non-repeatable Read·Phantom Read (Day 7)
-- [x] Lock (S Lock·X Lock·갭 락) & Deadlock (Day 7)
-- [x] MVCC (Multi-Version Concurrency Control) (Day 7)
-- [x] B-Tree / B+Tree 인덱스 구조, 클러스터링 vs 세컨더리 인덱스 (Day 8)
-- [x] 복합 인덱스와 왼쪽 접두사 원칙 (Day 8)
-- [x] 커버링 인덱스 (Day 8)
-- [x] EXPLAIN 실행 계획 분석 (type, key, rows, Extra) (Day 8)
-- [x] 슬로우 쿼리 로그 설정 및 튜닝 프로세스 (Day 8)
-- [x] 인덱스 안티패턴 (함수 적용 무력화, 선행 와일드카드, OR 조건, UUID PK) (Day 8)
-- [x] 저장 프로시저·트리거·함수 (Day 9)
-- [x] NoSQL 유형: Key-Value·Document·Column-Family·Graph (Day 10)
-- [x] CAP 정리: CP vs AP 선택 (Day 10)
-- [x] Polyglot Persistence 개념 (Day 10)
-- [ ] 데이터베이스 복제와 고가용성 (예정 Day 11)
+- [ ] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다.
+- [ ] 왜 면접에서 이 질문을 묻는지 설명한다.
+- [ ] 실제 운영 상황과 연결한다.
+- [ ] 답변 순서를 단계적으로 제시한다.
+- [ ] trade-off를 최소 2개 이상 비교한다.
+- [ ] 흔한 오해와 약한 답변을 구분한다.
+- [ ] follow-up 질문까지 대비한다.
