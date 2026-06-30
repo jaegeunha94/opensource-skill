@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — 안정적인 배포 전략과 롤백 프레임워크 | CI/CD 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* header */
+    .lesson-header {
+      border-left: 4px solid var(--accent);
+      padding: 1.5rem 1.5rem 1.5rem 2rem;
+      background: var(--surface);
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .lesson-title { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
+    .lesson-subtitle { color: var(--muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    /* section */
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 1.2rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.8rem; color: var(--text); }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.35rem; }
+
+    /* cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    /* interview question highlight */
+    .interview-q {
+      background: linear-gradient(135deg, #1e2a4a 0%, #1a2035 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .interview-q .label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .interview-q .question {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.5;
+    }
+
+    /* comparison grid */
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .strategy-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .strategy-card .name {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .strategy-card.blue-green .name { color: #60a5fa; }
+    .strategy-card.rolling .name { color: #34d399; }
+    .strategy-card.canary .name { color: #f59e0b; }
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-right: 0.3rem;
+      margin-bottom: 0.3rem;
+    }
+    .tag-green { background: #14532d; color: #4ade80; }
+    .tag-red { background: #450a0a; color: #f87171; }
+    .tag-yellow { background: #422006; color: #fbbf24; }
+    .tag-blue { background: #1e3a5f; color: #93c5fd; }
+
+    /* answer example */
+    .answer-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+    .answer-block .speaker {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    /* good vs weak */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .compare-card.good {
+      background: #052e16;
+      border: 1px solid #166534;
+    }
+    .compare-card.weak {
+      background: #2d0a0a;
+      border: 1px solid #7f1d1d;
+    }
+    .compare-label {
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .compare-card.good .compare-label { color: #4ade80; }
+    .compare-card.weak .compare-label { color: #f87171; }
+
+    /* reasoning steps */
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent2);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.1rem;
+    }
+
+    /* follow-up */
+    .followup-item {
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .followup-item .q {
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 0.5rem;
+    }
+    .followup-item .a {
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    /* rubric */
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:last-child td { border-bottom: none; }
+    .rubric-table tr:nth-child(even) td { background: #12141e; }
+    .level-badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .level-1 { background: #450a0a; color: #fca5a5; }
+    .level-2 { background: #422006; color: #fcd34d; }
+    .level-3 { background: #14532d; color: #86efac; }
+    .level-4 { background: #1e3a5f; color: #93c5fd; }
+
+    /* callout */
+    .callout {
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .callout-warn {
+      background: #2d1b00;
+      border: 1px solid var(--yellow);
+      color: #fef3c7;
+    }
+    .callout-info {
+      background: #0c1a3a;
+      border: 1px solid var(--accent);
+      color: #dbeafe;
+    }
+    .callout-icon { font-weight: 700; margin-right: 0.4rem; }
+
+    /* flow diagram (ascii-style) */
+    .flow-diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #a5b4fc;
+      overflow-x: auto;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      white-space: pre;
+    }
+
+    /* nav */
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .nav-bar a {
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-bar a:hover { text-decoration: underline; }
+    .nav-center { color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-header">
+    <div class="lesson-meta">CI/CD와 배포 전략 인터뷰 · Day 1</div>
+    <div class="lesson-title">안정적인 배포 전략과 롤백 프레임워크</div>
+    <div class="lesson-subtitle">배포 전략을 선택하는 기준, 각 전략의 trade-off, 롤백 판단 의사결정 트리까지 — 시니어 인터뷰에서 평가하는 배포 사고 전체를 다룬다.</div>
+  </div>
+
+  <!-- ─── SECTION 1: 면접 질문 ─── -->
+  <section>
+    <h2>🎯 오늘의 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">주질문 (Main Question)</div>
+      <div class="question">
+        "프로덕션 배포 시 어떤 배포 전략을 선택하고,<br>
+        롤백 기준은 어떻게 정의하고 계십니까?"
+      </div>
+    </div>
+
+    <div class="interview-q" style="border-color: var(--accent2);">
+      <div class="label" style="color: var(--accent2);">변형 질문 (Variation)</div>
+      <div class="question" style="font-size: 1rem;">
+        "Blue-Green, Rolling, Canary 배포의 차이를 설명하고,<br>
+        어떤 상황에서 각각을 선택하는지 말씀해주시겠습니까?"
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 2: 왜 면접에서 묻는가 ─── -->
+  <section>
+    <h2>🔍 왜 면접에서 이 질문을 하는가</h2>
+
+    <p>이 질문은 표면적으로는 배포 도구 지식을 묻는 것 같지만, 실제로 면접관이 평가하는 것은 다르다.</p>
+
+    <div class="card">
+      <div class="card-title">면접관이 실제로 평가하는 것</div>
+      <ul>
+        <li><strong>배포 리스크 인식:</strong> 배포를 변경이 아닌 "리스크 이벤트"로 인식하고 있는가</li>
+        <li><strong>의사결정 능력:</strong> 서비스 특성, 팀 역량, 인프라 제약을 고려해 전략을 선택하는가</li>
+        <li><strong>장애 대응 사고:</strong> 배포 전부터 "어떻게 롤백할까"를 설계하는가, 아니면 장애 후에 생각하는가</li>
+        <li><strong>Release Ownership:</strong> 배포를 "내 책임"으로 여기는가, 아니면 인프라팀 업무로 보는가</li>
+        <li><strong>커뮤니케이션 능력:</strong> 배포 결정을 팀과 어떻게 공유하고 문서화하는가</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>주니어 vs 시니어 차이:</strong> 주니어는 "어떤 도구를 쓰는가"에 집중한다. 시니어는 "왜 그 전략을 선택했는가, 무엇을 포기했는가"까지 말할 수 있어야 한다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 3: 전제 개념 ─── -->
+  <section>
+    <h2>📚 전제 개념: 배포가 왜 위험한가</h2>
+
+    <h3>배포의 본질 — "소프트웨어를 바꾸는 행위"</h3>
+    <p>배포는 "잘 돌아가던 것을 바꾸는 행위"다. 새 코드가 기존 코드보다 낫다고 확신해도, <strong>운영 환경에서는 항상 예측 못한 문제가 생긴다.</strong></p>
+    <p>그래서 시니어 개발자는 배포를 "코드 변경"이 아니라 "리스크가 있는 운영 이벤트"로 본다. 배포 전략이란 그 리스크를 어떻게 관리할지에 대한 선택이다.</p>
+
+    <h3>배포 리스크의 세 가지 축</h3>
+    <div class="card">
+      <ul>
+        <li><strong>영향 범위:</strong> 장애가 발생할 경우 몇 명의 사용자가 영향을 받는가</li>
+        <li><strong>감지 시간:</strong> 배포 후 문제를 얼마나 빨리 알 수 있는가</li>
+        <li><strong>복구 시간:</strong> 문제가 생겼을 때 얼마나 빨리 되돌릴 수 있는가</li>
+      </ul>
+    </div>
+    <p>세 가지를 모두 최소화하는 배포 전략이 이상적이지만, 현실에서는 비용·복잡도·인프라 제약 때문에 trade-off가 발생한다. <strong>배포 전략 선택이란 바로 이 trade-off를 의식적으로 선택하는 것이다.</strong></p>
+  </section>
+
+  <!-- ─── SECTION 4: 세 가지 배포 전략 ─── -->
+  <section>
+    <h2>🏗️ 세 가지 핵심 배포 전략</h2>
+
+    <div class="strategy-grid">
+      <div class="strategy-card blue-green">
+        <div class="name">Blue-Green 배포</div>
+        <div class="tag tag-green">즉각 롤백</div>
+        <div class="tag tag-red">비용 2배</div>
+        <div class="tag tag-blue">무중단</div>
+        <p style="margin-top:0.6rem; font-size:0.9rem; color:var(--muted);">
+          현재 운영 환경(Blue)과 동일한 새 환경(Green)을 미리 만들고 트래픽을 한 번에 전환한다.
+        </p>
+      </div>
+      <div class="strategy-card rolling">
+        <div class="name">Rolling 배포</div>
+        <div class="tag tag-green">낮은 비용</div>
+        <div class="tag tag-yellow">느린 롤백</div>
+        <div class="tag tag-blue">점진적 교체</div>
+        <p style="margin-top:0.6rem; font-size:0.9rem; color:var(--muted);">
+          인스턴스를 하나씩 순서대로 새 버전으로 교체한다. 교체 중 구버전/신버전이 동시에 운영된다.
+        </p>
+      </div>
+      <div class="strategy-card canary">
+        <div class="name">Canary 배포</div>
+        <div class="tag tag-green">위험 최소</div>
+        <div class="tag tag-red">설계 복잡</div>
+        <div class="tag tag-yellow">일부 트래픽</div>
+        <p style="margin-top:0.6rem; font-size:0.9rem; color:var(--muted);">
+          새 버전을 전체 트래픽의 1~5%에만 먼저 노출하고, 지표를 보며 점진적으로 비율을 늘린다.
+        </p>
+      </div>
+    </div>
+
+    <h3>Blue-Green 배포: 원리와 현실</h3>
+    <div class="flow-diagram">운영 환경 (Blue)   →  트래픽 100%
+새 환경   (Green)  →  배포 후 테스트 완료
+                              ↓
+                     로드밸런서 전환: Blue → Green
+                              ↓
+         Green 정상 → Blue 유지 (롤백 대기)
+         Green 장애 → 즉시 Blue로 되돌림 (초 단위)</div>
+
+    <p><strong>장점:</strong> 롤백이 LB 설정 변경 한 번으로 끝난다. 다운타임이 없다. 새 환경에서 충분히 검증 후 전환할 수 있다.</p>
+    <p><strong>단점:</strong> 인프라 비용이 2배다. DB 마이그레이션이 있으면 두 버전이 같은 DB를 공유해야 하므로, 스키마 변경을 신버전과 구버전 모두 호환되게 작성해야 한다.</p>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>흔한 오해:</strong> "Blue-Green이 가장 안전하니까 항상 써야 한다." — 스키마 변경이 잦거나 비용 제약이 크면 오히려 적합하지 않다. DB 호환성 관리 비용이 매우 높아진다.
+    </div>
+
+    <h3>Rolling 배포: 원리와 현실</h3>
+    <div class="flow-diagram">인스턴스 1, 2, 3, 4 모두 v1 실행 중
+                              ↓
+인스턴스 1 교체 (v1→v2)  — 나머지 3개 v1 유지
+인스턴스 2 교체 (v1→v2)  — 1: v2, 나머지 v1
+인스턴스 3 교체 (v1→v2)  — 1,2: v2, 나머지 v1
+인스턴스 4 교체 (v1→v2)  — 전체 v2
+                              ↓
+      중간 상태: v1 + v2 동시 운영 (API 호환성 필수)</div>
+
+    <p><strong>핵심 제약:</strong> 롤링 배포 중 v1과 v2가 같은 DB를 동시에 바라보므로, API 응답 형식·DB 스키마가 구버전과 신버전 모두 호환 가능해야 한다.</p>
+    <p><strong>롤백:</strong> 이미 교체된 인스턴스를 다시 구버전으로 되돌려야 하므로 Blue-Green보다 느리다.</p>
+
+    <h3>Canary 배포: 원리와 현실</h3>
+    <div class="flow-diagram">전체 트래픽 100% → v1 (기존)
+                              ↓
+5% 트래픽 → v2 (새 버전)  /  95% 트래픽 → v1
+         지표 모니터링: 에러율, 레이턴시, 비즈니스 지표
+                              ↓
+지표 정상  → 10% → 25% → 50% → 100% 점진 확장
+지표 이상  → v2 트래픽 0%로 즉시 차단</div>
+
+    <p><strong>핵심 강점:</strong> 실 트래픽 일부로 검증하므로 스테이징 환경과의 차이를 실제로 확인할 수 있다.</p>
+    <p><strong>핵심 제약:</strong> 어떤 지표를 보고 진행/중단을 판단할지 사전에 명확히 정해야 한다. 지표 기준 없이 "괜찮아 보이면 올리기"는 Canary가 아니다.</p>
+
+    <h3>세 전략 비교 요약</h3>
+    <table class="rubric-table" style="margin-bottom:1rem;">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>Blue-Green</th>
+          <th>Rolling</th>
+          <th>Canary</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>롤백 속도</td>
+          <td><span class="level-badge level-4">최빠름 (초)</span></td>
+          <td><span class="level-badge level-2">보통 (분)</span></td>
+          <td><span class="level-badge level-4">빠름 (트래픽 차단)</span></td>
+        </tr>
+        <tr>
+          <td>비용</td>
+          <td><span class="level-badge level-1">높음 (2배)</span></td>
+          <td><span class="level-badge level-4">낮음</span></td>
+          <td><span class="level-badge level-3">보통</span></td>
+        </tr>
+        <tr>
+          <td>DB 마이그레이션</td>
+          <td><span class="level-badge level-1">어려움</span></td>
+          <td><span class="level-badge level-1">어려움</span></td>
+          <td><span class="level-badge level-2">복잡</span></td>
+        </tr>
+        <tr>
+          <td>실 트래픽 검증</td>
+          <td><span class="level-badge level-2">X (전환 후)</span></td>
+          <td><span class="level-badge level-3">부분</span></td>
+          <td><span class="level-badge level-4">가장 확실</span></td>
+        </tr>
+        <tr>
+          <td>구현 복잡도</td>
+          <td><span class="level-badge level-3">보통</span></td>
+          <td><span class="level-badge level-4">낮음</span></td>
+          <td><span class="level-badge level-1">높음</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─── SECTION 5: 롤백 판단 프레임워크 ─── -->
+  <section>
+    <h2>🔄 롤백 판단 프레임워크</h2>
+
+    <p>롤백을 "언제" 하느냐보다 "어떤 기준으로 판단하느냐"가 훨씬 중요하다. 명확한 기준 없이 "느낌"으로 롤백을 결정하면 늦거나 과하거나 둘 중 하나다.</p>
+
+    <h3>롤백 판단 의사결정 트리</h3>
+    <div class="flow-diagram">배포 완료
+       ↓
+  [지표 모니터링] 에러율 / 레이턴시 / 비즈니스 지표
+       ↓
+  ┌─────────────────────────────────────┐
+  │  기준 위반 감지?                     │
+  │  - 에러율 > 배포 전 기준치 × 2       │
+  │  - P99 레이턴시 > 임계값             │
+  │  - 핵심 전환율 / 주문 수 이상 감소   │
+  └─────────────────────────────────────┘
+       ↓ 예                     ↓ 아니오
+  [핫픽스 가능 여부 판단]    [모니터링 유지]
+       ↓
+  핫픽스 불가 또는 영향 심각
+  → 즉시 롤백
+       ↓
+  핫픽스 가능 + 영향 경미
+  → 핫픽스 배포 (단, 롤백 준비 상태 유지)</div>
+
+    <h3>롤백 기준 설정 원칙</h3>
+    <div class="card">
+      <div class="card-title">배포 전에 미리 정해야 할 것들</div>
+      <ul>
+        <li><strong>에러율 임계값:</strong> "배포 후 5분 이내 에러율이 배포 전 기준치의 2배를 넘으면 자동 롤백"</li>
+        <li><strong>레이턴시 임계값:</strong> "P99 응답 시간이 1초를 넘으면 즉시 조사, 지속되면 롤백"</li>
+        <li><strong>비즈니스 지표:</strong> "결제 완료율이 5분 평균보다 20% 이상 감소하면 롤백"</li>
+        <li><strong>관찰 시간:</strong> "배포 후 최소 15분은 대기 후 지표 확인"</li>
+        <li><strong>담당자:</strong> "롤백 결정 권한은 배포 담당자 + 온콜 엔지니어"</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>흔한 실수:</strong> 롤백 기준을 배포 후에 팀원들과 상의해서 정한다. 배포 중에는 패닉 상태라 판단이 흐려진다. 기준은 반드시 배포 전에 문서화해야 한다.
+    </div>
+
+    <h3>롤백 vs 핫픽스 판단 기준</h3>
+    <div class="card">
+      <ul>
+        <li><strong>롤백이 우선:</strong> 영향 범위가 크고, 핫픽스 준비 시간이 5~10분 이상 걸릴 것 같을 때</li>
+        <li><strong>핫픽스가 우선:</strong> 영향 범위가 제한적이고 (예: 특정 기능만), 원인이 명확하고, 수정이 한두 줄 이내일 때</li>
+        <li><strong>데이터 변경이 있으면:</strong> 롤백 전에 반드시 "데이터 상태 역전이 가능한가"를 확인한다. 트랜잭션이 이미 완료된 데이터는 코드 롤백으로 되돌릴 수 없다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 6: 답변 사고 순서 ─── -->
+  <section>
+    <h2>🧠 답변 사고 순서</h2>
+    <p>면접 질문을 받았을 때 아래 순서로 생각을 전개하면 시니어 수준의 답변 구조가 된다.</p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>서비스 특성 파악 (상황 설정)</strong><br>
+          "어떤 종류의 서비스인가"부터 말한다. 트래픽 규모, 다운타임 허용 여부, DB 변경 빈도, 팀 역량을 먼저 정의한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>전략별 trade-off 제시</strong><br>
+          단순히 "Blue-Green이 좋다"가 아니라 각 전략의 비용/복잡도/롤백 속도를 비교하며 "왜 이 상황에서 이 전략인가"를 말한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>선택 기준 명시</strong><br>
+          내가 이 전략을 선택한 구체적인 판단 기준 (예: 다운타임 불허, 비용 2배 감내 가능, 스키마 변경 없음)을 나열한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>롤백 전략 선제적 언급</strong><br>
+          "배포 전에 롤백 기준과 절차를 정해둔다"고 말하는 것만으로 시니어 신호를 준다. 에러율 임계값, 자동 롤백 여부, 책임자를 언급한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>실무 경험 연결 (있다면)</strong><br>
+          실제로 이 전략을 쓴 경험이 있다면 "어떤 장애가 있었고, 어떻게 롤백했고, 무엇을 배웠는가"로 마무리한다.
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ─── SECTION 7: 핵심 답변 예시 ─── -->
+  <section>
+    <h2>💬 핵심 답변 예시</h2>
+
+    <div class="answer-block">
+      <div class="speaker">답변 예시 (시니어 수준)</div>
+      <p>"배포 전략 선택은 서비스 특성에 따라 달라집니다. 저는 크게 세 가지 기준으로 판단합니다: 다운타임 허용 여부, 인프라 비용, DB 마이그레이션 빈도입니다.</p>
+      <p>다운타임이 절대 허용되지 않고 비용 여유가 있으면 Blue-Green을 선택합니다. 롤백이 로드밸런서 전환 한 번으로 초 단위에 가능하기 때문입니다. 단, DB 스키마 변경이 있으면 구버전과 신버전 모두 호환되는 마이그레이션 전략이 필요합니다.</p>
+      <p>비용 제약이 있고 API 하위 호환성을 유지할 수 있으면 Rolling 배포를 씁니다. 인스턴스를 순차 교체하면서 health check로 이상을 감지하고, 임계치 이상 에러가 나오면 교체를 중단합니다.</p>
+      <p>새 기능의 실 트래픽 영향을 최소화하면서 검증하고 싶을 때는 Canary를 씁니다. 전체 트래픽의 5%만 새 버전에 보내고, 에러율·레이턴시·비즈니스 지표를 보면서 이상이 없을 때만 점진적으로 확장합니다.</p>
+      <p>롤백 기준은 배포 전에 팀과 문서로 합의합니다. 예를 들어 '배포 후 5분 이내 에러율이 기준치의 두 배를 넘으면 즉시 롤백, 핫픽스가 10분 이상 걸릴 것 같으면 롤백 후 핫픽스'로 정해둡니다. 판단은 배포 후 패닉 상태가 아니라 미리 정해두는 것이 핵심입니다."</p>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 8: Senior Follow-up ─── -->
+  <section>
+    <h2>🔺 Senior-Level Follow-up 질문</h2>
+
+    <div class="followup-item">
+      <div class="q">Q. "Blue-Green 배포에서 DB 마이그레이션은 어떻게 처리합니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> Green(신버전)과 Blue(구버전)이 같은 DB를 바라보므로, 스키마 변경은 두 버전 모두 호환돼야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> Expand-Contract(팽창-수축) 패턴을 쓴다. (1) 먼저 새 컬럼을 nullable로 추가하고 구버전이 동작하도록 유지한다. (2) 신버전 배포 후 새 컬럼을 사용한다. (3) 구버전 완전 제거 후 컬럼을 not null로 전환하거나 구 컬럼을 삭제한다. 배포 한 번에 큰 스키마 변경을 동반하면 롤백이 불가능해진다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "Canary 배포에서 어떤 지표를 보고 진행/중단을 결정합니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> "느낌"이 아닌 "수치 기준"이 있어야 Canary 의미가 있다.
+        <br><br>
+        <strong>핵심 답변:</strong> (1) 에러율 — 신버전 에러율이 구버전의 X% 이상이면 중단, (2) 레이턴시 — P99가 임계값 초과 시 중단, (3) 비즈니스 지표 — 결제 완료율·회원가입 전환율 등 핵심 지표가 통계적으로 유의미하게 감소하면 중단. 이 기준은 배포 전에 정하고, 자동화 가능하면 자동 롤백까지 설정한다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "자동 롤백과 수동 롤백 중 어느 쪽을 선호하십니까? 왜입니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 둘 다 장단점이 있다. 무조건 한쪽을 고르면 약한 답변이 된다.
+        <br><br>
+        <strong>핵심 답변:</strong> 자동 롤백은 감지·대응 속도가 빠르지만, 잘못된 지표 기준이 있으면 정상 배포도 롤백하는 오탐이 생긴다. 그래서 자동 롤백은 에러율처럼 명확한 지표에만 적용하고, 비즈니스 지표 이상이나 복잡한 판단이 필요한 케이스는 알림만 보내고 사람이 결정하게 한다. 중요한 것은 자동이든 수동이든 기준이 사전에 문서화돼 있어야 한다는 것이다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "배포 후 장애가 났을 때 롤백이 아니라 핫픽스를 선택한 경험이 있습니까? 이유는?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 롤백이 항상 답은 아니다. 데이터 일관성, 수정 용이성, 영향 범위를 고려해야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 예. 배포 후 특정 엔드포인트에서만 인증 오류가 발생한 경우, 이미 수백만 건의 트랜잭션이 처리된 상태에서 코드 롤백은 데이터 일관성을 깰 수 있었다. 해당 엔드포인트 설정 값 한 줄 수정으로 해결 가능했기에 핫픽스를 선택했다. 롤백 vs 핫픽스 판단은 영향 범위 × 수정 난이도 × 데이터 상태로 결정한다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 9: 좋은 답변 vs 약한 답변 ─── -->
+  <section>
+    <h2>⚖️ 좋은 답변과 약한 답변의 차이</h2>
+
+    <div class="compare-grid">
+      <div class="compare-card good">
+        <div class="compare-label">✅ 좋은 답변</div>
+        <ul>
+          <li>서비스 특성 (다운타임 허용 여부, 비용, DB 변경 빈도)을 먼저 언급</li>
+          <li>각 전략의 trade-off를 구체적으로 비교</li>
+          <li>"롤백 기준을 배포 전에 정해둔다"고 명시</li>
+          <li>에러율·레이턴시 임계값 같은 구체적 수치 언급</li>
+          <li>실 경험 (어떤 장애, 어떻게 롤백, 무엇을 배움)을 연결</li>
+          <li>자동 롤백의 장단점 모두 인식</li>
+        </ul>
+      </div>
+      <div class="compare-card weak">
+        <div class="compare-label">❌ 약한 답변</div>
+        <ul>
+          <li>"Blue-Green이 제일 좋습니다" — 맥락 없는 단답</li>
+          <li>전략 이름은 알지만 어떤 상황에 왜 쓰는지 모름</li>
+          <li>롤백에 대해 묻지 않으면 언급하지 않음</li>
+          <li>"장애가 나면 롤백합니다" — 판단 기준 없음</li>
+          <li>DB 마이그레이션 문제를 인식하지 못함</li>
+          <li>배포 = 코드 변경, 리스크 개념 없음</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>핵심 차이:</strong> 좋은 답변은 "선택 기준과 포기한 것"을 말한다. 약한 답변은 "정답인 것"을 말한다. 배포 전략에 정답은 없다. 어떤 제약 조건에서 무엇을 우선했는가가 핵심이다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 10: 실무 연결 ─── -->
+  <section>
+    <h2>🏭 실무 연결 — 이런 상황에서 이 전략</h2>
+
+    <div class="card">
+      <div class="card-title">상황별 전략 선택 가이드</div>
+      <table class="rubric-table">
+        <thead>
+          <tr><th>상황</th><th>권장 전략</th><th>이유</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>결제·금융 서비스, 다운타임 절대 불가</td>
+            <td>Blue-Green</td>
+            <td>즉시 롤백 필수, 비용보다 안정성 우선</td>
+          </tr>
+          <tr>
+            <td>스타트업 초기, 비용 제약, 트래픽 소규모</td>
+            <td>Rolling</td>
+            <td>인프라 비용 최소화, 구현 단순</td>
+          </tr>
+          <tr>
+            <td>대규모 기능 출시, 실 트래픽 검증 필요</td>
+            <td>Canary</td>
+            <td>실 사용자 일부로 리스크 검증 후 확장</td>
+          </tr>
+          <tr>
+            <td>Kubernetes 환경, 자동화 필요</td>
+            <td>Rolling (기본) + Canary (중요 변경)</td>
+            <td>K8s Deployment 기본이 Rolling, ArgoCD Rollouts로 Canary 추가</td>
+          </tr>
+          <tr>
+            <td>DB 스키마 대규모 변경 동반</td>
+            <td>Blue-Green + Expand-Contract 패턴</td>
+            <td>롤백 시 데이터 일관성 보장 필요</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 11: 자기 점검 Rubric ─── -->
+  <section>
+    <h2>📋 자기 점검 Rubric</h2>
+    <p>아래 기준으로 자신의 답변 수준을 체크하라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>레벨</th>
+          <th>할 수 있는 것</th>
+          <th>부족한 것</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="level-badge level-1">Lv 1</span></td>
+          <td>Blue-Green, Rolling, Canary 이름은 안다</td>
+          <td>선택 기준, trade-off, 롤백 개념 없음</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-2">Lv 2</span></td>
+          <td>각 전략의 동작 방식을 설명할 수 있다</td>
+          <td>실무 판단 기준, DB 마이그레이션 문제 모름</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-3">Lv 3</span></td>
+          <td>상황에 따라 전략을 선택하고 이유를 말할 수 있다. 롤백 기준 개념 이해</td>
+          <td>자동 롤백 설계, Canary 지표 정의 경험 부족</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-4">Lv 4 (목표)</span></td>
+          <td>서비스 특성·제약 조건 기반으로 전략 선택 + DB 마이그레이션 처리 방법 + 롤백 기준 사전 문서화 + 실 경험 사례 연결</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>셀프 체크리스트</h3>
+    <div class="card">
+      <ul>
+        <li>☐ Blue-Green, Rolling, Canary의 롤백 속도 차이를 즉시 말할 수 있는가</li>
+        <li>☐ "DB 마이그레이션이 있을 때 Blue-Green의 문제점"을 설명할 수 있는가</li>
+        <li>☐ Canary 배포에서 사용할 구체적인 지표와 임계값을 말할 수 있는가</li>
+        <li>☐ 롤백 기준을 배포 전에 정해야 하는 이유를 설명할 수 있는가</li>
+        <li>☐ 롤백 vs 핫픽스를 선택하는 판단 기준을 말할 수 있는가</li>
+        <li>☐ 본인이 실제로 겪은 배포 장애와 대응 경험을 연결해 말할 수 있는가</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 12: 흔한 오해 ─── -->
+  <section>
+    <h2>🚫 흔한 오해와 교정</h2>
+
+    <div class="card">
+      <div class="card-title">오해 1</div>
+      <p><strong>"Blue-Green이 가장 안전하니까 항상 써야 한다."</strong></p>
+      <p>→ Blue-Green은 비용이 2배이고 DB 마이그레이션 관리 비용이 높다. 스키마 변경이 잦거나 비용 제약이 크면 오히려 Rolling이나 Canary가 더 현실적이다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 2</div>
+      <p><strong>"Canary는 일부에만 배포하니까 리스크가 없다."</strong></p>
+      <p>→ Canary는 실 사용자가 새 버전을 경험한다는 의미다. 그 5%의 사용자가 장애를 경험하면 리스크가 있다. Canary의 목표는 리스크 제거가 아니라 리스크를 5%로 제한하고 조기에 감지하는 것이다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 3</div>
+      <p><strong>"롤백하면 장애가 끝난다."</strong></p>
+      <p>→ DB에 이미 쓰여진 데이터는 코드 롤백으로 되돌아가지 않는다. 특히 스키마 변경, 데이터 이관, 외부 API 연동이 있었다면 코드 롤백 후에도 데이터 불일치 문제가 남을 수 있다. 롤백 전에 항상 데이터 상태를 확인해야 한다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 4</div>
+      <p><strong>"Rolling 배포는 구버전/신버전이 동시에 떠도 괜찮다."</strong></p>
+      <p>→ API 응답 형식, DB 스키마가 구버전과 신버전 모두 처리할 수 있도록 설계돼야 한다. 신버전이 추가한 필드를 구버전이 무시하지 못하면 에러가 발생한다. Rolling은 하위 호환성 유지가 전제 조건이다.</p>
+    </div>
+  </section>
+
+  <div class="nav-bar">
+    <span></span>
+    <span class="nav-center">Day 1 / 10 — CI/CD와 배포 전략 인터뷰</span>
+    <a href="./index.html">목록으로 →</a>
+  </div>
+
+</div>
+</body>
+</html>
