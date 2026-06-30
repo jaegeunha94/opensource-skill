@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 10 — 단순 프로세서 설계 (Simple CPU)</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 10</span>
+  <strong>단순 프로세서 설계 (Simple CPU) — 단일 사이클 데이터패스와 제어 신호</strong>
+  <span class="lesson-date">· 2026-06-30</span>
+</div>
+
+<h1>CPU 내부 설계 — 단일 사이클 데이터패스와 제어 유닛</h1>
+
+<div class="progress-section">
+  <h3>학습 진행 상황</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 33%"></div>
+  </div>
+  <span class="progress-label">전체 커리큘럼의 약 33% 완료 · Day 10 / 30</span>
+</div>
+
+<h2>오늘 배울 것</h2>
+<ul>
+  <li>CPU를 구성하는 핵심 하드웨어 블록(레지스터 파일, ALU, 메모리, PC)의 역할을 이해한다</li>
+  <li>단일 사이클 데이터패스(Single-Cycle Datapath)가 명령어를 5단계로 실행하는 과정을 추적한다</li>
+  <li>R타입·I타입 Load·S타입 Store·B타입 Branch 각각에서 데이터가 어떤 경로를 따르는지 파악한다</li>
+  <li>제어 유닛(Control Unit)이 opcode/funct3/funct7를 보고 어떤 제어 신호를 내보내는지 이해한다</li>
+  <li>단일 사이클 설계의 성능 한계와 파이프라이닝이 왜 필요한지 논리적으로 도출한다</li>
+</ul>
+
+<!-- ============================================================
+     섹션 1: CPU란 무엇을 하는 기계인가
+     ============================================================ -->
+<h2>1. CPU의 본질 — 명령어를 반복하는 상태 기계</h2>
+
+<p>
+  CPU는 "메모리에서 명령어를 읽어, 그 명령어가 지시하는 연산을 수행하고, 결과를 저장한다"는
+  동작을 클록마다 반복하는 상태 기계(state machine)입니다.
+  이 반복 사이클을 <strong>Fetch → Decode → Execute → Memory → Write-Back</strong>이라 부르며,
+  이 다섯 단계를 하나의 클록 사이클 안에 모두 수행하는 구조가 <strong>단일 사이클 데이터패스</strong>입니다.
+</p>
+
+<div class="diagram">
+명령어 사이클 (Instruction Cycle):
+
+  ┌──────────────────────────────────────────────────────────┐
+  │  PC(Program Counter)가 가리키는 주소에서 명령어를 읽음   │  ← Fetch (IF)
+  ├──────────────────────────────────────────────────────────┤
+  │  opcode 해석, 레지스터 번호 추출, 즉시값 부호 확장       │  ← Decode (ID)
+  ├──────────────────────────────────────────────────────────┤
+  │  ALU가 연산 수행 (덧셈, 비교, 주소 계산 등)              │  ← Execute (EX)
+  ├──────────────────────────────────────────────────────────┤
+  │  데이터 메모리에서 Load 또는 Store                        │  ← Memory (MEM)
+  ├──────────────────────────────────────────────────────────┤
+  │  ALU 결과 또는 Load 데이터를 레지스터에 기록             │  ← Write-Back (WB)
+  └──────────────────────────────────────────────────────────┘
+
+단일 사이클: 위 5단계가 하나의 클록 안에 조합 논리로 완료됨
+파이프라인:  5단계를 겹쳐서 각 단계를 별도 클록 사이클에 수행 (Day 11 주제)
+</div>
+
+<!-- ============================================================
+     섹션 2: 핵심 하드웨어 블록
+     ============================================================ -->
+<h2>2. 핵심 하드웨어 블록</h2>
+
+<p>단일 사이클 CPU를 구성하는 주요 블록 다섯 가지입니다.</p>
+
+<h3>2-1. 프로그램 카운터 (PC)</h3>
+<div class="diagram">
+PC (Program Counter)
+  · 현재 실행 중인 명령어의 주소를 저장하는 32비트(또는 64비트) 레지스터
+  · 매 클록 사이클마다 PC + 4 로 자동 증가 (RISC-V: 명령어 크기 4 바이트)
+  · Branch / Jump 명령어 실행 시 PC ← 분기 목표 주소로 덮어씌움
+
+  [PC] ──→ 명령어 메모리(IM) ──→ 명령어(32비트) 출력
+       ↑
+  PC+4 또는 PC+offset (Branch 목표)
+</div>
+
+<h3>2-2. 명령어 메모리 (Instruction Memory)</h3>
+<div class="diagram">
+명령어 메모리 (IM, Instruction Memory / I-Cache)
+  · PC 주소를 입력받아 32비트 명령어를 출력하는 읽기 전용 메모리
+  · 단일 사이클에서는 조합 논리로 모델링 (클록 없이 즉시 읽힘)
+  · 실제 구현에서는 L1 I-Cache 또는 ROM
+
+  입력: 주소(32비트)
+  출력: 명령어(32비트)
+</div>
+
+<h3>2-3. 레지스터 파일 (Register File)</h3>
+<div class="diagram">
+레지스터 파일 (Register File)
+  · RISC-V: 32개 × 32비트 레지스터 (x0–x31)
+  · x0는 항상 0 (쓰기 시 무시)
+  · 단일 포트 쓰기, 이중 포트 읽기 (2개 레지스터를 동시에 읽을 수 있음)
+
+  입력:
+    Read Register 1 (rs1) ──→ [레지스터 파일] ──→ Read Data 1 (RD1)
+    Read Register 2 (rs2) ──→                 ──→ Read Data 2 (RD2)
+    Write Register  (rd)  ──→
+    Write Data            ──→  (WB 단계에서 결과 기록)
+    RegWrite (제어 신호)  ──→  1이면 쓰기 활성화
+
+  읽기는 조합 논리 (비동기), 쓰기는 클록 엣지에 동기화
+</div>
+
+<h3>2-4. ALU (Arithmetic Logic Unit)</h3>
+<div class="diagram">
+ALU (산술 논리 장치)
+  · 덧셈·뺄셈·AND·OR·XOR·비교(SLT) 등 연산 수행
+  · 두 32비트 입력 → 32비트 결과 출력
+  · ALU 제어 신호(ALUControl, 4비트)로 연산 종류 선택
+
+  입력:
+    A (rs1 값 또는 PC)
+    B (rs2 값 또는 즉시값 imm)  ← MUX로 선택
+    ALUControl (연산 종류)
+  출력:
+    ALU Result (32비트)
+    Zero (결과 == 0이면 1, Branch 판정에 사용)
+
+  ALUControl 코드 예:
+    0000 → AND    0001 → OR    0010 → ADD
+    0110 → SUB    0111 → SLT (set-less-than)
+</div>
+
+<h3>2-5. 데이터 메모리 (Data Memory)</h3>
+<div class="diagram">
+데이터 메모리 (DM, Data Memory / D-Cache)
+  · lw (Load Word) 와 sw (Store Word) 명령어가 접근하는 메모리
+  · ALU가 계산한 주소(effective address)를 사용하여 읽기/쓰기
+
+  입력:
+    Address (ALU 결과, 유효 주소)
+    Write Data (rs2 값, Store 시 사용)
+    MemRead  (1 → 읽기 활성화)
+    MemWrite (1 → 쓰기 활성화)
+  출력:
+    Read Data (lw 결과)
+</div>
+
+<!-- ============================================================
+     섹션 3: 단일 사이클 데이터패스 전체 구조
+     ============================================================ -->
+<h2>3. 단일 사이클 데이터패스 전체 구조</h2>
+
+<p>
+  위 블록들을 연결하면 아래와 같은 데이터패스가 됩니다.
+  <strong>MUX(멀티플렉서)</strong>는 제어 신호에 따라 입력 중 하나를 선택해 출력합니다.
+</p>
+
+<div class="diagram">
+┌─────────┐   명령어(32비트)   ┌──────────────────────────────────────────────┐
+│   PC    │ ────────────────→ │            명령어 디코더                       │
+└────┬────┘                   │  [31:25]=funct7 [24:20]=rs2  [19:15]=rs1      │
+     │                        │  [14:12]=funct3 [11:7]=rd    [6:0]=opcode     │
+     │ +4 (또는 branch 주소)  └──────┬────────┬──────────────┬────────────────┘
+     └──────────────────────────┐   │        │              │
+                                │   ↓ rs1,rs2│rd            │ 즉시값(imm) 부호 확장
+                         ┌──────┴──────────────────┐        │
+                         │       레지스터 파일      │        ↓
+                         │  RD1 (rs1 값) ─────────→├──→ [ALU입력A]
+                         │  RD2 (rs2 값) ──→[MUX]──┤    [MUX]──→ [ALU입력B]
+                         │                  ↑imm    │              (rs2 or imm)
+                         └──────────────────────────┘
+                                                    ↓
+                                              ┌──────────┐
+                                              │   ALU    │
+                                              │ (연산)   │
+                                              └────┬─────┘
+                                                   │ ALU 결과
+                         ┌─────────────────────────┤
+                         ↓                         ↓
+                   ┌───────────┐             [데이터메모리]
+                   │Write-Back │←─ [MUX] ←── Read Data (lw)
+                   │레지스터에 │         ↑─── ALU 결과 (R-type/ALU-I)
+                   │ 결과 저장 │
+                   └───────────┘
+</div>
+
+<div class="callout">
+  <div class="callout-title">MUX(Multiplexer)의 역할</div>
+  MUX는 "여러 입력 중 하나를 선택해 출력하는 스위치"입니다. 제어 신호 값(0 또는 1)에 따라 어떤 경로를 선택할지 결정합니다.<br><br>
+  데이터패스에서 핵심 MUX:
+  <ul>
+    <li><strong>ALUSrc MUX</strong>: ALU 입력 B를 rs2 값으로 할지, 즉시값(imm)으로 할지 선택</li>
+    <li><strong>MemtoReg MUX</strong>: 레지스터에 쓸 값을 ALU 결과로 할지, 메모리 Load 데이터로 할지 선택</li>
+    <li><strong>PC 소스 MUX</strong>: 다음 PC를 PC+4로 할지, Branch 목표 주소(PC+offset)로 할지 선택</li>
+  </ul>
+</div>
+
+<!-- ============================================================
+     섹션 4: 명령어 타입별 데이터 흐름
+     ============================================================ -->
+<h2>4. 명령어 타입별 데이터 흐름</h2>
+
+<h3>4-1. R타입 — 레지스터 간 산술·논리 연산</h3>
+<div class="diagram">
+예시: add rd, rs1, rs2   (rd ← rs1 + rs2)
+
+IF : PC → 명령어 메모리 → 32비트 명령어 fetch
+ID : 명령어[19:15]=rs1, [24:20]=rs2, [11:7]=rd  레지스터 파일에서 RD1, RD2 읽음
+EX : ALUSrc=0 → ALU 입력 B = RD2 (rs2 값)
+     funct7·funct3 → ALUControl=ADD
+     ALU: RD1 + RD2 → ALU Result
+MEM: MemRead=0, MemWrite=0 → 메모리 접근 없음
+WB : MemtoReg=0 → Write Data = ALU Result
+     RegWrite=1  → rd 레지스터에 ALU Result 기록
+
+활성 제어 신호: RegWrite=1, ALUSrc=0, ALUOp=10, MemtoReg=0
+비활성:          MemRead=0, MemWrite=0, Branch=0
+</div>
+
+<h3>4-2. I타입 Load — lw (Load Word)</h3>
+<div class="diagram">
+예시: lw rd, imm(rs1)    (rd ← Memory[rs1 + imm])
+
+IF : 명령어 fetch
+ID : rs1, rd 레지스터 읽기. 즉시값(imm[11:0]) 부호 확장 → 32비트
+EX : ALUSrc=1 → ALU 입력 B = 부호 확장된 imm (rs2 값이 아님)
+     ALUControl=ADD
+     ALU: rs1 + imm → 유효 주소(effective address)
+MEM: MemRead=1 → 데이터 메모리[유효 주소] → Read Data
+     MemWrite=0
+WB : MemtoReg=1 → Write Data = Read Data (메모리에서 읽은 값)
+     RegWrite=1  → rd 레지스터에 메모리 값 기록
+
+활성 제어 신호: RegWrite=1, ALUSrc=1, ALUOp=00(ADD), MemRead=1, MemtoReg=1
+비활성:          MemWrite=0, Branch=0
+</div>
+
+<h3>4-3. S타입 — sw (Store Word)</h3>
+<div class="diagram">
+예시: sw rs2, imm(rs1)   (Memory[rs1 + imm] ← rs2)
+
+IF : 명령어 fetch
+ID : rs1, rs2 레지스터 읽기
+     즉시값: imm[11:5]=[31:25], imm[4:0]=[11:7]  → 부호 확장
+EX : ALUSrc=1 → ALU 입력 B = 부호 확장된 imm
+     ALU: rs1 + imm → 유효 주소
+MEM: MemWrite=1 → 데이터 메모리[유효 주소] ← RD2 (rs2 값)
+     MemRead=0
+WB : RegWrite=0 → 레지스터 기록 없음 (저장 명령어는 레지스터를 바꾸지 않음)
+
+활성 제어 신호: ALUSrc=1, ALUOp=00(ADD), MemWrite=1
+비활성:          RegWrite=0, MemRead=0, Branch=0, MemtoReg=X(don't care)
+</div>
+
+<h3>4-4. B타입 — beq (Branch if Equal)</h3>
+<div class="diagram">
+예시: beq rs1, rs2, offset  (if rs1 == rs2: PC ← PC + (offset * 2))
+
+IF : 명령어 fetch
+ID : rs1, rs2 레지스터 읽기
+     즉시값: B타입 인코딩 → 13비트 부호 확장 (비트 0은 항상 0, 워드 정렬)
+EX : ALUSrc=0 → ALU 입력 B = RD2 (rs2 값)
+     ALUControl=SUB (rs1 - rs2 계산)
+     Zero = (rs1 - rs2 == 0) ? 1 : 0
+     분기 목표 주소: PC + (부호 확장된 offset)  ← 별도 가산기로 계산
+MEM: 메모리 접근 없음
+WB : RegWrite=0 → 레지스터 기록 없음
+PC 갱신:
+     PCSrc = Branch AND Zero
+     PCSrc=1 → PC ← PC + offset  (분기 성립)
+     PCSrc=0 → PC ← PC + 4       (분기 미성립)
+
+활성 제어 신호: Branch=1, ALUSrc=0, ALUOp=01(SUB)
+비활성:          RegWrite=0, MemRead=0, MemWrite=0
+</div>
+
+<h3>4-5. I타입 ALU — addi (Add Immediate)</h3>
+<div class="diagram">
+예시: addi rd, rs1, imm   (rd ← rs1 + imm)
+
+IF : 명령어 fetch
+ID : rs1 읽기, 즉시값 부호 확장
+EX : ALUSrc=1 → ALU 입력 B = 부호 확장된 imm
+     funct3=000, opcode=0010011 → ALUControl=ADD
+     ALU: rs1 + imm → 결과
+MEM: 메모리 접근 없음
+WB : MemtoReg=0 → Write Data = ALU Result
+     RegWrite=1  → rd 레지스터에 결과 기록
+
+lw와 제어 신호 비교:
+  addi: MemRead=0, MemtoReg=0   (ALU 결과를 레지스터에 직접 기록)
+  lw  : MemRead=1, MemtoReg=1   (메모리 값을 레지스터에 기록)
+</div>
+
+<!-- ============================================================
+     섹션 5: 제어 유닛
+     ============================================================ -->
+<h2>5. 제어 유닛 (Control Unit)</h2>
+
+<p>
+  제어 유닛은 명령어의 <strong>opcode(비트 6:0)</strong>를 입력받아
+  데이터패스 MUX와 메모리를 제어하는 신호들을 출력하는 조합 논리 회로입니다.
+  funct3와 funct7는 ALU 제어 유닛(ALU Control)이 별도로 처리합니다.
+</p>
+
+<h3>5-1. 주요 제어 신호 정의</h3>
+<table>
+  <thead>
+    <tr><th>신호</th><th>비트 폭</th><th>역할</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>RegWrite</td><td>1</td><td>1이면 레지스터 파일에 쓰기 허용</td></tr>
+    <tr><td>ALUSrc</td><td>1</td><td>0=rs2 값, 1=즉시값(imm) → ALU 입력 B 선택</td></tr>
+    <tr><td>ALUOp</td><td>2</td><td>ALU 제어 유닛에 전달하는 힌트 (00=Add, 01=Sub, 10=funct에 따라)</td></tr>
+    <tr><td>MemRead</td><td>1</td><td>1이면 데이터 메모리 읽기 활성화</td></tr>
+    <tr><td>MemWrite</td><td>1</td><td>1이면 데이터 메모리 쓰기 활성화</td></tr>
+    <tr><td>MemtoReg</td><td>1</td><td>0=ALU 결과, 1=메모리 읽기 값 → Write-Back 데이터 선택</td></tr>
+    <tr><td>Branch</td><td>1</td><td>1이면 분기 조건 성립 시 PC 변경 허용</td></tr>
+  </tbody>
+</table>
+
+<h3>5-2. opcode별 제어 신호 진리표</h3>
+<table>
+  <thead>
+    <tr>
+      <th>명령어 타입</th>
+      <th>opcode (7비트)</th>
+      <th>RegWrite</th>
+      <th>ALUSrc</th>
+      <th>ALUOp</th>
+      <th>MemRead</th>
+      <th>MemWrite</th>
+      <th>MemtoReg</th>
+      <th>Branch</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>R타입 (add, sub, and…)</td><td>0110011</td><td>1</td><td>0</td><td>10</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+    <tr><td>I타입 Load (lw)</td><td>0000011</td><td>1</td><td>1</td><td>00</td><td>1</td><td>0</td><td>1</td><td>0</td></tr>
+    <tr><td>I타입 ALU (addi…)</td><td>0010011</td><td>1</td><td>1</td><td>10</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+    <tr><td>S타입 Store (sw)</td><td>0100011</td><td>0</td><td>1</td><td>00</td><td>0</td><td>1</td><td>X</td><td>0</td></tr>
+    <tr><td>B타입 Branch (beq)</td><td>1100011</td><td>0</td><td>0</td><td>01</td><td>0</td><td>0</td><td>X</td><td>1</td></tr>
+  </tbody>
+</table>
+
+<h3>5-3. ALU 제어 유닛 (ALU Control)</h3>
+<div class="diagram">
+ALU 제어 유닛은 제어 유닛의 ALUOp(2비트)과 명령어의 funct3·funct7을 받아
+실제 ALU 연산 코드(ALUControl, 4비트)를 결정합니다.
+
+ALUOp=00 (Load/Store): ALUControl=ADD 고정 (주소 계산)
+ALUOp=01 (Branch)    : ALUControl=SUB 고정 (rs1-rs2로 같은지 비교)
+ALUOp=10 (R/I-ALU)   : funct3·funct7 조합으로 결정
+
+ALUOp=10 결정 예 (RISC-V):
+  funct7=0000000, funct3=000 → ADD  (add, addi)
+  funct7=0100000, funct3=000 → SUB  (sub)
+  funct7=0000000, funct3=111 → AND  (and, andi)
+  funct7=0000000, funct3=110 → OR   (or, ori)
+  funct7=0000000, funct3=010 → SLT  (slt, slti)
+
+2단계 제어 분해 이유:
+  · opcode 7비트만으로 이미 명령어 대분류 결정 가능
+  · funct3·funct7은 R타입과 일부 I타입 내에서만 의미 있음
+  → 제어 유닛을 두 레벨로 나눠 복잡도를 줄임
+</div>
+
+<!-- ============================================================
+     섹션 6: 단일 사이클의 클록 주기
+     ============================================================ -->
+<h2>6. 단일 사이클의 성능 — 가장 느린 명령어가 클록 주기를 결정한다</h2>
+
+<p>
+  단일 사이클 설계에서 클록 주기(T<sub>clk</sub>)는
+  <strong>데이터패스를 통과하는 최장 지연(critical path)</strong>에 의해 결정됩니다.
+</p>
+
+<div class="diagram">
+각 단계별 지연 시간 가정 (예시 값):
+
+  명령어 메모리 읽기: 200 ps
+  레지스터 파일 읽기:  30 ps
+  ALU 연산:           200 ps
+  데이터 메모리 읽기: 250 ps
+  레지스터 파일 쓰기:  30 ps
+
+명령어 타입별 총 지연:
+
+  R타입:  200 + 30 + 200 + 0   + 30 = 460 ps  (MEM 단계 없음)
+  addi:   200 + 30 + 200 + 0   + 30 = 460 ps
+  lw:     200 + 30 + 200 + 250 + 30 = 710 ps  ← 가장 느림 (critical path)
+  sw:     200 + 30 + 200 + 250 + 0  = 680 ps
+  beq:    200 + 30 + 200 + 0   + 0  = 430 ps
+
+결론: 클록 주기 T_clk = 710 ps (lw 기준)
+     → R타입도 460 ps면 충분한데 710 ps를 기다려야 함 (250 ps 낭비)
+
+CPI(Clocks Per Instruction) = 1 이지만
+T_clk이 길어서 실제 성능이 나쁠 수 있음
+
+파이프라인:  T_clk ≈ 200 ps (가장 느린 단일 단계 기준)
+            CPI ≈ 1 (이상적)  → 처리량 약 3.5배 향상
+</div>
+
+<div class="callout">
+  <div class="callout-title">단일 사이클 vs 파이프라이닝 비교</div>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>단일 사이클</th><th>파이프라인</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>CPI</td><td>1</td><td>~1 (이상적)</td></tr>
+      <tr><td>클록 주기</td><td>가장 느린 명령어 기준 (느림)</td><td>가장 느린 단일 단계 기준 (빠름)</td></tr>
+      <tr><td>하드웨어 복잡도</td><td>단순</td><td>복잡 (해저드 처리 필요)</td></tr>
+      <tr><td>처리량(Throughput)</td><td>낮음</td><td>높음</td></tr>
+      <tr><td>단일 명령어 지연(Latency)</td><td>낮음 (1사이클)</td><td>높음 (5사이클)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================
+     섹션 7: 하드와이어드 vs 마이크로코드 제어
+     ============================================================ -->
+<h2>7. 하드와이어드 제어 vs 마이크로코드 제어</h2>
+
+<div class="diagram">
+하드와이어드 제어 (Hardwired Control):
+  · 제어 유닛을 고정 조합 논리 회로로 구현
+  · opcode → 제어 신호 매핑을 AND/OR 게이트로 직접 연결
+  · 장점: 빠름 (조합 논리 지연만 있음), 전력 효율
+  · 단점: 새로운 명령어 추가가 어려움 (회로 재설계 필요)
+  · 사용: RISC (RISC-V, ARM), 단순 CPU
+
+마이크로코드 제어 (Microcode / Microprogrammed Control):
+  · 제어 신호 패턴을 ROM(마이크로 프로그램 메모리)에 저장
+  · opcode → ROM 주소 → 제어 신호 시퀀스 읽기
+  · 장점: 명령어 추가·수정이 ROM 업데이트로 가능 (펌웨어)
+  · 단점: ROM 접근 지연, 복잡도
+  · 사용: CISC (x86의 복잡한 명령어를 마이크로-op으로 분해)
+
+현대 x86:
+  · 간단한 명령어 → 하드와이어드 고속 경로 (fast path)
+  · 복잡한 명령어 → 마이크로코드 시퀀서
+  · 두 방식 혼합으로 CISC 호환성 + RISC 성능 달성
+</div>
+
+<!-- ============================================================
+     섹션 8: 완전한 단일 사이클 CPU 동작 추적 예시
+     ============================================================ -->
+<h2>8. 전체 동작 추적 — add t0, t1, t2</h2>
+
+<p>명령어 <code>add t0, t1, t2</code>가 단일 사이클 데이터패스를 통과하는 과정을 클록 하나 동안 단계별로 추적합니다.</p>
+
+<div class="diagram">
+명령어: add t0, t1, t2   (x5 ← x6 + x7)
+인코딩: 0000000_00111_00110_000_00101_0110011
+        funct7  rs2   rs1   f3  rd    opcode
+
+① Fetch (IF):
+   PC = 0x0000_1000
+   명령어 메모리[0x0000_1000] → 32비트 명령어 출력
+   PC+4 계산기: 0x0000_1000 + 4 = 0x0000_1004
+
+② Decode (ID):
+   opcode[6:0]   = 0110011  → 제어 유닛: R타입
+   rs1[19:15]    = 00110    → x6 (t1)
+   rs2[24:20]    = 00111    → x7 (t2)
+   rd [11:7]     = 00101    → x5 (t0) (아직 쓰지 않음)
+   레지스터 파일: RD1 = x6 값, RD2 = x7 값
+   제어 신호 출력:
+     RegWrite=1, ALUSrc=0, ALUOp=10, MemRead=0, MemWrite=0, MemtoReg=0, Branch=0
+
+③ Execute (EX):
+   ALUSrc=0 → ALU B = RD2 (x7 값)
+   ALUOp=10, funct7=0000000, funct3=000 → ALUControl=ADD
+   ALU: RD1 + RD2 = x6 + x7
+   ALU Result = 계산 결과
+   Zero = (결과 == 0) ? 1 : 0
+
+④ Memory (MEM):
+   MemRead=0, MemWrite=0 → 데이터 메모리 접근 없음
+   (이 단계는 add에서 아무 일도 하지 않음)
+
+⑤ Write-Back (WB):
+   MemtoReg=0 → Write Data = ALU Result
+   RegWrite=1  → 레지스터 파일: x5 ← ALU Result
+   (클록 상승 엣지에 동기화하여 기록)
+
+⑥ PC 갱신:
+   Branch=0 → PCSrc=0 → PC ← PC+4 = 0x0000_1004
+</div>
+
+<!-- ============================================================
+     퀴즈
+     ============================================================ -->
+<h2>이해 확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <p class="quiz-question">Q1. 단일 사이클 데이터패스에서 <code>lw t0, 8(s0)</code> 명령어 실행 시 제어 신호 ALUSrc의 올바른 값과 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> ALUSrc=0 — rs2 레지스터 값을 ALU 두 번째 입력으로 사용하기 때문이다</label></li>
+    <li><label><input type="radio" name="q1" value="1"> ALUSrc=1 — 즉시값(imm=8)을 ALU 두 번째 입력으로 사용해 유효 주소를 계산하기 때문이다</label></li>
+    <li><label><input type="radio" name="q1" value="2"> ALUSrc=0 — Load 명령어는 ALU를 사용하지 않기 때문이다</label></li>
+    <li><label><input type="radio" name="q1" value="3"> ALUSrc=1 — 즉시값을 ALU 첫 번째 입력(A)으로 사용하기 때문이다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <p class="quiz-question">Q2. <code>beq rs1, rs2, offset</code>에서 분기가 성립하는 조건으로 ALU가 수행하는 연산과 그 결과의 사용 방식은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> ALU가 rs1 + rs2를 계산하고, 결과가 offset과 같으면 분기한다</label></li>
+    <li><label><input type="radio" name="q2" value="1"> ALU가 rs1 - rs2를 계산하고, Zero 신호=1(결과가 0)이면 Branch=1과 AND되어 PC가 분기 주소로 바뀐다</label></li>
+    <li><label><input type="radio" name="q2" value="2"> ALU가 rs1 AND rs2를 계산하고, 결과가 0이 아니면 분기한다</label></li>
+    <li><label><input type="radio" name="q2" value="3"> 제어 유닛이 레지스터 값을 직접 비교하며 ALU는 분기에서 사용되지 않는다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <p class="quiz-question">Q3. 단일 사이클 데이터패스에서 클록 주기가 lw 명령어 기준으로 결정되는 이유로 가장 정확한 것은?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> lw 명령어가 가장 자주 실행되어 클록 주기에 영향을 주기 때문이다</label></li>
+    <li><label><input type="radio" name="q3" value="1"> 단일 사이클에서 모든 명령어가 동일한 클록 하나에 완료되어야 하므로, 가장 긴 지연 경로(critical path)인 lw에 맞춰야 하기 때문이다</label></li>
+    <li><label><input type="radio" name="q3" value="2"> lw가 유일하게 메모리와 ALU를 둘 다 사용하기 때문이다</label></li>
+    <li><label><input type="radio" name="q3" value="3"> 클록 주기는 ALU 지연 시간에만 의존하기 때문이다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q4">
+  <p class="quiz-question">Q4. <code>sw rs2, imm(rs1)</code>에서 RegWrite=0으로 설정하는 이유는?</p>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q4" value="0"> Store 명령어는 레지스터를 읽지 않기 때문이다</label></li>
+    <li><label><input type="radio" name="q4" value="1"> Store 명령어는 레지스터 파일에 결과를 기록하지 않고 메모리에 쓰기만 하므로, RegWrite=1이면 rd 자리에 있는 imm 비트들이 잘못된 레지스터를 덮어쓸 수 있기 때문이다</label></li>
+    <li><label><input type="radio" name="q4" value="2"> Store 명령어는 ALU를 사용하지 않기 때문이다</label></li>
+    <li><label><input type="radio" name="q4" value="3"> MemWrite=1과 RegWrite=1을 동시에 활성화하면 하드웨어 충돌이 발생하기 때문이다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================
+     Primary Source
+     ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">오늘의 추천 자료</div>
+  <strong>Computer Organization and Design RISC-V Edition (Patterson &amp; Hennessy) — Chapter 4: The Processor</strong><br>
+  단일 사이클 데이터패스와 제어 유닛을 블록 다이어그램과 진리표로 체계적으로 설명합니다.<br>
+  단일 사이클 → 파이프라인으로의 자연스러운 확장 논리가 탁월합니다.<br>
+  <br>
+  <strong>Digital Design and Computer Architecture: RISC-V Edition (Harris &amp; Harris) — Chapter 7: Microarchitecture</strong><br>
+  단일 사이클, 멀티 사이클, 파이프라인을 하나의 챕터에서 비교하며 설계 의사결정 논리를 명확하게 제시합니다.
+</div>
+
+<!-- ============================================================
+     핵심 요약
+     ============================================================ -->
+<h2>오늘의 핵심 요약</h2>
+
+<ul>
+  <li><strong>단일 사이클 CPU</strong>: IF → ID → EX → MEM → WB 다섯 단계를 클록 하나에 수행하는 설계</li>
+  <li><strong>PC</strong>: 다음 명령어 주소를 저장; 매 사이클 +4, 분기 시 목표 주소로 교체</li>
+  <li><strong>레지스터 파일</strong>: 2포트 읽기(비동기) + 1포트 쓰기(클록 동기); x0는 항상 0</li>
+  <li><strong>ALU</strong>: ALUControl 신호로 연산 선택; Zero 신호는 Branch 판정에 사용</li>
+  <li><strong>MUX</strong>: ALUSrc(rs2 vs imm), MemtoReg(ALU vs Mem), PCSrc(PC+4 vs 분기) 선택</li>
+  <li><strong>제어 유닛</strong>: opcode → 제어 신호 7가지 출력; ALU 제어 유닛이 funct3/funct7 처리</li>
+  <li><strong>R타입</strong>: ALUSrc=0, RegWrite=1, MemtoReg=0 — 레지스터 간 연산</li>
+  <li><strong>lw</strong>: ALUSrc=1, MemRead=1, MemtoReg=1, RegWrite=1 — 주소 계산 후 메모리 Load</li>
+  <li><strong>sw</strong>: ALUSrc=1, MemWrite=1, RegWrite=0 — 주소 계산 후 메모리 Store</li>
+  <li><strong>beq</strong>: ALUSrc=0, ALUOp=SUB, Branch=1, RegWrite=0 — Zero 신호와 AND로 분기 결정</li>
+  <li><strong>단일 사이클 한계</strong>: Critical Path(lw)가 클록 주기를 결정 → 파이프라인이 해결책</li>
+</ul>
+
+<!-- ============================================================
+     다음 수업 예고
+     ============================================================ -->
+<div class="callout">
+  <div class="callout-title">다음 수업 (Day 11)</div>
+  <strong>파이프라이닝 1 (Pipelining) — 5단계 파이프라인, 처리량 vs 지연 시간</strong><br>
+  오늘 설계한 단일 사이클 CPU의 5단계(IF, ID, EX, MEM, WB)를 겹쳐 실행하는 파이프라인 구조를 학습합니다.
+  파이프라인 레지스터가 왜 필요한지, 처리량(Throughput)과 지연 시간(Latency) 사이의 트레이드오프를 정량적으로 분석합니다.
+</div>
+
+<!-- ============================================================
+     선생님께 질문
+     ============================================================ -->
+<div class="ask-teacher">
+  <strong>궁금한 점이 있으신가요?</strong><br>
+  이해가 안 되는 부분, 더 깊이 알고 싶은 내용, 또는 실무와 어떻게 연결되는지
+  Claude에게 바로 질문하세요. 선생님은 항상 여기 있습니다.
+</div>
+
+<div class="lesson-footer">
+  <div class="lesson-nav">
+    <a href="0009-isa.html">← Day 9: 명령어 집합 아키텍처 (ISA)</a>
+    <a href="0011-pipelining-1.html">Day 11: 파이프라이닝 1 →</a>
+  </div>
+  컴퓨터 구조 데일리 학습 · <a href="../reference/">참고 자료</a> · <a href="../RESOURCES.md">추천 자료 목록</a>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1, 'lw 명령어에서 ALU의 역할은 유효 주소(effective address)를 계산하는 것입니다: rs1 + imm. 여기서 imm은 명령어 안의 12비트 즉시값이므로 ALUSrc=1로 설정해 MUX가 rs2 레지스터 값 대신 부호 확장된 즉시값을 ALU 입력 B로 선택하게 합니다. ALUSrc=0이면 rs2 값이 사용되어 잘못된 주소가 계산됩니다.');
+  initQuiz('q2', 1, 'beq는 ALUOp=01(SUB)로 ALU에 뺄셈(rs1 - rs2)을 수행시킵니다. rs1과 rs2가 같으면 결과가 0이 되어 Zero 신호=1이 됩니다. PCSrc = Branch AND Zero 이므로 Branch=1(제어 유닛이 beq 인식)이고 Zero=1일 때만 PCSrc=1이 되어 PC가 분기 목표 주소(PC + offset)로 변경됩니다. 두 값이 다르면 Zero=0이므로 PCSrc=0이 되어 PC ← PC+4로 진행합니다.');
+  initQuiz('q3', 1, '단일 사이클 데이터패스는 "모든 명령어가 정확히 하나의 클록 사이클 안에 완료"되어야 합니다. 클록 주기는 어떤 명령어도 시간 내에 처리할 수 있을 만큼 충분히 길어야 하므로, 데이터패스를 통과하는 데 가장 긴 시간이 걸리는 명령어(Critical Path)인 lw가 기준이 됩니다. lw는 명령어 메모리 + 레지스터 파일 + ALU + 데이터 메모리 + 레지스터 파일 쓰기를 모두 거치기 때문입니다.');
+  initQuiz('q4', 1, 'Store 명령어(sw)는 레지스터 값을 메모리에 쓰는 명령어로, 어떤 레지스터에도 결과를 저장하지 않습니다. S타입 인코딩에는 rd 필드가 없고 해당 비트들이 즉시값(imm)의 일부로 사용됩니다. 만약 RegWrite=1로 설정하면 imm 상위 비트들이 rd 번호로 해석되어 아무 레지스터나 덮어쓰는 오류가 발생합니다. RegWrite=0으로 비활성화함으로써 레지스터 파일을 보호합니다.');
+</script>
+</body>
+</html>
