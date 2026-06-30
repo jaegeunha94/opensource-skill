@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — 코드 성능과 하드웨어 사고 프레임워크 | 컴퓨터 구조 면접 대비</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="lesson-container">
+
+  <!-- Header -->
+  <header class="lesson-header">
+    <div class="day-badge">DAY 1</div>
+    <h1>코드 성능과 하드웨어 사고 프레임워크</h1>
+    <p class="subtitle">컴퓨터 구조 면접 대비 | 시니어 개발자 관점 기초 확립</p>
+  </header>
+
+  <!-- 이 레슨의 목표 -->
+  <h2>이 레슨에서 얻는 것</h2>
+  <p>
+    이 레슨은 Day 2~10의 모든 개념을 연결하는 <strong>사고 프레임워크</strong>를 만드는 것이 목표다.
+    면접에서 "왜 이 코드가 느린가요?" 혹은 "이 자료구조를 선택한 이유가 있나요?"라는 질문을 받았을 때
+    하드웨어 관점에서 체계적으로 답변할 수 있는 틀을 갖춘다.
+  </p>
+  <ul>
+    <li>시니어 개발자 면접에서 컴퓨터 구조 질문이 나오는 이유와 평가 목적 이해</li>
+    <li>성능 병목의 3계층 분류 체계 습득</li>
+    <li>"하드웨어를 의식하는 코드 작성" 관점의 기초 확립</li>
+    <li>이후 레슨의 학습 로드맵과 각 개념의 연결 구조 파악</li>
+  </ul>
+
+  <hr class="divider">
+
+  <!-- ========================= 면접 질문 ========================= -->
+  <h2>오늘의 면접 질문</h2>
+
+  <div class="card interview-q">
+    <div class="q-label">INTERVIEW QUESTION — SENIOR LEVEL</div>
+    <div class="question">
+      "같은 알고리즘, 같은 시간 복잡도인데 A 코드가 B 코드보다 3배 빠릅니다.<br>
+      왜 이런 차이가 나는지 설명해주시고, 이런 차이를 사전에 예측하거나 측정하는 방법을 말해주세요."
+    </div>
+  </div>
+
+  <p>이 질문은 초반부에 등장하는 <em>탐색용 질문</em>이다. 인터뷰어는 이 질문 하나로 지원자의 하드웨어 이해 수준을 빠르게 파악한다. 주니어는 "구현 차이"나 "상수 차이"로 얼버무리고, 시니어는 캐시, 메모리 접근 패턴, 분기 예측 등 구체적인 하드웨어 요인으로 답한다.</p>
+
+  <hr class="divider">
+
+  <!-- ========================= 전제 개념 ========================= -->
+  <h2>전제 개념 — 시작하기 전에 반드시 알아야 할 것</h2>
+
+  <div class="card prereq">
+    <div class="prereq-title">PREREQUISITE</div>
+    <p><strong>CPU가 코드를 실행한다는 게 정확히 무슨 뜻인가?</strong></p>
+    <p>
+      코드를 작성하면 컴파일러가 기계어(machine instruction)로 변환한다. CPU는 이 명령어를 한 번에
+      하나씩 실행하는 것처럼 보이지만, 실제로는 훨씬 복잡하다.
+    </p>
+    <p>
+      CPU 안에는 여러 종류의 <strong>저장소</strong>가 있다. 레지스터(register)는 CPU 코어 안에 있는
+      초고속 임시 저장소이고, 캐시(cache)는 그보다 크지만 조금 느린 저장소, DRAM은 우리가 "메모리"라고
+      부르는 곳, 디스크는 가장 느린 영구 저장소다.
+    </p>
+    <p>
+      <strong>핵심:</strong> CPU는 DRAM에서 직접 데이터를 읽으면 너무 느리기 때문에, 자주 쓰는 데이터를
+      캐시에 미리 올려둔다. 이 과정에서 예측이 맞으면 빠르고, 틀리면 느려진다.
+      바로 이 차이가 "같은 알고리즘인데 다른 속도"를 만드는 근본 원인이다.
+    </p>
+  </div>
+
+  <h3>기억해야 할 숫자 3개</h3>
+  <p>면접에서 이 숫자를 모르면 구체성이 없어진다. Jeff Dean의 "Latency Numbers Every Programmer Should Know"에서 나온 기준치다.</p>
+
+  <table class="latency-table">
+    <thead>
+      <tr>
+        <th>저장소</th>
+        <th>접근 시간 (대략)</th>
+        <th>직관적 비유</th>
+        <th>속도 등급</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>레지스터</td>
+        <td class="latency-fast">~0.3 ns (1 cycle)</td>
+        <td>손에 쥐고 있는 것</td>
+        <td class="latency-fast">최고속</td>
+      </tr>
+      <tr>
+        <td>L1 캐시 (32KB)</td>
+        <td class="latency-fast">~1 ns (3-4 cycles)</td>
+        <td>책상 위 메모지</td>
+        <td class="latency-fast">빠름</td>
+      </tr>
+      <tr>
+        <td>L2 캐시 (256KB)</td>
+        <td class="latency-fast">~4 ns (10-12 cycles)</td>
+        <td>책상 서랍</td>
+        <td class="latency-fast">빠름</td>
+      </tr>
+      <tr>
+        <td>L3 캐시 (공유, 수 MB)</td>
+        <td class="latency-medium">~40 ns (40-45 cycles)</td>
+        <td>옆 방 선반</td>
+        <td class="latency-medium">보통</td>
+      </tr>
+      <tr>
+        <td>DRAM (메인 메모리)</td>
+        <td class="latency-slow">~100 ns (200+ cycles)</td>
+        <td>건물 밖 창고</td>
+        <td class="latency-slow">느림</td>
+      </tr>
+      <tr>
+        <td>SSD (NVMe)</td>
+        <td class="latency-slow">~100 μs</td>
+        <td>서울 ↔ 부산 왕복</td>
+        <td class="latency-slow">매우 느림</td>
+      </tr>
+      <tr>
+        <td>HDD</td>
+        <td class="latency-slow">~10 ms</td>
+        <td>서울 ↔ 뉴욕 왕복</td>
+        <td class="latency-slow">극도로 느림</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <div class="callout-title">⚠ 면접 실수 주의</div>
+    이 숫자들은 2010년대 기준이고 현대 CPU는 조금씩 다르다. 하지만 비율(레지스터 vs L1 vs DRAM이 각각 1:4:200 수준으로 차이난다)은 여전히 유효하다. 정확한 숫자보다 <strong>상대적 비율과 그 의미</strong>를 설명할 수 있어야 한다.
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= 왜 면접에서 묻는가 ========================= -->
+  <h2>왜 면접에서 이 질문을 하는가</h2>
+
+  <div class="card why">
+    <p>
+      <strong>평가 목적:</strong> 지원자가 "알고리즘 복잡도 = 성능"이라는 단순한 사고에서
+      벗어나 있는지 확인한다. 10년차 이상 개발자에게는 다음이 기대된다:
+    </p>
+    <ul>
+      <li>성능 문제를 진단할 때 CPU, 메모리, OS, 네트워크 중 어느 계층이 병목인지 먼저 좁힐 수 있는가</li>
+      <li>코드를 작성할 때 하드웨어 동작을 예측하고 의도적으로 최적화할 수 있는가</li>
+      <li>팀 내 다른 개발자들에게 성능 문제를 설명하고, 측정 방법을 제안할 수 있는가</li>
+      <li>"느리다"는 제보를 받았을 때 데이터 없이 추측하지 않고 계측 먼저 한다는 원칙을 갖고 있는가</li>
+    </ul>
+    <p style="margin-top:0.75rem">
+      <strong>시그널:</strong> 이 질문에 "CPU 캐시 때문이요"라고만 답하면 키워드는 아는 것이고,
+      "cache miss가 늘어서 DRAM 접근이 증가했기 때문에, 메모리 접근 패턴을 locality 기준으로 바꾸면 개선됩니다"라고
+      답하면 하드웨어를 이해하고 있는 것이다.
+    </p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= 핵심 개념 ========================= -->
+  <h2>핵심 개념 — 성능 병목의 3계층 분류</h2>
+
+  <p>
+    시니어 개발자가 성능 문제에 접근할 때 쓰는 최초 분류 프레임워크다.
+    어떤 성능 문제든 이 세 계층 중 하나(또는 복합)에서 병목이 발생한다.
+  </p>
+
+  <h3>계층 1 — 계산 병목 (Computation Bound)</h3>
+  <p>
+    CPU가 실제로 연산을 처리하는 속도가 한계다. 메모리에서 데이터는 빠르게 오는데
+    CPU가 그것을 처리하느라 바쁘다.
+  </p>
+  <ul>
+    <li><strong>증상:</strong> CPU 사용률 100%, 캐시 miss rate 낮음, DRAM bandwidth 낮음</li>
+    <li><strong>예시:</strong> 암호화, 이미지 압축, 행렬 곱 (dense numerical computation)</li>
+    <li><strong>해결 방향:</strong> SIMD 벡터화, 알고리즘 개선, GPU 오프로딩</li>
+  </ul>
+
+  <h3>계층 2 — 메모리 병목 (Memory Bound)</h3>
+  <p>
+    CPU는 계산 준비가 됐는데 데이터가 아직 안 왔다. 메모리 접근을 기다리는 시간이 대부분이다.
+    <strong>현대 고성능 코드의 70%가 여기에 해당한다.</strong>
+  </p>
+  <ul>
+    <li><strong>증상:</strong> CPU 사용률은 높은데 실제 작업 처리량이 낮음, cache miss rate 높음</li>
+    <li><strong>예시:</strong> 연결 리스트 순회, 해시 맵 대규모 조회, 랜덤 메모리 접근 패턴</li>
+    <li><strong>해결 방향:</strong> 캐시 친화적 자료구조, 접근 패턴 개선, prefetching</li>
+  </ul>
+
+  <h3>계층 3 — 동기화 병목 (Synchronization Bound)</h3>
+  <p>
+    멀티코어 환경에서 스레드들이 서로 기다린다. 락(lock), 원자적 연산(atomic),
+    캐시 일관성 프로토콜이 병목을 만든다.
+  </p>
+  <ul>
+    <li><strong>증상:</strong> 스레드 수를 늘려도 성능 향상 없음, lock contention 감지</li>
+    <li><strong>예시:</strong> 잘못 설계된 공유 카운터, false sharing, 글로벌 뮤텍스</li>
+    <li><strong>해결 방향:</strong> lock-free 자료구조, false sharing 제거, 파티셔닝</li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-title">💡 실무 팁 — 어떻게 구분하는가</div>
+    <p><code>perf stat</code> 명령 하나로 세 계층을 구분할 수 있다:</p>
+    <pre>perf stat -e cycles,instructions,cache-misses,cache-references ./program</pre>
+    <ul>
+      <li><strong>IPC (instructions per cycle) 낮고 cache-misses 높다</strong> → 메모리 병목</li>
+      <li><strong>IPC 높다 (1.5+)</strong> → 계산 병목일 가능성</li>
+      <li><strong>perf lock contention 높다</strong> → 동기화 병목</li>
+    </ul>
+    <p>Day 8에서 자세히 다룬다.</p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= 실무 연결 ========================= -->
+  <h2>실무 연결 — 실제로 어디서 이 차이가 나는가</h2>
+
+  <h3>사례 1 — 배열 vs 연결 리스트 순회</h3>
+  <p>같은 1만 개 원소 순회, O(n)으로 동일하지만 실측 속도는 배열이 10~50배 빠른 경우가 있다.</p>
+  <pre>// 배열 순회 — cache-friendly (연속 메모리)
+for (int i = 0; i &lt; n; i++) {
+    sum += arr[i];  // arr[i]를 읽으면 그 근처 64바이트가 통째로 캐시에 올라옴
+}
+
+// 연결 리스트 순회 — cache-unfriendly (포인터 체인)
+Node* cur = head;
+while (cur) {
+    sum += cur-&gt;val;   // cur-&gt;val 읽고, 다음에 cur-&gt;next 주소로 이동
+    cur = cur-&gt;next;   // 이 주소는 메모리 어딘가에 흩어져 있음 → cache miss
+}</pre>
+  <p>
+    배열은 원소들이 연속된 메모리에 있어서 하나를 읽으면 그 다음 것들이 캐시에 미리 올라온다.
+    연결 리스트는 포인터를 따라가야 해서 매번 캐시 miss가 발생할 수 있다.
+    이게 Day 3에서 배울 <em>Cache Locality</em>의 핵심이다.
+  </p>
+
+  <h3>사례 2 — 행 우선 vs 열 우선 2D 배열 접근</h3>
+  <pre>// 빠른 버전 — 행 우선(row-major) 접근
+for (int i = 0; i &lt; N; i++)
+    for (int j = 0; j &lt; N; j++)
+        sum += matrix[i][j];   // 메모리 순서대로 순차 접근
+
+// 느린 버전 — 열 우선(column-major) 접근
+for (int j = 0; j &lt; N; j++)
+    for (int i = 0; i &lt; N; i++)
+        sum += matrix[i][j];   // stride=N으로 건너뜀 → 캐시 miss 폭발</pre>
+  <p>C/C++/Java에서 2D 배열은 행이 메모리에 연속 배치된다(row-major). 열 우선으로 접근하면 매 원소마다 N×4바이트를 건너뛰어 캐시 효율이 0에 가까워진다. N=1000이면 속도 차이가 10배 이상이다.</p>
+
+  <h3>사례 3 — 데이터 구조 설계: SoA vs AoS</h3>
+  <p>게임 엔진, 물리 시뮬레이터, 고주파 트레이딩에서 자주 나오는 패턴이다.</p>
+  <pre>// AoS (Array of Structs) — 일반적인 방식
+struct Entity { float x, y, z, health; };
+Entity entities[10000];
+// x, y, z, health, x, y, z, health, ... (인터리브)
+
+// SoA (Struct of Arrays) — 성능 최적화 방식
+struct Entities {
+    float x[10000], y[10000], z[10000], health[10000];
+};
+// xxx...yyy...zzz...hhh... (분리)</pre>
+  <p>
+    10,000개 엔티티의 x, y, z만 계산하는 루프(물리 업데이트)가 있을 때, AoS는 health 필드도 캐시로
+    올라와서 낭비가 생긴다. SoA는 x[], y[], z[]만 연속으로 올라오니 캐시 효율이 높다.
+    SIMD(Day 6)와도 자연스럽게 결합된다.
+  </p>
+
+  <hr class="divider">
+
+  <!-- ========================= 답변 사고 순서 ========================= -->
+  <h2>답변 사고 순서 — 면접에서 어떻게 말할 것인가</h2>
+
+  <p>이 순서대로 말하면 인터뷰어가 "하드웨어를 이해하는 개발자"로 인식한다.</p>
+
+  <ol class="think-steps">
+    <li>
+      <div>
+        <strong>병목 계층 먼저 좁히기</strong><br>
+        "A와 B의 차이를 보려면 먼저 어떤 종류의 병목인지 확인해야 합니다. CPU 계산인지, 메모리 접근인지, 동기화인지요."
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>메모리 계층과 캐시로 연결</strong><br>
+        "같은 알고리즘이라면 대부분 메모리 접근 패턴 차이입니다. 현대 CPU에서 DRAM 접근은 L1 캐시보다 50~100배 느리기 때문에, 캐시 miss 횟수가 3배 차이면 실행 시간도 3배가 날 수 있습니다."
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>구체적 원인 제시 (cache line, locality, branch)</strong><br>
+        "원인은 세 가지 중 하나나 복합입니다: spatial locality 부재, temporal locality 부재, branch misprediction입니다. 예를 들어 연결 리스트 순회는 포인터 chasing으로 매번 새로운 캐시 라인을 로드해서 느립니다."
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>측정 방법 제시</strong><br>
+        "추측이 아니라 측정으로 확인합니다. perf stat으로 cache-miss 카운터를 보거나, Valgrind의 cachegrind로 시뮬레이션하거나, VTune/perf record로 flamegraph를 분석합니다."
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>해결 방향 제시 (trade-off 포함)</strong><br>
+        "개선 방향은 접근 패턴을 sequential하게 바꾸거나, SoA로 데이터 레이아웃을 바꾸거나, 캐시 사이즈에 맞게 블록 단위로 처리하는 loop tiling입니다. 단, 코드 가독성이 떨어질 수 있어서 측정된 hot path에만 적용합니다."
+      </div>
+    </li>
+  </ol>
+
+  <hr class="divider">
+
+  <!-- ========================= 핵심 답변 예시 ========================= -->
+  <h2>핵심 답변 예시</h2>
+
+  <div class="card strong-answer">
+    <div class="answer-label strong">✓ 강한 답변 (시니어 수준)</div>
+    <p>
+      "같은 O(n) 알고리즘이라도 메모리 접근 패턴에 따라 실행 시간이 크게 달라집니다. 현대 CPU는 DRAM 접근 시간이 100ns 수준인 반면 L1 캐시는 1~4ns입니다. 그래서 같은 횟수의 메모리 접근이라도, 캐시 히트냐 미스냐에 따라 50~100배 차이가 납니다.
+    </p>
+    <p>
+      구체적으로 A가 배열 기반이고 B가 연결 리스트 기반이라면, A는 메모리가 연속 배치되어 있어서 한 cache line(64바이트)에 여러 원소가 올라오지만, B는 포인터를 따라 랜덤 주소로 점프하기 때문에 매번 새로운 cache line을 로드해야 합니다. 이게 cache miss 횟수 차이로 나타납니다.
+    </p>
+    <p>
+      측정은 <code>perf stat -e cache-misses ./program</code>으로 먼저 확인하고, 수치가 높다면 <code>perf record</code>와 flamegraph로 어느 함수에서 miss가 집중되는지 찾습니다. 최적화는 측정으로 병목이 확인된 후에만 합니다."
+    </p>
+  </div>
+
+  <div class="card weak-answer" style="margin-top: 1rem;">
+    <div class="answer-label weak">✗ 약한 답변 (주니어 수준)</div>
+    <p>
+      "구현 방식이 달라서 상수 차이가 났을 것 같아요. 아니면 A가 더 효율적인 로직을 쓴 것 같습니다. 컴파일러 최적화 차이일 수도 있어요."
+    </p>
+    <div style="margin-top:0.75rem; padding: 0.75rem; background: #1d1313; border-radius:6px;">
+      <strong style="color: var(--red);">왜 약한 답변인가:</strong>
+      <ul style="margin-top:0.4rem">
+        <li>"구현 차이"는 설명이 아니라 동어 반복이다 — 왜 구현 차이가 속도 차이를 만드는지가 핵심</li>
+        <li>하드웨어 계층(캐시, 메모리 접근 패턴)에 대한 언급이 전혀 없다</li>
+        <li>측정 방법을 모른다는 것이 드러난다 — 시니어는 데이터로 말한다</li>
+        <li>"컴파일러 최적화"는 틀리진 않지만 면접에서 캐시 개념을 피하는 도피처로 사용되는 경우가 많다</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= Senior Follow-up ========================= -->
+  <h2>Senior-Level Follow-up 질문과 답변</h2>
+
+  <div class="followup-card">
+    <div class="followup-q">
+      "캐시 miss를 줄이는 것만이 항상 정답인가요? 언제 캐시 최적화가 역효과를 낼 수 있나요?"
+    </div>
+    <div class="followup-a">
+      <p>아닙니다. 세 가지 경우에 역효과가 납니다:</p>
+      <ol>
+        <li><strong>과도한 prefetching:</strong> 실제로 쓰지 않을 데이터를 너무 많이 올리면 유효한 데이터를 캐시에서 밀어낼 수 있다 (cache pollution).</li>
+        <li><strong>멀티코어 환경의 false sharing:</strong> 캐시 라인 정렬을 너무 의식하다가 여러 스레드가 공유하는 캐시 라인에 서로 다른 변수를 넣으면, 쓸 때마다 다른 코어의 캐시를 무효화시켜 오히려 느려진다 (Day 5에서 다룸).</li>
+        <li><strong>최적화 가독성 손실이 더 비쌀 때:</strong> hot path가 아닌 코드에 SoA, loop tiling을 적용하면 유지보수 비용이 성능 이득보다 크다. "측정 먼저, 최적화는 나중에"가 원칙이다.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="followup-card" style="margin-top: 0.75rem;">
+    <div class="followup-q">
+      "JVM이나 Python처럼 런타임이 있는 환경에서도 이 지식이 적용되나요?"
+    </div>
+    <div class="followup-a">
+      <p>예, 그리고 오히려 더 중요할 수 있습니다. JVM에서도 ArrayList(배열 기반)가 LinkedList보다 순회가 빠른 이유는 캐시 locality 때문이다. Python에서 NumPy 배열이 일반 list보다 수십 배 빠른 이유도 연속 메모리 + 벡터 연산이다.</p>
+      <p>런타임이 하드웨어를 추상화해준다고 해서 하드웨어 동작이 사라지는 게 아니라, 그 영향이 여전히 성능 수치에 나타난다. JIT 컴파일러(JVM HotSpot, V8 등)도 이 원칙을 알고 있어서 루프 언롤링, SIMD 자동 벡터화를 시도하지만, 프로그래머가 데이터 레이아웃을 잘못 설계하면 JIT도 한계가 있다.</p>
+    </div>
+  </div>
+
+  <div class="followup-card" style="margin-top: 0.75rem;">
+    <div class="followup-q">
+      "실무에서 성능 최적화를 해야 할 때 어디서부터 시작하나요?"
+    </div>
+    <div class="followup-a">
+      <p>반드시 이 순서로 한다:</p>
+      <ol>
+        <li><strong>측정 (Measure first):</strong> 프로파일러 없이 추측하면 틀린 곳을 최적화하는 일이 생긴다. Brendan Gregg의 USE Method처럼 체계적으로 측정한다.</li>
+        <li><strong>병목 계층 확인:</strong> CPU bound인지, Memory bound인지, I/O bound인지, Lock bound인지 분류한다.</li>
+        <li><strong>알고리즘/자료구조 먼저:</strong> O(n²)를 O(n log n)으로 바꾸는 게 캐시 최적화보다 영향이 크다. 상수 최적화는 항상 마지막이다.</li>
+        <li><strong>캐시/메모리 접근 패턴:</strong> 알고리즘 개선 후에도 병목이 남으면 그때 캐시 locality를 본다.</li>
+        <li><strong>검증:</strong> 변경 전후 벤치마크와 프로파일을 비교해서 실제로 개선됐는지 확인한다.</li>
+      </ol>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= 흔한 오해 ========================= -->
+  <h2>흔한 오해와 정정</h2>
+
+  <div class="callout danger">
+    <div class="callout-title">✗ 오해 1 — "최신 CPU는 자동으로 최적화해주니까 캐시는 신경 안 써도 된다"</div>
+    <p>
+      CPU 프리페처(prefetcher)가 sequential access는 자동으로 잘 처리하지만, 랜덤 접근 패턴은 예측 못한다.
+      알고리즘이 본질적으로 랜덤 접근을 요구한다면 (예: 해시 테이블 대규모 조회), CPU가 해줄 수 있는 게 없다.
+      하드웨어 최적화는 프로그래머의 메모리 레이아웃 설계를 보조하지, 대체하지 않는다.
+    </p>
+  </div>
+
+  <div class="callout danger" style="margin-top: 0.75rem;">
+    <div class="callout-title">✗ 오해 2 — "메모리가 많으면 캐시 문제가 없다"</div>
+    <p>
+      DRAM 용량과 캐시 크기는 별개다. 32GB RAM이 있어도 L1 캐시는 32KB, L3는 수 MB 수준이다.
+      워킹셋(working set)이 캐시보다 크면 miss가 발생한다. RAM을 늘린다고 캐시 miss가 줄지 않는다.
+    </p>
+  </div>
+
+  <div class="callout danger" style="margin-top: 0.75rem;">
+    <div class="callout-title">✗ 오해 3 — "병렬화하면 항상 빨라진다"</div>
+    <p>
+      스레드를 늘릴수록 lock contention, false sharing, 캐시 일관성 트래픽이 증가할 수 있다.
+      Amdahl's Law에 따르면 직렬화된 부분이 있으면 병렬화 이득에 한계가 있다.
+      멀티코어 최적화(Day 5)는 단순히 스레드를 늘리는 것이 아니라 공유 자원을 줄이는 설계가 핵심이다.
+    </p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= 이후 커리큘럼 로드맵 ========================= -->
+  <h2>이후 레슨 로드맵 — 오늘 배운 프레임워크의 확장</h2>
+
+  <table class="rubric-table">
+    <thead>
+      <tr>
+        <th>Day</th>
+        <th>주제</th>
+        <th>오늘 개념과의 연결</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a href="./0002-memory-hierarchy.html" style="color: var(--accent2);">Day 2</a></td>
+        <td>메모리 계층 구조 — 숫자로 이해하는 비용 모델</td>
+        <td>오늘 표에 나온 숫자들의 근거와 실측 방법</td>
+      </tr>
+      <tr>
+        <td>Day 3</td>
+        <td>캐시 메커니즘 — Cache Line과 Locality</td>
+        <td>배열 vs 연결 리스트 차이의 물리적 근거</td>
+      </tr>
+      <tr>
+        <td>Day 4</td>
+        <td>CPU 파이프라인과 Branch Prediction</td>
+        <td>계산 병목의 micro-architecture 원인</td>
+      </tr>
+      <tr>
+        <td>Day 5</td>
+        <td>멀티코어 동시성과 False Sharing</td>
+        <td>동기화 병목의 하드웨어 근거</td>
+      </tr>
+      <tr>
+        <td>Day 6</td>
+        <td>SIMD와 벡터 연산</td>
+        <td>SoA 패턴 + 데이터 병렬화의 실현</td>
+      </tr>
+      <tr>
+        <td>Day 7</td>
+        <td>메모리 접근 패턴 최적화</td>
+        <td>오늘 행렬 예시의 체계적 일반화</td>
+      </tr>
+      <tr>
+        <td>Day 8</td>
+        <td>프로파일링과 하드웨어 카운터</td>
+        <td>"측정 먼저"의 실전 구현</td>
+      </tr>
+      <tr>
+        <td>Day 9</td>
+        <td>실전 성능 설계 패턴</td>
+        <td>오늘 프레임워크를 시스템 설계에 적용</td>
+      </tr>
+      <tr>
+        <td>Day 10</td>
+        <td>종합 면접 시뮬레이션</td>
+        <td>전체 커리큘럼 통합 답변 훈련</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr class="divider">
+
+  <!-- ========================= 자기 점검 Rubric ========================= -->
+  <h2>자기 점검 Rubric — 나는 어느 수준인가</h2>
+
+  <table class="rubric-table">
+    <thead>
+      <tr>
+        <th>수준</th>
+        <th>체크 항목</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="rubric-level senior">시니어</span></td>
+        <td>성능 병목을 계산/메모리/동기화 3계층으로 즉시 분류하고, 각 계층의 대표 원인과 측정 도구를 말할 수 있다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level senior">시니어</span></td>
+        <td>캐시 미스가 왜 속도 차이를 만드는지 숫자(L1 ≈ 1ns, DRAM ≈ 100ns)를 포함해 설명할 수 있다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level senior">시니어</span></td>
+        <td>배열 순회가 연결 리스트 순회보다 빠른 이유를 cache line과 spatial locality로 설명할 수 있다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level senior">시니어</span></td>
+        <td>최적화 전에 측정이 먼저라는 원칙과 구체적인 측정 방법(perf stat)을 답변에 포함한다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level mid">중급</span></td>
+        <td>캐시 miss가 느림의 원인임은 알지만, 숫자나 측정 방법은 모른다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level mid">중급</span></td>
+        <td>배열이 빠르다는 것은 알지만 cache line 단위 로딩 메커니즘은 설명 못한다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level junior">주니어</span></td>
+        <td>"구현 차이" 혹은 "상수 차이"로만 답하고 하드웨어 계층을 언급하지 않는다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level junior">주니어</span></td>
+        <td>캐시가 있다는 것은 알지만 어떻게 작동하는지, 측정은 어떻게 하는지 모른다</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr class="divider">
+
+  <!-- ========================= 퀴즈 ========================= -->
+  <div class="quiz-section">
+    <h3>확인 퀴즈 — 개념 점검</h3>
+    <p>이 질문들은 단순 암기가 아니라 이해도를 확인한다. 틀려도 설명을 읽고 이해하는 것이 목표다.</p>
+
+    <!-- Q1 -->
+    <div class="quiz-question">Q1. 다음 중 "Memory Bound" 병목의 특징으로 가장 정확한 것은?</div>
+    <ul class="quiz-options" id="q1-options">
+      <li><label><input type="radio" name="q1" value="a">CPU 사용률이 0%에 가깝고 아무 작업도 하지 않는다</label></li>
+      <li><label><input type="radio" name="q1" value="b">CPU 사용률은 높게 보이지만 실제 연산보다 메모리 대기 시간이 더 길다</label></li>
+      <li><label><input type="radio" name="q1" value="c">스레드가 많을수록 무조건 성능이 향상된다</label></li>
+      <li><label><input type="radio" name="q1" value="d">L1 캐시가 커질수록 항상 해결된다</label></li>
+    </ul>
+    <button class="quiz-btn" onclick="checkQuiz('q1', 'b')">채점하기</button>
+    <div id="q1-feedback" class="quiz-feedback"></div>
+
+    <!-- Q2 -->
+    <div class="quiz-question" style="margin-top:1.5rem">Q2. 1,000×1,000 정수 행렬을 행 우선(row-major) vs 열 우선(column-major)으로 접근할 때, 왜 행 우선이 더 빠른가?</div>
+    <ul class="quiz-options" id="q2-options">
+      <li><label><input type="radio" name="q2" value="a">행 우선은 덧셈 연산이 더 적게 필요하기 때문이다</label></li>
+      <li><label><input type="radio" name="q2" value="b">행 우선은 배열을 메모리에 저장하는 순서(row-major layout)와 같아서 연속된 메모리를 읽으므로 cache miss가 적다</label></li>
+      <li><label><input type="radio" name="q2" value="c">컴파일러가 행 우선을 자동으로 벡터화하기 때문이다</label></li>
+      <li><label><input type="radio" name="q2" value="d">DRAM 버스 폭이 행 방향으로 최적화되어 있기 때문이다</label></li>
+    </ul>
+    <button class="quiz-btn" onclick="checkQuiz('q2', 'b')">채점하기</button>
+    <div id="q2-feedback" class="quiz-feedback"></div>
+
+    <!-- Q3 -->
+    <div class="quiz-question" style="margin-top:1.5rem">Q3. "성능 최적화를 해야 한다"는 요청을 받았을 때 시니어 개발자가 가장 먼저 해야 하는 것은?</div>
+    <ul class="quiz-options" id="q3-options">
+      <li><label><input type="radio" name="q3" value="a">모든 연결 리스트를 배열로 교체한다</label></li>
+      <li><label><input type="radio" name="q3" value="b">스레드 수를 두 배로 늘린다</label></li>
+      <li><label><input type="radio" name="q3" value="c">프로파일러로 실제 병목 위치와 종류를 먼저 측정한다</label></li>
+      <li><label><input type="radio" name="q3" value="d">캐시 크기에 맞게 데이터 구조를 SoA로 전환한다</label></li>
+    </ul>
+    <button class="quiz-btn" onclick="checkQuiz('q3', 'c')">채점하기</button>
+    <div id="q3-feedback" class="quiz-feedback"></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= 추천 자료 ========================= -->
+  <h2>오늘 레슨의 추천 1차 자료</h2>
+  <ul>
+    <li>
+      <strong>"Latency Numbers Every Programmer Should Know"</strong> — Jeff Dean / Peter Norvig<br>
+      <span class="tag">레퍼런스</span> 메모리 계층 숫자를 직접 확인하고 업데이트된 버전 찾아보기
+    </li>
+    <li>
+      <strong>CS:APP (Computer Systems: A Programmer's Perspective), Chapter 6</strong> — Bryant & O'Hallaron<br>
+      <span class="tag">교재</span> 메모리 계층, 캐시 동작 원리를 가장 프로그래머 친화적으로 설명한 챕터
+    </li>
+    <li>
+      <strong>"What Every Programmer Should Know About Memory"</strong> — Ulrich Drepper<br>
+      <span class="tag">논문/가이드</span> 실측 데이터로 캐시 효과를 보여주는 실무 최고 자료 (무료 PDF)
+    </li>
+  </ul>
+
+  <div class="callout info" style="margin-top: 1rem;">
+    <div class="callout-title">💬 모르는 것이 있으면 바로 질문하세요</div>
+    이 레슨에서 이해가 안 가는 부분이 있으면 Claude에게 "Day 1에서 [개념]을 더 설명해줘"라고 질문하세요.
+    면접 대비용이니 실제 면접 답변 연습도 함께 요청할 수 있습니다.
+  </div>
+
+  <!-- Navigation -->
+  <nav class="lesson-nav">
+    <a href="../lessons/" class="nav-link">← 레슨 목록</a>
+    <a href="./0002-memory-hierarchy.html" class="nav-link">Day 2 — 메모리 계층 구조 →</a>
+  </nav>
+
+</div>
+
+<script>
+  const quizAnswers = {
+    q1: {
+      correct: 'b',
+      feedback: {
+        a: '오답: CPU 사용률이 0%이면 아무것도 안 하는 상태이지, Memory Bound가 아닙니다. Memory Bound는 CPU가 열심히 실행하려 하지만 데이터를 기다리는 상태입니다.',
+        b: '정답: Memory Bound는 CPU 코어가 계산 준비를 마쳤지만 메모리에서 데이터가 오기를 기다리는 상태입니다. <code>perf stat</code>에서 IPC(Instructions Per Cycle)가 낮고 cache-misses가 높게 나타납니다.',
+        c: '오답: 스레드를 늘리면 Memory Bound 상황에서 오히려 메모리 대역폭 경쟁이 심해져 더 느려질 수 있습니다.',
+        d: '오답: L1 캐시가 커져도 워킹셋이 그보다 크면 miss가 발생합니다. 또한 L1을 크게 만들면 접근 레이턴시가 늘어나는 trade-off도 있습니다.'
+      }
+    },
+    q2: {
+      correct: 'b',
+      feedback: {
+        a: '오답: 행/열 접근 방향은 연산 횟수와 무관합니다. 같은 N² 번의 접근이 일어납니다.',
+        b: '정답: C, C++, Java의 2D 배열은 행이 메모리에 연속 배치됩니다(row-major layout). 행 우선으로 접근하면 인접한 메모리를 순서대로 읽어 한 cache line 로드로 여러 원소를 커버합니다. 열 우선이면 N개 원소만큼 건너뛰어서 매 원소마다 새 cache line이 필요합니다.',
+        c: '오답: 자동 벡터화는 부수적 효과이고, 근본 원인은 메모리 레이아웃과 접근 패턴의 일치 여부입니다.',
+        d: '오답: DRAM 버스는 방향성이 없습니다. 차이의 원인은 CPU 캐시 레이어에서 발생합니다.'
+      }
+    },
+    q3: {
+      correct: 'c',
+      feedback: {
+        a: '오답: 병목이 메모리 접근 패턴인지 확인도 안 하고 자료구조를 바꾸면 잘못된 곳을 최적화할 수 있습니다. 실제로 연결 리스트가 병목이 아닌 코드를 수정하면 시간만 낭비됩니다.',
+        b: '오답: 병목이 CPU bound인지도 모르는 상태에서 스레드를 늘리면 lock contention이나 false sharing으로 더 느려질 수 있습니다.',
+        c: '정답: "Measure First, Optimize Later"는 시니어 개발자의 핵심 원칙입니다. 프로파일러(perf, Instruments, async-profiler 등)로 병목의 위치(어느 함수)와 종류(CPU/메모리/IO/동기화)를 먼저 확인하고, 데이터가 있을 때 최적화 방향을 결정합니다.',
+        d: '오답: SoA 변환도 프로파일링으로 해당 부분이 실제 병목임을 확인한 후에 하는 것입니다. 무작정 SoA로 바꾸면 가독성이 크게 낮아지면서 병목이 아닌 곳을 건드리는 낭비가 됩니다.'
+      }
+    }
+  };
+
+  function checkQuiz(qid, correctVal) {
+    const selected = document.querySelector(`input[name="${qid}"]:checked`);
+    const feedback = document.getElementById(`${qid}-feedback`);
+    const data = quizAnswers[qid];
+
+    if (!selected) {
+      feedback.className = 'quiz-feedback incorrect';
+      feedback.innerHTML = '답을 선택해주세요.';
+      return;
+    }
+
+    const val = selected.value;
+    const isCorrect = val === data.correct;
+    feedback.className = 'quiz-feedback ' + (isCorrect ? 'correct' : 'incorrect');
+    const header = isCorrect ? '✓ 정답입니다!' : '✗ 오답입니다.';
+    feedback.innerHTML = `<strong>${header}</strong><div class="explanation">${data.feedback[val]}</div>`;
+  }
+</script>
+</body>
+</html>

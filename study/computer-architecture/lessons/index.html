@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>컴퓨터 구조 — 시니어 인터뷰 대비 학습 목록</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .lesson-list { list-style: none; padding: 0; }
+    .lesson-list li {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 0.6rem;
+      transition: background 0.15s;
+    }
+    .lesson-list li:hover { background: var(--surface); }
+    .lesson-list a {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.9rem 1.2rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+    .lesson-list .day-num {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 6px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .lesson-list .day-num.planned {
+      background: var(--surface2);
+      color: var(--muted);
+    }
+    .lesson-list .title { font-weight: 500; }
+    .lesson-list .status {
+      margin-left: auto;
+      font-size: 0.75rem;
+      color: var(--green);
+    }
+    .lesson-list .status.planned { color: var(--muted); }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 1.5rem;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+    }
+    .back-link:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+<div class="lesson-container">
+  <header class="lesson-header">
+    <div class="day-badge">컴퓨터 구조</div>
+    <h1>시니어 인터뷰 대비 레슨 목록</h1>
+    <p class="subtitle">10년차 이상 개발자 면접 — 성능 병목 분석 · 메모리 계층 · 하드웨어 기반 설계 판단</p>
+  </header>
+
+  <ul class="lesson-list">
+    <li>
+      <a href="./0001-hardware-performance-framework.html">
+        <span class="day-num">DAY 1</span>
+        <span class="title">코드 성능과 하드웨어 사고 프레임워크</span>
+        <span class="status">✓ 완료</span>
+      </a>
+    </li>
+    <li>
+      <a href="./0002-memory-hierarchy.html" style="pointer-events:none; opacity:0.5">
+        <span class="day-num planned">DAY 2</span>
+        <span class="title">메모리 계층 구조 — 숫자로 이해하는 비용 모델</span>
+        <span class="status planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#" style="pointer-events:none; opacity:0.5">
+        <span class="day-num planned">DAY 3</span>
+        <span class="title">캐시 메커니즘 — Cache Line과 Locality</span>
+        <span class="status planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#" style="pointer-events:none; opacity:0.5">
+        <span class="day-num planned">DAY 4</span>
+        <span class="title">CPU 파이프라인과 Branch Prediction</span>
+        <span class="status planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#" style="pointer-events:none; opacity:0.5">
+        <span class="day-num planned">DAY 5</span>
+        <span class="title">멀티코어 동시성과 False Sharing</span>
+        <span class="status planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#" style="pointer-events:none; opacity:0.5">
+        <span class="day-num planned">DAY 6</span>
+        <span class="title">SIMD와 벡터 연산</span>
+        <span class="status planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#" style="pointer-events:none; opacity:0.5">
+        <span class="day-num planned">DAY 7</span>
+        <span class="title">메모리 접근 패턴 최적화</span>
+        <span class="status planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#" style="pointer-events:none; opacity:0.5">
+        <span class="day-num planned">DAY 8</span>
+        <span class="title">프로파일링과 하드웨어 카운터</span>
+        <span class="status planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#" style="pointer-events:none; opacity:0.5">
+        <span class="day-num planned">DAY 9</span>
+        <span class="title">실전 성능 설계 패턴</span>
+        <span class="status planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#" style="pointer-events:none; opacity:0.5">
+        <span class="day-num planned">DAY 10</span>
+        <span class="title">종합 면접 시뮬레이션</span>
+        <span class="status planned">예정</span>
+      </a>
+    </li>
+  </ul>
+
+  <div class="callout info" style="margin-top: 2rem;">
+    <div class="callout-title">📋 MISSION</div>
+    <p>
+      성능 병목 분석, 메모리 계층 이해, 하드웨어 기반 설계 판단 역량으로 시니어 면접에서 인정받는 것이 목표입니다.
+      단순 개념 암기가 아니라 <strong>왜</strong>를 설명할 수 있는 수준을 목표로 합니다.
+    </p>
+  </div>
+</div>
+</body>
+</html>
