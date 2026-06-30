@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 11 — 고급 라우팅 프로토콜: OSPF와 BGP</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --accent: #6c8ebf;
+      --accent2: #7ec8e3;
+      --green: #4caf81;
+      --yellow: #f0c040;
+      --red: #e05252;
+      --orange: #f09850;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --border: #2d3148;
+      --code-bg: #12141f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      text-align: center;
+      padding: 2.5rem 2rem;
+      background: linear-gradient(135deg, #1a1d2e 0%, #252840 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.9rem;
+      border-radius: 20px;
+      margin-bottom: 1rem;
+    }
+    header h1 { font-size: 1.9rem; font-weight: 700; margin-bottom: 0.5rem; }
+    header p { color: var(--muted); font-size: 0.95rem; }
+    .objective-box {
+      background: var(--surface);
+      border-left: 4px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .objective-box h3 { color: var(--accent2); margin-bottom: 0.6rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .objective-box ul { padding-left: 1.2rem; }
+    .objective-box li { margin-bottom: 0.3rem; color: var(--text); }
+    section { margin-bottom: 2.8rem; }
+    h2 {
+      font-size: 1.35rem;
+      color: var(--accent2);
+      margin-bottom: 1.2rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.4rem 0 0.7rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1rem 0 0.5rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      font-family: 'Consolas', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      padding: 0.15em 0.45em;
+      border-radius: 4px;
+      font-size: 0.87em;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+      font-family: 'Consolas', 'Cascadia Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: #c9d1d9;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 0.6rem;
+    }
+    .card-title.ospf { color: var(--green); }
+    .card-title.bgp { color: var(--orange); }
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.88rem;
+    }
+    .compare-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.7rem 0.9rem;
+      text-align: left;
+      font-weight: 600;
+    }
+    .compare-table td {
+      padding: 0.65rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .info-box {
+      border-radius: 8px;
+      padding: 1rem 1.3rem;
+      margin: 1.2rem 0;
+    }
+    .info-box.tip { background: rgba(76, 175, 129, 0.1); border-left: 3px solid var(--green); }
+    .info-box.warn { background: rgba(240, 192, 64, 0.08); border-left: 3px solid var(--yellow); }
+    .info-box.key { background: rgba(108, 142, 191, 0.1); border-left: 3px solid var(--accent); }
+    .info-box .label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 0.4rem;
+    }
+    .info-box.tip .label { color: var(--green); }
+    .info-box.warn .label { color: var(--yellow); }
+    .info-box.key .label { color: var(--accent); }
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      margin: 1rem 0;
+      font-family: 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      color: #c9d1d9;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .step-list { counter-reset: steps; list-style: none; padding-left: 0; }
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .step-list li::before {
+      content: counter(steps);
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .quiz-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
+    .quiz-q { font-weight: 600; margin-bottom: 0.8rem; color: var(--accent2); }
+    .quiz-options { list-style: none; padding: 0; }
+    .quiz-options li {
+      padding: 0.5rem 0.8rem;
+      border-radius: 6px;
+      margin-bottom: 0.4rem;
+      background: var(--surface2);
+      cursor: default;
+    }
+    details.answer { margin-top: 0.6rem; }
+    details.answer summary {
+      cursor: pointer;
+      color: var(--accent);
+      font-size: 0.88rem;
+      user-select: none;
+    }
+    details.answer .answer-body {
+      margin-top: 0.5rem;
+      padding: 0.8rem;
+      background: rgba(76,175,129,0.08);
+      border-left: 3px solid var(--green);
+      border-radius: 0 6px 6px 0;
+      font-size: 0.9rem;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.6rem;
+      border-radius: 4px;
+      margin-right: 0.3rem;
+      font-weight: 600;
+    }
+    .tag.as { background: rgba(108,142,191,0.2); color: var(--accent2); }
+    .tag.igp { background: rgba(76,175,129,0.2); color: var(--green); }
+    .tag.egp { background: rgba(240,152,80,0.2); color: var(--orange); }
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 11</div>
+    <h1>고급 라우팅 프로토콜</h1>
+    <p>OSPF와 BGP — 인터넷이 실제로 경로를 결정하는 방법</p>
+  </header>
+
+  <div class="objective-box">
+    <h3>오늘의 학습 목표</h3>
+    <ul>
+      <li>정적 라우팅과 동적 라우팅의 차이를 설명할 수 있다</li>
+      <li>OSPF 링크 상태 라우팅의 동작 원리(LSA, LSDB, SPF 계산)를 이해한다</li>
+      <li>BGP가 자율 시스템 간 경로를 교환하는 방식을 설명할 수 있다</li>
+      <li>IGP와 EGP의 역할 차이를 구분한다</li>
+      <li>BGP 속성(AS-PATH, NEXT-HOP, LOCAL_PREF, MED)을 이해한다</li>
+    </ul>
+  </div>
+
+  <!-- ===================== 1. 왜 동적 라우팅이 필요한가 ===================== -->
+  <section>
+    <h2>1. 왜 동적 라우팅이 필요한가?</h2>
+
+    <p>Day 3에서 라우팅 테이블과 Longest Prefix Match를 배웠다. 당시에는 관리자가 직접 경로를 설정하는 <strong>정적 라우팅(static routing)</strong>을 다뤘다. 소규모 네트워크에서는 충분하지만, 수천 개의 라우터가 서로 연결된 인터넷에서는 수동 관리가 불가능하다.</p>
+
+    <div class="info-box key">
+      <div class="label">핵심 질문</div>
+      라우터 A가 라우터 Z까지 가는 경로가 두 가지인데, 중간 링크 하나가 끊어졌을 때 어떻게 자동으로 우회 경로를 찾을 수 있을까?
+    </div>
+
+    <p><strong>동적 라우팅 프로토콜</strong>은 라우터들이 서로 경로 정보를 교환하여 네트워크 변화에 자동으로 적응한다. 동적 라우팅 프로토콜은 사용 범위에 따라 두 가지로 나뉜다:</p>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>구분</th>
+          <th>풀네임</th>
+          <th>사용 범위</th>
+          <th>대표 프로토콜</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tag igp">IGP</span></td>
+          <td>Interior Gateway Protocol</td>
+          <td>자율 시스템(AS) 내부</td>
+          <td>OSPF, RIP, EIGRP</td>
+        </tr>
+        <tr>
+          <td><span class="tag egp">EGP</span></td>
+          <td>Exterior Gateway Protocol</td>
+          <td>자율 시스템(AS) 간</td>
+          <td>BGP</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>자율 시스템(AS)이란?</h3>
+    <p><strong>자율 시스템(Autonomous System, AS)</strong>은 단일 관리 정책 하에 운영되는 라우터 집합이다. KT, SK브로드밴드, AWS, Google 각각이 하나의 AS를 운영한다. 각 AS에는 고유한 <strong>AS 번호(ASN)</strong>가 부여된다(예: AS9318은 SK브로드밴드).</p>
+
+    <div class="diagram">인터넷 구조 (개념도)
+
+  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+  │   AS 9318 (SKT)  │    │  AS 7018 (AT&T)  │    │  AS 16509 (AWS)  │
+  │                  │    │                  │    │                  │
+  │  R1 ─── R2       │BGP │   R5 ─── R6     │BGP │  R9 ─── R10     │
+  │   │       │      │◄──►│    │       │     │◄──►│   │       │     │
+  │  R3 ─── R4       │    │   R7 ─── R8     │    │  R11 ─── R12    │
+  │    [OSPF 사용]   │    │   [OSPF 사용]   │    │  [OSPF 사용]    │
+  └──────────────────┘    └──────────────────┘    └──────────────────┘
+       IGP (내부)               IGP (내부)               IGP (내부)
+  ←────────────────────── BGP (AS 간 경계) ───────────────────────►</div>
+
+    <div class="info-box tip">
+      <div class="label">요약</div>
+      AS 내부는 OSPF 같은 IGP로 빠르게 경로를 교환하고, AS 경계에서는 BGP로 인터넷 전체의 경로 정보를 교환한다.
+    </div>
+  </section>
+
+  <!-- ===================== 2. OSPF — 링크 상태 라우팅 ===================== -->
+  <section>
+    <h2>2. OSPF — 링크 상태 라우팅</h2>
+
+    <p><strong>OSPF(Open Shortest Path First)</strong>는 AS 내부에서 사용하는 링크 상태 기반 라우팅 프로토콜이다. "Open"은 오픈 표준(RFC 2328 / RFC 5340)을 의미한다.</p>
+
+    <h3>링크 상태 vs 거리 벡터</h3>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>방식</th>
+          <th>원리</th>
+          <th>정보 공유 대상</th>
+          <th>대표 프로토콜</th>
+          <th>수렴 속도</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>링크 상태</strong></td>
+          <td>전체 네트워크 지도를 그리고 Dijkstra 최단 경로 계산</td>
+          <td>모든 라우터에 동일한 LSDB</td>
+          <td>OSPF, IS-IS</td>
+          <td>빠름</td>
+        </tr>
+        <tr>
+          <td><strong>거리 벡터</strong></td>
+          <td>이웃에게 "나는 X까지 N홉"이라고 알림</td>
+          <td>인접(neighbor) 라우터에만 공유</td>
+          <td>RIP, EIGRP</td>
+          <td>느림 (수렴 문제)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>OSPF 핵심 개념</h3>
+
+    <div class="card">
+      <div class="card-title ospf">LSA (Link State Advertisement)</div>
+      <p>각 라우터가 자신과 연결된 링크 정보를 광고하는 패킷. "나는 라우터 A이고, B와 비용 10으로 연결, C와 비용 5로 연결"을 전체 네트워크에 전파한다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title ospf">LSDB (Link State Database)</div>
+      <p>수집한 모든 LSA를 저장하는 데이터베이스. 같은 영역(Area) 내의 모든 라우터는 동일한 LSDB를 갖는다. 이 지도를 바탕으로 최단 경로를 계산한다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title ospf">SPF 알고리즘 (Dijkstra)</div>
+      <p>LSDB(전체 지도)를 바탕으로 자신을 루트로 하는 최단 경로 트리를 계산한다. 비용(Cost)은 인터페이스 대역폭에 반비례한다(10Gbps &lt; 1Gbps &lt; 100Mbps 순서로 Cost 증가).</p>
+    </div>
+
+    <h3>OSPF 동작 과정 (단계별)</h3>
+
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>이웃 탐색 (Neighbor Discovery)</strong><br>
+          라우터가 Hello 패킷을 멀티캐스트(<code>224.0.0.5</code>)로 전송하여 OSPF 이웃을 발견한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>인접 관계 수립 (Adjacency Formation)</strong><br>
+          같은 링크의 라우터들이 Hello 매개변수를 교환하고 Master/Slave 역할을 결정한다. 멀티액세스 네트워크에서는 DR(Designated Router)과 BDR(Backup DR)을 선출하여 LSA 교환을 최소화한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>LSDB 동기화 (Database Exchange)</strong><br>
+          인접 라우터끼리 DBD(Database Description) 패킷을 교환하고 상대가 모르는 LSA를 요청(LSR)하여 수신(LSU)한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>SPF 계산 (Route Calculation)</strong><br>
+          LSDB가 완성되면 Dijkstra 알고리즘으로 자신을 루트로 하는 최단 경로 트리를 계산하여 라우팅 테이블에 반영한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>변화 감지 및 재계산 (Convergence)</strong><br>
+          링크가 끊어지면 해당 라우터가 새 LSA를 플러딩(flooding)하고, 모든 라우터가 SPF를 재계산한다. RIP보다 수렴 속도가 훨씬 빠르다.
+        </div>
+      </li>
+    </ol>
+
+    <h3>OSPF Area와 계층 구조</h3>
+
+    <p>대규모 네트워크에서 LSDB가 너무 커지면 SPF 계산 부하가 증가한다. OSPF는 <strong>Area</strong>로 네트워크를 분할하여 이 문제를 해결한다.</p>
+
+    <div class="diagram">OSPF Area 구조
+
+         ┌─────── Area 0 (Backbone) ───────┐
+         │                                  │
+  Area 1 ─── ABR1 ─── R_backbone ─── ABR2 ─── Area 2
+  (일반 Area)  │                        │     (일반 Area)
+               └────────────────────────┘
+
+  ABR (Area Border Router): 두 Area에 동시에 속하는 라우터
+  Area 0: 백본 영역 (모든 Area가 연결)
+  Area 1, 2: 일반 영역 (내부 LSA를 Area 0으로만 요약 전송)</div>
+
+    <ul>
+      <li><strong>Area 0 (Backbone Area)</strong>: 모든 OSPF Area의 중심. 다른 Area는 반드시 Area 0을 통해 연결된다.</li>
+      <li><strong>ABR (Area Border Router)</strong>: 두 Area에 걸쳐 있는 라우터. 각 Area의 LSA를 요약(Summary LSA)하여 다른 Area로 전달.</li>
+      <li>Area를 나누면 각 Area 내부의 LSDB 크기가 줄어 SPF 계산이 가벼워진다.</li>
+    </ul>
+
+    <div class="info-box warn">
+      <div class="label">주의</div>
+      OSPF의 Cost는 기본적으로 <code>100Mbps / 인터페이스 대역폭</code>으로 계산된다. 기가비트 이상 링크에서는 모두 Cost 1이 되어 구분이 안 되므로, 고속 환경에서는 레퍼런스 대역폭을 높게 재설정해야 한다.
+    </div>
+  </section>
+
+  <!-- ===================== 3. BGP — 인터넷의 라우팅 프로토콜 ===================== -->
+  <section>
+    <h2>3. BGP — 인터넷의 라우팅 프로토콜</h2>
+
+    <p><strong>BGP(Border Gateway Protocol, RFC 4271)</strong>는 AS 간 경로를 교환하는 EGP다. 현재 버전은 BGP-4로, 인터넷의 "지도"를 그리는 유일한 프로토콜이다.</p>
+
+    <div class="info-box key">
+      <div class="label">BGP의 특징</div>
+      BGP는 <strong>최단 경로</strong>가 아니라 <strong>정책 기반</strong>으로 경로를 선택한다. AS 간에는 비용뿐 아니라 비즈니스 관계(피어링, 트랜짓 비용)가 경로 결정에 영향을 미친다.
+    </div>
+
+    <h3>iBGP vs eBGP</h3>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>구분</th>
+          <th>전체 이름</th>
+          <th>사용 범위</th>
+          <th>특징</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>eBGP</strong></td>
+          <td>External BGP</td>
+          <td>서로 다른 AS 사이</td>
+          <td>AS 경계 라우터(ASBR) 간 연결. TTL=1로 직접 연결만 허용(기본값)</td>
+        </tr>
+        <tr>
+          <td><strong>iBGP</strong></td>
+          <td>Internal BGP</td>
+          <td>같은 AS 내부</td>
+          <td>AS 내의 BGP 라우터 간 전파. Full-mesh 또는 Route Reflector 사용</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>BGP 세션 수립 과정</h3>
+
+    <p>BGP는 TCP 179 포트를 사용하여 신뢰성 있는 세션을 수립한다. OSPF처럼 자동 탐색이 아니라, 관리자가 <strong>피어(Peer)</strong>를 명시적으로 설정해야 한다.</p>
+
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>TCP 연결 수립</strong><br>
+          BGP 피어가 TCP 3-way handshake로 연결을 맺는다 (포트 179).
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>OPEN 메시지 교환</strong><br>
+          AS 번호, BGP 버전, Hold Time, BGP 라우터 ID를 교환한다. Hold Time이 합의되면 Keepalive를 해당 시간 내에 보내지 않으면 세션이 종료된다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>UPDATE 메시지 교환</strong><br>
+          경로 정보(NLRI: Network Layer Reachability Information)와 경로 속성을 교환한다. 새 경로 광고와 철회(Withdraw)가 여기서 이루어진다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>KEEPALIVE 메시지</strong><br>
+          세션을 유지하기 위해 주기적으로 교환하는 빈 메시지 (Hold Timer 리셋).
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>NOTIFICATION 메시지</strong><br>
+          오류 발생 시 전송 후 세션 종료. 오류 코드와 세부 코드로 원인을 알린다.
+        </div>
+      </li>
+    </ol>
+
+    <h3>BGP 핵심 속성 (Path Attributes)</h3>
+
+    <p>BGP는 경로 선택을 위해 여러 <strong>경로 속성(Path Attribute)</strong>을 사용한다. 관리자는 이 속성을 조작해 트래픽 경로를 제어한다.</p>
+
+    <div class="card">
+      <div class="card-title bgp">AS-PATH</div>
+      <p>해당 경로가 거쳐온 AS 번호의 순서 목록. 예: <code>AS-PATH: 7018 9318 4134</code>는 AS7018 → AS9318 → AS4134를 경유한다는 뜻. 루프 방지에 사용되며, 일반적으로 AS-PATH가 짧을수록 선호된다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title bgp">NEXT-HOP</div>
+      <p>해당 경로에 도달하기 위해 다음에 보내야 할 라우터의 IP. eBGP에서는 피어의 IP, iBGP에서는 eBGP 세션 엔드포인트의 IP가 설정된다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title bgp">LOCAL_PREF (로컬 선호도)</div>
+      <p>AS 내부에서만 사용하는 속성(iBGP). 값이 높을수록 선호. 여러 eBGP 피어를 통해 같은 목적지에 도달할 수 있을 때, 어떤 출구를 선택할지 결정한다. (기본값 100)</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title bgp">MED (Multi-Exit Discriminator)</div>
+      <p>상대 AS에게 "우리 네트워크에 들어올 때 이 입구를 선호해 달라"고 힌트를 주는 속성. 값이 낮을수록 선호. LOCAL_PREF와 반대 방향으로 영향을 미친다.</p>
+    </div>
+
+    <h3>BGP 경로 선택 알고리즘 (Best Path Selection)</h3>
+
+    <p>같은 목적지로 가는 경로가 여러 개일 때 BGP는 다음 순서로 최적 경로를 선택한다:</p>
+
+    <pre>1. Weight (Cisco 전용, 값이 높을수록 선호)
+2. LOCAL_PREF (값이 높을수록 선호, AS 내부 정책)
+3. locally originated (자신이 직접 생성한 경로 선호)
+4. AS-PATH 길이 (짧을수록 선호)
+5. ORIGIN type (IGP > EGP > incomplete)
+6. MED (값이 낮을수록 선호)
+7. eBGP > iBGP
+8. 가장 낮은 IGP metric to NEXT-HOP
+9. 가장 낮은 BGP Router ID (tie-breaker)</pre>
+
+    <div class="info-box tip">
+      <div class="label">실무 팁</div>
+      실제 운영에서 경로를 제어할 때는 대부분 LOCAL_PREF(아웃바운드 제어)와 AS-PATH prepending(인바운드 제어)을 사용한다. MED는 같은 AS에서 온 경로에만 비교되어 신뢰하기 어렵다.
+    </div>
+
+    <h3>BGP 보안 이슈 — 라우트 하이재킹</h3>
+
+    <p>BGP는 경로 광고를 인증하는 메커니즘이 원래 없었다. 이로 인해 <strong>BGP 하이재킹(Route Hijacking)</strong>이 발생할 수 있다.</p>
+
+    <div class="diagram">BGP 하이재킹 사례 (2010년 중국 China Telecom)
+
+  [정상 상황]
+  AS16509(AWS) 192.0.2.0/24 광고 → 전 세계 인터넷이 AWS로 트래픽 전송
+
+  [하이재킹]
+  AS4134(China Telecom)가 192.0.2.0/24를 자신이 갖고 있다고 허위 광고
+  → 더 구체적인 prefix 또는 짧은 AS-PATH로 인해 일부 트래픽이 잘못 라우팅
+  → 중국을 경유하거나 블랙홀에 빠질 수 있음</div>
+
+    <p>현재는 <strong>RPKI(Resource Public Key Infrastructure)</strong>를 통해 AS가 특정 IP prefix를 광고할 권한이 있는지를 암호학적으로 검증하는 방식으로 대응한다.</p>
+  </section>
+
+  <!-- ===================== 4. OSPF vs BGP 종합 비교 ===================== -->
+  <section>
+    <h2>4. OSPF vs BGP 종합 비교</h2>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>OSPF</th>
+          <th>BGP</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>유형</td>
+          <td><span class="tag igp">IGP</span> (AS 내부)</td>
+          <td><span class="tag egp">EGP</span> (AS 간)</td>
+        </tr>
+        <tr>
+          <td>RFC</td>
+          <td>RFC 2328 (v2), RFC 5340 (v3)</td>
+          <td>RFC 4271</td>
+        </tr>
+        <tr>
+          <td>알고리즘</td>
+          <td>Dijkstra (링크 상태)</td>
+          <td>정책 기반 경로 선택</td>
+        </tr>
+        <tr>
+          <td>경로 선택 기준</td>
+          <td>Cost (대역폭 기반)</td>
+          <td>정책 속성 (LOCAL_PREF, AS-PATH 등)</td>
+        </tr>
+        <tr>
+          <td>전송 프로토콜</td>
+          <td>IP 직접 (프로토콜 번호 89)</td>
+          <td>TCP 179</td>
+        </tr>
+        <tr>
+          <td>이웃 탐색</td>
+          <td>자동 (Hello 패킷, 멀티캐스트)</td>
+          <td>수동 설정 (피어 명시)</td>
+        </tr>
+        <tr>
+          <td>수렴 속도</td>
+          <td>빠름 (수 초)</td>
+          <td>느림 (수 분, 정책 적용 필요)</td>
+        </tr>
+        <tr>
+          <td>확장성</td>
+          <td>Area로 구조화, 수백~수천 라우터</td>
+          <td>인터넷 전체 (900,000+ 경로)</td>
+        </tr>
+        <tr>
+          <td>보안</td>
+          <td>MD5/SHA 인증 (피어 간)</td>
+          <td>TCP MD5, RPKI (경로 원본 검증)</td>
+        </tr>
+        <tr>
+          <td>사용 환경</td>
+          <td>기업/ISP 내부 네트워크</td>
+          <td>ISP 간, IXP(인터넷 교환 포인트)</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ===================== 5. 실전 시나리오 ===================== -->
+  <section>
+    <h2>5. 실전 시나리오 — 트래픽 경로 추적</h2>
+
+    <p>한국에서 AWS 서버(<code>54.230.x.x</code>)에 접속할 때 라우팅이 어떻게 이루어지는지 추적해 보자.</p>
+
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>내 PC → 기업/가정 라우터</strong><br>
+          기본 게이트웨이로 패킷이 전달된다. 내 PC의 라우팅 테이블에는 <code>0.0.0.0/0 → 게이트웨이</code> 경로가 있다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>게이트웨이 → ISP (예: SKT, AS9318)</strong><br>
+          ISP 라우터가 BGP 테이블에서 <code>54.230.0.0/15</code>(AWS prefix)를 찾아 다음 홉을 결정한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>ISP 내부 라우팅 (OSPF)</strong><br>
+          SKT 내부에서 OSPF가 패킷을 국제 관문 라우터(ASBR)까지 전달한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>국제 BGP 피어링</strong><br>
+          한국 ISP의 ASBR이 eBGP로 연결된 AWS(AS16509) 또는 중간 경유 AS의 ASBR에 패킷을 전달한다. 경로는 BGP 정책에 따라 결정된다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>AWS 내부 (OSPF 또는 사내 라우팅)</strong><br>
+          AWS 내부에서 목적지 서버까지 최종 전달. EC2의 Virtual Private Cloud(VPC) 라우팅 테이블을 통해 도달한다.
+        </div>
+      </li>
+    </ol>
+
+    <h3><code>traceroute</code>로 AS 경계 확인하기</h3>
+    <pre># Linux/macOS
+traceroute 54.230.0.1
+
+# 출력 예시
+ 1  192.168.1.1      (내 게이트웨이)
+ 2  10.x.x.x         (ISP 내부 — OSPF 경유)
+ 3  203.x.x.x        (ISP 국내 백본)
+ 4  202.x.x.x        (ISP 국제 관문 — eBGP 경계)
+ 5  54.239.x.x       (AWS 네트워크 진입)
+ 6  54.230.0.1       (목적지 도달)
+
+# whois로 AS 확인
+whois -h whois.cymru.com " -v 54.230.0.1"
+# → AS16509 | Amazon.com, Inc.</pre>
+
+    <div class="info-box tip">
+      <div class="label">실습 포인트</div>
+      <code>traceroute</code> 출력에서 홉마다 IP가 크게 바뀌거나 지연이 급증하는 지점이 AS 경계(eBGP 피어링 포인트)일 가능성이 높다.
+    </div>
+  </section>
+
+  <!-- ===================== 6. 퀴즈 ===================== -->
+  <section>
+    <h2>6. 이해도 확인 — 퀴즈</h2>
+
+    <div class="quiz-section">
+      <div class="quiz-q">Q1. OSPF가 링크 상태를 전달하는 패킷 단위는?</div>
+      <ul class="quiz-options">
+        <li>① BGP UPDATE</li>
+        <li>② LSA (Link State Advertisement)</li>
+        <li>③ RIP Response</li>
+        <li>④ LSDB Packet</li>
+      </ul>
+      <details class="answer">
+        <summary>정답 보기</summary>
+        <div class="answer-body">
+          <strong>② LSA</strong>. OSPF에서 각 라우터는 자신의 링크 상태를 LSA 형태로 플러딩(flooding)한다. LSDB는 수집된 모든 LSA를 담는 데이터베이스이지, 패킷 단위가 아니다. BGP UPDATE는 BGP 전용 패킷이다.
+        </div>
+      </details>
+    </div>
+
+    <div class="quiz-section" style="margin-top: 1rem;">
+      <div class="quiz-q">Q2. BGP에서 AS 간 루프를 방지하는 속성은?</div>
+      <ul class="quiz-options">
+        <li>① LOCAL_PREF</li>
+        <li>② MED</li>
+        <li>③ AS-PATH</li>
+        <li>④ NEXT-HOP</li>
+      </ul>
+      <details class="answer">
+        <summary>정답 보기</summary>
+        <div class="answer-body">
+          <strong>③ AS-PATH</strong>. BGP 라우터는 UPDATE를 수신할 때 AS-PATH에 자신의 AS 번호가 이미 포함되어 있으면 해당 경로를 무시(루프 방지)한다. LOCAL_PREF는 AS 내부 출구 선택, MED는 타 AS에 입구 힌트를 주는 속성이다.
+        </div>
+      </details>
+    </div>
+
+    <div class="quiz-section" style="margin-top: 1rem;">
+      <div class="quiz-q">Q3. 다음 중 OSPF가 경로를 선택하는 기준은?</div>
+      <ul class="quiz-options">
+        <li>① AS-PATH 길이가 짧은 경로</li>
+        <li>② 비즈니스 정책에 따른 선호도</li>
+        <li>③ 인터페이스 대역폭 기반 Cost의 합이 작은 경로</li>
+        <li>④ BGP Weight 값이 높은 경로</li>
+      </ul>
+      <details class="answer">
+        <summary>정답 보기</summary>
+        <div class="answer-body">
+          <strong>③ Cost의 합이 작은 경로</strong>. OSPF는 각 인터페이스의 Cost(= 레퍼런스 대역폭 / 인터페이스 대역폭)를 합산하여 최솟값인 경로를 Dijkstra 알고리즘으로 선택한다. AS-PATH는 BGP, BGP Weight도 BGP(Cisco 전용) 속성이다.
+        </div>
+      </details>
+    </div>
+
+    <div class="quiz-section" style="margin-top: 1rem;">
+      <div class="quiz-q">Q4. OSPF Area에 대한 설명으로 옳은 것은?</div>
+      <ul class="quiz-options">
+        <li>① 모든 Area는 서로 직접 연결되어야 한다</li>
+        <li>② Area 0은 백본 영역으로, 모든 다른 Area가 여기에 연결되어야 한다</li>
+        <li>③ ABR은 하나의 Area에만 속할 수 있다</li>
+        <li>④ Area를 나누면 LSDB 크기가 커진다</li>
+      </ul>
+      <details class="answer">
+        <summary>정답 보기</summary>
+        <div class="answer-body">
+          <strong>② Area 0이 백본</strong>. OSPF의 Area 0은 백본 영역이며 모든 다른 Area는 Area 0에 직접 또는 virtual link로 연결되어야 한다. ABR은 두 Area에 동시에 속한다. Area를 나누면 각 Area의 LSDB 크기가 줄어 SPF 계산 부하가 감소한다.
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- ===================== 7. 핵심 개념 요약 ===================== -->
+  <section>
+    <h2>7. 핵심 개념 요약</h2>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>용어</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>AS (Autonomous System)</code></td>
+          <td>단일 관리 정책으로 운영되는 라우터 집합. 고유 ASN 부여.</td>
+        </tr>
+        <tr>
+          <td><code>IGP</code></td>
+          <td>AS 내부 라우팅 프로토콜 (OSPF, RIP, EIGRP)</td>
+        </tr>
+        <tr>
+          <td><code>EGP</code></td>
+          <td>AS 간 라우팅 프로토콜 (BGP)</td>
+        </tr>
+        <tr>
+          <td><code>LSA</code></td>
+          <td>OSPF 링크 상태 광고 패킷</td>
+        </tr>
+        <tr>
+          <td><code>LSDB</code></td>
+          <td>OSPF 전체 네트워크 지도 데이터베이스</td>
+        </tr>
+        <tr>
+          <td><code>SPF</code></td>
+          <td>Dijkstra 알고리즘으로 최단 경로 트리 계산</td>
+        </tr>
+        <tr>
+          <td><code>DR / BDR</code></td>
+          <td>멀티액세스 네트워크에서 LSA 교환을 중앙화하는 Designated Router</td>
+        </tr>
+        <tr>
+          <td><code>ABR</code></td>
+          <td>OSPF Area 경계 라우터 (두 Area 동시 소속)</td>
+        </tr>
+        <tr>
+          <td><code>eBGP</code></td>
+          <td>서로 다른 AS 간 BGP 세션</td>
+        </tr>
+        <tr>
+          <td><code>iBGP</code></td>
+          <td>같은 AS 내 BGP 라우터 간 세션</td>
+        </tr>
+        <tr>
+          <td><code>AS-PATH</code></td>
+          <td>BGP 경로가 거쳐온 AS 번호 목록 (루프 방지 + 경로 길이 기준)</td>
+        </tr>
+        <tr>
+          <td><code>LOCAL_PREF</code></td>
+          <td>AS 내 아웃바운드 경로 선택 선호도 (높을수록 선호)</td>
+        </tr>
+        <tr>
+          <td><code>MED</code></td>
+          <td>타 AS에게 인바운드 입구 힌트 (낮을수록 선호)</td>
+        </tr>
+        <tr>
+          <td><code>RPKI</code></td>
+          <td>BGP 경로 원본 인증 — AS가 특정 prefix를 광고할 권한 검증</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ===================== 다음 학습 ===================== -->
+  <section>
+    <h2>다음 학습 예고</h2>
+    <p><strong>Day 12</strong>에서는 <strong>네트워크 성능 분석과 최적화</strong>를 다룬다. TCP 처리량 공식, RTT와 지연의 원인, 네트워크 병목 진단 도구(<code>netstat</code>, <code>ss</code>, <code>iperf3</code>), 그리고 실제 애플리케이션 성능에 영향을 미치는 네트워크 요인들을 학습한다.</p>
+  </section>
+
+  <footer>
+    <p>컴퓨터 네트워크 학습 워크스페이스 &mdash; Day 11</p>
+    <p style="margin-top: 0.4rem;"><a href="./index.html">← 학습 목록으로</a></p>
+  </footer>
+
+</div>
+</body>
+</html>

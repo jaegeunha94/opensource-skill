@@ -14,6 +14,7 @@
 | 8 | 2026-06-27 | 실습 — Wireshark 패킷 분석 | [day-08-wireshark-analysis.html](lessons/day-08-wireshark-analysis.html) |
 | 9 | 2026-06-28 | 무선 네트워크 & 최신 트렌드 | [day-09-wireless-sdn-cloud.html](lessons/day-09-wireless-sdn-cloud.html) |
 | 10 | 2026-06-29 | 종합 복습 & 실전 문제 | [day-10-final-review.html](lessons/day-10-final-review.html) |
+| 11 | 2026-06-30 | 고급 라우팅 프로토콜: OSPF와 BGP | [day-11-routing-protocols-ospf-bgp.html](lessons/day-11-routing-protocols-ospf-bgp.html) |
 
 ## 다음 예정 학습
 
@@ -25,10 +26,12 @@
 | ~~8~~ | ~~실습 — Wireshark 패킷 분석~~ | ~~필터링, TCP 스트림 추적, DNS/HTTP 트래픽 분석~~ |
 | ~~9~~ | ~~무선 네트워크 & 최신 트렌드~~ | ~~Wi-Fi 표준, SDN 개념, 클라우드 네트워킹 기초~~ |
 | ~~10~~ | ~~종합 복습 & 실전 문제~~ | ~~전체 개념 연결, 서브넷 계산 실전, 프로토콜 흐름 추적~~ |
+| ~~11~~ | ~~고급 라우팅 프로토콜: OSPF와 BGP~~ | ~~AS, IGP/EGP, LSA/LSDB/SPF, eBGP/iBGP, AS-PATH/LOCAL_PREF/MED~~ |
+| 12 | 네트워크 성능 분석과 최적화 | TCP 처리량 공식, RTT, 병목 진단, netstat/ss/iperf3 |
 
 ## 현재 학습 위치
 
-**Day 10 완료** — 네트워크 기초 과정 전 과정 완료 🎉
+**Day 11 완료** — 고급 라우팅 프로토콜(OSPF & BGP) 완료. 다음: Day 12 네트워크 성능 분석.
 
 ## 습득한 핵심 개념
 
@@ -67,3 +70,8 @@
 - [x] SDN 제어 평면·데이터 평면 분리 및 OpenFlow (Day 9 완료)
 - [x] VPC, NAT Gateway, Security Group, 로드밸런서, CDN, 서비스 메시 (Day 9 완료)
 - [x] 전체 개념 연결 및 서브넷 계산 실전 (Day 10 완료)
+- [x] AS, IGP, EGP 개념 구분 (Day 11 완료)
+- [x] OSPF 링크 상태 라우팅 — LSA/LSDB/SPF/Area 구조 (Day 11 완료)
+- [x] BGP 세션 수립 및 경로 선택 알고리즘 (Day 11 완료)
+- [x] BGP 핵심 속성 — AS-PATH, NEXT-HOP, LOCAL_PREF, MED (Day 11 완료)
+- [x] BGP 라우트 하이재킹과 RPKI (Day 11 완료)
