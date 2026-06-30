@@ -12,12 +12,12 @@
 | 6 | 2026-06-27 | 트리 기초 (Tree Basics) | [0006-tree-basics.html](lessons/0006-tree-basics.html) |
 | 7 | 2026-06-28 | 이진 탐색 트리 (BST) | [0007-bst.html](lessons/0007-bst.html) |
 | 8 | 2026-06-29 | 힙 (Heap) | [0008-heap.html](lessons/0008-heap.html) |
+| 9 | 2026-06-30 | 균형 이진 트리 (AVL / Red-Black) | [0009-balanced-bst.html](lessons/0009-balanced-bst.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | 균형 이진 트리 (AVL / Red-Black) | 회전 연산, 높이 균형 조건 |
 | 10 | 트라이 (Trie) | 문자열 탐색, 자동완성 구현 |
 | 11 | 그래프 기초 (Graph Basics) | 방향·무방향, 인접 행렬·리스트, 가중 그래프 |
 | 12 | 그래프 탐색 (BFS / DFS) | 너비 우선·깊이 우선, 연결 요소, 위상 정렬 |
@@ -32,7 +32,7 @@
 
 ## 현재 학습 위치
 
-**Day 8 완료** — 힙(Heap) 학습 완료. 다음은 균형 이진 트리(AVL / Red-Black).
+**Day 9 완료** — 균형 이진 트리(AVL / Red-Black) 학습 완료. 다음은 트라이(Trie).
 
 ## 습득한 핵심 개념
 
@@ -47,7 +47,8 @@
 - [x] 트리 기초 — 용어(루트·리프·깊이·높이), 이진 트리 종류, 전위·중위·후위·레벨 순회 (✓ Day 6)
 - [x] 이진 탐색 트리 — BST 성질, 삽입·탐색·삭제 O(log n), 중위 순회 정렬, 편향 트리 문제 (✓ Day 7)
 - [x] 힙 — 최대힙·최소힙, 배열 표현·인덱스 공식, heapify-up·down, Floyd Build-Heap O(n), 힙 정렬 O(n log n), 우선순위 큐 (✓ Day 8)
-- [ ] 균형 이진 트리 AVL/Red-Black (예정 Day 9)
+- [x] 균형 이진 트리 — AVL 높이 균형 인수(BF), 4가지 회전 케이스(LL/RR/LR/RL), Red-Black 5가지 규칙, 흑색 높이, Recoloring vs Rotation (✓ Day 9)
+- [ ] 트라이 (예정 Day 10)
 - [ ] 트라이 (예정 Day 10)
 - [ ] 그래프 (예정 Day 11–13)
 - [ ] 정렬 알고리즘 (예정 Day 14–16)
