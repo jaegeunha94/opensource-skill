@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — DB 쿼리 튜닝: EXPLAIN 읽기와 N+1 문제 | 성능 최적화 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; color: #c8dae8; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">성능 최적화 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 2
+  </nav>
+
+  <h1>Day 2 — DB 쿼리 튜닝: EXPLAIN 읽기와 N+1 문제</h1>
+  <p class="subtitle">"인덱스 추가하면 됩니다"가 아니라 실행 계획을 읽고 왜 느린지 설명하는 능력 · 2026-07-01</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#n-plus-one">N+1 문제 깊게 보기</a></li>
+      <li><a href="#practice">실무 연결</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"느린 쿼리가 있다는 리포트를 받았습니다. EXPLAIN 결과를 어떻게 읽고 문제를 진단하시겠습니까?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"ORM을 사용할 때 발생하는 N+1 문제를 설명하고, 실제로 어떻게 발견하고 해결하셨나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"Full table scan(Seq Scan)이 항상 나쁜 것은 아니라고들 합니다. 어떤 경우에 그런가요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"EXPLAIN 명령어를 아느냐"</strong>가 아니라 <strong>"실행 계획을 읽고 근거 있는 결론을 내리느냐"</strong>를 봅니다. Day 1에서 "DB가 병목"임을 확인했다고 가정했을 때, 그다음 단계에서 실제로 무엇을 보는지가 이 레슨의 핵심입니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>실행 계획을 읽을 수 있는가</strong> — Seq Scan / Index Scan / Index Only Scan을 구분하고, 각각이 언제 정상이고 언제 문제인지 판단하는가.</li>
+      <li><strong>추정치와 실측치를 구분하는가</strong> — <code>EXPLAIN</code>의 예상 행 수와 <code>EXPLAIN ANALYZE</code>의 실제 실행 결과가 다를 때 그 의미를 해석할 수 있는가.</li>
+      <li><strong>ORM 추상화의 함정을 아는가</strong> — 편리한 ORM 뒤에서 실제로 몇 개의 쿼리가 나가는지 감지하고 설명할 수 있는가.</li>
+      <li><strong>"인덱스 추가"가 만능이 아님을 아는가</strong> — 선택도(selectivity), 쓰기 비용, 인덱스 유지 비용까지 고려해서 트레이드오프를 말할 수 있는가.</li>
+    </ul>
+
+    <p>10년차 이하의 전형적인 약한 패턴: "쿼리가 느리면 인덱스를 추가합니다." 이 답변은 방향은 맞을 수 있지만, 왜 느린지에 대한 근거(실행 계획 분석)가 없어서 면접관 입장에서는 "찍어서 맞춘 것"으로 보입니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>실행 계획(Execution Plan)이란</h3>
+    <p>DB는 쿼리를 실행하기 전에 "이 쿼리를 어떤 순서로, 어떤 방법으로 처리할 것인가"를 스스로 계획합니다. 이 계획을 세우는 프로그램을 <strong>쿼리 플래너(Query Planner)</strong>라 부르고, <code>EXPLAIN</code> 명령어는 그 계획을 사람이 볼 수 있게 출력해줍니다. 내비게이션이 목적지까지 여러 경로 중 하나를 골라주는 것과 비슷합니다 — 그 경로가 왜 선택됐는지, 실제로 얼마나 걸렸는지를 보는 것이 <code>EXPLAIN</code>을 읽는 목적입니다.</p>
+
+    <h3>EXPLAIN vs EXPLAIN ANALYZE</h3>
+    <p><code>EXPLAIN</code>은 <strong>실제로 쿼리를 실행하지 않고</strong> 계획만 보여줍니다. 여기 나오는 행 수(rows)는 테이블 통계를 기반으로 한 <strong>추정치</strong>입니다.</p>
+    <p><code>EXPLAIN ANALYZE</code>는 <strong>실제로 쿼리를 실행</strong>하면서 각 단계가 실제로 몇 ms 걸렸고 실제로 몇 행을 처리했는지 함께 보여줍니다. 추정치와 실측치의 차이가 크다면, DB가 가진 테이블 통계 정보가 오래되었다는 신호입니다.</p>
+
+    <div class="why-box">
+      <strong>주의:</strong> <code>EXPLAIN ANALYZE</code>는 쿼리를 실제로 실행하므로, <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code>에 사용하면 데이터가 실제로 변경됩니다. 운영 환경에서 쓸 때는 트랜잭션으로 감싸고 롤백하거나, 읽기 전용 복제본에서 실행하는 것이 안전합니다.
+    </div>
+
+    <h3>스캔(Scan) 방식 세 가지</h3>
+    <table class="method-table">
+      <thead>
+        <tr><th>방식</th><th>동작</th><th>정상적인 상황</th><th>의심해야 할 상황</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Seq Scan</strong><br><span class="tag-pill">Full Table Scan</span></td>
+          <td>테이블 전체를 처음부터 끝까지 읽음</td>
+          <td>테이블이 작거나, 조건에 맞는 행이 전체의 상당 비율(예: 20~30% 이상)일 때</td>
+          <td>큰 테이블에서 소수의 행만 찾는데 Seq Scan이 나올 때 — 인덱스 부재 또는 미사용</td>
+        </tr>
+        <tr>
+          <td><strong>Index Scan</strong></td>
+          <td>인덱스로 위치를 찾은 뒤, 실제 데이터 페이지에 접근해서 행을 읽음</td>
+          <td>조건에 맞는 행이 전체의 일부(선택도 높음)일 때</td>
+          <td>인덱스는 타지만 데이터 페이지 접근이 랜덤 I/O라 여전히 느릴 수 있음</td>
+        </tr>
+        <tr>
+          <td><strong>Index Only Scan</strong></td>
+          <td>인덱스에 포함된 컬럼만으로 쿼리를 완성해서 데이터 페이지에 접근하지 않음</td>
+          <td>SELECT하는 컬럼이 모두 인덱스(Covering Index)에 포함될 때 — 가장 빠름</td>
+          <td>-</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>선택도(Selectivity)</h3>
+    <p>조건에 맞는 행이 전체 테이블에서 차지하는 비율입니다. 성별(男/女)처럼 값의 종류가 몇 개 안 되는 컬럼은 선택도가 낮습니다 — 인덱스를 걸어도 결국 절반 가까운 행을 읽어야 하므로, 플래너는 오히려 Seq Scan을 선택합니다. 반대로 이메일 주소처럼 거의 유일한 값이면 선택도가 높아서 인덱스가 효과적입니다.</p>
+
+    <h3>조인(Join) 알고리즘 감 잡기</h3>
+    <ul>
+      <li><strong>Nested Loop</strong>: 한쪽 테이블의 각 행마다 다른 쪽 테이블을 조회. 한쪽이 작고 다른 쪽에 인덱스가 있을 때 빠름. 양쪽 다 크면 매우 느려짐.</li>
+      <li><strong>Hash Join</strong>: 작은 테이블로 해시 테이블을 만들고 큰 테이블을 한 번 훑으며 매칭. 대용량 조인에서 유리.</li>
+      <li><strong>Merge Join</strong>: 양쪽을 정렬된 상태로 놓고 동시에 훑으며 매칭. 이미 정렬(인덱스)되어 있을 때 유리.</li>
+    </ul>
+    <p>면접에서 이 세 가지 이름을 몰라도 괜찮지만, "왜 이 조인 방식이 선택됐을까?"를 유추하는 사고 — 테이블 크기, 인덱스 유무 — 는 보여줘야 합니다.</p>
+  </section>
+
+  <!-- 4. N+1 문제 -->
+  <section id="n-plus-one">
+    <h2>4. N+1 문제 깊게 보기</h2>
+
+    <p>N+1 문제는 <strong>목록 1개를 조회(1번 쿼리)한 뒤, 목록의 각 항목마다 연관 데이터를 또 조회(N번 쿼리)</strong>하게 되어, 총 <code>N+1</code>번의 쿼리가 발생하는 패턴입니다. ORM의 지연 로딩(Lazy Loading)이 편의를 위해 이 패턴을 감춰서 코드만 봐서는 문제를 알아채기 어렵습니다.</p>
+
+    <pre><code><span class="comment">// 겉보기엔 평범한 코드지만...</span>
+posts = Post.objects.all()          <span class="comment">// 1번 쿼리: 게시글 100개 조회</span>
+for post in posts:
+    print(post.author.name)         <span class="comment">// author 접근마다 쿼리 발생 → 100번 쿼리</span>
+<span class="comment">// 총 101번의 쿼리 (N+1)</span></code></pre>
+
+    <p>해결 방법은 <strong>미리 함께 가져오는 것(Eager Loading)</strong>입니다.</p>
+
+    <pre><code><span class="comment">// JOIN으로 한 번에 (Django의 select_related, JPA의 fetch join과 동일한 개념)</span>
+posts = Post.objects.select_related(<span class="string">'author'</span>).all()
+<span class="comment">// 총 1번의 쿼리로 게시글 + 작성자 정보를 함께 조회</span></code></pre>
+
+    <div class="why-box">
+      <strong>주의:</strong> Eager Loading을 무조건 쓰면 안 됩니다. 1:N 관계에서 JOIN으로 한 번에 가져오면, N쪽 행 개수만큼 원래 데이터(1쪽)가 <strong>중복(fan-out)</strong>되어 응답 데이터 크기가 커지고 메모리를 더 씁니다. 관계가 1:다수(예: 게시글 1개에 댓글 수백 개)라면 JOIN보다 <strong>별도의 IN 절 쿼리 한 번(Batch Loading)</strong>이 더 효율적일 수 있습니다.
+    </div>
+
+    <pre><code><span class="comment">// Batch Loading: 쿼리 2번으로 N+1 해결, JOIN의 fan-out도 피함</span>
+posts = Post.objects.all()                        <span class="comment">// 1번: 게시글 100개</span>
+author_ids = [p.author_id for p in posts]
+authors = Author.objects.filter(id__in=author_ids) <span class="comment">// 1번: IN 절로 작성자 한 번에</span>
+<span class="comment">// 총 2번의 쿼리, JOIN 없이 데이터 중복도 없음</span></code></pre>
+  </section>
+
+  <!-- 5. 실무 연결 -->
+  <section id="practice">
+    <h2>5. 실무 연결</h2>
+
+    <h3>상황 1: 게시글 목록 API가 게시글 수만큼 느려짐</h3>
+    <p>게시글 100개를 보여주는 API가 게시글 10개일 때는 빨랐는데 100개가 되자 갑자기 느려졌다면, 요청 수가 아니라 <strong>항목 수에 비례해서 쿼리 수가 늘어나는 패턴</strong> — 전형적인 N+1입니다. 쿼리 로그를 켜서 같은 형태의 쿼리가 반복되는지 확인하면 바로 드러납니다.</p>
+
+    <h3>상황 2: WHERE 조건에 인덱스가 있는데도 Seq Scan이 나옴</h3>
+    <p>인덱스를 걸었는데도 플래너가 Seq Scan을 선택하는 경우, 원인은 대개 셋 중 하나입니다: (1) 컬럼의 선택도가 낮아서 인덱스보다 전체 스캔이 더 저렴하다고 판단, (2) 컬럼에 함수나 타입 캐스팅을 적용해서 인덱스를 못 탐(<code>WHERE YEAR(created_at) = 2026</code>), (3) 테이블 통계가 오래되어 플래너가 잘못된 판단을 내림(<code>ANALYZE</code> 필요).</p>
+
+    <h3>상황 3: 대시보드 집계 쿼리는 Seq Scan인데 정상</h3>
+    <p>전체 매출을 월별로 집계하는 쿼리처럼 테이블의 대부분(또는 전체) 행을 다 읽어야 하는 쿼리는 Seq Scan이 <strong>오히려 정상이자 최적</strong>입니다. 인덱스를 태우면 랜덤 I/O가 반복되어 더 느려질 수 있습니다. 이런 경우는 인덱스가 아니라 <strong>사전 집계 테이블이나 캐시</strong>로 접근해야 합니다.</p>
+
+    <h3>상황 4: 대형 고객사 데이터에서만 조인이 느림</h3>
+    <p>Nested Loop 조인은 한쪽 테이블이 작을 때 유리합니다. 특정 대형 고객사만 연관 데이터가 수십만 건이라면, 플래너가 여전히 Nested Loop을 쓰고 있어 느려질 수 있습니다. 이 경우 통계 갱신이나 조인 방식에 영향을 주는 조건(파티셔닝, 인덱스 추가)을 검토합니다.</p>
+  </section>
+
+  <!-- 6. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>6. 답변 사고 순서</h2>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>EXPLAIN ANALYZE로 추정치와 실측치를 함께 본다</strong>
+          <p style="margin-top:0.3rem">"몇 개월 전 인덱스를 걸었으니 괜찮을 것"이라고 가정하지 않고, 지금 이 순간의 실행 계획을 직접 확인합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>Scan 방식과 예상 대비 실제 행 수 차이를 확인한다</strong>
+          <p style="margin-top:0.3rem">Seq Scan인지 Index Scan인지 보고, 그것이 테이블/조건 크기 대비 정상인지 판단합니다. 추정 행 수와 실제 행 수가 크게 다르면 통계 정보(ANALYZE) 문제를 의심합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>애플리케이션 레벨의 쿼리 횟수를 확인한다</strong>
+          <p style="margin-top:0.3rem">쿼리 자체는 빨라도 API가 느리면, 쿼리 로그나 ORM 디버그 툴로 요청 하나당 쿼리가 몇 번 나가는지 셉니다. 항목 수에 비례해서 늘어나면 N+1을 의심합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>선택도와 쓰기 비용을 함께 고려해서 해법을 고른다</strong>
+          <p style="margin-top:0.3rem">인덱스 추가, Eager Loading, Batch Loading 중 상황(선택도, 1:N 비율, 쓰기 빈도)에 맞는 해법을 선택합니다. 무조건 인덱스나 무조건 JOIN이 아닙니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>수정 후 쿼리 수와 실행 계획을 재확인한다</strong>
+          <p style="margin-top:0.3rem">쿼리 수가 실제로 줄었는지, 실행 계획이 원하는 방식(Index Scan 등)으로 바뀌었는지 다시 확인합니다.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 7. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>7. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "느린 쿼리가 있다는 리포트를 받았습니다. EXPLAIN 결과를 어떻게 읽고 문제를 진단하시겠습니까?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>먼저 <code>EXPLAIN ANALYZE</code>로 실행 계획과 실제 실행 결과를 함께 봅니다. 여기서 두 가지를 확인합니다. 첫째, 어떤 스캔 방식이 쓰였는지 — 큰 테이블에서 소수의 행만 찾는데 Seq Scan이 나온다면 인덱스가 없거나 조건에 함수가 걸려서 인덱스를 못 타는 경우입니다.</p>
+      <br>
+      <p>둘째, 예상 행 수와 실제 행 수 차이를 봅니다. 차이가 크면 테이블 통계가 오래된 것이므로 <code>ANALYZE</code>부터 실행합니다. 인덱스가 있는데도 Seq Scan이 나온다면, 조건 컬럼의 선택도가 낮아서 플래너가 일부러 Seq Scan을 선택했을 가능성도 확인합니다 — 이 경우 인덱스를 강제해도 오히려 느려질 수 있습니다.</p>
+      <br>
+      <p>쿼리 자체는 빠른데 API가 느리다면 N+1을 의심합니다. 쿼리 로그를 켜서 같은 패턴의 쿼리가 항목 수만큼 반복되는지 확인하고, 맞다면 관계의 카디널리티에 따라 JOIN(Eager Loading) 또는 IN 절 기반 Batch Loading으로 바꿉니다. 1:다수 관계에서 무작정 JOIN하면 fan-out으로 데이터가 중복되어 오히려 응답이 커질 수 있어서, 관계 비율을 보고 선택합니다.</p>
+      <br>
+      <p>수정 후에는 다시 <code>EXPLAIN ANALYZE</code>와 쿼리 로그로 실제 개선을 확인합니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>추정치(EXPLAIN)와 실측치(ANALYZE)를 구분해서 접근</li>
+      <li>"인덱스가 있는데도 안 탈 수 있다"는 선택도 개념까지 포함</li>
+      <li>N+1 진단(쿼리 횟수 카운트)과 해법 선택 기준(카디널리티)을 함께 제시</li>
+      <li>JOIN이 만능이 아니라는 트레이드오프를 명시</li>
+      <li>수정 후 검증 단계를 포함</li>
+    </ul>
+  </section>
+
+  <!-- 8. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"쿼리가 느리면 인덱스를 추가하겠습니다. 그래도 느리면 캐시를 붙이겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>실행 계획을 확인하지 않고 바로 해법(인덱스)으로 건너뜀</li>
+        <li>인덱스를 걸어도 선택도가 낮으면 플래너가 안 쓸 수 있다는 것을 모름</li>
+        <li>N+1처럼 쿼리 자체가 아니라 쿼리 "횟수"가 문제인 경우를 놓침</li>
+        <li>"캐시를 붙인다"는 근본 원인 해결이 아니라 증상 회피일 수 있음</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"N+1 문제는 JOIN을 쓰면 무조건 해결됩니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>1:다수 관계에서 JOIN이 fan-out으로 데이터를 중복시켜 오히려 응답이 커질 수 있음을 모름</li>
+        <li>관계의 카디널리티에 따라 JOIN과 Batch Loading(IN 절) 중 선택해야 한다는 트레이드오프가 없음</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>EXPLAIN(추정)과 EXPLAIN ANALYZE(실측)를 구분해서 설명한다</li>
+        <li>스캔 방식(Seq/Index/Index Only)과 선택도 개념으로 근거를 댄다</li>
+        <li>쿼리 자체와 쿼리 "횟수"(N+1) 문제를 구분해서 접근한다</li>
+        <li>JOIN vs Batch Loading을 카디널리티 기준으로 선택하는 이유를 말한다</li>
+        <li>수정 후 재검증 단계를 포함한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9. Follow-up -->
+  <section id="followups">
+    <h2>9. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: 인덱스가 있는데도 EXPLAIN에서 Seq Scan이 나옵니다. 왜 그럴까요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 세 가지를 확인합니다. 첫째, 조건 컬럼의 선택도가 낮아서(예: boolean, 성별) 플래너가 인덱스보다 Seq Scan이 더 저렴하다고 판단했을 수 있습니다. 둘째, <code>WHERE LOWER(email) = ...</code>처럼 컬럼에 함수를 적용하면 일반 인덱스를 타지 못합니다(함수 기반 인덱스가 필요). 셋째, 테이블 통계가 오래되어 플래너가 잘못된 비용 계산을 했을 수 있으므로 <code>ANALYZE</code>를 실행해 통계를 갱신하고 다시 확인합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: N+1을 해결하기 위해 무조건 JOIN으로 합치면 되나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 아닙니다. 1:1이나 다수:1 관계(게시글-작성자)에서는 JOIN(Eager Loading)이 효율적이지만, 1:다수 관계(게시글-댓글 수백 개)에서 JOIN하면 게시글 정보가 댓글 수만큼 중복되는 fan-out이 발생해 응답 데이터가 오히려 커집니다. 이런 경우 별도의 IN 절 쿼리로 한 번 더 가져오는 Batch Loading이 데이터 중복 없이 쿼리 수만 줄이는 더 나은 선택입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: EXPLAIN ANALYZE를 프로덕션에서 그대로 실행해도 되나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> <code>EXPLAIN ANALYZE</code>는 쿼리를 실제로 실행합니다. <code>SELECT</code>는 대체로 안전하지만, <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code>에 쓰면 데이터가 실제로 바뀝니다. 트랜잭션으로 감싸고 마지막에 롤백하거나, 읽기 전용 복제본(Read Replica)에서 실행하는 것이 안전합니다. 또한 무거운 쿼리를 트래픽이 많은 시간대에 실제로 실행하면 그 자체로 부하를 유발할 수 있어 타이밍도 고려해야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 쿼리는 각각 빠른데(1ms 이하) API는 여전히 느립니다. 어떻게 확인하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 쿼리 하나하나의 실행 시간이 아니라 <strong>쿼리의 총 횟수와 순차 실행 여부</strong>를 봅니다. N+1처럼 쿼리가 100번 나가면 각각 1ms라도 네트워크 왕복(Round Trip) 시간이 누적되어 전체는 수백 ms가 됩니다. 쿼리 로그에서 동일 요청 내 쿼리 수를 세고, 직렬로 실행되고 있다면 Batch Loading이나 병렬화를 검토합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: Full table scan(Seq Scan)이 항상 나쁜 것은 아니라고 하는데, 어떤 경우인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 조건에 맞는 행이 테이블 전체의 상당 비율을 차지할 때는 Seq Scan이 더 빠릅니다. 인덱스를 타면 인덱스 페이지를 읽고 다시 데이터 페이지로 랜덤 접근해야 하는데, 이 랜덤 I/O 비용이 순차 읽기보다 비쌀 수 있기 때문입니다. 월간 매출 집계처럼 테이블 대부분을 읽어야 하는 배치/집계성 쿼리에서는 Seq Scan이 정상이며, 이런 쿼리를 빠르게 하려면 인덱스가 아니라 사전 집계 테이블이나 캐시를 고려해야 합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>10. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"인덱스만 있으면 무조건 빠르다"</strong></p>
+      <p>선택도가 낮은 컬럼(예: boolean)에 인덱스를 걸어도 플래너가 Seq Scan을 선택할 수 있습니다. 인덱스는 "조건에 맞는 행이 적을 때" 효과적입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"N+1은 무조건 JOIN으로 고치면 된다"</strong></p>
+      <p>1:다수 관계에서 JOIN은 fan-out으로 데이터를 중복시켜 응답 크기를 키웁니다. 관계 비율에 따라 Batch Loading(IN 절)이 더 나을 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"EXPLAIN의 예상 행 수(rows)는 항상 정확하다"</strong></p>
+      <p>이 수치는 통계 기반 추정치입니다. 최근 대량 데이터 변경이 있었는데 <code>ANALYZE</code>를 실행하지 않았다면 추정치가 실제와 크게 다를 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"Full table scan은 항상 나쁘다"</strong></p>
+      <p>조건에 맞는 행이 테이블의 상당 비율을 차지하거나 테이블 자체가 작으면, Seq Scan이 인덱스보다 오히려 빠릅니다. 스캔 방식 자체가 아니라 "이 상황에 맞는 방식인가"를 봐야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"ORM을 쓰면 N+1 문제는 프레임워크가 알아서 막아준다"</strong></p>
+      <p>대부분의 ORM은 기본이 지연 로딩(Lazy Loading)입니다. 개발자가 명시적으로 Eager Loading이나 Batch Loading을 지정하지 않으면 N+1은 코드가 늘어날 때마다 조용히 재발합니다.</p>
+    </div>
+  </section>
+
+  <!-- 11. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>11. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 2를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>EXPLAIN</code>과 <code>EXPLAIN ANALYZE</code>의 차이(추정치 vs 실측치)를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Seq Scan, Index Scan, Index Only Scan의 차이와 각각 정상적인 상황을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>선택도(Selectivity)가 인덱스 사용 여부에 미치는 영향을 예시로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>N+1 문제가 왜 발생하는지, ORM의 지연 로딩과 어떻게 연결되는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Eager Loading(JOIN)과 Batch Loading(IN 절) 중 언제 무엇을 선택하는지 카디널리티 기준으로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>인덱스가 있는데도 Seq Scan이 나오는 세 가지 원인을 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Full table scan이 오히려 정상인 상황을 예시로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>EXPLAIN ANALYZE</code>를 운영 환경에서 안전하게 실행하는 방법을 말할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 3</h3>
+      <p><strong>인덱스 최적화 — 언제 인덱스가 오히려 느려지나</strong></p>
+      <p>Day 2에서 "인덱스는 만능이 아니다"를 확인했다면, Day 3에서는 B-Tree 인덱스의 내부 구조, Composite Index의 컬럼 순서, Covering Index, 그리고 인덱스가 쓰기 성능과 유지 비용에 미치는 트레이드오프를 다룹니다.</p>
+      <p>면접 질문 예고: "Composite Index를 만들 때 컬럼 순서가 왜 중요한가요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    성능 최적화 시니어 인터뷰 · Day 2 of 20 · 2026-07-01
+  </p>
+
+</div>
+</body>
+</html>
