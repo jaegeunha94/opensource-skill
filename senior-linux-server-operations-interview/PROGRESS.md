@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 리눅스 서버 장애 대응 프레임워크 | [0001-linux-incident-response-framework.html](lessons/0001-linux-incident-response-framework.html) |
+| 2 | 2026-07-01 | 프로세스 & CPU 진단 심화 | [0002-process-cpu-diagnostics.html](lessons/0002-process-cpu-diagnostics.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | 프로세스 & CPU 진단 심화 | ps aux, top 필드 해석, strace, /proc/PID, CPU 바운드 vs I/O 바운드 판단 |
 | 3 | 메모리 진단 & OOM | free available vs used, vmstat si/so, /proc/meminfo, OOM Killer 로그 해석, swap 정책 |
 | 4 | 디스크 I/O 진단 | iostat util, await, iotop, lsof 열린 파일, inode 고갈, df vs du 차이 |
 | 5 | 로그 분석 & journalctl | journalctl 필터 옵션, rsyslog, /var/log 구조, grep/awk/sed 조합, 로그 로테이션 |
@@ -21,7 +21,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — Day 2: 프로세스 & CPU 진단 심화 예정.
+**Day 2 완료** — Day 3: 메모리 진단 & OOM 예정.
 
 ## 습득한 핵심 개념
 
@@ -32,7 +32,10 @@
 - [x] USE 방법론 (Utilization / Saturation / Errors 체계적 진단) (Day 1)
 - [x] 즉각 조치 vs 데이터 확보의 trade-off (kill 전 스택 트레이스 확보) (Day 1)
 - [x] Senior 답변 구조: 영향 범위 → 데이터 → 가설 → 조치 → 재발 방지 + 소통 (Day 1)
-- [ ] 프로세스 상태 심화, strace, /proc (예정 Day 2)
+- [x] ps/top 필드 심화 (VSZ vs RSS, PR/NI 관계, top -H 스레드 단위 진단) (Day 2)
+- [x] /proc/PID 활용 (status, stat, fd, limits로 메모리/스레드/fd 고갈 진단) (Day 2)
+- [x] strace 활용과 프로덕션 위험 (syscall 패턴 해석, ptrace 오버헤드, 요약 모드) (Day 2)
+- [x] CPU 바운드 vs I/O 바운드 구분 (syscall 유무, busy-wait 함정) (Day 2)
 - [ ] 메모리 진단 & OOM Killer (예정 Day 3)
 - [ ] 디스크 I/O 진단 심화 (예정 Day 4)
 - [ ] 로그 분석 & journalctl (예정 Day 5)
