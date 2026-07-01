@@ -11,13 +11,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 저장장치와 접근 패턴 프레임워크 | [interview-day01-storage-access-patterns.html](lessons/interview-day01-storage-access-patterns.html) |
+| 2 | 2026-07-01 | 파일 조직 선택 (Sequential / Indexed / Hash) | [interview-day02-file-organization.html](lessons/interview-day02-file-organization.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 1 | 저장장치와 접근 패턴 프레임워크 | "메모리 자료구조를 디스크 파일에 그대로 쓰면 왜 문제가 생깁니까?" | block I/O, sequential/random access, buffering |
-| 2 | 파일 조직 선택 | "순차 파일, 인덱스 파일, 해시 파일을 어떤 기준으로 선택합니까?" | 조회/삽입/삭제/range query trade-off |
 | 3 | 인덱스 기본 구조 | "dense index와 sparse index는 어떤 상황에서 유리합니까?" | 저장 공간, 탐색 비용, 정렬 파일 전제 |
 | 4 | B-Tree와 B+Tree | "왜 DB 인덱스는 B+Tree를 많이 사용합니까?" | fanout, height, range scan, leaf linkage |
 | 5 | 해싱 기반 파일 | "해시 인덱스가 빠른데도 모든 인덱스를 해시로 만들지 않는 이유는 무엇입니까?" | equality lookup, collision, range query 한계 |
@@ -29,18 +28,18 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — 저장장치와 접근 패턴 프레임워크.
-**다음: Day 2** — 파일 조직 선택 (순차 파일, 인덱스 파일, 해시 파일).
+**Day 2 완료** — 파일 조직 선택 (순차 파일, 인덱스 파일, 해시 파일).
+**다음: Day 3** — 인덱스 기본 구조 (dense index, sparse index).
 
 ## Interview 답변 체크리스트
 
-- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. *(Day 1 완료)*
-- [x] 왜 면접에서 이 질문을 묻는지 설명한다. *(Day 1 완료)*
-- [x] 실제 운영 상황과 연결한다. *(Day 1 완료)*
-- [x] 답변 순서를 단계적으로 제시한다. *(Day 1 완료)*
-- [x] trade-off를 최소 2개 이상 비교한다. *(Day 1 완료)*
-- [x] 흔한 오해와 약한 답변을 구분한다. *(Day 1 완료)*
-- [x] follow-up 질문까지 대비한다. *(Day 1 완료)*
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. *(Day 1~2 완료)*
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. *(Day 1~2 완료)*
+- [x] 실제 운영 상황과 연결한다. *(Day 1~2 완료)*
+- [x] 답변 순서를 단계적으로 제시한다. *(Day 1~2 완료)*
+- [x] trade-off를 최소 2개 이상 비교한다. *(Day 1~2 완료)*
+- [x] 흔한 오해와 약한 답변을 구분한다. *(Day 1~2 완료)*
+- [x] follow-up 질문까지 대비한다. *(Day 1~2 완료)*
 
 ## 습득한 핵심 개념
 
@@ -50,7 +49,9 @@
 - [x] Buffer Pool / Page Cache — hot data 캐싱 원리 (Day 1)
 - [x] I/O 비용 모델 — 비교 횟수가 아닌 I/O 횟수 기준 성능 평가 (Day 1)
 - [x] BST vs B+Tree — fanout 차이와 I/O 횟수 비교 (Day 1)
-- [ ] Sequential / Indexed / Hash 파일 조직 선택 기준 (예정 Day 2)
+- [x] Sequential / Indexed / Hash 파일 조직 선택 기준 (Day 2)
+- [x] Heap file, overflow area, 인덱스 유지 비용 (Day 2)
+- [x] Hash file의 range query 한계 (Day 2)
 - [ ] Dense Index vs Sparse Index (예정 Day 3)
 - [ ] B-Tree vs B+Tree 상세 구조 (예정 Day 4)
 - [ ] Hash File — collision, overflow, range query 한계 (예정 Day 5)

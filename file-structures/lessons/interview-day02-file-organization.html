@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — 파일 조직 선택 | 파일구조 면접 준비</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222535;
+      --border: #2e3147;
+      --accent: #5b8dee;
+      --accent2: #7c5cbf;
+      --green: #3ecf8e;
+      --red: #e25c5c;
+      --yellow: #f5a623;
+      --text: #e2e4f0;
+      --muted: #8b90a8;
+      --code-bg: #12141f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1f3c 0%, #12141f 100%);
+      border-bottom: 2px solid var(--accent2);
+      padding: 2.5rem 2rem;
+      margin: 0 -1rem 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .icon-q  { background: #2b1f4a; color: var(--accent2); }
+    .icon-pre { background: #1a2f3a; color: var(--accent); }
+    .icon-why { background: #2a2010; color: var(--yellow); }
+    .icon-real { background: #112a1f; color: var(--green); }
+    .icon-think { background: #1f2a3a; color: #a8c5f0; }
+    .icon-ans  { background: #1a2a1a; color: var(--green); }
+    .icon-trade { background: #2a1a1a; color: var(--red); }
+    .icon-myth  { background: #2a1f10; color: var(--yellow); }
+    .icon-follow { background: #1a1a2a; color: var(--accent2); }
+    .icon-diff  { background: #202020; color: #c0c0c0; }
+    .icon-rub  { background: #0e1e1a; color: var(--green); }
+
+    h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 1.25rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    li { margin-bottom: 0.35rem; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #2b1f4a 0%, #1a1d27 100%);
+      border: 1.5px solid var(--accent2);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #d4c8f5;
+      margin-bottom: 0.75rem;
+    }
+    .interview-sub {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.88rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+      font-size: 0.87rem;
+      line-height: 1.6;
+    }
+    pre code { background: none; border: none; padding: 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.85rem 0;
+      font-size: 0.92rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+    .answer-block {
+      border-left: 3px solid;
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 0.85rem 0;
+    }
+    .answer-strong { border-color: var(--green); background: rgba(62,207,142,0.06); }
+    .answer-weak   { border-color: var(--red);   background: rgba(226,92,92,0.06); }
+    .answer-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+    .label-strong { color: var(--green); }
+    .label-weak   { color: var(--red); }
+
+    .step-list { counter-reset: step; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-list li:last-child { border-bottom: none; }
+    .step-list li::before {
+      content: counter(step);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0;
+    }
+    .followup-q {
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .score-high { background: rgba(62,207,142,0.2); color: var(--green); }
+    .score-mid  { background: rgba(245,166,35,0.2); color: var(--yellow); }
+    .score-low  { background: rgba(226,92,92,0.2);  color: var(--red); }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.85rem 0;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+    .callout-info { background: rgba(91,141,238,0.08); border-left: 3px solid var(--accent); }
+    .callout-warn { background: rgba(245,166,35,0.08); border-left: 3px solid var(--yellow); }
+    .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin: 0.1rem;
+    }
+    .tag-blue { background: rgba(91,141,238,0.15); color: var(--accent); }
+    .tag-green { background: rgba(62,207,142,0.15); color: var(--green); }
+    .tag-yellow { background: rgba(245,166,35,0.15); color: var(--yellow); }
+
+    .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      color: #c9d0e8;
+      margin: 0.85rem 0;
+      white-space: pre;
+    }
+
+    nav.breadcrumb {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    nav.breadcrumb a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <nav class="breadcrumb">
+      <a href="../">파일구조 면접 준비</a> › <a href="./index.html">레슨 목록</a>
+    </nav>
+    <div class="day-badge">Interview Day 2</div>
+    <h1>파일 조직 선택 — Sequential / Indexed / Hash</h1>
+    <p class="subtitle">조회, 삽입, 삭제, range query 요구사항으로 저장 구조를 고르는 판단력 훈련</p>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-q">Q</div>
+      <h2>면접 질문</h2>
+    </div>
+    <div class="interview-q">
+      "순차 파일, 인덱스 파일, 해시 파일을 어떤 기준으로 선택합니까?
+      각각의 조회, 삽입, 삭제, 범위 검색 비용은 어떻게 다릅니까?"
+    </div>
+    <p class="interview-sub">변형 질문 유형</p>
+    <ul>
+      <li>"게시판 검색 기능을 새로 설계한다면 어떤 파일 조직을 고르시겠습니까?"</li>
+      <li>"삽입이 잦은 로그 파일과 조회가 잦은 마스터 테이블은 왜 다른 구조를 써야 합니까?"</li>
+      <li>"정렬된 순차 파일에 새 레코드를 삽입할 때 어떤 문제가 생깁니까?"</li>
+      <li>"해시 인덱스는 조회가 O(1)인데, 왜 모든 테이블에 해시 인덱스를 쓰지 않습니까?"</li>
+    </ul>
+  </div>
+
+  <!-- 2. 전제 개념 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">📖</div>
+      <h2>전제 개념 — 쉬운 한국어로 먼저 이해하기</h2>
+    </div>
+
+    <h3>2-1. 파일 조직(File Organization)이란</h3>
+    <p>
+      파일 조직은 <strong>레코드를 디스크 블록에 물리적으로 어떻게 배치할 것인가</strong>에 대한 설계입니다.
+      Day 1에서 다룬 것처럼 디스크는 block 단위로 읽고 쓰기 때문에,
+      같은 데이터라도 어떻게 배치하느냐에 따라 조회/삽입/삭제 비용이 완전히 달라집니다.
+      크게 네 가지 방식이 있습니다: <strong>heap(pile) file</strong>, <strong>sequential file</strong>,
+      <strong>indexed file</strong>, <strong>hashed file</strong>.
+    </p>
+
+    <div class="divider"></div>
+    <h3>2-2. Heap File (Pile File) — 정렬 없이 그냥 쌓기</h3>
+    <p>
+      레코드를 들어오는 순서대로 파일 끝에 계속 추가(append)만 하는 방식입니다.
+      정렬도, 인덱스도 없습니다.
+    </p>
+    <div class="diagram">[ Heap File ]
+
+Block 0          Block 1          Block 2 (마지막)
+┌────────────┐  ┌────────────┐  ┌────────────┐
+│ id=57      │  │ id=12      │  │ id=91      │  ← 순서 무작위
+│ id=3       │  │ id=88      │  │             │  ← 새 레코드는 항상 여기 추가
+│ id=200     │  │ id=44      │  │             │
+└────────────┘  └────────────┘  └────────────┘
+
+삽입: 마지막 block에 추가 → O(1) I/O (순차 쓰기)
+조회(특정 id): 어디 있는지 몰라 전체 스캔 → O(N/B) I/O (B = block당 레코드 수)
+삭제: 위치를 찾은 뒤 삭제 표시(tombstone) 또는 마지막 레코드로 대체</div>
+    <p>
+      삽입은 가장 저렴하지만(항상 끝에 순차 쓰기), 조회는 가장 비쌉니다(항상 전체 스캔).
+      로그 적재나 임시 적재 영역(staging)처럼 "일단 빨리 쓰고, 나중에 한꺼번에 처리"하는 상황에 맞습니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>2-3. Sequential File — 정렬해서 저장하기</h3>
+    <p>
+      특정 키(예: id) 기준으로 <strong>물리적으로 정렬</strong>된 상태로 레코드를 저장하는 방식입니다.
+      정렬되어 있으므로 이진 탐색으로 검색할 수 있고, 순서대로 읽으면 범위 검색이 순차 I/O로 처리됩니다.
+    </p>
+    <div class="diagram">[ Sequential File — key 기준 정렬 ]
+
+Block 0          Block 1          Block 2
+┌────────────┐  ┌────────────┐  ┌────────────┐
+│ id=3       │  │ id=44      │  │ id=91      │
+│ id=12      │  │ id=57      │  │ id=200     │
+└────────────┘  ┌────────────┘  └────────────┘
+
+조회(id=57): 정렬되어 있으므로 이진 탐색 → O(log₂(N/B)) I/O
+range(id 12~91): 시작점만 찾고 이후 순차 스캔 → 매우 저렴 (순차 I/O)
+삽입(id=50): 정렬 위치를 지켜야 함 → 뒤 레코드를 전부 밀어야 함 → O(N/B) I/O
+
+[ 실무 대안: Overflow Area ]
+Main File (정렬 유지)        Overflow Area (임시, 미정렬)
+┌────────────┐             ┌────────────┐
+│ id=3       │             │ id=50 (신규)│ ← main을 밀지 않고 여기 먼저 추가
+│ id=12      │  ─┬link┐    │ id=61 (신규)│
+│ id=44      │   │    └───▶│             │
+│ id=57      │◀──┘         └────────────┘
+└────────────┘
+  주기적으로 main + overflow를 merge하여 재정렬(reorganization)</div>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span><strong>면접관이 보는 것:</strong> "정렬돼 있으니 삽입도 쉽겠다"는 흔한 착각입니다.
+      정렬을 유지하려면 삽입마다 뒤 레코드를 물리적으로 이동시켜야 하고,
+      이 비용을 피하려고 overflow area와 주기적 재구성(reorganization)을 쓴다는 것까지 설명해야 합니다.</span>
+    </div>
+
+    <div class="divider"></div>
+    <h3>2-4. Indexed File — 별도의 지도(index)를 두기</h3>
+    <p>
+      데이터 파일 자체는 어떤 순서든 상관없이 두고, 대신 <strong>키 → 레코드 위치</strong>를 매핑하는
+      작은 별도 구조(index)를 만들어 검색을 가속하는 방식입니다.
+      인덱스는 데이터 파일보다 훨씬 작아서(키 + 포인터만 저장) 메모리에 올리기 쉽고,
+      인덱스에서 위치를 찾은 뒤 데이터 파일에 한 번만 접근하면 됩니다.
+    </p>
+    <div class="diagram">[ Indexed File ]
+
+Index (key, block 주소만 저장 — 작고 빠름)
+┌───────────────┐
+│ id=3  → B0    │
+│ id=44 → B1    │
+│ id=91 → B2    │
+└───────────────┘
+       │ 인덱스에서 위치를 찾은 뒤 딱 한 번 접근
+       ▼
+Data File (블록 단위 저장, 순서는 자유)
+Block 0        Block 1        Block 2
+┌──────────┐  ┌──────────┐  ┌──────────┐
+│ id=3 ... │  │ id=44... │  │ id=91... │
+└──────────┘  └──────────┘  └──────────┘
+
+조회: 인덱스 탐색(대부분 메모리) + 데이터 block 1회 I/O → 매우 빠름
+삽입: 데이터는 아무 데나 추가 가능하지만, 인덱스에도 항목을 추가/재정렬해야 함
+  → 인덱스 유지(maintenance) 비용이 발생</div>
+    <p>
+      인덱스 자체도 결국 정렬된 파일이거나 트리 구조입니다.
+      이 인덱스를 dense/sparse로 나누고, 트리로 발전시킨 것이 Day 3~4에서 다룰 B-Tree/B+Tree입니다.
+      여기서는 "인덱스는 공짜가 아니라 유지 비용이 있는 또 하나의 자료구조"라는 점이 핵심입니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>2-5. Hashed File (Direct File) — 계산으로 바로 위치 찾기</h3>
+    <p>
+      키를 해시 함수에 넣어 <strong>어느 block(bucket)에 저장될지 직접 계산</strong>하는 방식입니다.
+      탐색이 필요 없고, 계산만으로 위치를 알아내므로 평균적으로 O(1) I/O입니다.
+    </p>
+    <div class="diagram">[ Hashed File ]
+
+hash(id) mod 4 = bucket 번호
+
+Bucket 0        Bucket 1        Bucket 2        Bucket 3
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+│ id=44    │  │ id=57    │  │ id=3     │  │ id=91    │
+│ id=12    │  │          │  │ id=200   │  │          │
+└──────────┘  └──────────┘  └──────────┘  └──────────┘
+                                ↑
+                        collision(충돌): id=3과 id=200이
+                        같은 bucket으로 계산됨
+                        → overflow chain 또는 open addressing으로 처리
+
+조회(id=X): hash(X) 계산 → 해당 bucket 1회 I/O → O(1) 평균
+range(id 12~91): 해시값은 원래 키의 순서를 보존하지 않음
+  → "12보다 크고 91보다 작은 모든 id"를 찾으려면 전체 스캔 필요 → range query 불가</div>
+    <p>
+      해시는 <strong>동등 비교(equality lookup, "id = 57")</strong>에는 이론상 최고 성능이지만,
+      <strong>범위 검색(range query, "id BETWEEN 12 AND 91")</strong>에는 근본적으로 쓸 수 없습니다.
+      키의 순서 정보를 해시 값이 보존하지 않기 때문입니다. 이것이 dense index/B+Tree와의 결정적 차이입니다.
+    </p>
+  </div>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-why">?</div>
+      <h2>왜 면접에서 이 질문을 묻는가</h2>
+    </div>
+    <p>
+      이 질문은 자료구조 이름을 나열할 수 있는지가 아니라, <strong>워크로드를 분석해서 구조를 고르는 판단 과정</strong>을 봅니다.
+    </p>
+    <ol>
+      <li>
+        <strong>접근 패턴을 먼저 묻는 습관이 있는가</strong><br>
+        "인덱스 걸면 되죠"가 아니라, 조회/삽입/삭제/range 비율을 먼저 확인하는 사고를 하는지 봅니다.
+      </li>
+      <li>
+        <strong>쓰기 비용을 무시하지 않는가</strong><br>
+        읽기만 빨라지는 구조는 없습니다. 인덱스, 정렬 유지에는 항상 쓰기 비용이 따른다는 것을 아는지 확인합니다.
+      </li>
+      <li>
+        <strong>실제 시스템 설계 경험과 연결되는가</strong><br>
+        로그 적재(heap 유사), 마스터 테이블 조회(indexed), 세션/캐시(hashed) 같은 실무 사례를 즉시 연결할 수 있어야 합니다.
+      </li>
+    </ol>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span>
+        주니어 수준 답변: "인덱스를 걸면 검색이 빨라집니다."<br>
+        10년차 기대 답변: "조회/삽입 비율과 range query 필요 여부를 먼저 확인합니다.
+        쓰기가 압도적으로 많고 조회가 드물면 heap에 가까운 append 구조가 낫고,
+        조회가 많고 동등 비교 위주면 hash, 범위 검색이 필요하면 정렬 기반 인덱스를 씁니다."
+      </span>
+    </div>
+  </div>
+
+  <!-- 4. 실무 연결 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-real">⚙</div>
+      <h2>실무 연결</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>실무 상황</th>
+          <th>적합한 구조와 이유</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>애플리케이션 로그 / 이벤트 적재</strong></td>
+          <td>
+            Heap에 가까운 append-only 쓰기. 조회는 드물거나 나중에 배치로 처리하므로
+            쓰기 비용을 최소화하는 것이 우선입니다. Kafka log segment가 대표적입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>게시판 / 상품 검색</strong></td>
+          <td>
+            제목, 카테고리 등 범위 검색·정렬·LIKE 검색이 필요합니다.
+            정렬 기반 인덱스(B+Tree)가 필요하고, 해시 인덱스만으로는 부족합니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>세션 스토어, 캐시 (Redis)</strong></td>
+          <td>
+            거의 항상 key로 동등 조회(GET session:1234)만 하고 range query가 없습니다.
+            해시 기반 구조(hash table)가 이론적으로 최적입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>파티션 키 설계 (DynamoDB, Kafka)</strong></td>
+          <td>
+            파티션 키는 해시로 분산시켜 균등 분배하지만,
+            정렬/범위 조회가 필요한 부분은 별도의 정렬 키(sort key)를 둡니다.
+            이것이 hash와 sequential 구조를 함께 쓰는 하이브리드 설계입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>대량 데이터 마이그레이션 / 초기 적재(bulk load)</strong></td>
+          <td>
+            인덱스를 미리 걸어두고 삽입하면 삽입마다 인덱스 유지 비용이 발생해 매우 느립니다.
+            인덱스를 제거한 채 heap/sequential로 대량 적재한 뒤, 마지막에 인덱스를 한 번에 재생성합니다.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-think">→</div>
+      <h2>답변 사고 순서 — 면접에서 이렇게 생각하면서 말한다</h2>
+    </div>
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>접근 패턴 확인</strong><br>
+          조회 대 삽입 대 삭제 비율은? 동등 조회(=)인가, 범위 조회(BETWEEN, &gt;, ORDER BY)인가?
+          쓰기가 몰아서 발생하는가(batch), 지속적으로 발생하는가?
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>저장장치 비용 모델 재확인 (Day 1 프레임워크 적용)</strong><br>
+          어떤 구조든 결국 I/O 횟수로 평가합니다. 정렬 유지, 인덱스 갱신도 결국 추가 I/O라는 것을 전제로 둡니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>후보 구조 비교</strong><br>
+          heap(쓰기 최적) / sequential(range에 강함, 삽입 비쌈) / indexed(균형, 유지비용 있음) /
+          hash(동등 조회 최강, range 불가) 네 가지를 조회·삽입·삭제·range 축으로 비교합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>I/O 비용 추정</strong><br>
+          예상 레코드 수, block당 레코드 수를 근거로 대략적인 I/O 횟수를 어림잡아 말합니다
+          (예: "정렬 파일이면 이진 탐색으로 log₂(N/B) 정도").
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>운영 trade-off 설명</strong><br>
+          선택한 구조의 유지보수 비용(재구성 주기, 인덱스 리빌드, collision 처리)까지 언급합니다.
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-ans">✓</div>
+      <h2>핵심 답변 예시</h2>
+    </div>
+
+    <h3>짧은 버전 (1~2분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Short)</div>
+      <p>
+        먼저 접근 패턴을 봅니다. 쓰기가 압도적으로 많고 조회가 거의 없다면 heap처럼 그냥 append하는 구조가
+        가장 저렴합니다. 조회가 잦고 동등 비교 위주라면 해시 구조가 이론상 최고의 조회 성능을 냅니다.
+        하지만 범위 검색이나 정렬된 출력이 필요하다면 해시는 쓸 수 없고, 정렬 기반 인덱스 파일을 써야 합니다.
+      </p>
+      <p>
+        실무에서는 거의 항상 순수 heap이나 순수 sequential file을 그대로 쓰지 않고,
+        정렬된 데이터 파일 위에 인덱스를 얹거나, B+Tree 인덱스로 조회와 range를 함께 지원하는 쪽을 선택합니다.
+        다만 인덱스는 공짜가 아니라서, 삽입마다 인덱스도 갱신해야 하는 쓰기 비용이 따른다는 점을 함께 고려합니다.
+      </p>
+    </div>
+
+    <h3>깊이 있는 버전 (3~5분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Deep)</div>
+      <p>
+        네 가지 조직 방식을 조회/삽입/삭제/range 네 축으로 비교해서 판단합니다.
+        Heap file은 삽입이 항상 파일 끝에 순차 쓰기라 O(1) I/O로 가장 저렴하지만, 조회는 위치 정보가 없어
+        전체 스캔(O(N/B))이 필요합니다. 그래서 조회가 드문 로그·이벤트 적재에 적합합니다.
+      </p>
+      <p>
+        Sequential file은 정렬되어 있어 이진 탐색으로 O(log₂(N/B)) 조회가 가능하고, range query는 시작점만 찾으면
+        나머지는 순차 스캔이라 매우 저렴합니다. 문제는 삽입입니다. 정렬을 유지하려면 뒤 레코드를 밀어야 하므로
+        실무에서는 이 비용을 감추기 위해 별도의 overflow area에 신규 레코드를 먼저 쌓고,
+        주기적으로 main file과 병합해 재정렬(reorganization)합니다. 이 재구성 주기 자체가 운영 비용입니다.
+      </p>
+      <p>
+        Indexed file은 데이터 파일과 별도로 (key → 위치) 매핑만 담은 작은 인덱스를 둡니다. 인덱스는
+        데이터보다 훨씬 작아 메모리에 상주하기 쉽고, 인덱스 탐색 후 데이터에 1회만 접근하면 됩니다.
+        하지만 인덱스도 자료구조이므로 삽입/삭제 때마다 유지 비용이 발생하고, 이 인덱스를 정렬 배열로 둘지
+        B-Tree로 둘지에 따라 유지 비용과 조회 성능이 또 달라집니다.
+      </p>
+      <p>
+        Hashed file은 해시 함수로 위치를 직접 계산하기 때문에 동등 조회에서 평균 O(1) I/O로 최고 성능을 냅니다.
+        하지만 해시 값은 원래 키의 순서를 보존하지 않으므로, "특정 범위의 레코드를 모두 찾아라"는 요청에는
+        전체 스캔밖에 방법이 없습니다. 그래서 세션 스토어나 캐시처럼 동등 조회만 있는 워크로드에는 최적이지만,
+        게시판 검색이나 정렬된 리포트가 필요한 테이블에는 부적합합니다.
+      </p>
+      <p>
+        결론적으로 저는 조회 패턴이 range를 포함하면 정렬 기반 인덱스(B+Tree)를, 순수 동등 조회 + 초고속 캐시성
+        접근이면 해시를, 쓰기가 압도적이고 조회가 드물면 append-only 구조를 우선 검토합니다.
+        실무에서는 종종 두 가지를 함께 씁니다. 예를 들어 DynamoDB 파티션 키는 해시로 분산하고
+        정렬 키(sort key)는 B-Tree 유사 구조로 범위 조회를 지원합니다.
+      </p>
+    </div>
+
+    <div class="answer-block answer-weak">
+      <div class="answer-label label-weak">약한 답변</div>
+      <p>
+        "인덱스를 걸면 검색이 빨라지니까 다 인덱스를 겁니다. 해시는 O(1)이니까 제일 빠르고요."
+      </p>
+      <p>
+        <strong>왜 약한가:</strong> 삽입/삭제 비용을 전혀 고려하지 않았습니다.
+        range query가 불가능한 해시의 한계를 모릅니다. "빠르다"는 결론만 있고,
+        조회/삽입/삭제/range라는 다차원 trade-off로 구조를 비교하는 사고 과정이 없습니다.
+        모든 상황에 하나의 정답(인덱스, 또는 해시)을 대입하는 것 자체가 위험 신호입니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 7. Trade-off -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-trade">⇄</div>
+      <h2>Trade-off 정리</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>조직 방식</th>
+          <th>조회(동등)</th>
+          <th>Range Query</th>
+          <th>삽입</th>
+          <th>삭제</th>
+          <th>공간 오버헤드</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Heap</strong></td>
+          <td>O(N/B) 전체 스캔</td>
+          <td>불가 (스캔 필요)</td>
+          <td>O(1) 매우 저렴</td>
+          <td>tombstone 또는 이동</td>
+          <td>없음</td>
+        </tr>
+        <tr>
+          <td><strong>Sequential</strong></td>
+          <td>O(log₂(N/B)) 이진탐색</td>
+          <td>매우 저렴 (순차 스캔)</td>
+          <td>비쌈 (재정렬/overflow)</td>
+          <td>비쌈 (shift 또는 표시)</td>
+          <td>overflow area 필요</td>
+        </tr>
+        <tr>
+          <td><strong>Indexed</strong></td>
+          <td>매우 빠름 (인덱스 + 1회 접근)</td>
+          <td>인덱스 구조에 따라 다름</td>
+          <td>보통 (인덱스 갱신 비용)</td>
+          <td>보통 (인덱스 갱신 비용)</td>
+          <td>인덱스 저장 공간 추가</td>
+        </tr>
+        <tr>
+          <td><strong>Hashed</strong></td>
+          <td>평균 O(1) 최고</td>
+          <td>불가 (순서 보존 안 됨)</td>
+          <td>평균 O(1), collision 시 비쌈</td>
+          <td>평균 O(1), collision 정리 필요</td>
+          <td>bucket 여유 공간 필요</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span>
+        네 구조 모두 "완벽한 구조"는 없습니다. 조회를 빠르게 하면 삽입이 느려지고,
+        삽입을 빠르게 하면 조회가 느려집니다. 이 trade-off를 명시적으로 말하는 것 자체가
+        10년차 답변의 핵심입니다.
+      </span>
+    </div>
+  </div>
+
+  <!-- 8. 흔한 오해 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-myth">✗</div>
+      <h2>흔한 오해와 바로잡기</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 1: "인덱스를 많이 걸수록 무조건 좋다"</div>
+      <p>
+        인덱스는 조회를 빠르게 하는 대신, 모든 INSERT/UPDATE/DELETE마다 인덱스도 함께 갱신해야 합니다.
+        인덱스가 많을수록 쓰기 성능이 떨어지고 저장 공간도 늘어납니다.
+        실무에서는 실제 쿼리 패턴을 보고 필요한 인덱스만 만듭니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 2: "정렬된 파일이니 삽입도 빠를 것이다"</div>
+      <p>
+        정렬을 물리적으로 유지하려면 삽입 위치 뒤의 레코드를 전부 밀어야 합니다.
+        실무 시스템은 이 비용을 피하려고 overflow area, 주기적 reorganization,
+        또는 애초에 트리 기반 구조(B+Tree)를 써서 삽입 비용을 O(log N)으로 낮춥니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 3: "해시가 O(1)이니 항상 B+Tree보다 빠르다"</div>
+      <p>
+        동등 조회 단일 케이스만 보면 맞을 수 있지만, 해시는 순서 정보를 버리기 때문에
+        range query, ORDER BY, 정렬된 결과가 필요한 순간 전체 스캔으로 퇴화합니다.
+        DB 인덱스가 기본으로 B+Tree인 이유는 동등 조회와 range 조회를 모두 균형 있게 지원하기 때문입니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 4: "heap file은 정렬도 인덱스도 없으니 실무에서 쓸모없다"</div>
+      <p>
+        오히려 로그 적재, 이벤트 스트림, 대량 bulk insert의 staging 영역에서는
+        heap에 가까운 append-only 구조가 최선입니다.
+        조회가 필요 없거나 나중에 배치로 처리한다면, 정렬/인덱스 유지 비용 자체가 낭비입니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- 9. Follow-up 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-follow">↓</div>
+      <h2>Senior-Level Follow-up 질문과 답변 방향</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "정렬 순서를 유지하면서 삽입 비용을 줄이는 방법이 있습니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        두 가지 접근이 있습니다. 첫째는 overflow area를 두고 신규 레코드를 임시로 미정렬 상태로 쌓았다가
+        주기적으로 main file과 병합·재정렬하는 것입니다(재구성 비용은 배치로 상환).
+        둘째는 애초에 배열이 아닌 트리 구조(B-Tree/B+Tree)를 쓰는 것입니다.
+        트리는 삽입할 때 리프 노드 재분배(split)만으로 정렬 순서를 O(log N)에 유지할 수 있어
+        배열식 정렬 파일의 O(N) 삽입 비용을 근본적으로 피합니다. (Day 4에서 자세히 다룹니다.)
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "해시 파일에서 collision은 어떻게 처리합니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        대표적으로 chaining(같은 bucket 안에 overflow list 연결)과 open addressing(다른 빈 slot을 탐사)이 있습니다.
+        디스크 기반 해시 파일에서는 보통 overflow bucket을 체인으로 연결하는 방식을 씁니다.
+        더 나아가 bucket이 가득 찼을 때 전체를 rehash하는 비용을 피하기 위해
+        extendible hashing이나 linear hashing처럼 점진적으로 bucket을 늘리는 기법을 씁니다. (Day 5에서 다룹니다.)
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "인덱스 파일 자체도 파일인데, 그 인덱스는 어떻게 검색합니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        인덱스가 작으면 메모리에 올려 선형/이진 탐색으로 충분하지만, 인덱스 자체가 커지면
+        인덱스도 여러 block에 걸쳐 저장되고, 그 인덱스를 찾기 위한 또 다른(더 작은) 인덱스가 필요해집니다.
+        이렇게 인덱스를 계층적으로 쌓아 올린 것이 multi-level index이고, 이를 자연스럽게 균형 트리로 일반화한 것이
+        B-Tree/B+Tree입니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "실시간 삽입이 매우 잦은 시스템에서 인덱스 구조를 어떻게 유지합니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        매 삽입마다 인덱스를 즉시 갱신하는 대신, 쓰기를 메모리 버퍼(memtable)에 먼저 모았다가
+        일정 크기가 되면 정렬된 파일로 순차 flush하고, 백그라운드에서 파일들을 병합(compaction)하는
+        LSM-Tree 방식이 있습니다. 랜덤 쓰기를 순차 쓰기로 바꿔 쓰기 처리량을 크게 높입니다.
+        RocksDB, Cassandra, LevelDB가 이 방식을 씁니다. (Day 9 append-only 구조에서 더 다룹니다.)
+      </p>
+    </div>
+  </div>
+
+  <!-- 10. 좋은 답변과 약한 답변 차이 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-diff">≠</div>
+      <h2>좋은 답변과 약한 답변의 차이</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>약한 답변 (5년차 이하)</th>
+          <th>강한 답변 (10년차 이상)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>판단 시작점</td>
+          <td>"인덱스를 걸면 빠르다"</td>
+          <td>"조회/삽입 비율과 range 필요 여부를 먼저 확인한다"</td>
+        </tr>
+        <tr>
+          <td>구조 비교</td>
+          <td>구조 하나만 언급</td>
+          <td>heap/sequential/indexed/hash 4가지를 조회·삽입·삭제·range 축으로 비교</td>
+        </tr>
+        <tr>
+          <td>해시의 한계</td>
+          <td>"해시가 제일 빠르다"</td>
+          <td>"동등 조회는 최고지만 range query는 근본적으로 불가"</td>
+        </tr>
+        <tr>
+          <td>정렬 파일의 함정</td>
+          <td>언급 없음</td>
+          <td>"삽입 시 shift 비용, overflow area와 재구성 주기 필요"</td>
+        </tr>
+        <tr>
+          <td>실무 연결</td>
+          <td>이론만 말함</td>
+          <td>로그 적재, 세션 스토어, DynamoDB 파티션/정렬 키 등 실제 사례 연결</td>
+        </tr>
+        <tr>
+          <td>follow-up 대비</td>
+          <td>추가 질문에 막힘</td>
+          <td>collision 처리, multi-level index, LSM-Tree까지 연결</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 11. Self-check Rubric -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-rub">✓</div>
+      <h2>자기 점검 Rubric</h2>
+    </div>
+    <p>답변 연습 후 아래 기준으로 자신을 평가하세요.</p>
+
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>접근 패턴(조회/삽입/삭제/range)을 먼저 물었다</strong><br>
+        구조를 정하기 전에 워크로드 특성부터 확인하는 순서로 답했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>네 가지 조직 방식을 다차원으로 비교했다</strong><br>
+        heap/sequential/indexed/hash를 조회·삽입·삭제·range 관점에서 비교했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>해시의 range query 한계를 명확히 설명했다</strong><br>
+        해시 값이 순서 정보를 보존하지 않는다는 근본 이유를 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>정렬 파일의 삽입 비용 문제와 overflow area를 언급했다</strong><br>
+        정렬 유지 비용과 실무 완화 기법(overflow, 재구성)을 함께 설명했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>실무 사례를 1개 이상 언급했다</strong><br>
+        로그 적재, 세션 스토어, DynamoDB 파티션/정렬 키, bulk load 중 하나 이상 연결했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>인덱스 유지 비용을 명시했다</strong><br>
+        인덱스가 조회를 빠르게 하는 대신 쓰기 비용을 늘린다는 trade-off를 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>Follow-up에서 collision 처리 또는 multi-level index를 설명했다</strong><br>
+        chaining/open addressing, 또는 인덱스를 계층화한 구조를 근거로 답했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>LSM-Tree 또는 유사한 쓰기 최적화 구조를 언급했다</strong><br>
+        실시간 삽입이 잦은 상황에서의 대안을 제시했다.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="callout callout-info">
+      <span class="callout-icon">📊</span>
+      <span>
+        <strong>자가 평가:</strong>
+        '필수' 3개 모두 → 합격 수준 |
+        '권장' 3개 추가 → 좋은 인상 |
+        '심화' 포함 → 탑티어 후보
+      </span>
+    </div>
+  </div>
+
+  <!-- 12. 다음 레슨 예고 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">→</div>
+      <h2>다음 레슨 예고 — Day 3: 인덱스 기본 구조</h2>
+    </div>
+    <p>
+      다음 레슨에서는 indexed file 안의 인덱스 자체를 더 깊이 들여다봅니다.
+      데이터 파일이 정렬돼 있다는 전제 아래, 인덱스에 모든 키를 담을지(dense) 일부만 담을지(sparse)를
+      저장 공간과 탐색 비용 관점에서 비교합니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>주제</th><th>면접 핵심 질문</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Dense Index</td>
+          <td>모든 레코드에 인덱스 항목을 두면 어떤 장단점이 있는가?</td>
+        </tr>
+        <tr>
+          <td>Sparse Index</td>
+          <td>정렬 파일 전제가 왜 필요하고, 저장 공간을 어떻게 줄이는가?</td>
+        </tr>
+        <tr>
+          <td>Primary vs Secondary Index</td>
+          <td>정렬 기준 키가 아닌 컬럼에는 어떤 인덱스를 써야 하는가?</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <span class="tag tag-blue">Dense Index</span>
+      <span class="tag tag-green">Sparse Index</span>
+      <span class="tag tag-green">Primary Index</span>
+      <span class="tag tag-yellow">Secondary Index</span>
+      개념이 이번 레슨의 indexed file 기반 위에서 다루어집니다.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>
