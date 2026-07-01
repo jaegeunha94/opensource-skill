@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — 메모리 계층 구조: 숫자로 이해하는 비용 모델 | 컴퓨터 구조 면접 대비</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="lesson-container">
+
+  <!-- Header -->
+  <header class="lesson-header">
+    <div class="day-badge">DAY 2</div>
+    <h1>메모리 계층 구조 — 숫자로 이해하는 비용 모델</h1>
+    <p class="subtitle">컴퓨터 구조 면접 대비 | Latency, Bandwidth, 그리고 정량적 설계 판단</p>
+  </header>
+
+  <!-- 이 레슨의 목표 -->
+  <h2>이 레슨에서 얻는 것</h2>
+  <p>
+    Day 1에서 "캐시가 느리면 DRAM보다 빠르다"는 정성적 감각을 익혔다면, 오늘은 그 감각을
+    <strong>숫자로 계산하는 능력</strong>으로 바꾼다. 시니어 면접에서는 "빠르다/느리다"가 아니라
+    "몇 배 느리고, 그래서 설계를 어떻게 바꿀 것인가"를 요구한다.
+  </p>
+  <ul>
+    <li>레지스터 → L1 → L2 → L3 → DRAM → 네트워크 → 디스크까지 전체 비용 스펙트럼을 정량적으로 설명</li>
+    <li>Latency(지연 시간)와 Bandwidth(대역폭)를 구분하고, 왜 최적화 전략이 달라지는지 이해</li>
+    <li>데이터 크기(working set)와 캐시 용량을 비교해 병목 위치를 사전에 추정하는 방법 습득</li>
+    <li>이 비용 모델을 실제 설계 판단(로컬 캐시 크기, Redis 사용 여부, NUMA 배치)에 적용</li>
+  </ul>
+
+  <hr class="divider">
+
+  <!-- ========================= 면접 질문 ========================= -->
+  <h2>오늘의 면접 질문</h2>
+
+  <div class="card interview-q">
+    <div class="q-label">INTERVIEW QUESTION — SENIOR LEVEL</div>
+    <div class="question">
+      "1억 개의 정수 데이터에 랜덤하게 접근하는 로직이 있습니다.<br>
+      이 데이터가 전부 DRAM에 있을 때와, 자주 쓰는 부분만 L3 캐시에 들어갈 때 성능 차이를
+      어떻게 추정하시겠습니까? 그리고 이 추정이 실제 시스템 설계에서 왜 중요한가요?"
+    </div>
+  </div>
+
+  <p>
+    이 질문은 <em>정량적 사고력</em>을 평가하는 질문이다. "느려질 것 같다"는 감으로 답하면 중급이고,
+    실제 바이트 수, 캐시 용량, ns 단위 latency를 근거로 back-of-envelope 계산을 해내면 시니어다.
+    구글, 메타, 하이프리퀀시 트레이딩 회사들이 특히 이런 유형을 선호한다 — 실무에서 용량 계획과
+    캐시 설계를 할 때 정확히 이 계산을 매일 하기 때문이다.
+  </p>
+
+  <hr class="divider">
+
+  <!-- ========================= 전제 개념 ========================= -->
+  <h2>전제 개념 — 시작하기 전에 반드시 알아야 할 것</h2>
+
+  <div class="card prereq">
+    <div class="prereq-title">PREREQUISITE</div>
+    <p><strong>왜 메모리는 "한 종류"가 아니라 "계층"으로 존재하는가?</strong></p>
+    <p>
+      빠르고, 크고, 싼 메모리를 한 번에 만들 수 있다면 계층은 필요 없다. 하지만 물리적으로
+      셋 중 두 개만 고를 수 있다. 레지스터는 빠르지만 극히 작고 비싸다(CPU 다이 위에 트랜지스터로
+      직접 구현). DRAM은 크고 싸지만 느리다(전기적으로 커패시터에 전하를 충전/방전하는 방식이라
+      접근할 때마다 물리적 지연이 있다).
+    </p>
+    <p>
+      그래서 컴퓨터는 <strong>빠르고 작은 것</strong>부터 <strong>느리고 큰 것</strong>까지 여러 단을 쌓고,
+      자주 쓰는 데이터를 위쪽(레지스터, 캐시)으로 끌어올려서 평균 접근 시간을 낮춘다.
+      이게 메모리 계층(memory hierarchy)이 존재하는 근본 이유다.
+    </p>
+    <p>
+      <strong>핵심 개념 두 가지를 구분해야 한다:</strong>
+    </p>
+    <ul>
+      <li><strong>Latency(지연 시간):</strong> 요청 한 번이 완료되기까지 걸리는 시간. "얼마나 오래 기다리나"</li>
+      <li><strong>Bandwidth(대역폭):</strong> 단위 시간당 옮길 수 있는 데이터량. "한 번에 얼마나 많이 옮길 수 있나"</li>
+    </ul>
+    <p>
+      비유하면 Latency는 서울에서 부산까지 편지 한 통이 도착하는 시간이고, Bandwidth는
+      그 도로로 하루에 몇 톤의 화물을 옮길 수 있는지다. 트럭을 더 많이 투입하면(파이프라이닝,
+      병렬 요청) 화물량(bandwidth)은 늘릴 수 있어도, 편지 한 통의 도착 시간(latency)은
+      줄지 않는다. 이 차이를 못 잡으면 잘못된 최적화를 하게 된다 — 예를 들어 포인터 체이싱처럼
+      순차적으로 의존적인 접근은 아무리 대역폭을 늘려도 빨라지지 않는다.
+    </p>
+  </div>
+
+  <h3>기억해야 할 숫자 — Latency와 Bandwidth 전체 스펙트럼</h3>
+  <p>Day 1에서 본 표를 확장한다. 이번엔 대역폭과 용량까지 함께 본다.</p>
+
+  <table class="latency-table">
+    <thead>
+      <tr>
+        <th>계층</th>
+        <th>대략 용량</th>
+        <th>Latency</th>
+        <th>대략 Bandwidth</th>
+        <th>속도 등급</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>레지스터</td>
+        <td>~32개 × 8바이트</td>
+        <td class="latency-fast">~0.3 ns (1 cycle)</td>
+        <td class="latency-fast">사실상 무제한 (코어 내부)</td>
+        <td class="latency-fast">최고속</td>
+      </tr>
+      <tr>
+        <td>L1 캐시 (코어 전용)</td>
+        <td>32~64 KB</td>
+        <td class="latency-fast">~1 ns (4 cycles)</td>
+        <td class="latency-fast">~100+ GB/s (코어당)</td>
+        <td class="latency-fast">빠름</td>
+      </tr>
+      <tr>
+        <td>L2 캐시 (코어 전용)</td>
+        <td>256 KB ~ 1 MB</td>
+        <td class="latency-fast">~3-4 ns (12 cycles)</td>
+        <td class="latency-fast">~50 GB/s (코어당)</td>
+        <td class="latency-fast">빠름</td>
+      </tr>
+      <tr>
+        <td>L3 캐시 (코어 공유)</td>
+        <td>8 ~ 32 MB</td>
+        <td class="latency-medium">~15-20 ns (40-45 cycles)</td>
+        <td class="latency-medium">~20-30 GB/s (공유, 경쟁 발생)</td>
+        <td class="latency-medium">보통</td>
+      </tr>
+      <tr>
+        <td>DRAM (로컬 소켓)</td>
+        <td>수십 ~ 수백 GB</td>
+        <td class="latency-slow">~60-100 ns</td>
+        <td class="latency-slow">~20-25 GB/s (채널당)</td>
+        <td class="latency-slow">느림</td>
+      </tr>
+      <tr>
+        <td>DRAM (NUMA 원격 소켓)</td>
+        <td>-</td>
+        <td class="latency-slow">~150-300 ns</td>
+        <td class="latency-slow">로컬 대비 감소</td>
+        <td class="latency-slow">더 느림</td>
+      </tr>
+      <tr>
+        <td>같은 데이터센터 네트워크 왕복</td>
+        <td>-</td>
+        <td class="latency-slow">~0.3-1 ms</td>
+        <td class="latency-medium">NIC에 따라 다름 (10-100 Gbps)</td>
+        <td class="latency-slow">매우 느림</td>
+      </tr>
+      <tr>
+        <td>SSD (NVMe) 랜덤 읽기</td>
+        <td>수백 GB ~ TB</td>
+        <td class="latency-slow">~50-150 μs</td>
+        <td class="latency-medium">~3-7 GB/s</td>
+        <td class="latency-slow">매우 느림</td>
+      </tr>
+      <tr>
+        <td>HDD 랜덤 읽기</td>
+        <td>TB 단위</td>
+        <td class="latency-slow">~5-10 ms</td>
+        <td class="latency-slow">~100-200 MB/s</td>
+        <td class="latency-slow">극도로 느림</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <div class="callout-title">⚠ 면접 실수 주의</div>
+    정확한 숫자를 외우려 하지 마라. 인터뷰어가 원하는 건 <strong>자릿수(order of magnitude)</strong> 감각이다.
+    "DRAM은 L1보다 대략 100배 느리고, 네트워크 왕복은 DRAM보다 또 5,000~10,000배 느리다"는 비율 감각만
+    있어도 대부분의 설계 판단 질문에 답할 수 있다.
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= 왜 면접에서 묻는가 ========================= -->
+  <h2>왜 면접에서 이 질문을 하는가</h2>
+
+  <div class="card why">
+    <p>
+      <strong>평가 목적:</strong> 정성적 지식("캐시가 빠르다")과 정량적 설계 능력("그래서 몇 배 차이가 나고,
+      이 설계를 선택해야 한다")은 완전히 다른 레벨이다. 10년차 이상에게 기대하는 것:
+    </p>
+    <ul>
+      <li>데이터 크기와 캐시 용량을 비교해서 병목 위치를 사전에 "계산"으로 추정할 수 있는가</li>
+      <li>Latency와 Bandwidth를 구분해서, 문제 유형에 맞는 최적화 방향을 고를 수 있는가</li>
+      <li>이 숫자를 실제 아키텍처 결정(로컬 캐시 vs Redis, 샤딩, NUMA 배치)에 연결할 수 있는가</li>
+      <li>"메모리에 있으니 빠르다"처럼 뭉뚱그린 표현 대신 근거를 댈 수 있는가</li>
+    </ul>
+    <p style="margin-top:0.75rem">
+      <strong>시그널:</strong> "메모리 접근은 다 빠릅니다"라고 답하면 계층 구조를 모르는 것이고,
+      "1억 개 정수는 400MB라서 L3(수십 MB)보다 훨씬 크므로 대부분 DRAM에서 옵니다. 랜덤 접근이면 회당 약 100ns이고,
+      L3에 다 들어간다면 15-20ns 수준으로 5배 이상 빨라집니다"라고 답하면 정량적 설계 판단력을 보여주는 것이다.
+    </p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= 핵심 개념 ========================= -->
+  <h2>핵심 개념 — 비용 모델을 실제로 계산하는 법</h2>
+
+  <h3>1단계 — Working Set 크기 계산</h3>
+  <p>
+    <strong>Working set</strong>은 어떤 시간 구간 동안 실제로 반복 접근하는 데이터의 총량이다.
+    전체 데이터가 100GB여도, 자주 접근하는 부분(hot data)이 10MB뿐이라면 working set은 10MB다.
+  </p>
+  <pre>working_set_bytes = 자주_접근하는_레코드_수 × 레코드당_바이트
+
+예: 자주 조회되는 사용자 세션 100만 개 × 200바이트 = 200MB
+→ L3(수십 MB)보다 크다 → 대부분 DRAM 접근이 발생한다</pre>
+
+  <h3>2단계 — 어느 계층에 위치하는지 판정</h3>
+  <table class="rubric-table">
+    <thead>
+      <tr>
+        <th>Working Set 크기</th>
+        <th>예상 위치</th>
+        <th>설계 시사점</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&lt; 256KB ~ 1MB</td>
+        <td>L2에 상주 가능</td>
+        <td>루프 내부 hot 변수는 이 크기를 넘지 않도록 설계</td>
+      </tr>
+      <tr>
+        <td>~ 8-32MB</td>
+        <td>L3에 상주 가능</td>
+        <td>단일 서버 내 로컬 캐시(예: 인메모리 LRU) 사이즈 결정 기준</td>
+      </tr>
+      <tr>
+        <td>수백 MB ~ 수십 GB</td>
+        <td>DRAM 필요</td>
+        <td>순차 접근 유지가 핵심, 랜덤 접근이면 miss 비용 큼</td>
+      </tr>
+      <tr>
+        <td>수십 GB 이상, 여러 서버 공유 필요</td>
+        <td>DRAM + 네트워크(Redis 등)</td>
+        <td>네트워크 latency(0.3ms~)가 지배적 비용이 됨</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>3단계 — 접근 패턴 반영 (순차 vs 랜덤)</h3>
+  <p>
+    같은 용량이어도 <strong>접근 패턴</strong>에 따라 체감 latency가 완전히 다르다.
+    순차 접근은 하드웨어 프리페처(prefetcher)가 다음에 필요한 cache line을 미리 읽어와서
+    DRAM latency를 사실상 "숨긴다"(latency hiding). 랜덤 접근은 프리페처가 예측할 수 없어서
+    매번 전체 latency를 다 지불한다.
+  </p>
+  <pre>// 순차 접근 — 프리페처가 동작 → 실효 latency가 표기 값보다 훨씬 낮음
+for (int i = 0; i &lt; n; i++) sum += arr[i];
+
+// 랜덤 접근 — 프리페처 무력화 → 표기 latency를 거의 그대로 지불
+for (int i = 0; i &lt; n; i++) sum += arr[random_index[i]];</pre>
+
+  <h3>4단계 — Latency-bound vs Bandwidth-bound 구분</h3>
+  <p>
+    같은 "메모리 병목"이라도 원인이 다르면 해법이 다르다.
+  </p>
+  <ul>
+    <li>
+      <strong>Latency-bound (지연 시간 병목):</strong> 포인터 체이싱, 연결 리스트, 트리 순회처럼
+      다음 접근이 이전 접근 결과에 의존하는 경우. 해법: 접근을 병렬화하거나(소프트웨어 프리페치),
+      자료구조를 캐시 친화적으로 바꿔 depth를 줄인다.
+    </li>
+    <li>
+      <strong>Bandwidth-bound (대역폭 병목):</strong> 큰 배열을 통째로 복사하거나 스트리밍 연산(memcpy,
+      대용량 집계)을 하는 경우. 해법: 옮기는 바이트 수 자체를 줄이거나(압축, 필요한 컬럼만 로드),
+      메모리 채널/코어를 병렬로 활용한다.
+    </li>
+  </ul>
+
+  <div class="callout tip">
+    <div class="callout-title">💡 실무 팁 — Roofline 모델 감각</div>
+    <p>
+      "이 코드가 계산 병목인지 메모리 대역폭 병목인지"를 가르는 기준이 <strong>arithmetic intensity</strong>
+      (바이트당 연산 수, FLOPs/byte)다. 이 값이 CPU의 (peak FLOPs ÷ peak bandwidth)보다 낮으면
+      아무리 연산을 줄여도 대역폭이 한계라서 속도가 안 오른다. 벡터 합처럼 데이터당 연산이 적은
+      작업은 거의 항상 bandwidth-bound다. Day 8 프로파일링에서 이 값을 실측하는 방법을 다룬다.
+    </p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= 실무 연결 ========================= -->
+  <h2>실무 연결 — 이 비용 모델이 실제 설계를 어떻게 바꾸는가</h2>
+
+  <h3>사례 1 — 로컬 캐시 크기를 얼마로 잡을 것인가</h3>
+  <pre># 비용 모델 기반 캐시 사이징 예시
+L3_SIZE_MB = 32
+avg_entry_bytes = 200          # 캐시 항목 하나의 평균 바이트 수
+target_hit_rate_entries = 100_000
+
+working_set_mb = target_hit_rate_entries * avg_entry_bytes / (1024 * 1024)
+# working_set_mb ≈ 19MB → L3 안에 들어간다
+# → 로컬 인메모리 캐시로 커버 가능, Redis 없이도 hot path는 ~20ns 수준 유지</pre>
+  <p>
+    이런 계산 없이 "일단 크게 잡자"고 캐시를 키우면, working set이 L3를 넘어가는 순간부터
+    hit rate가 오히려 떨어지는 역설이 생긴다(캐시 항목은 늘었지만 각 접근이 DRAM으로 밀림).
+  </p>
+
+  <h3>사례 2 — 로컬 캐시 vs Redis, 언제 무엇을 쓰는가</h3>
+  <p>
+    로컬 캐시(프로세스 메모리)는 ~1-20ns, Redis 같은 원격 캐시는 네트워크 왕복 포함
+    ~0.3-1ms다. 자릿수로 4,000~50,000배 차이다. 그런데도 실무에서 Redis를 쓰는 이유는
+    성능이 아니라 <strong>여러 서버가 같은 상태를 공유해야 하는 요구사항</strong> 때문이다.
+    이게 바로 "숫자로 설명하되, 숫자만으로 결론 내지 않는" 시니어의 트레이드오프 사고다.
+  </p>
+  <table class="rubric-table">
+    <thead>
+      <tr><th>기준</th><th>로컬 캐시</th><th>Redis(원격 캐시)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Latency</td><td>~1-20 ns</td><td>~0.3-1 ms</td></tr>
+      <tr><td>서버 간 공유</td><td>불가 (프로세스별로 따로 존재)</td><td>가능</td></tr>
+      <tr><td>용량</td><td>프로세스 메모리 한도 내</td><td>별도 인스턴스, 수평 확장 가능</td></tr>
+      <tr><td>일관성 관리</td><td>단순 (단일 프로세스)</td><td>무효화 전략 필요</td></tr>
+    </tbody>
+  </table>
+
+  <h3>사례 3 — NUMA 환경에서 스레드 배치</h3>
+  <p>
+    멀티소켓 서버에서는 각 CPU 소켓에 로컬로 붙은 DRAM이 있다. 다른 소켓의 DRAM에 접근하면
+    (원격 NUMA 접근) 로컬 접근보다 1.5~3배 느리다. 스레드가 소켓 A에서 실행되는데 데이터는
+    소켓 B의 메모리에 할당돼 있으면, 코드 로직은 그대로인데 순전히 배치 문제로 성능이
+    떨어진다. <code>numactl --cpubind --membind</code>로 스레드와 메모리를 같은 소켓에
+    고정하는 것이 고성능 서버(DB, 캐시 서버)에서 표준 관행이다.
+  </p>
+
+  <h3>사례 4 — API 요청 예산(latency budget) 설계</h3>
+  <p>
+    P99 100ms 목표인 API가 있다고 하자. 내부에서 DB 인덱스 조회(디스크/SSD, 수백 μs~ms),
+    Redis 조회(0.3-1ms), 로컬 메모리 캐시(수십 ns)를 조합해서 쓴다면, 예산의 대부분은
+    네트워크 홉과 디스크 I/O가 차지하고 순수 메모리 연산은 오차 범위에도 안 들어간다.
+    이게 바로 "왜 알고리즘 상수 최적화보다 네트워크 홉 수를 줄이는 게 더 중요한가"에 대한
+    정량적 근거다.
+  </p>
+
+  <hr class="divider">
+
+  <!-- ========================= 답변 사고 순서 ========================= -->
+  <h2>답변 사고 순서 — 면접에서 어떻게 말할 것인가</h2>
+
+  <ol class="think-steps">
+    <li>
+      <div>
+        <strong>데이터 크기(working set)를 먼저 계산</strong><br>
+        "1억 개 정수는 4바이트씩이면 400MB입니다. 이건 L3 캐시(수십 MB)보다 훨씬 큽니다."
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>접근 패턴을 확인 (순차 vs 랜덤)</strong><br>
+        "랜덤 접근이라고 하셨으니 하드웨어 프리페처가 거의 도움이 안 됩니다. 접근할 때마다 DRAM latency를 온전히 지불합니다."
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>계층별 latency를 근거로 배수 계산</strong><br>
+        "L3에 다 들어간다면 접근당 약 15-20ns, DRAM이면 약 100ns입니다. 5-6배 정도 차이가 날 것으로 추정합니다."
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>Latency-bound인지 Bandwidth-bound인지 구분</strong><br>
+        "랜덤 접근이므로 이건 latency-bound 문제입니다. 대역폭을 늘려도 해결되지 않고, 접근 패턴 자체를 바꾸거나 hot 데이터를 줄여야 합니다."
+      </div>
+    </li>
+    <li>
+      <div>
+        <strong>설계 판단으로 연결</strong><br>
+        "실무라면 전체 데이터를 다 캐시에 넣으려 하지 않고, 접근 빈도 상위 데이터만 골라 working set을 L3 크기 이하로 줄이는 방향을 검토하겠습니다. 측정은 perf stat의 cache-misses 카운터로 확인합니다."
+      </div>
+    </li>
+  </ol>
+
+  <hr class="divider">
+
+  <!-- ========================= 핵심 답변 예시 ========================= -->
+  <h2>핵심 답변 예시</h2>
+
+  <div class="card strong-answer">
+    <div class="answer-label strong">✓ 강한 답변 (시니어 수준)</div>
+    <p>
+      "1억 개의 4바이트 정수는 약 400MB입니다. 이는 일반적인 L3 캐시 용량(8-32MB)보다 훨씬 커서,
+      대부분의 데이터는 DRAM에 상주하게 됩니다.
+    </p>
+    <p>
+      랜덤 접근이라는 조건이 중요합니다. 순차 접근이면 하드웨어 프리페처가 다음 cache line을
+      미리 로드해서 체감 latency가 크게 낮아지지만, 랜덤 접근은 프리페처가 무력화되어 매번
+      약 100ns의 DRAM latency를 그대로 지불합니다. 반면 hot 데이터만 골라 L3(수십 MB)
+      안에 들어가게 만들면 접근당 약 15-20ns로 5배 이상 개선됩니다.
+    </p>
+    <p>
+      이건 latency-bound 문제이기 때문에 대역폭을 늘리는 방향(예: 더 많은 메모리 채널)은
+      해법이 아닙니다. 실무에서는 접근 빈도 상위 데이터만 별도 hot cache로 분리하거나,
+      데이터 레이아웃을 바꿔 접근을 순차적으로 재구성하는 방향을 검토합니다. 실제 개선 여부는
+      <code>perf stat -e cache-misses,cache-references</code>로 측정해 확인합니다."
+    </p>
+  </div>
+
+  <div class="card weak-answer" style="margin-top: 1rem;">
+    <div class="answer-label weak">✗ 약한 답변 (주니어 수준)</div>
+    <p>
+      "메모리에 다 올라가 있으니까 디스크보다는 빠를 것 같습니다. L3 캐시가 더 빠르다는 건
+      알고 있는데, 정확히 얼마나 차이 나는지는 모르겠어요. 아마 캐시에 있으면 훨씬 빠를 것 같습니다."
+    </p>
+    <div style="margin-top:0.75rem; padding: 0.75rem; background: #1d1313; border-radius:6px;">
+      <strong style="color: var(--red);">왜 약한 답변인가:</strong>
+      <ul style="margin-top:0.4rem">
+        <li>데이터 크기(400MB)를 계산하지 않아서 "왜" L3에 못 들어가는지 근거가 없다</li>
+        <li>랜덤 접근이라는 조건을 무시했다 — 접근 패턴이 결과를 좌우하는 핵심 변수인데 다루지 않음</li>
+        <li>"훨씬 빠를 것 같다"는 정량적 배수가 없는 추측이다 — 시니어는 자릿수라도 제시한다</li>
+        <li>Latency-bound인지 Bandwidth-bound인지 구분이 없어서 해법 제시가 불가능하다</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= Senior Follow-up ========================= -->
+  <h2>Senior-Level Follow-up 질문과 답변</h2>
+
+  <div class="followup-card">
+    <div class="followup-q">
+      "Latency와 Bandwidth를 구분하는 게 왜 중요한가요? 둘 다 결국 '메모리가 느리다'는 것 아닌가요?"
+    </div>
+    <div class="followup-a">
+      <p>
+        둘은 완전히 다른 최적화 전략을 요구하기 때문입니다. Latency-bound 문제(포인터 체이싱,
+        트리 순회)는 요청을 병렬화하거나 소프트웨어 프리페치로 "기다리는 시간을 숨기는" 방식으로
+        푼다. 반면 Bandwidth-bound 문제(대용량 배열 복사, 스트리밍 집계)는 애초에 옮기는
+        바이트 수를 줄이거나(압축, 컬럼 지향 저장), 여러 메모리 채널/코어를 병렬로 써서
+        총 처리량을 늘리는 방식으로 푼다.
+      </p>
+      <p>
+        Latency-bound 문제에 코어를 더 투입해도 (의존성 때문에) 소용없고, Bandwidth-bound
+        문제에 프리페치 힌트를 아무리 넣어도 대역폭 자체의 물리적 한계는 못 넘는다.
+        문제 유형을 잘못 진단하면 엉뚱한 최적화에 시간을 쓰게 된다.
+      </p>
+    </div>
+  </div>
+
+  <div class="followup-card" style="margin-top: 0.75rem;">
+    <div class="followup-q">
+      "L1 캐시를 그냥 L3처럼 크게 만들면 안 되나요? 왜 항상 작고 빠른 캐시와 크고 느린 캐시로 나뉘나요?"
+    </div>
+    <div class="followup-a">
+      <p>
+        캐시가 커지면 그 안에서 원하는 데이터를 찾는 회로(태그 비교, associativity 탐색)의
+        배선이 길어지고 복잡해져서 물리적으로 접근 시간이 늘어난다. 이건 설계자의 선택이
+        아니라 반도체 물리 법칙에 가깝다. 그래서 CPU는 "코어 옆에 작고 초고속 L1", "조금
+        떨어진 곳에 중간 크기 L2", "여러 코어가 공유하는 크고 상대적으로 느린 L3"로 계층을
+        나눠서, 자주 쓰는 소량 데이터는 초고속으로, 가끔 쓰는 대량 데이터는 적당한 속도로
+        커버하는 절충안을 취한다.
+      </p>
+      <p>
+        이건 소프트웨어 설계에도 그대로 적용되는 원칙이다 — L1 캐시 하나로 다 해결하려 하지
+        말고, 계층별로 다른 특성(속도 vs 용량)을 인정하고 설계하라는 것. 로컬 캐시(작고 빠름)
+        + Redis(크고 공유 가능하지만 느림) 조합도 같은 철학이다.
+      </p>
+    </div>
+  </div>
+
+  <div class="followup-card" style="margin-top: 0.75rem;">
+    <div class="followup-q">
+      "NUMA를 신경 쓰지 않고 짠 코드는 실제로 얼마나 손해를 볼 수 있나요?"
+    </div>
+    <div class="followup-a">
+      <p>
+        원격 소켓 DRAM 접근은 로컬 대비 1.5~3배 느리다. 스레드 풀이 OS 스케줄러에 의해
+        아무 코어에나 배치되고, 메모리는 처음 할당한 소켓에 고정(first-touch 정책)되는
+        경우가 흔해서, 스레드가 이동하면 매 접근마다 원격 페널티를 지불하게 된다. 멀티소켓
+        DB 서버나 캐시 서버에서 이런 문제로 처리량이 20-30% 이상 떨어지는 사례가 실제로
+        보고된다.
+      </p>
+      <p>
+        해법은 <code>numactl</code>로 스레드와 메모리 할당을 같은 소켓에 고정하거나,
+        애플리케이션 레벨에서 NUMA-aware 메모리 할당자를 쓰는 것이다. 다만 단일 소켓
+        서버나 클라우드의 작은 인스턴스에서는 해당 사항이 없으므로, 먼저 <code>lscpu</code>나
+        <code>numactl --hardware</code>로 NUMA 노드가 실제로 여러 개인지 확인하는 게 먼저다."
+      </p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= 흔한 오해 ========================= -->
+  <h2>흔한 오해와 정정</h2>
+
+  <div class="callout danger">
+    <div class="callout-title">✗ 오해 1 — "메모리(DRAM)에 있으면 다 똑같이 빠르다"</div>
+    <p>
+      DRAM 안에서도 접근 패턴(순차 vs 랜덤), NUMA 로컬/원격 여부에 따라 몇 배씩 차이가 난다.
+      "메모리에 있다"는 것은 "디스크보다는 빠르다"는 의미이지, "항상 동일하게 빠르다"는
+      의미가 아니다.
+    </p>
+  </div>
+
+  <div class="callout danger" style="margin-top: 0.75rem;">
+    <div class="callout-title">✗ 오해 2 — "Bandwidth를 늘리면 Latency도 좋아진다"</div>
+    <p>
+      더 넓은 도로(bandwidth)를 깔아도 트럭 한 대가 도착하는 시간(latency)은 그대로다.
+      메모리 채널을 늘리거나 더 빠른 DRAM(DDR5 등)을 쓰면 대역폭은 늘지만, 개별 접근의
+      latency는 크게 개선되지 않는 경우가 많다. 포인터 체이싱 같은 latency-bound 문제는
+      대역폭 투자로 해결되지 않는다.
+    </p>
+  </div>
+
+  <div class="callout danger" style="margin-top: 0.75rem;">
+    <div class="callout-title">✗ 오해 3 — "캐시는 크면 클수록 무조건 좋다"</div>
+    <p>
+      캐시를 키우면 hit rate는 늘 수 있지만, 앞서 본 것처럼 물리적으로 접근 시간(latency)도
+      함께 늘어난다. 그래서 L1은 일부러 작게 유지해 latency를 최소화하고, L3만 상대적으로
+      크게 키워 용량을 확보하는 절충 설계를 쓴다. 소프트웨어 캐시도 마찬가지로, working set을
+      넘어서는 크기로 키우면 관리 오버헤드(eviction, 메모리 압박)만 늘고 hit rate 개선은
+      미미할 수 있다.
+    </p>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= 이후 커리큘럼 로드맵 ========================= -->
+  <h2>이후 레슨 로드맵 — 오늘 배운 비용 모델의 확장</h2>
+
+  <table class="rubric-table">
+    <thead>
+      <tr>
+        <th>Day</th>
+        <th>주제</th>
+        <th>오늘 개념과의 연결</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Day 3</td>
+        <td>캐시 메커니즘 — Cache Line과 Locality</td>
+        <td>오늘의 "L3에 들어간다/안 들어간다" 판정을 cache line 단위로 정밀화</td>
+      </tr>
+      <tr>
+        <td>Day 4</td>
+        <td>CPU 파이프라인과 Branch Prediction</td>
+        <td>계산 병목에서 latency-bound 개념이 branch misprediction으로 확장</td>
+      </tr>
+      <tr>
+        <td>Day 5</td>
+        <td>멀티코어 동시성과 False Sharing</td>
+        <td>NUMA와 캐시 공유가 만드는 동기화 병목의 하드웨어 근거</td>
+      </tr>
+      <tr>
+        <td>Day 6</td>
+        <td>SIMD와 벡터 연산</td>
+        <td>Bandwidth-bound 워크로드를 데이터 병렬화로 최적화</td>
+      </tr>
+      <tr>
+        <td>Day 7</td>
+        <td>메모리 접근 패턴 최적화</td>
+        <td>오늘의 working set 계산을 prefetching·loop tiling에 적용</td>
+      </tr>
+      <tr>
+        <td>Day 8</td>
+        <td>프로파일링과 하드웨어 카운터</td>
+        <td>오늘의 추정치를 perf로 실측 검증</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr class="divider">
+
+  <!-- ========================= 자기 점검 Rubric ========================= -->
+  <h2>자기 점검 Rubric — 나는 어느 수준인가</h2>
+
+  <table class="rubric-table">
+    <thead>
+      <tr>
+        <th>수준</th>
+        <th>체크 항목</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="rubric-level senior">시니어</span></td>
+        <td>데이터 크기(바이트)와 캐시 용량을 비교해서 어느 계층에 상주할지 계산으로 추정할 수 있다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level senior">시니어</span></td>
+        <td>Latency와 Bandwidth를 구분하고, 문제가 어느 쪽에 해당하는지에 따라 다른 해법을 제시한다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level senior">시니어</span></td>
+        <td>로컬 캐시와 Redis 같은 원격 캐시의 latency 차이를 자릿수로 설명하고, 그럼에도 원격 캐시를 쓰는 이유(공유 상태)를 설명한다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level senior">시니어</span></td>
+        <td>NUMA가 무엇이고 왜 스레드/메모리 배치가 성능에 영향을 주는지 설명할 수 있다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level mid">중급</span></td>
+        <td>L1/L2/L3/DRAM 순서와 대략적인 속도 차이는 알지만 정량적 계산은 못한다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level mid">중급</span></td>
+        <td>Latency와 Bandwidth 용어는 알지만 실제 문제에서 어느 쪽인지 구분하지 못한다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level junior">주니어</span></td>
+        <td>"메모리에 있으면 빠르다"처럼 계층을 구분하지 않고 뭉뚱그려 답한다</td>
+      </tr>
+      <tr>
+        <td><span class="rubric-level junior">주니어</span></td>
+        <td>working set이나 데이터 크기 계산 없이 감으로 "빠를 것 같다/느릴 것 같다"고만 답한다</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr class="divider">
+
+  <!-- ========================= 퀴즈 ========================= -->
+  <div class="quiz-section">
+    <h3>확인 퀴즈 — 개념 점검</h3>
+    <p>이 질문들은 단순 암기가 아니라 이해도를 확인한다. 틀려도 설명을 읽고 이해하는 것이 목표다.</p>
+
+    <!-- Q1 -->
+    <div class="quiz-question">Q1. 다음 중 "Bandwidth-bound" 워크로드의 특징으로 가장 정확한 것은?</div>
+    <ul class="quiz-options" id="q1-options">
+      <li><label><input type="radio" name="q1" value="a">연결 리스트를 순회하며 다음 노드 포인터를 따라가는 작업</label></li>
+      <li><label><input type="radio" name="q1" value="b">큰 배열 전체를 순차적으로 복사하거나 합산하는, 데이터당 연산이 적은 스트리밍 작업</label></li>
+      <li><label><input type="radio" name="q1" value="c">해시맵에서 서로 다른 키를 랜덤하게 조회하는 작업</label></li>
+      <li><label><input type="radio" name="q1" value="d">트리 구조를 루트부터 리프까지 조건 분기하며 탐색하는 작업</label></li>
+    </ul>
+    <button class="quiz-btn" onclick="checkQuiz('q1', 'b')">채점하기</button>
+    <div id="q1-feedback" class="quiz-feedback"></div>
+
+    <!-- Q2 -->
+    <div class="quiz-question" style="margin-top:1.5rem">Q2. 로컬 프로세스 메모리 캐시(수 ns~수십 ns)와 Redis 같은 원격 캐시(네트워크 왕복 포함 약 0.3-1ms) 사이의 latency 차이는 대략 몇 배 수준인가?</div>
+    <ul class="quiz-options" id="q2-options">
+      <li><label><input type="radio" name="q2" value="a">2~3배 정도로 큰 차이는 아니다</label></li>
+      <li><label><input type="radio" name="q2" value="b">10배 정도</label></li>
+      <li><label><input type="radio" name="q2" value="c">수천~수만 배 수준으로, 자릿수 자체가 다르다</label></li>
+      <li><label><input type="radio" name="q2" value="d">차이가 없다, 둘 다 메모리이므로 동일하다</label></li>
+    </ul>
+    <button class="quiz-btn" onclick="checkQuiz('q2', 'c')">채점하기</button>
+    <div id="q2-feedback" class="quiz-feedback"></div>
+
+    <!-- Q3 -->
+    <div class="quiz-question" style="margin-top:1.5rem">Q3. L1 캐시가 L3 캐시보다 용량이 훨씬 작지만 더 빠른 근본적인 이유는?</div>
+    <ul class="quiz-options" id="q3-options">
+      <li><label><input type="radio" name="q3" value="a">L1은 더 비싼 재료로 만들어서 무조건 빠르게 설계할 수 있기 때문이다</label></li>
+      <li><label><input type="radio" name="q3" value="b">캐시가 커질수록 데이터를 찾는 회로(태그 비교, 배선 경로)가 길어지고 복잡해져 물리적으로 접근 시간이 늘어나기 때문이다</label></li>
+      <li><label><input type="radio" name="q3" value="c">L1은 코어마다 하나씩 있고 L3는 공유라서 소프트웨어적으로 느리게 만들었기 때문이다</label></li>
+      <li><label><input type="radio" name="q3" value="d">운영체제가 L3 접근에 우선순위를 낮게 주기 때문이다</label></li>
+    </ul>
+    <button class="quiz-btn" onclick="checkQuiz('q3', 'b')">채점하기</button>
+    <div id="q3-feedback" class="quiz-feedback"></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ========================= 추천 자료 ========================= -->
+  <h2>오늘 레슨의 추천 1차 자료</h2>
+  <ul>
+    <li>
+      <strong>"What Every Programmer Should Know About Memory"</strong> — Ulrich Drepper<br>
+      <span class="tag">논문/가이드</span> Latency, Bandwidth, NUMA를 실측 데이터로 다루는 가장 상세한 실무 자료
+    </li>
+    <li>
+      <strong>CS:APP, Chapter 6 — The Memory Hierarchy</strong> — Bryant & O'Hallaron<br>
+      <span class="tag">교재</span> 메모리 계층의 물리적 근거와 캐시 동작을 체계적으로 설명
+    </li>
+    <li>
+      <strong>Roofline Model (Berkeley, Williams et al.)</strong><br>
+      <span class="tag">논문</span> Arithmetic intensity로 compute-bound/bandwidth-bound를 정량적으로 구분하는 프레임워크
+    </li>
+  </ul>
+
+  <div class="callout info" style="margin-top: 1rem;">
+    <div class="callout-title">💬 모르는 것이 있으면 바로 질문하세요</div>
+    이 레슨에서 이해가 안 가는 부분이 있으면 Claude에게 "Day 2에서 [개념]을 더 설명해줘"라고 질문하세요.
+    특히 working set 계산이나 NUMA 개념은 실제 숫자를 바꿔가며 연습하면 훨씬 빨리 체득됩니다.
+  </div>
+
+  <!-- Navigation -->
+  <nav class="lesson-nav">
+    <a href="./0001-hardware-performance-framework.html" class="nav-link">← Day 1 — 하드웨어 사고 프레임워크</a>
+    <a href="../lessons/" class="nav-link">레슨 목록 →</a>
+  </nav>
+
+</div>
+
+<script>
+  const quizAnswers = {
+    q1: {
+      correct: 'b',
+      feedback: {
+        a: '오답: 연결 리스트 순회는 다음 포인터에 의존적으로 접근하는 latency-bound 문제입니다. 대역폭이 아니라 개별 접근의 지연 시간이 병목입니다.',
+        b: '정답: 큰 배열을 순차적으로 복사/합산하는 작업은 데이터당 연산이 매우 적어서(arithmetic intensity가 낮음), CPU 연산 능력이 아니라 데이터를 옮기는 속도(bandwidth)가 병목이 됩니다.',
+        c: '오답: 랜덤 해시 조회는 각 접근이 이전 결과와 무관하게 예측 불가능한 주소로 튀므로 latency-bound에 가깝습니다.',
+        d: '오답: 트리 탐색은 부모 노드의 값을 봐야 다음 자식 노드 주소를 알 수 있는 의존적 접근이라 latency-bound입니다.'
+      }
+    },
+    q2: {
+      correct: 'c',
+      feedback: {
+        a: '오답: 로컬 메모리는 나노초(ns) 단위, 네트워크 왕복은 밀리초(ms) 단위입니다. ns와 ms는 100만 배 차이가 나는 단위이므로 2~3배로는 절대 설명되지 않습니다.',
+        b: '오답: 10배로는 한참 부족합니다. 1ms = 1,000,000ns이므로 20ns 기준으로도 최소 수만 배 차이가 납니다.',
+        c: '정답: 로컬 메모리(수십 ns)와 네트워크 왕복(수백 μs ~ 수 ms)은 자릿수 자체가 다릅니다. 이 차이 때문에 "성능만 보면 로컬 캐시가 항상 이긴다"는 것이 사실이지만, 그럼에도 Redis를 쓰는 이유는 성능이 아니라 여러 서버 간 상태 공유 때문입니다.',
+        d: '오답: 로컬 프로세스 메모리와 네트워크를 거쳐야 하는 원격 캐시는 물리적으로 완전히 다른 경로를 거칩니다. "둘 다 메모리"라는 표현 자체가 계층 구조를 무시한 오해입니다.'
+      }
+    },
+    q3: {
+      correct: 'b',
+      feedback: {
+        a: '오답: 재료비가 아니라 회로 설계의 물리적 제약이 원인입니다. 아무리 비싼 재료를 써도 캐시가 커지면 배선 지연과 탐색 비용은 늘어납니다.',
+        b: '정답: 캐시가 커질수록 원하는 데이터를 찾기 위한 태그 비교 회로와 배선 경로가 길어지고 복잡해집니다. 이는 반도체 물리 법칙에 가까운 근본적 트레이드오프이며, 그래서 CPU는 작고 빠른 L1과 크고 상대적으로 느린 L3를 함께 두는 계층 설계를 택합니다.',
+        c: '오답: 코어 전용/공유 여부는 결과이지 원인이 아닙니다. 공유해서 느린 게 아니라, 크기가 커서 물리적으로 느려진 것이고, 그 큰 캐시를 여러 코어가 공유하는 것이 경제적이기 때문에 공유 구조를 택한 것입니다.',
+        d: '오답: 캐시 접근 우선순위는 운영체제가 아니라 하드웨어(CPU 캐시 컨트롤러)가 처리하며, 소프트웨어적 우선순위 조작이 아니라 물리적 회로 특성이 근본 원인입니다.'
+      }
+    }
+  };
+
+  function checkQuiz(qid, correctVal) {
+    const selected = document.querySelector(`input[name="${qid}"]:checked`);
+    const feedback = document.getElementById(`${qid}-feedback`);
+    const data = quizAnswers[qid];
+
+    if (!selected) {
+      feedback.className = 'quiz-feedback incorrect';
+      feedback.innerHTML = '답을 선택해주세요.';
+      return;
+    }
+
+    const val = selected.value;
+    const isCorrect = val === data.correct;
+    feedback.className = 'quiz-feedback ' + (isCorrect ? 'correct' : 'incorrect');
+    const header = isCorrect ? '✓ 정답입니다!' : '✗ 오답입니다.';
+    feedback.innerHTML = `<strong>${header}</strong><div class="explanation">${data.feedback[val]}</div>`;
+  }
+</script>
+</body>
+</html>

@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 코드 성능과 하드웨어 사고 프레임워크 | [0001-hardware-performance-framework.html](lessons/0001-hardware-performance-framework.html) |
+| 2 | 2026-07-01 | 메모리 계층 구조 — 숫자로 이해하는 비용 모델 | [0002-memory-hierarchy.html](lessons/0002-memory-hierarchy.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | 메모리 계층 구조 — 숫자로 이해하는 비용 모델 | 레지스터, L1/L2/L3 캐시, DRAM, latency, bandwidth, 비용 모델 |
 | 3 | 캐시 메커니즘 — Cache Line과 Locality | cache line 크기, spatial locality, temporal locality, SoA vs AoS |
 | 4 | CPU 파이프라인과 Branch Prediction | pipeline stage, data hazard, control hazard, branch predictor |
 | 5 | 멀티코어 동시성과 False Sharing | cache coherence, MESI, false sharing, atomic, memory fence |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — 다음: Day 2 — 메모리 계층 구조.
+**Day 2 완료** — 다음: Day 3 — 캐시 메커니즘(Cache Line과 Locality).
 
 ## 습득한 핵심 개념
 
@@ -30,7 +30,7 @@
 - [x] "코드는 하드웨어 위에서 실행된다"는 시니어 관점 (Day 1)
 - [x] 성능 병목 3계층 분류 (계산, 메모리, 동기화) (Day 1)
 - [x] 인터뷰에서 컴퓨터 구조 질문의 평가 목적 이해 (Day 1)
-- [ ] 메모리 계층 비용 모델 (Day 2 예정)
+- [x] 메모리 계층 비용 모델 — latency/bandwidth 구분, working set 계산, NUMA (Day 2)
 - [ ] Cache Line과 Locality (Day 3 예정)
 - [ ] Branch Prediction (Day 4 예정)
 - [ ] False Sharing (Day 5 예정)
