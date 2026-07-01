@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — TTL 설계와 캐시 무효화 전략</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 2 · Redis / 캐시 전략 Interview</div>
+    <h1>TTL 설계와 캐시 무효화 전략</h1>
+    <div class="subtitle">TTL을 근거 있게 설정하고, DB 변경과 캐시 상태를 안전하게 맞추는 무효화 설계 능력</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "캐시 TTL은 어떤 기준으로 설정하시나요? 모든 데이터에 같은 TTL을 쓰면 안 되는 이유가 있을까요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "'Cache invalidation is one of the two hard things in computer science'라는 말을 들어보셨을 겁니다. 캐시 무효화가 왜 어렵다고 생각하십니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "상품 가격을 DB에서 수정했는데, 캐시에는 옛날 가격이 몇 초간 남아 있었습니다. 이런 상황이 왜 생기고, 어떻게 방지하시겠습니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>TTL과 무효화는 별개의 문제다</h2>
+
+    <h3>TTL(Time To Live)이란?</h3>
+    <p>
+      TTL은 <strong>캐시에 넣은 데이터가 자동으로 사라지기까지의 시간</strong>이다.
+      Redis에서 <code>SETEX key 300 value</code>라고 하면, 300초 뒤 Redis가 알아서 그 키를 지운다.
+      이것을 <strong>수동적 만료(passive expiration)</strong>라고 한다 — 누군가 지운 게 아니라 시간이 지나서 저절로 사라지는 것이다.
+    </p>
+
+    <div class="callout callout-info">
+      <strong>핵심 전제:</strong> TTL은 "언젠가는 최신 데이터로 돌아온다"는 <strong>최후의 안전망</strong>이다.
+      TTL이 있다고 해서 그 사이에 사용자가 <strong>틀린 데이터</strong>를 보는 문제가 해결되는 것은 아니다.
+      "TTL 설계"와 "무효화 설계"는 서로 다른 질문에 답한다.
+    </div>
+
+    <table>
+      <tr>
+        <th>질문</th>
+        <th>답을 주는 메커니즘</th>
+      </tr>
+      <tr>
+        <td>데이터가 최대 얼마나 오래 stale 할 수 있는가?</td>
+        <td>TTL (passive expiration)</td>
+      </tr>
+      <tr>
+        <td>데이터가 바뀐 <strong>즉시</strong> 캐시도 최신 상태가 되어야 하는가?</td>
+        <td>무효화 (invalidation) — 명시적 삭제/갱신</td>
+      </tr>
+    </table>
+
+    <h3>TTL 설정 기준: "얼마나"가 아니라 "왜"부터</h3>
+    <p>
+      TTL을 "일단 5분"처럼 감으로 정하면 안 된다. TTL은 다음 세 가지의 교집합으로 정해야 한다.
+    </p>
+    <ol>
+      <li><strong>데이터 변경 주기</strong>: 상품 가격이 하루 한 번 바뀐다면 TTL 60초는 낭비다.</li>
+      <li><strong>비즈니스 허용 불일치(staleness budget)</strong>: "몇 초/몇 분 오래된 데이터를 보여줘도 괜찮은가"를 기획/비즈니스 관점에서 정한다.</li>
+      <li><strong>트래픽 재계산 비용</strong>: TTL이 짧을수록 캐시 미스가 늘고 DB 재조회가 잦아진다. TTL이 길수록 메모리 점유와 staleness가 늘어난다.</li>
+    </ol>
+
+    <div class="callout callout-warn">
+      TTL은 <strong>"데이터가 얼마나 자주 바뀌는가"</strong>와 <strong>"바뀐 데이터를 얼마나 빨리 반영해야 하는가"</strong>의
+      곱으로 결정되는 값이지, 팀 컨벤션으로 정하는 상수가 아니다.
+    </div>
+
+    <h3>무효화(Invalidation)란? — TTL이 끝나기 전에 캐시를 강제로 최신화하는 것</h3>
+    <p>
+      데이터가 변경되는 순간, TTL 만료를 기다리지 않고 <strong>즉시</strong> 캐시를 지우거나 갱신하는 것이 무효화다.
+      크게 세 가지 접근이 있다.
+    </p>
+
+    <h3>① 명시적 삭제 (Explicit Delete / Event-based Invalidation)</h3>
+    <p>
+      DB 쓰기가 끝나면 애플리케이션이 관련 캐시 키를 직접 <code>DEL</code>한다.
+      다음 읽기 요청이 캐시 미스를 만나 DB에서 최신 값을 가져와 다시 캐시한다.
+    </p>
+    <pre><code><span class="comment"># 명시적 삭제 방식 (Cache-aside + write 시 invalidate)</span>
+<span class="func">def</span> update_product_price(product_id, new_price):
+    <span class="comment"># 1. DB 먼저 갱신</span>
+    db.execute(<span class="string">"UPDATE products SET price=? WHERE id=?"</span>, new_price, product_id)
+
+    <span class="comment"># 2. 캐시는 '갱신'하지 않고 '삭제'한다</span>
+    redis.delete(<span class="string">f"product:{product_id}"</span>)
+    <span class="comment"># 다음 GET 요청이 캐시 미스를 만나 DB에서 최신값을 다시 읽어온다</span></code></pre>
+
+    <h3>② 캐시 갱신 (Update-in-place)</h3>
+    <p>
+      삭제 대신 새 값을 바로 캐시에 <code>SET</code>한다. 캐시 미스가 없어 히트율은 높지만,
+      아래에서 다룰 <strong>race condition</strong> 위험이 크다. 그래서 실무에서는 삭제를 더 선호한다.
+    </p>
+
+    <h3>③ 캐시 버스팅 (Cache Busting) — 키 자체를 바꿔서 무효화하는 방식</h3>
+    <p>
+      값을 지우거나 덮어쓰는 대신, <strong>캐시 키에 버전을 넣어서</strong> 새 버전은 자연히 새 키로 조회되게 만드는 기법이다.
+      정적 자산(JS/CSS 번들), CDN, 다단계 캐시처럼 <strong>서버가 직접 지울 수 없는 캐시</strong>에서 특히 중요하다.
+    </p>
+    <pre><code><span class="comment"># 버전 기반 캐시 키 (cache busting)</span>
+cache_key = <span class="string">f"product:{product_id}:v{schema_version}"</span>
+<span class="comment"># 또는 정적 파일: main.a1b2c3.js (콘텐츠 해시를 파일명에 포함)</span>
+<span class="comment"># → 값이 바뀌면 키/파일명이 바뀌므로 '삭제'할 필요 자체가 없다</span></code></pre>
+
+    <div class="callout callout-tip">
+      <strong>왜 캐시 버스팅이 다른가:</strong> 삭제/갱신은 "이 캐시를 내가 지울 수 있다"를 전제로 한다.
+      브라우저 캐시나 CDN 엣지처럼 서버가 직접 통제할 수 없는 캐시는 <strong>키(파일명/URL)를 바꾸는 방식</strong>으로만
+      무효화할 수 있다. Redis 캐시 설계에서도 스키마가 바뀌는 경우(직렬화 포맷 변경 등) 같은 원리를 쓴다.
+    </div>
+
+    <h3>Race Condition: 왜 "삭제"가 "갱신"보다 안전한가</h3>
+    <p>
+      캐시 갱신(update-in-place)은 동시성 상황에서 <strong>stale write</strong> 문제를 만들 수 있다.
+      두 요청이 겹치면 다음과 같은 순서가 실제로 발생할 수 있다.
+    </p>
+    <pre><code><span class="comment">시간 순서 (Update-in-place의 위험한 시나리오)</span>
+t1: 요청 A - GET product:1 → 캐시 미스, DB에서 old_price=1000 조회 시작
+t2: 요청 B - UPDATE price=2000 (DB 갱신), 캐시를 2000으로 SET
+t3: 요청 A - (t1에서 읽어온) old_price=1000 을 캐시에 SET  ← 최신값(2000)을 덮어씀!
+
+결과: DB는 2000인데 캐시는 1000. TTL이 끝날 때까지 틀린 값이 서빙된다.</code></pre>
+    <p>
+      삭제(DEL) 방식이면 t3에서 캐시를 지우기만 하므로, 다음 요청이 DB에서 다시 읽어와 최신값을 반영한다.
+      물론 삭제도 완벽하지 않다 — 이건 아래 Follow-up에서 <strong>delayed double delete</strong> 패턴으로 더 다룬다.
+    </p>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <p>
+      TTL/무효화 질문은 <strong>"동시성과 순서(ordering)를 얼마나 진지하게 다뤄봤는가"</strong>를 평가하는 질문이다.
+      캐시를 "붙여봤다" 수준에서는 절대 나오지 않는, <strong>운영 중 사고를 겪어본 사람</strong>만 명확히 답할 수 있는 영역이다.
+    </p>
+
+    <ul>
+      <li>
+        <strong>TTL을 근거로 설명하는가:</strong> "5분이요"가 아니라, 변경 주기와 허용 불일치를 근거로 값을 도출하는가
+      </li>
+      <li>
+        <strong>삭제와 갱신의 차이를 아는가:</strong> 왜 실무에서 삭제(DEL)를 더 많이 쓰는지, race condition을 이해하는가
+      </li>
+      <li>
+        <strong>쓰기 순서를 생각하는가:</strong> "DB 먼저 vs 캐시 먼저" 순서에 따라 어떤 위험이 생기는지 아는가
+      </li>
+      <li>
+        <strong>완벽한 무효화는 없다는 것을 아는가:</strong> replica lag, 다단계 캐시, 분산 환경에서 무효화가
+        본질적으로 어렵다는 것을 인지하고, 그 안에서 리스크를 관리하는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      "Cache invalidation, naming things, and off-by-one errors"가 컴퓨터 과학에서 어려운 문제로 자주 언급되는 이유는,
+      캐시 무효화가 <strong>분산된 여러 상태(DB, 캐시, 때로는 여러 캐시 레이어)를 하나의 진실로 맞추는 문제</strong>이기 때문이다.
+      면접관은 이 어려움을 인지하고 있는지, 그리고 그 안에서 실용적인 타협을 할 수 있는지를 본다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 상품 가격 수정 후 잠깐 옛 가격이 보임</h3>
+    <p>
+      운영자가 관리자 페이지에서 가격을 수정했는데, 고객 화면에는 몇 초간 옛 가격이 보인다는 CS가 들어온다.
+      원인은 대부분 TTL에만 의존하고 <strong>변경 시점 무효화가 빠져 있는 경우</strong>다.
+      → 가격 변경 API에 <strong>캐시 키 명시적 삭제</strong>를 추가하고, TTL은 "삭제 로직이 실패했을 때의 안전망"으로만 둔다.
+    </p>
+
+    <h3>상황 2: 여러 서버가 같은 상품을 동시에 갱신</h3>
+    <p>
+      배치 작업과 관리자 수정이 동시에 같은 상품에 대해 DB를 갱신하면, 캐시를 update-in-place로 갱신할 경우
+      먼저 읽은 요청이 나중에 stale 값을 덮어쓸 수 있다.
+      → <strong>삭제(DEL) 기반 무효화</strong>로 전환하고, 필요하면 짧은 지연 후 한 번 더 지우는
+      <strong>delayed double delete</strong>를 적용한다.
+    </p>
+
+    <h3>상황 3: Read Replica를 쓰는 DB에서 캐시가 옛날 값으로 다시 채워짐</h3>
+    <p>
+      DB write 후 캐시를 지웠는데, 곧바로 들어온 읽기 요청이 <strong>아직 복제되지 않은 Read Replica</strong>에서
+      옛 값을 읽어 다시 캐시에 채워 넣는 경우가 있다. 캐시를 지웠는데도 stale 데이터가 되살아나는 것이다.
+      → 쓰기 직후 짧은 시간(예: replica lag보다 조금 긴 시간) 뒤 <strong>한 번 더</strong> 캐시를 지우는
+      지연 이중 삭제로 이 창(window)을 좁힌다.
+    </p>
+
+    <h3>상황 4: 프론트엔드 정적 자산 배포 후 사용자가 옛날 JS를 계속 씀</h3>
+    <p>
+      배포했는데 브라우저/CDN 캐시가 옛 파일을 계속 서빙한다.
+      → 파일명에 콘텐츠 해시를 포함하는 <strong>캐시 버스팅</strong>으로, 애초에 "지울 필요가 없는" 구조를 만든다.
+      Redis 캐시에서도 직렬화 스키마가 바뀔 때 같은 원리(버전을 키에 포함)를 적용한다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>TTL과 무효화를 분리해서 설명하기</strong>
+        "TTL은 최악의 경우 데이터가 얼마나 오래 stale할 수 있는지를 정하는 안전망이고,
+        무효화는 변경이 생겼을 때 즉시 최신화하는 별개의 메커니즘입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>TTL 산정 근거 제시</strong>
+        "TTL은 데이터 변경 주기와 비즈니스가 허용하는 불일치 시간의 교집합으로 정합니다.
+        상품 가격처럼 즉시성이 중요하면 무효화를 주로 쓰고 TTL은 안전망으로만 짧게 둡니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>무효화 방식 선택 — 삭제 우선</strong>
+        "저는 캐시를 갱신하기보다 삭제하는 방식을 선호합니다. 갱신은 동시 요청 상황에서
+        옛 값이 새 값을 덮어쓰는 race condition 위험이 있기 때문입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>쓰기 순서(ordering) 언급</strong>
+        "DB를 먼저 갱신하고 캐시를 삭제하는 순서를 씁니다. 캐시를 먼저 지우면 그 사이
+        들어온 읽기 요청이 옛 DB 값을 다시 캐시에 채워 넣는 창이 더 커지기 때문입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>완벽하지 않다는 것을 인정하고 대응책 제시 (Senior 포인트)</strong>
+        "DB 쓰기 후 삭제해도 Read Replica lag이나 동시 요청 때문에 완전히 안전하진 않습니다.
+        그래서 필요하면 수백 ms 뒤에 한 번 더 지우는 delayed double delete를 적용합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>서버가 통제 못 하는 캐시는 다르게 접근</strong>
+        "CDN이나 브라우저 캐시처럼 직접 지울 수 없는 계층은 키/파일명에 버전을 넣는
+        캐시 버스팅으로 접근합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "TTL과 무효화는 서로 다른 문제를 풉니다. TTL은 '최악의 경우 데이터가 얼마나 오래 stale할 수 있는가'를
+        정하는 안전망이고, 무효화는 '변경이 생기면 즉시 최신 상태로 되돌리는' 메커니즘입니다.
+        TTL 값은 데이터 변경 주기와 비즈니스가 허용하는 불일치 시간을 곱해서 정합니다.
+      </p>
+      <p>
+        무효화는 캐시를 갱신(update)하기보다 삭제(delete)하는 방식을 기본으로 씁니다.
+        갱신 방식은 동시 요청 상황에서 늦게 시작된 요청이 먼저 읽은 옛 값을 나중에 캐시에 써서,
+        최신값을 덮어쓰는 race condition이 생길 수 있기 때문입니다. 삭제 방식은 다음 읽기가
+        캐시 미스를 만나 DB에서 항상 최신값을 다시 읽어오게 만들어 이 위험을 없앱니다.
+      </p>
+      <p>
+        쓰기 순서는 DB를 먼저 갱신하고 캐시를 나중에 삭제하는 순서를 씁니다. 다만 이것도 완전하진 않아서,
+        Read Replica lag이 있는 환경에서는 캐시를 지운 직후 아직 복제되지 않은 옛 값을 다시 읽어와
+        캐시가 채워질 수 있습니다. 이런 경우 삭제 후 짧은 지연을 두고 한 번 더 지우는
+        delayed double delete 패턴을 적용해서 그 창을 좁힙니다.
+      </p>
+      <p>
+        마지막으로, CDN이나 브라우저 캐시처럼 서버가 직접 지울 수 없는 캐시는 삭제 방식 자체가 불가능하므로,
+        콘텐츠 해시를 키나 파일명에 포함하는 캐시 버스팅으로 접근합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "캐시를 삭제(DEL)하는 대신 새 값으로 바로 갱신(SET)하면 안 되나요? 그럼 캐시 미스도 없을 텐데요."</h3>
+    <p><strong>약한 답변:</strong> "네, 그게 더 나을 것 같습니다. 캐시 미스가 없으니까요."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "히트율만 보면 갱신이 유리해 보이지만, 동시 쓰기 상황에서 위험합니다. 요청 A가 옛 값을 DB에서
+      읽는 도중 요청 B가 새 값으로 DB와 캐시를 모두 갱신하면, 뒤늦게 도착한 요청 A의 옛 값이
+      캐시에 다시 쓰여서 최신값을 덮어쓸 수 있습니다. 삭제 방식은 이런 경우에도 다음 읽기가
+      항상 DB에서 최신값을 다시 가져오게 만들기 때문에 더 안전합니다. 갱신 비용이 매우 비싸고
+      쓰기 동시성이 낮다는 게 확실한 경우에만 갱신 방식을 예외적으로 고려합니다."
+    </p>
+
+    <h3>F2. "DB를 먼저 갱신하고 캐시를 지우는 게 나을까요, 캐시를 먼저 지우고 DB를 갱신하는 게 나을까요?"</h3>
+    <p><strong>약한 답변:</strong> "순서는 크게 상관없을 것 같습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "DB 먼저, 캐시 삭제가 나중이 기본입니다. 캐시를 먼저 지우면, 그 직후 들어온 읽기 요청이
+      아직 갱신되지 않은 DB의 옛 값을 읽어서 다시 캐시에 채워 넣는 창(window)이 생기고,
+      DB 갱신이 끝날 때까지 그 옛 값이 캐시에 남아있게 됩니다. DB를 먼저 갱신하면 이 창이
+      훨씬 좁아집니다. 다만 완전히 없어지는 건 아니라서, 정말 중요한 데이터는 delayed double delete로
+      한 번 더 방어합니다."
+    </p>
+
+    <h3>F3. "delayed double delete는 정확히 어떻게 동작하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "DB를 갱신한 직후 캐시를 한 번 지우고, Read Replica의 복제 지연 시간보다 조금 긴 시간(예: 500ms~1초) 뒤에
+      같은 키를 한 번 더 지웁니다. 첫 번째 삭제 이후 짧은 시간 안에 다른 요청이 아직 복제되지 않은 옛 값을
+      Replica에서 읽어 캐시를 다시 채우더라도, 두 번째 삭제가 그 오염된 캐시를 다시 지워줍니다.
+      비동기 큐나 별도 워커로 지연 삭제 작업을 예약하는 방식으로 구현합니다. 100% 완벽한 보장은 아니지만,
+      실무에서 stale 캐시가 남는 시간을 크게 줄여줍니다."
+    </p>
+
+    <h3>F4. "모든 캐시 키에 같은 TTL을 쓰면 어떤 문제가 생기나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "같은 시각에 캐시를 채운 키들이 같은 시각에 한꺼번에 만료되면서, 그 순간 몰린 요청이 전부
+      DB로 향하는 상황이 생길 수 있습니다. 이걸 캐시 스탬피드(cache stampede)라고 부릅니다.
+      이를 막기 위해 기본 TTL에 ±10~20% 정도의 무작위 값(jitter)을 더해서 만료 시점을 분산시킵니다.
+      캐시 스탬피드와 hot key 문제는 다음 세션에서 더 깊게 다룰 부분입니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>TTL과 무효화를 <strong>서로 다른 개념</strong>으로 명확히 구분한다</li>
+          <li>TTL 값을 <strong>변경 주기 × 허용 불일치</strong>로 도출한다</li>
+          <li>삭제와 갱신의 <strong>race condition 차이</strong>를 구체적 시나리오로 설명한다</li>
+          <li>DB-캐시 <strong>쓰기 순서</strong>가 왜 중요한지 안다</li>
+          <li>무효화가 <strong>100% 완벽할 수 없다는 것</strong>을 인정하고 완화책을 제시한다</li>
+          <li>서버가 통제 못 하는 캐시(CDN 등)는 <strong>다른 전략</strong>이 필요함을 안다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"TTL 5분이면 충분합니다" — <strong>근거 없는 상수</strong></li>
+          <li>삭제와 갱신을 같은 것으로 취급한다</li>
+          <li>동시성 상황(race condition)을 전혀 고려하지 않는다</li>
+          <li>DB와 캐시 쓰기 순서를 신경 쓰지 않는다</li>
+          <li>"캐시는 지우면 끝"이라고 생각하고 replica lag을 모른다</li>
+          <li>모든 캐시를 같은 방식으로 무효화할 수 있다고 가정한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 캐시 무효화를 <strong>"지우면 되는 일"</strong>이 아니라
+      <strong>"여러 저장소의 상태를 시간 순서 속에서 맞추는 동시성 문제"</strong>로 본다.
+      면접관은 이 문제의 어려움을 인지하고 현실적인 완화책을 설계할 수 있는지를 확인한다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "TTL만 짧게 잡으면 무효화는 신경 안 써도 된다"</h3>
+    <p>
+      <strong>사실:</strong> TTL을 초 단위로 짧게 잡으면 stale 창은 줄지만, 캐시 히트율이 급격히 떨어져
+      캐시를 쓰는 의미가 사라진다. 즉시성이 중요한 데이터는 TTL을 짧게 하는 것보다
+      <strong>명시적 무효화</strong>를 넣고, TTL은 여유 있게 잡아 안전망으로만 쓰는 것이 정석이다.
+    </p>
+
+    <h3>오해 2: "캐시를 갱신하는 게 지우는 것보다 항상 낫다 (히트율 때문에)"</h3>
+    <p>
+      <strong>사실:</strong> 갱신은 동시 쓰기 상황에서 오래된 값이 최신값을 덮어쓰는 race condition을
+      만들 수 있다. 히트율 이득보다 데이터 정합성 리스크가 더 큰 경우가 많아 실무에서는 삭제를 기본으로 삼는다.
+    </p>
+
+    <h3>오해 3: "캐시를 지웠으면 그 이후로는 항상 최신값이 보장된다"</h3>
+    <p>
+      <strong>사실:</strong> Read Replica lag, 동시 요청, 다단계 캐시(로컬 캐시 + Redis + CDN) 등의 이유로
+      캐시를 지운 직후에도 잠깐 옛 값이 다시 채워질 수 있다. 정말 중요한 데이터는
+      delayed double delete 같은 보완책이 필요하다.
+    </p>
+
+    <h3>오해 4: "무효화 로직은 코드에서 캐시 삭제 한 줄이면 끝이다"</h3>
+    <p>
+      <strong>사실:</strong> 무효화 대상 키를 빠뜨리면(관련된 다른 캐시 키, 예: 목록 캐시, 통계 캐시 등)
+      부분적으로만 무효화되어 오히려 더 찾기 어려운 버그가 된다. 데이터 변경 시 영향받는
+      <strong>모든 캐시 키의 범위</strong>를 설계 단계에서 명시적으로 정리해야 한다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>TTL / 무효화 설계 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>항목</th>
+        <th>권장 접근</th>
+        <th>주의</th>
+      </tr>
+      <tr>
+        <td>즉시성이 중요한 데이터 (가격, 재고)</td>
+        <td><span class="badge badge-green">명시적 삭제 + 짧은 TTL 안전망</span></td>
+        <td><span class="badge badge-red">TTL만 의존 금지</span></td>
+      </tr>
+      <tr>
+        <td>즉시성이 덜 중요한 데이터 (목록, 통계)</td>
+        <td><span class="badge badge-green">TTL 중심 + jitter</span></td>
+        <td><span class="badge badge-yellow">TTL 동기화로 인한 stampede 주의</span></td>
+      </tr>
+      <tr>
+        <td>동시 쓰기가 잦은 키</td>
+        <td><span class="badge badge-green">삭제(DEL) 방식</span></td>
+        <td><span class="badge badge-red">갱신(SET) 방식은 race condition 위험</span></td>
+      </tr>
+      <tr>
+        <td>Read Replica 사용 환경</td>
+        <td><span class="badge badge-green">Delayed double delete</span></td>
+        <td><span class="badge badge-yellow">지연 삭제 실패 시 재시도 큐 필요</span></td>
+      </tr>
+      <tr>
+        <td>서버가 직접 지울 수 없는 캐시 (CDN, 브라우저)</td>
+        <td><span class="badge badge-green">캐시 버스팅 (버전/해시 키)</span></td>
+        <td><span class="badge badge-yellow">DEL 방식 적용 불가</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"TTL을 짧게 잡으면 문제없습니다"만 말하고, 무효화라는 개념 자체를 구분하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>TTL과 명시적 삭제(DEL)가 다른 개념임을 알고, 값 변경 시 캐시를 지운다는 흐름을 설명할 수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>삭제와 갱신 방식의 차이, DB-캐시 쓰기 순서(DB 먼저 → 캐시 삭제)의 이유를 설명할 수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>race condition을 구체적 시나리오로 설명하고, replica lag까지 고려한 delayed double delete를
+      제시하며, TTL jitter와 캐시 버스팅처럼 상황별로 다른 무효화 전략이 필요함을 자연스럽게 연결해서 답변함</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. TTL 값을 정하는 두 가지 축(변경 주기, 허용 불일치)을 즉시 말할 수 있는가?<br>
+      2. 캐시를 삭제하는 방식이 갱신하는 방식보다 안전한 이유를 race condition 시나리오로 설명할 수 있는가?<br>
+      3. DB를 먼저 갱신하고 캐시를 나중에 지워야 하는 이유를 설명할 수 있는가?<br>
+      4. delayed double delete가 어떤 문제를 해결하기 위한 패턴인지 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>TTL과 무효화는 다른 문제.</strong> TTL은 안전망, 무효화는 즉시 최신화 메커니즘이다.</li>
+      <li><strong>TTL = 데이터 변경 주기 × 비즈니스 허용 불일치.</strong> 감으로 정하지 않는다.</li>
+      <li><strong>삭제(DEL)가 갱신(SET)보다 안전하다.</strong> 갱신은 늦게 도착한 요청이 최신값을 덮어쓰는 race condition 위험이 있다.</li>
+      <li><strong>DB 먼저, 캐시 삭제는 나중.</strong> 순서가 바뀌면 stale 창이 더 커진다.</li>
+      <li><strong>완벽한 무효화는 없다.</strong> Replica lag 대비 delayed double delete로 창을 좁힌다.</li>
+      <li><strong>서버가 못 지우는 캐시(CDN 등)는 캐시 버스팅</strong>(버전/해시를 키에 포함)으로 접근한다.</li>
+      <li><strong>동일 TTL을 남발하면 stampede 위험.</strong> jitter로 만료 시점을 분산시킨다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 2 완료 · 다음: Day 3 — 캐시 스탬피드와 Hot Key 문제</span>
+  </div>
+
+</div>
+</body>
+</html>

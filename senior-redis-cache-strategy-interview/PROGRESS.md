@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 캐시 전략과 Redis 사용 판단 프레임워크 | [0001-cache-strategy-redis-decision-framework.html](lessons/0001-cache-strategy-redis-decision-framework.html) |
+| 2 | 2026-07-01 | TTL 설계와 캐시 무효화 전략 | [0002-ttl-design-cache-invalidation.html](lessons/0002-ttl-design-cache-invalidation.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | TTL 설계와 캐시 무효화 전략 | TTL 설정 기준, Event-based invalidation, Cache-Busting |
 | 3 | 캐시 스탬피드와 Hot Key 문제 | Dog-pile effect, Mutex lock, Local cache 계층 |
 | 4 | Redis 자료구조 실무 선택 기준 | String, Hash, List, Set, Sorted Set 선택 판단 |
 | 5 | 세션 저장소와 분산 락 | Session store 설계, Redlock 알고리즘, 분산 락 패턴 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — 다음: Day 2 — TTL 설계와 캐시 무효화 전략
+**Day 2 완료** — 다음: Day 3 — 캐시 스탬피드와 Hot Key 문제
 
 ## 습득한 핵심 개념
 
@@ -32,8 +32,8 @@
 - [x] Write-behind 패턴 (Day 1)
 - [x] 캐시 히트율과 성능 관계 (Day 1)
 - [x] Redis vs Memcached 판단 기준 (Day 1)
-- [ ] TTL 설계 원칙 (예정 Day 2)
-- [ ] 캐시 무효화 전략 (예정 Day 2)
+- [x] TTL 설계 원칙 (Day 2)
+- [x] 캐시 무효화 전략 (Day 2)
 - [ ] 캐시 스탬피드 방지 (예정 Day 3)
 - [ ] Hot Key 문제 해결 (예정 Day 3)
 - [ ] Redis 자료구조 선택 기준 (예정 Day 4)
