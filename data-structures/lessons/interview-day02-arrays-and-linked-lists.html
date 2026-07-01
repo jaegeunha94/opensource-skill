@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — 배열과 연결 리스트 | 자료구조 10년차 이상 개발자 Interview</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',system-ui,sans-serif;line-height:1.75;color:#1a1a2e;background:#f8f9fc;padding:0}
+    .hero{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:#fff;padding:3rem 2rem 2.5rem;text-align:center}
+    .hero .label{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#94a3d8;margin-bottom:.5rem}
+    .hero h1{font-size:1.9rem;font-weight:700;margin-bottom:.75rem;line-height:1.3}
+    .hero .sub{font-size:1rem;color:#c0c9e8;max-width:680px;margin:0 auto}
+    .container{max-width:860px;margin:0 auto;padding:2rem 1.25rem 4rem}
+    h2{font-size:1.25rem;font-weight:700;color:#0f3460;margin:2.5rem 0 1rem;padding-left:.75rem;border-left:4px solid #e94560}
+    h3{font-size:1.05rem;font-weight:600;color:#16213e;margin:1.5rem 0 .5rem}
+    p{margin-bottom:.85rem;color:#2d3748}
+    ul,ol{padding-left:1.5rem;margin-bottom:.85rem;color:#2d3748}
+    li{margin-bottom:.35rem}
+    code{background:#eef2ff;color:#3730a3;padding:.1em .35em;border-radius:3px;font-size:.88em;font-family:'Consolas','Courier New',monospace}
+
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+    .card-title{font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b;margin-bottom:.75rem}
+
+    .interview-q{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+    .interview-q .q-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#c2410c;margin-bottom:.5rem}
+    .interview-q blockquote{font-size:1.05rem;font-style:italic;color:#431407;font-weight:500;border:none;padding:0;margin:0}
+
+    .concept-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+    .concept-box .c-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#15803d;margin-bottom:.5rem}
+
+    .why-box{background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+    .why-box .w-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#7c3aed;margin-bottom:.5rem}
+
+    .practice-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+    .practice-box .p-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#1d4ed8;margin-bottom:.5rem}
+
+    .steps{counter-reset:step;padding-left:0;list-style:none;margin-bottom:.85rem}
+    .steps li{counter-increment:step;display:flex;gap:.75rem;margin-bottom:.7rem;color:#2d3748}
+    .steps li::before{content:counter(step);flex-shrink:0;width:1.6rem;height:1.6rem;background:#0f3460;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;margin-top:.15rem}
+
+    .answer-block{border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+    .answer-block.short{background:#fefce8;border:1px solid #fde68a}
+    .answer-block.deep{background:#f0f9ff;border:1px solid #bae6fd}
+    .answer-block .a-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem}
+    .answer-block.short .a-label{color:#92400e}
+    .answer-block.deep .a-label{color:#075985}
+
+    .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+    @media(max-width:620px){.compare-grid{grid-template-columns:1fr}}
+    .compare-card{border-radius:10px;padding:1.1rem 1.25rem}
+    .compare-card.strong{background:#f0fdf4;border:1px solid #86efac}
+    .compare-card.weak{background:#fff1f2;border:1px solid #fda4af}
+    .compare-card .c-head{font-size:.75rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:.6rem}
+    .compare-card.strong .c-head{color:#15803d}
+    .compare-card.weak .c-head{color:#be123c}
+
+    .followup{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:.85rem}
+    .followup .fq{font-weight:600;color:#1e293b;margin-bottom:.4rem}
+    .followup .fa{color:#475569;font-size:.93rem}
+
+    .misconception{background:#fff7ed;border-left:4px solid #f97316;padding:1rem 1.25rem;border-radius:0 8px 8px 0;margin-bottom:.75rem}
+    .misconception .myth{font-weight:700;color:#c2410c;margin-bottom:.3rem}
+    .misconception .fact{color:#431407}
+
+    .table-wrap{overflow-x:auto;margin-bottom:1rem}
+    table{width:100%;border-collapse:collapse;font-size:.88rem}
+    th{background:#1a1a2e;color:#e2e8f0;padding:.6rem .85rem;text-align:left;white-space:nowrap}
+    td{border-bottom:1px solid #e2e8f0;padding:.55rem .85rem;color:#374151;vertical-align:top}
+    tr:nth-child(even) td{background:#f8fafc}
+
+    .rubric{list-style:none;padding-left:0;margin-bottom:.85rem}
+    .rubric li{display:flex;align-items:flex-start;gap:.6rem;margin-bottom:.5rem;font-size:.9rem;color:#374151}
+    .rubric li::before{content:'☐';font-size:1.1rem;flex-shrink:0;color:#94a3b8;margin-top:-.05rem}
+
+    .badge{display:inline-block;padding:.2em .6em;border-radius:4px;font-size:.73rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:.35rem}
+    .badge-day{background:#0f3460;color:#fff}
+    .badge-topic{background:#e94560;color:#fff}
+
+    .nav-link{display:inline-block;margin-top:2.5rem;padding:.6rem 1.2rem;background:#0f3460;color:#fff;border-radius:6px;text-decoration:none;font-size:.88rem;font-weight:600}
+    .nav-link:hover{background:#e94560}
+    .section-divider{height:1px;background:linear-gradient(to right,#e2e8f0,transparent);margin:2rem 0}
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="label">자료구조 10년차 이상 개발자 Interview</div>
+  <h1>Day 2 — 배열과 연결 리스트</h1>
+  <div class="sub">Big-O만 보면 놓치는 실무 성능 차이: locality, allocation, resize, pointer chasing을 근거로 설명한다.</div>
+</div>
+
+<div class="container">
+
+  <!-- ===== 면접 질문 ===== -->
+  <h2>면접 질문</h2>
+
+  <div class="interview-q">
+    <div class="q-label">핵심 질문 1</div>
+    <blockquote>배열과 연결 리스트의 Big-O만 보면 놓치는 실무 성능 차이는 무엇입니까?</blockquote>
+  </div>
+
+  <div class="interview-q">
+    <div class="q-label">핵심 질문 2</div>
+    <blockquote>연결 리스트는 삽입/삭제가 O(1)이라고 하는데, 왜 실무에서는 동적 배열을 더 많이 씁니까?</blockquote>
+  </div>
+
+  <div class="interview-q">
+    <div class="q-label">핵심 질문 3</div>
+    <blockquote>동적 배열의 resize가 서비스 레이턴시에 영향을 준 경험이 있다면, 어떻게 완화하겠습니까?</blockquote>
+  </div>
+
+  <!-- ===== 전제 개념 ===== -->
+  <h2>전제 개념 — 여기서부터 읽으면 됩니다</h2>
+
+  <div class="concept-box">
+    <div class="c-label">배열과 연결 리스트가 메모리에 저장되는 방식</div>
+    <p><strong>배열(Array)</strong>은 원소를 메모리에 <strong>연속된 하나의 블록</strong>으로 저장합니다. 그래서 <code>arr[i]</code>는 시작 주소 + i × 원소크기로 바로 계산되어 index 접근이 O(1)입니다.</p>
+    <p><strong>연결 리스트(Linked List)</strong>는 각 원소(노드)가 별도로 메모리에 할당되고, 노드마다 "다음 노드의 주소"를 가리키는 포인터로 서로 연결됩니다. 그래서 5번째 원소를 찾으려면 처음부터 포인터를 5번 따라가야 하므로 index 접근이 O(n)입니다.</p>
+    <p>여기까지는 대부분 아는 내용입니다. 시니어 면접에서 갈리는 지점은 "그래서 실측 성능이 왜, 얼마나 다른가"를 설명할 수 있는지입니다.</p>
+  </div>
+
+  <div class="concept-box">
+    <div class="c-label">메모리 locality와 CPU 캐시 (복습 + 심화)</div>
+    <p>CPU는 메인 메모리(RAM)에서 데이터를 바로 읽지 않고, 훨씬 빠른 <strong>L1/L2/L3 캐시</strong>를 거칩니다. 메모리를 한 번 읽을 때 CPU는 그 주소 근처 데이터를 <strong>캐시 라인(보통 64바이트)</strong> 단위로 통째로 캐시에 올려둡니다. 다음에 인접한 주소를 읽으면 이미 캐시에 있으므로(cache hit) 메인 메모리 접근보다 수십~수백 배 빠릅니다.</p>
+    <p><strong>배열</strong>은 원소가 연속 메모리에 있으므로, 원소 하나를 읽을 때 이웃 원소들도 같은 캐시 라인에 함께 올라옵니다. 순차 순회 시 대부분의 접근이 cache hit입니다.</p>
+    <p><strong>연결 리스트</strong>는 노드가 <code>malloc</code>/<code>new</code>로 그때그때 할당되므로 메모리 여기저기 흩어져 있습니다(비연속). 노드 A에서 노드 B로 이동할 때 B의 주소는 예측할 수 없는 곳에 있어서, 매번 캐시에 없는 새 메모리 페이지를 읽어야 합니다(cache miss). 이를 <strong>pointer chasing</strong>이라 부릅니다.</p>
+    <p>결과적으로 둘 다 순회는 O(n)이지만, 배열은 캐시 효율이 높아 실측 성능이 연결 리스트보다 수 배(경우에 따라 5~20배) 빠를 수 있습니다.</p>
+  </div>
+
+  <div class="concept-box">
+    <div class="c-label">동적 배열의 resize와 amortized cost</div>
+    <p>고정 크기 배열은 용량을 넘으면 원소를 더 넣을 수 없습니다. 그래서 Python <code>list</code>, Java <code>ArrayList</code>, C++ <code>std::vector</code> 같은 <strong>동적 배열</strong>은 용량이 부족하면 <strong>보통 1.5~2배 큰 새 배열을 할당하고, 기존 원소를 전부 새 배열로 복사</strong>한 뒤 기존 배열을 버립니다.</p>
+    <p>이 복사는 O(n)이지만 매번 일어나지 않고, 용량이 찰 때만 발생합니다. n번 append 중 복사가 log₂n 번만 일어나므로, 전체 복사 비용을 n번 append로 나누면 append 하나당 <strong>amortized O(1)</strong>이 됩니다.</p>
+    <p>중요한 것은 이 O(1)이 "매번 똑같이 빠르다"는 뜻이 아니라는 점입니다. 대부분의 append는 진짜 O(1)이지만, resize가 걸리는 그 순간의 append는 O(n) 복사 비용을 그대로 지불합니다. 평균은 낮아도 <strong>순간 레이턴시 spike</strong>가 발생할 수 있습니다.</p>
+  </div>
+
+  <div class="concept-box">
+    <div class="c-label">포인터 오버헤드(pointer overhead)란</div>
+    <p>연결 리스트의 노드는 데이터 외에 "다음 노드 주소"(이중 연결이면 "이전 노드 주소"까지)를 저장할 추가 공간이 필요합니다. 64비트 시스템에서 포인터 하나는 8바이트입니다.</p>
+    <p>예를 들어 정수(4바이트) 하나를 저장하는데, 단일 연결 리스트 노드는 데이터 4바이트 + 다음 포인터 8바이트 + 메모리 할당자(allocator)가 붙이는 관리 정보(보통 16바이트 내외)까지 더해져 실제로는 정수 하나에 20~30바이트 이상을 쓰는 경우가 많습니다. 배열은 이런 오버헤드 없이 정수 4바이트만 씁니다.</p>
+    <p>즉 연결 리스트는 "논리적으로 저장한 데이터양"보다 실제 메모리 사용량이 훨씬 큰 경우가 흔합니다. 이는 메모리가 제한된 환경(임베디드, 대용량 인메모리 캐시)에서 중요한 판단 기준이 됩니다.</p>
+  </div>
+
+  <!-- ===== 왜 면접에서 묻는가 ===== -->
+  <h2>왜 면접에서 이 질문을 묻는가</h2>
+
+  <div class="why-box">
+    <div class="w-label">면접관이 보는 신호</div>
+    <p>"배열과 연결 리스트 차이는?"은 신입 면접에서도 나오는 질문이지만, 10년차 이상에게 묻는 이유는 다릅니다. 면접관은 다음을 확인합니다.</p>
+    <ul>
+      <li><strong>이론과 실측의 차이를 아는가</strong>: 교과서 Big-O 표를 넘어서, 하드웨어(캐시, 메모리 할당자)가 실제 성능에 미치는 영향을 설명할 수 있는가.</li>
+      <li><strong>운영 경험이 있는가</strong>: resize spike, GC 압박, 메모리 단편화(fragmentation) 같은 실제 운영 이슈를 겪어봤는가.</li>
+      <li><strong>대안을 설계할 수 있는가</strong>: 문제가 생겼을 때 capacity 사전 예약, 배치 삽입, 청크 기반 구조(unrolled linked list 등)로 완화할 방법을 제시하는가.</li>
+      <li><strong>"연결 리스트는 안 쓴다"로 끝내지 않는가</strong>: 연결 리스트가 여전히 유리한 상황(중간 삽입/삭제가 매우 잦고 순차 접근만 하는 경우, 반복자 무효화를 피해야 하는 경우)을 아는가.</li>
+    </ul>
+    <p>주니어는 "배열은 O(1) 접근, 리스트는 O(1) 삽입"이라고 표를 외웁니다. 시니어는 "그 O(1)이 성립하는 조건과, 실측에서 왜 다르게 나타나는지"를 설명합니다.</p>
+  </div>
+
+  <!-- ===== 실무 연결 ===== -->
+  <h2>실무 연결</h2>
+
+  <div class="practice-box">
+    <div class="p-label">시나리오 1 — 대량 로그 배치 처리</div>
+    <p>초당 수만 건의 로그를 버퍼에 쌓았다가 일정 크기마다 배치로 flush한다.</p>
+    <p><strong>선택: 동적 배열(사전 capacity 예약)</strong> — append가 dominant하고 순서대로 순회하며 flush하므로 배열이 유리. 단, append 시작 전에 예상 배치 크기만큼 <code>capacity</code>를 미리 할당(<code>ArrayList(int initialCapacity)</code>, Python <code>array.array</code> 등)해서 resize 자체를 없애는 것이 실무 최적화입니다.</p>
+  </div>
+
+  <div class="practice-box">
+    <div class="p-label">시나리오 2 — LRU 캐시의 eviction 순서 관리</div>
+    <p>가장 최근에 쓰이지 않은 항목을 O(1)에 찾아 제거해야 한다.</p>
+    <p><strong>선택: 이중 연결 리스트 + HashMap 조합</strong> — 임의 위치의 노드를 알고 있는 상태에서 O(1) 삭제/이동이 필요하므로 이 경우는 연결 리스트가 배열보다 명확히 유리합니다. 배열이었다면 중간 삭제 시 뒤 원소들을 당기는 O(n) 이동이 필요합니다.</p>
+  </div>
+
+  <div class="practice-box">
+    <div class="p-label">시나리오 3 — 실시간 트레이딩 시스템의 주문 큐</div>
+    <p>p99 레이턴시가 매우 낮아야 하고, 예측 불가능한 GC pause나 resize spike를 허용할 수 없다.</p>
+    <p><strong>선택: 고정 크기 배열(ring buffer)</strong> — 동적 배열의 amortized O(1)도 위험합니다. resize가 걸리는 순간 O(n) 복사가 발생하기 때문입니다. 용량을 미리 정해 고정 배열로 만들고 circular index로 관리하면 진짜 worst-case O(1)을 보장합니다.</p>
+  </div>
+
+  <div class="practice-box">
+    <div class="p-label">시나리오 4 — 대용량 텍스트 에디터의 buffer</div>
+    <p>커서 위치에서 문자를 자주 삽입/삭제하지만, 화면 렌더링 시 순차 접근도 필요하다.</p>
+    <p><strong>선택: gap buffer 또는 rope 자료구조</strong> — 순수 배열은 중간 삽입 O(n), 순수 연결 리스트는 순차 접근이 느립니다. 실무 에디터(Emacs, VS Code)는 두 구조의 장점을 절충한 gap buffer/rope/piece table 같은 하이브리드 구조를 씁니다. "배열 아니면 리스트"가 아니라 요구사항에 맞춰 조합을 설계하는 것이 시니어 답변입니다.</p>
+  </div>
+
+  <!-- ===== 답변 사고 순서 ===== -->
+  <h2>답변 사고 순서</h2>
+
+  <ol class="steps">
+    <li><strong>연산 패턴 확인</strong> — index 랜덤 접근이 dominant한가, 순차 순회가 dominant한가, 중간 삽입/삭제가 잦은가?</li>
+    <li><strong>삽입/삭제 위치 확인</strong> — 끝에서만 발생하는가(배열이 유리), 중간/앞에서 자주 발생하는가(연결 리스트 또는 다른 구조 고려)?</li>
+    <li><strong>크기 예측 가능성 확인</strong> — 최대 크기를 미리 알 수 있는가? 알 수 있다면 capacity 사전 예약으로 resize 자체를 없앨 수 있다.</li>
+    <li><strong>레이턴시 요구 확인</strong> — 평균이 중요한가, worst-case(p99, p999)가 중요한가? worst-case가 중요하면 amortized cost가 위험 요소가 된다.</li>
+    <li><strong>메모리 제약 확인</strong> — 포인터 오버헤드를 감당할 수 있는가? 대용량일수록 배열 계열이 메모리 효율에서 유리하다.</li>
+    <li><strong>최종 선택과 조건부 trade-off 명시</strong> — "이 조건이면 X, 조건이 바뀌면 Y"로 마무리한다.</li>
+  </ol>
+
+  <!-- ===== 핵심 답변 예시 ===== -->
+  <h2>핵심 답변 예시</h2>
+
+  <p><strong>질문:</strong> "배열과 연결 리스트의 Big-O만 보면 놓치는 실무 성능 차이는 무엇입니까?"</p>
+
+  <div class="answer-block short">
+    <div class="a-label">짧은 버전 (30초)</div>
+    <p>"둘 다 순회는 O(n)이지만, 배열은 메모리가 연속되어 있어 CPU 캐시 효율이 높고, 연결 리스트는 노드가 흩어져 있어 pointer chasing으로 인한 캐시 miss가 반복됩니다. 그래서 실측 순회 성능은 배열이 훨씬 빠른 경우가 많습니다. 또 연결 리스트는 노드마다 포인터를 저장해야 해서 메모리 오버헤드가 크고, 동적 배열은 resize 시 O(n) 복사로 인한 레이턴시 spike가 발생할 수 있다는 점도 함께 고려해야 합니다."</p>
+  </div>
+
+  <div class="answer-block deep">
+    <div class="a-label">깊이 있는 버전 (2분)</div>
+    <p>"Big-O만 보면 배열 순회와 연결 리스트 순회는 둘 다 O(n)이라 같아 보이지만, 실측 성능은 크게 다릅니다. 원인은 메모리 locality입니다. 배열은 연속된 메모리 블록이라 원소 하나를 읽을 때 CPU 캐시 라인(64바이트) 단위로 인접 원소가 함께 캐시에 올라와서 순차 순회 대부분이 cache hit입니다. 연결 리스트는 노드가 heap에 그때그때 할당되어 메모리에 흩어져 있고, 다음 노드 주소를 매번 새로 읽어야 하니 cache miss가 반복됩니다. 100만 개 규모 실측에서는 배열이 연결 리스트보다 5~10배 이상 빠른 경우도 있습니다.</p>
+    <p>삽입/삭제 측면에서도 함정이 있습니다. 연결 리스트의 삽입은 '이미 위치를 알고 있을 때만' O(1)이고, 그 위치를 찾는 탐색 자체는 O(n)입니다. 반면 동적 배열은 끝에 추가하는 append는 amortized O(1)이지만, 용량이 찰 때 O(n) 복사가 발생해서 평균은 낮아도 순간 레이턴시 spike가 생길 수 있습니다. p99 레이턴시가 중요한 시스템에서는 이 spike 자체가 문제가 되므로, capacity를 미리 예약하거나 고정 크기 ring buffer로 설계해서 resize를 아예 없애는 방식을 씁니다.</p>
+    <p>메모리 사용량도 다릅니다. 연결 리스트는 노드마다 포인터 필드가 추가되어, 저장하는 데이터가 작을수록 오버헤드 비율이 커집니다. 그래서 대용량 데이터를 순차적으로 다루는 경우 저는 기본적으로 동적 배열을 선택하고, 중간 삽입/삭제가 매우 잦으면서 순서 접근이 위치를 이미 알고 있는 경우(LRU 캐시의 노드 이동 같은)에만 연결 리스트를 선택합니다."</p>
+  </div>
+
+  <!-- ===== 비교 표 ===== -->
+  <h2>배열 vs 연결 리스트 상세 비교</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>배열 / 동적 배열</th>
+          <th>연결 리스트</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>index 접근</td>
+          <td>O(1)</td>
+          <td>O(n)</td>
+        </tr>
+        <tr>
+          <td>끝에 삽입</td>
+          <td>amortized O(1) (resize spike 가능)</td>
+          <td>O(1) (tail 포인터 유지 시)</td>
+        </tr>
+        <tr>
+          <td>앞/중간 삽입·삭제</td>
+          <td>O(n) (원소 이동 필요)</td>
+          <td>O(1) (위치를 이미 알고 있을 때) / 탐색 포함 시 O(n)</td>
+        </tr>
+        <tr>
+          <td>순차 순회 실측 성능</td>
+          <td>빠름 (캐시 효율 높음)</td>
+          <td>느림 (pointer chasing, cache miss)</td>
+        </tr>
+        <tr>
+          <td>메모리 오버헤드</td>
+          <td>낮음 (데이터만 연속 저장)</td>
+          <td>높음 (노드마다 포인터 + 할당자 관리 정보)</td>
+        </tr>
+        <tr>
+          <td>메모리 할당 패턴</td>
+          <td>큰 블록 1회 할당(리사이즈 시 재할당)</td>
+          <td>노드마다 개별 할당 → 단편화(fragmentation) 위험</td>
+        </tr>
+        <tr>
+          <td>worst-case 레이턴시</td>
+          <td>resize 시 O(n) spike</td>
+          <td>비교적 예측 가능 (단, GC 대상 증가로 GC 압박 가능)</td>
+        </tr>
+        <tr>
+          <td>동시성</td>
+          <td>배열 전체 lock 또는 CAS 기반 lock-free 배열 가능</td>
+          <td>노드 단위 fine-grained lock 가능하나 구현 복잡</td>
+        </tr>
+        <tr>
+          <td>대표 실무 사례</td>
+          <td>로그 버퍼, 행렬 연산, ring buffer, 배치 처리</td>
+          <td>LRU eviction 리스트, 프리 리스트(free list), undo 히스토리</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== Senior-level follow-up ===== -->
+  <h2>Senior-level Follow-up 질문</h2>
+
+  <div class="followup">
+    <div class="fq">Q1. "동적 배열의 resize spike를 실무에서 어떻게 완화합니까?"</div>
+    <div class="fa">가장 확실한 방법은 예상 크기를 미리 알고 capacity를 사전 할당하는 것입니다(<code>ArrayList(expectedSize)</code>, Python <code>list</code>의 경우 <code>[None] * n</code> 후 채우기 또는 <code>array</code> 모듈). 예상 크기를 모른다면 growth factor를 조정하거나(너무 자주 resize되지 않도록), resize를 별도 백그라운드 스레드에서 미리 준비해두는 기법도 있습니다. 레이턴시가 극도로 민감하면 아예 고정 크기 ring buffer로 설계해 resize 자체를 제거합니다.</div>
+  </div>
+
+  <div class="followup">
+    <div class="fq">Q2. "연결 리스트가 배열보다 명확히 유리한 실무 사례를 하나 설명해보세요."</div>
+    <div class="fa">LRU 캐시입니다. HashMap으로 key → 노드 참조를 O(1)에 찾고, 이중 연결 리스트로 해당 노드를 리스트 맨 앞으로 옮기거나(최근 사용으로 갱신) 맨 뒤에서 제거(eviction)합니다. 이미 노드 참조를 갖고 있으므로 탐색 없이 O(1) 삽입/삭제가 가능합니다. 배열로 구현하면 중간 원소를 옮길 때 뒤 원소들을 이동시켜야 해서 O(n)이 됩니다.</div>
+  </div>
+
+  <div class="followup">
+    <div class="fq">Q3. "메모리 단편화(fragmentation)가 연결 리스트에서 왜 문제가 됩니까?"</div>
+    <div class="fa">노드를 계속 생성/삭제하면 힙 메모리에 크고 작은 빈 공간이 불규칙하게 남습니다. 이는 이후 할당 요청을 처리하는 속도를 떨어뜨리고, 전체 메모리 사용량이 실제 데이터량보다 부풀어 보이게 만듭니다. 장기 실행 서버 프로세스에서는 이 단편화가 누적되어 메모리 사용량이 계속 늘어나는 것처럼 보이는 문제(가짜 메모리 누수처럼 보이는 현상)를 일으킬 수 있습니다. 대안으로 메모리 풀(memory pool)이나 arena allocator로 노드를 미리 뭉텅이로 할당해 단편화를 줄이는 기법을 씁니다.</div>
+  </div>
+
+  <div class="followup">
+    <div class="fq">Q4. "언어/런타임에 따라 이 차이가 달라질 수 있습니까?"</div>
+    <div class="fa">네. GC가 있는 언어(Java, Python, Go)는 연결 리스트의 노드가 많을수록 GC가 순회해야 할 객체 수가 늘어나 GC pause에 영향을 줄 수 있습니다. 반면 C/C++/Rust처럼 수동 메모리 관리 또는 소유권 기반 관리를 하는 언어는 GC pause는 없지만 할당자(allocator) 성능과 단편화 문제가 더 직접적으로 드러납니다. 그래서 '연결 리스트가 항상 이만큼 느리다'는 절대적인 수치보다, 런타임 특성에 따라 병목 지점이 달라진다고 설명하는 것이 정확합니다.</div>
+  </div>
+
+  <!-- ===== 좋은 답변 vs 약한 답변 ===== -->
+  <h2>좋은 답변 vs 약한 답변</h2>
+
+  <div class="compare-grid">
+    <div class="compare-card strong">
+      <div class="c-head">강한 답변 (senior level)</div>
+      <ul>
+        <li>메모리 locality와 캐시 라인 개념으로 실측 성능 차이의 원인을 설명</li>
+        <li>연결 리스트의 O(1) 삽입이 "위치를 이미 알 때"라는 전제를 명시</li>
+        <li>amortized O(1)과 worst-case spike를 구분하고, 완화 방법(capacity 예약, ring buffer)을 제시</li>
+        <li>연결 리스트가 유리한 구체적 실무 사례(LRU 등)를 함께 제시</li>
+        <li>GC, 메모리 단편화 등 운영 관점 이슈까지 언급</li>
+      </ul>
+    </div>
+    <div class="compare-card weak">
+      <div class="c-head">약한 답변 (주니어 패턴)</div>
+      <ul>
+        <li>"배열은 접근이 빠르고 리스트는 삽입이 빠르다"로 끝냄</li>
+        <li>왜 실측 성능이 다른지 설명하지 못하고 Big-O만 반복</li>
+        <li>연결 리스트 삽입이 항상 O(1)이라고 잘못 일반화</li>
+        <li>resize spike, 메모리 오버헤드, GC 영향을 전혀 언급하지 않음</li>
+        <li>연결 리스트가 실무에서 쓰이는 구체적 이유를 대지 못함</li>
+      </ul>
+    </div>
+  </div>
+
+  <p>약한 답변이 약한 이유: "배열 vs 리스트" 비교표를 암기한 사람은 O(1)이라는 기호만 말합니다. 시니어는 그 O(1)이 성립하는 전제 조건, 실제 하드웨어에서 벌어지는 일, 그리고 그 결과가 운영 중인 시스템의 어떤 지표(p99 레이턴시, 메모리 사용량, GC pause)에 영향을 주는지까지 이어서 설명합니다.</p>
+
+  <!-- ===== 흔한 오해 ===== -->
+  <h2>흔한 오해와 바로잡기</h2>
+
+  <div class="misconception">
+    <div class="myth">오해 1: "연결 리스트는 삽입/삭제가 O(1)이라 배열보다 항상 빠르다"</div>
+    <div class="fact"><strong>사실:</strong> 삽입 위치를 이미 알고 있을 때만 O(1)입니다. 대부분의 실무 상황에서는 삽입할 위치를 먼저 찾아야 하고, 그 탐색이 O(n)입니다. 위치 탐색을 포함하면 오히려 배열의 원소 이동(O(n)이지만 캐시 효율이 높아 상수 인자가 작음)보다 느릴 수 있습니다.</div>
+  </div>
+
+  <div class="misconception">
+    <div class="myth">오해 2: "동적 배열의 append는 항상 O(1)이므로 레이턴시가 균일하다"</div>
+    <div class="fact"><strong>사실:</strong> amortized O(1)은 "평균"이 O(1)이라는 뜻이며, resize가 걸리는 순간의 append는 O(n) 복사 비용을 그대로 지불합니다. 평균 처리량은 높지만 개별 요청의 worst-case 레이턴시는 spike가 날 수 있습니다. p99/p999 레이턴시 SLA가 있는 시스템에서는 이 차이가 실제 장애로 이어질 수 있습니다.</div>
+  </div>
+
+  <div class="misconception">
+    <div class="myth">오해 3: "Big-O가 O(n)으로 같으면 배열 순회와 연결 리스트 순회 속도도 비슷하다"</div>
+    <div class="fact"><strong>사실:</strong> 점근적 복잡도는 같아도 상수 인자가 다릅니다. 배열은 캐시 효율 덕분에 실측에서 수 배 빠른 경우가 흔합니다. 알고리즘 복잡도 분석과 실측 성능 튜닝은 다른 층위의 문제이며, 시니어 면접은 이 둘을 구분해서 설명할 수 있는지를 봅니다.</div>
+  </div>
+
+  <div class="misconception">
+    <div class="myth">오해 4: "연결 리스트는 메모리를 필요한 만큼만 쓰므로 배열보다 메모리 효율이 좋다"</div>
+    <div class="fact"><strong>사실:</strong> 정반대인 경우가 많습니다. 동적 배열은 용량 초과 전에는 재할당이 없고 데이터만 연속 저장하지만, 연결 리스트는 원소마다 포인터 필드와 할당자 관리 정보가 추가되어 논리적 데이터양보다 실제 메모리 사용량이 훨씬 클 수 있습니다. 배열의 "메모리 낭비"는 예약된 여유 capacity 정도지만, 연결 리스트의 "메모리 낭비"는 원소 개수에 비례해서 계속 누적됩니다.</div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ===== 자기 점검 rubric ===== -->
+  <h2>자기 점검 Rubric</h2>
+
+  <p>아래 항목에 스스로 답할 수 있으면 Day 2를 완료한 것입니다.</p>
+
+  <ul class="rubric">
+    <li>배열과 연결 리스트의 순회가 둘 다 O(n)인데 실측 성능이 다른 이유를 캐시 라인과 pointer chasing으로 설명할 수 있다.</li>
+    <li>연결 리스트의 삽입이 O(1)이라는 말의 전제(위치를 이미 알고 있을 때)를 정확히 말할 수 있다.</li>
+    <li>동적 배열의 amortized O(1) append와 resize 순간의 worst-case O(n) spike를 구분해서 설명할 수 있다.</li>
+    <li>resize spike를 완화하는 실무 기법(capacity 예약, ring buffer 등)을 최소 한 가지 제시할 수 있다.</li>
+    <li>연결 리스트가 배열보다 메모리 오버헤드가 큰 이유(포인터 필드, 할당자 관리 정보)를 설명할 수 있다.</li>
+    <li>연결 리스트가 명확히 유리한 실무 사례(LRU 캐시 등)를 하나 이상 근거와 함께 제시할 수 있다.</li>
+    <li>약한 답변과 강한 답변의 차이를 본인 말로 설명할 수 있다.</li>
+  </ul>
+
+  <a href="./index.html" class="nav-link">← 레슨 목록으로</a>
+
+</div>
+</body>
+</html>
