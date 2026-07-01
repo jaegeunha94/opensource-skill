@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — 스키마 설계와 정규화 | 데이터베이스 10년차 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3148;
+      --accent: #7c6af7;
+      --accent2: #4fa3e0;
+      --success: #3ecf8e;
+      --warn: #f5a623;
+      --danger: #e05c5c;
+      --text: #e2e4f0;
+      --text2: #a0a8c0;
+      --text3: #6b738f;
+      --code-bg: #13151f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1d27 0%, #161927 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 1rem 2rem;
+      text-align: center;
+    }
+    .page-header .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .page-header h1 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .page-header p {
+      color: var(--text2);
+      font-size: 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin: 2rem 0;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+    .toc ol { padding-left: 1.25rem; color: var(--accent2); }
+    .toc ol li { margin-bottom: 0.35rem; }
+    .toc ol li a { color: var(--accent2); text-decoration: none; font-size: 0.93rem; }
+    .toc ol li a:hover { text-decoration: underline; }
+
+    section { margin: 2.5rem 0; }
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section-title .icon {
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.75rem;
+    }
+    .card p, .card li { color: var(--text2); font-size: 0.95rem; }
+    .card ul, .card ol { padding-left: 1.2rem; }
+    .card li { margin-bottom: 0.4rem; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #1e1a3a 0%, #1a1d27 100%);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+    }
+    .interview-q p {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.6;
+    }
+
+    .concept-box {
+      background: var(--surface2);
+      border-left: 4px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 1.25rem 1.5rem;
+      margin: 1rem 0;
+    }
+    .concept-box h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.6rem;
+    }
+    .concept-box p, .concept-box li { font-size: 0.93rem; color: var(--text2); }
+    .concept-box ul { padding-left: 1.2rem; }
+    .concept-box li { margin-bottom: 0.35rem; }
+
+    .step-list { counter-reset: steps; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      align-items: flex-start;
+    }
+    .step-list li::before {
+      content: counter(steps);
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-top: 0.15rem;
+    }
+    .step-list li .step-content {}
+    .step-list li .step-content strong { color: #fff; font-size: 0.97rem; display: block; margin-bottom: 0.25rem; }
+    .step-list li .step-content p { color: var(--text2); font-size: 0.92rem; }
+    .step-list li .step-content ul { color: var(--text2); font-size: 0.92rem; padding-left: 1.1rem; margin-top: 0.3rem; }
+    .step-list li .step-content li { margin-bottom: 0.25rem; }
+
+    .answer-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1rem 0;
+      font-size: 0.92rem;
+      color: var(--text2);
+      line-height: 1.8;
+    }
+    .answer-block .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-short { background: #1e3a2e; color: var(--success); }
+    .tag-deep  { background: #1a2e3a; color: var(--accent2); }
+    .tag-good  { background: #1e3a2e; color: var(--success); }
+    .tag-weak  { background: #3a1e1e; color: var(--danger); }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+    .compare-card.good { border-top: 3px solid var(--success); }
+    .compare-card.weak { border-top: 3px solid var(--danger); }
+    .compare-card h4 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; }
+    .compare-card.good h4 { color: var(--success); }
+    .compare-card.weak h4 { color: var(--danger); }
+    .compare-card p { font-size: 0.88rem; color: var(--text2); line-height: 1.7; font-style: italic; }
+    .compare-card .why { font-size: 0.82rem; color: var(--text3); margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.6rem; font-style: normal; }
+
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .followup-card .q { color: var(--accent); font-size: 0.93rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .followup-card .intent { font-size: 0.82rem; color: var(--text3); margin-bottom: 0.75rem; }
+    .followup-card .a { font-size: 0.9rem; color: var(--text2); }
+
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      border-bottom: 2px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text2);
+      vertical-align: top;
+    }
+    .rubric-table tr:last-child td { border-bottom: none; }
+    .rubric-table tr:hover td { background: var(--surface2); }
+    .level-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .level-strong { background: #1e3a2e; color: var(--success); }
+    .level-mid    { background: #2a2a10; color: var(--warn); }
+    .level-weak   { background: #3a1e1e; color: var(--danger); }
+
+    .misconception {
+      background: #2a1e1e;
+      border: 1px solid #5a2e2e;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.85rem;
+    }
+    .misconception .myth { font-size: 0.88rem; color: var(--danger); font-weight: 600; margin-bottom: 0.4rem; }
+    .misconception .myth::before { content: "✗ 오해: "; }
+    .misconception .truth { font-size: 0.88rem; color: var(--success); }
+    .misconception .truth::before { content: "✓ 실제: "; }
+
+    .nav-footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav-footer a {
+      color: var(--accent2);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .nav-footer a:hover { text-decoration: underline; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.35rem;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.85em;
+      color: #a8d8f0;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: #a8d8f0;
+      line-height: 1.65;
+      margin: 0.75rem 0;
+    }
+    .highlight-keyword { color: #c792ea; }
+    .highlight-string  { color: #c3e88d; }
+    .highlight-comment { color: #546e7a; font-style: italic; }
+    .highlight-number  { color: #f78c6c; }
+    .highlight-fn      { color: #82aaff; }
+
+    .tip {
+      background: #1a2e1e;
+      border: 1px solid #2e5e3e;
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.88rem;
+      color: #7ed9a8;
+    }
+    .tip::before { content: "💡 "; }
+    .warn-box {
+      background: #2a2010;
+      border: 1px solid #5a4e20;
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.88rem;
+      color: var(--warn);
+    }
+    .warn-box::before { content: "⚠ "; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="day-badge">Day 2 · 인터뷰 커리큘럼</div>
+  <h1>스키마 설계와 정규화</h1>
+  <p>정규화와 역정규화를 실무 요구사항에 맞춰 선택하는 판단 기준</p>
+</div>
+
+<div class="container">
+
+  <nav class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#prerequisite">전제 개념</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-flow">답변 사고 순서</a></li>
+      <li><a href="#answer-example">핵심 답변 예시</a></li>
+      <li><a href="#tradeoff">Trade-off</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followup">Senior-level Follow-up</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </nav>
+
+  <!-- ① 면접 질문 -->
+  <section id="interview-question">
+    <h2 class="section-title"><span class="icon">💬</span> 면접 질문</h2>
+    <div class="interview-q">
+      <div class="label">Core Question</div>
+      <p>"정규화와 역정규화를 실무에서 어떻게 선택합니까?"</p>
+    </div>
+    <div class="card">
+      <h3>함께 출제되는 변형 질문</h3>
+      <ul>
+        <li>"전자상거래 주문 시스템의 스키마를 설계한다면 어떤 테이블로 나누시겠습니까?"</li>
+        <li>"3NF까지 정규화된 스키마인데 상세 페이지가 느립니다. 어떻게 접근하시겠습니까?"</li>
+        <li>"다대다 관계는 어떻게 모델링합니까? 연결 테이블에 속성이 필요하면 어떻게 하시겠습니까?"</li>
+        <li>"JSON/JSONB 컬럼은 언제 쓰고 언제 쓰지 않습니까?"</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ② 왜 면접에서 묻는가 -->
+  <section id="why-asked">
+    <h2 class="section-title"><span class="icon">🎯</span> 왜 면접에서 묻는가</h2>
+    <div class="card">
+      <p>이 질문은 정규형 이름을 암기했는지가 아니라 <strong style="color:#fff">요구사항을 데이터 구조로 번역하는 판단력</strong>을 보기 위한 것입니다.</p>
+      <br>
+      <ul>
+        <li><strong>초기 설계 감각:</strong> 주니어는 "정규화가 정답"이라고 배우고 끝내지만, 시니어는 읽기/쓰기 패턴과 정합성 요구를 먼저 파악하고 정규화 수준을 정합니다.</li>
+        <li><strong>기술 부채 예측력:</strong> 처음에 잘못 설계한 스키마는 서비스가 커질수록 마이그레이션 비용이 기하급수적으로 늘어납니다. 면접관은 "나중에 바꾸기 어려운 결정을 지금 얼마나 신중하게 하는가"를 봅니다.</li>
+        <li><strong>trade-off 언어화 능력:</strong> "정규화하면 좋다"가 아니라 무결성, 저장공간, 조인 비용, 변경 비용 중 무엇을 얻고 무엇을 잃는지 구체적으로 말할 수 있는가를 확인합니다.</li>
+        <li><strong>협업 신호:</strong> 스키마는 여러 팀이 오래 함께 쓰는 계약입니다. 확장 가능하고 설명 가능한 설계를 하는 사람인지 판단합니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ③ 전제 개념 -->
+  <section id="prerequisite">
+    <h2 class="section-title"><span class="icon">📚</span> 전제 개념</h2>
+
+    <div class="concept-box">
+      <h4>정규화(Normalization)란?</h4>
+      <p>
+        정규화는 데이터 중복을 줄이고 "이상 현상(anomaly)"을 막기 위해 테이블을 분리하는 과정입니다.
+        핵심 아이디어는 <strong>하나의 사실은 한 곳에만 저장한다</strong>는 것입니다.
+        같은 정보가 여러 행에 중복되어 있으면, 하나만 고치고 나머지를 놓치는 실수가 생깁니다.
+      </p>
+      <br>
+      <p>세 가지 이상 현상:</p>
+      <ul>
+        <li><strong>삽입 이상(Insertion anomaly):</strong> 특정 정보를 넣으려면 관련 없는 정보까지 함께 넣어야 하는 상황. 예: 주문이 없는 신규 고객을 등록하려는데 테이블 구조상 주문 정보 컬럼이 필수라서 등록이 막힘.</li>
+        <li><strong>갱신 이상(Update anomaly):</strong> 같은 값이 여러 행에 중복 저장돼 있어서 하나만 고치면 나머지와 값이 어긋남. 예: 상품명이 주문 테이블 100개 행에 중복 저장되어 있는데 한 행만 수정.</li>
+        <li><strong>삭제 이상(Deletion anomaly):</strong> 한 행을 지웠더니 의도치 않게 다른 정보까지 함께 사라짐. 예: 마지막 주문을 삭제했더니 그 상품에 대한 정보 자체가 테이블에서 사라짐.</li>
+      </ul>
+    </div>
+
+    <div class="concept-box">
+      <h4>함수적 종속성(Functional Dependency)이란?</h4>
+      <p>
+        컬럼 A의 값이 정해지면 컬럼 B의 값이 자동으로 하나로 정해질 때, "B는 A에 함수적으로 종속한다(A → B)"고 합니다.
+        예를 들어 <code>주문번호 → 주문일자</code>는 성립하지만, <code>상품명 → 주문번호</code>는 성립하지 않습니다(같은 상품명이 여러 주문에 나올 수 있으므로).
+        정규화는 결국 "이 컬럼이 테이블의 기본키(PK) 전체에 종속하는가?"를 검사하는 작업입니다.
+      </p>
+    </div>
+
+    <div class="concept-box">
+      <h4>1NF · 2NF · 3NF · BCNF를 쉬운 말로</h4>
+      <ul>
+        <li><strong>1NF (제1정규형):</strong> 한 칸(셀)에 값을 하나만 저장한다. 예: <code>취미</code> 컬럼에 "축구,독서,영화"처럼 콤마로 여러 값을 넣지 않고 별도 테이블로 분리한다.</li>
+        <li><strong>2NF (제2정규형):</strong> 복합키(컬럼 2개 이상으로 이루어진 PK)를 쓸 때, PK 일부에만 종속하는 컬럼을 분리한다. 예: <code>(주문번호, 상품번호)</code>가 PK인데 <code>상품명</code>이 <code>상품번호</code>에만 종속한다면 상품 테이블로 분리한다.</li>
+        <li><strong>3NF (제3정규형):</strong> PK가 아닌 컬럼끼리 서로 종속하는 경우(이행적 종속, transitive dependency)를 분리한다. 예: <code>주문</code> 테이블에 <code>고객ID</code>와 <code>고객등급</code>이 함께 있는데, <code>고객등급</code>이 <code>고객ID</code>에 종속한다면 고객 테이블로 옮긴다.</li>
+        <li><strong>BCNF (보이스-코드 정규형):</strong> 3NF보다 엄격한 버전으로, 모든 결정자(다른 컬럼을 결정하는 컬럼)가 후보키여야 한다. 실무에서는 3NF까지만 가는 경우가 대부분이고, BCNF는 복합키에 특수한 종속 관계가 있을 때만 고려합니다.</li>
+      </ul>
+      <p style="margin-top:0.75rem;">실무 감각: 대부분의 실무 스키마는 <strong>3NF를 기본선</strong>으로 설계하고, 성능 병목이 확인된 부분만 선택적으로 역정규화합니다. 처음부터 1NF만 지키고 나머지를 무시하면 갱신 이상이 반복적으로 발생합니다.</p>
+    </div>
+
+    <div class="concept-box">
+      <h4>역정규화(Denormalization)란?</h4>
+      <p>
+        정규화된 스키마에서 조회 성능을 위해 <strong>의도적으로 중복을 허용</strong>하는 것입니다.
+        조인 비용이 크거나 읽기 트래픽이 압도적으로 많은 경우에 적용합니다.
+        역정규화는 정규화를 "못해서"가 아니라, 정규화를 다 이해한 상태에서 "일부러 트레이드오프를 선택하는 것"입니다.
+      </p>
+      <br>
+      <p>대표적인 역정규화 기법:</p>
+      <ul>
+        <li><strong>중복 컬럼 추가:</strong> 주문 테이블에 상품명을 함께 저장(주문 시점의 상품명 스냅샷 목적으로도 사용).</li>
+        <li><strong>집계 컬럼 캐싱:</strong> 게시글 테이블에 <code>댓글수</code> 컬럼을 두고 댓글 생성/삭제 시 갱신(매번 COUNT 쿼리 방지).</li>
+        <li><strong>테이블 병합:</strong> 자주 함께 조회되는 두 테이블을 하나로 합침.</li>
+        <li><strong>머티리얼라이즈드 뷰(Materialized View):</strong> 복잡한 조인/집계 결과를 물리적으로 저장해두고 주기적으로 갱신.</li>
+      </ul>
+    </div>
+
+    <div class="concept-box">
+      <h4>제약조건(Constraints)은 왜 중요한가?</h4>
+      <p>
+        <code>PRIMARY KEY</code>, <code>FOREIGN KEY</code>, <code>UNIQUE</code>, <code>NOT NULL</code>, <code>CHECK</code>는 애플리케이션 코드가 실수해도 DB 레벨에서 데이터 정합성을 지켜주는 마지막 방어선입니다.
+        "애플리케이션에서 검증하니까 DB 제약은 없어도 된다"는 접근은 여러 서비스·배치·수동 쿼리가 같은 테이블을 건드리는 순간 위험해집니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ④ 실무 연결 -->
+  <section id="real-world">
+    <h2 class="section-title"><span class="icon">🏭</span> 실무 연결</h2>
+    <div class="card">
+      <h3>시나리오: 주문 상세 페이지가 느려짐</h3>
+      <p>
+        3NF로 정규화된 스키마에서 주문 상세 페이지를 렌더링하려면 <code>orders</code>, <code>order_items</code>, <code>products</code>, <code>users</code>, <code>coupons</code> 등 5~6개 테이블을 조인해야 합니다.
+        트래픽이 늘면서 이 조인 쿼리가 병목이 됩니다.
+      </p>
+      <br>
+      <ul>
+        <li><strong>선택지 1 — 인덱스 최적화:</strong> 조인 컬럼에 적절한 인덱스가 있는지 먼저 확인. 정규화 자체는 문제가 아닐 수 있음.</li>
+        <li><strong>선택지 2 — 읽기 전용 역정규화 테이블:</strong> 주문 조회 전용으로 필요한 컬럼을 미리 합쳐둔 <code>order_summary</code> 테이블을 별도로 만들고 비동기로 동기화.</li>
+        <li><strong>선택지 3 — 캐싱:</strong> Redis에 주문 상세를 캐싱하되 TTL과 무효화 전략 설계.</li>
+      </ul>
+      <p style="margin-top:0.75rem;">중요한 것은 "정규화가 틀렸다"고 성급히 결론 내지 않고, 실제 병목이 조인인지 인덱스 부재인지 먼저 EXPLAIN으로 확인하는 순서입니다.</p>
+    </div>
+    <div class="card">
+      <h3>시나리오: 주문 시점의 상품명·가격을 보존해야 하는 경우</h3>
+      <p>
+        <code>order_items</code>가 <code>products</code>를 참조만 하면, 나중에 상품명이나 가격이 바뀌었을 때 과거 주문 내역까지 바뀐 것처럼 보이는 문제가 생깁니다.
+        이는 흔한 실수가 아니라 <strong>의도적인 역정규화가 필요한 대표 사례</strong>입니다. 주문 시점의 상품명·가격을 <code>order_items</code>에 스냅샷으로 저장해야 합니다.
+      </p>
+    </div>
+    <div class="card">
+      <h3>시나리오: 다대다 관계 — 상품과 카테고리</h3>
+      <p>
+        상품 하나가 여러 카테고리에 속할 수 있고, 카테고리 하나에 여러 상품이 속할 수 있다면 <code>product_categories</code> 같은 연결(중간) 테이블이 필요합니다.
+        만약 "이 카테고리에 지정된 순서(정렬)"처럼 관계 자체에 속성이 필요하면, 연결 테이블에 <code>display_order</code> 컬럼을 추가합니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ⑤ 답변 사고 순서 -->
+  <section id="answer-flow">
+    <h2 class="section-title"><span class="icon">🔍</span> 답변 사고 순서</h2>
+    <div class="tip">스키마 설계 질문은 "정답 테이블 구조"를 맞히는 게 아니라, 어떤 질문을 스스로에게 던지고 결정했는지를 보여주는 것이 핵심입니다.</div>
+
+    <ol class="step-list">
+      <li>
+        <div class="step-content">
+          <strong>1단계 — 읽기/쓰기 패턴과 정합성 요구 파악</strong>
+          <p>이 데이터는 얼마나 자주 쓰이고, 얼마나 자주 읽히는가? 정합성이 조금이라도 깨지면 안 되는 도메인인가(결제·재고), 약간의 지연이 허용되는 도메인인가(추천·통계)?</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>2단계 — 엔티티와 관계 식별</strong>
+          <p>핵심 엔티티(사용자, 주문, 상품 등)를 정의하고 1:1, 1:N, N:M 관계를 명확히 한다. N:M은 연결 테이블이 필요한지, 연결 테이블에 추가 속성이 필요한지 확인한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>3단계 — 3NF 기준으로 기본 설계</strong>
+          <p>함수적 종속성을 기준으로 이상 현상이 없는 구조를 먼저 만든다. 이 단계에서는 성능을 고려하지 않고 "무결성이 자연스럽게 보장되는 구조"를 목표로 한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>4단계 — 병목 지점 예측 및 검증</strong>
+          <p>어떤 화면/API가 몇 개 테이블을 조인해야 하는지, 트래픽 규모에서 이 조인이 실제로 문제가 될지 가늠한다. 추측이 아니라 예상 QPS와 데이터 볼륨을 근거로 판단한다.</p>
+          <ul>
+            <li>조인 대상 테이블 수와 각 테이블의 예상 크기</li>
+            <li>읽기:쓰기 비율 — 읽기가 압도적이면 역정규화 여지가 커짐</li>
+            <li>정합성 요구 수준 — 실시간 정확성이 필요한가, eventual consistency로 충분한가</li>
+          </ul>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>5단계 — 선택적 역정규화 적용</strong>
+          <p>병목이 실제로 확인된 부분에만 역정규화를 적용한다. 전체 스키마를 역정규화하지 않고, 문제되는 조회 경로만 최적화한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>6단계 — 정합성 보정 전략 수립</strong>
+          <p>역정규화된 데이터를 어떻게 최신 상태로 유지할지 결정한다. 애플리케이션 트랜잭션 내 갱신, DB 트리거, 이벤트 기반 비동기 동기화(CDC), 배치 재계산 중 상황에 맞는 방법을 선택하고, 불일치가 생겼을 때 감지·복구하는 절차까지 설계한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>7단계 — 마이그레이션 리스크 검토</strong>
+          <p>스키마 변경이 기존 서비스에 어떤 영향을 주는지 확인한다. 운영 중인 대형 테이블에 컬럼 추가/제거는 잠금 시간과 배포 순서를 함께 고려한다.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ⑥ 핵심 답변 예시 -->
+  <section id="answer-example">
+    <h2 class="section-title"><span class="icon">💡</span> 핵심 답변 예시</h2>
+
+    <div class="answer-block">
+      <span class="tag tag-short">짧은 버전 (1분)</span>
+      <p>
+        "저는 기본적으로 3NF를 기준으로 설계를 시작합니다. 정규화된 구조가 무결성을 자연스럽게 보장하기 때문입니다. 다만 읽기 트래픽이 압도적으로 많거나 조인 비용이 실제로 병목이라는 게 EXPLAIN이나 부하 테스트로 확인되면, 그 조회 경로에 한해서 역정규화를 적용합니다. 이때 반드시 역정규화된 데이터를 어떻게 최신 상태로 유지할지 — 트랜잭션 내 갱신인지, 이벤트 기반 비동기 동기화인지 — 함께 설계합니다. 전체 스키마를 역정규화하는 것이 아니라, 문제가 확인된 부분만 선택적으로 적용하는 것이 원칙입니다."
+      </p>
+    </div>
+
+    <div class="answer-block">
+      <span class="tag tag-deep">깊이 있는 버전 (3~4분)</span>
+      <p>
+        "스키마 설계는 두 단계로 나눠서 접근합니다.<br><br>
+        <strong>첫 번째 단계는 '무결성 우선' 설계입니다.</strong> 엔티티와 관계를 식별하고, 함수적 종속성을 기준으로 3NF까지 정규화합니다. 예를 들어 주문 시스템이라면 <code>users</code>, <code>orders</code>, <code>order_items</code>, <code>products</code>를 분리하고, 각 테이블의 컬럼이 그 테이블의 PK에만 종속하도록 설계합니다. 이 단계에서는 성능보다 '갱신 이상이 없는가'를 먼저 검증합니다.<br><br>
+        <strong>두 번째 단계는 '성능 검증 후 선택적 역정규화'입니다.</strong> 예상 트래픽과 조인 비용을 계산해봅니다. 예를 들어 주문 목록 API가 초당 수천 건 조회되는데 5개 테이블 조인이 필요하다면, 조회 전용 <code>order_summary</code> 테이블을 별도로 두고 비동기로 동기화하는 방식을 검토합니다. 다만 이때 반드시 정합성 보정 전략을 함께 설계합니다 — 이벤트 기반으로 즉시 동기화할지, 배치로 주기적으로 재계산할지, 불일치가 생겼을 때 어떻게 감지할지까지 포함합니다.<br><br>
+        또한 <strong>비즈니스적으로 의도된 중복</strong>과 <strong>성능을 위한 역정규화</strong>를 구분합니다. 예를 들어 주문 시점의 상품명·가격은 상품 테이블이 바뀌어도 변하면 안 되는 스냅샷이므로, 이건 성능 최적화가 아니라 도메인 요구사항으로서의 중복입니다."
+      </p>
+    </div>
+  </section>
+
+  <!-- ⑦ Trade-off -->
+  <section id="tradeoff">
+    <h2 class="section-title"><span class="icon">⚖️</span> Trade-off</h2>
+    <div class="card">
+      <h3>정규화 vs 역정규화</h3>
+      <ul>
+        <li><strong>정규화 이득:</strong> 데이터 중복 최소화, 갱신 이상 방지, 저장 공간 절약, 스키마 변경이 상대적으로 안전</li>
+        <li><strong>정규화 비용:</strong> 조회 시 여러 테이블 조인 필요 → 쿼리 복잡도와 조인 비용 증가</li>
+        <li><strong>역정규화 이득:</strong> 조회 성능 향상, 조인 제거로 쿼리 단순화</li>
+        <li><strong>역정규화 비용:</strong> 데이터 중복으로 인한 저장 공간 증가, 갱신 시 여러 곳을 함께 고쳐야 하는 부담, 동기화 실패 시 정합성 깨짐</li>
+        <li><strong>판단 기준:</strong> 쓰기가 잦고 정합성이 중요한 도메인(재고, 잔액)은 정규화 우선. 읽기가 압도적이고 약간의 지연 정합성이 허용되는 도메인(피드, 통계, 대시보드)은 역정규화 고려.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>연결 테이블 vs JSON 컬럼으로 다대다 표현</h3>
+      <ul>
+        <li><strong>연결 테이블 이득:</strong> FK 제약으로 무결성 보장, 관계 자체에 속성 추가 가능, 인덱스 기반 효율적 조회</li>
+        <li><strong>JSON 컬럼 이득:</strong> 스키마 변경 없이 유연하게 구조 확장 가능, 문서형으로 한 번에 저장/조회</li>
+        <li><strong>JSON 컬럼 비용:</strong> 참조 무결성 보장 안 됨(FK 불가), 내부 값 기준 조인/인덱싱이 상대적으로 어려움, 값의 형태가 제각각이면 애플리케이션에서 검증 부담 증가</li>
+        <li><strong>판단 기준:</strong> 구조가 자주 조회·조인·집계되면 연결 테이블. 구조가 가변적이고 통짜로 읽고 쓰는 경우(설정값, 로그 메타데이터)라면 JSON 컬럼 고려.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>즉시 동기화 vs 비동기 동기화 (역정규화 데이터 유지)</h3>
+      <ul>
+        <li><strong>즉시 동기화(같은 트랜잭션):</strong> 정합성 강함, 하지만 트랜잭션이 무거워지고 lock 범위가 넓어짐</li>
+        <li><strong>비동기 동기화(이벤트/배치):</strong> 쓰기 성능 유지, 하지만 일시적인 불일치(eventual consistency) 발생 가능</li>
+        <li><strong>판단 기준:</strong> 사용자가 즉시 확인해야 하는 값(주문 상태)은 동기 갱신, 집계성 값(좋아요 수, 조회수)은 비동기 갱신이 일반적으로 허용됨</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ⑧ 흔한 오해 -->
+  <section id="misconceptions">
+    <h2 class="section-title"><span class="icon">🚫</span> 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="myth">정규화는 무조건 많이 할수록 좋다.</div>
+      <div class="truth">정규화 수준이 높아질수록 조회 시 조인해야 할 테이블이 늘어납니다. 실무에서는 대부분 3NF를 기본선으로 삼고, BCNF나 4NF까지 가는 경우는 드뭅니다. "정규화를 많이 했다"가 좋은 설계를 의미하지 않습니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">역정규화하면 무조건 빠르다.</div>
+      <div class="truth">역정규화는 조회는 빨라지지만 쓰기 경로가 복잡해지고, 동기화 실패 시 정합성이 깨질 위험이 생깁니다. 정합성 검증·복구 로직 없이 역정규화만 적용하면 오히려 디버깅하기 어려운 데이터 불일치 버그가 늘어납니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">NoSQL을 쓰면 정규화를 신경 쓸 필요가 없다.</div>
+      <div class="truth">NoSQL도 데이터 모델링이 필요합니다. 오히려 스키마 유연성 때문에 처음부터 접근 패턴(access pattern)을 기준으로 문서/컬렉션 구조를 설계해야 합니다. RDB는 나중에 쿼리를 바꿀 여지가 있지만, 많은 NoSQL은 접근 패턴에 맞춰 미리 비정규화된 형태로 설계하는 것이 원칙입니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">외래키(FK) 제약은 성능에 나쁘니 애플리케이션에서만 검증하면 된다.</div>
+      <div class="truth">FK가 일부 쓰기 경로에 오버헤드를 주는 것은 사실이지만, 그 대가로 여러 서비스·배치·수동 쿼리가 동시에 접근해도 참조 무결성이 깨지지 않는다는 보장을 얻습니다. 트래픽이 매우 높은 특정 테이블에서 의도적으로 FK를 제거하는 것과, 처음부터 습관적으로 FK를 쓰지 않는 것은 전혀 다른 결정입니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">JSON 컬럼에 다 넣으면 스키마 변경이 필요 없어서 유연하다.</div>
+      <div class="truth">유연한 대신 값의 형태를 DB가 보장해주지 않습니다. 오탈자, 타입 불일치, 누락된 필드가 조용히 쌓이다가 나중에 파싱 에러로 터집니다. 자주 조회·필터링되는 값은 별도 컬럼으로 꺼내고, 정말 가변적인 부가 정보만 JSON에 남기는 것이 일반적인 절충안입니다.</div>
+    </div>
+  </section>
+
+  <!-- ⑨ 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2 class="section-title"><span class="icon">📊</span> 좋은 답변 vs 약한 답변</h2>
+    <div class="compare-grid">
+      <div class="compare-card good">
+        <h4>강한 답변</h4>
+        <p>"기본은 3NF로 무결성을 확보하고, 실제 트래픽과 조인 비용을 측정해서 병목이 확인된 조회 경로에만 역정규화를 적용합니다. 역정규화할 때는 반드시 동기화 전략과 불일치 감지 방법을 같이 설계합니다. 예를 들어 주문 요약 테이블은 이벤트 기반으로 비동기 동기화하고, 주기적으로 원본과 대조하는 배치를 둡니다."</p>
+        <p class="why">
+          왜 강한가: 정규화를 기본값으로 삼되 근거 기반으로 예외를 만듭니다. "측정 후 결정"이라는 태도가 명확합니다. 역정규화의 숨은 비용(동기화, 불일치 감지)까지 함께 설계합니다.
+        </p>
+      </div>
+      <div class="compare-card weak">
+        <h4>약한 답변</h4>
+        <p>"정규화하면 조인이 많아져서 느려지니까 저는 보통 역정규화해서 테이블을 하나로 합칩니다. 그게 더 빠릅니다."</p>
+        <p class="why">
+          왜 약한가: 근거 없이 성능만 앞세웁니다. 무결성 리스크와 동기화 비용을 전혀 언급하지 않습니다. "언제" 역정규화하는지 기준이 없고, 모든 상황에 같은 답을 적용합니다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑩ Follow-up -->
+  <section id="followup">
+    <h2 class="section-title"><span class="icon">🎓</span> Senior-level Follow-up 질문</h2>
+
+    <div class="followup-card">
+      <div class="q">Q. 역정규화한 집계 컬럼(예: 댓글 수)이 실제 값과 어긋나면 어떻게 탐지하고 복구하시겠습니까?</div>
+      <div class="intent">의도: 역정규화를 "적용"만 하고 끝내는지, 운영 단계까지 책임지는 설계를 하는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> ① 주기적으로 원본 테이블 기준 실제 COUNT와 캐시된 값을 비교하는 배치 잡을 둡니다. ② 불일치 비율을 모니터링 지표로 노출해서 급증하면 알림을 받습니다. ③ 불일치 원인을 먼저 찾습니다 — 트랜잭션 롤백 시 카운터만 반영된 경우, 동시성 문제로 갱신이 유실된 경우 등. ④ 원인을 못 찾더라도 배치로 정기 재계산해서 값을 보정하는 안전망을 둡니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. 다대다 관계의 연결 테이블에 "가입 순서"처럼 관계 자체의 속성이 필요하면 어떻게 설계하시겠습니까?</div>
+      <div class="intent">의도: 단순 다대다와, 관계에 속성이 있는 다대다(연관 엔티티)를 구분해서 모델링할 수 있는지 봅니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 연결 테이블 자체를 하나의 엔티티로 승격시켜서 별도 컬럼을 추가합니다. 예: <code>team_members(team_id, user_id, joined_at, role)</code>처럼 연결 테이블에 속성 컬럼을 둡니다. 이때 PK는 <code>(team_id, user_id)</code> 복합키로 두거나, 조회 패턴에 따라 별도 surrogate key(예: <code>id</code>)를 두고 <code>(team_id, user_id)</code>에 UNIQUE 제약을 겁니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. 운영 중인 5천만 행 테이블에 컬럼을 하나 추가해야 합니다. 어떻게 접근하시겠습니까?</div>
+      <div class="intent">의도: 스키마 변경이 무료가 아니라는 것을 인지하는지, 대형 테이블 DDL의 운영 리스크를 아는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> ① DB 엔진과 버전에 따라 컬럼 추가가 즉시 처리되는지(메타데이터만 변경) 아니면 테이블 전체를 재작성하는지 확인합니다(예: 기본값 있는 컬럼 추가는 엔진별로 동작이 다름). ② 재작성이 필요하다면 <code>gh-ost</code>, <code>pt-online-schema-change</code> 같은 온라인 스키마 변경 도구 사용을 검토합니다. ③ staging에서 실행 시간을 측정하고 트래픽이 낮은 시간대에 적용합니다. ④ 애플리케이션 배포 순서도 함께 고려합니다 — 새 컬럼을 쓰는 코드는 컬럼 추가가 완료된 이후에 배포합니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. 왜 3NF까지만 가고 BCNF나 4NF까지는 잘 가지 않습니까?</div>
+      <div class="intent">의도: 정규형 단계를 기계적으로 아는지, 아니면 실무적 판단 기준까지 이해하는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 대부분의 실무 스키마에서 발생하는 이상 현상은 3NF 수준에서 대부분 해결됩니다. BCNF는 복합키에 여러 후보키가 겹치는 특수한 종속 관계에서만 차이가 나는데, 이런 케이스는 실무에서 드뭅니다. 정규형을 더 올리는 것 자체가 목적이 아니라 실제 발생하는 이상 현상을 없애는 것이 목적이므로, 3NF에서 남은 문제가 없다면 더 올릴 이유가 없습니다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑪ Rubric -->
+  <section id="rubric">
+    <h2 class="section-title"><span class="icon">✅</span> 자기 점검 Rubric</h2>
+    <div style="overflow-x: auto;">
+      <table class="rubric-table">
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>강한 답변</th>
+            <th>중간 답변</th>
+            <th>약한 답변</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>기본 원칙</td>
+            <td><span class="level-badge level-strong">3NF를 기본값으로, 예외는 근거 기반</span></td>
+            <td><span class="level-badge level-mid">정규화가 좋다고만 언급</span></td>
+            <td><span class="level-badge level-weak">원칙 없이 케바케라고만 답함</span></td>
+          </tr>
+          <tr>
+            <td>병목 판단 근거</td>
+            <td><span class="level-badge level-strong">예상 QPS·조인 비용·데이터량 기반 판단</span></td>
+            <td><span class="level-badge level-mid">"느리면 역정규화" 정도</span></td>
+            <td><span class="level-badge level-weak">근거 없이 항상 역정규화 선호</span></td>
+          </tr>
+          <tr>
+            <td>정합성 보정 전략</td>
+            <td><span class="level-badge level-strong">동기/비동기 동기화, 불일치 감지·복구까지 설계</span></td>
+            <td><span class="level-badge level-mid">동기화가 필요하다고만 언급</span></td>
+            <td><span class="level-badge level-weak">동기화 문제 언급 없음</span></td>
+          </tr>
+          <tr>
+            <td>다대다·관계 모델링</td>
+            <td><span class="level-badge level-strong">연결 테이블, 속성 필요 시 승격 설계 설명</span></td>
+            <td><span class="level-badge level-mid">연결 테이블 필요성만 언급</span></td>
+            <td><span class="level-badge level-weak">관계 모델링 개념 없음</span></td>
+          </tr>
+          <tr>
+            <td>Trade-off 인식</td>
+            <td><span class="level-badge level-strong">무결성·저장공간·조인비용·변경비용 복수 비교</span></td>
+            <td><span class="level-badge level-mid">한 가지 trade-off만 언급</span></td>
+            <td><span class="level-badge level-weak">trade-off 없이 결론만 제시</span></td>
+          </tr>
+          <tr>
+            <td>운영 리스크</td>
+            <td><span class="level-badge level-strong">대형 테이블 DDL, 온라인 스키마 변경 도구 언급</span></td>
+            <td><span class="level-badge level-mid">"조심해야 한다" 정도</span></td>
+            <td><span class="level-badge level-weak">운영 리스크 언급 없음</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem;">
+      <h3>이 Day 레슨 이후 스스로 확인할 것</h3>
+      <ul>
+        <li>본인이 최근에 설계했거나 사용한 스키마 하나를 골라 3NF 위반이 있는지 직접 점검해보기</li>
+        <li>그 스키마에서 만약 역정규화를 적용한다면 어떤 컬럼을, 어떤 동기화 전략으로 처리할지 글로 써보기</li>
+        <li>Day 2 면접 질문을 소리 내어 2분 내로 답변해보기. "3NF 기본 + 근거 기반 예외" 구조가 자연스러운지 확인하기</li>
+        <li>위 Rubric 기준으로 본인 답변을 스스로 채점하기</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="nav-footer">
+    <a href="./interview-day-001-db-performance-diagnosis.html">← Day 1 — DB 성능 진단 프레임워크</a>
+    <a href="./interview-day-003-index-design.html">Day 3 — 인덱스 설계 →</a>
+  </div>
+
+</div>
+</body>
+</html>

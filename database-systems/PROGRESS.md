@@ -11,13 +11,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | DB 성능 진단 프레임워크 | [interview-day-001-db-performance-diagnosis.html](lessons/interview-day-001-db-performance-diagnosis.html) |
+| 2 | 2026-07-01 | 스키마 설계와 정규화 | [interview-day-002-schema-design.html](lessons/interview-day-002-schema-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 1 | DB 성능 진단 프레임워크 | "특정 API가 느려졌습니다. DB 관점에서 어떤 순서로 확인하시겠습니까?" | 증상 분리, 실행 계획, 인덱스, lock, 데이터량 확인 |
-| 2 | 스키마 설계와 정규화 | "정규화와 역정규화를 실무에서 어떻게 선택합니까?" | 무결성, 중복, 읽기 성능, 변경 비용 trade-off |
 | 3 | 인덱스 설계 | "복합 인덱스 순서는 어떤 기준으로 정합니까?" | selectivity, leftmost prefix, covering, write 비용 |
 | 4 | 트랜잭션과 격리 수준 | "READ COMMITTED와 REPEATABLE READ를 어떻게 선택합니까?" | 이상 현상, MVCC, lock, 정합성 요구사항 |
 | 5 | Lock과 Deadlock | "운영 중 deadlock이 발생하면 어떻게 분석하고 줄입니까?" | lock wait, transaction scope, retry, ordering |
@@ -29,14 +28,14 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — 다음: Day 2 스키마 설계와 정규화
+**Day 2 완료** — 다음: Day 3 인덱스 설계
 
 ## Interview 답변 체크리스트
 
-- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1 ✓)
-- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1 ✓)
-- [x] 실제 운영 상황과 연결한다. (Day 1 ✓)
-- [x] 답변 순서를 단계적으로 제시한다. (Day 1 ✓)
-- [x] trade-off를 최소 2개 이상 비교한다. (Day 1 ✓)
-- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1 ✓)
-- [x] follow-up 질문까지 대비한다. (Day 1 ✓)
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1 ✓ / Day 2 ✓)
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1 ✓ / Day 2 ✓)
+- [x] 실제 운영 상황과 연결한다. (Day 1 ✓ / Day 2 ✓)
+- [x] 답변 순서를 단계적으로 제시한다. (Day 1 ✓ / Day 2 ✓)
+- [x] trade-off를 최소 2개 이상 비교한다. (Day 1 ✓ / Day 2 ✓)
+- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1 ✓ / Day 2 ✓)
+- [x] follow-up 질문까지 대비한다. (Day 1 ✓ / Day 2 ✓)
