@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — 프로세스와 스레드, 실무 설계 기준 | 운영체제 시니어 인터뷰</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .interview-q {
+      background: #1a7a4a;
+      color: white;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+      font-family: var(--font-sans);
+    }
+    .interview-q .q-label {
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.8;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q .q-text {
+      font-size: 1.1rem;
+      line-height: 1.55;
+      font-style: italic;
+    }
+    .answer-box {
+      background: #f8f8f4;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-family: var(--font-sans);
+      font-size: 0.93rem;
+    }
+    .answer-box.strong {
+      border-left: 5px solid #2d7a2d;
+      background: #f0f9f0;
+    }
+    .answer-box.weak {
+      border-left: 5px solid #c0392b;
+      background: #fdecea;
+    }
+    .answer-label {
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.4rem;
+    }
+    .strong .answer-label { color: #2d7a2d; }
+    .weak .answer-label { color: #c0392b; }
+    .step-flow {
+      counter-reset: step-counter;
+      list-style: none;
+      margin: 0.5rem 0 1.25rem;
+    }
+    .step-flow li {
+      counter-increment: step-counter;
+      position: relative;
+      padding: 0.75rem 0.75rem 0.75rem 3rem;
+      border-left: 2px solid #ddd;
+      margin-bottom: 0.5rem;
+      margin-left: 1rem;
+    }
+    .step-flow li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: -1.1rem;
+      top: 0.65rem;
+      background: var(--accent);
+      color: white;
+      width: 1.8rem;
+      height: 1.8rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    .followup-item {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin: 0.75rem 0;
+      overflow: hidden;
+    }
+    .followup-q {
+      background: #f4f4f0;
+      padding: 0.6rem 1rem;
+      font-weight: bold;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .followup-q:hover { background: #ebebde; }
+    .followup-a {
+      padding: 0.75rem 1rem;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      display: none;
+      border-top: 1px solid #ddd;
+      background: #fafafa;
+    }
+    .rubric-table td:first-child {
+      font-weight: bold;
+      white-space: nowrap;
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+    }
+    .rubric-table td:last-child {
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+    }
+    .metric-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    .metric-item {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+    }
+    .metric-name {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--accent);
+      margin-bottom: 0.3rem;
+    }
+    .metric-desc {
+      font-family: var(--font-sans);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+    @media (max-width: 500px) {
+      .metric-card { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 2</span>
+  <span>프로세스와 스레드, 실무 설계 기준</span>
+  <span class="lesson-date"> · 2026-07-01</span>
+  <span> · <a href="./index.html">목록으로</a></span>
+</div>
+
+<h1>프로세스와 스레드, 실무 설계 기준</h1>
+<p>
+  "프로세스는 무겁고 스레드는 가볍다"는 대답은 교과서 수준입니다.
+  10년차 이상 면접에서는 <strong>왜 어떤 서버는 멀티프로세스로, 어떤 서버는 멀티스레드로 설계했는지</strong>를
+  주소 공간, 격리, 자원 공유, crash 영향 범위 관점에서 설명할 수 있어야 합니다.
+</p>
+
+<!-- ============================================================ -->
+<h2>오늘의 면접 질문</h2>
+
+<div class="interview-q">
+  <div class="q-label">Senior Interview Question</div>
+  <div class="q-text">
+    "nginx는 멀티프로세스(worker process) 구조를 쓰고, Tomcat 같은 Java 애플리케이션 서버는
+    멀티스레드 구조를 씁니다. 두 설계의 차이를 프로세스와 스레드의 근본적인 차이로 설명하고,
+    본인이 새 서버를 설계한다면 어떤 기준으로 선택하겠습니까?"
+  </div>
+</div>
+
+<p>
+  이 질문은 정의 암기(“프로세스는 독립된 메모리, 스레드는 공유된 메모리”)로 끝나면 약한 답변입니다.
+  면접관은 <strong>그 차이가 실제 설계 결정(격리 vs 성능, crash 영향 범위, 통신 비용)에
+  어떻게 연결되는지</strong>를 봅니다.
+</p>
+
+<!-- ============================================================ -->
+<h2>전제 개념: 이것부터 알고 있어야 합니다</h2>
+
+<h3>1. 프로세스란 무엇인가</h3>
+<p>
+  프로세스는 <strong>실행 중인 프로그램의 인스턴스</strong>입니다. OS는 프로세스마다 다음을 독립적으로 부여합니다.
+</p>
+<ul>
+  <li><strong>가상 주소 공간</strong>: code, data, heap, stack 영역이 통째로 별도로 존재합니다. 페이지 테이블도 별도입니다.</li>
+  <li><strong>커널 자원</strong>: 파일 디스크립터 테이블, 시그널 핸들러, 프로세스 ID, 권한(UID/GID)을 독립적으로 가집니다.</li>
+  <li><strong>PCB(Process Control Block)</strong>: 커널이 프로세스를 관리하기 위한 메타데이터 구조체입니다.</li>
+</ul>
+<p>
+  즉, 프로세스 A의 메모리 버그가 프로세스 B의 메모리를 건드릴 수 없습니다.
+  OS가 하드웨어(MMU)로 주소 공간을 분리해서 강제로 격리하기 때문입니다.
+</p>
+
+<h3>2. 스레드란 무엇인가</h3>
+<p>
+  스레드는 <strong>하나의 프로세스 안에서 실행되는 흐름</strong>입니다.
+  같은 프로세스에 속한 스레드들은 다음을 <strong>공유</strong>합니다.
+</p>
+<ul>
+  <li>code 영역(실행할 명령어)</li>
+  <li>data, heap 영역(전역 변수, 동적 할당 메모리)</li>
+  <li>열려 있는 파일 디스크립터, 소켓</li>
+</ul>
+<p>
+  반대로 스레드마다 <strong>독립적으로 가지는 것</strong>은 다음뿐입니다.
+</p>
+<ul>
+  <li>자신만의 스택(지역 변수, 함수 호출 프레임)</li>
+  <li>레지스터 값과 프로그램 카운터(PC)</li>
+  <li>스레드 ID, 스케줄링 상태</li>
+</ul>
+<div class="callout">
+  <div class="callout-title">핵심 포인트</div>
+  스레드 간 통신이 빠른 이유는 <strong>heap을 공유하기 때문</strong>입니다. 포인터 하나만 넘기면 됩니다.
+  반대로 이것이 race condition의 원인이기도 합니다 — 같은 메모리를 동시에 건드릴 수 있기 때문입니다.
+</div>
+
+<h3>3. Context Switch 비용의 차이</h3>
+<p>
+  프로세스 간 전환과 스레드 간 전환은 둘 다 레지스터/PC/스택 포인터를 저장·복원하지만,
+  프로세스 전환에는 추가 비용이 있습니다.
+</p>
+<div class="metric-card">
+  <div class="metric-item">
+    <div class="metric-name">프로세스 전환</div>
+    <div class="metric-desc">페이지 테이블(CR3 레지스터)을 교체해야 합니다. 주소 공간이 바뀌므로 TLB(주소 변환 캐시)가 무효화되고, 이후 메모리 접근마다 TLB miss가 늘어나 잠깐 느려집니다.</div>
+  </div>
+  <div class="metric-item">
+    <div class="metric-name">스레드 전환 (같은 프로세스 내)</div>
+    <div class="metric-desc">주소 공간이 동일하므로 페이지 테이블 교체가 필요 없습니다. TLB를 그대로 재사용할 수 있어 상대적으로 가볍습니다.</div>
+  </div>
+</div>
+<div class="callout warning">
+  <div class="callout-title">흔한 오해</div>
+  "프로세스 전환은 느리고 스레드 전환은 빠르다"는 절대적 사실이 아닙니다.
+  둘 다 커널 모드 진입, 스케줄러 실행 같은 공통 오버헤드를 가지며, 프로세스 전환의 <em>추가 비용</em>은
+  TLB/캐시 무효화 정도입니다. 스레드가 많아 lock contention이 심하면 스레드 모델이 오히려 더 느릴 수 있습니다.
+</div>
+
+<h3>4. 프로세스 생성 비용과 Copy-on-Write</h3>
+<p>
+  Unix 계열에서 프로세스를 생성하는 <code>fork()</code>는 "부모의 전체 메모리를 복사한다"고 알려져 있지만,
+  실제로는 <strong>Copy-on-Write(COW)</strong> 방식을 씁니다.
+  fork 직후에는 부모와 자식이 같은 물리 메모리 페이지를 가리키고, 페이지 테이블만 복제합니다.
+  둘 중 하나가 그 페이지에 <strong>쓰기</strong>를 시도할 때만 실제로 페이지를 복사합니다.
+</p>
+<p>
+  즉 fork 자체는 페이지 테이블 복제 수준이라 생각보다 가볍고, 이후 <code>execve()</code>로 새 프로그램을
+  적재하면 이전 주소 공간은 대부분 버려집니다(nginx, Apache prefork 모델의 원리).
+</p>
+
+<h3>5. Crash 영향 범위 (격리)</h3>
+<p>
+  이 개념이 오늘 질문의 핵심입니다.
+</p>
+<ul>
+  <li><strong>프로세스 크래시</strong>: 세그멘테이션 폴트가 나면 그 프로세스만 종료됩니다. 다른 프로세스는 영향받지 않습니다. (OS가 하드웨어로 주소 공간을 분리했기 때문)</li>
+  <li><strong>스레드 크래시</strong>: 한 스레드가 세그멘테이션 폴트를 내면 <strong>같은 프로세스의 모든 스레드가 함께 종료</strong>됩니다. 주소 공간을 공유하기 때문에 OS는 "어느 스레드의 문제인지"가 아니라 "이 프로세스 전체가 손상됐다"고 판단합니다.</li>
+</ul>
+<div class="callout">
+  <div class="callout-title">실무로 연결되는 지점</div>
+  요청 하나가 서버 전체를 죽이면 안 되는 서비스(웹 서버, 프록시)는
+  <strong>격리 단위를 프로세스로</strong> 두는 설계가 안전합니다. nginx가 master-worker 멀티프로세스
+  구조를 쓰는 핵심 이유가 바로 이것입니다 — worker 하나가 죽어도 master가 즉시 새 worker를 fork합니다.
+</div>
+
+<!-- ============================================================ -->
+<h2>왜 면접에서 이 질문을 묻는가</h2>
+<ol>
+  <li>
+    <strong>아키텍처 설계 근거를 아는가</strong> — 프로세스/스레드 모델을 고른 이유를
+    "그냥 그렇게 배웠다"가 아니라 격리, 성능, 통신 비용의 trade-off로 설명할 수 있는지 확인합니다.
+  </li>
+  <li>
+    <strong>장애 범위를 예측할 수 있는가</strong> — 설계 시점에 "이 컴포넌트가 죽으면 어디까지 영향이 가는가"를
+    고려했는지가 신뢰성 설계 경험의 지표입니다.
+  </li>
+  <li>
+    <strong>플랫폼별 제약을 이해하는가</strong> — Python GIL, JVM 스레드 모델, Node.js 이벤트 루프처럼
+    언어/런타임마다 프로세스·스레드 선택이 달라지는 이유를 아는지 봅니다.
+  </li>
+</ol>
+
+<!-- ============================================================ -->
+<h2>실무 연결</h2>
+<ul>
+  <li>
+    <strong>nginx / Gunicorn prefork worker</strong>: 요청 처리 워커를 프로세스 단위로 분리해
+    워커 하나의 메모리 손상이나 크래시가 다른 요청 처리에 영향을 주지 않게 합니다.
+  </li>
+  <li>
+    <strong>Java 애플리케이션 서버(Tomcat)의 스레드 풀</strong>: 요청마다 프로세스를 만들면
+    JVM 힙, 클래스 로딩, 커넥션 풀을 매번 새로 초기화해야 해 비용이 큽니다.
+    스레드는 이런 자원을 공유하므로 요청 처리 단위로 적합합니다. 대신 스레드 하나의
+    치명적 오류(<code>OutOfMemoryError</code> 등)가 JVM 프로세스 전체에 영향을 줄 수 있습니다.
+  </li>
+  <li>
+    <strong>Python multiprocessing vs threading</strong>: CPython은 GIL(Global Interpreter Lock)
+    때문에 한 프로세스 안에서 여러 스레드가 동시에 Python 바이트코드를 실행하지 못합니다.
+    CPU-bound 작업(이미지 처리, 데이터 변환)은 <code>multiprocessing</code>으로 별도 프로세스에
+    나눠야 실제 병렬성을 얻습니다. I/O-bound 작업(네트워크 호출 대기)은 스레드나 <code>asyncio</code>로 충분합니다.
+  </li>
+  <li>
+    <strong>컨테이너 1-프로세스 원칙</strong>: 컨테이너는 보통 프로세스 1개를 메인으로 실행합니다.
+    컨테이너 안에서 여러 요청을 처리하는 스레드 풀을 둘지, 컨테이너를 여러 개(멀티 프로세스처럼) 복제해
+    오케스트레이터가 격리와 재시작을 담당하게 할지는 이 프로세스/스레드 trade-off의 연장선입니다.
+  </li>
+</ul>
+
+<!-- ============================================================ -->
+<h2>답변 사고 순서</h2>
+<ol class="step-flow">
+  <li>
+    <strong>격리 요구사항 확인</strong><br>
+    "이 컴포넌트에서 처리 단위 하나가 실패했을 때, 다른 처리 단위까지 함께 죽어도 되는가?"를 먼저 묻습니다.
+    안 된다면 프로세스 단위 격리가 필요하다는 신호입니다.
+  </li>
+  <li>
+    <strong>통신/공유 빈도 확인</strong><br>
+    처리 단위 간 데이터 공유가 잦고 대용량이면(예: 캐시, 커넥션 풀 공유) 스레드가 유리합니다.
+    프로세스 간 공유는 IPC(공유 메모리, 소켓, 파이프)가 필요해 비용이 커집니다.
+  </li>
+  <li>
+    <strong>워크로드 특성 확인 (CPU-bound vs I/O-bound)</strong><br>
+    CPU-bound면 실제 병렬 실행이 가능한 단위(멀티프로세스 또는 GIL 없는 런타임의 멀티스레드)가 필요합니다.
+    I/O-bound면 스레드나 비동기 이벤트 루프로 동시성만 확보해도 충분합니다.
+  </li>
+  <li>
+    <strong>생성/전환 비용 확인</strong><br>
+    요청마다 새 실행 단위를 만들어야 한다면(단발성 작업) 스레드 풀 또는 프로세스 풀을 미리 만들어두고
+    재사용하는 방식(pre-fork, thread pool)으로 생성 비용을 상각합니다.
+  </li>
+  <li>
+    <strong>플랫폼 제약 반영</strong><br>
+    언어/런타임의 한계(GIL, 스레드 안전성이 약한 라이브러리)를 고려해 최종 모델을 정합니다.
+  </li>
+  <li>
+    <strong>결론과 근거 제시</strong><br>
+    "격리가 중요하고 워크로드가 짧고 반복적이라 prefork 멀티프로세스를 선택했다"처럼
+    구체적인 결론과 트레이드오프 근거를 함께 제시합니다.
+  </li>
+</ol>
+
+<!-- ============================================================ -->
+<h2>핵심 답변 예시</h2>
+
+<h3>짧은 버전 (30초 답변)</h3>
+<div class="answer-box strong">
+  <div class="answer-label">강한 답변 (짧은 버전)</div>
+  <p>
+    "프로세스는 독립된 주소 공간을 가져 크래시가 격리되지만 생성·전환 비용이 상대적으로 크고,
+    스레드는 주소 공간을 공유해 통신이 빠르지만 하나가 죽으면 프로세스 전체가 죽습니다.
+    저는 요청 처리 단위의 실패가 다른 요청에 전파되면 안 되는 서버(프록시, 게이트웨이)는
+    멀티프로세스로, 상태 공유가 잦고 짧은 요청을 대량 처리하는 애플리케이션 서버는
+    스레드 풀로 설계하겠습니다."
+  </p>
+</div>
+
+<h3>깊이 있는 버전 (2분 답변)</h3>
+<div class="answer-box strong">
+  <div class="answer-label">강한 답변 (깊이 있는 버전)</div>
+  <p>
+    "프로세스와 스레드의 차이는 결국 <em>무엇을 공유하고, 무엇이 격리되는가</em>로 귀결됩니다.
+    프로세스는 OS가 하드웨어(MMU)로 주소 공간을 분리하기 때문에 한 프로세스의 메모리 손상이
+    다른 프로세스로 전파되지 않습니다. 반면 스레드는 같은 주소 공간을 공유하므로
+    통신은 포인터 하나로 끝날 만큼 빠르지만, 하나의 치명적 오류가 프로세스 전체를 무너뜨립니다.
+  </p>
+  <p>
+    nginx가 master-worker 멀티프로세스 구조를 쓰는 이유가 이것입니다.
+    워커 프로세스 하나가 비정상 요청 때문에 죽어도 master가 즉시 새 워커를 fork해서
+    전체 서비스는 영향을 받지 않습니다. 반대로 Tomcat 같은 애플리케이션 서버는
+    요청마다 프로세스를 새로 만들면 JVM 초기화, 클래스 로딩, 커넥션 풀 재구성 비용이 커서
+    스레드 풀로 요청을 처리하고, 대신 헬스체크와 재시작 정책으로 장애를 완화합니다.
+  </p>
+  <p>
+    제가 새 서버를 설계한다면, 먼저 '요청 단위 실패가 다른 요청에 전파돼도 되는가'를 기준으로
+    격리 필요성을 판단하고, 그다음 워크로드가 CPU-bound인지 I/O-bound인지에 따라
+    실제 병렬성이 필요한지(멀티프로세스) 아니면 동시성만 있으면 되는지(스레드/이벤트 루프)를 정하겠습니다.
+    Python처럼 GIL이 있는 런타임이라면 CPU-bound 작업은 처음부터 멀티프로세스로 설계하겠습니다."
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<h2>좋은 답변과 약한 답변의 차이</h2>
+
+<div class="answer-box weak">
+  <div class="answer-label">약한 답변</div>
+  <p>"프로세스는 메모리를 독립적으로 쓰고 스레드는 메모리를 공유합니다. 스레드가 더 가볍고 빠릅니다."</p>
+</div>
+<p><strong>왜 약한가:</strong>
+  정의는 맞지만 "왜 실무에서 이렇게 나눠 쓰는지"에 대한 연결이 없습니다.
+  "스레드가 더 가볍다"는 것도 상황에 따라 달라지는 일반화이며, 근거(TLB, 페이지 테이블) 없이
+  결론만 말하면 암기로 보입니다.
+</p>
+
+<div class="answer-box weak">
+  <div class="answer-label">약한 답변</div>
+  <p>"저는 항상 스레드를 씁니다. 프로세스는 무겁고 IPC가 번거로우니까요."</p>
+</div>
+<p><strong>왜 약한가:</strong>
+  격리 요구사항을 전혀 고려하지 않은 일방적 선택입니다.
+  크래시 격리가 중요한 컴포넌트(프록시, 게이트웨이, 플러그인 실행 환경)에서는
+  스레드 단일 프로세스 구조가 오히려 위험할 수 있습니다.
+</p>
+
+<div class="answer-box strong">
+  <div class="answer-label">강한 답변의 패턴</div>
+  <p>
+    ① 격리 요구사항 판단 → ② 통신/공유 빈도 판단 → ③ 워크로드 특성(CPU/I/O-bound) 판단 →
+    ④ 플랫폼 제약(GIL 등) 반영 → ⑤ 구체적 사례(nginx, Tomcat, Python)로 근거 제시
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<h2>Senior-level Follow-up 질문</h2>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "Python은 GIL 때문에 멀티스레딩이 의미 없다는 주장에 어떻게 답하시겠습니까?"
+  </div>
+  <div class="followup-a">
+    반은 맞고 반은 틀린 주장입니다. GIL은 <strong>한 번에 하나의 스레드만 Python 바이트코드를 실행</strong>하게
+    강제하므로 CPU-bound 작업(순수 연산)은 스레드를 여러 개 만들어도 실질적인 병렬 실행이 되지 않습니다.
+    이 경우 <code>multiprocessing</code>으로 프로세스를 나누거나, NumPy처럼 GIL을 놓아주는 C 확장을 씁니다.<br><br>
+    하지만 <strong>I/O-bound 작업</strong>(네트워크 호출, 파일 읽기)에서는 스레드가 블로킹 I/O를 기다리는 동안
+    GIL을 놓아주기 때문에 다른 스레드가 실행될 수 있습니다. 따라서 "멀티스레딩이 항상 무의미하다"는
+    과도한 일반화이며, 워크로드 종류에 따라 답이 달라집니다.
+  </div>
+</div>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "스레드 스택 크기를 신경 써야 하는 이유는 무엇입니까?"
+  </div>
+  <div class="followup-a">
+    각 스레드는 독립된 스택을 가지며, 기본 스택 크기는 보통 1MB~8MB입니다(OS/런타임마다 다름).
+    스레드를 수천 개 만드는 설계라면 스택만으로도 수 GB의 가상 메모리를 예약하게 됩니다.
+    실제 물리 메모리는 페이지가 실제로 쓰일 때만 커밋되지만, 가상 주소 공간 고갈이나
+    과도한 스레드 생성으로 인한 컨텍스트 스위치 오버헤드는 실무 문제가 됩니다.
+    그래서 "스레드는 무한정 늘려도 된다"는 오해를 경계해야 하며, 스레드 풀 크기를 워크로드에 맞게
+    제한하는 것이 일반적입니다.
+  </div>
+</div>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "nginx가 멀티프로세스인데도 고성능인 이유는 무엇입니까? 프로세스가 무겁다면서요?"
+  </div>
+  <div class="followup-a">
+    nginx는 요청마다 프로세스를 만들지 않습니다. Master 프로세스가 시작 시 고정된 수의
+    Worker 프로세스를 미리 fork해두고(pre-fork), 각 Worker는 이벤트 루프(epoll 기반)로
+    수천 개의 커넥션을 논블로킹 방식으로 동시에 처리합니다.
+    즉, "프로세스 생성 비용"은 서버 기동 시 한 번만 지불하고, 이후에는 프로세스 전환 없이
+    각 Worker가 자신의 이벤트 루프 안에서 스레드 수준의 동시성 없이도 대량의 커넥션을 처리합니다.
+    격리(장애 시 재시작)와 성능(이벤트 기반 동시성)을 동시에 얻는 설계입니다.
+  </div>
+</div>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "컨테이너 환경에서는 이 프로세스/스레드 선택이 어떻게 달라집니까?"
+  </div>
+  <div class="followup-a">
+    컨테이너는 이미 OS 프로세스 격리(namespace, cgroup)를 활용한 격리 단위이므로,
+    "격리가 필요한 작업 단위 = 별도 컨테이너"로 옮기고, 컨테이너 내부에서는 스레드나
+    가벼운 워커로 처리량을 확보하는 2단계 구조가 흔합니다.
+    예를 들어 요청 처리 크래시 격리는 컨테이너를 여러 개 복제(replica)해서 오케스트레이터가 담당하고,
+    컨테이너 내부 애플리케이션은 스레드 풀로 단일 프로세스 안에서 자원을 공유하며 처리량을 높입니다.
+    이 주제는 Day 9(컨테이너와 OS 격리)에서 namespace/cgroup과 함께 더 깊이 다룹니다.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>자기 점검 Rubric</h2>
+
+<table class="rubric-table">
+  <thead>
+    <tr>
+      <th>점검 항목</th>
+      <th>강한 답변 기준</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>정의의 근거</td>
+      <td>"주소 공간을 공유/분리한다"를 TLB, 페이지 테이블, MMU 수준까지 연결해 설명했는가</td>
+    </tr>
+    <tr>
+      <td>격리 관점</td>
+      <td>crash 영향 범위(프로세스 전체 vs 다른 프로세스 무관)를 설계 기준으로 언급했는가</td>
+    </tr>
+    <tr>
+      <td>워크로드 구분</td>
+      <td>CPU-bound와 I/O-bound에 따라 선택이 달라진다는 것을 설명했는가</td>
+    </tr>
+    <tr>
+      <td>실제 사례</td>
+      <td>nginx, Tomcat, Python GIL 등 구체적 시스템으로 근거를 뒷받침했는가</td>
+    </tr>
+    <tr>
+      <td>Trade-off 언급</td>
+      <td>격리 vs 통신 비용, 생성 비용 vs 재사용(pool)을 비교했는가</td>
+    </tr>
+    <tr>
+      <td>일반화 경계</td>
+      <td>"스레드는 항상 빠르다/프로세스는 항상 무겁다" 같은 절대적 주장을 피했는가</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2>확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <div class="quiz-question">
+    Q1. 같은 프로세스에 속한 두 스레드 A, B가 공유하지 <strong>않는</strong> 것은?
+  </div>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> heap에 동적 할당된 메모리</label></li>
+    <li><label><input type="radio" name="q1" value="1"> 각 스레드의 스택과 레지스터 값</label></li>
+    <li><label><input type="radio" name="q1" value="2"> 전역 변수(data 영역)</label></li>
+    <li><label><input type="radio" name="q1" value="3"> 열려 있는 파일 디스크립터</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <div class="quiz-question">
+    Q2. 한 프로세스 안의 스레드 하나가 세그멘테이션 폴트로 죽으면 어떻게 됩니까?
+  </div>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> 그 스레드만 종료되고 나머지 스레드는 계속 실행된다</label></li>
+    <li><label><input type="radio" name="q2" value="1"> 같은 프로세스에 속한 모든 스레드가 함께 종료된다</label></li>
+    <li><label><input type="radio" name="q2" value="2"> OS가 자동으로 스레드를 재시작한다</label></li>
+    <li><label><input type="radio" name="q2" value="3"> 다른 프로세스에도 영향을 준다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <div class="quiz-question">
+    Q3. Python에서 CPU-bound 연산(예: 대규모 행렬 계산을 순수 Python으로)을 병렬화하려 할 때 가장 적절한 접근은?
+  </div>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> threading으로 스레드를 여러 개 만든다 — GIL이 있어도 CPU 코어를 나눠 쓴다</label></li>
+    <li><label><input type="radio" name="q3" value="1"> multiprocessing으로 별도 프로세스를 만든다 — 각 프로세스가 독립된 GIL과 주소 공간을 가진다</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 스레드 수를 늘리면 늘릴수록 선형적으로 빨라진다</label></li>
+    <li><label><input type="radio" name="q3" value="3"> async/await만으로 충분하다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">추천 1차 자료</div>
+  <p>
+    <strong>OSTEP (Operating Systems: Three Easy Pieces)</strong> — "Concurrency" 파트의
+    Threads Introduction 챕터. 스레드가 왜 존재하는지, 주소 공간 공유의 의미를 코드 예제로 다룹니다.
+  </p>
+  <p style="margin-top:0.5rem">
+    <strong>nginx 공식 문서 — "Inside NGINX: How We Designed for Performance & Scale"</strong>
+    (nginx.com 블로그) — master-worker 프로세스 모델과 이벤트 기반 처리 방식을 실제 설계자 관점에서 설명합니다.
+  </p>
+</div>
+
+<div class="ask-teacher">
+  이해가 안 되는 부분이 있으면 Claude에게 바로 물어보세요. "fork와 COW를 코드 예제로 보여줘",
+  "GIL이 실제로 언제 풀리는지 더 설명해줘"처럼 구체적으로 질문하면 더 깊이 답변해드립니다.
+</div>
+
+<!-- ============================================================ -->
+<div class="progress-section">
+  <h3>이 레슨의 커리큘럼 위치</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 20%"></div>
+  </div>
+  <div class="progress-label">Day 2 / 10 완료 — 다음: Day 3 Context Switch와 스케줄링</div>
+</div>
+
+<div class="lesson-footer">
+  <div>운영체제 10년차 이상 개발자 Interview · Day 2</div>
+  <div class="lesson-nav">
+    <a href="./0011-day1-os-performance-diagnosis-framework.html">← Day 1</a>
+    <a href="./index.html">목록</a>
+    <a href="./0003-threads.html">기존 Day 3 (CS 기초) →</a>
+  </div>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1,
+    '스레드마다 독립적으로 가지는 것은 자신만의 스택(지역 변수, 호출 프레임)과 레지스터/프로그램 카운터입니다. ' +
+    'heap, 전역 변수(data 영역), 열려 있는 파일 디스크립터는 같은 프로세스의 모든 스레드가 공유합니다. ' +
+    '이 공유 덕분에 스레드 간 통신이 빠르지만, 동시에 접근하면 race condition의 원인이 됩니다.'
+  );
+
+  initQuiz('q2', 1,
+    '스레드는 같은 프로세스의 주소 공간을 공유하기 때문에, 한 스레드의 치명적 오류(세그멘테이션 폴트 등)는 ' +
+    'OS 입장에서 "이 프로세스의 메모리 상태가 손상되었다"는 의미가 됩니다. 따라서 그 프로세스에 속한 ' +
+    '모든 스레드가 함께 종료됩니다. 이것이 프로세스 격리(다른 프로세스는 안전)와 대비되는 스레드의 근본적 위험입니다.'
+  );
+
+  initQuiz('q3', 1,
+    'CPython은 GIL 때문에 한 프로세스 안에서 동시에 하나의 스레드만 Python 바이트코드를 실행할 수 있습니다. ' +
+    '순수 CPU-bound 연산은 스레드를 늘려도 GIL 경쟁 때문에 실질적인 병렬 실행이 되지 않습니다. ' +
+    'multiprocessing으로 별도 프로세스를 만들면 프로세스마다 독립된 인터프리터와 GIL을 가지므로 ' +
+    '실제로 여러 CPU 코어를 활용한 병렬 처리가 가능합니다. async/await는 I/O-bound 동시성에는 유효하지만 ' +
+    'CPU-bound 연산 자체를 빠르게 만들어주지 않습니다.'
+  );
+</script>
+</body>
+</html>

@@ -11,13 +11,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | OS 관점 성능 진단 프레임워크 | [0011-day1-os-performance-diagnosis-framework.html](lessons/0011-day1-os-performance-diagnosis-framework.html) |
+| 2 | 2026-07-01 | 프로세스와 스레드 (실무 설계 기준) | [0012-day2-process-vs-thread-design.html](lessons/0012-day2-process-vs-thread-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 1 | OS 관점 성능 진단 프레임워크 | "CPU 사용률은 낮은데 API 응답이 느립니다. OS 관점에서 무엇을 보겠습니까?" | load average, I/O wait, thread state, context switch 해석 |
-| 2 | 프로세스와 스레드 | "프로세스와 스레드 차이를 실무 설계 기준으로 설명해보세요." | 주소 공간, 자원 공유, 격리, crash 영향 범위 |
 | 3 | Context Switch와 스케줄링 | "스레드를 늘렸는데 성능이 떨어지는 이유는 무엇일 수 있습니까?" | context switch 비용, CPU-bound/I/O-bound 구분 |
 | 4 | 동시성 제어 | "race condition을 어떻게 발견하고 예방합니까?" | lock, atomic, critical section, 테스트와 관측 |
 | 5 | Deadlock과 Lock Contention | "운영 중 deadlock 또는 lock contention이 의심되면 어떻게 대응합니까?" | dump 분석, lock ordering, timeout, retry |
@@ -29,8 +28,8 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** (2026-06-30) — OS 관점 성능 진단 프레임워크
-**다음**: Day 2 — 프로세스와 스레드 (실무 설계 기준)
+**Day 2 완료** (2026-07-01) — 프로세스와 스레드 (실무 설계 기준)
+**다음**: Day 3 — Context Switch와 스케줄링
 
 ## Interview 답변 체크리스트
 
@@ -50,7 +49,7 @@
 - [x] vmstat 지표 읽기 (r, b, wa, cs, si, so) — Day 1
 - [x] voluntary vs involuntary context switch 해석 — Day 1
 - [x] swap on/off trade-off — Day 1
-- [ ] 프로세스 vs 스레드 주소 공간 차이 (예정 Day 2)
+- [x] 프로세스 vs 스레드 주소 공간 차이, crash 격리 범위 — Day 2
 - [ ] context switch 비용 측정 (예정 Day 3)
 - [ ] race condition 탐지와 예방 (예정 Day 4)
 - [ ] deadlock RCA와 대응 (예정 Day 5)
