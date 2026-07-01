@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — 세션 관리와 JWT: 설계 판단</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #252836;
+      --border: #2e3147;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --blue: #3b82f6;
+      --cyan: #06b6d4;
+      --orange: #f97316;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 0 2rem;
+      margin-bottom: 3rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      margin-bottom: 1rem;
+    }
+    h1 { font-size: 2rem; font-weight: 800; line-height: 1.25; margin-bottom: 0.75rem; }
+    .subtitle { color: var(--muted); font-size: 1rem; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 3rem 0 1.25rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--accent-light);
+    }
+    h3 { font-size: 1.1rem; font-weight: 700; margin: 2rem 0 0.75rem; color: var(--cyan); }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--yellow); }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.4rem; }
+    strong { color: #fff; font-weight: 700; }
+    code {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.88em;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      color: var(--cyan);
+    }
+    pre {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    pre code { background: none; border: none; padding: 0; color: var(--text); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin: 1.25rem 0;
+    }
+    .card-accent { border-left: 4px solid var(--accent); }
+    .card-green { border-left: 4px solid var(--green); }
+    .card-red { border-left: 4px solid var(--red); }
+    .card-yellow { border-left: 4px solid var(--yellow); }
+    .card-blue { border-left: 4px solid var(--blue); }
+    .card-cyan { border-left: 4px solid var(--cyan); }
+    .card-orange { border-left: 4px solid var(--orange); }
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+    .card-title.green { color: var(--green); }
+    .card-title.red { color: var(--red); }
+    .card-title.yellow { color: var(--yellow); }
+    .card-title.blue { color: var(--blue); }
+    .card-title.accent { color: var(--accent-light); }
+    .card-title.cyan { color: var(--cyan); }
+    .card-title.orange { color: var(--orange); }
+    .interview-q {
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin: 2rem 0 1rem;
+    }
+    .interview-q .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent-light);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q .q-text {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.4;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+    .step-list { counter-reset: steps; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .step-list li::before {
+      content: counter(steps);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .rubric-table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    .rubric-table th, .rubric-table td {
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    .rubric-table th { background: var(--surface2); font-size: 0.85rem; color: var(--muted); }
+    .rubric-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .tag {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 0.1rem;
+    }
+    .tag-purple { background: rgba(99,102,241,0.2); color: var(--accent-light); border: 1px solid rgba(99,102,241,0.3); }
+    .tag-green { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    .tag-red { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .toc h2 { margin: 0 0 1rem; border: none; font-size: 1rem; color: var(--muted); }
+    .toc ol { margin: 0; }
+    .toc a { color: var(--accent-light); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
+    .misconception {
+      background: rgba(239,68,68,0.05);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-left: 4px solid var(--red);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin: 1rem 0;
+    }
+    .misconception .label { color: var(--red); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="day-badge">DAY 2</div>
+  <h1>세션 관리와 JWT<br>— 설계 판단</h1>
+  <p class="subtitle">백엔드 보안 / Secure Coding — 10년차 이상 개발자 Interview 대비</p>
+</header>
+
+<nav class="toc">
+  <h2>목차</h2>
+  <ol>
+    <li><a href="#why-matters">왜 "세션 vs JWT"가 시니어 질문인가</a></li>
+    <li><a href="#session-based">세션 기반 인증 — Stateful 모델</a></li>
+    <li><a href="#jwt-based">JWT 기반 인증 — Stateless 모델</a></li>
+    <li><a href="#storage">토큰 저장 위치 — localStorage vs httpOnly Cookie</a></li>
+    <li><a href="#refresh">토큰 갱신 전략 — Access/Refresh Token</a></li>
+    <li><a href="#revocation">JWT 취소 문제 — 블랙리스트와 회전</a></li>
+    <li><a href="#interview-q1">면접 질문 1 — 세션 vs JWT 선택 기준</a></li>
+    <li><a href="#interview-q2">면접 질문 2 — 토큰 저장 위치와 XSS/CSRF trade-off</a></li>
+    <li><a href="#interview-q3">면접 질문 3 — 즉시 로그아웃/권한 회수</a></li>
+    <li><a href="#rubric">자기 점검 Rubric</a></li>
+  </ol>
+</nav>
+
+<!-- ===== SECTION 1 ===== -->
+<section id="why-matters">
+  <h2>1. 왜 "세션 vs JWT"가 시니어 질문인가</h2>
+
+  <p>
+    주니어에게 이 질문을 하면 "JWT가 더 최신이니까 씁니다"라는 답이 돌아온다.
+    시니어에게 원하는 답은 다르다 — <strong>"우리 시스템의 확장 구조와 취소 요구사항을 보고 선택했다"</strong>는 근거다.
+  </p>
+
+  <div class="card card-yellow">
+    <div class="card-title yellow">실무 상황</div>
+    <p>
+      단일 서버로 운영하던 서비스가 트래픽이 늘어 서버를 여러 대로 늘려야 한다.
+      기존 세션 방식이면 "어느 서버가 이 세션을 들고 있는가"가 문제가 된다.
+      이때 팀은 JWT로 전환할지, 세션을 중앙 저장소(Redis)로 옮길지 결정해야 한다.
+      이 결정에는 정답이 없고, <strong>트래픽 패턴, 팀 인프라 숙련도, 보안 요구사항</strong>에 따라 달라진다.
+    </p>
+  </div>
+
+  <p>
+    이 주제가 면접에서 반복되는 이유는 <strong>"정답이 없는 trade-off를 근거 있게 설명할 수 있는가"</strong>를
+    가장 명확하게 드러내는 주제이기 때문이다. 인증 방식 하나로 확장성, 보안, 운영 복잡도가 모두 얽힌다.
+  </p>
+
+  <div class="misconception">
+    <div class="label">흔한 오해 — "JWT는 세션보다 항상 우월하다"</div>
+    <p>
+      JWT는 "서버가 상태를 안 들고 있어도 된다"는 <strong>Stateless</strong> 특성 때문에 인기가 많아졌지만,
+      이 특성 자체가 <strong>취소(로그아웃, 권한 회수)를 어렵게 만드는 대가</strong>다. 우월한 게 아니라 다른 trade-off를 가진 선택지다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 2 ===== -->
+<section id="session-based">
+  <h2>2. 세션 기반 인증 — Stateful 모델</h2>
+
+  <h3>전제 개념: 세션이란 무엇인가?</h3>
+  <p>
+    로그인에 성공하면 서버는 <strong>세션 ID</strong>라는 임의의 문자열을 생성하고,
+    그 ID에 대응하는 사용자 정보(세션 데이터)를 서버 쪽 저장소(메모리, Redis, DB)에 저장한다.
+    클라이언트에는 세션 ID만 쿠키로 내려준다. 이후 요청마다 쿠키의 세션 ID로 서버 저장소를 조회해 사용자를 식별한다.
+  </p>
+
+  <div class="card card-accent">
+    <div class="card-title accent">동작 흐름</div>
+    <ol class="step-list">
+      <li><div>클라이언트가 로그인 요청 → 서버가 자격증명 검증</div></li>
+      <li><div>서버가 세션 ID 생성 후 세션 저장소(Redis 등)에 <code>{session_id: user_data}</code> 저장</div></li>
+      <li><div>서버가 <code>Set-Cookie: session_id=...</code>로 클라이언트에 전달</div></li>
+      <li><div>이후 요청마다 클라이언트가 쿠키 자동 전송 → 서버가 저장소 조회로 사용자 식별</div></li>
+      <li><div>로그아웃 시 서버가 저장소에서 해당 세션 삭제 → 즉시 무효화</div></li>
+    </ol>
+  </div>
+
+  <table class="rubric-table">
+    <thead>
+      <tr><th>항목</th><th>세션 기반 특징</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>상태 위치</td><td>서버(Stateful) — 세션 저장소가 진실의 원천</td></tr>
+      <tr><td>즉시 취소</td><td>가능 — 저장소에서 삭제하면 그 즉시 무효</td></tr>
+      <tr><td>확장성</td><td>여러 서버 운영 시 세션 저장소를 공유해야 함(Redis 등 중앙화 필요)</td></tr>
+      <tr><td>마이크로서비스</td><td>서비스마다 세션 저장소를 조회해야 하므로 결합도가 높아짐</td></tr>
+      <tr><td>클라이언트 부담</td><td>쿠키만 들고 있으면 되므로 가볍다</td></tr>
+    </tbody>
+  </table>
+
+  <div class="card card-blue">
+    <div class="card-title blue">실무 연결</div>
+    <p>
+      사내 관리자 도구, 서버 대수가 적은 모놀리식 서비스, "로그아웃 즉시 반영"이 중요한 금융/의료 서비스는
+      세션 기반이 여전히 합리적인 선택이다. Redis 하나로 여러 서버가 세션을 공유하면 확장성 문제도 크지 않다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 3 ===== -->
+<section id="jwt-based">
+  <h2>3. JWT 기반 인증 — Stateless 모델</h2>
+
+  <h3>전제 개념: JWT 구조</h3>
+  <p>
+    JWT(JSON Web Token)는 <code>Header.Payload.Signature</code> 세 부분을 점(.)으로 이어붙인 문자열이다.
+    Header와 Payload는 Base64URL로 <strong>인코딩(암호화 아님!)</strong>되어 있을 뿐이라 누구나 디코딩해서 내용을 읽을 수 있다.
+    Signature만이 "이 토큰이 서버가 발급한 게 맞다"는 것을 보장한다.
+  </p>
+
+  <pre><code>eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0Iiwicm9sZSI6InVzZXIifQ.SflKxwRJSMeKKF2QT4fw...
+└────── Header ──────┘└──────── Payload ────────┘└──── Signature ────┘
+
+Header:  {"alg": "HS256", "typ": "JWT"}
+Payload: {"sub": "1234", "role": "user", "exp": 1735689600}
+Signature: HMACSHA256(base64(header) + "." + base64(payload), SECRET_KEY)</code></pre>
+
+  <div class="misconception">
+    <div class="label">흔한 오해 — "JWT는 암호화되어 있어서 안전하다"</div>
+    <p>
+      Payload는 <strong>암호화가 아니라 인코딩</strong>이다. 누구나 <code>jwt.io</code>에 붙여넣으면 내용을 읽을 수 있다.
+      JWT에 비밀번호나 카드번호 같은 민감 정보를 넣으면 안 된다. Signature는 "위조 방지"만 하지 "내용 은닉"은 하지 않는다.
+    </p>
+  </div>
+
+  <h3>서명 알고리즘 선택 — HS256 vs RS256</h3>
+
+  <div class="two-col">
+    <div class="card card-blue">
+      <div class="card-title blue">HS256 (대칭키, HMAC)</div>
+      <p>같은 비밀키로 서명과 검증을 모두 한다.</p>
+      <p><strong>적합:</strong> 단일 서비스, 발급자와 검증자가 같은 신뢰 영역</p>
+      <p><strong>위험:</strong> 검증하는 모든 서버가 비밀키를 알아야 하므로 키 유출 범위가 넓어짐</p>
+    </div>
+    <div class="card card-cyan">
+      <div class="card-title cyan">RS256 (비대칭키, RSA)</div>
+      <p>Private Key로 서명, Public Key로 검증한다.</p>
+      <p><strong>적합:</strong> 여러 마이크로서비스가 토큰을 검증만 해야 할 때 — 검증 서버는 Public Key만 가지면 됨</p>
+      <p><strong>trade-off:</strong> 계산 비용이 HMAC보다 높고 키 관리(로테이션, 배포)가 더 복잡</p>
+    </div>
+  </div>
+
+  <div class="card card-red">
+    <div class="card-title red">치명적 구현 취약점 — Algorithm Confusion / alg:none</div>
+    <p>
+      JWT 라이브러리 중 일부는 Header의 <code>alg</code> 필드를 신뢰하고 그 알고리즘으로 검증을 시도한다.
+      공격자가 <code>alg</code>를 <code>none</code>으로 바꾸면 서명 검증 자체를 건너뛰는 라이브러리가 있었다(과거 다수의 CVE 사례).
+      또한 RS256으로 발급된 토큰의 <code>alg</code>를 HS256으로 바꾸고, 공개적으로 알려진 <strong>Public Key를 HMAC 비밀키처럼 사용</strong>해
+      서명을 위조하는 공격도 가능했다.
+    </p>
+    <p><strong>방어:</strong> 서버 쪽에서 허용할 알고리즘을 화이트리스트로 명시적으로 고정한다 (예: <code>jwt.decode(token, key, algorithms=["RS256"])</code>).
+    토큰의 <code>alg</code> 헤더를 그대로 신뢰하지 않는다.</p>
+  </div>
+
+  <table class="rubric-table">
+    <thead>
+      <tr><th>항목</th><th>JWT 기반 특징</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>상태 위치</td><td>클라이언트(Stateless) — 토큰 자체에 필요한 정보가 담김</td></tr>
+      <tr><td>즉시 취소</td><td>어려움 — 서버가 "이 토큰은 무효"라는 상태를 별도로 관리해야 함(모순적으로 다시 Stateful)</td></tr>
+      <tr><td>확장성</td><td>좋음 — 어느 서버든 Public Key/비밀키만 있으면 검증 가능, 중앙 저장소 조회 불필요</td></tr>
+      <tr><td>마이크로서비스</td><td>서비스 간 토큰 전파가 쉬움(SSO, API Gateway 연동에 유리)</td></tr>
+      <tr><td>클라이언트 부담</td><td>토큰 크기가 커서(Payload 포함) 매 요청마다 더 많은 데이터 전송</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 4 ===== -->
+<section id="storage">
+  <h2>4. 토큰 저장 위치 — localStorage vs httpOnly Cookie</h2>
+
+  <h3>전제 개념: 왜 저장 위치가 보안 문제인가?</h3>
+  <p>
+    JWT를 어디에 저장하느냐에 따라 <strong>어떤 공격에 노출되는가</strong>가 완전히 달라진다.
+    이건 "취향"이 아니라 "어떤 위협을 더 감당할 수 있는가"를 고르는 문제다.
+  </p>
+
+  <div class="two-col">
+    <div class="card card-red">
+      <div class="card-title red">localStorage 저장</div>
+      <p><strong>장점:</strong> JS에서 자유롭게 읽고 헤더에 담아 전송 가능, CSRF 걱정 없음(쿠키 자동 전송이 아니므로)</p>
+      <p><strong>치명적 단점:</strong> <strong>XSS 공격에 완전히 노출</strong>된다. 페이지에 악성 스크립트가 하나라도 실행되면
+      <code>localStorage.getItem("token")</code>으로 토큰을 그대로 탈취당한다.</p>
+    </div>
+    <div class="card card-green">
+      <div class="card-title green">httpOnly Cookie 저장</div>
+      <p><strong>장점:</strong> JavaScript로 <code>document.cookie</code>를 통해 접근 불가 → XSS로 토큰을 직접 훔칠 수 없음</p>
+      <p><strong>단점:</strong> 쿠키는 브라우저가 자동으로 전송하므로 <strong>CSRF 공격</strong>에 노출된다 →
+      <code>SameSite</code> 속성과 CSRF 토큰으로 별도 방어 필요</p>
+    </div>
+  </div>
+
+  <div class="card card-accent">
+    <div class="card-title accent">실무에서 흔히 쓰는 조합</div>
+    <p>
+      Access Token은 <strong>httpOnly + Secure + SameSite=Strict/Lax 쿠키</strong>에 저장하고,
+      CSRF는 <code>SameSite</code> 속성 + Double Submit Cookie 패턴이나 커스텀 헤더(<code>X-Requested-With</code>) 검증으로 방어하는 조합이
+      "XSS와 CSRF 둘 다 어느 정도 대응 가능한" 실무 표준에 가깝다.
+    </p>
+  </div>
+
+  <table class="rubric-table">
+    <thead>
+      <tr><th>쿠키 속성</th><th>역할</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>httpOnly</code></td><td>JavaScript에서 쿠키 접근 차단 → XSS로 인한 토큰 탈취 방지</td></tr>
+      <tr><td><code>Secure</code></td><td>HTTPS 연결에서만 쿠키 전송 → 평문 네트워크 도청 방지</td></tr>
+      <tr><td><code>SameSite=Strict</code></td><td>다른 사이트에서의 요청에는 쿠키를 아예 안 보냄 → CSRF 강력 방어, 단 외부 링크 클릭 후 로그인 유지 등 UX 저하 가능</td></tr>
+      <tr><td><code>SameSite=Lax</code></td><td>최상위 탐색(링크 클릭)에는 쿠키 전송, 하지만 폼 자동 제출/이미지 태그 등에는 차단 → 실무 기본값으로 많이 사용</td></tr>
+    </tbody>
+  </table>
+
+  <div class="misconception">
+    <div class="label">흔한 오해 — "httpOnly 쿠키면 CSRF도 막힌다"</div>
+    <p>
+      httpOnly는 <strong>XSS로부터 토큰을 보호</strong>할 뿐이다. 브라우저는 여전히 쿠키를 자동으로 요청에 실어 보내므로,
+      공격자 사이트가 사용자 브라우저를 통해 우리 서버로 요청을 보내면(CSRF) 쿠키가 그대로 실려 나간다.
+      httpOnly와 CSRF 방어는 <strong>서로 다른 위협에 대한 서로 다른 방어</strong>다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 5 ===== -->
+<section id="refresh">
+  <h2>5. 토큰 갱신 전략 — Access/Refresh Token</h2>
+
+  <h3>전제 개념: 왜 토큰을 두 개로 나누는가?</h3>
+  <p>
+    JWT의 근본 문제는 <strong>"만료 전에는 취소할 수 없다"</strong>는 것이다.
+    만료 시간을 길게 잡으면(예: 7일) 탈취당했을 때 피해가 오래간다.
+    만료 시간을 짧게 잡으면(예: 15분) 사용자가 15분마다 재로그인해야 하는 UX 문제가 생긴다.
+    이 딜레마를 푸는 실무 패턴이 <strong>Access Token + Refresh Token</strong> 분리다.
+  </p>
+
+  <div class="card card-accent">
+    <div class="card-title accent">Access/Refresh Token 패턴</div>
+    <ul>
+      <li><strong>Access Token</strong>: 짧은 수명(5~15분), API 요청마다 사용, 탈취돼도 피해 시간이 짧음</li>
+      <li><strong>Refresh Token</strong>: 긴 수명(며칠~몇 주), Access Token이 만료되면 이걸로 재발급 요청,
+      <strong>httpOnly 쿠키에만 저장</strong>하고 API 요청에는 절대 사용하지 않음</li>
+    </ul>
+  </div>
+
+  <h3>Refresh Token Rotation (회전)</h3>
+  <p>
+    Refresh Token을 한 번 쓸 때마다 <strong>새 Refresh Token으로 교체</strong>하고 이전 것은 무효화한다.
+    같은 Refresh Token으로 두 번째 재발급 요청이 오면 "탈취당한 정황"으로 간주하고 해당 사용자의 모든 토큰을 강제 폐기한다.
+  </p>
+
+  <pre><code># Refresh Token Rotation 흐름
+1. 클라이언트가 Refresh Token A로 재발급 요청
+2. 서버: A가 유효한지 확인 → 새 Access Token + 새 Refresh Token B 발급, A는 폐기(사용됨으로 표시)
+3. 클라이언트는 이제 B를 사용
+
+# 탈취 탐지
+4. 만약 이미 폐기된 A로 재요청이 들어오면
+   → 정상 사용자가 아니라 탈취범이 예전 토큰으로 시도한 것으로 간주
+   → 해당 사용자 계정의 모든 Refresh Token 계열을 즉시 폐기 + 재인증 요구</code></pre>
+
+  <div class="card card-yellow">
+    <div class="card-title yellow">실무 연결</div>
+    <p>
+      은행 앱이 "이 기기에서 이상 활동이 감지되어 로그아웃되었습니다"라고 알리는 경우가 이 패턴이다.
+      토큰 재사용 탐지로 탈취를 사후에라도 잡아낼 수 있다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 6 ===== -->
+<section id="revocation">
+  <h2>6. JWT 취소 문제 — 블랙리스트와 회전</h2>
+
+  <h3>전제 개념: Stateless의 대가</h3>
+  <p>
+    JWT가 자랑하는 "서버가 상태를 안 들고 있어도 된다"는 특성은,
+    뒤집어 말하면 <strong>"서버가 이 토큰이 아직 유효한지 판단할 방법이 토큰 자체의 만료 시간뿐"</strong>이라는 뜻이다.
+    사용자가 로그아웃하거나, 관리자가 계정을 정지하거나, 비밀번호를 바꿔도 — 만료되지 않은 JWT는 여전히 유효하다.
+    이것이 시니어 인터뷰에서 가장 자주 파고드는 지점이다.
+  </p>
+
+  <table class="rubric-table">
+    <thead>
+      <tr><th>방법</th><th>동작 방식</th><th>trade-off</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>짧은 TTL + Refresh Token</td>
+        <td>Access Token 수명을 짧게(5~15분) 두어 자연 만료로 위험을 제한</td>
+        <td>완전한 즉시 취소는 아니고 "최대 15분의 위험 창"이 남음</td>
+      </tr>
+      <tr>
+        <td>블랙리스트 (Redis)</td>
+        <td>로그아웃/정지된 토큰의 <code>jti</code>(토큰 ID)를 Redis에 만료 시간까지만 저장, 검증 시마다 조회</td>
+        <td>결국 Stateless의 장점을 일부 포기하고 저장소 조회가 다시 생김(다만 로그아웃 등 예외 케이스만 조회하므로 세션 방식보다는 부하가 적음)</td>
+      </tr>
+      <tr>
+        <td>토큰 버전 관리 (Token Versioning)</td>
+        <td>사용자 레코드에 <code>token_version</code> 필드를 두고 JWT Payload에 포함, 비밀번호 변경/강제 로그아웃 시 버전 증가 → 이전 버전 토큰은 전부 무효</td>
+        <td>사용자당 하나의 카운터 조회만 필요해 블랙리스트보다 가볍지만, "특정 토큰 하나만" 취소하기는 어려움(전체 무효화 단위)</td>
+      </tr>
+      <tr>
+        <td>Refresh Token Rotation</td>
+        <td>Refresh Token 재사용 탐지로 탈취 시나리오에서 사후 대응</td>
+        <td>실시간 차단이 아니라 재사용 시점에 탐지 — Access Token 유효 기간만큼은 여전히 노출</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card card-green">
+    <div class="card-title green">실무에서 조합하는 방식</div>
+    <p>
+      대부분의 실무 시스템은 하나만 쓰지 않는다. <strong>짧은 TTL(15분) + 토큰 버전 관리(비밀번호 변경/강제 로그아웃 시 즉시 무효화) +
+      Refresh Token Rotation(탈취 탐지)</strong>을 조합해서, "완전한 즉시 취소는 아니지만 위험을 충분히 제한하는" 현실적인 균형을 잡는다.
+    </p>
+  </div>
+
+  <div class="misconception">
+    <div class="label">흔한 오해 — "JWT는 Stateless니까 서버 부담이 전혀 없다"</div>
+    <p>
+      실무에서 안전하게 쓰려면 블랙리스트든 토큰 버전이든 결국 <strong>서버 쪽에 최소한의 상태</strong>가 필요하다.
+      "완전한 Stateless"는 이론에 가깝고, 실무 JWT는 "세션보다 가벼운 상태를 유지하는 하이브리드"에 가깝다는 것을 이해해야 한다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== INTERVIEW Q1 ===== -->
+<section id="interview-q1">
+  <h2>7. 면접 질문 1 — 세션 vs JWT 선택 기준</h2>
+
+  <div class="interview-q">
+    <div class="label">면접 질문</div>
+    <div class="q-text">
+      "세션 기반 인증과 JWT 기반 인증 중 무엇을 선택하시겠습니까? 어떤 기준으로 결정하나요?"
+    </div>
+  </div>
+
+  <h3>왜 면접에서 묻는가?</h3>
+  <p>
+    이 질문은 정답 맞히기가 아니다. <strong>"트래픽 구조, 조직의 인프라 역량, 보안 요구사항을 종합해서 근거 있게 판단하는가"</strong>를 본다.
+    "JWT가 대세니까"라고 답하면 유행을 따라간 것이지 설계한 것이 아니다.
+  </p>
+
+  <h3>답변 사고 순서</h3>
+  <ol class="step-list">
+    <li><div><strong>서버 구성 파악</strong> — 단일 서버인가, 여러 대인가, 이미 Redis 같은 공유 저장소가 있는가?</div></li>
+    <li><div><strong>취소 요구사항 파악</strong> — 로그아웃/권한 회수가 즉시 반영되어야 하는 도메인인가(금융, 의료)?</div></li>
+    <li><div><strong>서비스 경계 파악</strong> — 마이크로서비스 간 토큰을 전달해야 하는가, 아니면 단일 서비스인가?</div></li>
+    <li><div><strong>trade-off 명시</strong> — 어느 쪽을 선택해도 포기하는 게 있다는 것을 설명한다.</div></li>
+  </ol>
+
+  <div class="card card-green">
+    <div class="card-title green">강한 답변 예시</div>
+    <p>
+      "저는 먼저 서버 확장 계획과 즉시 취소 요구사항을 봅니다.
+      만약 서버가 소수이고 이미 Redis를 세션 저장소로 쓰고 있으며, 로그아웃/정지가 즉시 반영되어야 하는 도메인이라면 세션 기반을 유지합니다.
+      반대로 여러 마이크로서비스가 API Gateway 뒤에서 토큰을 검증해야 하고, 서비스 간 결합도를 낮추는 게 중요하다면 JWT를 선택합니다.
+      다만 JWT를 선택하더라도 즉시 취소가 필요한 부분(비밀번호 변경, 강제 로그아웃)은 토큰 버전 관리로 보완합니다.
+      결국 '무조건 JWT'가 아니라 시스템의 확장 패턴과 취소 요구사항의 균형점을 찾는 결정입니다."
+    </p>
+  </div>
+
+  <div class="card card-red">
+    <div class="card-title red">약한 답변 예시</div>
+    <p>"JWT가 요즘 표준이고 Stateless라서 확장성이 좋으니 JWT를 씁니다."</p>
+    <p><strong>왜 약한가?</strong> "요즘 표준"은 근거가 아니다. JWT의 취소 문제, 저장 위치 위험을 전혀 언급하지 않아 trade-off를 이해하지 못한 것으로 보인다.</p>
+  </div>
+
+  <h3>Senior-level Follow-up 질문들</h3>
+  <div class="card card-accent">
+    <div class="card-title accent">Follow-up: "세션 기반으로 시작한 서비스를 트래픽 급증 때문에 JWT로 마이그레이션해야 한다면 어떻게 하겠습니까?"</div>
+    <p>
+      <strong>모범 답변 방향:</strong> "먼저 트래픽 증가가 정말 '세션 저장소 병목' 때문인지 확인합니다.
+      대부분의 경우 세션 저장소를 Redis 클러스터로 확장하는 것만으로 충분히 해결됩니다.
+      JWT 전환은 취소 로직 재설계, 클라이언트 저장 방식 변경, 기존 세션 사용자 마이그레이션까지 필요한 큰 작업이므로,
+      단순 트래픽 증가만으로는 전환 비용을 정당화하기 어렵습니다. 마이크로서비스 분리처럼 아키텍처 자체가 바뀌는 시점에 함께 검토하는 게 합리적입니다."
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== INTERVIEW Q2 ===== -->
+<section id="interview-q2">
+  <h2>8. 면접 질문 2 — 토큰 저장 위치와 XSS/CSRF trade-off</h2>
+
+  <div class="interview-q">
+    <div class="label">면접 질문</div>
+    <div class="q-text">
+      "JWT를 클라이언트 어디에 저장하시겠습니까? 그 선택이 어떤 공격에 노출되나요?"
+    </div>
+  </div>
+
+  <h3>왜 면접에서 묻는가?</h3>
+  <p>
+    이 질문은 "정답이 하나가 아닌 보안 결정"을 다루는 능력을 본다.
+    localStorage와 httpOnly Cookie 모두 완벽하지 않다 — <strong>어떤 공격을 감수할 것인지 명시적으로 선택하고 나머지를 보완할 수 있는가</strong>가 핵심이다.
+  </p>
+
+  <h3>답변 사고 순서</h3>
+  <ol class="step-list">
+    <li><div><strong>두 옵션의 공격 표면 나열</strong> — localStorage는 XSS, Cookie는 CSRF에 취약함을 먼저 짚는다.</div></li>
+    <li><div><strong>선택과 이유</strong> — 보통 httpOnly Cookie를 선택하는 이유(XSS가 더 흔하고 피해가 큼)를 설명한다.</div></li>
+    <li><div><strong>남은 위협 보완책 제시</strong> — CSRF를 SameSite + 토큰으로 어떻게 막는지 설명한다.</div></li>
+    <li><div><strong>추가 방어층 언급</strong> — CSP(Content Security Policy)로 XSS 자체 발생 확률을 낮추는 것도 언급하면 더 좋다.</div></li>
+  </ol>
+
+  <div class="card card-green">
+    <div class="card-title green">강한 답변 예시</div>
+    <p>
+      "Access Token은 httpOnly, Secure, SameSite=Lax 쿠키에 저장합니다.
+      localStorage에 저장하면 XSS 한 번으로 토큰이 그대로 탈취되는데, XSS는 CSRF보다 발생 빈도와 피해 범위가 큽니다.
+      대신 쿠키 저장은 CSRF에 노출되므로, 상태 변경 요청에는 CSRF 토큰을 별도 헤더로 검증하고 SameSite=Lax로 크로스 사이트 자동 전송을 1차로 막습니다.
+      추가로 CSP를 적용해 인라인 스크립트 실행 자체를 제한해서 XSS 발생 확률도 같이 낮춥니다."
+    </p>
+  </div>
+
+  <div class="card card-red">
+    <div class="card-title red">약한 답변 예시</div>
+    <p>"localStorage에 저장하고 헤더에 담아 보냅니다. 구현이 간단해서 그렇게 했습니다."</p>
+    <p><strong>왜 약한가?</strong> "구현이 간단하다"는 보안 근거가 아니다. XSS 노출 위험을 인지하지 못하고 있다는 신호로 읽힌다.</p>
+  </div>
+
+  <h3>Senior-level Follow-up 질문들</h3>
+  <div class="card card-accent">
+    <div class="card-title accent">Follow-up: "모바일 앱(네이티브)에서는 어떻게 저장하나요? 브라우저와 다른가요?"</div>
+    <p>
+      <strong>모범 답변 방향:</strong> "네이티브 앱에는 DOM이나 쿠키 자동 전송 개념이 없으므로 위협 모델이 다릅니다.
+      iOS는 Keychain, Android는 Keystore/EncryptedSharedPreferences처럼 OS가 제공하는 보안 저장소를 사용합니다.
+      브라우저의 XSS/CSRF 고민을 그대로 적용하는 게 아니라, 플랫폼별 안전한 저장소가 있는지부터 확인해야 합니다."
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== INTERVIEW Q3 ===== -->
+<section id="interview-q3">
+  <h2>9. 면접 질문 3 — 즉시 로그아웃/권한 회수</h2>
+
+  <div class="interview-q">
+    <div class="label">면접 질문</div>
+    <div class="q-text">
+      "JWT를 쓰는 시스템에서 관리자가 사용자를 즉시 정지시켜야 합니다. 어떻게 구현하시겠습니까?"
+    </div>
+  </div>
+
+  <h3>왜 면접에서 묻는가?</h3>
+  <p>
+    이 질문은 JWT의 근본 약점(취소 불가)을 실제 운영 요구사항과 충돌시켜서,
+    <strong>이론을 실무 제약과 연결할 수 있는가</strong>를 시험한다. "JWT는 원래 그렇습니다"로 끝나면 탈락에 가깝다.
+  </p>
+
+  <h3>답변 사고 순서</h3>
+  <ol class="step-list">
+    <li><div><strong>문제 인정</strong> — 순수 JWT 검증만으로는 만료 전까지 막을 수 없음을 먼저 인정한다.</div></li>
+    <li><div><strong>보완 메커니즘 선택</strong> — 토큰 버전 관리 또는 블랙리스트 중 상황에 맞는 것을 고른다.</div></li>
+    <li><div><strong>검증 경로에 삽입</strong> — 매 요청마다 어디서 이 확인을 추가하는지 설명한다(미들웨어).</div></li>
+    <li><div><strong>비용 설명</strong> — 이 보완책이 Stateless의 일부를 포기하는 trade-off임을 명시한다.</div></li>
+  </ol>
+
+  <pre><code># 토큰 버전 관리 구현 예시
+class User:
+    id: int
+    token_version: int  # 기본값 0, 강제 로그아웃/정지 시 +1
+
+def issue_token(user: User) -> str:
+    return jwt.encode(
+        {"sub": user.id, "tv": user.token_version, "exp": ...},
+        SECRET_KEY, algorithm="HS256"
+    )
+
+async def get_current_user(token: str) -> User:
+    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    user = await db.get_user(payload["sub"])
+    if user.token_version != payload["tv"]:
+        raise HTTPException(401, "토큰이 더 이상 유효하지 않습니다")  # 정지/강제 로그아웃 반영
+    return user
+
+def suspend_user(user: User):
+    user.token_version += 1  # 이 순간부터 기존 토큰 전부 무효
+    db.save(user)</code></pre>
+
+  <div class="card card-green">
+    <div class="card-title green">강한 답변 예시</div>
+    <p>
+      "순수 JWT는 만료 전까지 취소가 안 되므로, User 테이블에 token_version 필드를 두고 발급 시 Payload에 포함시킵니다.
+      관리자가 정지시키면 token_version을 증가시키고, 인증 미들웨어에서 매 요청마다 DB의 현재 버전과 토큰의 버전을 비교합니다.
+      이렇게 하면 정지 조치가 사실상 즉시(다음 요청부터) 반영됩니다.
+      비용은 매 요청마다 사용자 레코드 조회가 필요하다는 것인데, 이건 캐시(Redis)에 token_version만 캐싱해서 완화할 수 있습니다."
+    </p>
+  </div>
+
+  <div class="card card-red">
+    <div class="card-title red">약한 답변 예시</div>
+    <p>"JWT는 만료될 때까지 유효하니 만료 시간을 짧게 설정합니다."</p>
+    <p><strong>왜 약한가?</strong> "즉시" 정지라는 요구사항에 정면으로 답하지 못했다. 짧은 TTL은 위험 창을 줄일 뿐 즉시 취소가 아니다.</p>
+  </div>
+
+  <h3>Senior-level Follow-up 질문들</h3>
+  <div class="card card-accent">
+    <div class="card-title accent">Follow-up: "token_version 비교를 위해 매번 DB를 조회하면 성능에 영향이 크지 않나요?"</div>
+    <p>
+      <strong>모범 답변 방향:</strong> "맞습니다, 그래서 실무에서는 token_version만 Redis에 캐싱해서 조회 비용을 낮춥니다.
+      또는 정지 이벤트 발생 빈도가 낮다는 점을 이용해, 평소엔 캐시된 값으로 빠르게 통과시키고
+      정지/권한 변경 이벤트가 발생했을 때만 캐시를 무효화하는 방식으로 대부분의 요청은 추가 DB 조회 없이 처리합니다."
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== RUBRIC ===== -->
+<section id="rubric">
+  <h2>10. 자기 점검 Rubric</h2>
+
+  <p>아래 기준으로 오늘 학습한 내용을 점검한다. 각 항목을 스스로 말로 설명할 수 있어야 한다.</p>
+
+  <table class="rubric-table">
+    <thead>
+      <tr><th>점검 항목</th><th>미달 (주니어 수준)</th><th>달성 (시니어 수준)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>세션 vs JWT 선택</td>
+        <td>"JWT가 대세라서"</td>
+        <td>서버 구성, 취소 요구사항, 서비스 경계를 기준으로 근거 있게 선택</td>
+      </tr>
+      <tr>
+        <td>JWT 구조 이해</td>
+        <td>"암호화되어 있어 안전하다"</td>
+        <td>Payload는 인코딩일 뿐이며 Signature만 위조를 방지한다는 것을 구분</td>
+      </tr>
+      <tr>
+        <td>서명 알고리즘</td>
+        <td>HS256/RS256 차이를 모름</td>
+        <td>대칭/비대칭 차이와 alg 화이트리스트 검증의 필요성을 설명 가능</td>
+      </tr>
+      <tr>
+        <td>토큰 저장 위치</td>
+        <td>"localStorage가 편해서 씀"</td>
+        <td>XSS vs CSRF trade-off를 이해하고 httpOnly + SameSite + CSRF 방어 조합을 설명</td>
+      </tr>
+      <tr>
+        <td>토큰 갱신</td>
+        <td>Access/Refresh 구분 없음</td>
+        <td>짧은 Access + 긴 Refresh, Refresh Rotation으로 탈취 탐지까지 설명</td>
+      </tr>
+      <tr>
+        <td>토큰 취소</td>
+        <td>"JWT는 취소가 안 된다"에서 사고 멈춤</td>
+        <td>토큰 버전 관리/블랙리스트로 실무적 보완책을 제시하고 비용까지 설명</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card card-green">
+    <div class="card-title green">다음 레슨 예고 — Day 3: SQL Injection</div>
+    <p>
+      인증/세션을 다뤘으니, 다음은 데이터 계층에서 가장 오래되었지만 여전히 실무에서 재발하는 취약점을 다룬다.
+    </p>
+    <ul>
+      <li>Parameterized Query가 왜 근본적인 방어인지 (문자열 이스케이프와의 차이)</li>
+      <li>ORM을 쓰면 안전하다는 착각과 실제 취약 패턴(raw query, 동적 정렬/컬럼명)</li>
+      <li>Blind SQL Injection — 에러 메시지가 없어도 데이터를 뽑아내는 원리</li>
+      <li>SQL Injection을 발견했을 때의 실무 대응 순서</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
