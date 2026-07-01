@@ -14,16 +14,17 @@
 | 8 | 2026-06-28 | 프로토타이핑 기법 — Lo-Fi·Hi-Fi·인터랙티브 프로토타입 | [0008-prototyping-techniques.html](lessons/0008-prototyping-techniques.html) |
 | 9 | 2026-06-29 | 사용성 테스트 — 계획·진행·결과 분석 | [0009-usability-testing.html](lessons/0009-usability-testing.html) |
 | 10 | 2026-06-30 | 반응형 & 모바일 UX — 용어와 패턴 | [0010-responsive-mobile-ux.html](lessons/0010-responsive-mobile-ux.html) |
+| 11 | 2026-07-01 | UX 글쓰기 — 마이크로카피와 인터페이스 언어 | [0011-ux-writing-microcopy.html](lessons/0011-ux-writing-microcopy.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 11 | UX 글쓰기(UX Writing) — 마이크로카피와 인터페이스 언어 | Microcopy, CTA, Error Message, Voice & Tone, Placeholder, Tooltip |
+| 12 | 다크 패턴(Dark Pattern)과 윤리적 디자인 | Confirmshaming, Roach Motel, Sneak into Basket, Forced Continuity, Nagging |
 
 ## 현재 학습 위치
 
-**Day 10 완료** — Day 11 (UX 글쓰기 — 마이크로카피와 인터페이스 언어) 예정.
+**Day 11 완료** — Day 12 (다크 패턴과 윤리적 디자인) 예정.
 
 ## 습득한 핵심 개념
 
@@ -99,6 +100,14 @@
 - [x] Safe Area (세이프 에어리어) — Day 10
 - [x] Thumb Zone (엄지 영역) — Day 10
 - [x] Content Prioritization (콘텐츠 우선순위 지정) — Day 10
-- [ ] Microcopy (마이크로카피) — 예정 Day 11
-- [ ] CTA (Call-to-Action) — 예정 Day 11
-- [ ] Voice & Tone — 예정 Day 11
+- [x] Microcopy (마이크로카피) — Day 11
+- [x] CTA (Call-to-Action) — Day 11
+- [x] Error Message / Humanized Error (에러 메시지) — Day 11
+- [x] Voice & Tone (보이스 앤 톤) — Day 11
+- [x] Placeholder (플레이스홀더) — Day 11
+- [x] Tooltip (툴팁) — Day 11
+- [x] Empty State Copy (빈 상태 카피) — Day 11
+- [x] Confirmation Message (확인 메시지) — Day 11
+- [ ] Dark Pattern (다크 패턴) — 예정 Day 12
+- [ ] Confirmshaming — 예정 Day 12
+- [ ] Roach Motel — 예정 Day 12

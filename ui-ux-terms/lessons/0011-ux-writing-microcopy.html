@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 11 — UX 글쓰기: 마이크로카피와 인터페이스 언어</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; font-size: 16px; line-height: 1.7; color: #1a1a2e; background: #f8f9fc; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+    /* header */
+    header { background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%); color: #fff; border-radius: 12px; padding: 2rem 2rem 1.75rem; margin-bottom: 2rem; }
+    header .day-badge { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-bottom: 0.5rem; }
+    header h1 { font-size: 1.7rem; font-weight: 700; line-height: 1.3; }
+    header p.subtitle { margin-top: 0.6rem; opacity: 0.9; font-size: 0.95rem; }
+
+    /* nav breadcrumb */
+    .breadcrumb { font-size: 0.82rem; color: #6c757d; margin-bottom: 1.5rem; }
+    .breadcrumb a { color: #3a7bd5; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* section */
+    section { background: #fff; border-radius: 10px; padding: 1.75rem 2rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    section h2 { font-size: 1.15rem; font-weight: 700; color: #3a7bd5; margin-bottom: 1rem; border-left: 4px solid #3a7bd5; padding-left: 0.75rem; }
+    section h3 { font-size: 1rem; font-weight: 700; color: #2d3436; margin: 1.4rem 0 0.5rem; }
+    section p { margin-bottom: 0.85rem; }
+    section ul, section ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    section ul li, section ol li { margin-bottom: 0.4rem; }
+
+    /* term card */
+    .term-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+    .term-card .term-title { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.25rem; }
+    .term-card .term-eng { font-size: 0.82rem; color: #6c757d; margin-bottom: 0.5rem; font-style: italic; }
+    .term-card .term-body { font-size: 0.93rem; }
+
+    /* table */
+    .table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+    th { background: #f0f4ff; color: #3a7bd5; font-weight: 700; text-align: left; padding: 0.6rem 0.9rem; border-bottom: 2px solid #d0d9f5; }
+    td { padding: 0.55rem 0.9rem; border-bottom: 1px solid #eee; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fbff; }
+
+    /* callout */
+    .callout { border-left: 4px solid #00d2ff; background: #f0faff; border-radius: 0 8px 8px 0; padding: 0.9rem 1.1rem; margin: 1rem 0; font-size: 0.9rem; }
+    .callout.warn { border-color: #f39c12; background: #fffbf0; }
+    .callout.tip  { border-color: #27ae60; background: #f0fff4; }
+
+    /* code */
+    code { background: #f4f4f8; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.85em; font-family: 'Fira Code', monospace; }
+    pre { background: #1e1e2e; color: #cdd6f4; border-radius: 8px; padding: 1.1rem 1.3rem; overflow-x: auto; font-size: 0.85rem; margin: 0.75rem 0; }
+    pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+
+    /* copy compare */
+    .compare-row { display: flex; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .compare-col { flex: 1 1 240px; border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.9rem; }
+    .compare-col.bad { background: #fff4f4; border-left: 4px solid #e74c3c; }
+    .compare-col.good { background: #f0fff4; border-left: 4px solid #27ae60; }
+    .compare-col .label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+    .compare-col.bad .label { color: #e74c3c; }
+    .compare-col.good .label { color: #27ae60; }
+
+    /* quiz */
+    .quiz { background: #fafbfe; border: 1px solid #d0d9f5; border-radius: 8px; padding: 1.25rem 1.4rem; margin-top: 1.5rem; }
+    .quiz h3 { font-size: 1rem; color: #3a7bd5; margin-bottom: 0.75rem; }
+    .quiz .q { font-weight: 600; margin-bottom: 0.6rem; }
+    .quiz .options li { margin-bottom: 0.3rem; cursor: pointer; padding: 0.3rem 0.5rem; border-radius: 4px; transition: background 0.15s; }
+    .quiz .options li:hover { background: #e8f0ff; }
+    .quiz details { margin-top: 0.75rem; }
+    .quiz details summary { cursor: pointer; color: #3a7bd5; font-size: 0.9rem; }
+    .quiz details p { margin-top: 0.5rem; font-size: 0.9rem; background: #f0fff4; border-left: 3px solid #27ae60; padding: 0.6rem 0.8rem; border-radius: 0 6px 6px 0; }
+
+    /* footer */
+    footer { text-align: center; font-size: 0.82rem; color: #aaa; margin-top: 2.5rem; }
+    footer a { color: #3a7bd5; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="breadcrumb">
+    <a href="./index.html">← UI/UX 용어 학습 목록</a>
+  </div>
+
+  <header>
+    <div class="day-badge">Day 11 · UI/UX 용어</div>
+    <h1>UX 글쓰기 — 마이크로카피와 인터페이스 언어</h1>
+    <p class="subtitle">Microcopy · CTA · Error Message · Voice &amp; Tone · Placeholder · Tooltip</p>
+  </header>
+
+  <!-- ───────────────── 1. 왜 이 용어가 중요한가 ───────────────── -->
+  <section>
+    <h2>1. 왜 이 용어들이 중요한가</h2>
+    <p>
+      버튼 하나에 적힌 단어, 오류가 났을 때 뜨는 한 줄 메시지, 빈 입력창에 흐리게 떠 있는 안내 문구.
+      이런 짧은 텍스트들을 <strong>마이크로카피(Microcopy)</strong>라고 부르며, 사용자가 제품을 신뢰하고
+      다음 행동을 결정하는 데 UI 비주얼만큼이나 큰 영향을 준다.
+    </p>
+    <p>
+      디자인 리뷰에서 "이 버튼 문구가 애매하다", "에러 메시지가 불친절하다"는 피드백이 나왔을 때,
+      정확한 용어로 문제를 짚고 개선 원칙을 제안할 수 있어야 개발자·디자이너·PM이 같은 기준으로
+      카피를 다듬을 수 있다.
+    </p>
+  </section>
+
+  <!-- ───────────────── 2. 핵심 용어 카드 ───────────────── -->
+  <section>
+    <h2>2. 핵심 용어 카드</h2>
+
+    <div class="term-card">
+      <div class="term-title">마이크로카피</div>
+      <div class="term-eng">Microcopy</div>
+      <div class="term-body">
+        버튼 레이블, 입력 힌트, 오류 메시지, 빈 상태 안내처럼 인터페이스 곳곳에 흩어져 있는
+        짧은 텍스트. Joshua Porter가 처음 이 용어를 대중화했으며, "제품의 목소리가 사용자와
+        직접 대화하는 순간"으로 정의된다. 문장 하나가 전환율(conversion)과 신뢰도에
+        직접적인 영향을 줄 수 있다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">CTA</div>
+      <div class="term-eng">Call-to-Action</div>
+      <div class="term-body">
+        사용자가 다음 행동을 하도록 유도하는 버튼·링크 문구. "제출하기" 같은 일반 동사보다
+        <strong>구체적인 결과를 담은 동사구</strong>("무료로 시작하기", "장바구니에 담기")가
+        클릭률을 높인다는 것이 실무에서 반복 검증된 원칙이다. CTA는 하나의 화면에 우선순위가
+        명확한 <em>Primary CTA</em> 하나만 두는 것이 일반적이다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">에러 메시지</div>
+      <div class="term-eng">Error Message / Humanized Error</div>
+      <div class="term-body">
+        시스템 오류나 사용자 입력 실수를 알리는 메시지. 좋은 에러 메시지는
+        <strong>① 무엇이 잘못됐는지 ② 왜 그런지 ③ 어떻게 고치는지</strong> 세 요소를 포함한다.
+        "Error 400" 같은 코드 노출이나 "잘못된 입력입니다" 같은 모호한 문구는
+        Humanized Error(사람이 이해할 수 있게 번역된 에러) 원칙을 위반한 사례로 자주 언급된다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">보이스 앤 톤</div>
+      <div class="term-eng">Voice &amp; Tone</div>
+      <div class="term-body">
+        <strong>Voice(보이스)</strong>는 브랜드의 고정된 성격(예: 친근함, 전문성)으로 제품 전체에서
+        일관되게 유지된다. <strong>Tone(톤)</strong>은 같은 Voice를 상황에 맞게 조절한 어조로,
+        성공 메시지는 밝게, 에러나 결제 실패 상황은 차분하고 신중하게 조정한다.
+        Mailchimp의 Content Style Guide가 이 개념을 정립한 대표 사례로 자주 인용된다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">플레이스홀더</div>
+      <div class="term-eng">Placeholder</div>
+      <div class="term-body">
+        입력 필드가 비어 있을 때 흐리게 표시되는 예시 텍스트. 값을 입력하면 사라지므로
+        <strong>라벨(Label) 대용으로 쓰면 안 된다</strong> — 입력 중 사용자가 어떤 필드였는지
+        잊어버리는 접근성 문제가 발생한다(WCAG에서도 플레이스홀더만으로 라벨을 대체하지
+        말 것을 권고). 형식 예시("010-1234-5678")를 보여줄 때만 보조적으로 사용한다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">툴팁</div>
+      <div class="term-eng">Tooltip</div>
+      <div class="term-body">
+        아이콘이나 요소에 마우스를 올리거나(hover) 포커스했을 때 나타나는 짧은 보조 설명.
+        핵심 기능을 설명하는 데 의존하면 안 되며(모바일에는 hover가 없음), 부가 정보나
+        전문 용어 풀이처럼 <strong>없어도 사용에 지장 없는 정보</strong>에만 사용하는 것이 원칙이다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">빈 상태 카피</div>
+      <div class="term-eng">Empty State Copy</div>
+      <div class="term-body">
+        데이터가 아직 없는 화면(첫 방문, 검색 결과 없음, 목록 삭제 후)에 표시하는 안내 문구.
+        단순히 "결과 없음"이라고 알리는 대신, <strong>왜 비어 있는지 설명하고 다음 행동을 제안</strong>하는
+        것이 좋은 Empty State 카피의 기준이다. 온보딩 단계에서는 첫 액션을 유도하는 CTA를
+        함께 배치한다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">확인 메시지</div>
+      <div class="term-eng">Confirmation Message</div>
+      <div class="term-body">
+        작업이 성공적으로 완료됐음을 알리는 메시지("저장되었습니다", "결제가 완료되었습니다").
+        되돌릴 수 없는 작업(삭제, 결제) 전에는 <strong>Confirmation Dialog</strong>(확인 대화상자)로
+        사전 확인을 받고, 완료 후에는 명확한 결과 메시지로 마무리하는 것이 표준 흐름이다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────── 3. 나쁜 카피 vs 좋은 카피 ───────────────── -->
+  <section>
+    <h2>3. 나쁜 카피 vs 좋은 카피</h2>
+
+    <h3>① CTA 문구</h3>
+    <div class="compare-row">
+      <div class="compare-col bad">
+        <div class="label">Weak</div>
+        제출
+      </div>
+      <div class="compare-col good">
+        <div class="label">Strong</div>
+        무료로 시작하기
+      </div>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d; margin-top:-0.5rem;">
+      "제출"은 어떤 결과가 일어나는지 알려주지 않는다. 결과를 명시한 동사구가
+      사용자의 불확실성을 줄여준다.
+    </p>
+
+    <h3>② 에러 메시지</h3>
+    <div class="compare-row">
+      <div class="compare-col bad">
+        <div class="label">Weak</div>
+        오류가 발생했습니다. (Error 500)
+      </div>
+      <div class="compare-col good">
+        <div class="label">Strong</div>
+        저장에 실패했어요. 잠시 후 다시 시도하거나, 계속되면 고객센터로 문의해 주세요.
+      </div>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d; margin-top:-0.5rem;">
+      좋은 에러 메시지는 원인 코드를 그대로 노출하지 않고, 사용자가 취할 수 있는
+      다음 행동을 제시한다.
+    </p>
+
+    <h3>③ 빈 상태 카피</h3>
+    <div class="compare-row">
+      <div class="compare-col bad">
+        <div class="label">Weak</div>
+        데이터가 없습니다.
+      </div>
+      <div class="compare-col good">
+        <div class="label">Strong</div>
+        아직 작성한 글이 없어요. 첫 글을 써 볼까요? [글쓰기]
+      </div>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d; margin-top:-0.5rem;">
+      비어 있는 이유와 다음 행동을 함께 제시하면 빈 화면이 막다른 길이 아니라
+      시작 지점으로 느껴진다.
+    </p>
+  </section>
+
+  <!-- ───────────────── 4. 에러 메시지 설계 3요소 ───────────────── -->
+  <section>
+    <h2>4. 에러 메시지 설계 3요소</h2>
+    <ol>
+      <li><strong>무엇이 잘못됐는가</strong> — 사용자가 이해할 수 있는 말로 상황을 설명한다.</li>
+      <li><strong>왜 그런가</strong> — 원인을 간단히 밝힌다(비밀번호 형식 불일치, 네트워크 오류 등).</li>
+      <li><strong>어떻게 고치는가</strong> — 사용자가 바로 취할 수 있는 다음 행동을 제안한다.</li>
+    </ol>
+    <div class="callout tip">
+      <strong>Tip — 사용자 잘못이 아니라 시스템 언어로:</strong>
+      "당신이 잘못 입력했습니다" 대신 "형식이 맞지 않아요"처럼 사용자를 탓하지 않는
+      어조를 쓴다. 비난조 카피는 신뢰도와 이탈률에 부정적인 영향을 준다.
+    </div>
+    <div class="callout warn">
+      <strong>주의 — 에러 코드 노출:</strong>
+      "Error 500", "NullPointerException" 같은 내부 구현 정보를 그대로 노출하면
+      사용자는 물론 보안 관점에서도 바람직하지 않다. 사용자용 메시지와 개발자용 로그를
+      분리해서 설계해야 한다.
+    </div>
+  </section>
+
+  <!-- ───────────────── 5. Voice & Tone 적용 예시 ───────────────── -->
+  <section>
+    <h2>5. Voice &amp; Tone 적용 예시</h2>
+    <p>
+      같은 Voice(친근하고 담백한 브랜드 성격)를 유지하면서도 상황에 따라 Tone을 다르게
+      조절하는 예시:
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>상황</th><th>Tone</th><th>예시 카피</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>회원가입 성공</td><td>밝고 환영하는 톤</td><td>가입을 환영해요! 첫 프로젝트를 만들어 볼까요?</td></tr>
+          <tr><td>결제 실패</td><td>차분하고 신중한 톤</td><td>결제가 처리되지 않았어요. 카드 정보를 다시 확인해 주세요.</td></tr>
+          <tr><td>계정 삭제 확인</td><td>진지하고 명확한 톤</td><td>계정을 삭제하면 모든 데이터가 영구적으로 사라져요. 계속할까요?</td></tr>
+          <tr><td>기능 안내 툴팁</td><td>가볍고 도움을 주는 톤</td><td>여기를 누르면 팀원을 초대할 수 있어요.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Voice는 브랜드마다 하나로 고정되지만, Tone은 같은 회사 안에서도 화면 목적에 따라
+      계속 달라진다는 점이 핵심 차이다.
+    </p>
+  </section>
+
+  <!-- ───────────────── 6. 용어 요약 ───────────────── -->
+  <section>
+    <h2>6. 용어 요약</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>용어</th><th>한국어</th><th>한 줄 설명</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Microcopy</td><td>마이크로카피</td><td>UI 곳곳에 흩어진 짧은 안내·행동 문구</td></tr>
+          <tr><td>CTA</td><td>Call-to-Action</td><td>다음 행동을 유도하는 버튼·링크 문구</td></tr>
+          <tr><td>Error Message</td><td>에러 메시지</td><td>무엇·왜·어떻게를 담아 사람 언어로 번역한 오류 안내</td></tr>
+          <tr><td>Voice &amp; Tone</td><td>보이스 앤 톤</td><td>고정된 브랜드 성격(Voice)과 상황별 어조(Tone)</td></tr>
+          <tr><td>Placeholder</td><td>플레이스홀더</td><td>빈 입력창의 예시 텍스트; 라벨 대용 금지</td></tr>
+          <tr><td>Tooltip</td><td>툴팁</td><td>hover/focus 시 나타나는 부가 설명, 핵심 정보 의존 금지</td></tr>
+          <tr><td>Empty State Copy</td><td>빈 상태 카피</td><td>데이터 없는 화면에서 이유와 다음 행동을 안내하는 문구</td></tr>
+          <tr><td>Confirmation Message</td><td>확인 메시지</td><td>작업 완료를 알리는 결과 메시지</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───────────────── 7. 셀프 체크 퀴즈 ───────────────── -->
+  <section>
+    <h2>7. 셀프 체크 퀴즈</h2>
+
+    <div class="quiz">
+      <h3>Q1</h3>
+      <p class="q">좋은 에러 메시지가 반드시 포함해야 할 세 가지는?</p>
+      <ol class="options" type="A">
+        <li>A. 에러 코드, 발생 시간, 서버 IP</li>
+        <li>B. 무엇이 잘못됐는지, 왜 그런지, 어떻게 고치는지</li>
+        <li>C. 사과 문구, 이모지, 브랜드 슬로건</li>
+        <li>D. 재부팅 안내, 고객센터 전화번호, 약관 링크</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — 무엇이 잘못됐는지, 왜 그런지, 어떻게 고치는지</strong><br>
+          이 세 요소가 빠지면 사용자는 문제를 이해하지도, 스스로 해결하지도 못한다.
+          A는 개발자 디버깅용 정보로 사용자에게는 불필요하거나 보안상 노출하면 안 되는 정보다.
+          C는 톤을 부드럽게 할 수는 있지만 그 자체가 핵심 요소는 아니다.
+          D는 상황에 따라 도움이 될 수 있지만 모든 에러에 필요한 필수 요소는 아니다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q2</h3>
+      <p class="q">Voice와 Tone의 차이에 대한 설명으로 맞는 것은?</p>
+      <ol class="options" type="A">
+        <li>A. Voice와 Tone은 같은 말을 다르게 부르는 것뿐이다</li>
+        <li>B. Voice는 상황마다 바뀌고, Tone은 브랜드 전체에서 고정된다</li>
+        <li>C. Voice는 브랜드의 고정된 성격이고, Tone은 상황에 따라 조절되는 어조다</li>
+        <li>D. Tone은 오직 에러 메시지에만 적용되는 개념이다</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: C — Voice는 고정된 성격, Tone은 상황별 어조</strong><br>
+          A는 오답 — 두 개념은 명확히 구분된다.
+          B는 정의가 반대로 뒤바뀐 설명이다.
+          D는 오답 — Tone은 성공 메시지, 안내 문구 등 모든 카피 상황에 적용된다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q3</h3>
+      <p class="q">플레이스홀더(Placeholder) 사용에 대한 설명으로 옳은 것은?</p>
+      <ol class="options" type="A">
+        <li>A. 라벨(Label) 없이 플레이스홀더만으로 입력 필드를 설명해도 충분하다</li>
+        <li>B. 플레이스홀더는 입력값이 채워지면 사라지므로 라벨 대용으로 쓰면 안 된다</li>
+        <li>C. 플레이스홀더는 항상 굵은 글씨로 강조해야 한다</li>
+        <li>D. 플레이스홀더는 모바일에서만 사용하는 요소다</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — 라벨 대용으로 쓰면 안 된다</strong><br>
+          A는 오답 — 사용자가 입력을 시작하면 플레이스홀더가 사라져 어떤 필드였는지
+          잊어버리는 접근성 문제가 생긴다. WCAG도 이를 라벨 대체 수단으로 권장하지 않는다.
+          C는 근거 없는 오답 — 오히려 플레이스홀더는 옅은 색으로 라벨과 시각적으로
+          구분하는 것이 일반적이다.
+          D는 오답 — 데스크톱·모바일 모두에서 쓰이는 일반적인 UI 요소다.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ───────────────── 8. 다음 학습 예고 ───────────────── -->
+  <section>
+    <h2>8. 다음 학습 예고 — Day 12</h2>
+    <p>
+      <strong>다크 패턴(Dark Pattern)과 윤리적 디자인</strong>
+    </p>
+    <p>
+      마이크로카피와 UI 설계가 사용자를 돕는 대신 속이는 방향으로 쓰일 때를 다룬다.
+      Confirmshaming(죄책감 유발 문구), Roach Motel(가입은 쉽고 해지는 어려운 구조),
+      Sneak into Basket(장바구니 몰래 추가), Forced Continuity(무료체험 후 자동결제 은닉),
+      Nagging(반복적인 재요청) 등 대표적인 다크 패턴 유형과, 이를 피하는 윤리적 카피·플로우
+      설계 원칙을 학습한다.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      <a href="./index.html">← 전체 목록</a> &nbsp;|&nbsp;
+      UI/UX 용어 학습 워크스페이스 · Day 11 · 2026-07-01
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>
