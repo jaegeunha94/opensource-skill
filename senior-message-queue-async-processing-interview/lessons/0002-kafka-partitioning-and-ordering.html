@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — Kafka 아키텍처와 파티셔닝 / 순서 보장 설계</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    /* Header */
+    .lesson-header {
+      border-left: 4px solid #6366f1;
+      padding: 1rem 1.5rem;
+      background: #1e1f2e;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-header .day-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #818cf8;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .lesson-header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #f1f5f9;
+    }
+    .lesson-header .meta {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-top: 0.4rem;
+    }
+
+    /* Section */
+    .section {
+      background: #1a1b2e;
+      border: 1px solid #2d2e4a;
+      border-radius: 10px;
+      padding: 1.6rem 1.8rem;
+      margin-bottom: 1.8rem;
+    }
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6366f1;
+      margin-bottom: 0.6rem;
+    }
+    .section h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #c7d2fe;
+      margin-bottom: 1rem;
+    }
+    .section p { color: #cbd5e1; margin-bottom: 0.9rem; }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* Interview question box */
+    .interview-q {
+      background: #13141f;
+      border: 2px solid #4f46e5;
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.8rem;
+    }
+    .interview-q .q-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #a5b4fc;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q .q-text {
+      font-size: 1.08rem;
+      font-weight: 600;
+      color: #e0e7ff;
+      line-height: 1.6;
+    }
+
+    /* Callout */
+    .callout {
+      border-left: 3px solid #6366f1;
+      padding: 0.9rem 1.2rem;
+      background: #13141f;
+      border-radius: 0 6px 6px 0;
+      margin: 1rem 0;
+      color: #c7d2fe;
+    }
+    .callout.warn { border-left-color: #f59e0b; background: #1c1a10; color: #fde68a; }
+    .callout.good { border-left-color: #10b981; background: #0d1c16; color: #6ee7b7; }
+    .callout.bad  { border-left-color: #ef4444; background: #1c0d0d; color: #fca5a5; }
+
+    /* Steps */
+    .steps { list-style: none; counter-reset: step-counter; padding: 0; }
+    .steps li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step-counter);
+      min-width: 28px;
+      height: 28px;
+      background: #4f46e5;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .steps li .step-body { color: #cbd5e1; }
+    .steps li .step-body strong { color: #e2e8f0; }
+
+    /* Code block */
+    pre {
+      background: #0d0e1a;
+      border: 1px solid #2d2e4a;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      color: #a5f3fc;
+      line-height: 1.6;
+      margin: 1rem 0;
+    }
+    code { font-family: 'Fira Code', 'Cascadia Code', monospace; }
+
+    /* Comparison table */
+    .compare { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    .compare th {
+      background: #1e1f35;
+      color: #a5b4fc;
+      font-weight: 700;
+      padding: 0.7rem 1rem;
+      text-align: left;
+      border-bottom: 2px solid #3730a3;
+    }
+    .compare td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid #2d2e4a;
+      color: #cbd5e1;
+      vertical-align: top;
+    }
+    .compare tr:last-child td { border-bottom: none; }
+    .compare tr:hover td { background: #1e1f2e; }
+
+    /* Answer blocks */
+    .answer-block {
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .answer-block.strong {
+      background: #0a1f15;
+      border: 1px solid #059669;
+    }
+    .answer-block.weak {
+      background: #1c0e0e;
+      border: 1px solid #dc2626;
+    }
+    .answer-block .ab-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+    .answer-block.strong .ab-label { color: #34d399; }
+    .answer-block.weak .ab-label { color: #f87171; }
+    .answer-block p { font-size: 0.9rem; color: #cbd5e1; margin-bottom: 0.5rem; }
+
+    /* Rubric */
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid #2d2e4a;
+      align-items: flex-start;
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #6366f1;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .rubric-item .rubric-text { color: #cbd5e1; font-size: 0.9rem; }
+    .rubric-item .rubric-text strong { color: #e2e8f0; }
+
+    /* Follow-up */
+    .followup-item {
+      background: #13141f;
+      border: 1px solid #2d2e4a;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-item .fu-q {
+      font-weight: 600;
+      color: #a5b4fc;
+      margin-bottom: 0.5rem;
+      font-size: 0.92rem;
+    }
+    .followup-item .fu-a {
+      color: #94a3b8;
+      font-size: 0.88rem;
+      line-height: 1.65;
+    }
+
+    /* Tag pills */
+    .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
+    .tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.25rem 0.7rem;
+      border-radius: 999px;
+      background: #1e1f35;
+      color: #818cf8;
+      border: 1px solid #3730a3;
+    }
+
+    /* Nav */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #2d2e4a;
+      font-size: 0.85rem;
+    }
+    .nav a { color: #6366f1; text-decoration: none; }
+    .nav a:hover { text-decoration: underline; }
+
+    ul.bullets { list-style: disc; padding-left: 1.4rem; }
+    ul.bullets li { color: #cbd5e1; margin-bottom: 0.4rem; font-size: 0.92rem; }
+    ul.bullets li strong { color: #e2e8f0; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="lesson-header">
+    <div class="day-badge">Day 2 · 메시지 큐 / 비동기 처리 인터뷰</div>
+    <h1>Kafka 아키텍처와 파티셔닝 / 순서 보장 설계</h1>
+    <div class="meta">2026-07-01 · 예상 학습 시간 70분</div>
+    <div class="tags">
+      <span class="tag">Kafka</span>
+      <span class="tag">Partition</span>
+      <span class="tag">Consumer Group</span>
+      <span class="tag">Ordering</span>
+      <span class="tag">파티션 키 설계</span>
+    </div>
+  </div>
+
+  <!-- Interview Question -->
+  <div class="interview-q">
+    <div class="q-label">오늘의 면접 질문</div>
+    <div class="q-text">
+      "주문 상태 변경 이벤트(생성 → 결제완료 → 배송중 → 배송완료)를 Kafka로 처리하려고 합니다.
+      같은 주문의 이벤트가 순서대로 처리되어야 한다면 Topic과 Partition을 어떻게 설계하시겠습니까?
+      Consumer를 늘려서 처리량을 확장하려면 어떤 제약이 생깁니까?"
+    </div>
+  </div>
+
+  <!-- 1. 전제 개념 -->
+  <div class="section">
+    <div class="section-label">전제 개념</div>
+    <h2>Topic, Partition, Offset — Kafka가 메시지를 저장하는 방식</h2>
+
+    <p>
+      Kafka를 이해하려면 "메시지를 어떻게 나눠서 저장하는가"부터 시작해야 한다.
+      Kafka는 메시지를 하나의 거대한 큐에 쌓지 않는다. <strong>Topic</strong>이라는 논리적 채널을 만들고,
+      그 Topic을 다시 여러 개의 <strong>Partition</strong>으로 물리적으로 쪼갠다.
+    </p>
+    <p>
+      Partition은 한쪽 끝에서만 추가되는 로그 파일이라고 생각하면 쉽다.
+      메시지가 들어오면 파티션 끝에 순서대로 append되고, 각 메시지는 파티션 안에서 0, 1, 2, 3...처럼
+      증가하는 번호를 받는다. 이 번호가 <strong>Offset</strong>이다.
+      Consumer는 "나는 이 파티션의 몇 번 Offset까지 읽었다"를 기억해서 다음에 이어서 읽는다.
+    </p>
+
+    <pre><code>Topic: order-events (파티션 3개)
+
+Partition 0: [msg0][msg1][msg2][msg3] ...  ← offset 0,1,2,3
+Partition 1: [msg0][msg1][msg2]       ...  ← offset 0,1,2
+Partition 2: [msg0][msg1][msg2][msg3][msg4] ← offset 0,1,2,3,4</code></pre>
+
+    <div class="callout">
+      <strong>핵심 직관:</strong> Kafka는 "하나의 큐"가 아니라 "여러 개의 독립적인 로그 파일 묶음"이다.
+      이렇게 쪼개는 이유는 딱 하나, <strong>병렬 처리를 위해서</strong>다.
+      파티션이 3개면 최대 3개의 Consumer가 동시에 각자 다른 파티션을 읽을 수 있다.
+      대신 이 구조 때문에 "순서 보장은 파티션 안에서만 된다"는 제약이 생긴다 — 오늘 다룰 핵심 문제다.
+    </div>
+  </div>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label">왜 면접에서 묻는가</div>
+    <h2>이 질문이 평가하는 것</h2>
+
+    <p>
+      "Kafka 파티션이 뭔가요?"는 지식 확인 질문이지만, "순서를 보장하면서 확장하려면 어떻게 하나요?"는
+      완전히 다른 질문이다. 이 질문에는 근본적인 긴장 관계가 숨어 있다 —
+      <strong>순서 보장</strong>과 <strong>병렬 처리(확장성)</strong>는 서로 상충한다.
+    </p>
+
+    <ul class="bullets">
+      <li>
+        <strong>구조적 제약을 이해하는가:</strong>
+        "파티션을 늘리면 무조건 빨라진다"고 생각하면 순서가 깨지는 이유를 설명하지 못한다.
+        왜 순서 보장이 파티션 단위로만 되는지, 그 이유를 구조에서부터 설명할 수 있는가.
+      </li>
+      <li>
+        <strong>파티션 키 설계 감각이 있는가:</strong>
+        "어떤 값을 파티션 키로 쓸 것인가"는 실무에서 가장 자주 틀리는 설계 결정이다.
+        키를 잘못 고르면 특정 파티션에 트래픽이 몰리는 "핫 파티션" 문제가 생긴다.
+      </li>
+      <li>
+        <strong>Consumer Group과 리밸런싱을 아는가:</strong>
+        파티션 수와 Consumer 수의 관계, Consumer가 늘어나거나 죽었을 때 무슨 일이 일어나는지
+        (Rebalancing) 실무에서 겪어본 사람인지 확인한다.
+      </li>
+    </ul>
+  </div>
+
+  <!-- 3. 실무 연결 -->
+  <div class="section">
+    <div class="section-label">실무 연결</div>
+    <h2>주문 상태 이벤트에서 이 설계가 왜 중요한가</h2>
+
+    <p>
+      주문 상태는 "생성 → 결제완료 → 배송중 → 배송완료" 순서로만 의미가 있다.
+      만약 "배송완료" 이벤트가 "결제완료"보다 먼저 처리되면, 시스템은 결제가 안 된 주문이
+      배송 완료된 것처럼 잘못된 상태를 갖게 된다. 이것이 순서 보장이 필요한 전형적인 이유다.
+    </p>
+    <p>
+      반면 서로 다른 주문의 이벤트끼리는 순서가 섞여도 괜찮다.
+      주문 A의 이벤트와 주문 B의 이벤트가 어떤 순서로 처리되든 각자의 상태 기계에는 영향이 없다.
+      이 차이를 이해하면 "전체 순서(Global Ordering)"가 아니라
+      "<strong>같은 주문끼리의 순서(Per-key Ordering)</strong>"만 보장하면 된다는 결론에 도달한다.
+    </p>
+
+    <table class="compare">
+      <thead>
+        <tr>
+          <th>순서 보장 범위</th>
+          <th>설계 방법</th>
+          <th>처리량</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>전체 Topic 글로벌 순서</td>
+          <td>파티션 1개만 사용</td>
+          <td>매우 낮음 — 병렬 처리 불가능</td>
+        </tr>
+        <tr>
+          <td>주문 ID 단위 순서 (권장)</td>
+          <td>주문 ID를 파티션 키로 사용, 파티션 여러 개</td>
+          <td>높음 — 서로 다른 주문은 병렬 처리</td>
+        </tr>
+        <tr>
+          <td>순서 무관</td>
+          <td>키 없이 라운드로빈 분배</td>
+          <td>가장 높음 — 순서 보장 없음</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <strong>흔한 오해:</strong> "Kafka는 순서를 보장하는 메시지 큐다."
+      정확히는 "같은 파티션 안에서만" 순서를 보장한다. 파티션 키를 지정하지 않고 라운드로빈으로 분배하면
+      같은 주문의 이벤트도 다른 파티션에 흩어질 수 있고, 그러면 순서가 깨진다.
+      "Kafka를 쓰면 순서가 보장된다"는 절반만 맞는 말이다 — 파티션 키 설계를 해야 진짜로 보장된다.
+    </div>
+  </div>
+
+  <!-- 4. 파티션 키 설계 프레임워크 -->
+  <div class="section">
+    <div class="section-label">핵심 개념</div>
+    <h2>파티션 키 설계 — 어떤 값을 키로 쓸 것인가</h2>
+
+    <p>
+      Kafka Producer는 메시지를 보낼 때 Key를 지정할 수 있다.
+      같은 Key를 가진 메시지는 항상 같은 Partition으로 간다(해시 함수로 결정).
+      이 Key를 무엇으로 정하느냐가 순서 보장과 부하 분산을 동시에 좌우한다.
+    </p>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <strong>순서가 필요한 단위를 먼저 정의</strong><br>
+          "무엇과 무엇 사이에 순서가 지켜져야 하는가?"를 먼저 답한다.
+          주문 상태 변경은 같은 주문 ID 안에서만 순서가 필요하다 → 파티션 키 = 주문 ID.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>키의 분산도(cardinality)를 확인</strong><br>
+          키 값의 종류가 파티션 수보다 훨씬 많아야 골고루 분산된다.
+          주문 ID는 수백만 개 존재하므로 좋은 키다.
+          반면 "상태(status)"를 키로 쓰면 값의 종류가 4~5개뿐이라 특정 파티션에 쏠린다.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>핫 파티션(Hot Partition) 위험 점검</strong><br>
+          특정 키에 트래픽이 몰리면 그 키가 속한 파티션 하나만 과부하된다.
+          예를 들어 "대형 셀러 ID"를 키로 쓰면, 그 셀러의 주문이 몰릴 때 파티션 하나가 병목이 된다.
+          이런 경우 "셀러 ID + 시간 버킷"처럼 키를 조합해서 분산도를 높이는 완화책을 쓴다.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>파티션 수는 나중에 늘리기 어렵다는 점 고려</strong><br>
+          파티션을 늘리면 기존 키의 해시 매핑이 바뀌어서, 늘리기 전후로 같은 키가 다른 파티션에 갈 수 있다.
+          이는 일시적으로 순서를 깨뜨린다. 따라서 파티션 수는 처음부터 여유 있게(향후 확장 고려) 정하는 것이 안전하다.
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout good">
+      <strong>면접 팁:</strong> "주문 ID를 키로 쓰면 됩니다"로 끝내지 말고,
+      "왜 주문 ID인지 + 분산도 확인 + 핫 파티션 위험 + 파티션 수를 나중에 바꾸기 어렵다"까지 언급하면
+      실무에서 이 문제를 실제로 겪어본 사람이라는 신호를 준다.
+    </div>
+  </div>
+
+  <!-- 5. Consumer Group과 리밸런싱 -->
+  <div class="section">
+    <div class="section-label">핵심 개념</div>
+    <h2>Consumer Group — 파티션과 Consumer의 관계</h2>
+
+    <p>
+      Consumer는 혼자 동작하지 않고 <strong>Consumer Group</strong>이라는 단위로 묶인다.
+      같은 Group에 속한 Consumer들은 Topic의 파티션들을 나눠 가진다 — 한 파티션은 같은 Group 안에서
+      정확히 하나의 Consumer만 담당한다. 이 규칙이 "같은 파티션 = 순서 보장"의 기반이 된다.
+    </p>
+
+    <pre><code>Topic: order-events (파티션 3개), Consumer Group: order-service
+
+Partition 0 ──▶ Consumer A
+Partition 1 ──▶ Consumer B
+Partition 2 ──▶ Consumer C
+
+Consumer를 4개로 늘리면? → Consumer D는 담당할 파티션이 없어 대기 상태(idle)가 된다.
+파티션 수가 병렬 처리의 상한선이다.</code></pre>
+
+    <table class="compare">
+      <thead>
+        <tr>
+          <th>상황</th>
+          <th>결과</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Consumer 수 &lt; 파티션 수</td>
+          <td>Consumer 한 개가 여러 파티션을 담당 (처리량 저하 가능)</td>
+        </tr>
+        <tr>
+          <td>Consumer 수 = 파티션 수</td>
+          <td>1:1 매핑 — 최대 병렬도</td>
+        </tr>
+        <tr>
+          <td>Consumer 수 &gt; 파티션 수</td>
+          <td>남는 Consumer는 대기 상태 — 자원 낭비</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>Rebalancing이란:</strong> Consumer가 추가되거나(스케일아웃), 죽거나(장애), Group을 떠나면
+      Group 안의 파티션 배분이 다시 계산된다. 이 재배분 과정을 Rebalancing이라 하며,
+      진행되는 동안 잠시 메시지 소비가 멈춘다. Rebalancing이 자주 일어나면(불안정한 Consumer, 짧은 세션 타임아웃 등)
+      전체 처리량이 흔들리므로 운영에서 주의 깊게 모니터링해야 하는 지표다.
+    </div>
+  </div>
+
+  <!-- 6. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label">답변 사고 순서</div>
+    <h2>면접에서 이 질문을 받았을 때 생각하는 순서</h2>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <strong>순서가 필요한 범위를 먼저 좁힌다</strong><br>
+          "전체 이벤트가 아니라 같은 주문 ID 안에서만 순서가 지켜지면 충분합니다.
+          서로 다른 주문끼리는 순서가 섞여도 문제없습니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>파티션 키를 결정하고 이유를 설명</strong><br>
+          "주문 ID를 파티션 키로 사용합니다. 같은 키는 항상 같은 파티션으로 가기 때문에
+          같은 주문의 이벤트는 순서대로 하나의 파티션 로그에 쌓입니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>파티션 수와 확장성을 연결</strong><br>
+          "파티션 수만큼 Consumer를 병렬로 둘 수 있으므로, 파티션 수 = 처리량 확장의 상한선입니다.
+          여유 있게 파티션을 설정하되, 주문 ID의 분산도가 충분한지 먼저 확인합니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>핫 파티션과 리밸런싱 리스크를 선제적으로 언급</strong><br>
+          "특정 셀러의 주문이 몰리면 특정 파티션이 과부하될 수 있어 모니터링이 필요합니다.
+          Consumer가 추가/제거될 때 Rebalancing이 발생해 잠시 처리가 멈추는 것도 고려합니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>운영 관점으로 마무리</strong><br>
+          "Consumer Lag과 파티션별 처리량 불균형을 모니터링해서, 특정 파티션만 지연되는지 조기에 감지합니다."
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 7. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label">핵심 답변 예시</div>
+    <h2>실제 면접 답변 예시</h2>
+
+    <div class="callout good">
+      <p>
+        "먼저 순서 보장이 필요한 범위를 정의하겠습니다. 전체 Topic의 글로벌 순서가 아니라,
+        같은 주문 ID 안에서의 순서만 지켜지면 충분합니다. 서로 다른 주문의 이벤트는 순서가 섞여도
+        비즈니스 로직에 영향이 없습니다.
+      </p>
+      <p>
+        이를 위해 Producer가 메시지를 발행할 때 주문 ID를 파티션 키로 지정합니다.
+        Kafka는 같은 키를 항상 같은 파티션으로 라우팅하므로, 한 주문의 모든 상태 변경 이벤트는
+        하나의 파티션 로그 안에 순서대로 쌓입니다.
+      </p>
+      <p>
+        처리량 확장은 파티션 수에 의해 상한이 정해집니다. Consumer Group 안에서 파티션 하나는
+        Consumer 하나만 담당하므로, 파티션이 6개면 최대 6개의 Consumer로 병렬 처리할 수 있습니다.
+        다만 주문 ID의 분산도가 충분한지 먼저 확인해야 합니다 — 만약 특정 대형 셀러의 주문이
+        전체 트래픽의 큰 비중을 차지한다면, 그 셀러의 주문 ID들이 몰리는 파티션이 병목이 될 수 있습니다.
+      </p>
+      <p>
+        운영 단계에서는 파티션별 처리 지연(Lag)을 모니터링해서 특정 파티션만 뒤처지는지 감지하고,
+        Consumer가 늘거나 줄 때 발생하는 Rebalancing 시간도 고려해서 세션 타임아웃 설정을 조정합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- 8. Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label">Senior-Level Follow-up</div>
+    <h2>면접관이 이어서 물어볼 수 있는 질문들</h2>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "파티션 수를 나중에 늘리면 무슨 일이 생깁니까?"</div>
+      <div class="fu-a">
+        파티션을 늘리면 Key의 해시값과 파티션 번호 매핑(hash(key) % partition_count)이 바뀝니다.
+        같은 주문 ID라도 파티션 수 변경 전후로 다른 파티션에 배정될 수 있습니다.
+        이미 처리 중인 주문의 이후 이벤트가 다른 파티션으로 가면, 과거 이벤트와 순서가 어긋날 위험이 있습니다.
+        따라서 파티션 수는 트래픽 성장을 고려해 처음부터 여유 있게 설정하고,
+        불가피하게 늘려야 한다면 트래픽이 적은 시간대에 신중히 진행하고 영향받는 키의 순서 정합성을 검증합니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "특정 파티션만 계속 Lag이 쌓입니다. 원인을 어떻게 찾겠습니까?"</div>
+      <div class="fu-a">
+        먼저 그 파티션에 트래픽이 쏠리는지(핫 파티션) 확인합니다 — 파티션 키 분산도 문제일 수 있습니다.
+        다음으로 그 파티션을 담당하는 Consumer가 다른 Consumer보다 느린 처리 로직(예: 특정 셀러의
+        복잡한 정산 로직)을 갖고 있는지 확인합니다. 마지막으로 해당 Consumer 인스턴스 자체의 리소스
+        문제(CPU, 네트워크, DB 커넥션 풀 고갈)를 점검합니다. 파티션 키 설계 문제라면 재설계가 필요하고,
+        특정 로직이 무거운 문제라면 그 로직만 별도 Topic으로 분리하는 것도 방법입니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "Consumer가 처리 중 갑자기 죽으면 순서 보장에 영향이 있습니까?"</div>
+      <div class="fu-a">
+        Consumer가 죽으면 Rebalancing이 일어나 그 파티션을 다른 Consumer가 이어받습니다.
+        마지막으로 커밋된 Offset부터 다시 읽으므로, 커밋 이후 처리했지만 아직 커밋 안 된 메시지가
+        재전달될 수 있습니다(At-least-once). 순서 자체는 파티션 로그 순서 그대로 유지되지만,
+        재전달로 인한 중복 처리는 발생할 수 있으므로 Consumer 로직은 여전히 멱등해야 합니다.
+        순서 보장과 중복 방지는 별개의 문제이며 둘 다 설계해야 한다는 점이 핵심입니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "글로벌 순서(전체 Topic 순서)가 꼭 필요하다면 어떻게 하시겠습니까?"</div>
+      <div class="fu-a">
+        파티션을 1개로 제한하면 전체 순서가 보장되지만, 병렬 처리가 완전히 사라져 처리량이 극단적으로
+        제한됩니다. 실무에서는 진짜로 글로벌 순서가 필요한 경우는 드물고, 보통 "특정 엔티티 단위 순서"로
+        요구사항을 재정의할 수 있는지부터 확인합니다. 정말 불가피하다면, 순서가 중요한 이벤트만 별도의
+        단일 파티션 Topic으로 분리하고 나머지 고빈도 이벤트는 다중 파티션으로 병렬 처리하는
+        하이브리드 설계를 제안합니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label">답변 품질 비교</div>
+    <h2>좋은 답변과 약한 답변의 차이</h2>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변 — 이렇게 말하면 시니어로 보인다</div>
+      <p>"순서 보장이 필요한 범위를 주문 ID 단위로 좁히고, 주문 ID를 파티션 키로 씁니다. 파티션 수가 병렬 처리 상한이므로 트래픽 성장을 고려해 여유 있게 설정하고, 특정 셀러 쏠림으로 인한 핫 파티션 위험과 파티션 수 변경 시 순서가 깨질 수 있는 점을 모니터링합니다."</p>
+      <p><em>→ 순서 범위 정의 + 키 설계 근거 + 확장성 상한 인지 + 리스크(핫 파티션, 파티션 변경) 선제 언급</em></p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변 — 이렇게 말하면 주니어로 보인다</div>
+      <p>"Kafka는 순서를 보장하니까 그냥 쓰면 됩니다. 파티션을 여러 개 두면 빨라집니다."</p>
+      <p><em>→ 파티션 단위로만 순서가 보장된다는 사실을 모름. 키 설계 개념이 없음. 순서와 확장성의 트레이드오프를 인지하지 못함.</em></p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변 — 극단적 선택</div>
+      <p>"순서가 중요하니까 파티션을 1개만 씁니다."</p>
+      <p><em>→ 전체 순서와 엔티티 단위 순서를 구분하지 못함. 불필요하게 병렬 처리를 포기해서 처리량 문제를 스스로 만듦.</em></p>
+    </div>
+  </div>
+
+  <!-- 10. 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label">자기 점검 Rubric</div>
+    <h2>내 답변을 이 기준으로 점검해보자</h2>
+
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>순서 범위 정의:</strong>
+        "글로벌 순서"가 아니라 "같은 키(주문 ID) 단위 순서"만 필요하다는 것을 명확히 구분했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>파티션 키 근거:</strong>
+        어떤 값을 키로 쓸지, 왜 그 값이 적합한지(분산도)를 설명했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>확장성 상한 인지:</strong>
+        파티션 수가 병렬 처리의 상한이라는 구조적 제약을 언급했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>핫 파티션 리스크:</strong>
+        특정 키에 트래픽이 몰릴 때의 위험과 완화 방법(키 조합 등)을 언급했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>파티션 수 변경 리스크:</strong>
+        파티션을 나중에 늘리면 해시 매핑이 바뀌어 순서에 영향을 줄 수 있음을 알고 있는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>순서 보장 ≠ 중복 방지:</strong>
+        순서 보장과 멱등성(중복 처리 방지)이 별개의 문제라는 것을 구분했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>운영 관점:</strong>
+        파티션별 Lag 모니터링, Rebalancing 영향 등 운영 요소를 언급했는가?
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. 오늘 배운 것 -->
+  <div class="section">
+    <div class="section-label">오늘 배운 것 요약</div>
+    <h2>Day 2 핵심 정리</h2>
+    <ul class="bullets">
+      <li>Kafka는 Topic을 여러 <strong>Partition</strong>으로 쪼개 병렬 처리를 가능하게 하며, 순서 보장은 <strong>같은 파티션 안에서만</strong> 유효하다.</li>
+      <li>순서가 필요한 범위를 "전체"가 아니라 "엔티티 단위(주문 ID 등)"로 좁히고, 그 값을 <strong>파티션 키</strong>로 지정하는 것이 핵심 설계다.</li>
+      <li>파티션 수는 <strong>병렬 처리의 상한선</strong>이며, Consumer 수가 파티션 수를 넘으면 남는 Consumer는 대기 상태가 된다.</li>
+      <li>파티션 키의 분산도가 낮으면 <strong>핫 파티션</strong> 문제가 생기고, 파티션 수를 나중에 늘리면 해시 매핑이 바뀌어 순서가 깨질 수 있다.</li>
+      <li>Consumer Group 안에서 파티션 재배분(<strong>Rebalancing</strong>)은 Consumer 추가/제거/장애 시 발생하며 일시적으로 처리가 멈춘다.</li>
+      <li>순서 보장과 멱등성(중복 처리 방지)은 서로 다른 문제이며, Kafka는 순서만 보장할 뿐 중복 방지는 애플리케이션이 별도로 설계해야 한다.</li>
+    </ul>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 3: RabbitMQ Exchange 유형과 라우팅 설계 →</span>
+  </div>
+
+</div>
+</body>
+</html>
