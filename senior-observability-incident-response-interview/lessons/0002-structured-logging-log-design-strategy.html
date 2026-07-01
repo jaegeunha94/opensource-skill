@@ -1,0 +1,904 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — 구조화 로깅과 로그 설계 전략</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #6c8aff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    /* Header */
+    .day-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #3b4fd8, #6c8aff);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #f1f5f9;
+      line-height: 1.3;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Sections */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-icon {
+      font-size: 1.25rem;
+    }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 1.25rem 0 0.5rem;
+    }
+    h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin: 1rem 0 0.4rem;
+    }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    p:last-child { margin-bottom: 0; }
+
+    /* Interview question box */
+    .interview-q {
+      background: linear-gradient(135deg, #1a2040, #1e2a4a);
+      border: 1px solid #3b4fd8;
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .interview-q .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .interview-q .question {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    /* Callout boxes */
+    .callout {
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+    }
+    .callout.info {
+      background: #0f2744;
+      border-left: 3px solid #3b82f6;
+    }
+    .callout.warning {
+      background: #2d1f00;
+      border-left: 3px solid var(--yellow);
+    }
+    .callout.success {
+      background: #052e1a;
+      border-left: 3px solid var(--green);
+    }
+    .callout.danger {
+      background: #2d0f0f;
+      border-left: 3px solid var(--red);
+    }
+    .callout-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .callout.info .callout-title { color: #60a5fa; }
+    .callout.warning .callout-title { color: var(--yellow); }
+    .callout.success .callout-title { color: var(--green); }
+    .callout.danger .callout-title { color: var(--red); }
+
+    /* Code */
+    code {
+      background: var(--code-bg);
+      color: #a5f3fc;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.88em;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      border: 1px solid #1e2a3a;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid #1e2a3a;
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+    }
+    pre code { background: none; border: none; padding: 0; color: inherit; }
+
+    /* Lists */
+    ul, ol { padding-left: 1.4rem; margin: 0.6rem 0; }
+    li { margin-bottom: 0.4rem; color: var(--text); }
+    li::marker { color: var(--accent); }
+
+    /* Comparison table */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .compare-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .compare-box.good { border-top: 3px solid var(--green); }
+    .compare-box.bad { border-top: 3px solid var(--red); }
+    .compare-box .compare-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+    .compare-box.good .compare-label { color: var(--green); }
+    .compare-box.bad .compare-label { color: var(--red); }
+    .compare-box p { font-size: 0.9rem; color: var(--text-muted); }
+    .compare-box .quote {
+      font-style: italic;
+      color: var(--text);
+      background: var(--bg);
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Steps */
+    .steps { counter-reset: step-counter; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step-counter);
+      background: var(--accent);
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 700;
+      min-width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .steps li div { flex: 1; }
+    .steps li strong { color: #f1f5f9; display: block; margin-bottom: 0.2rem; }
+
+    /* Pillar grid */
+    .pillar-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .pillar {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .pillar-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .pillar-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 0.5rem;
+    }
+    .pillar-desc { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* Tag */
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      margin: 0.15rem;
+    }
+    .tag.blue { background: #1e3a6e; color: #93c5fd; }
+    .tag.purple { background: #2d1f5e; color: #c4b5fd; }
+    .tag.green { background: #0f3326; color: #6ee7b7; }
+    .tag.orange { background: #3d2000; color: #fdba74; }
+
+    /* Rubric */
+    .rubric-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .rubric-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+    }
+    .rubric-title { font-weight: 600; font-size: 0.95rem; }
+    .rubric-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+    }
+    .badge-must { background: #7c3aed; color: #ede9fe; }
+    .badge-strong { background: #1d4ed8; color: #dbeafe; }
+    .badge-bonus { background: #065f46; color: #d1fae5; }
+    .rubric-item p { font-size: 0.88rem; color: var(--text-muted); margin: 0; }
+
+    /* Follow-up */
+    .followup {
+      background: #1a1030;
+      border: 1px solid #4c1d95;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .followup .fq { font-weight: 600; color: #c4b5fd; margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .followup .fa { font-size: 0.9rem; color: var(--text-muted); }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th {
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+    td {
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #141720; }
+
+    /* Nav */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2rem;
+      gap: 1rem;
+    }
+    .nav a {
+      display: inline-block;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      text-decoration: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+    }
+    .nav a:hover { border-color: var(--accent); }
+
+    @media (max-width: 640px) {
+      .compare-grid, .pillar-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="day-badge">DAY 2 · Observability / 장애 대응 인터뷰</div>
+  <h1>구조화 로깅과 로그 설계 전략</h1>
+  <p class="subtitle">구조화 로그, 로그 레벨 전략, Correlation ID, 컨텍스트 전파 — "좋은 로그"를 설계하는 사고방식</p>
+
+  <!-- ===================== INTERVIEW QUESTIONS ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🎯</span>
+      <h2>오늘의 핵심 면접 질문</h2>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">질문 1 — 자주 출제 (개념 + 설계)</div>
+      <div class="question">"좋은 로그(good log)란 어떤 로그인가요? 로그를 설계할 때 어떤 기준으로 접근하시나요?"</div>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">질문 2 — 자주 출제 (경험 + 트레이드오프)</div>
+      <div class="question">"마이크로서비스 환경에서 여러 서비스를 거치는 요청 하나를 로그로 어떻게 추적하시나요?"</div>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">질문 3 — 시니어 추가 질문 (운영 판단)</div>
+      <div class="question">"로그 레벨을 어떻게 설계하고 운영하시나요? 프로덕션에서 DEBUG 로그는 어떻게 다루시나요?"</div>
+    </div>
+  </div>
+
+  <!-- ===================== WHY ASK ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🔍</span>
+      <h2>왜 인터뷰에서 묻는가</h2>
+    </div>
+
+    <p>로그는 개발자 대부분이 매일 다루는 도구라서 "당연히 안다"고 생각하기 쉽다. 하지만 시니어 인터뷰에서 로그 질문은 의외로 변별력이 크다. 면접관이 실제로 보는 것은 다음 세 가지다.</p>
+
+    <h3>1. 로그를 "기록"이 아니라 "설계 대상"으로 다루는가</h3>
+    <p>주니어는 <code>print</code>나 <code>console.log</code>를 디버깅 도구로만 쓴다. 시니어는 로그를 <strong>나중에 누군가(미래의 나, 다른 팀원, 온콜 담당자)가 장애 상황에서 검색할 자료</strong>로 미리 설계한다. "이 로그 한 줄만 보고 무슨 일이 있었는지 알 수 있는가"를 기준으로 로그를 쓰는지가 핵심이다.</p>
+
+    <h3>2. 분산 시스템에서 요청을 추적하는 능력</h3>
+    <p>단일 서버에서는 로그 파일 하나만 보면 됐다. 서비스가 5개, 10개로 늘어나면 하나의 사용자 요청이 여러 서비스를 거치면서 로그가 흩어진다. 이걸 다시 하나로 묶어서 볼 수 있는 능력(Correlation ID, 컨텍스트 전파)이 있는지가 마이크로서비스 경험의 진짜 증거다.</p>
+
+    <h3>3. 비용과 신호 대 잡음비를 이해하는가</h3>
+    <p>"로그는 많을수록 좋다"는 흔한 오해다. 시니어는 로그 저장/검색 비용, 그리고 너무 많은 로그가 오히려 진짜 신호를 찾기 어렵게 만든다는 것(Signal-to-Noise)을 이해하고 있어야 한다.</p>
+
+    <div class="callout info">
+      <div class="callout-title">인터뷰어가 듣고 싶어하는 신호</div>
+      "저는 로그를 쓸 때 '이 로그 한 줄이 검색 결과에 나왔을 때, 추가 질문 없이 상황을 이해할 수 있는가'를 기준으로 씁니다. 그래서 사람이 읽는 문장형 로그가 아니라, 기계가 파싱할 수 있는 구조화된 필드로 로그를 남기고, 모든 요청에 추적 가능한 ID를 포함시킵니다."
+    </div>
+  </div>
+
+  <!-- ===================== PREREQUISITE ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📚</span>
+      <h2>전제 개념 — 쉬운 언어로 먼저 이해하기</h2>
+    </div>
+
+    <h3>비구조화 로그(Unstructured Log)란?</h3>
+    <p>많은 개발자가 처음 배우는 로그 방식이다. 그냥 사람이 읽기 편하게 문장으로 찍는다.</p>
+    <pre><code>2026-06-30 14:22:01 ERROR 주문 처리 실패 user=12345 order=98765 사유: 결제 타임아웃</code></pre>
+    <p>사람이 눈으로 읽으면 이해된다. 문제는 <strong>기계가 이걸 검색하고 집계하기 어렵다</strong>는 것이다. "user=12345 형태로 쓴 로그"와 "userId: 12345 형태로 쓴 로그"와 "고객번호 12345 형태로 쓴 로그"가 섞여 있으면, 하나의 쿼리로 전부 찾을 수 없다.</p>
+
+    <div class="callout warning">
+      <div class="callout-title">비구조화 로그의 실제 문제</div>
+      장애가 났을 때 "user=12345와 관련된 에러를 모두 찾아줘"라는 요청을 받으면, 비구조화 로그에서는 정규식을 여러 개 짜야 하고, 로그를 쓴 사람마다 표현 방식이 달라서 일부는 반드시 놓친다. 100개 서비스가 있다면 100가지 로그 포맷이 존재할 수도 있다.
+    </div>
+
+    <h3>구조화 로그(Structured Log)란?</h3>
+    <p>로그를 문장이 아니라 <strong>정해진 필드를 가진 데이터(주로 JSON)</strong>로 남기는 방식이다.</p>
+    <pre><code>{
+  "timestamp": "2026-06-30T14:22:01.482Z",
+  "level": "ERROR",
+  "service": "order-service",
+  "trace_id": "8f3a2c91-...",
+  "user_id": "12345",
+  "order_id": "98765",
+  "event": "payment_timeout",
+  "message": "결제 타임아웃으로 주문 처리 실패",
+  "duration_ms": 5023,
+  "payment_gateway": "card_company_a"
+}</code></pre>
+    <p>이렇게 남기면 <code>user_id: "12345"</code>로 정확히 검색할 수 있고, <code>event: "payment_timeout"</code>로 같은 유형의 장애를 전부 모아볼 수 있고, <code>duration_ms &gt; 3000</code>처럼 조건 검색과 집계가 가능해진다.</p>
+
+    <div class="callout success">
+      <div class="callout-title">핵심 차이 한 문장</div>
+      비구조화 로그는 <strong>사람이 읽으라고</strong> 쓰는 것이고, 구조화 로그는 <strong>기계가 검색하고, 사람은 결과를 읽으라고</strong> 쓰는 것이다.
+    </div>
+
+    <h3>Correlation ID(trace_id)란?</h3>
+    <p>하나의 사용자 요청이 여러 서비스를 거칠 때, 그 요청 전체를 하나로 묶어주는 식별자다. 실무에서는 흔히 <code>trace_id</code>, <code>request_id</code>, <code>correlation_id</code> 등으로 부른다.</p>
+
+    <p>동작 원리는 간단하다:</p>
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>요청 진입 시점에 ID 생성</strong>
+          API Gateway나 최초 진입 서비스에서 <code>trace_id</code>를 하나 생성한다. (예: UUID)
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>모든 로그에 포함</strong>
+          이 서비스 안에서 남기는 모든 로그에 이 <code>trace_id</code>를 필드로 포함시킨다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>다음 서비스로 호출할 때 전파</strong>
+          다른 서비스를 호출할 때 HTTP 헤더(예: <code>X-Trace-Id</code>)나 메시지 큐 메타데이터에 같은 값을 실어 보낸다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>받은 서비스도 동일하게 로깅 + 전파</strong>
+          다음 서비스는 헤더에서 <code>trace_id</code>를 읽어서 자신의 로그에도 똑같이 남기고, 또 다음 서비스로 전파한다.
+        </div>
+      </li>
+    </ol>
+
+    <p>결과적으로 <code>trace_id</code> 하나로 검색하면, 그 요청이 거쳐간 모든 서비스의 로그를 시간 순서대로 볼 수 있다.</p>
+
+    <div class="callout info">
+      <div class="callout-title">비유로 이해하기</div>
+      택배 송장 번호와 같다. 상품이 창고, 물류센터, 배송기사를 거치는 동안 각 단계에서 같은 송장 번호로 상태를 기록한다. 송장 번호 하나만 있으면 상품이 지금 어디 있는지, 어디서 지연됐는지 전체 이력을 추적할 수 있다. <code>trace_id</code>가 없다면 각 물류센터에 따로 전화해서 "이 시간에 이 무게의 상품 못 보셨어요?"라고 묻는 것과 같다.
+    </div>
+
+    <h3>로그 레벨(Log Level)이란?</h3>
+    <p>로그의 심각도/중요도를 구분하는 태그다. 일반적으로 다음 순서로 심각해진다.</p>
+
+    <table>
+      <thead>
+        <tr><th>레벨</th><th>의미</th><th>사용 시점</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>DEBUG</strong></td>
+          <td>개발 중 상세 디버깅 정보</td>
+          <td>변수 값, 함수 진입/종료 등. 프로덕션 상시 비활성화가 보통</td>
+        </tr>
+        <tr>
+          <td><strong>INFO</strong></td>
+          <td>정상적인 주요 이벤트</td>
+          <td>"주문이 생성됨", "결제가 성공함" 같은 비즈니스 이벤트</td>
+        </tr>
+        <tr>
+          <td><strong>WARN</strong></td>
+          <td>비정상이지만 서비스는 계속 동작</td>
+          <td>재시도 발생, deprecated API 호출, 임계치 근접</td>
+        </tr>
+        <tr>
+          <td><strong>ERROR</strong></td>
+          <td>요청 처리 실패, 즉각 조치 필요할 수 있음</td>
+          <td>결제 실패, DB 연결 실패, 예외 발생</td>
+        </tr>
+        <tr>
+          <td><strong>FATAL/CRITICAL</strong></td>
+          <td>서비스 전체가 동작 불가능</td>
+          <td>프로세스 종료 직전, 필수 설정 로딩 실패</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warning">
+      <div class="callout-title">흔한 실수</div>
+      많은 개발자가 모든 것을 <code>ERROR</code>로 찍거나, 반대로 모든 것을 <code>INFO</code>로 찍는다. 재시도로 정상 복구된 상황을 <code>ERROR</code>로 남기면, 온콜 담당자는 실제로 조치가 필요 없는 알림에 익숙해져서(Alert Fatigue) 진짜 <code>ERROR</code>도 무시하게 된다.
+    </div>
+  </div>
+
+  <!-- ===================== LOG DESIGN PRINCIPLES ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🧩</span>
+      <h2>로그 설계 원칙 — 무엇을, 왜 포함해야 하는가</h2>
+    </div>
+
+    <p>면접에서 "좋은 로그를 어떻게 설계하나요?"라는 질문에 이 원칙들로 답하면 구조가 잡힌다.</p>
+
+    <h3>1. 컨텍스트를 항상 포함한다</h3>
+    <p>에러 메시지만 있고 "누구의, 어떤 요청에서" 발생했는지 없는 로그는 쓸모가 없다. 최소한 다음 필드는 모든 로그에 공통으로 포함하는 것이 좋다.</p>
+    <ul>
+      <li><code>trace_id</code> — 요청 전체 추적용</li>
+      <li><code>service</code> — 어떤 서비스에서 남긴 로그인지</li>
+      <li><code>user_id</code> / <code>tenant_id</code> — 어떤 사용자/조직 관련인지 (개인정보는 마스킹 또는 별도 관리)</li>
+      <li><code>timestamp</code> — ISO 8601 형식, 타임존 명시(UTC 권장)</li>
+      <li><code>level</code> — 심각도</li>
+    </ul>
+
+    <h3>2. 이벤트 이름을 명시적으로 구분한다</h3>
+    <p><code>message</code> 필드의 자연어 문장만으로 검색하지 말고, <code>event: "payment_timeout"</code>처럼 코드로 검색 가능한 이벤트 이름을 별도 필드로 둔다. 문장은 사람마다 조금씩 다르게 쓰지만, 이벤트 이름은 팀 내 표준으로 고정할 수 있다.</p>
+
+    <h3>3. 민감 정보는 남기지 않거나 마스킹한다</h3>
+    <p>비밀번호, 카드 번호, 주민등록번호, 인증 토큰 등을 로그에 그대로 남기면 보안 사고와 컴플라이언스 위반이 된다. 마스킹(예: 카드번호 앞 6자리+뒤 4자리만) 또는 아예 로그에서 제외한다.</p>
+
+    <h3>4. 로그 레벨을 환경과 상황에 맞게 동적으로 조절한다</h3>
+    <p>프로덕션은 기본 INFO 이상으로 운영하되, 특정 장애 조사 중에는 <strong>재배포 없이</strong> 특정 서비스나 특정 요청 범위만 DEBUG로 올릴 수 있는 기능(Dynamic Log Level)을 갖추는 것이 시니어다운 설계다.</p>
+
+    <h3>5. 로그는 "질문에 답할 수 있는가"로 검증한다</h3>
+    <p>로그를 작성한 뒤 스스로에게 물어본다: "이 로그만 보고 어떤 사용자의 어떤 요청이 왜 실패했는지 알 수 있는가?" 답이 "아니오"라면 컨텍스트가 부족한 것이다.</p>
+
+    <div class="callout success">
+      <div class="callout-title">시니어 답변에서 나와야 하는 내용</div>
+      "저희 팀은 로그 스키마를 공통 라이브러리로 표준화해서, 모든 서비스가 같은 필드 이름(trace_id, service, event 등)을 강제로 사용하도록 했습니다. 개발자가 로그를 남길 때 필드 이름을 고민하지 않게 만든 것이 핵심이었고, 이후로 Kibana에서 서비스 전체를 가로지르는 검색이 가능해졌습니다."
+    </div>
+  </div>
+
+  <!-- ===================== ANSWER REASONING ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🧠</span>
+      <h2>답변 사고 순서 — 면접장에서 어떻게 풀어나가는가</h2>
+    </div>
+
+    <h3>질문 1: "좋은 로그란 어떤 로그인가요?"</h3>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>기준 제시 (10초)</strong>
+          "저는 좋은 로그를 '한 줄만 보고 추가 질문 없이 상황을 이해할 수 있는 로그'로 정의합니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>구조화가 왜 필요한지 (15초)</strong>
+          "이를 위해서는 문장형 로그가 아니라 구조화된(JSON) 로그가 필요합니다. 기계가 검색·집계할 수 있어야 하기 때문입니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>필수 컨텍스트 필드 (20초)</strong>
+          "최소한 trace_id, service, user_id, event, timestamp는 모든 로그에 공통으로 포함시킵니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>실무 경험 연결 (30초)</strong>
+          본인이 로그 스키마를 표준화했거나, 컨텍스트 부족으로 장애 분석이 늦어졌던 경험을 구체적으로 말한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>마무리 — 비용 인식 (10초)</strong>
+          "다만 로그가 많을수록 좋은 것은 아니라서, 레벨과 샘플링으로 비용과 신호 대 잡음비를 관리합니다."
+        </div>
+      </li>
+    </ol>
+
+    <h3>질문 2: "여러 서비스를 거치는 요청을 로그로 어떻게 추적하나요?"</h3>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>문제 정의 (10초)</strong>
+          "단일 서비스 로그만으로는 요청이 어느 서비스에서 얼마나 걸렸는지, 어디서 실패했는지 알 수 없습니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>해결책 제시 (15초)</strong>
+          "그래서 trace_id를 요청 진입 시점에 생성하고, 서비스 간 호출마다 HTTP 헤더로 전파해서 모든 로그에 같은 trace_id가 남도록 합니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>구현 디테일로 신뢰도 확보 (20초)</strong>
+          "이걸 애플리케이션 코드마다 수동으로 하면 누락이 생기기 때문에, 공통 미들웨어나 인터셉터 레벨에서 자동으로 처리하도록 인프라화했습니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>실제 효과로 마무리 (15초)</strong>
+          "이 표준화 이후 여러 서비스에 걸친 장애 분석 시간이 크게 줄었습니다."
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ===================== MODEL ANSWERS ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">💬</span>
+      <h2>핵심 답변 예시</h2>
+    </div>
+
+    <h3>질문 1 모범 답변: "좋은 로그란?"</h3>
+
+    <div class="callout success">
+      <div class="callout-title">강한 답변</div>
+      <p>"저는 좋은 로그를 '이 로그 한 줄만 보고, 추가로 코드를 찾아보거나 다른 사람에게 물어보지 않아도 상황을 이해할 수 있는 로그'라고 정의합니다. 이를 위해 문장형이 아니라 JSON 형태의 구조화 로그를 씁니다.</p>
+      <p>모든 로그에 trace_id, service, event, user_id, timestamp를 공통 필드로 강제했습니다. 특히 event 필드는 자유 텍스트가 아니라 payment_timeout, order_created처럼 팀 내에서 미리 합의한 이름을 쓰도록 코드 리뷰 체크리스트에 넣었습니다.</p>
+      <p>실제로 이전에는 로그 메시지가 개발자마다 제각각이라 '결제 실패'와 '결제 오류'와 'payment failed'가 섞여 있어서 검색이 안 됐던 경험이 있습니다. 이후 공통 로깅 라이브러리를 만들어서 필드와 이벤트 이름을 강제하니, 장애 시 검색 시간이 크게 줄었습니다."</p>
+    </div>
+
+    <h3>질문 2 모범 답변: "분산 요청 추적"</h3>
+
+    <div class="callout success">
+      <div class="callout-title">강한 답변</div>
+      <p>"저희는 API Gateway 진입 시점에 trace_id를 생성하고, 이후 모든 서비스 간 호출에 X-Trace-Id 헤더로 전파하도록 표준화했습니다. 각 서비스는 로깅 미들웨어에서 이 헤더를 자동으로 읽어 모든 로그에 포함시키기 때문에, 개발자가 매번 신경 쓸 필요가 없습니다.</p>
+      <p>비동기 처리(메시지 큐)에서도 동일한 원칙을 적용해서, 메시지 헤더에 trace_id를 실어 보냈습니다. 이렇게 하지 않으면 큐를 거치는 순간 추적이 끊기는 경우가 많은데, 실제로 저희도 초기에는 큐 이후 로그가 끊겨서 30분 걸릴 분석이 3시간 넘게 걸린 적이 있었습니다.</p>
+      <p>이후에는 trace_id 하나로 Kibana에서 검색하면 요청이 거친 모든 서비스의 로그를 시간순으로 볼 수 있게 됐고, 여기에 분산 트레이싱 도구(Jaeger)의 span 정보도 같은 trace_id로 연결해서 로그와 트레이스를 함께 봅니다."</p>
+    </div>
+  </div>
+
+  <!-- ===================== STRONG VS WEAK ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">⚖️</span>
+      <h2>좋은 답변 vs 약한 답변의 차이</h2>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-box good">
+        <div class="compare-label">강한 답변 — 좋은 로그</div>
+        <div class="quote">"모든 로그에 trace_id, event, user_id를 강제하는 공통 로깅 라이브러리를 만들었고, event 이름은 팀 컨벤션으로 고정했습니다. 이후 검색 시간이 눈에 띄게 줄었습니다."</div>
+        <p>표준화 방법과 실제 효과가 함께 있다. 팀 차원의 설계 판단이 담겨있다.</p>
+      </div>
+      <div class="compare-box bad">
+        <div class="compare-label">약한 답변 — 좋은 로그</div>
+        <div class="quote">"로그는 최대한 자세하게 남기고, try-catch에서 에러가 나면 로그를 찍습니다."</div>
+        <p>구조화, 컨텍스트, 검색 가능성에 대한 언급이 없다. "자세하게"라는 말은 오히려 비용/노이즈 문제를 모른다는 신호다.</p>
+      </div>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-box good">
+        <div class="compare-label">강한 답변 — 분산 추적</div>
+        <div class="quote">"trace_id를 진입점에서 생성해 미들웨어 레벨에서 자동 전파하도록 인프라화했습니다. 큐를 거칠 때도 메시지 헤더에 실어서 끊기지 않게 했습니다."</div>
+        <p>비동기 구간까지 고려한 완결성. 자동화(미들웨어)로 실수를 구조적으로 방지한 판단이 있다.</p>
+      </div>
+      <div class="compare-box bad">
+        <div class="compare-label">약한 답변 — 분산 추적</div>
+        <div class="quote">"각 서비스 로그를 시간 순서로 비교해서 어떤 요청인지 유추합니다."</div>
+        <p>ID 기반 추적이 아니라 타임스탬프 유추다. 여러 요청이 동시에 오면 구분이 불가능하다. 실무 규모를 겪어보지 못한 답변으로 들린다.</p>
+      </div>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-box good">
+        <div class="compare-label">강한 답변 — 로그 레벨</div>
+        <div class="quote">"재시도로 정상 복구된 경우는 WARN으로, 최종 실패만 ERROR로 구분했습니다. ERROR는 온콜 알림과 연결되어 있어서, 이 구분이 없으면 Alert Fatigue가 생깁니다."</div>
+        <p>레벨 구분이 알림 체계와 어떻게 연결되는지까지 설명한다.</p>
+      </div>
+      <div class="compare-box bad">
+        <div class="compare-label">약한 답변 — 로그 레벨</div>
+        <div class="quote">"에러가 나면 ERROR, 그 외에는 INFO로 찍습니다."</div>
+        <p>WARN의 역할, 알림 연동, Alert Fatigue에 대한 이해가 전혀 없다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== FOLLOW-UP ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🎓</span>
+      <h2>Senior-level Follow-up 질문과 답변 방향</h2>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "trace_id가 서비스 경계를 넘어갈 때(예: 다른 회사 API 호출) 끊기는 경우는 어떻게 처리하나요?"</div>
+      <div class="fa">
+        핵심 논리: 외부 시스템은 우리의 trace_id 규약을 모른다. 이 경계에서는 우리 쪽에서 "외부 호출 시작/종료" span을 별도로 남기고, 외부 시스템이 반환하는 자체 요청 ID(있다면)를 함께 로깅해서 연결 고리를 남긴다.
+        <br><br>
+        실무 답변 방향: "외부 API 호출 직전/직후에 우리 trace_id와 외부 응답의 request-id를 함께 로그로 남겨서, 외부사에 문의할 때 그 request-id로 연결할 수 있게 했습니다. 완전한 자동 연결은 불가능하지만 최소한의 추적 고리는 만들어 둡니다."
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "로그 저장 비용이 너무 커졌습니다. 어떻게 줄이시겠습니까?"</div>
+      <div class="fa">
+        핵심 논리: 모든 로그를 동일한 가치로 취급하지 않는다. 접근 빈도와 중요도에 따라 계층화(hot/warm/cold storage)하고, 샘플링과 보존 기간을 조정한다.
+        <br><br>
+        실무 답변 방향: "ERROR/WARN은 90일 보존, INFO는 14일, DEBUG는 프로덕션에서 기본 비활성화하되 필요 시 동적으로 특정 서비스만 활성화하는 구조로 바꿨습니다. 또한 고빈도 INFO 로그(예: 헬스체크)는 샘플링해서 일부만 저장했습니다. 이렇게 해서 로그 비용을 유지하면서도 장애 대응에 필요한 로그는 그대로 남겼습니다."
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "구조화 로그로 전환할 때 기존 팀의 저항이 있었을 것 같은데, 어떻게 설득했나요?"</div>
+      <div class="fa">
+        핵심 논리: 강제보다 자동화로 마찰을 줄인다. 개발자가 직접 필드 이름을 신경 쓰지 않아도 공통 라이브러리가 처리하게 만들면 저항이 줄어든다.
+        <br><br>
+        실무 답변 방향: "처음엔 '로그 포맷 바꾸라'는 지시로 접근했다가 반발이 컸습니다. 이후 공통 로깅 라이브러리를 만들어서 개발자는 logger.info('event_name', {필드}) 형태로만 쓰면 나머지(trace_id 주입, JSON 직렬화)는 라이브러리가 알아서 처리하도록 바꿨습니다. 실제 장애에서 검색이 빨라진 사례를 공유하니 자발적으로 전환이 이루어졌습니다."
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "개인정보가 포함된 로그를 실수로 남긴 적이 있나요? 어떻게 방지하시나요?"</div>
+      <div class="fa">
+        핵심 논리: 사람의 주의력에 의존하는 것은 확장 가능한 해결책이 아니다. 코드 레벨의 자동 마스킹과 로깅 라이브러리 차원의 필드 화이트리스트가 필요하다.
+        <br><br>
+        실무 답변 방향: "공통 로깅 라이브러리에 민감 필드 이름 패턴(password, card_number, ssn 등)을 자동 마스킹하는 필터를 넣었습니다. 그리고 로그로 남길 수 있는 필드를 화이트리스트로 관리해서, 새 필드를 로그에 추가하려면 리뷰를 거치도록 했습니다. 실수로 한 번 카드 번호 앞자리가 로그에 남았던 사고 이후 도입한 조치입니다."
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "로그와 트레이싱(Distributed Tracing)의 역할이 겹치는 것 같은데, 둘 다 필요한 이유가 뭔가요?"</div>
+      <div class="fa">
+        핵심 논리: 로그는 "특정 시점에 무슨 일이 있었는지"에 강하고(풍부한 컨텍스트), 트레이싱은 "요청이 어디서 시간을 썼는지"에 강하다(정확한 시간/구조). 둘은 같은 trace_id로 연결되어야 진가를 발휘한다.
+        <br><br>
+        실무 답변 방향: "트레이스는 서비스 간 호출 구조와 소요 시간을 시각적으로 보여주지만, 왜 실패했는지 구체적인 이유(에러 메시지, 파라미터 값)는 로그에 있습니다. 저희는 트레이스의 span_id를 로그 필드에도 포함시켜서, 느린 span을 발견하면 바로 그 구간의 로그로 드릴다운할 수 있게 연결했습니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== COMMON MISCONCEPTIONS ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">⚠️</span>
+      <h2>흔한 오해와 Trade-off</h2>
+    </div>
+
+    <h3>오해 1: "구조화 로그는 사람이 읽기 불편하니 개발 환경에서는 안 써도 된다"</h3>
+    <p><strong>현실:</strong> 개발 환경과 프로덕션 환경의 로그 포맷이 다르면, 로컬에서 테스트한 로깅 코드가 프로덕션에서 다르게 동작하는 것을 놓치기 쉽다.</p>
+    <p><strong>올바른 접근:</strong> 로그는 항상 구조화(JSON)로 남기고, 로컬 개발 시에는 CLI 도구(예: pino-pretty, jq)로 JSON을 보기 좋게 포맷팅해서 출력한다. 데이터 자체는 동일하게 유지한다.</p>
+
+    <h3>오해 2: "trace_id만 있으면 로그의 컨텍스트 필드는 최소화해도 된다"</h3>
+    <p><strong>현실:</strong> trace_id는 "어떤 요청인지"를 식별할 뿐, "왜 실패했는지"는 알려주지 않는다. trace_id로 요청을 찾은 뒤에도 결국 각 로그 줄에 있는 구체적 필드(에러 코드, 파라미터 값)를 봐야 원인을 알 수 있다.</p>
+    <p><strong>올바른 접근:</strong> trace_id는 "묶어주는" 역할, 나머지 필드는 "설명하는" 역할이다. 둘 다 필요하다.</p>
+
+    <h3>오해 3: "로그 레벨은 개발자 재량에 맡겨도 된다"</h3>
+    <p><strong>현실:</strong> 팀마다 기준이 다르면 어떤 서비스는 모든 것이 ERROR로 시끄럽고, 어떤 서비스는 진짜 장애도 INFO로 조용히 묻힌다. 온콜 알림과 연동된 레벨(보통 ERROR 이상)의 기준이 팀마다 다르면 알림 신뢰도가 무너진다.</p>
+    <p><strong>올바른 접근:</strong> 레벨별 기준을 팀 문서로 명문화하고, 코드 리뷰에서 레벨 오남용을 체크한다.</p>
+
+    <h3>Trade-off: 로그 상세도 vs 저장/검색 비용</h3>
+    <p>모든 요청, 모든 필드를 다 로깅하면 이상적이지만, 트래픽이 커지면 로그 저장소 비용이 인프라 비용을 초과하는 경우도 생긴다. 특히 고빈도 엔드포인트(헬스체크, 폴링 API)의 로그는 대부분 가치가 낮다.</p>
+    <p>핵심 Trade-off: <strong>"모든 것을 기록하는 안전함 vs 필요한 것만 남기는 비용 효율"</strong>. 실무에서는 레벨/샘플링/보존 기간을 조합해 이 균형을 맞춘다. 중요한 것은 <strong>ERROR와 트랜잭션 경계 로그는 절대 샘플링하지 않고, 고빈도 저가치 INFO만 샘플링 대상으로 삼는 것</strong>이다.</p>
+  </div>
+
+  <!-- ===================== RUBRIC ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">✅</span>
+      <h2>자기 점검 Rubric</h2>
+    </div>
+    <p>이 답변들을 자신있게 말할 수 있으면 Day 2를 완료한 것이다.</p>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">구조화 로그와 비구조화 로그의 차이와, 구조화가 필요한 이유를 설명할 수 있다</span>
+        <span class="rubric-badge badge-must">필수</span>
+      </div>
+      <p>"기계가 검색/집계할 수 있어야 한다"는 핵심 이유가 포함되어야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">Correlation ID(trace_id)의 생성부터 전파까지 전체 흐름을 설명할 수 있다</span>
+        <span class="rubric-badge badge-must">필수</span>
+      </div>
+      <p>진입점 생성 → 로그 포함 → 헤더 전파 → 다음 서비스에서 재사용, 이 흐름을 순서대로 말할 수 있어야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">로그 레벨(DEBUG~FATAL)을 상황별로 구분해서 설명할 수 있다</span>
+        <span class="rubric-badge badge-must">필수</span>
+      </div>
+      <p>재시도 후 정상 복구는 WARN, 최종 실패는 ERROR처럼 실무 기준 예시가 있어야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">로그에 반드시 포함해야 할 공통 컨텍스트 필드를 나열할 수 있다</span>
+        <span class="rubric-badge badge-strong">강함</span>
+      </div>
+      <p>trace_id, service, user_id, event, timestamp 등. 왜 각 필드가 필요한지도 설명할 수 있어야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">비동기(메시지 큐) 구간에서도 추적이 끊기지 않게 하는 방법을 설명할 수 있다</span>
+        <span class="rubric-badge badge-strong">강함</span>
+      </div>
+      <p>메시지 헤더/메타데이터에 trace_id를 실어 보내는 방식을 언급할 수 있어야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">민감 정보 마스킹과 로그 비용 관리(샘플링, 보존 기간)를 설명할 수 있다</span>
+        <span class="rubric-badge badge-bonus">보너스</span>
+      </div>
+      <p>보안/컴플라이언스 인식과 비용 트레이드오프까지 있으면 시니어급 답변이 된다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">공통 로깅 라이브러리로 표준화를 이끈 경험을 말할 수 있다</span>
+        <span class="rubric-badge badge-bonus">보너스</span>
+      </div>
+      <p>강제가 아니라 자동화로 팀 저항을 줄인 리더십 경험이면 더 좋다.</p>
+    </div>
+  </div>
+
+  <!-- ===================== REAL WORLD ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🏭</span>
+      <h2>실무 연결 — 이 개념이 실제 어디에 쓰이는가</h2>
+    </div>
+
+    <h3>스타트업 (소규모 팀)</h3>
+    <p>단일 서비스 또는 소수 서비스라도 구조화 로그(JSON)는 처음부터 적용하는 것이 좋다. 나중에 서비스가 늘어난 뒤 바꾸려면 비용이 훨씬 크다. trace_id는 API Gateway나 로드밸런서 레벨에서 헤더로 생성해주는 경우가 많아 도입 비용이 낮다.</p>
+
+    <h3>성장기 회사 (수백만 사용자)</h3>
+    <p>여러 팀이 서로 다른 언어/프레임워크로 서비스를 만들기 시작하면서 로그 포맷이 갈라지기 쉬운 시기다. 이때 공통 로깅 라이브러리 또는 사이드카(예: Fluent Bit) 표준화가 필요해진다. Correlation ID 전파가 인프라 레벨(서비스 메시)에서 자동화되기 시작한다.</p>
+
+    <h3>대형 플랫폼 (수천만 사용자)</h3>
+    <p>로그 볼륨 자체가 관측성 파이프라인의 병목이 된다. 카디널리티(고유 필드 값의 개수) 관리, 로그 계층화 저장(hot/warm/cold), 실시간 스트리밍 로그 처리(Kafka 기반 로그 파이프라인)가 전담 팀의 과제가 된다.</p>
+  </div>
+
+  <!-- ===================== NEXT ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">➡️</span>
+      <h2>다음 학습 예고 — Day 3</h2>
+    </div>
+    <p><strong>메트릭과 알림 설계</strong></p>
+    <p>RED(Rate, Errors, Duration)와 USE(Utilization, Saturation, Errors) 방법론, 알림 임계값을 어떻게 정하는가, False Positive와 False Negative를 줄이는 알림 설계 원칙. 면접에서 "알림을 어떤 기준으로 설계하시나요?"라는 질문에 답변하는 방법을 다룬다.</p>
+    <div style="margin-top:0.75rem;">
+      <span class="tag blue">RED Method</span>
+      <span class="tag blue">USE Method</span>
+      <span class="tag purple">Alert Threshold</span>
+      <span class="tag purple">False Positive/Negative</span>
+      <span class="tag green">Golden Signals</span>
+    </div>
+  </div>
+
+  <div class="nav">
+    <a href="./0001-observability-incident-response-framework.html">← Day 1</a>
+    <a href="./index.html">목록으로 →</a>
+  </div>
+
+</div>
+</body>
+</html>
