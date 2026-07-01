@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — GitHub Actions 파이프라인 설계와 자동화 품질 | CI/CD 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* header */
+    .lesson-header {
+      border-left: 4px solid var(--accent);
+      padding: 1.5rem 1.5rem 1.5rem 2rem;
+      background: var(--surface);
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .lesson-title { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
+    .lesson-subtitle { color: var(--muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    /* section */
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 1.2rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.8rem; color: var(--text); }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.35rem; }
+
+    /* cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    /* interview question highlight */
+    .interview-q {
+      background: linear-gradient(135deg, #1e2a4a 0%, #1a2035 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .interview-q .label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .interview-q .question {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.5;
+    }
+
+    /* comparison grid */
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .strategy-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .strategy-card .name {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .strategy-card.blue-green .name { color: #60a5fa; }
+    .strategy-card.rolling .name { color: #34d399; }
+    .strategy-card.canary .name { color: #f59e0b; }
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-right: 0.3rem;
+      margin-bottom: 0.3rem;
+    }
+    .tag-green { background: #14532d; color: #4ade80; }
+    .tag-red { background: #450a0a; color: #f87171; }
+    .tag-yellow { background: #422006; color: #fbbf24; }
+    .tag-blue { background: #1e3a5f; color: #93c5fd; }
+
+    /* answer example */
+    .answer-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+    .answer-block .speaker {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    /* good vs weak */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .compare-card.good {
+      background: #052e16;
+      border: 1px solid #166534;
+    }
+    .compare-card.weak {
+      background: #2d0a0a;
+      border: 1px solid #7f1d1d;
+    }
+    .compare-label {
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .compare-card.good .compare-label { color: #4ade80; }
+    .compare-card.weak .compare-label { color: #f87171; }
+
+    /* reasoning steps */
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent2);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.1rem;
+    }
+
+    /* follow-up */
+    .followup-item {
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .followup-item .q {
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 0.5rem;
+    }
+    .followup-item .a {
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    /* rubric */
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:last-child td { border-bottom: none; }
+    .rubric-table tr:nth-child(even) td { background: #12141e; }
+    .level-badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .level-1 { background: #450a0a; color: #fca5a5; }
+    .level-2 { background: #422006; color: #fcd34d; }
+    .level-3 { background: #14532d; color: #86efac; }
+    .level-4 { background: #1e3a5f; color: #93c5fd; }
+
+    /* callout */
+    .callout {
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .callout-warn {
+      background: #2d1b00;
+      border: 1px solid var(--yellow);
+      color: #fef3c7;
+    }
+    .callout-info {
+      background: #0c1a3a;
+      border: 1px solid var(--accent);
+      color: #dbeafe;
+    }
+    .callout-icon { font-weight: 700; margin-right: 0.4rem; }
+
+    /* flow diagram (ascii-style) */
+    .flow-diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #a5b4fc;
+      overflow-x: auto;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      white-space: pre;
+    }
+
+    /* code block */
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      color: #d1d5db;
+      overflow-x: auto;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      white-space: pre;
+    }
+
+    /* nav */
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .nav-bar a {
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-bar a:hover { text-decoration: underline; }
+    .nav-center { color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-header">
+    <div class="lesson-meta">CI/CD와 배포 전략 인터뷰 · Day 2</div>
+    <div class="lesson-title">GitHub Actions 파이프라인 설계와 자동화 품질</div>
+    <div class="lesson-subtitle">workflow 구조 설계, 트리거 전략, 캐시와 병렬화, secret 관리, 품질 게이트까지 — "그냥 CI 돌아간다"가 아니라 "왜 이렇게 설계했는가"를 말할 수 있는 수준을 목표로 한다.</div>
+  </div>
+
+  <!-- ─── SECTION 1: 면접 질문 ─── -->
+  <section>
+    <h2>🎯 오늘의 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">주질문 (Main Question)</div>
+      <div class="question">
+        "GitHub Actions로 CI/CD 파이프라인을 설계한다면,<br>
+        어떤 구조로 설계하고 품질을 어떻게 보장하시겠습니까?"
+      </div>
+    </div>
+
+    <div class="interview-q" style="border-color: var(--accent2);">
+      <div class="label" style="color: var(--accent2);">변형 질문 (Variation)</div>
+      <div class="question" style="font-size: 1rem;">
+        "빌드 시간이 계속 느려지고 있습니다. 파이프라인을 어떻게 진단하고 개선하시겠습니까?<br>
+        그리고 secret은 어떻게 안전하게 관리하십니까?"
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 2: 왜 면접에서 묻는가 ─── -->
+  <section>
+    <h2>🔍 왜 면접에서 이 질문을 하는가</h2>
+
+    <p>GitHub Actions는 거의 모든 회사가 쓰는 도구라, "yml 문법을 아는가"를 확인하려는 질문이 아니다. 면접관은 <strong>파이프라인을 설계 대상으로 보는가, 그냥 복사-붙여넣기 대상으로 보는가</strong>를 구분하려 한다.</p>
+
+    <div class="card">
+      <div class="card-title">면접관이 실제로 평가하는 것</div>
+      <ul>
+        <li><strong>구조화 능력:</strong> job과 step을 목적에 맞게 분리하는가, 아니면 하나의 거대한 job에 다 몰아넣는가</li>
+        <li><strong>속도 최적화 사고:</strong> 캐시, 병렬화, 의존성 재사용으로 피드백 루프를 얼마나 줄일 수 있는지 아는가</li>
+        <li><strong>보안 인식:</strong> secret과 credential을 워크플로우에서 어떻게 다뤄야 안전한지 아는가</li>
+        <li><strong>품질 게이트 설계:</strong> "테스트만 통과하면 merge 가능"이 아니라 어떤 단계에서 무엇을 막을지 설계하는가</li>
+        <li><strong>운영 비용 인식:</strong> CI 시간 = 개발자 대기 시간 = 비용이라는 것을 이해하는가</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>주니어 vs 시니어 차이:</strong> 주니어는 "workflow 파일을 작성할 수 있다"에서 멈춘다. 시니어는 "이 구조를 선택한 이유, 트리거를 이렇게 설계한 이유, 무엇을 게이트로 막는지"를 설명하고, 팀 전체의 CI 시간과 비용까지 고려한다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 3: 전제 개념 ─── -->
+  <section>
+    <h2>📚 전제 개념: CI 파이프라인이 왜 "설계"의 대상인가</h2>
+
+    <h3>CI(Continuous Integration)의 본질 — "빠르고 믿을 수 있는 피드백"</h3>
+    <p>CI의 핵심 가치는 딱 하나다. <strong>코드를 바꿨을 때, 그 변경이 안전한지 최대한 빨리, 최대한 정확하게 알려주는 것.</strong> 느리면 개발자는 CI 결과를 기다리지 않고 다음 작업으로 넘어가버리고, 부정확하면(flaky) 결과를 신뢰하지 않고 무시하게 된다. 둘 다 CI가 있으나 마나 한 상태를 만든다.</p>
+    <p>그래서 "파이프라인 설계"란 결국 두 가지 문제를 푸는 것이다: <strong>어떻게 더 빠르게 만들 것인가</strong>, <strong>어떻게 더 믿을 수 있게 만들 것인가.</strong> 이 두 목표는 종종 서로 trade-off 관계에 있다 — 더 많은 검사를 넣을수록 느려지고, 빠르게 만들려고 검사를 줄이면 신뢰도가 떨어진다.</p>
+
+    <h3>GitHub Actions의 기본 구성 요소 (쉬운 설명)</h3>
+    <div class="card">
+      <ul>
+        <li><strong>Workflow:</strong> <code>.github/workflows/*.yml</code> 파일 하나. "언제, 무엇을 실행할지"를 정의하는 전체 단위</li>
+        <li><strong>Trigger (on):</strong> 워크플로우를 시작시키는 이벤트. push, pull_request, schedule, workflow_dispatch(수동 실행) 등</li>
+        <li><strong>Job:</strong> 워크플로우 안의 독립된 실행 단위. 기본적으로 <strong>서로 다른 job은 병렬로 실행</strong>된다 (별도 러너에서)</li>
+        <li><strong>Step:</strong> job 안의 순차 실행 단위. 같은 job의 step들은 <strong>같은 러너에서 순서대로</strong> 실행된다</li>
+        <li><strong>Runner:</strong> 실제로 코드를 실행하는 서버 (GitHub 호스팅 또는 self-hosted)</li>
+      </ul>
+    </div>
+    <p>여기서 시니어급 이해가 갈리는 지점은 "job은 병렬, step은 순차"라는 사실을 <strong>구조 설계에 실제로 활용하는가</strong>다. 서로 의존성이 없는 작업(예: lint와 unit test)을 같은 job에 넣으면 불필요하게 순차 실행되어 시간이 늘어난다.</p>
+  </section>
+
+  <!-- ─── SECTION 4: 파이프라인 구조 설계 ─── -->
+  <section>
+    <h2>🏗️ 파이프라인 구조 설계</h2>
+
+    <h3>흔한 실수: 하나의 거대한 Job</h3>
+    <div class="flow-diagram">[Job: build-and-test]  (모두 순차, 하나라도 느리면 전체가 느려짐)
+  1. checkout
+  2. install deps
+  3. lint
+  4. unit test
+  5. integration test
+  6. build
+  7. docker push
+     ↓
+  총 소요 시간 = 모든 단계의 합</div>
+
+    <h3>개선된 구조: 목적별 Job 분리 + 병렬화</h3>
+    <div class="flow-diagram">[Job: lint]      ─┐
+[Job: unit-test] ─┼─ 병렬 실행 (서로 독립적)
+[Job: build]     ─┘
+        ↓ (모두 통과해야)
+[Job: integration-test]  ← build 결과물(artifact) 필요
+        ↓
+[Job: docker-push]  ← main 브랜치에서만 실행
+        ↓
+총 소요 시간 = 가장 느린 병렬 그룹 + 순차 의존 구간</div>
+
+    <p><strong>핵심 원칙:</strong> 서로 의존성이 없는 작업은 반드시 분리된 job으로 만들어 병렬 실행되게 한다. 의존성이 있는 작업만 <code>needs</code>로 순서를 강제한다.</p>
+
+    <div class="code-block">jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm run lint
+
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm test
+
+  build:
+    needs: [lint, unit-test]      # lint, test 통과해야 build 진행
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/</div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>흔한 오해:</strong> "job을 여러 개로 쪼개면 무조건 빨라진다." — 각 job은 새 러너를 프로비저닝하는 오버헤드(수십 초)가 있다. 너무 잘게 쪼개면 오히려 느려질 수 있다. 병렬화는 "의존성이 없고, 각 job의 실행 시간이 프로비저닝 오버헤드보다 충분히 길 때" 이득이다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 5: 트리거 전략, 캐시, secret 관리, 품질 게이트 ─── -->
+  <section>
+    <h2>⚙️ 자동화 품질의 네 가지 축</h2>
+
+    <h3>1. 트리거 전략 — "언제 실행할 것인가"</h3>
+    <p>모든 이벤트에 전체 파이프라인을 돌리는 것은 낭비다. 트리거를 목적에 맞게 세분화해야 CI 시간과 러너 비용을 통제할 수 있다.</p>
+    <div class="card">
+      <ul>
+        <li><strong>PR(pull_request):</strong> lint + unit test + build까지만. 빠른 피드백이 목적이므로 무거운 테스트는 제외</li>
+        <li><strong>main 브랜치 push:</strong> 전체 테스트 + 통합 테스트 + 배포까지 진행</li>
+        <li><strong>schedule(cron):</strong> 야간 전체 회귀 테스트, 의존성 취약점 스캔 등 느리지만 매번 필요하지 않은 작업</li>
+        <li><strong>workflow_dispatch:</strong> 수동 배포, hotfix 배포처럼 사람이 명시적으로 트리거해야 하는 작업</li>
+        <li><strong>paths 필터:</strong> 모노레포에서 변경된 디렉토리와 관련된 파이프라인만 실행 (예: <code>paths: ['backend/**']</code>)</li>
+      </ul>
+    </div>
+
+    <h3>2. 캐시와 병렬화 — "어떻게 더 빠르게 만들 것인가"</h3>
+    <div class="card">
+      <ul>
+        <li><strong>의존성 캐시:</strong> <code>actions/cache</code>로 <code>node_modules</code>, pip 캐시, Docker layer 캐시를 재사용한다. lock 파일 해시를 캐시 키로 써서 의존성이 바뀔 때만 캐시를 갱신한다</li>
+        <li><strong>매트릭스 전략:</strong> 여러 Node 버전, OS 조합을 <code>strategy.matrix</code>로 병렬 실행한다</li>
+        <li><strong>테스트 샤딩:</strong> 테스트를 여러 그룹으로 나눠 병렬 러너에서 동시에 실행한다 (예: Jest의 <code>--shard</code>)</li>
+        <li><strong>불필요한 checkout 깊이 제한:</strong> <code>fetch-depth: 1</code>로 전체 git 히스토리를 받지 않는다</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>실무 판단:</strong> 캐시 도입 전에는 반드시 "무엇이 병목인가"를 먼저 측정해야 한다. GitHub Actions는 각 step의 실행 시간을 UI에서 보여준다. 측정 없이 캐시부터 넣는 것은 추측성 최적화다.
+    </div>
+
+    <h3>3. Secret 관리 — "어떻게 안전하게 다룰 것인가"</h3>
+    <div class="card">
+      <ul>
+        <li><strong>GitHub Secrets 사용:</strong> API 키, 배포 credential은 절대 코드나 workflow yml에 하드코딩하지 않고 <code>Settings → Secrets and variables</code>에 저장</li>
+        <li><strong>Environment 단위 secret 분리:</strong> production, staging 환경별로 secret을 분리하고, production은 승인(required reviewer)을 거쳐야 접근 가능하게 설정</li>
+        <li><strong>Fork PR에서 secret 미노출:</strong> 외부 기여자의 fork에서 온 <code>pull_request</code> 이벤트는 기본적으로 secret에 접근할 수 없다. 이 보호를 <code>pull_request_target</code>으로 우회할 때는 매우 신중해야 한다 (악성 코드가 secret을 탈취할 수 있음)</li>
+        <li><strong>최소 권한 원칙:</strong> <code>permissions:</code> 블록으로 <code>GITHUB_TOKEN</code>의 권한을 필요한 범위로 명시적으로 축소한다 (기본값은 과도하게 넓을 수 있음)</li>
+        <li><strong>OIDC 기반 인증 선호:</strong> AWS/GCP 배포 시 장기 credential(access key)을 secret으로 저장하는 대신, OIDC로 단기 토큰을 발급받는 방식이 더 안전하다</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>흔한 사고:</strong> <code>pull_request_target</code> 트리거와 fork의 PR 코드를 그대로 checkout해서 실행하는 조합은 악의적인 PR이 secret을 탈취하는 대표적인 공급망 공격 경로다. fork PR에서는 신뢰할 수 없는 코드를 secret이 있는 컨텍스트에서 실행하지 않아야 한다.
+    </div>
+
+    <h3>4. 품질 게이트 — "무엇을 막을 것인가"</h3>
+    <div class="card">
+      <ul>
+        <li><strong>Branch protection rule:</strong> 특정 status check(lint, test, build)가 통과해야만 merge 버튼이 활성화되도록 강제</li>
+        <li><strong>커버리지 임계값:</strong> 커버리지가 기준(예: 80%) 이하로 떨어지면 CI 실패 처리</li>
+        <li><strong>보안 스캔:</strong> 의존성 취약점(Dependabot, Snyk), SAST(CodeQL) 결과가 critical이면 merge 차단</li>
+        <li><strong>필수 리뷰어:</strong> production 배포 environment에 required reviewer를 설정해 사람이 최종 승인하게 함</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>흔한 오해:</strong> "품질 게이트를 많이 넣을수록 안전하다." — 게이트가 너무 많거나 느리면 개발자가 게이트를 우회하는 습관(강제 merge, 게이트 skip 라벨 남용)이 생긴다. 게이트는 실제로 장애를 막은 이력이 있는 항목 위주로, 최소한으로 설계해야 지켜진다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 6: 답변 사고 순서 ─── -->
+  <section>
+    <h2>🧠 답변 사고 순서</h2>
+    <p>면접 질문을 받았을 때 아래 순서로 생각을 전개하면 시니어 수준의 답변 구조가 된다.</p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>파이프라인의 목적부터 정의</strong><br>
+          "빠른 피드백"과 "신뢰할 수 있는 검증"이라는 두 목표를 먼저 언급하고, 이 둘의 trade-off를 어떻게 관리하는지로 이야기를 시작한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Job/Step 구조 설계 원칙 제시</strong><br>
+          의존성 없는 작업은 병렬 job으로 분리하고, 의존성 있는 작업만 <code>needs</code>로 순서를 강제한다고 설명한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>트리거 전략으로 리소스 낭비 통제</strong><br>
+          PR에는 가벼운 검증만, main push에는 전체 검증, 야간 스케줄로 무거운 작업을 분리한다고 말한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>속도 최적화 방법 구체적으로 언급</strong><br>
+          캐시 키 전략, 매트릭스, 테스트 샤딩 등 "측정 후 최적화"했다는 사고 과정을 보여준다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>보안과 품질 게이트로 마무리</strong><br>
+          secret 관리 원칙(최소 권한, environment 분리, fork PR 위험)과 branch protection으로 무엇을 막는지 언급하며 답변을 완성한다.
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ─── SECTION 7: 핵심 답변 예시 ─── -->
+  <section>
+    <h2>💬 핵심 답변 예시</h2>
+
+    <div class="answer-block">
+      <div class="speaker">답변 예시 (시니어 수준)</div>
+      <p>"파이프라인을 설계할 때 가장 먼저 생각하는 것은 '빠른 피드백'과 '신뢰할 수 있는 검증'이라는 두 목표입니다. 이 둘은 종종 상충하기 때문에, PR에서는 lint와 unit test처럼 빠른 검증만 병렬로 돌리고, main 브랜치에 머지된 후에는 통합 테스트까지 포함한 전체 파이프라인을 돌리는 식으로 단계를 나눕니다.</p>
+      <p>구조적으로는 서로 의존성이 없는 작업, 예를 들어 lint와 unit test는 별도 job으로 분리해서 병렬 실행되게 합니다. build처럼 lint/test 결과가 필요한 작업만 <code>needs</code>로 순서를 강제합니다. job을 너무 잘게 쪼개면 러너 프로비저닝 오버헤드가 커지므로, 각 job의 실행 시간이 충분히 길 때만 분리합니다.</p>
+      <p>속도 개선은 추측이 아니라 측정부터 합니다. GitHub Actions가 제공하는 step별 실행 시간을 보고 병목을 찾은 다음, 의존성 설치가 느리면 lock 파일 해시 기반 캐시를 넣고, 테스트가 느리면 샤딩으로 병렬화합니다.</p>
+      <p>보안 측면에서는 secret을 절대 코드에 하드코딩하지 않고 GitHub Secrets와 environment 단위로 분리합니다. 특히 fork에서 온 PR은 secret 접근을 기본적으로 차단하고, <code>pull_request_target</code>처럼 이 보호를 우회하는 트리거는 외부 코드를 신뢰하지 않는 방식으로만 제한적으로 씁니다. 마지막으로 branch protection에 필수 status check을 걸어서, 실제로 장애를 막은 이력이 있는 게이트만 최소한으로 강제합니다. 게이트가 너무 많으면 팀이 우회하는 습관이 생기기 때문에, 게이트 개수 자체도 관리 대상으로 봅니다."</p>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 8: Senior Follow-up ─── -->
+  <section>
+    <h2>🔺 Senior-Level Follow-up 질문</h2>
+
+    <div class="followup-item">
+      <div class="q">Q. "모노레포 환경에서 CI 시간이 계속 늘어나고 있습니다. 어떻게 관리하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 모노레포의 문제는 "관련 없는 변경까지 전체 파이프라인을 돌리는 것"이다.
+        <br><br>
+        <strong>핵심 답변:</strong> <code>paths</code> 필터로 변경된 디렉토리에 해당하는 파이프라인만 트리거되게 한다. 공통 라이브러리가 바뀌면 이를 참조하는 모든 패키지의 파이프라인을 트리거하는 의존성 그래프 기반 실행(Nx, Turborepo 등)을 도입한다. 그래도 느리면 self-hosted runner로 캐시 계층을 공유하거나, 러너 스펙을 늘리는 것도 고려한다. 다만 인프라 비용 대비 효과를 먼저 측정한다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "Flaky 테스트가 CI에서 자주 실패합니다. 어떻게 대응하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> "재시도로 덮는다"는 임시방편이지 해결책이 아니다. 근본 원인 관리가 필요하다.
+        <br><br>
+        <strong>핵심 답변:</strong> 우선 flaky 테스트를 격리(quarantine)해서 메인 파이프라인의 신뢰도를 지키고, 별도 트래킹 이슈로 관리한다. 재시도(retry)는 임시 완화책으로만 쓰고, 재시도 횟수와 빈도를 대시보드로 추적해 "숨겨진 flaky"가 누적되지 않게 한다. 원인은 대개 테스트 간 상태 공유, 타이밍 의존, 외부 네트워크 의존이므로 이를 제거하는 방향으로 고쳐야 하고, 고치지 않으면 팀이 CI 실패를 "무시해도 되는 것"으로 학습해버리는 게 더 큰 문제라는 점을 강조한다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "GitHub Actions와 Jenkins 중 어떤 상황에서 무엇을 선택하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 도구 선호가 아니라 운영 제약(호스팅, 커스터마이징, 보안 요구)으로 답한다.
+        <br><br>
+        <strong>핵심 답변:</strong> GitHub Actions는 GitHub 저장소와 통합이 매끄럽고 관리형이라 운영 부담이 적어 대부분의 팀에 적합하다. 반면 온프레미스 배포가 필수이거나, 매우 복잡한 커스텀 파이프라인 로직, 사내 네트워크 안에서만 접근 가능한 인프라에 배포해야 하는 규제 환경에서는 self-hosted 유연성이 높은 Jenkins가 더 맞는 경우가 있다. 최근에는 GitHub Actions도 self-hosted runner를 지원하므로, "관리형이냐 자체 호스팅이냐"보다 "기존 플러그인 생태계와 조직의 운영 인력"이 실질적인 결정 요인이 되는 경우가 많다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "CI 파이프라인이 통과했는데 프로덕션에서 장애가 났습니다. 파이프라인의 어디가 문제였을까요?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> "테스트가 부족했다"는 답은 너무 표면적이다. 어떤 종류의 gap인지 구조적으로 짚어야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> CI 환경과 프로덕션 환경의 차이(설정값, 트래픽 규모, 외부 의존성 가용성)를 먼저 의심한다. 다음으로 테스트 피라미드에서 어떤 계층이 비어 있었는지 확인한다 — 단위 테스트만 있고 통합/E2E가 없었다면 서비스 간 연동 문제를 못 잡는다. 마지막으로 이번 장애를 재현하는 테스트 케이스를 추가해서 회귀를 방지하고, 이 패턴의 장애가 다시 CI를 통과하지 못하도록 게이트를 보강한다. 파이프라인은 100% 안전을 보장하지 못하므로, 이 gap을 메우는 것과 동시에 배포 전략(Canary 등)으로 실제 트래픽에서의 조기 감지도 병행해야 한다고 언급한다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 9: 좋은 답변 vs 약한 답변 ─── -->
+  <section>
+    <h2>⚖️ 좋은 답변과 약한 답변의 차이</h2>
+
+    <div class="compare-grid">
+      <div class="compare-card good">
+        <div class="compare-label">✅ 좋은 답변</div>
+        <ul>
+          <li>"빠른 피드백 vs 신뢰할 수 있는 검증" trade-off를 먼저 언급</li>
+          <li>job/step 분리 기준을 의존성 관점에서 설명</li>
+          <li>"측정 후 최적화"라는 사고 과정을 명시</li>
+          <li>secret 관리, fork PR 위험, 최소 권한 원칙을 구체적으로 언급</li>
+          <li>품질 게이트를 "많을수록 좋다"가 아니라 비용으로 인식</li>
+          <li>도구 선택을 운영 제약 기준으로 설명 (선호가 아님)</li>
+        </ul>
+      </div>
+      <div class="compare-card weak">
+        <div class="compare-label">❌ 약한 답변</div>
+        <ul>
+          <li>"yml 파일에 job 여러 개 쓰면 됩니다" — 구조적 이유 없음</li>
+          <li>캐시를 "일단 넣으면 빠르다"고만 이해</li>
+          <li>secret을 어디에 두는지 언급 안 함</li>
+          <li>fork PR / pull_request_target의 보안 위험을 모름</li>
+          <li>품질 게이트 = 테스트 통과 여부로만 이해</li>
+          <li>"GitHub Actions가 무조건 좋다/Jenkins가 무조건 좋다" 식 단정</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>핵심 차이:</strong> 좋은 답변은 파이프라인을 "비용(시간, 인프라, 보안 리스크)이 있는 시스템"으로 다룬다. 약한 답변은 파이프라인을 "설정하면 끝나는 스크립트"로 다룬다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 10: 실무 연결 ─── -->
+  <section>
+    <h2>🏭 실무 연결 — 이런 상황에서 이렇게 설계</h2>
+
+    <div class="card">
+      <div class="card-title">상황별 파이프라인 설계 가이드</div>
+      <table class="rubric-table">
+        <thead>
+          <tr><th>상황</th><th>설계 포인트</th><th>이유</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>PR 리뷰 대기 시간이 너무 길다</td>
+            <td>PR 트리거를 lint+unit test로 축소, 무거운 테스트는 main push 이후로</td>
+            <td>빠른 피드백이 리뷰 사이클을 좌우함</td>
+          </tr>
+          <tr>
+            <td>외부 기여자(오픈소스)가 많은 저장소</td>
+            <td>fork PR에서 secret 접근 차단 유지, pull_request_target 사용 최소화</td>
+            <td>악성 코드의 secret 탈취 방지</td>
+          </tr>
+          <tr>
+            <td>배포가 자주 실패해 롤백이 잦다</td>
+            <td>production environment에 required reviewer + 통합 테스트 게이트 추가</td>
+            <td>배포 전 마지막 방어선 강화</td>
+          </tr>
+          <tr>
+            <td>모노레포에서 빌드 시간이 20분 이상</td>
+            <td>paths 필터 + 의존성 그래프 기반 selective build</td>
+            <td>관련 없는 패키지 빌드 낭비 제거</td>
+          </tr>
+          <tr>
+            <td>규제 산업, 온프레미스 필수</td>
+            <td>Jenkins self-hosted 또는 GitHub Actions self-hosted runner</td>
+            <td>네트워크 격리, 감사 요구사항 충족</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 11: 자기 점검 Rubric ─── -->
+  <section>
+    <h2>📋 자기 점검 Rubric</h2>
+    <p>아래 기준으로 자신의 답변 수준을 체크하라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>레벨</th>
+          <th>할 수 있는 것</th>
+          <th>부족한 것</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="level-badge level-1">Lv 1</span></td>
+          <td>workflow yml 문법을 작성할 수 있다</td>
+          <td>job/step 구조 설계 기준, 캐시, secret 관리 개념 없음</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-2">Lv 2</span></td>
+          <td>job 병렬화, needs, 캐시 사용법을 안다</td>
+          <td>측정 기반 최적화, fork PR 보안 위험 모름</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-3">Lv 3</span></td>
+          <td>트리거 전략을 목적별로 설계하고 secret을 environment로 분리해 관리한다</td>
+          <td>모노레포 최적화, flaky 테스트 관리 경험 부족</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-4">Lv 4 (목표)</span></td>
+          <td>속도/신뢰도 trade-off 인식 + 측정 기반 최적화 + secret·fork PR 보안 설계 + 품질 게이트를 비용으로 관리 + 도구 선택을 제약 조건으로 설명</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>셀프 체크리스트</h3>
+    <div class="card">
+      <ul>
+        <li>☐ job과 step의 실행 방식 차이(병렬 vs 순차)를 설명할 수 있는가</li>
+        <li>☐ PR 트리거와 main push 트리거를 왜 다르게 설계하는지 말할 수 있는가</li>
+        <li>☐ 캐시를 넣기 전에 무엇을 먼저 측정해야 하는지 설명할 수 있는가</li>
+        <li>☐ fork PR에서 secret이 왜 위험할 수 있는지 설명할 수 있는가</li>
+        <li>☐ 품질 게이트를 무작정 늘리면 안 되는 이유를 말할 수 있는가</li>
+        <li>☐ GitHub Actions와 Jenkins를 도구 선호가 아닌 제약 조건으로 비교할 수 있는가</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 12: 흔한 오해 ─── -->
+  <section>
+    <h2>🚫 흔한 오해와 교정</h2>
+
+    <div class="card">
+      <div class="card-title">오해 1</div>
+      <p><strong>"job을 여러 개로 쪼개면 무조건 빨라진다."</strong></p>
+      <p>→ 각 job은 새 러너 프로비저닝 오버헤드가 있다. 실행 시간이 짧은 작업을 과도하게 쪼개면 오버헤드가 병렬화 이득을 상쇄해 오히려 느려질 수 있다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 2</div>
+      <p><strong>"캐시를 넣으면 항상 빨라진다."</strong></p>
+      <p>→ 캐시 키 전략이 잘못되면(예: 항상 같은 키를 써서 오래된 의존성이 남거나, 반대로 매번 캐시 미스가 나는 키 설계) 오히려 캐시 복원/저장 오버헤드만 늘어난다. 병목을 측정하지 않고 캐시부터 넣는 것은 비효율적이다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 3</div>
+      <p><strong>"GitHub Secrets에 넣으면 완전히 안전하다."</strong></p>
+      <p>→ Secrets는 로그에 자동 마스킹되지만, 코드에서 secret을 출력하거나 외부로 전송하는 스크립트를 실행하면 유출된다. 특히 fork PR을 신뢰할 수 없는 컨텍스트에서 secret과 함께 실행하면 탈취될 수 있다. Secrets 저장소는 "안전한 위치"일 뿐, 워크플로우 설계가 안전하지 않으면 무의미하다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 4</div>
+      <p><strong>"품질 게이트는 많을수록 안전하다."</strong></p>
+      <p>→ 게이트가 너무 많거나 느리면 개발자가 강제 merge, 게이트 skip 라벨 등으로 우회하는 습관이 생긴다. 실제로 장애를 막은 이력이 있는 게이트 위주로 최소한으로 유지해야 실효성이 지켜진다.</p>
+    </div>
+  </section>
+
+  <div class="nav-bar">
+    <a href="./0001-deployment-strategy-rollback-framework.html">← Day 1</a>
+    <span class="nav-center">Day 2 / 10 — CI/CD와 배포 전략 인터뷰</span>
+    <a href="./index.html">목록으로 →</a>
+  </div>
+
+</div>
+</body>
+</html>

@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 안정적인 배포 전략과 롤백 프레임워크 | [0001-deployment-strategy-rollback-framework.html](lessons/0001-deployment-strategy-rollback-framework.html) |
+| 2 | 2026-07-01 | GitHub Actions 파이프라인 설계와 자동화 품질 | [0002-github-actions-pipeline-design-automation-quality.html](lessons/0002-github-actions-pipeline-design-automation-quality.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | GitHub Actions 파이프라인 설계와 자동화 품질 | workflow 구조, job/step, 트리거 전략, 캐시, secret 관리, 품질 게이트 |
 | 3 | Jenkins와 빌드 자동화 실무 | Jenkinsfile, 선언적 파이프라인, 멀티브랜치, 플러그인, 자체 호스팅 운영 |
 | 4 | 테스트 자동화 전략과 CI 품질 게이트 | 테스트 피라미드, 단위/통합/E2E, 커버리지 임계값, flaky test, 실패 시 정책 |
 | 5 | Artifact 관리와 버전 관리 전략 | 이미지 레지스트리, 태깅 전략, semantic versioning, artifact 불변성, 프로모션 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — 다음: Day 2 — GitHub Actions 파이프라인 설계와 자동화 품질
+**Day 2 완료** — 다음: Day 3 — Jenkins와 빌드 자동화 실무
 
 ## 습득한 핵심 개념
 
@@ -30,7 +30,7 @@
 - [x] Blue-Green / Rolling / Canary 개념과 trade-off (Day 1)
 - [x] 롤백 판단 기준과 의사결정 트리 (Day 1)
 - [x] 배포 리스크 컨트롤 원칙 (Day 1)
-- [ ] GitHub Actions 파이프라인 설계 (예정 Day 2)
+- [x] GitHub Actions 파이프라인 설계 (Day 2)
 - [ ] 테스트 자동화 전략과 품질 게이트 (예정 Day 4)
 - [ ] Artifact 관리와 버전 전략 (예정 Day 5)
 - [ ] Blue-Green 배포 심층 (예정 Day 6)
