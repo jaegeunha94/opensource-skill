@@ -1,0 +1,1004 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — 확장성 패턴</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #232635;
+      --border: #2e3248;
+      --text: #e2e4f0;
+      --muted: #8b8fa8;
+      --accent: #7c83f5;
+      --accent2: #56cfb2;
+      --warn: #f5a623;
+      --danger: #f56060;
+      --success: #56cf8a;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    .header {
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+    h1 { font-size: 1.9rem; font-weight: 700; line-height: 1.3; }
+    .subtitle { color: var(--muted); margin-top: 0.4rem; font-size: 0.95rem; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--accent2);
+      font-size: 0.72rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      margin: 0.2rem 0.1rem;
+      border: 1px solid var(--border);
+    }
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+      padding-left: 0.75rem;
+      margin-bottom: 1.2rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 0.6rem;
+      margin-top: 1.2rem;
+    }
+    h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--warn);
+      margin-bottom: 0.4rem;
+      margin-top: 1rem;
+    }
+    p { margin-bottom: 0.8rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.3rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card.question { border-left: 4px solid var(--warn); }
+    .card.followup  { border-left: 4px solid var(--accent); }
+    .card.good      { border-left: 4px solid var(--success); }
+    .card.weak      { border-left: 4px solid var(--danger); }
+    .card.rubric    { border-left: 4px solid var(--accent2); }
+    .card.info      { border-left: 4px solid var(--muted); }
+
+    .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .label.q { color: var(--warn); }
+    .label.f { color: var(--accent); }
+    .label.g { color: var(--success); }
+    .label.w { color: var(--danger); }
+    .label.r { color: var(--accent2); }
+    .label.i { color: var(--muted); }
+
+    .quote {
+      font-style: italic;
+      color: var(--text);
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.88rem;
+      color: var(--accent2);
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .step-body { flex: 1; }
+
+    .rubric-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score { display: flex; gap: 0.3rem; }
+    .dot {
+      width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+    }
+    .dot.filled { background: var(--accent2); border-color: var(--accent2); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--accent2);
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    td {
+      padding: 0.55rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 2rem;
+    }
+    .toc ol { margin-bottom: 0; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    .highlight-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .nav-bottom a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .nav-bottom a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ───────────── HEADER ───────────── -->
+  <div class="header">
+    <div class="day-badge">DAY 3</div>
+    <h1>확장성 패턴</h1>
+    <p class="subtitle">10년차 이상 백엔드 엔지니어 Interview 대비 — 실무 판단력 중심</p>
+    <div style="margin-top:0.8rem;">
+      <span class="tag">수평 확장</span>
+      <span class="tag">샤딩</span>
+      <span class="tag">레플리케이션</span>
+      <span class="tag">캐싱 전략</span>
+      <span class="tag">CDN</span>
+      <span class="tag">Hot Spot</span>
+    </div>
+  </div>
+
+  <!-- ───────────── TOC ───────────── -->
+  <div class="toc">
+    <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.6rem;">목차</p>
+    <ol>
+      <li><a href="#section-overview">오늘 레슨 개요</a></li>
+      <li><a href="#section-scaling">수평 확장 vs 수직 확장 — 언제, 왜 선택하는가</a></li>
+      <li><a href="#section-sharding">샤딩 — 샤드 키 선택과 리밸런싱</a></li>
+      <li><a href="#section-replication">레플리케이션 — Read Replica, 복제 지연, Failover</a></li>
+      <li><a href="#section-caching">캐싱 전략 — Cache-Aside, TTL, 무효화, Stampede</a></li>
+      <li><a href="#section-cdn">CDN — 정적/동적 콘텐츠와 엣지 캐싱</a></li>
+      <li><a href="#section-scenario">종합 시나리오 — 트래픽이 10배로 늘어난다면</a></li>
+      <li><a href="#section-rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- ───────────── 1. OVERVIEW ───────────── -->
+  <section id="section-overview">
+    <h2>1. 오늘 레슨 개요</h2>
+    <p>
+      "어떻게 확장하시겠어요?"는 시니어 면접에서 가장 흔한 질문이지만, 가장 얕게 답하기 쉬운 질문이기도 합니다.
+      "서버를 늘리고 캐시를 넣겠습니다" 수준의 답변은 주니어와 구분되지 않습니다.
+      10년차 이상 면접에서는 <strong>"어떤 지표가 병목이었고, 왜 그 확장 방법을 선택했으며, 그 선택이 만든 새로운 문제를 어떻게 관리했는가"</strong>를 봅니다.
+    </p>
+    <div class="highlight-box">
+      <strong>면접관이 실제로 보는 신호</strong>
+      <ul style="margin-top:0.5rem;">
+        <li>"확장하면 된다" ↔ 확장이 만드는 새 복잡도(일관성, 운영 비용, 장애 범위)를 함께 설명한다</li>
+        <li>기술 나열 ↔ 병목 지표(CPU, I/O, connection, 지연시간)에 따라 선택 기준이 다르다는 것을 안다</li>
+        <li>단일 해법 ↔ 단계적으로(캐시 → 레플리카 → 샤딩) 비용이 낮은 방법부터 시도한다</li>
+      </ul>
+    </div>
+    <p>이 레슨에서는 <strong>확장성의 5개 핵심 축</strong>을 다루며, 각 영역마다 면접 질문 → 답변 구조 → senior follow-up → 좋은/약한 답변 비교 → 자기 점검 순서로 진행합니다.</p>
+  </section>
+
+  <!-- ───────────── 2. HORIZONTAL VS VERTICAL SCALING ───────────── -->
+  <section id="section-scaling">
+    <h2>2. 수평 확장 vs 수직 확장 — 언제, 왜 선택하는가</h2>
+
+    <h3>배경 개념: 확장이란 무엇을 의미하는가</h3>
+    <p>
+      서버 한 대가 처리할 수 있는 요청 수는 CPU, 메모리, 네트워크 대역폭, 디스크 I/O에 의해 한계가 있습니다.
+      트래픽이 그 한계를 넘으면 두 가지 방향이 있습니다. <strong>수직 확장(Scale-Up)</strong>은 한 대의 사양을 올리는 것이고,
+      <strong>수평 확장(Scale-Out)</strong>은 같은 사양의 서버를 여러 대로 늘리는 것입니다.
+      면접에서 이 차이를 "정의"로만 아는 사람과 "언제 어느 쪽이 실패하는지"까지 아는 사람은 확실히 구분됩니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"서비스 트래픽이 3배로 늘었습니다. 수직 확장과 수평 확장 중 어떤 것을 먼저 고려하시겠어요? 그리고 각각의 한계는 무엇인가요?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>정답은 "무조건 수평 확장"이 아닙니다. 상태(state)를 가진 컴포넌트인지, 팀의 운영 역량은 어느 수준인지까지 고려하는지를 봅니다.</p>
+
+    <h4>비교표</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>수직 확장 (Scale-Up)</th>
+          <th>수평 확장 (Scale-Out)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>방법</td>
+          <td>CPU/메모리/디스크 업그레이드</td>
+          <td>동일 사양 서버를 추가, 로드밸런서로 분산</td>
+        </tr>
+        <tr>
+          <td>한계</td>
+          <td>하드웨어 물리적 상한, 비용이 사양에 비선형적으로 증가</td>
+          <td>이론상 무한하지만 상태 동기화·일관성 문제 발생</td>
+        </tr>
+        <tr>
+          <td>다운타임</td>
+          <td>대개 재부팅/교체 필요 (다운타임 발생 가능)</td>
+          <td>무중단 확장 가능 (새 인스턴스 추가만)</td>
+        </tr>
+        <tr>
+          <td>복잡도</td>
+          <td>애플리케이션 변경 불필요</td>
+          <td>세션 공유, 분산 락, 데이터 정합성 등 새 설계 필요</td>
+        </tr>
+        <tr>
+          <td>적합 사례</td>
+          <td>단일 인스턴스 DB, 초기 단계 서비스, 빠른 임시 대응</td>
+          <td>Stateless 애플리케이션 서버, 트래픽 급증이 예상되는 서비스</td>
+        </tr>
+        <tr>
+          <td>장애 영향 범위</td>
+          <td>한 대가 죽으면 전체 장애 (SPOF)</td>
+          <td>한 대가 죽어도 나머지가 흡수 (부분 저하)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>단계별 판단 흐름</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>병목 지표를 먼저 특정합니다.</strong> CPU-bound인지, I/O-bound인지, connection 수 한계인지에 따라 해법이 다릅니다.
+        예: CPU 사용률이 90%를 넘어 응답 지연이 생겼다면 확장이 맞는 방향이지만, DB connection pool 고갈이 원인이면 서버를 늘려도 DB가 병목이 되어 문제가 이전될 뿐입니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>애플리케이션이 Stateless인지 확인합니다.</strong> 세션을 로컬 메모리에 저장하는 애플리케이션은 그대로 수평 확장하면 특정 서버에만 요청이 몰리거나 세션이 유실됩니다.
+        Redis 등 외부 세션 스토어로 옮기는 작업이 선행되어야 합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>단기 대응과 구조적 대응을 분리합니다.</strong> 트래픽 급증에는 우선 수직 확장(즉시 적용 가능)으로 막고,
+        동시에 수평 확장이 가능하도록 애플리케이션을 stateless로 리팩터링하는 것이 현실적인 시니어의 판단입니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>DB는 다르게 접근합니다.</strong> 애플리케이션 서버는 수평 확장이 비교적 쉽지만, RDB는 상태를 가지므로 먼저 수직 확장 → Read Replica → 샤딩 순서로 비용이 낮은 단계부터 검토합니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"먼저 병목 지표를 확인합니다. CPU-bound라면 애플리케이션 서버를 수평 확장하는 것이 맞지만, 저희 서비스는 세션을 로컬 메모리에 저장하고 있어 그대로 확장하면 sticky session 문제가 생깁니다. 그래서 단기적으로는 인스턴스 사양을 올려 즉시 대응하고, 동시에 세션을 Redis로 옮겨 stateless로 만든 뒤 오토스케일링 그룹으로 전환했습니다. DB는 커넥션 수가 이미 임계치에 가까웠기 때문에 Read Replica를 먼저 추가해 읽기 트래픽을 분산했습니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"트래픽이 늘면 서버를 늘리면 됩니다. 수평 확장이 수직 확장보다 좋으니까 서버 여러 대로 나누겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 병목이 무엇인지 확인하지 않고, 애플리케이션이 stateless인지도 고려하지 않았습니다. "수평 확장이 항상 좋다"는 근거 없는 일반화입니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"수평 확장을 적용했는데도 특정 시간대에 응답 지연이 여전히 발생합니다. 인스턴스 수는 충분한데 왜 이런 일이 생길 수 있을까요?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 애플리케이션 서버는 늘었지만 뒤에 있는 <strong>공유 자원(DB, 캐시, 외부 API)</strong>이 여전히 단일 병목일 수 있습니다.
+        로드밸런서가 요청을 고르게 분산하지 못하는 경우(라운드로빈이 아닌 특정 키 기반 라우팅)도 원인이 됩니다.
+        진단 순서: 1) APM으로 어느 계층에서 지연이 발생하는지 확인, 2) DB connection pool 사용률 확인, 3) 로드밸런서의 인스턴스별 트래픽 분포 확인.
+        "서버를 늘렸으니 끝"이 아니라 확장 후에도 새로운 병목이 어디로 이동했는지 계속 추적하는 것이 핵심입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 3. SHARDING ───────────── -->
+  <section id="section-sharding">
+    <h2>3. 샤딩 — 샤드 키 선택과 리밸런싱</h2>
+
+    <h3>배경 개념: 왜 샤딩이 필요한가</h3>
+    <p>
+      Read Replica로도 감당할 수 없는 <strong>쓰기(write) 트래픽</strong>이나, 한 대의 디스크에 담을 수 없는 데이터 양이 문제가 되면
+      데이터를 여러 물리적 DB로 쪼개는 샤딩(Sharding)을 검토합니다.
+      핵심은 "어떤 기준으로 데이터를 나눌 것인가"이며, 이 기준을 <strong>샤드 키(Shard Key)</strong>라고 부릅니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"사용자 10억 명 규모 서비스의 주문 테이블을 샤딩해야 합니다. 어떤 기준으로 샤드 키를 선택하시겠어요? 잘못된 샤드 키 선택이 만드는 문제는 무엇인가요?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>샤딩 방법(해시, 레인지, 디렉토리)을 나열하는 것이 아니라, <strong>쿼리 패턴과 데이터 분포</strong>를 근거로 샤드 키를 선택하는 사고 과정을 봅니다.</p>
+
+    <h4>샤딩 전략 비교</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>전략</th>
+          <th>방법</th>
+          <th>장점</th>
+          <th>단점</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>해시 기반 (Hash-based)</td>
+          <td><code>hash(user_id) % N</code>으로 샤드 결정</td>
+          <td>데이터가 균등하게 분산됨</td>
+          <td>범위 쿼리 불가, 샤드 수 변경 시 대규모 재배치 필요</td>
+        </tr>
+        <tr>
+          <td>레인지 기반 (Range-based)</td>
+          <td>id 범위(1~1000만, 1000만~2000만...)로 분할</td>
+          <td>범위 쿼리에 유리, 직관적</td>
+          <td>특정 범위에 트래픽 집중 시 Hot Shard 발생</td>
+        </tr>
+        <tr>
+          <td>디렉토리 기반 (Directory-based)</td>
+          <td>별도 매핑 테이블(lookup service)에서 샤드 위치 조회</td>
+          <td>유연한 재배치, 샤드 추가/이동이 쉬움</td>
+          <td>매핑 서비스가 SPOF/병목이 될 수 있음, 조회 hop 추가</td>
+        </tr>
+        <tr>
+          <td>Consistent Hashing</td>
+          <td>해시 링에 서버를 배치해 최소 재배치로 확장</td>
+          <td>노드 추가/제거 시 영향받는 데이터가 최소화됨</td>
+          <td>구현 복잡도 높음, 가상 노드(virtual node) 설계 필요</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>샤드 키 선택 원칙</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>가장 자주 사용되는 조회 조건을 샤드 키로 선택합니다.</strong>
+        주문 조회가 대부분 <code>user_id</code> 기준이라면 <code>user_id</code>를 샤드 키로 잡아야 조회 시 어느 샤드인지 바로 알 수 있습니다.
+        <code>order_id</code>를 샤드 키로 잡으면 "이 사용자의 모든 주문"을 조회할 때 모든 샤드를 뒤져야 하는 <strong>스캐터-개더(Scatter-Gather)</strong> 문제가 생깁니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>카디널리티와 분포를 확인합니다.</strong> 값의 종류가 적거나(예: 국가 코드) 특정 값에 데이터가 몰리면(예: 대형 셀러 하나가 주문의 30%) Hot Shard가 생깁니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>조인이 필요한 데이터는 같은 샤드에 두는 것을 고려합니다.</strong> 크로스 샤드 조인은 애플리케이션 레벨에서 여러 번 조회 후 병합해야 하므로 비용이 큽니다.
+        연관 테이블에 같은 샤드 키(예: <code>user_id</code>)를 넣어 함께 이동하도록 설계합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>미래의 리샤딩 비용을 미리 계산합니다.</strong> 해시 기반은 샤드 수를 바꾸면 거의 모든 데이터가 재배치됩니다.
+        Consistent Hashing이나 미리 넉넉한 논리 샤드(virtual shard)를 만들어 물리 서버에 매핑하는 방식(예: 4096개의 논리 샤드를 물리 서버 몇 대에 배치)으로 재배치 범위를 줄입니다.
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <strong>Hot Shard(핫스팟)란?</strong><br>
+      특정 샤드에 트래픽이나 데이터가 비정상적으로 몰리는 현상입니다. 예를 들어 인플루언서 한 명이 대부분의 팔로우를 받는 SNS에서 <code>user_id</code>로 단순 해시 샤딩하면
+      해당 인플루언서의 팔로워 데이터가 있는 샤드에만 부하가 몰릴 수 있습니다.
+      해결책: 값이 큰 엔티티는 별도로 추가 분산(sub-sharding)하거나, 읽기가 많은 핫 데이터는 캐시 레이어로 흡수합니다.
+    </div>
+
+    <div class="card info">
+      <div class="label i">자주 나오는 함정 질문</div>
+      <p class="quote">"샤딩 후 특정 사용자의 모든 데이터를 조회하려면 어떻게 하나요?"</p>
+      <p style="margin-top:0.6rem;font-size:0.9rem;">
+        샤드 키를 알고 있으면(예: user_id) 해당 샤드 하나만 조회하면 됩니다.
+        하지만 "관리자가 전체 주문 통계를 봐야 한다"처럼 샤드 키 없이 전체를 조회해야 하는 경우, OLTP 샤드를 직접 스캔하지 않고
+        별도의 <strong>OLAP/데이터 웨어하우스로 비동기 복제</strong>하여 집계 쿼리는 그쪽에서 처리하는 것이 정석입니다.
+      </p>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"주문 도메인의 조회가 90% 이상 user_id 기준이므로 user_id를 샤드 키로 선택합니다. 다만 대형 셀러의 주문이 몰릴 가능성이 있어, 상위 1% 셀러는 별도 모니터링을 걸어 Hot Shard 여부를 추적합니다. 재배치 비용을 낮추기 위해 물리 샤드 4대가 아니라 논리 샤드 256개를 만들고 4대에 매핑하는 방식으로 설계해서, 향후 8대로 늘릴 때 데이터 이동을 최소화합니다. 관리자용 전체 통계는 샤드를 직접 조회하지 않고 CDC로 데이터 웨어하우스에 복제해 처리합니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"user_id를 해시로 나눠서 여러 DB에 저장하면 됩니다. 샤드가 많을수록 성능이 좋아지니 넉넉하게 나눕니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 조회 패턴을 고려하지 않았고, Hot Shard·리샤딩 비용·크로스 샤드 쿼리 문제를 전혀 언급하지 않았습니다. "샤드가 많을수록 좋다"는 근거 없는 주장입니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"샤드 4개를 8개로 늘려야 합니다. 서비스 중단 없이 어떻게 리샤딩하시겠어요?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong><br>
+        1) Dual-write 또는 CDC(Change Data Capture)로 기존 샤드의 데이터를 새 샤드 배치로 실시간 복제합니다.<br>
+        2) 복제가 따라잡은 뒤(lag이 0에 수렴) 트래픽 라우팅 레이어(샤드 매핑 테이블 또는 프록시)를 새 배치로 전환합니다.<br>
+        3) 전환 직후 일정 기간 이전 샤드도 유지하며 롤백 가능하게 둡니다.<br>
+        4) 검증 후 기존 샤드를 정리합니다.<br>
+        핵심은 "한 번에 전환"이 아니라 <strong>이중 쓰기 → 검증 → 점진적 전환 → 롤백 가능 기간 확보</strong>의 단계적 접근입니다. Consistent Hashing을 미리 적용해뒀다면 재배치 범위 자체가 줄어듭니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 4. REPLICATION ───────────── -->
+  <section id="section-replication">
+    <h2>4. 레플리케이션 — Read Replica, 복제 지연, Failover</h2>
+
+    <h3>배경 개념: 읽기와 쓰기를 분리하는 이유</h3>
+    <p>
+      대부분의 서비스는 쓰기보다 읽기가 훨씬 많습니다(예: 읽기:쓰기 = 9:1). 마스터(Primary) DB 한 대가 모든 읽기·쓰기를 처리하면 읽기 트래픽만으로도 포화됩니다.
+      레플리케이션은 마스터의 변경 사항을 하나 이상의 복제본(Replica)에 비동기/동기로 전파해, 읽기를 복제본으로 분산하는 기법입니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"Read Replica를 도입한 뒤, 사용자가 글을 작성하고 바로 새로고침했더니 글이 안 보인다는 버그 리포트가 들어왔습니다. 원인과 해결책을 설명해 주세요."</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>복제 지연(Replication Lag)이라는 근본 원인을 정확히 짚고, "일관성을 어디까지 희생할 수 있는가"에 대한 실무 판단을 봅니다.</p>
+
+    <h4>단계별 원인 분석</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>복제는 비동기이므로 지연이 존재합니다.</strong> 마스터에 커밋된 변경 사항이 replica의 binlog/WAL을 통해 전파되는 데 수십 ms ~ 수 초가 걸릴 수 있습니다.
+        글쓰기 직후 즉시 replica로 읽기 요청이 가면 아직 반영 전 상태를 읽습니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>이 문제는 "Read-after-Write Consistency"가 깨진 것입니다.</strong> 사용자 본인이 방금 쓴 데이터를 즉시 읽지 못하는 것은 사용자 경험상 치명적입니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>해결 옵션들:</strong>
+        <ul>
+          <li>쓰기 직후 일정 시간(또는 특정 요청) 동안은 마스터에서 읽도록 라우팅 ("sticky read")</li>
+          <li>세션 내에서 마지막 쓰기 시점의 복제 위치(LSN/binlog position)를 추적해, replica가 그 지점까지 따라잡은 뒤에만 읽기 허용</li>
+          <li>클라이언트에 낙관적 UI 업데이트를 적용해 서버 재조회 없이 화면에 즉시 반영</li>
+        </ul>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>근본적으로는 일관성 요구 수준을 도메인별로 다르게 적용합니다.</strong> 본인 글 목록, 결제 확인처럼 즉시 일관성이 중요한 화면은 마스터에서 읽고,
+        타임라인 피드처럼 약간의 지연이 허용되는 화면은 replica에서 읽습니다.
+      </div>
+    </div>
+
+    <h4>복제 방식 비교</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>방식</th>
+          <th>설명</th>
+          <th>장점</th>
+          <th>단점</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>비동기 (Async)</td>
+          <td>마스터가 커밋 후 응답, 복제는 별도로 전파</td>
+          <td>쓰기 지연 최소, 성능 우수</td>
+          <td>replica lag, failover 시 데이터 유실 가능</td>
+        </tr>
+        <tr>
+          <td>동기 (Sync)</td>
+          <td>replica가 반영을 확인해야 커밋 완료</td>
+          <td>데이터 유실 없음</td>
+          <td>쓰기 지연 증가, replica 장애 시 쓰기 전체 블록 위험</td>
+        </tr>
+        <tr>
+          <td>준동기 (Semi-sync)</td>
+          <td>최소 1개 replica가 받았음을 확인 후 커밋</td>
+          <td>성능과 안전성의 절충</td>
+          <td>여전히 완전한 무손실은 아님, 설정 복잡도 존재</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"이건 복제 지연으로 인한 Read-after-Write Consistency 문제입니다. 저희는 사용자가 방금 쓴 데이터를 다시 읽는 API(자기 글 조회, 마이페이지)는 마스터로 라우팅하고, 타임라인처럼 다수 사용자 데이터를 보여주는 API는 replica로 라우팅하는 정책을 도입했습니다. 결제처럼 절대 유실되면 안 되는 쓰기는 준동기 복제로 전환해 최소 1개 replica 반영을 보장했고, failover 시 데이터 유실 위험을 낮췄습니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"복제가 늦어서 그런 거니까 replica를 더 빠른 서버로 바꾸면 해결됩니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 근본 원인(비동기 복제의 본질적 특성)을 이해하지 못했습니다. 하드웨어를 바꿔도 지연은 0이 되지 않으며, 도메인별 일관성 요구사항을 구분하지 못했습니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"마스터 DB가 갑자기 다운됐습니다. Replica를 새 마스터로 승격(failover)하는 과정에서 어떤 위험이 있고, 어떻게 최소화하시겠어요?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong><br>
+        1) <strong>데이터 유실 위험</strong>: 비동기 복제였다면 마스터에는 커밋됐지만 replica로 아직 전파되지 않은 데이터가 유실됩니다. 준동기 복제로 이 위험을 줄일 수 있습니다.<br>
+        2) <strong>스플릿 브레인(Split-Brain)</strong>: 기존 마스터가 완전히 죽지 않고 네트워크 파티션 상태라면, 승격된 새 마스터와 기존 마스터가 동시에 쓰기를 받는 상황이 생길 수 있습니다. Fencing(기존 마스터 강제 격리) 또는 쿼럼 기반 합의(예: etcd, Consul을 이용한 리더 선출)로 방지합니다.<br>
+        3) <strong>애플리케이션 재연결</strong>: connection pool과 DNS/VIP가 새 마스터를 즉시 바라보도록 자동화(예: ProxySQL, Orchestrator, RDS Multi-AZ의 자동 failover)해야 사람이 개입하는 지연을 없앨 수 있습니다.<br>
+        핵심은 "failover는 자동화되어야 하지만, 자동화가 스플릿 브레인을 만들지 않도록 fencing 메커니즘이 반드시 함께 있어야 한다"는 점입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 5. CACHING ───────────── -->
+  <section id="section-caching">
+    <h2>5. 캐싱 전략 — Cache-Aside, TTL, 무효화, Cache Stampede</h2>
+
+    <h3>배경 개념: 캐시는 왜 만능이 아닌가</h3>
+    <p>
+      캐시는 DB 부하를 줄이고 응답 속도를 높이는 가장 저렴한 확장 수단입니다. 하지만 캐시는 "원본 데이터의 복사본"이므로
+      원본이 바뀌면 캐시도 갱신되어야 합니다. 이 동기화 문제가 캐싱을 어렵게 만드는 핵심입니다.
+      "캐시 무효화(Cache Invalidation)와 이름 짓기는 컴퓨터 과학에서 가장 어려운 두 가지 문제"라는 말이 있을 정도입니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"인기 상품 상세 페이지에 Redis 캐시를 적용했습니다. TTL 만료 순간 동시에 수천 개 요청이 들어오면 어떤 문제가 생기고, 어떻게 막으시겠어요?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>Cache Stampede(Thundering Herd)라는 구체적 현상을 알고 있는지, 그리고 방지 기법을 실제로 구현해본 적이 있는지를 봅니다.</p>
+
+    <h4>캐싱 패턴 비교</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>패턴</th>
+          <th>동작</th>
+          <th>장점</th>
+          <th>단점</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Cache-Aside (Lazy Loading)</td>
+          <td>읽기 시 캐시 확인 → 없으면 DB 조회 후 캐시에 저장</td>
+          <td>구현 단순, 필요한 데이터만 캐싱됨</td>
+          <td>첫 요청은 항상 느림(cache miss), 캐시-DB 불일치 가능 구간 존재</td>
+        </tr>
+        <tr>
+          <td>Write-Through</td>
+          <td>쓰기 시 캐시와 DB를 함께 갱신</td>
+          <td>캐시가 항상 최신 상태</td>
+          <td>모든 쓰기가 캐시 쓰기 지연을 포함, 안 쓰는 데이터도 캐싱됨</td>
+        </tr>
+        <tr>
+          <td>Write-Behind (Write-Back)</td>
+          <td>캐시에 먼저 쓰고, DB에는 비동기로 나중에 반영</td>
+          <td>쓰기 응답 매우 빠름</td>
+          <td>캐시 장애 시 데이터 유실 위험, 구현 복잡</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>Cache Stampede(Thundering Herd) 방지 기법</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Mutex Lock (분산 락)</strong> — TTL 만료 시 첫 번째 요청만 DB를 조회하고 캐시를 갱신하도록 락을 걸고,
+        나머지 요청은 락이 풀릴 때까지 대기하거나 이전 값을 잠시 더 사용합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>확률적 조기 재계산 (Probabilistic Early Expiration)</strong> — TTL이 다가올수록 낮은 확률로 미리 갱신을 트리거해,
+        정확히 같은 시점에 모두 만료되는 것을 방지합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>TTL에 지터(Jitter) 추가</strong> — 동일한 TTL(예: 정확히 300초)로 여러 키를 캐싱하면 동시에 만료됩니다.
+        <code>TTL = base + random(0, jitter)</code>처럼 무작위성을 더해 만료 시점을 분산시킵니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Stale-While-Revalidate</strong> — 만료된 캐시라도 즉시 삭제하지 않고, 낡은 값을 우선 반환하면서 백그라운드에서 갱신합니다.
+        사용자는 약간 오래된 데이터를 보지만 DB에 부하가 몰리지 않습니다.
+      </div>
+    </div>
+
+    <h4>구현 예시 — Mutex Lock 기반 방지</h4>
+    <pre><code># 의사코드
+def get_product(product_id):
+    value = redis.get(f"product:{product_id}")
+    if value is not None:
+        return value
+
+    lock_key = f"lock:product:{product_id}"
+    if redis.set(lock_key, "1", nx=True, ex=5):  # 락 획득 성공한 요청만 DB 조회
+        try:
+            value = db.query_product(product_id)
+            redis.set(f"product:{product_id}", value, ex=300)
+        finally:
+            redis.delete(lock_key)
+        return value
+    else:
+        time.sleep(0.05)
+        return get_product(product_id)  # 재시도 (또는 stale 값 반환)</code></pre>
+
+    <h4>캐시 무효화(Invalidation) 전략</h4>
+    <div class="highlight-box">
+      <strong>TTL 기반</strong>: 가장 단순하지만 최대 TTL 시간만큼 stale 데이터를 허용합니다.<br>
+      <strong>이벤트 기반</strong>: 데이터 변경 시 명시적으로 캐시 키를 삭제/갱신합니다(예: 상품 정보 수정 API에서 <code>DEL product:123</code>). 정확하지만 모든 쓰기 경로에서 빠짐없이 처리해야 합니다.<br>
+      <strong>버전 기반</strong>: 캐시 키에 버전을 포함(<code>product:123:v5</code>)해 갱신 시 버전만 올리고 이전 키는 TTL로 자연 소멸시킵니다. 배포 중 캐시 스키마 변경에도 안전합니다.
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"TTL이 동시에 만료되면 Cache Stampede가 발생해 DB에 순간적으로 수천 개 쿼리가 몰립니다. 저희는 두 가지를 함께 적용했습니다. 첫째, Redis SETNX로 분산 락을 구현해 만료 시점에 단 하나의 요청만 DB를 조회하고 나머지는 대기 후 갱신된 캐시를 읽습니다. 둘째, TTL에 ±10% 지터를 추가해 애초에 동시 만료 확률을 낮췄습니다. 락 대기 중인 요청이 너무 많아질 경우를 대비해, 락 획득 실패 시 짧은 시간 동안은 만료된 값을 stale로 반환하는 fallback도 뒀습니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"캐시가 만료돼서 DB에 요청이 몰리는 거니까 TTL을 늘리면 됩니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: TTL을 늘리는 것은 문제를 늦출 뿐 해결하지 못하며, 데이터 최신성을 희생합니다. Cache Stampede라는 현상 자체를 인지하지 못한 답변입니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"캐시에는 있지도 않은 상품 ID(예: 존재하지 않는 상품, 혹은 악의적인 스캐닝 요청)로 계속 조회가 들어오면 무슨 문제가 생기고, 어떻게 막으시겠어요?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 이것은 <strong>Cache Penetration(캐시 관통)</strong> 문제입니다. 존재하지 않는 키는 캐시에 없으므로 매번 DB까지 도달해 DB에 부하를 줍니다.
+        해결: 1) 존재하지 않는 결과도 짧은 TTL로 "null 캐싱"합니다(<code>product:999999 = NULL, TTL=60s</code>).
+        2) Bloom Filter로 "존재 가능한 ID 집합"을 미리 만들어, 필터를 통과하지 못하면 DB 조회 자체를 스킵합니다.
+        3) API Gateway/WAF 레벨에서 비정상적인 스캐닝 패턴을 rate limit으로 차단합니다.
+        null 캐싱이 가장 구현이 간단하고 실무에서 가장 많이 쓰입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 6. CDN ───────────── -->
+  <section id="section-cdn">
+    <h2>6. CDN — 정적/동적 콘텐츠와 엣지 캐싱</h2>
+
+    <h3>배경 개념: 물리적 거리도 지연시간이다</h3>
+    <p>
+      서울에 있는 서버에 미국 사용자가 접속하면 왕복 지연(RTT)만 150ms 이상 걸릴 수 있습니다.
+      CDN(Content Delivery Network)은 전 세계 엣지(Edge) 위치에 콘텐츠 사본을 두어, 사용자와 물리적으로 가까운 노드가 응답하게 합니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"정적 자산(이미지, JS/CSS)뿐 아니라 API 응답도 CDN으로 캐싱할 수 있을까요? 어떤 조건에서 가능하고, 어떤 위험이 있나요?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"CDN = 정적 파일용"이라는 얕은 이해를 넘어, 동적 콘텐츠 캐싱의 조건과 위험(개인화, 캐시 poisoning, 무효화 지연)을 아는지 봅니다.</p>
+
+    <h4>CDN 캐싱 대상 판단 기준</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>사용자별로 다른 응답인가?</strong> 로그인 사용자 개인화 데이터(장바구니, 추천)는 캐싱하면 다른 사용자에게 노출될 위험이 있어 부적합합니다.
+        반대로 상품 목록, 공지사항처럼 모두에게 동일한 응답은 적합합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>얼마나 자주 바뀌는가?</strong> 실시간 재고 수량처럼 초 단위로 바뀌는 데이터는 CDN 캐싱의 이득이 적습니다.
+        반대로 상품 상세 설명처럼 하루에 한두 번 바뀌는 데이터는 좋은 후보입니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>캐시 키를 정교하게 설계합니다.</strong> 동적 API를 캐싱할 때는 URL뿐 아니라 <code>Vary</code> 헤더(Accept-Language, Authorization 유무)까지 캐시 키에 포함해야
+        다른 사용자/언어 응답이 섞이는 사고를 막을 수 있습니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>무효화 방법을 미리 설계합니다.</strong> CDN 캐시는 오리진보다 무효화 전파가 느릴 수 있습니다.
+        긴급 수정이 필요한 콘텐츠(가격 오류 등)는 CDN 프로바이더의 즉시 퍼지(purge) API를 호출하는 운영 절차가 있어야 합니다.
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <strong>Cache-Control 헤더 실무 설정 예시</strong><br>
+      <code>Cache-Control: public, max-age=3600, s-maxage=86400</code><br>
+      <code>max-age</code>는 브라우저(사용자 로컬) 캐시 시간, <code>s-maxage</code>는 CDN(공유 캐시) 캐시 시간을 별도로 지정합니다.
+      개인화 응답은 <code>Cache-Control: private, no-store</code>로 CDN이 절대 캐싱하지 않도록 명시해야 합니다.
+    </div>
+
+    <div class="card info">
+      <div class="label i">자주 나오는 함정 질문</div>
+      <p class="quote">"CDN을 쓰면 오리진 서버 부하가 완전히 사라지나요?"</p>
+      <p style="margin-top:0.6rem;font-size:0.9rem;">
+        아닙니다. Cache Miss, TTL 만료, 캐시되지 않는 동적 요청은 여전히 오리진까지 도달합니다.
+        또한 여러 엣지 노드가 동시에 만료되면 CDN 레벨에서도 Cache Stampede가 발생할 수 있어(오리진 쉴드, Origin Shield 기능으로 완화),
+        "CDN을 쓰면 오리진은 신경 안 써도 된다"는 생각은 틀렸습니다.
+      </p>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"동적 API도 조건에 따라 CDN 캐싱이 가능합니다. 사용자별로 다르지 않고, 초 단위로 바뀌지 않는 응답(예: 카테고리 목록, 인기 상품 랭킹 1분 지연 허용)은 s-maxage와 Vary 헤더를 정교하게 설정해 캐싱합니다. 개인화 데이터는 반드시 private, no-store로 CDN 캐싱을 명시적으로 차단합니다. 긴급 수정이 필요한 콘텐츠를 위해 CDN purge API를 배포 파이프라인에 연결해, 수동 개입 없이 즉시 무효화되도록 했습니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"CDN은 이미지나 JS 파일 같은 정적 자산에만 쓰는 거라서 API는 캐싱하지 않는 게 안전합니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: CDN의 활용 범위를 정적 자산으로만 한정해, 동적 콘텐츠 캐싱으로 얻을 수 있는 확장성 이득을 놓칩니다. "안전하다"는 근거 없는 회피성 답변입니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"CDN 캐시를 잘못 설정해서, 한 사용자의 개인정보가 담긴 API 응답이 다른 사용자에게도 캐싱되어 노출되는 사고가 발생했습니다. 원인과 재발 방지 대책은?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 대부분 <code>Vary: Authorization</code> 또는 <code>Cache-Control: private</code> 누락이 원인입니다.
+        CDN이 인증 여부와 무관하게 URL만으로 캐시 키를 만들면, 사용자 A의 응답이 캐싱되어 같은 URL을 요청한 사용자 B에게 그대로 반환됩니다.
+        재발 방지: 1) 개인화 응답 엔드포인트에는 <code>no-store</code>를 기본값으로 강제하는 미들웨어/린트 규칙 도입,
+        2) 배포 전 CDN 캐시 헤더 자동 검증 테스트 추가,
+        3) 사고 직후 전체 캐시 퍼지 및 영향받은 사용자 식별을 위한 액세스 로그 분석,
+        4) 이 사고를 postmortem으로 남겨 "캐싱 가능 여부"를 API 설계 체크리스트에 명시적 항목으로 추가.
+        이 문제는 보안 사고이기도 하므로 SEV 등급을 높여 대응해야 합니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 7. SCENARIO ───────────── -->
+  <section id="section-scenario">
+    <h2>7. 종합 시나리오 — 트래픽이 10배로 늘어난다면</h2>
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"현재 서비스가 DAU 10만인데, 마케팅 캠페인으로 다음 달 DAU가 100만이 될 예정입니다. 확장 계획을 우선순위와 함께 설명해 주세요."</p>
+    </div>
+    <p>이 질문은 지금까지 배운 개념을 <strong>순서와 비용</strong>을 고려해 조합하는 능력을 봅니다. 좋은 답변은 아래처럼 단계적이고, 각 단계에서 무엇을 측정해 다음 단계로 넘어갈지 기준이 있습니다.</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>측정부터 시작합니다.</strong> 현재 지표(RPS, DB CPU, connection 사용률, 캐시 히트율)를 baseline으로 잡고, 10배 트래픽 시 어느 컴포넌트가 먼저 한계에 도달하는지 용량 산정을 합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>비용이 낮은 것부터 적용합니다.</strong> 캐싱 히트율을 높이는 것(예: 상품 상세 캐시 도입)이 샤딩보다 훨씬 싸고 빠릅니다. 정적 자산과 캐싱 가능한 API를 CDN으로 옮겨 오리진 부하 자체를 줄입니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>애플리케이션 서버를 오토스케일링 가능하게 만듭니다.</strong> Stateless 전환이 안 되어 있다면 세션을 외부 스토어로 옮기는 작업이 선행됩니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>DB는 Read Replica부터.</strong> 읽기:쓰기 비율이 높다면 Replica 추가만으로 상당 부분 흡수됩니다. 그래도 쓰기 병목이 남으면 그때 샤딩을 검토합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>부하 테스트로 검증합니다.</strong> k6, Locust 등으로 실제 10배 트래픽을 시뮬레이션해, 이론상 계획이 실제로 버티는지 캠페인 전에 확인합니다.
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <strong>시니어가 반드시 언급해야 하는 것</strong>: 확장은 "언제까지, 얼마의 예산으로"라는 제약과 함께 옵니다.
+      샤딩은 가장 강력하지만 개발·운영 비용이 가장 크므로, 캠페인이 일회성이라면 오히려 <strong>일시적인 수직 확장 + 캐싱 + Rate Limiting(대기열)</strong> 조합이 더 합리적인 선택일 수 있습니다.
+      "무조건 최신 아키텍처로 간다"가 아니라 상황에 맞는 비용 대비 효과를 판단하는 것이 시니어의 신호입니다.
+    </div>
+  </section>
+
+  <!-- ───────────── 8. RUBRIC ───────────── -->
+  <section id="section-rubric">
+    <h2>8. 자기 점검 Rubric</h2>
+    <p>각 항목을 솔직하게 채점하세요. ●●●=잘 설명할 수 있음, ●●○=부분적으로 앎, ●○○=어렴풋이 앎, ○○○=모름</p>
+
+    <div class="card rubric">
+      <div class="rubric-item">
+        <span>수평/수직 확장의 한계와 선택 기준을 병목 지표 기반으로 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>애플리케이션을 stateless로 만드는 것이 왜 수평 확장의 전제조건인지 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>샤딩 전략(해시/레인지/디렉토리/Consistent Hashing)의 장단점을 비교할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>Hot Shard가 왜 생기고 어떻게 완화하는지 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>Replication Lag과 Read-after-Write Consistency 문제를 실무 해결책과 함께 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>Failover 시 스플릿 브레인 위험과 fencing 개념을 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>Cache-Aside/Write-Through/Write-Behind의 차이와 적합 상황을 말할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>Cache Stampede와 Cache Penetration을 구별하고 각각의 방지 기법을 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>CDN으로 동적 콘텐츠를 캐싱하는 조건과 위험(개인정보 노출 등)을 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>대규모 트래픽 증가 시나리오에서 비용 순서를 고려한 단계적 확장 계획을 제시할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+    </div>
+
+    <h3>점수 해석</h3>
+    <ul>
+      <li><strong>8~10개 ●●●</strong>: 확장성 영역 시니어 수준. Day 4로 진행해도 됩니다.</li>
+      <li><strong>5~7개 ●●●</strong>: 핵심은 알지만 ●●○ 항목을 다시 읽고 자신의 프로젝트 사례로 재구성해 보세요.</li>
+      <li><strong>4개 이하 ●●●</strong>: 샤딩과 캐싱 섹션을 한 번 더 읽고, 종합 시나리오 질문에 직접 소리 내어 답해보세요.</li>
+    </ul>
+
+    <h3>추천 복습 방법</h3>
+    <p>오늘 배운 내용 중 가장 자신 없는 질문 하나를 골라, 면접관 앞에서 말하듯 2~3분간 소리 내어 설명해보세요. 막히는 부분이 실제로 모르는 부분입니다.</p>
+  </section>
+
+  <!-- ───────────── NAVIGATION ───────────── -->
+  <div class="nav-bottom">
+    <a href="./0002-database-design-and-transactions.html">← Day 2: 데이터베이스 설계 &amp; 트랜잭션</a>
+    <a href="./index.html">목록으로</a>
+    <span style="color:var(--muted);font-size:0.9rem;">Day 4: 분산 시스템 &amp; 일관성 →</span>
+  </div>
+
+</div>
+</body>
+</html>
