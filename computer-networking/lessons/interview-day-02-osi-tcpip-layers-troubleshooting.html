@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interview Day 2 — OSI/TCP-IP 계층과 실무 장애 분석</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.72; color: #1a1d23; background: #fff; }
+    h1 { margin: 0 0 8px; font-size: 2rem; line-height: 1.25; }
+    .subtitle { color: #57606a; margin: 0 0 32px; font-size: 1.05rem; }
+    h2 { margin-top: 48px; padding-top: 12px; border-top: 2px solid #e5e7eb; font-size: 1.4rem; }
+    h3 { margin-top: 32px; color: #1a1d23; }
+    h4 { margin-top: 20px; color: #444; font-size: 1rem; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.93rem; }
+    th, td { border: 1px solid #d8dee4; padding: 9px 12px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 18px; background: #0d1117; color: #e6edf3; border-radius: 8px; font-size: 0.88rem; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.35em; border-radius: 4px; border: 1px solid #d8dee4; }
+    blockquote { margin: 20px 0; padding: 4px 20px; border-left: 4px solid #0b57d0; background: #f0f4ff; color: #2d3748; }
+    blockquote.warn { border-left-color: #e3a008; background: #fffbeb; }
+    blockquote.good { border-left-color: #16a34a; background: #f0fdf4; }
+    blockquote.bad  { border-left-color: #dc2626; background: #fef2f2; }
+    details { margin: 20px 0; padding: 14px 18px; border: 1px solid #d8dee4; border-radius: 8px; background: #fafafa; }
+    summary { cursor: pointer; font-weight: 600; font-size: 1rem; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 36px 0; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-right: 6px; }
+    .badge-senior { background: #dbeafe; color: #1d4ed8; }
+    .badge-tool   { background: #fce7f3; color: #9d174d; }
+    .badge-trap   { background: #fee2e2; color: #991b1b; }
+    .badge-tip    { background: #dcfce7; color: #15803d; }
+    .back { margin-bottom: 32px; font-size: 0.95rem; }
+    .rubric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+    .rubric-col { padding: 16px; border-radius: 8px; }
+    .rubric-col.weak  { background: #fef2f2; border: 1px solid #fca5a5; }
+    .rubric-col.strong { background: #f0fdf4; border: 1px solid #86efac; }
+    .rubric-col h4 { margin-top: 0; }
+    @media (max-width: 640px) { .rubric-grid { grid-template-columns: 1fr; } }
+    .step-list { counter-reset: step; padding: 0; list-style: none; }
+    .step-list li { counter-increment: step; padding: 10px 0 10px 52px; position: relative; border-bottom: 1px solid #f0f0f0; }
+    .step-list li::before { content: counter(step); position: absolute; left: 0; top: 10px; width: 32px; height: 32px; background: #0b57d0; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+    .interview-q { background: #1a1d23; color: #e6edf3; padding: 20px 24px; border-radius: 8px; margin: 20px 0; font-size: 1.05rem; font-style: italic; }
+    .interview-q::before { content: "💬 면접 질문"; display: block; font-size: 0.78rem; font-style: normal; font-weight: 700; color: #8b949e; margin-bottom: 8px; letter-spacing: 0.05em; }
+    .toc { background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 8px; padding: 20px 24px; margin: 24px 0 40px; }
+    .toc h3 { margin-top: 0; font-size: 1rem; }
+    .toc ol { margin: 0; padding-left: 20px; }
+    .toc li { margin: 4px 0; font-size: 0.93rem; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+
+  <h1>Interview Day 2</h1>
+  <p class="subtitle">OSI/TCP-IP 계층과 실무 장애 분석 — "계층 암기를 트러블슈팅 사고로 바꾸는 법"</p>
+
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#interview-q">면접 질문</a></li>
+      <li><a href="#prerequisite">전제 개념 — 알아야 할 기초</a></li>
+      <li><a href="#why-asked">왜 면접에서 이걸 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#thinking-order">답변 사고 순서</a></li>
+      <li><a href="#answer-example">핵심 답변 예시</a></li>
+      <li><a href="#tradeoff">Trade-off</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#followup">Senior-level Follow-up 질문</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <h2 id="interview-q">1. 면접 질문</h2>
+
+  <div class="interview-q">
+    "OSI 7계층을 설명해보세요." — 라고 물은 뒤 면접관이 바로 이어서: "그런데 그게 실제 장애 분석에서 어떻게 쓰입니까? 어제 겪었던 네트워크 이슈를 계층 관점에서 설명해보세요."
+  </div>
+
+  <p>앞부분("7계층을 나열하라")은 사실 미끼다. 대부분의 지원자가 여기서 <strong>OSI 계층 이름 암기 발표</strong>로 답을 끝낸다. 진짜 평가는 뒷부분에서 시작된다 — <strong>계층 모델을 실제 원인 분리 도구로 쓸 수 있는가</strong>다. 10년차 이상에게는 "계층이 몇 개인가"가 아니라 "계층을 어떻게 무기로 쓰는가"를 묻는다.</p>
+
+  <hr>
+
+  <!-- 2. 전제 개념 -->
+  <h2 id="prerequisite">2. 전제 개념 — 알아야 할 기초</h2>
+
+  <h3>2-1. OSI 7계층은 왜 만들어졌는가</h3>
+  <p>1980년대에는 컴퓨터 제조사마다 통신 방식이 달라 서로 다른 장비끼리 통신이 안 됐다. OSI(Open Systems Interconnection)는 "통신 기능을 역할별로 나누면 어느 계층이든 표준만 지키면 서로 다른 회사 장비도 통신할 수 있다"는 아이디어에서 나온 <strong>참조 모델(reference model)</strong>이다. 즉 실제로 동작하는 프로토콜 스택이 아니라, <strong>문제를 나눠서 생각하기 위한 사고의 틀</strong>이다.</p>
+
+  <blockquote>
+    <strong>비유:</strong> 택배가 늦게 온다고 하자. "포장 문제인가(물건을 담는 방식) vs 운송 문제인가(트럭 경로) vs 주소 문제인가(배송지 오기입) vs 수령인 문제인가(사람이 집에 없음)"를 나눠 생각하지 않으면 어디서부터 고쳐야 할지 모른다. OSI 계층은 이 "나눠서 생각하기"를 네트워크에 적용한 것이다.
+  </blockquote>
+
+  <h3>2-2. 실무에서는 OSI 7계층이 아니라 TCP/IP 4~5계층으로 생각한다</h3>
+  <p>교과서는 OSI 7계층(물리-데이터링크-네트워크-전송-세션-표현-응용)을 가르치지만, 실제 인터넷은 TCP/IP 4계층(링크-인터넷-전송-응용)으로 구현되어 있다. 세션/표현 계층은 실무에서 별도 계층으로 다뤄지지 않고 응용 계층 프로토콜(TLS, HTTP 등) 안에 흡수돼 있다. <strong>면접에서 7계층을 순서대로 읊는 것보다, 실무에서 쓰는 4~5계층 매핑을 아는 것이 더 시니어다운 답변이다.</strong></p>
+
+  <table>
+    <thead>
+      <tr><th>OSI 7계층</th><th>TCP/IP 계층</th><th>실무 대응 요소</th><th>장애 시 확인 도구</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>7. 응용</td><td rowspan="3">응용 (Application)</td><td>HTTP, DNS, TLS, gRPC, 애플리케이션 로직</td><td><code>curl -v</code>, APM, 애플리케이션 로그</td></tr>
+      <tr><td>6. 표현</td><td>직렬화, 인코딩, TLS 암호화</td><td>TLS 핸드셰이크 로그, 인증서 체인</td></tr>
+      <tr><td>5. 세션</td><td>TLS 세션, 연결 유지(keep-alive)</td><td>세션 재사용 여부, connection pool 상태</td></tr>
+      <tr><td>4. 전송</td><td>전송 (Transport)</td><td>TCP, UDP, 포트, 흐름/혼잡 제어</td><td><code>ss</code>, <code>netstat</code>, <code>tcpdump</code></td></tr>
+      <tr><td>3. 네트워크</td><td>인터넷 (Internet)</td><td>IP, 라우팅, NAT, ICMP</td><td><code>traceroute</code>, <code>mtr</code>, <code>ip route</code></td></tr>
+      <tr><td>2. 데이터링크</td><td rowspan="2">링크 (Link)</td><td>MAC 주소, 스위치, ARP, VLAN</td><td><code>arp -a</code>, 스위치 포트 통계</td></tr>
+      <tr><td>1. 물리</td><td>케이블, NIC, 신호</td><td><code>ethtool</code>, 링크 상태 LED, 케이블 테스터</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2-3. 캡슐화(Encapsulation)란 무엇이고 왜 장애 분석에 중요한가</h3>
+  <p>데이터가 응용 계층에서 만들어져 물리 계층으로 내려갈 때마다 각 계층은 자기 헤더를 덧붙인다. HTTP 요청(응용 데이터)은 TCP 세그먼트가 되고, IP 패킷이 되고, 이더넷 프레임이 되어 전선을 탄다. <strong>이 순서를 알아야 "어느 계층에서 문제가 생겼을 때 위/아래 계층이 각각 어떻게 보이는지"를 추론할 수 있다.</strong></p>
+
+  <pre><code>[HTTP 요청]
+   ↓ TCP 헤더 추가 (포트, 시퀀스 번호)
+[TCP 세그먼트]
+   ↓ IP 헤더 추가 (출발지/목적지 IP, TTL)
+[IP 패킷]
+   ↓ 이더넷 헤더 추가 (출발지/목적지 MAC)
+[이더넷 프레임]
+   ↓ 전기/광 신호로 변환
+[물리 신호]</code></pre>
+
+  <p>예를 들어 MTU(최대 전송 단위)보다 큰 패킷은 IP 계층에서 단편화(fragmentation)되거나 드롭된다. 이건 TCP 계층에서는 "재전송이 계속된다"로만 보이고, 응용 계층에서는 "가끔 응답이 안 온다"로만 보인다. <strong>같은 문제가 계층마다 다른 증상으로 보이기 때문에, 캡슐화 순서를 알아야 증상에서 원인 계층을 역추론할 수 있다.</strong></p>
+
+  <h3>2-4. "계층 분리(layer isolation)"라는 실무 사고 도구</h3>
+  <p>장애 상황에서 "어느 계층까지는 정상이고 어느 계층부터 비정상인가"를 경계 짓는 작업이다. 예를 들어 <code>ping</code>이 성공하면 L3(네트워크 계층)까지는 정상이라는 뜻이다. <code>telnet host 443</code>으로 TCP 연결이 되면 L4까지 정상이다. 그런데 HTTPS 요청이 실패하면 문제는 L5~L7(TLS/HTTP) 어딘가에 있다는 뜻이다. <strong>이렇게 아래 계층부터 하나씩 "여기까지는 정상"을 확인하며 위로 올라가는 것이 장애 분석의 기본 골격이다.</strong></p>
+
+  <hr>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <h2 id="why-asked">3. 왜 면접에서 이걸 묻는가</h2>
+
+  <p>이 질문은 세 단계로 필터링한다:</p>
+
+  <ol>
+    <li><strong>1단계 필터 (교과서 암기 vs 이해)</strong> — 7계층 이름을 순서대로 말하는 것 자체는 통과 기준이 아니다. 이름을 말하면서 각 계층이 "왜" 그 역할을 맡는지 설명할 수 있는지 본다.</li>
+    <li><strong>2단계 필터 (이해 vs 적용)</strong> — "그래서 실제 장애에서 어떻게 썼는가"를 물어서, 계층 모델을 실전에서 도구로 써봤는지 확인한다. 여기서 답을 못하면 이론만 아는 사람으로 분류된다.</li>
+    <li><strong>3단계 필터 (적용 vs 사고 체계화)</strong> — follow-up으로 "그럼 어떤 계층부터 확인할지 순서를 어떻게 정합니까"를 물어, 즉흥적으로 도구를 쓰는 게 아니라 재사용 가능한 방법론을 가지고 있는지 본다.
+    </li>
+  </ol>
+
+  <blockquote class="warn">
+    <strong>면접관이 피하고 싶은 답변:</strong> "물리, 데이터링크, 네트워크, 전송, 세션, 표현, 응용 계층이 있습니다" 하고 끝내는 답변. 이건 위키백과를 읽은 사람과 구분이 안 된다. 10년차 면접에서는 이 다음 문장이 없으면 감점이다.
+  </blockquote>
+
+  <hr>
+
+  <!-- 4. 실무 연결 -->
+  <h2 id="real-world">4. 실무 연결</h2>
+
+  <h3>실제 장애 시나리오 A — "핑은 되는데 사이트가 안 열려요"</h3>
+  <p>고객사에서 "우리 서버에 ping은 잘 되는데 웹사이트가 안 열린다"고 신고했다. ping(ICMP, L3)이 성공했다는 것은 네트워크 경로와 IP 도달성은 정상이라는 뜻이다. 문제는 그 위 계층에 있다는 것을 바로 추론할 수 있었다. <code>telnet host 443</code>으로 확인하니 TCP 연결(L4)도 정상. 마지막으로 <code>openssl s_client -connect host:443</code>으로 확인하니 인증서 만료로 TLS 핸드셰이크(L5/L6)가 실패하고 있었다. <strong>계층을 하나씩 배제하지 않았다면 "네트워크는 정상인데 왜 안 되지"에서 멈췄을 것이다.</strong></p>
+
+  <h3>실제 장애 시나리오 B — 사내망에서만 특정 서비스가 느림</h3>
+  <p>사내 VPN을 통해 접속하면 외부 API 호출이 느리다는 보고가 있었다. L3(라우팅)는 <code>traceroute</code>로 정상 경로 확인. L4(TCP 연결)도 빠르게 맺어짐. 그런데 대용량 응답에서만 느려졌다. 원인은 VPN 터널의 MTU가 1400인데 서버가 1500 바이트 패킷을 그대로 보내 <strong>L3에서 단편화(fragmentation)</strong>가 발생하고 있었던 것. 이건 L2/L3 경계에서 생긴 문제가 L7(응용) 증상으로만 보인 전형적인 사례다.</p>
+
+  <h3>실제 장애 시나리오 C — 컨테이너 배포 후 서비스 간 통신 실패</h3>
+  <p>Kubernetes 클러스터에서 새 Pod를 배포했더니 다른 서비스와 통신이 안 됐다. L3(Pod IP 라우팅)까지는 CNI 플러그인에서 정상 확인. 문제는 L2에 가까운 계층 — NetworkPolicy(방화벽 규칙, 실질적으로 L3/L4 필터)가 새 네임스페이스의 트래픽을 차단하고 있었다. <strong>클라우드 네이티브 환경에서도 결국 문제는 전통적인 계층 모델로 분해된다</strong>는 것을 보여주는 사례다.</p>
+
+  <hr>
+
+  <!-- 5. 답변 사고 순서 -->
+  <h2 id="thinking-order">5. 답변 사고 순서</h2>
+
+  <p>계층 모델 질문에 답할 때는 아래 순서로 구조화한다. "계층을 나열"하는 것이 아니라 "계층을 진단에 쓰는 절차"를 보여주는 것이 핵심이다.</p>
+
+  <ol class="step-list">
+    <li>
+      <strong>계층 모델을 실무 언어로 재정의</strong>
+      <br>OSI 7계층을 그대로 나열하지 않고, TCP/IP 4~5계층 + 각 계층의 실무 구성요소(스위치, 라우터, TCP, TLS, HTTP)로 바로 연결한다.
+    </li>
+    <li>
+      <strong>"위에서 아래로" 혹은 "아래에서 위로" 접근 방향을 명시</strong>
+      <br>일반적으로는 <strong>아래에서 위로(bottom-up)</strong> 확인한다. 물리적으로 연결이 되는지(L1/L2) → IP가 도달하는지(L3) → 포트가 열려 있는지(L4) → 애플리케이션이 정상 응답하는지(L7). 각 계층에서 "정상"을 확인하면 다음 계층으로 넘어간다.
+    </li>
+    <li>
+      <strong>각 계층에서 쓰는 도구와 정상/비정상 기준을 구체적으로 제시</strong>
+      <pre><code>L1/L2: ip link show / ethtool eth0        → 링크 상태 UP, 에러 카운터 0
+L3:    ping / traceroute / mtr             → 목적지 도달, 손실률 0%에 가까움
+L4:    telnet host port / ss -tn           → 연결 성공, 재전송 없음
+L7:    curl -v / openssl s_client          → TLS 핸드셰이크 성공, HTTP 상태 코드 정상</code></pre>
+    </li>
+    <li>
+      <strong>계층 경계에서 증상이 "번역"된다는 점을 설명</strong>
+      <br>L3 문제(예: MTU mismatch)가 L7에서는 "가끔 큰 응답만 느리다"로 보일 수 있다는 것을 명시적으로 언급해, 계층 간 증상 전이를 이해하고 있음을 보여준다.
+    </li>
+    <li>
+      <strong>실제 겪은 사례로 연결</strong>
+      <br>이론 설명 후 반드시 실제 사례 1개를 계층 순서에 따라 재구성해서 말한다. "핑은 됐지만 TLS 인증서 문제였다" 같은 구체적 경험이 신뢰도를 만든다.
+    </li>
+    <li>
+      <strong>이 사고방식이 왜 효율적인지 요약</strong>
+      <br>계층별 배제법을 쓰면 "가능성이 낮은 원인에 시간을 낭비하지 않고, 정상/비정상 경계를 빠르게 좁힐 수 있다"는 점을 강조한다.
+    </li>
+  </ol>
+
+  <hr>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <h2 id="answer-example">6. 핵심 답변 예시</h2>
+
+  <h3>짧은 답변 (60초 버전)</h3>
+  <blockquote class="good">
+    "저는 OSI 7계층을 그대로 쓰기보다 TCP/IP 4~5계층으로 단순화해서 씁니다 — 링크, 네트워크, 전송, 응용. 장애가 나면 아래에서 위로 확인합니다. 먼저 <code>ping</code>으로 IP 도달성(L3)을 확인하고, <code>telnet</code>이나 <code>curl</code>로 포트 연결(L4)을 확인하고, 마지막에 TLS와 HTTP 응답(L7)을 봅니다. 예를 들어 지난번 '핑은 되는데 사이트가 안 열린다'는 장애는 L3까지는 정상이고 L7의 TLS 인증서 만료가 원인이었습니다. 계층별로 정상 구간을 좁혀가면 원인 후보를 빠르게 줄일 수 있습니다."
+  </blockquote>
+
+  <h3>깊이 있는 답변 (면접관이 "더 자세히"라고 물을 때)</h3>
+  <blockquote class="good">
+    "OSI 7계층은 원래 서로 다른 벤더 장비가 상호운용되도록 만든 참조 모델이라, 실제 구현체인 TCP/IP 스택과 1:1로 대응하지 않습니다. 세션/표현 계층은 실무에서 TLS나 애플리케이션 프로토콜 안에 흡수돼 있다고 보는 게 맞습니다. 그래서 저는 실무에서는 링크-네트워크-전송-응용의 4계층으로 단순화해서 생각합니다.
+
+    장애 분석에서는 캡슐화 순서를 거꾸로 이용합니다. 데이터가 응용에서 물리로 내려가며 헤더가 쌓이기 때문에, 하위 계층에서 문제가 생기면 상위 계층에서는 전혀 다른 증상으로 보입니다. 예를 들어 MTU mismatch(L3)는 L7에서는 '큰 응답만 가끔 느리다'로 나타나고, TCP TIME_WAIT 고갈(L4)은 L7에서는 '연결이 간헐적으로 거부된다'로 나타납니다. 그래서 증상만 보고 바로 상위 계층을 의심하면 안 되고, 아래에서부터 순서대로 배제해야 합니다.
+
+    실제로 겪은 사례를 말씀드리면, 사내 VPN을 통한 외부 API 호출이 큰 응답에서만 느려진 적이 있습니다. traceroute로 L3 경로는 정상, telnet으로 L4 연결도 빨랐는데, tcpdump로 캡처해보니 VPN MTU(1400)보다 큰 패킷이 반복 재전송되고 있었습니다. 서버 측 MSS clamping으로 해결했습니다. 이 경험에서 배운 건, 계층 모델은 단순히 지식이 아니라 '어디까지 확인했으니 다음은 여기를 봐야 한다'는 순서를 주는 도구라는 점입니다."
+  </blockquote>
+
+  <hr>
+
+  <!-- 7. Trade-off -->
+  <h2 id="tradeoff">7. Trade-off</h2>
+
+  <table>
+    <thead>
+      <tr><th>선택</th><th>장점</th><th>단점 / 주의사항</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Bottom-up 진단 (아래에서 위로)</strong></td>
+        <td>확실한 사실부터 쌓아가므로 오판 가능성이 낮음. 물리/네트워크 계층은 확인이 빠르고 명확함</td>
+        <td>L7 문제(애플리케이션 로직 버그 등)일 때는 하위 계층 확인이 시간 낭비가 될 수 있음</td>
+      </tr>
+      <tr>
+        <td><strong>Top-down 진단 (위에서 아래로)</strong></td>
+        <td>사용자가 실제로 겪는 증상(HTTP 에러 코드 등)에서 바로 시작해 빠르게 후보를 좁힐 수 있음</td>
+        <td>하위 계층 문제(MTU, 라우팅)를 애플리케이션 버그로 오판할 위험이 있음</td>
+      </tr>
+      <tr>
+        <td><strong>계층 모델을 엄밀하게 지키기</strong></td>
+        <td>사고가 체계적이고 다른 사람에게 설명하기 쉬움</td>
+        <td>실제 프로토콜은 계층을 넘나듦(예: TCP가 라우팅 정보에 영향받음). 지나친 도식화는 실제 원인을 놓칠 수 있음</td>
+      </tr>
+      <tr>
+        <td><strong>도구 기반 확인 (ping/traceroute/curl)</strong></td>
+        <td>빠르고 대부분 상황에서 충분함</td>
+        <td>ICMP가 방화벽에서 차단되거나 우선순위가 낮게 처리되면 오판 가능 (Day 1의 오해 참고)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 8. 흔한 오해 -->
+  <h2 id="misconceptions">8. 흔한 오해</h2>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 1</span> "OSI 7계층은 실제 인터넷이 동작하는 방식이다"</summary>
+    <p>OSI는 참조 모델(reference model)이지 구현체가 아니다. 실제 인터넷은 TCP/IP 스택으로 구현되어 있고 TCP/IP는 4~5계층으로 설명된다. 세션/표현 계층은 별도 프로토콜 계층으로 존재하지 않고 응용 계층 프로토콜(TLS, HTTP 등)에 기능이 흡수돼 있다. 면접에서 "OSI 7계층대로 인터넷이 동작한다"고 말하면 개념 이해가 얕다는 신호로 읽힌다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 2</span> "계층은 항상 순서대로, 완전히 독립적으로 문제가 생긴다"</summary>
+    <p>실무에서는 계층 경계가 깔끔하지 않다. 예를 들어 NAT(L3/L4 경계)는 IP와 포트를 동시에 바꾸고, 로드밸런서는 L4/L7을 동시에 다룬다(L4 LB vs L7 LB). "계층은 서로 완전히 독립적"이라는 전제로만 접근하면 NAT, 로드밸런서, 방화벽처럼 계층을 넘나드는 장비에서 헤맬 수 있다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 3</span> "낮은 계층부터 확인하면 항상 가장 효율적이다"</summary>
+    <p>모든 상황에서 bottom-up이 정답은 아니다. HTTP 500 에러처럼 애플리케이션 로그에 이미 원인이 찍혀 있는 경우, L1부터 순서대로 확인하는 것은 시간 낭비다. 계층 모델은 "증상이 애매하고 원인 후보가 넓을 때" 쓰는 방법론이지, 모든 장애에 기계적으로 적용하는 절차가 아니다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 4</span> "캡슐화는 그냥 헤더를 더하는 것뿐, 장애 분석과 무관하다"</summary>
+    <p>캡슐화 순서를 모르면 "왜 L3 문제가 L7 증상으로 보이는지"를 설명할 수 없다. MTU mismatch(L3)가 왜 애플리케이션 타임아웃(L7)으로 나타나는지 설명하지 못하면, 서로 다른 계층의 문제를 같은 계층 문제로 착각해 잘못된 곳을 고치게 된다.</p>
+  </details>
+
+  <hr>
+
+  <!-- 9. Follow-up 질문 -->
+  <h2 id="followup">9. Senior-level Follow-up 질문</h2>
+
+  <table>
+    <thead>
+      <tr><th>Follow-up 질문</th><th>면접관의 의도</th><th>답변 포인트</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>"L4 로드밸런서와 L7 로드밸런서의 차이를 계층 관점에서 설명해보세요."</td>
+        <td>계층 모델을 실제 인프라 컴포넌트에 적용할 수 있는지</td>
+        <td>L4는 IP/포트만 보고 라우팅(빠름, 프로토콜 비인식). L7은 HTTP 헤더/경로까지 보고 라우팅(느리지만 콘텐츠 기반 라우팅, TLS termination 가능).</td>
+      </tr>
+      <tr>
+        <td>"NAT는 어느 계층에서 동작합니까? 그리고 왜 그것이 P2P 연결을 어렵게 만듭니까?"</td>
+        <td>계층 경계를 넘나드는 컴포넌트 이해</td>
+        <td>NAT는 L3(IP)와 L4(포트)를 동시에 변환한다. 내부 IP가 외부에서 보이지 않아 외부에서 내부로 직접 연결을 시작할 수 없다(NAT traversal 문제, STUN/TURN 필요).</td>
+      </tr>
+      <tr>
+        <td>"컨테이너 네트워크(Overlay network)는 계층 모델에서 어떻게 표현됩니까?"</td>
+        <td>최신 인프라를 전통 모델로 설명할 수 있는지</td>
+        <td>오버레이 네트워크는 기존 L3 위에 가상 L2/L3를 캡슐화(VXLAN 등)해서 만든다. 즉 "터널링"은 계층을 하나 더 쌓는 것과 같다 — 이게 MTU 문제를 유발하는 이유다.</td>
+      </tr>
+      <tr>
+        <td>"같은 장애 증상이 L4 문제일 수도, L7 문제일 수도 있다면 무엇으로 구분합니까?"</td>
+        <td>모호한 상황에서의 구조화된 판단력</td>
+        <td>TCP 연결 자체(handshake)는 성공하는지(L4), 연결 후 데이터 교환에서 실패하는지(L7)를 <code>tcpdump</code>나 <code>curl -v</code>의 단계별 타임스탬프로 구분한다.</td>
+      </tr>
+      <tr>
+        <td>"주니어 개발자가 '핑이 되니까 네트워크는 문제 없다'고 말하면 어떻게 지도하겠습니까?"</td>
+        <td>기술 리딩/멘토링 역량</td>
+        <td>ping은 L3(ICMP)만 검증한다는 것, L4/L7은 별도 프로토콜이라 별도로 확인해야 한다는 것을 계층 다이어그램과 실제 사례로 설명한다고 답한다.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 10. Rubric -->
+  <h2 id="rubric">10. 자기 점검 Rubric</h2>
+
+  <div class="rubric-grid">
+    <div class="rubric-col weak">
+      <h4>약한 답변 (Junior 수준)</h4>
+      <ul>
+        <li>"물리, 데이터링크, 네트워크, 전송, 세션, 표현, 응용 계층이 있습니다"로 답을 끝냄</li>
+        <li>OSI 7계층과 TCP/IP 계층의 관계를 설명하지 못함</li>
+        <li>계층별로 어떤 도구를 쓰는지 구체적으로 말하지 못함</li>
+        <li>실제 장애 사례와 연결하지 못하고 이론만 나열</li>
+        <li>계층 경계에서 증상이 어떻게 "번역"되는지 개념이 없음</li>
+      </ul>
+    </div>
+    <div class="rubric-col strong">
+      <h4>강한 답변 (Senior 수준)</h4>
+      <ul>
+        <li>OSI가 참조 모델이고 실무에서는 TCP/IP 4~5계층으로 단순화해서 쓴다고 설명</li>
+        <li>계층별로 구체적인 도구와 정상/비정상 판단 기준을 제시</li>
+        <li>캡슐화 순서를 근거로 "왜 하위 계층 문제가 상위 계층 증상으로 보이는지" 설명</li>
+        <li>bottom-up/top-down 접근의 trade-off를 상황에 맞게 선택</li>
+        <li>실제 겪은 장애를 계층 순서로 재구성해 말함</li>
+        <li>NAT, 로드밸런서처럼 계층을 넘나드는 컴포넌트도 설명할 수 있음</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>자기 점검 체크리스트</h3>
+  <ul>
+    <li>☐ OSI와 TCP/IP 계층의 차이와 대응 관계를 설명했는가?</li>
+    <li>☐ 계층별 도구와 정상/비정상 기준을 구체적으로 말했는가?</li>
+    <li>☐ 캡슐화 순서로 "증상의 계층 간 전이"를 설명했는가?</li>
+    <li>☐ bottom-up과 top-down 중 언제 어떤 방식을 쓰는지 근거를 댔는가?</li>
+    <li>☐ 실무 사례를 계층 순서로 재구성해 말했는가?</li>
+    <li>☐ 계층을 넘나드는 컴포넌트(NAT, LB)에 대한 이해를 보였는가?</li>
+  </ul>
+
+  <hr>
+
+  <h2>다음 레슨 예고</h2>
+  <blockquote>
+    <strong>Interview Day 3</strong> — TCP vs UDP와 연결 관리
+    <br>핵심 질문: "TCP가 신뢰성을 제공한다는 말은 정확히 무엇을 의미합니까?"
+    <br>3-way handshake, 재전송, 흐름/혼잡 제어, 지연 trade-off를 실무 판단 기준으로 다룬다.
+  </blockquote>
+
+  <nav class="back" style="margin-top:48px;"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+</body>
+</html>
