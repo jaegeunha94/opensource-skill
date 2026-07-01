@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — 컨테이너 격리 원리: 네임스페이스, cgroup, 이미지 레이어</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3347;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #3ecf8e;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --code-bg: #141824;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 16px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 2rem 2rem;
+      text-align: center;
+    }
+    .hero .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .hero h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .hero p { color: var(--muted); max-width: 640px; margin: 0 auto; }
+    .container { max-width: 860px; margin: 0 auto; padding: 2rem; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--accent);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--text); }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      color: #93c5fd;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.88em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.2rem;
+    }
+    pre code { background: none; padding: 0; color: #a5f3fc; font-size: 0.85rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-accent { border-left: 4px solid var(--accent); }
+    .card-green { border-left: 4px solid var(--green); }
+    .card-red { border-left: 4px solid var(--red); }
+    .card-yellow { border-left: 4px solid var(--yellow); }
+    .card-purple { border-left: 4px solid var(--accent2); }
+
+    .question-box {
+      background: var(--surface2);
+      border: 1px solid var(--accent2);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1.5rem 0;
+    }
+    .question-box .q-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+    .question-box .q-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.4rem;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--accent);
+      text-align: left;
+      padding: 0.65rem 1rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+    }
+    td {
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0 1.4rem;
+    }
+    @media (max-width: 640px) { .answer-grid { grid-template-columns: 1fr; } }
+    .answer-good {
+      background: #0d2b1e;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-bad {
+      background: #2b0d0d;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-good .label { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .answer-bad .label { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+
+    .rubric {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-item .check { color: var(--green); font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .rubric-item .text { font-size: 0.9rem; }
+
+    .section-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+    .tag-why { background: #1a2840; color: var(--accent); }
+    .tag-concept { background: #1a1a2e; color: var(--accent2); }
+    .tag-answer { background: #0d2b1e; color: var(--green); }
+    .tag-followup { background: #2b1a00; color: var(--orange); }
+    .tag-rubric { background: #2b2000; color: var(--yellow); }
+
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+      font-size: 0.85rem;
+    }
+    .nav-bar a { color: var(--accent); text-decoration: none; }
+    .nav-bar a:hover { text-decoration: underline; }
+
+    .hl-green { color: var(--green); font-weight: 600; }
+    .hl-red { color: var(--red); font-weight: 600; }
+    .hl-yellow { color: var(--yellow); font-weight: 600; }
+    .hl-accent { color: var(--accent); font-weight: 600; }
+    .hl-orange { color: var(--orange); font-weight: 600; }
+
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem 1.6rem; margin-bottom: 2rem; }
+    .toc h3 { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.7rem; }
+    .toc ol { margin-bottom: 0; }
+    .toc li { font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="day-badge">Day 2</div>
+  <h1>컨테이너 격리 원리 — 네임스페이스, cgroup, 이미지 레이어</h1>
+  <p>"컨테이너가 뭔가요?"에 커널 메커니즘으로 답하기 — 격리는 어디까지고, 왜 종종 배신하는가</p>
+</div>
+
+<div class="container">
+
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#recap">Day 1 복기 — 오늘 다루는 것</a></li>
+      <li><a href="#question1">면접 질문 1 — PID 네임스페이스와 PID 1 문제</a></li>
+      <li><a href="#question2">면접 질문 2 — cgroup 메모리 제한과 컨테이너 OOMKilled</a></li>
+      <li><a href="#question3">면접 질문 3 — 이미지 레이어와 OCI 표준</a></li>
+      <li><a href="#mental-model">시니어의 정신 모델 — 네임스페이스 7종과 OCI 3-스펙 구조</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- ========== SECTION 1 ========== -->
+  <h2 id="recap">1. Day 1 복기 — 오늘 다루는 것</h2>
+
+  <p>Day 1에서는 "컨테이너는 네임스페이스 + cgroup으로 격리된 프로세스"라는 결론만 다뤘다. 오늘은 그 결론을 뜯어서, 시니어 면접에서 실제로 나오는 세 가지 함정 질문을 통해 <strong>격리가 실제로 어디까지 되고 어디서부터 안 되는지</strong>를 정확히 이해한다.</p>
+
+  <div class="card card-accent">
+    <p>시니어 면접관이 네임스페이스/cgroup을 묻는 진짜 이유는 "정의를 아는가"가 아니다. <strong>"격리를 완전한 것으로 오해해서 운영 사고를 낸 적이 없는가"</strong>를 확인하려는 것이다. 컨테이너 격리에는 구멍이 있고, 그 구멍을 모르는 사람이 프로덕션에서 OOMKilled, 좀비 프로세스, 이미지 빌드 지옥을 만든다.</p>
+  </div>
+
+  <!-- ========== SECTION 2 ========== -->
+  <h2 id="question1">2. 면접 질문 1 — PID 네임스페이스와 PID 1 문제</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"컨테이너 안에서 ps 명령을 치면 왜 호스트의 다른 프로세스가 안 보이나요? 그리고 컨테이너 안에서 애플리케이션을 PID 1로 직접 실행하면 어떤 문제가 생기나요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 두 단계로 나뉘어 있고, 대부분의 지원자는 첫 번째 단계(네임스페이스가 뭔지)까지만 답하고 멈춘다. 시니어는 두 번째 단계까지 가야 한다. 면접관이 확인하는 것:</p>
+  <ul>
+    <li>PID 네임스페이스가 "프로세스 목록을 필터링하는 것"이 아니라 "완전히 새로운 프로세스 트리를 만드는 것"임을 이해하는가</li>
+    <li>리눅스에서 PID 1이 갖는 특수한 커널 책임(좀비 프로세스 수거, 시그널 전파)을 알고 있는가</li>
+    <li>이것이 실제로 컨테이너 운영에서 "배포했는데 컨테이너가 안 죽는다"는 장애로 이어진 경험이 있는가</li>
+  </ul>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>PID 네임스페이스란?</h3>
+    <p>리눅스에서 모든 프로세스는 PID(Process ID)를 가진다. 일반적으로 시스템을 부팅하면 <code>init</code> 프로세스가 PID 1을 받고, 그 뒤에 뜨는 모든 프로세스가 순서대로 번호를 받는다.</p>
+    <p><strong>PID 네임스페이스</strong>는 "번호를 새로 매기는 별도의 좌표계"를 만드는 커널 기능이다. 컨테이너를 시작하면 커널은 새 PID 네임스페이스를 만들고, 그 안에서 처음 실행되는 프로세스에게 <strong>새 네임스페이스 기준으로 PID 1</strong>을 부여한다.</p>
+    <ul>
+      <li>중요한 점: 이 프로세스는 <strong>호스트 입장에서는 PID 1이 아니다</strong>. 호스트에서 <code>ps aux</code>를 치면 이 프로세스가 PID 4821 같은 일반 번호로 보인다.</li>
+      <li>즉, PID는 "절대적인 값"이 아니라 <strong>어느 네임스페이스에서 보느냐에 따라 달라지는 값</strong>이다. 같은 프로세스가 컨테이너 안에서는 PID 1, 호스트에서는 PID 4821로 동시에 존재한다.</li>
+      <li>컨테이너 안의 프로세스는 자신이 속한 네임스페이스 밖의 프로세스를 <strong>볼 수도, 죽일 수도 없다</strong> — 이게 <code>ps</code>에 호스트 프로세스가 안 보이는 이유다.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>PID 1이 특별한 이유 — "좀비 수거"와 "시그널 전파"</h3>
+    <p>리눅스 커널은 PID 1에게 두 가지 특별한 책임을 강제로 부여한다. 이걸 모르면 컨테이너 운영에서 반복적으로 곤란을 겪는다.</p>
+    <ul>
+      <li><strong>좀비 프로세스 수거(reaping):</strong> 자식 프로세스가 종료되면 부모가 <code>wait()</code> 시스템 콜로 종료 상태를 회수해야 한다. 회수하지 않으면 그 프로세스는 <strong>좀비(zombie)</strong> 상태로 프로세스 테이블에 남는다. 부모가 죽으면 그 자식은 PID 1에게 입양(re-parented)되는데, 표준 <code>init</code>은 이런 고아 프로세스를 자동으로 수거하도록 설계되어 있다. 컨테이너의 PID 1이 일반 애플리케이션(예: Node.js, Python 스크립트)이면 이 수거 책임을 지지 않는다 — 좀비가 계속 쌓인다.</li>
+      <li><strong>시그널 처리:</strong> 커널은 PID 1에게 보내는 시그널의 기본 동작(default disposition)을 무시한다. 일반 프로세스라면 <code>SIGTERM</code>을 받으면 즉시 종료되지만, PID 1은 애플리케이션이 <strong>명시적으로 SIGTERM 핸들러를 등록해야만</strong> 반응한다. 등록하지 않았다면 <code>docker stop</code>이 보낸 SIGTERM을 그냥 무시하고, Docker는 10초(기본 grace period) 뒤 강제로 <code>SIGKILL</code>을 보낸다.</li>
+    </ul>
+  </div>
+
+  <h3>실무에서 이게 왜 문제가 되는가</h3>
+  <table>
+    <tr>
+      <th>증상</th>
+      <th>원인</th>
+      <th>실무 영향</th>
+    </tr>
+    <tr>
+      <td>배포 시 컨테이너가 10초씩 걸려서 내려감</td>
+      <td>앱이 SIGTERM 핸들러를 등록 안 함 → grace period 끝까지 대기 후 SIGKILL</td>
+      <td>롤링 업데이트가 느려지고, 강제 종료로 인해 진행 중이던 요청이 끊김</td>
+    </tr>
+    <tr>
+      <td>장기 운영 시 컨테이너 프로세스 수가 서서히 증가</td>
+      <td>PID 1이 자식 프로세스(서브 커맨드 실행 등)의 좀비를 수거하지 않음</td>
+      <td>PID 네임스페이스의 PID 테이블이 고갈되면 새 프로세스를 못 띄움</td>
+    </tr>
+    <tr>
+      <td>Node.js 앱이 <code>npm start</code>로 실행되는데 종료 신호가 앱까지 안 감</td>
+      <td>쉘 형식(<code>CMD npm start</code>)으로 실행하면 <code>/bin/sh -c</code>가 PID 1이 되고, 실제 앱은 그 자식이라 시그널이 전파 안 됨</td>
+      <td><code>docker stop</code>이 항상 타임아웃까지 걸림</td>
+    </tr>
+  </table>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>격리 메커니즘 설명:</strong> PID 네임스페이스가 프로세스 트리를 새로 매긴다는 사실 — "필터링"이 아니라 "별도 좌표계"라는 표현으로 정확히 짚는다.</li>
+    <li><strong>PID 1의 커널 레벨 특수성 언급:</strong> 좀비 수거와 시그널 기본 동작 무시라는 두 가지 책임.</li>
+    <li><strong>실패 시나리오로 연결:</strong> 애플리케이션이 이 책임을 모르면 좀비 누적, SIGTERM 무시로 인한 강제 종료가 발생한다는 것.</li>
+    <li><strong>해결책 제시:</strong> <code>tini</code>, <code>dumb-init</code> 같은 경량 init 프로세스를 PID 1로 두거나, Docker의 <code>--init</code> 플래그, Kubernetes에서는 애플리케이션이 직접 SIGTERM을 처리하도록 설계.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"PID 네임스페이스는 프로세스 목록을 숨기는 게 아니라, 커널이 완전히 새로운 PID 좌표계를 만드는 겁니다. 컨테이너 안에서 처음 뜬 프로세스는 그 네임스페이스 안에서 PID 1을 받고, 호스트에서는 다른 번호로 보입니다. 컨테이너는 자기 네임스페이스 밖의 프로세스를 볼 수도 죽일 수도 없어서 <code>ps</code>에 호스트 프로세스가 안 보입니다.</p>
+    <p style="margin-top:0.6rem;">문제는 PID 1이 리눅스에서 특별한 책임을 갖는다는 겁니다. 좀비 프로세스를 수거해야 하고, SIGTERM 같은 시그널의 기본 동작이 무시돼서 애플리케이션이 명시적으로 핸들러를 등록해야만 반응합니다. 저희 팀에서 실제로 <code>CMD npm start</code>처럼 쉘 형식으로 실행한 컨테이너가 <code>docker stop</code> 때마다 10초씩 걸리는 문제가 있었는데, 원인이 <code>/bin/sh</code>가 PID 1이 돼서 SIGTERM이 실제 Node 프로세스까지 전파가 안 된 거였습니다. exec 형식(<code>CMD [\"node\", \"server.js\"]</code>)으로 바꾸고 앱에서 SIGTERM 핸들러를 등록해서 해결했습니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>PID 네임스페이스를 "새 좌표계"로 정확히 설명</li>
+        <li>PID 1의 좀비 수거·시그널 무시라는 커널 레벨 책임 언급</li>
+        <li>쉘 형식 vs exec 형식 CMD 차이까지 인지</li>
+        <li>실제 장애 재현과 해결 과정을 구체적으로 서술</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"네임스페이스로 프로세스가 격리돼서 안 보입니다"에서 멈춤</li>
+        <li>PID 1 문제를 전혀 모름</li>
+        <li>왜 컨테이너 종료가 느린지 설명 못함</li>
+        <li><code>tini</code>/<code>dumb-init</code> 같은 해결책을 모름</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "Kubernetes에서는 Pod가 종료될 때 어떤 순서로 시그널이 전달되나요? PID 1 문제와 어떻게 연결되나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "Pod 삭제 요청이 오면 kubelet이 컨테이너의 PID 1에 SIGTERM을 보내고, <code>terminationGracePeriodSeconds</code>(기본 30초) 동안 기다립니다. 이 시간 안에 프로세스가 스스로 종료하지 않으면 SIGKILL로 강제 종료합니다. 동시에 Service의 엔드포인트에서 이 Pod를 제거하는 작업도 병렬로 일어나는데, 이 타이밍이 어긋나면 종료 중인 Pod로 트래픽이 계속 들어오는 문제가 생깁니다. 그래서 <code>preStop</code> 훅으로 몇 초간 sleep을 넣어 엔드포인트 제거가 전파될 시간을 벌고, 그 다음 SIGTERM을 앱이 정상 처리하도록 설계합니다. 이게 PID 1 문제와 정확히 같은 축입니다 — 앱이 SIGTERM을 못 받으면 이 모든 graceful shutdown 설계가 무의미해집니다."</p>
+  </div>
+
+  <!-- ========== SECTION 3 ========== -->
+  <h2 id="question2">3. 면접 질문 2 — cgroup 메모리 제한과 컨테이너 OOMKilled</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"컨테이너에 메모리 512MB 제한을 걸었는데, 컨테이너 안에서 free -m을 치면 왜 호스트의 전체 메모리(예: 64GB)가 보이나요? 그리고 이게 실제로 어떤 장애로 이어지나요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 겉보기엔 사소한 명령어 결과 하나를 묻지만, 실제로는 <strong>"cgroup이 정확히 무엇을 격리하고 무엇을 격리하지 않는지"</strong>를 아는지 시험한다. 이걸 정확히 아는 사람만이 JVM 힙 사이즈 오버, 컨테이너 OOMKilled 같은 클래식한 프로덕션 장애의 근본 원인을 설명할 수 있다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — cgroup은 "보여주는" 게 아니라 "제한하는" 것</span></h3>
+
+  <div class="card">
+    <p>Day 1에서 다룬 것처럼, 컨테이너의 격리는 두 가지 서로 다른 커널 기능의 조합이다:</p>
+    <ul>
+      <li><strong>네임스페이스:</strong> "무엇을 볼 수 있는가"를 격리한다. (PID, 마운트, 네트워크 등)</li>
+      <li><strong>cgroup:</strong> "얼마나 쓸 수 있는가"를 제한하고 사용량을 계정(accounting)한다. (CPU, 메모리, I/O)</li>
+    </ul>
+    <p><strong>핵심은 cgroup에는 "가시성을 숨기는 네임스페이스" 역할이 없다는 것이다.</strong> <code>free</code>, <code>top</code> 같은 도구는 <code>/proc/meminfo</code>를 읽는데, 이 파일은 기본적으로 <strong>호스트 전체의 메모리 정보</strong>를 보여준다. 컨테이너의 메모리 사용량 제한은 <code>/sys/fs/cgroup/memory/.../memory.limit_in_bytes</code> (cgroup v1) 같은 별도 경로에 있고, 커널이 이 값을 기준으로 <strong>강제로 프로세스를 죽이는 역할만</strong> 한다. "보여주는 값"과 "제한하는 값"이 서로 다른 곳에 있다는 게 함정의 본질이다.</p>
+  </div>
+
+  <div class="card card-red">
+    <h3>클래식 장애 — JVM 힙 사이즈와 cgroup</h3>
+    <p>Java 8 초기 버전(및 그 이전)의 JVM은 컨테이너 안에서도 기본 힙 크기를 <strong>호스트의 전체 메모리를 기준으로</strong> 계산했다. 예를 들어 호스트가 64GB 메모리를 가진 노드인데 컨테이너에는 512MB 제한이 걸려있다면, JVM은 "메모리가 64GB구나"라고 착각하고 기본 힙을 16GB(전체의 1/4)로 잡으려 시도한다.</p>
+    <p style="margin-top:0.6rem;">결과: 컨테이너는 힙을 할당하려는 순간 512MB 제한을 초과해서 커널의 <strong>OOM Killer</strong>에 의해 즉시 <code>SIGKILL</code>을 받는다. Kubernetes에서는 이게 <code>OOMKilled</code> 상태로 나타난다. 이 문제는 애플리케이션 로직과 무관하게, 순전히 "cgroup 인식을 못하는 런타임"이 원인이다.</p>
+  </div>
+
+  <h3>이 문제가 해결된 방식 — cgroup-aware 런타임</h3>
+  <table>
+    <tr>
+      <th>시점/버전</th>
+      <th>변화</th>
+    </tr>
+    <tr>
+      <td>JDK 8u131 ~ JDK 10</td>
+      <td><code>-XX:+UseCGroupMemoryLimitForHeap</code> 실험 플래그로 cgroup 제한을 인식하게 함 (수동 활성화 필요)</td>
+    </tr>
+    <tr>
+      <td>JDK 10 이후</td>
+      <td>cgroup 인식이 기본 활성화. <code>-XX:MaxRAMPercentage</code>로 컨테이너 메모리의 몇 %를 힙으로 쓸지 명시 가능</td>
+    </tr>
+    <tr>
+      <td>Node.js, Python 등</td>
+      <td>런타임 자체는 대부분 여전히 OS 메모리를 그대로 신뢰 — GC 튜닝이나 메모리 제한 플래그를 애플리케이션 레벨에서 직접 관리해야 함</td>
+    </tr>
+  </table>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>역할 분리부터:</strong> 네임스페이스는 "보이는 것"을, cgroup은 "쓸 수 있는 양과 강제 종료"를 담당한다는 구분.</li>
+    <li><strong><code>free</code>가 호스트 값을 보여주는 이유:</strong> <code>/proc/meminfo</code>는 cgroup을 인식하지 않는 전통적인 커널 인터페이스이기 때문.</li>
+    <li><strong>실제 장애로 연결:</strong> 이 gap을 모르는 런타임(구버전 JVM)이 호스트 메모리 기준으로 힙을 잡아서 즉시 OOMKilled.</li>
+    <li><strong>운영 대응 제시:</strong> 최신 런타임의 cgroup-aware 옵션 사용, requests/limits을 애플리케이션 힙 설정과 일치시키는 실무 습관.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"cgroup은 리소스 사용량을 제한하고 초과 시 커널이 강제로 개입하는 메커니즘이지, 프로세스에게 '너가 볼 수 있는 메모리는 이만큼이야'라고 알려주는 가시성 격리는 아닙니다. <code>free</code>나 <code>top</code>은 <code>/proc/meminfo</code>를 읽는데 이건 전통적으로 호스트 전체 값을 보여줍니다. 그래서 컨테이너 안에서도 호스트의 전체 메모리가 보입니다.</p>
+    <p style="margin-top:0.6rem;">이게 실무에서 문제가 됐던 건 구버전 JVM입니다. JDK 8 초기 버전은 컨테이너 메모리 제한을 인식하지 못해서, 호스트 전체 메모리를 기준으로 기본 힙 사이즈를 계산했습니다. 컨테이너 limit이 512MB인데 JVM이 16GB 힙을 잡으려고 하면, 할당 시도 즉시 cgroup 제한을 넘어서 OOM Killer가 프로세스를 죽입니다. Kubernetes에서 이게 OOMKilled로 보입니다. 이걸 겪은 뒤로는 항상 <code>-XX:MaxRAMPercentage</code>를 명시하고, 컨테이너 <code>resources.limits.memory</code>와 JVM 힙 설정을 같이 리뷰하는 걸 배포 체크리스트에 넣었습니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>네임스페이스(가시성)와 cgroup(제한/계정)의 역할을 명확히 구분</li>
+        <li><code>/proc/meminfo</code>가 cgroup을 인식하지 않는다는 구체적 원인 제시</li>
+        <li>JVM 힙 사이즈 오버라는 실제 장애 사례로 연결</li>
+        <li>재발 방지를 위한 구체적인 운영 관행(체크리스트, 플래그) 언급</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"버그인 것 같아요" — 원리를 모르고 추측</li>
+        <li>cgroup이 프로세스 가시성도 격리한다고 잘못 설명</li>
+        <li>OOMKilled와의 연결을 못함</li>
+        <li>실무 사례나 해결책 제시가 전혀 없음</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "cgroup v1과 v2의 차이를 아시나요? 왜 v2로의 전환이 권장되나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "cgroup v1은 CPU, 메모리, I/O 등 각 컨트롤러가 독립적인 계층 구조(hierarchy)를 가져서, 같은 프로세스가 서로 다른 컨트롤러에서 다른 그룹에 속할 수 있었습니다. 이게 관리와 디버깅을 복잡하게 만들었습니다. cgroup v2는 <strong>단일 통합 계층(unified hierarchy)</strong>으로 모든 컨트롤러가 같은 트리 구조를 공유합니다. 그래서 '이 프로세스 그룹의 리소스 제한'을 한 곳에서 일관되게 볼 수 있고, 메모리 압박 시 컨테이너별로 더 정교하게 반응하는 PSI(Pressure Stall Information) 같은 기능도 v2에서 강화됐습니다. Kubernetes 1.25+ 및 최신 containerd/runc는 cgroup v2를 기본으로 사용하고, 이제 대부분의 최신 배포판(Ubuntu 22.04+, RHEL 9+)이 v2를 기본값으로 씁니다."</p>
+  </div>
+
+  <!-- ========== SECTION 4 ========== -->
+  <h2 id="question3">4. 면접 질문 3 — 이미지 레이어와 OCI 표준</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"Docker 이미지의 레이어 구조를 설명해주세요. 왜 Dockerfile의 명령어 순서가 빌드 캐시와 이미지 크기에 영향을 주나요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>"자주 바뀌는 걸 아래에 둬라"는 규칙은 대부분 안다. 시니어에게 원하는 건 그 규칙의 <strong>메커니즘</strong>이다 — 왜 그렇게 해야 캐시가 재사용되는지, 레이어가 실제로 무엇을 저장하는지, 이게 CI 빌드 시간과 배포 속도에 어떤 실질적 영향을 주는지를 설명할 수 있는가를 본다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 이미지는 레이어의 스택, 레이어는 파일시스템 diff</span></h3>
+
+  <div class="card">
+    <h3>Union Filesystem이란?</h3>
+    <p>Docker 이미지는 하나의 큰 파일시스템이 아니라, <strong>여러 개의 읽기 전용 레이어가 순서대로 쌓인 것</strong>이다. 각 레이어는 이전 레이어 대비 <strong>변경분(diff)</strong>만 저장한다 — 새로 추가된 파일, 수정된 파일, 삭제 표시(whiteout file).</p>
+    <p>컨테이너를 실행하면 이 읽기 전용 레이어들 위에 <strong>쓰기 가능한 얇은 레이어(container layer)</strong>가 하나 추가된다. 파일을 읽을 때는 위에서부터 아래로 레이어를 뒤지면서 처음 발견한 버전을 반환하고, 파일을 수정할 때는 <strong>Copy-on-Write(CoW)</strong> 방식으로 하위 레이어의 파일을 쓰기 가능 레이어로 복사한 뒤 그 복사본을 수정한다. 이걸 구현하는 대표적인 드라이버가 <strong>OverlayFS</strong>다.</p>
+  </div>
+
+  <div class="card">
+    <h3>Dockerfile 명령어 하나 = 레이어 하나 (대부분)</h3>
+    <p>Dockerfile의 각 지시어(<code>RUN</code>, <code>COPY</code>, <code>ADD</code> 등)는 실행될 때마다 새 레이어를 만든다. Docker는 각 레이어를 <strong>내용 기반 해시(SHA256)</strong>로 식별하고, 빌드 시 <strong>레이어 캐시</strong>를 확인한다.</p>
+    <ul>
+      <li>어떤 지시어의 <strong>내용</strong>(예: <code>COPY</code>의 대상 파일 내용, <code>RUN</code>의 명령어 문자열)이 이전 빌드와 동일하고, 그 이전의 모든 레이어도 캐시가 유지됐다면 → 이 레이어는 <strong>재사용(cache hit)</strong>된다.</li>
+      <li>어느 한 레이어라도 캐시가 깨지면(내용이 바뀌면), <strong>그 이후의 모든 레이어는 캐시를 못 쓰고 처음부터 다시 빌드</strong>된다 — 캐시는 순차적이다.</li>
+    </ul>
+    <p>그래서 "자주 바뀌는 것(소스 코드 <code>COPY</code>)을 아래에, 자주 안 바뀌는 것(의존성 설치 <code>RUN npm install</code>)을 위에" 두는 이유가 여기서 나온다. 의존성 설치는 <code>package.json</code>이 안 바뀌면 캐시가 유지되고, 그 위에 있는 소스 코드 <code>COPY</code>만 매번 새로 실행된다.</p>
+  </div>
+
+  <pre><code># 나쁜 예 — 소스 코드가 먼저 COPY되면 코드 한 줄만 바뀌어도
+# 그 아래 npm install까지 캐시가 전부 깨짐
+COPY . .
+RUN npm install
+
+# 좋은 예 — 의존성 파일만 먼저 COPY, 코드는 나중에
+# package.json이 안 바뀌면 npm install 레이어가 캐시로 재사용됨
+COPY package.json package-lock.json ./
+RUN npm install
+COPY . .</code></pre>
+
+  <h3>레이어 수와 이미지 크기의 관계</h3>
+  <table>
+    <tr>
+      <th>패턴</th>
+      <th>결과</th>
+    </tr>
+    <tr>
+      <td><code>RUN apt-get update</code>와 <code>RUN apt-get install</code>을 별도 레이어로 분리</td>
+      <td>install 레이어만 캐시가 깨져도 update 결과(오래된 패키지 인덱스)가 재사용돼 최신 패키지를 못 받는 문제 발생 가능</td>
+    </tr>
+    <tr>
+      <td><code>RUN apt-get update && apt-get install -y ... && rm -rf /var/lib/apt/lists/*</code>를 한 레이어로</td>
+      <td>설치 후 캐시 파일을 같은 레이어 안에서 삭제해야 실제로 이미지 크기가 줄어듦 (다른 레이어에서 지우면 이전 레이어에 이미 저장된 용량은 그대로 남음)</td>
+    </tr>
+    <tr>
+      <td>멀티스테이지 빌드 없이 빌드 도구까지 최종 이미지에 포함</td>
+      <td>컴파일러, devDependencies 등이 프로덕션 이미지에 남아 크기와 공격 표면(attack surface) 증가</td>
+    </tr>
+  </table>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>레이어의 물리적 정체:</strong> 각 레이어는 파일시스템 diff이고, OverlayFS 같은 union filesystem이 이를 겹쳐서 하나의 뷰로 보여준다는 것.</li>
+    <li><strong>캐시 메커니즘:</strong> 레이어는 내용 해시로 식별되고, 캐시는 순차적으로 깨진다는 것(한 레이어가 깨지면 그 이후 전부 재빌드).</li>
+    <li><strong>실무 규칙으로 연결:</strong> 변경 빈도가 낮은 지시어를 위로, 자주 바뀌는 지시어를 아래로 — 이게 왜 캐시 히트율을 높이는지 메커니즘으로 설명.</li>
+    <li><strong>크기 최적화까지 확장:</strong> 같은 레이어 안에서 생성과 삭제를 함께 처리해야 하는 이유, 멀티스테이지 빌드로 최종 이미지에서 빌드 도구를 제거하는 이유.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"Docker 이미지는 읽기 전용 레이어들이 순서대로 쌓인 구조입니다. 각 레이어는 이전 레이어 대비 파일 변경분만 저장하고, OverlayFS 같은 union filesystem이 이걸 겹쳐서 하나의 파일시스템처럼 보여줍니다. Dockerfile의 지시어 하나가 레이어 하나를 만들고, 이 레이어는 명령어와 대상 파일 내용의 해시로 식별됩니다.</p>
+    <p style="margin-top:0.6rem;">캐시는 순차적으로 동작해서, 위에서부터 첫 번째로 내용이 바뀐 레이어부터 그 아래(뒤에 오는) 모든 레이어가 재빌드됩니다. 그래서 <code>package.json</code>만 먼저 COPY해서 <code>npm install</code>을 실행하고, 소스 코드는 그 뒤에 COPY하면 코드만 바뀌었을 때 의존성 설치를 스킵할 수 있습니다. 저희는 이걸로 CI 빌드 시간을 8분에서 1분대로 줄였습니다.</p>
+    <p style="margin-top:0.6rem;">이미지 크기 최적화는 별개 축인데, <code>apt-get update && install && rm cache</code>를 한 레이어로 묶어야 실제로 용량이 줄고, 최종적으로는 멀티스테이지 빌드로 컴파일러나 devDependencies를 최종 이미지에서 아예 제외합니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>레이어를 "파일시스템 diff"로 정확히 설명</li>
+        <li>캐시가 순차적으로 깨진다는 메커니즘 언급</li>
+        <li>구체적 개선 지표(빌드 시간 단축) 제시</li>
+        <li>레이어 수 최적화와 이미지 크기 최적화를 구분해서 설명</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"자주 바뀌는 걸 아래에 두면 좋다"는 규칙만 암기</li>
+        <li>왜 그런지 메커니즘 설명 못함</li>
+        <li>레이어 삭제가 이미지 크기를 줄이지 못하는 함정을 모름</li>
+        <li>멀티스테이지 빌드를 언급 못함</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "OCI(Open Container Initiative)가 무엇이고, Docker 없이도 컨테이너가 실행되는 이유는 무엇인가요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "OCI는 컨테이너 이미지와 런타임의 표준을 정의하는 사양입니다. 크게 세 가지로 나뉩니다 — Image Spec(이미지 레이어, 매니페스트, 설정 파일 형식), Runtime Spec(컨테이너를 실제로 실행하는 방법, 즉 네임스페이스/cgroup 설정 방식), Distribution Spec(이미지를 레지스트리에 push/pull하는 API 형식). Docker가 이 표준을 만드는 데 기여했고, 지금은 Docker든 Podman이든 containerd든 이 표준을 따르는 이미지를 상호 호환해서 실행할 수 있습니다. Kubernetes가 Docker에 종속되지 않고 containerd나 CRI-O 같은 다른 런타임을 쓸 수 있는 것도 이 OCI Runtime Spec 덕분입니다. runc가 이 스펙의 참조 구현체이고, 실제로 네임스페이스와 cgroup을 만들어서 컨테이너를 기동하는 저수준 도구입니다."</p>
+  </div>
+
+  <!-- ========== SECTION 5 ========== -->
+  <h2 id="mental-model">5. 시니어의 정신 모델 — 네임스페이스 7종과 OCI 3-스펙 구조</h2>
+
+  <p>오늘 다룬 세 질문을 하나의 그림으로 통합하면, 시니어가 "컨테이너"라는 단어를 들었을 때 머릿속에 그려야 할 구조는 다음과 같다.</p>
+
+  <div class="card card-purple">
+    <h3>리눅스 네임스페이스 7종 — 각각 무엇을 격리하는가</h3>
+    <table>
+      <tr><th>네임스페이스</th><th>격리 대상</th><th>실무에서 마주치는 예</th></tr>
+      <tr><td><code>PID</code></td><td>프로세스 ID, 프로세스 트리</td><td>컨테이너 안에서 <code>ps</code>에 다른 컨테이너 프로세스가 안 보임</td></tr>
+      <tr><td><code>NET</code></td><td>네트워크 인터페이스, IP, 라우팅 테이블, 포트</td><td>같은 포트 8080을 여러 컨테이너가 동시에 쓸 수 있음</td></tr>
+      <tr><td><code>MNT</code></td><td>마운트 지점 (파일시스템 뷰)</td><td>컨테이너마다 독립된 루트 파일시스템처럼 보임</td></tr>
+      <tr><td><code>UTS</code></td><td>호스트명, 도메인명</td><td>컨테이너마다 다른 <code>hostname</code> 설정 가능</td></tr>
+      <tr><td><code>IPC</code></td><td>프로세스 간 통신(공유 메모리, 세마포어, 메시지 큐)</td><td>컨테이너 간 SysV IPC로 서로 간섭 못함</td></tr>
+      <tr><td><code>USER</code></td><td>사용자/그룹 ID 매핑</td><td>컨테이너 안 root(UID 0)를 호스트의 비특권 UID에 매핑 (rootless 컨테이너의 기반)</td></tr>
+      <tr><td><code>CGROUP</code></td><td>cgroup 계층 자체를 컨테이너 안에서 격리된 것처럼 보이게 함</td><td>컨테이너 안에서 자신의 cgroup 경로만 보이게 해 정보 노출 방지</td></tr>
+    </table>
+    <p style="margin-top:0.8rem;"><strong>흔한 오해:</strong> "cgroup 네임스페이스"와 "cgroup(리소스 제한)"은 다른 것이다. cgroup 네임스페이스는 <strong>가시성</strong>을 격리하고, cgroup 자체(컨트롤러)는 <strong>사용량 제한</strong>을 담당한다. 이 둘을 구분 못하면 Question 2의 답변이 흔들린다.</p>
+  </div>
+
+  <div class="card card-purple">
+    <h3>OCI 3-스펙과 실제 도구의 매핑</h3>
+    <ul>
+      <li><strong>Image Spec:</strong> 레이어 구조, 매니페스트(manifest.json), 이미지 설정(config.json) 형식을 정의. <code>docker build</code>, <code>buildah</code>가 이 형식으로 이미지를 만든다.</li>
+      <li><strong>Runtime Spec:</strong> 컨테이너 실행 방법(네임스페이스, cgroup, 마운트 설정)을 정의. <strong>runc</strong>가 이 스펙의 참조 구현체 — 실제로 네임스페이스를 만들고 프로세스를 그 안에 넣는 저수준 도구.</li>
+      <li><strong>Distribution Spec:</strong> 레지스트리 push/pull API 형식. Docker Hub, ECR, GCR 모두 이 스펙을 따른다.</li>
+    </ul>
+    <p style="margin-top:0.6rem;"><strong>실행 체인:</strong> Kubernetes(kubelet) → CRI(Container Runtime Interface) → containerd → runc → 커널의 네임스페이스/cgroup 시스템 콜. Docker는 이제 이 체인의 상위 UX 계층일 뿐, 실제 컨테이너 기동은 containerd/runc가 담당한다.</p>
+  </div>
+
+  <!-- ========== SECTION 6 ========== -->
+  <h2 id="rubric">6. 자기 점검 Rubric</h2>
+
+  <div class="rubric">
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">PID 네임스페이스를 "필터링"이 아니라 "새로운 좌표계 생성"으로 정확히 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">PID 1의 좀비 프로세스 수거와 시그널 기본 동작 무시라는 두 가지 커널 책임을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">쉘 형식 CMD와 exec 형식 CMD가 시그널 전파에 미치는 차이를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">네임스페이스(가시성)와 cgroup(사용량 제한/계정)의 역할 차이를 명확히 구분할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">컨테이너 안 <code>free -m</code>이 호스트 값을 보여주는 이유와, 이게 JVM OOMKilled로 이어지는 인과관계를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">cgroup v1과 v2의 구조적 차이(분리된 계층 vs 통합 계층)를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">이미지 레이어를 "파일시스템 diff"로 설명하고, 캐시가 순차적으로 깨진다는 메커니즘을 말할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Dockerfile 명령어 순서 최적화와 이미지 크기 최적화(같은 레이어 내 삭제, 멀티스테이지 빌드)를 구분해서 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">OCI의 Image/Runtime/Distribution Spec 세 가지와 각각에 대응하는 실제 도구(buildah, runc, 레지스트리)를 연결할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">모든 답변에서 실무 장애 경험이나 구체적 개선 지표로 마무리할 수 있다</span>
+    </div>
+  </div>
+
+  <div class="card card-accent" style="margin-top: 2rem;">
+    <h3>다음 Day 예고</h3>
+    <p><strong>Day 3 — Dockerfile 설계: 레이어 최적화, 멀티스테이지, 보안 이미지.</strong> 오늘 배운 레이어 캐시 원리를 실제 Dockerfile 설계 패턴으로 확장한다. 멀티스테이지 빌드로 빌드 환경과 런타임 환경을 분리하는 이유, non-root 유저 강제, distroless/scratch 베이스 이미지 선택 기준, 그리고 "이 Dockerfile을 리뷰해달라"는 실무형 면접 질문에 대응하는 체크리스트를 다룹니다.</p>
+  </div>
+
+</div>
+
+<div class="nav-bar">
+  <a href="./0001-container-kubernetes-operations-framework.html">← Day 1</a>
+  <a href="../PROGRESS.md">PROGRESS.md</a>
+  <a href="./index.html">레슨 목록</a>
+  <a href="./0003-dockerfile-design-multistage-security.html">Day 3 →</a>
+</div>
+
+</body>
+</html>
