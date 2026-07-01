@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — 데이터 모델링과 ORM: SQLAlchemy 2.x, Alembic</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="lesson-wrap">
+
+  <!-- ── Header ────────────────────────────────────── -->
+  <header class="lesson-header">
+    <div class="lesson-meta">
+      <span class="tag tag-day">Day 3</span>
+      <span class="tag tag-level">실무자 기준</span>
+      <span class="tag tag-time">약 55분</span>
+    </div>
+    <h1 class="lesson-title">데이터 모델링과 ORM<br>SQLAlchemy 2.x · Alembic 실전</h1>
+    <p class="lesson-subtitle">
+      스키마는 한 번 잘못 설계하면 되돌리기 가장 어려운 결정이다.
+      이 레슨은 SQLAlchemy 2.x의 Data Mapper 모델 정의, 관계 로딩 전략(N+1 문제),
+      그리고 무중단 배포를 견디는 Alembic 마이그레이션 전략까지 다룬다.
+    </p>
+  </header>
+
+  <!-- ── 1. 왜 ORM인가 ──────────────────────────────── -->
+  <h2>1. ORM은 편의 도구가 아니라 설계 결정이다</h2>
+
+  <p>
+    ORM을 쓰는 이유는 "SQL을 안 써도 되어서"가 아니다.
+    <strong>객체 그래프와 관계형 스키마 사이의 임피던스 불일치(impedance mismatch)</strong>를
+    일관된 방식으로 다루기 위해서다. SQLAlchemy는 두 가지 큰 설계 축을 제공한다.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>패턴</th><th>대표 구현</th><th>특징</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Active Record</strong></td>
+        <td>Django ORM</td>
+        <td>모델 인스턴스가 자기 자신을 저장/조회한다 (<code>user.save()</code>). 단순하지만 도메인 로직과 영속성이 강하게 결합된다.</td>
+      </tr>
+      <tr>
+        <td><strong>Data Mapper</strong></td>
+        <td>SQLAlchemy</td>
+        <td>모델은 순수한 데이터 구조이고, <code>Session</code>이 영속성을 담당한다. 도메인 객체가 DB를 몰라도 된다 — 서비스 레이어와 궁합이 좋다.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <blockquote class="callout info">
+    <div class="callout-title">Day 4와의 연결</div>
+    Data Mapper 패턴은 Day 4의 <strong>Repository 패턴</strong>이 성립하는 전제 조건이다.
+    모델이 스스로 저장 방법을 알면(Active Record) Repository로 추상화할 이유가 없어진다.
+  </blockquote>
+
+  <!-- ── 2. 선언적 모델 정의 ────────────────────────── -->
+  <h2>2. SQLAlchemy 2.x 선언적 모델 — <code>Mapped</code> / <code>mapped_column</code></h2>
+
+  <p>
+    2.x부터는 타입 힌트 기반의 <code>Mapped[T]</code> 문법이 표준이다.
+    1.x의 <code>Column(Integer, ...)</code> 방식은 여전히 동작하지만,
+    새 프로젝트에서는 타입 체커(mypy/pyright)와 잘 맞는 2.x 문법을 쓴다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# app/models/base.py
+from sqlalchemy.orm import DeclarativeBase
+
+class Base(DeclarativeBase):
+    """모든 ORM 모델의 공통 베이스"""
+    pass
+</pre>
+  </div>
+
+  <div class="code-block">
+<pre>
+# app/models/user.py
+from datetime import datetime
+from sqlalchemy import String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.models.base import Base
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    password_hash: Mapped[str] = mapped_column(String(255))
+    is_active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+    orders: Mapped[list["Order"]] = relationship(back_populates="user")
+</pre>
+  </div>
+
+  <blockquote class="callout tip">
+    <div class="callout-title">server_default vs default</div>
+    <code>server_default=func.now()</code>는 DB가 값을 채운다 (SQL <code>DEFAULT NOW()</code>).
+    <code>default=True</code>는 Python 레벨에서 INSERT 전에 채운다.
+    시간·시퀀스처럼 DB가 원천이어야 하는 값은 <code>server_default</code>를 쓴다 —
+    애플리케이션 서버 시계가 어긋나도 DB 기준으로 일관된다.
+  </blockquote>
+
+  <!-- ── 3. 관계 매핑 ───────────────────────────────── -->
+  <h2>3. 관계 매핑 — 1:N, N:N, cascade</h2>
+
+  <div class="code-block">
+<pre>
+# app/models/order.py
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.models.base import Base
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    total_amount: Mapped[int]
+
+    user: Mapped["User"] = relationship(back_populates="orders")
+    items: Mapped[list["OrderItem"]] = relationship(
+        back_populates="order",
+        cascade="all, delete-orphan",   # 주문 삭제 시 아이템도 함께 삭제
+    )
+
+# N:N — association table
+from sqlalchemy import Table, Column
+
+product_tag = Table(
+    "product_tag",
+    Base.metadata,
+    Column("product_id", ForeignKey("products.id"), primary_key=True),
+    Column("tag_id", ForeignKey("tags.id"), primary_key=True),
+)
+
+class Product(Base):
+    __tablename__ = "products"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tags: Mapped[list["Tag"]] = relationship(secondary=product_tag, back_populates="products")
+</pre>
+  </div>
+
+  <blockquote class="callout warn">
+    <div class="callout-title"><code>cascade="all, delete-orphan"</code>은 신중하게</div>
+    이 설정은 부모 삭제 시 자식을 자동 삭제한다. 감사 로그(audit log)나
+    소프트 삭제 정책이 있는 도메인에서는 의도치 않은 데이터 손실로 이어질 수 있다.
+    "삭제"가 실제로 물리적 삭제인지, 상태 변경(soft delete)인지 먼저 정책을 정한다.
+  </blockquote>
+
+  <!-- ── 4. N+1 문제와 로딩 전략 ────────────────────── -->
+  <h2>4. N+1 문제 — 실무에서 가장 흔한 성능 버그</h2>
+
+  <p>
+    관계를 정의하면 기본적으로 <strong>lazy loading</strong>(접근하는 순간 쿼리 발생)이 적용된다.
+    목록을 순회하며 관계 속성에 접근하면, 목록 조회 1번 + 각 항목마다 관계 조회 1번 =
+    <strong>N+1번의 쿼리</strong>가 발생한다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# 나쁜 예 — N+1 발생
+orders = await session.scalars(select(Order))
+for order in orders:
+    print(order.user.email)   # 각 order마다 별도 SELECT 발생!
+
+# 좋은 예 1 — selectinload: 관계를 별도의 IN 쿼리로 한 번에 가져옴
+from sqlalchemy.orm import selectinload
+
+stmt = select(Order).options(selectinload(Order.user))
+orders = await session.scalars(stmt)
+for order in orders:
+    print(order.user.email)   # 추가 쿼리 없음
+
+# 좋은 예 2 — joinedload: LEFT JOIN으로 한 번에 가져옴 (1:1, N:1에 적합)
+from sqlalchemy.orm import joinedload
+
+stmt = select(Order).options(joinedload(Order.user))
+</pre>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>전략</th><th>SQL 방식</th><th>적합한 관계</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>lazy="select"</code> (기본)</td>
+        <td>접근 시점마다 별도 SELECT</td>
+        <td>거의 접근하지 않는 관계</td>
+      </tr>
+      <tr>
+        <td><code>selectinload()</code></td>
+        <td>부모 ID 목록으로 <code>WHERE id IN (...)</code> 1회 추가</td>
+        <td>1:N — 자식이 많을 때 (JOIN 시 행 폭증 방지)</td>
+      </tr>
+      <tr>
+        <td><code>joinedload()</code></td>
+        <td>LEFT OUTER JOIN 한 번</td>
+        <td>N:1, 1:1 — 자식 쪽에서 부모를 가져올 때</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <blockquote class="callout danger">
+    <div class="callout-title">joinedload를 1:N에 잘못 쓰면?</div>
+    부모 1건에 자식이 100건이면 JOIN 결과가 100행으로 늘어나
+    부모 데이터가 100번 중복 전송된다. 1:N 관계에는 <code>selectinload</code>를 우선 고려한다.
+  </blockquote>
+
+  <!-- ── 5. Async 세션 설정 ─────────────────────────── -->
+  <h2>5. Async Engine과 Session 설정</h2>
+
+  <div class="code-block">
+<pre>
+# app/database.py
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+
+engine = create_async_engine(
+    "postgresql+asyncpg://user:pass@localhost/mydb",
+    pool_size=10,        # 상시 유지할 커넥션 수
+    max_overflow=5,      # 순간 초과 허용치
+    pool_pre_ping=True,  # 끊긴 커넥션을 자동 감지 후 재연결
+    echo=False,          # 개발 중에만 True로 SQL 로그 확인
+)
+
+async_session_maker = async_sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False,
+)
+
+async def get_db_session() -> AsyncSession:
+    async with async_session_maker() as session:
+        yield session
+</pre>
+  </div>
+
+  <blockquote class="callout tip">
+    <div class="callout-title">expire_on_commit=False가 필요한 이유</div>
+    기본값(True)은 커밋 후 객체 속성 접근 시 자동으로 재조회한다.
+    FastAPI 응답 직렬화 시점(커밋 이후)에 속성에 접근하면
+    이미 세션이 닫혀 <code>DetachedInstanceError</code>가 발생할 수 있다.
+    <code>False</code>로 두면 커밋 후에도 메모리에 남은 값을 그대로 쓴다.
+  </blockquote>
+
+  <!-- ── 6. Alembic 마이그레이션 ────────────────────── -->
+  <h2>6. Alembic — 스키마 변경을 코드로 관리한다</h2>
+
+  <h3>6-1. 기본 흐름</h3>
+
+  <div class="code-block">
+<pre>
+# 최초 설정
+alembic init migrations
+
+# 모델 변경 후 마이그레이션 스크립트 자동 생성
+alembic revision --autogenerate -m "add is_active to users"
+
+# 적용
+alembic upgrade head
+
+# 롤백 (직전 리비전으로)
+alembic downgrade -1
+</pre>
+  </div>
+
+  <blockquote class="callout warn">
+    <div class="callout-title">autogenerate는 초안일 뿐이다</div>
+    Alembic의 자동 생성은 컬럼 이름 변경을 <em>삭제 + 추가</em>로 오인하는 등
+    완벽하지 않다. 생성된 스크립트를 항상 사람이 검토하고,
+    데이터 손실 가능성이 있는 <code>drop_column</code>은 특히 주의 깊게 확인한다.
+  </blockquote>
+
+  <h3>6-2. 무중단 배포를 견디는 마이그레이션 순서</h3>
+
+  <p>
+    운영 중인 서비스는 <strong>스키마 변경과 애플리케이션 배포가 동시에 일어나지 않는다.</strong>
+    구버전 코드가 떠 있는 동안에도 DB가 깨지지 않아야 한다.
+    "NOT NULL 컬럼 추가"를 예로 들면, 아래 순서로 나눠야 한다.
+  </p>
+
+  <div class="diagram">
+1단계: nullable 컬럼 추가             (구버전 코드도 정상 동작)
+        ALTER TABLE users ADD COLUMN phone VARCHAR(20);
+
+2단계: 애플리케이션 배포              (신버전이 phone을 쓰기 시작)
+        신버전 코드는 phone에 값을 채워 넣는다
+
+3단계: 기존 행 백필(backfill)         (배치 작업, 트랜잭션 잘게 쪼개서)
+        UPDATE users SET phone = '' WHERE phone IS NULL;
+
+4단계: NOT NULL 제약 추가             (모든 행이 값을 가진 뒤에만 안전)
+        ALTER TABLE users ALTER COLUMN phone SET NOT NULL;
+  </div>
+
+  <blockquote class="callout danger">
+    <div class="callout-title">한 번에 하면 안 되는 이유</div>
+    <code>ADD COLUMN phone VARCHAR(20) NOT NULL</code>을 배포 직전에 한 번에 실행하면,
+    아직 떠 있는 구버전 인스턴스의 INSERT가 <code>phone</code> 값 없이 실패한다.
+    롤링 배포 중에는 항상 신버전과 구버전이 동시에 트래픽을 받는다는 것을 전제해야 한다.
+  </blockquote>
+
+  <h3>6-3. 컬럼 삭제도 같은 원칙</h3>
+
+  <div class="diagram">
+1단계: 애플리케이션이 해당 컬럼을 더 이상 읽지도, 쓰지도 않도록 배포
+2단계: 일정 기간 모니터링 (롤백 가능성 대비)
+3단계: 컬럼 삭제 마이그레이션 배포
+  </div>
+
+  <!-- ── 7. Pydantic ↔ ORM 분리 재확인 ─────────────── -->
+  <h2>7. Pydantic 스키마와 ORM 모델은 왜 항상 분리하는가</h2>
+
+  <p>
+    Day 2에서 Request/Response 스키마 분리를 다뤘다. ORM 모델 관점에서 보면 이유가 더 명확하다.
+    ORM 모델은 <strong>DB 제약조건(스키마)</strong>을 표현하고,
+    Pydantic 스키마는 <strong>API 계약</strong>을 표현한다. 둘의 변경 주기가 다르다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# ORM 모델을 그대로 반환하면 안 되는 이유
+class User(Base):
+    ...
+    password_hash: Mapped[str]       # 절대 API로 노출되면 안 됨
+    internal_risk_score: Mapped[int] # 내부 전용 필드
+
+# Pydantic 응답 스키마 — 명시적으로 노출할 필드만 선언
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    name: str
+    is_active: bool
+    model_config = {"from_attributes": True}   # ORM 객체 → Pydantic 변환 허용
+</pre>
+  </div>
+
+  <p>
+    "화이트리스트" 방식이 핵심이다. 새 컬럼을 ORM 모델에 추가해도
+    Response 스키마에 명시적으로 넣지 않는 한 API로 노출되지 않는다.
+    반대로 ORM 모델을 그대로 반환하면, 나중에 추가한 민감한 컬럼이 조용히 노출된다.
+  </p>
+
+  <!-- ── 8. 실무 체크리스트 ─────────────────────────── -->
+  <h2>8. 데이터 모델링 셀프 리뷰 체크리스트</h2>
+
+  <blockquote class="callout info">
+    <div class="callout-title">스키마 작성 시 확인할 것</div>
+    <ul style="margin:0;padding-left:1.4rem;">
+      <li>모든 외래키에 인덱스가 있다 (SQLAlchemy는 FK에 자동으로 인덱스를 만들지 않는다)</li>
+      <li>1:N 관계 목록 조회에서 <code>selectinload</code>를 쓰고 있다</li>
+      <li>N:1 단건 조회에서 필요 시 <code>joinedload</code>를 쓰고 있다</li>
+      <li>비밀번호, 토큰 등 민감 컬럼이 Response 스키마에 없다</li>
+      <li>NOT NULL 컬럼 추가는 nullable → 배포 → 백필 → NOT NULL 순서를 따른다</li>
+      <li>autogenerate로 만든 마이그레이션을 사람이 검토했다</li>
+      <li><code>cascade="all, delete-orphan"</code>이 실제 삭제 정책과 일치한다</li>
+      <li><code>server_default</code>와 <code>default</code>를 구분해서 썼다</li>
+    </ul>
+  </blockquote>
+
+  <!-- ── 9. 퀴즈 ────────────────────────────────────── -->
+  <section class="quiz-section">
+    <h2>🧠 이해도 점검</h2>
+
+    <div class="quiz-question"
+         data-answer="c"
+         data-explanation="selectinload는 부모 ID 목록으로 별도의 IN 쿼리를 1회 추가 실행해 N+1을 방지한다. 1:N 관계에서 JOIN으로 인한 행 폭증도 피할 수 있다.">
+      <p>Q1. 사용자 100명의 목록을 조회하며 각 사용자의 주문 목록(1:N)도 함께 가져와야 한다. 가장 적합한 로딩 전략은?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>기본 lazy loading 그대로 사용한다</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>joinedload로 LEFT JOIN 한 번에 가져온다</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>selectinload로 별도 IN 쿼리를 추가한다</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>매 요청마다 raw SQL을 직접 작성한다</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="b"
+         data-explanation="ORM 모델은 DB 스키마를, Pydantic 스키마는 API 계약을 표현한다. 둘을 분리해야 민감 필드 노출을 막고, 두 계층의 변경 주기를 독립적으로 관리할 수 있다.">
+      <p>Q2. ORM 모델을 API 응답으로 그대로 직렬화하면 안 되는 가장 근본적인 이유는?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>Pydantic이 ORM 객체를 지원하지 않아서</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>DB 스키마와 API 계약의 책임과 변경 주기가 다르고, 민감 필드가 암묵적으로 노출될 수 있어서</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>속도가 느려져서</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>SQLAlchemy가 JSON 직렬화를 지원하지 않아서</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="a"
+         data-explanation="롤링 배포 중에는 신버전과 구버전이 동시에 트래픽을 받는다. NOT NULL을 즉시 추가하면 구버전의 INSERT가 실패한다. nullable 추가 → 배포 → 백필 → NOT NULL 순서가 안전하다.">
+      <p>Q3. 운영 중인 테이블에 NOT NULL 컬럼을 안전하게 추가하는 순서는?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>nullable로 추가 → 배포 → 기존 행 백필 → NOT NULL 제약 추가</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>바로 NOT NULL DEFAULT 값으로 추가한다</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>배포를 먼저 하고 나중에 컬럼을 추가한다</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>순서는 상관없다, DB가 알아서 처리한다</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="d"
+         data-explanation="Data Mapper 패턴에서는 모델이 순수한 데이터 구조이고 Session이 영속성을 담당한다. 이 분리 덕분에 도메인 객체가 저장 방식을 몰라도 되고, Repository 패턴으로 추상화할 수 있다."
+         >
+      <p>Q4. SQLAlchemy가 따르는 Data Mapper 패턴의 특징은?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>모델 인스턴스가 <code>user.save()</code>로 스스로 저장한다</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>모델과 DB 저장 로직이 강하게 결합된다</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>Django ORM과 동일한 방식이다</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>모델은 순수 데이터 구조이고, Session이 영속성을 담당해 Repository 패턴과 잘 맞는다</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </section>
+
+  <!-- ── 1차 자료 ────────────────────────────────────── -->
+  <h2>권장 1차 자료</h2>
+  <ul>
+    <li>
+      <a href="https://docs.sqlalchemy.org/en/20/orm/quickstart.html" target="_blank" rel="noopener">SQLAlchemy 2.x ORM Quickstart</a> —
+      <code>Mapped</code>/<code>mapped_column</code> 문법과 관계 정의를 공식 예제로 확인한다.
+    </li>
+    <li>
+      <a href="https://docs.sqlalchemy.org/en/20/orm/queryguide/relationships.html" target="_blank" rel="noopener">Relationship Loading Techniques</a> —
+      lazy, selectinload, joinedload의 차이를 심화 학습한다.
+    </li>
+    <li>
+      <a href="https://alembic.sqlalchemy.org/en/latest/tutorial.html" target="_blank" rel="noopener">Alembic 공식 튜토리얼</a> —
+      autogenerate와 수동 마이그레이션 작성법.
+    </li>
+  </ul>
+
+  <!-- ── Ask teacher ────────────────────────────────── -->
+  <div class="ask-teacher">
+    <strong>질문이 있으신가요?</strong><br>
+    N+1 문제를 실제 코드에서 어떻게 발견하는지, 또는 특정 관계에
+    어떤 로딩 전략이 맞는지 헷갈리면 언제든 질문하세요.
+    예시: "다대다 관계에서는 selectinload와 joinedload 중 뭐가 나을까요?"
+  </div>
+
+  <!-- ── Footer ─────────────────────────────────────── -->
+  <footer class="lesson-footer">
+    <a href="./0002-api-design-principles.html">← Day 2: API 설계 원칙</a>
+    <span style="color:var(--text-dim);font-size:0.85rem;">Day 3 — 데이터 모델링과 ORM</span>
+    <span style="color:var(--text-dim);font-size:0.85rem;">Day 4: 서비스 경계 설계 →</span>
+  </footer>
+
+</main>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

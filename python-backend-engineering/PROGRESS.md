@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-06-29 | Python 백엔드 아키텍처 전체 구조 개요 | [0001-python-backend-architecture-overview.html](lessons/0001-python-backend-architecture-overview.html) |
 | 2 | 2026-06-30 | API 설계 원칙 — REST, OpenAPI, FastAPI 실전 | [0002-api-design-principles.html](lessons/0002-api-design-principles.html) |
+| 3 | 2026-07-01 | 데이터 모델링과 ORM — SQLAlchemy 2.x, Alembic 실전 | [0003-data-modeling-and-orm.html](lessons/0003-data-modeling-and-orm.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | 데이터 모델링과 ORM | SQLAlchemy 2.x 모델, Alembic 마이그레이션, Pydantic ↔ ORM 분리 |
 | 4 | 서비스 경계 설계 | 레이어드 아키텍처, Repository 패턴, 도메인 서비스 vs 응용 서비스 |
 | 5 | 트랜잭션과 동시성 | ACID, 격리 수준, 낙관적/비관적 잠금, 데드락 방지 |
 | 6 | 인증과 인가 | JWT 구조와 검증, OAuth2 Password Flow, RBAC, 토큰 갱신 전략 |
@@ -21,7 +21,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — Day 3 (데이터 모델링과 ORM)으로 진행 예정.
+**Day 3 완료** — Day 4 (서비스 경계 설계)로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -37,8 +37,11 @@
 - [x] FastAPI 라우터 구조와 Dependency Injection (Day 2)
 - [x] 에러 응답 표준화 (Day 2)
 - [x] OpenAPI 자동 생성과 하위 호환성 관리 (Day 2)
-- [ ] SQLAlchemy 2.x ORM (예정 Day 3)
-- [ ] 마이그레이션 전략 (예정 Day 3)
+- [x] SQLAlchemy 2.x 선언적 모델과 Data Mapper 패턴 (Day 3)
+- [x] 관계 매핑과 cascade 정책 (Day 3)
+- [x] N+1 문제와 로딩 전략 (selectinload, joinedload) (Day 3)
+- [x] Async Engine/Session 설정 (Day 3)
+- [x] Alembic 마이그레이션과 무중단 배포 순서 (Day 3)
 - [ ] 레이어드 아키텍처 (예정 Day 4)
 - [ ] ACID와 격리 수준 (예정 Day 5)
 - [ ] JWT 인증 흐름 (예정 Day 6)
