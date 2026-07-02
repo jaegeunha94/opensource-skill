@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — Context Switch와 스케줄링 | 운영체제 시니어 인터뷰</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .interview-q {
+      background: #1a7a4a;
+      color: white;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+      font-family: var(--font-sans);
+    }
+    .interview-q .q-label {
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.8;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q .q-text {
+      font-size: 1.1rem;
+      line-height: 1.55;
+      font-style: italic;
+    }
+    .answer-box {
+      background: #f8f8f4;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-family: var(--font-sans);
+      font-size: 0.93rem;
+    }
+    .answer-box.strong {
+      border-left: 5px solid #2d7a2d;
+      background: #f0f9f0;
+    }
+    .answer-box.weak {
+      border-left: 5px solid #c0392b;
+      background: #fdecea;
+    }
+    .answer-label {
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.4rem;
+    }
+    .strong .answer-label { color: #2d7a2d; }
+    .weak .answer-label { color: #c0392b; }
+    .step-flow {
+      counter-reset: step-counter;
+      list-style: none;
+      margin: 0.5rem 0 1.25rem;
+    }
+    .step-flow li {
+      counter-increment: step-counter;
+      position: relative;
+      padding: 0.75rem 0.75rem 0.75rem 3rem;
+      border-left: 2px solid #ddd;
+      margin-bottom: 0.5rem;
+      margin-left: 1rem;
+    }
+    .step-flow li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: -1.1rem;
+      top: 0.65rem;
+      background: var(--accent);
+      color: white;
+      width: 1.8rem;
+      height: 1.8rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    .followup-item {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin: 0.75rem 0;
+      overflow: hidden;
+    }
+    .followup-q {
+      background: #f4f4f0;
+      padding: 0.6rem 1rem;
+      font-weight: bold;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .followup-q:hover { background: #ebebde; }
+    .followup-a {
+      padding: 0.75rem 1rem;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      display: none;
+      border-top: 1px solid #ddd;
+      background: #fafafa;
+    }
+    .rubric-table td:first-child {
+      font-weight: bold;
+      white-space: nowrap;
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+    }
+    .rubric-table td:last-child {
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+    }
+    .metric-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    .metric-item {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+    }
+    .metric-name {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--accent);
+      margin-bottom: 0.3rem;
+    }
+    .metric-desc {
+      font-family: var(--font-sans);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+    @media (max-width: 500px) {
+      .metric-card { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 3</span>
+  <span>Context Switch와 스케줄링</span>
+  <span class="lesson-date"> · 2026-07-02</span>
+  <span> · <a href="./index.html">목록으로</a></span>
+</div>
+
+<h1>Context Switch와 스케줄링</h1>
+<p>
+  "스레드 풀 크기를 32에서 200으로 늘렸더니 처리량이 오히려 떨어졌다"는 현상은
+  10년차 이상 개발자라면 한 번쯤 겪었을 문제입니다. 이 레슨은 그 현상을
+  <strong>context switch 비용과 스케줄러의 동작 원리</strong>로 설명하는 능력을 훈련합니다.
+</p>
+
+<!-- ============================================================ -->
+<h2>오늘의 면접 질문</h2>
+
+<div class="interview-q">
+  <div class="q-label">Senior Interview Question</div>
+  <div class="q-text">
+    "API 서버의 스레드 풀 크기를 32에서 200으로 늘렸더니, 초당 처리량(throughput)이
+    늘어나기는커녕 오히려 떨어지고 응답 지연도 늘었습니다. CPU 사용률은 100%에 가깝습니다.
+    운영체제 관점에서 무슨 일이 일어난 것이며, 스레드 풀 크기를 어떻게 다시 정하시겠습니까?"
+  </div>
+</div>
+
+<p>
+  이 질문은 "스레드를 늘리면 항상 빠르다"는 통념을 시험합니다.
+  면접관은 <strong>스케줄러가 실행 단위를 어떻게 번갈아 실행하는지, 그 전환에 어떤 비용이 드는지,
+  그리고 그 비용이 워크로드 특성과 어떻게 부딪히는지</strong>를 설명할 수 있는지를 봅니다.
+</p>
+
+<!-- ============================================================ -->
+<h2>전제 개념: 이것부터 알고 있어야 합니다</h2>
+
+<h3>1. CPU 코어는 한 번에 하나의 실행 흐름만 처리한다</h3>
+<p>
+  물리 CPU 코어 하나는 <strong>한 순간에 하나의 명령어 흐름(스레드)만</strong> 실행할 수 있습니다
+  (하이퍼스레딩처럼 코어 하나가 2개 흐름을 흉내 내는 예외는 있지만 원리는 동일합니다).
+  그런데 우리는 코어 수보다 훨씬 많은 프로세스와 스레드를 "동시에 실행 중"이라고 느낍니다.
+  이것이 가능한 이유가 <strong>스케줄링</strong>입니다 — OS가 아주 짧은 시간 단위(타임 슬라이스, 보통 수 ms~수십 ms)로
+  실행 흐름을 빠르게 번갈아 실행시켜 동시성처럼 보이게 만드는 것입니다.
+</p>
+
+<h3>2. Context Switch란 무엇인가</h3>
+<p>
+  Context switch는 <strong>실행 중이던 흐름 A를 잠시 멈추고, 그 상태를 저장한 뒤, 다른 흐름 B의 저장된 상태를
+  복원해서 실행을 이어가는 과정</strong>입니다. "context"는 다시 실행을 재개하는 데 필요한 모든 정보를 말합니다.
+</p>
+<ul>
+  <li><strong>레지스터 값</strong>: CPU 레지스터(프로그램 카운터, 스택 포인터, 범용 레지스터)를 PCB/TCB에 저장</li>
+  <li><strong>스케줄링 상태</strong>: 실행 중 → 준비(ready) 또는 대기(waiting) 상태로 전이</li>
+  <li><strong>(프로세스 전환 시) 주소 공간 정보</strong>: 페이지 테이블 베이스 레지스터(CR3) 교체</li>
+</ul>
+<div class="callout">
+  <div class="callout-title">핵심 포인트</div>
+  Context switch 자체는 커널이 하는 "일"이므로, 그동안 애플리케이션 코드는 실행되지 않습니다.
+  즉 context switch가 잦을수록 <strong>실제 작업에 쓰이는 시간의 비율(useful work ratio)이 줄어듭니다.</strong>
+</div>
+
+<h3>3. Context Switch가 발생하는 3가지 계기</h3>
+<div class="metric-card">
+  <div class="metric-item">
+    <div class="metric-name">타임 슬라이스 소진</div>
+    <div class="metric-desc">스케줄러가 정한 시간(타임 퀀텀)을 다 쓰면 강제로 다른 스레드에게 CPU를 넘깁니다. (선점형 스케줄링)</div>
+  </div>
+  <div class="metric-item">
+    <div class="metric-name">I/O 대기 진입</div>
+    <div class="metric-desc">현재 스레드가 read(), recv() 같은 블로킹 호출로 대기 상태에 들어가면, CPU를 놀리지 않기 위해 즉시 다른 실행 가능한 스레드로 전환합니다.</div>
+  </div>
+  <div class="metric-item">
+    <div class="metric-name">인터럽트/시스템콜</div>
+    <div class="metric-desc">타이머 인터럽트, 하드웨어 인터럽트(네트워크 패킷 도착 등), 또는 스레드가 직접 yield/lock 대기에 들어가는 경우도 전환을 유발합니다.</div>
+  </div>
+</div>
+<p>
+  vmstat의 <code>cs</code>(context switch) 값이 순간적으로 급증한다면, 이 세 가지 중 어떤 것이
+  원인인지 나눠서 봐야 합니다 — 특히 <strong>voluntary context switch</strong>(스레드가 스스로 lock/I/O를 기다리며 양보)와
+  <strong>involuntary context switch</strong>(타임 슬라이스를 다 써서 강제로 뺏김)를 구분하는 것이 진단의 핵심입니다
+  (Day 1에서 다룬 지표입니다).
+</p>
+
+<h3>4. Context Switch의 진짜 비용: 저장/복원보다 캐시가 더 아프다</h3>
+<p>
+  레지스터 저장/복원 자체는 마이크로초 이하로 빠릅니다. 하지만 실무에서 문제가 되는 비용은
+  <strong>캐시와 TLB의 재구축 비용</strong>입니다.
+</p>
+<ul>
+  <li>
+    <strong>CPU 캐시(L1/L2) 오염</strong>: 스레드 A가 실행되는 동안 A가 자주 쓰는 데이터가 캐시에 적재돼 있습니다.
+    스레드 B로 전환되면 B가 자신의 데이터를 캐시에 채우면서 A의 캐시 라인을 밀어냅니다.
+    다시 A로 돌아오면 캐시 미스가 늘어나 메인 메모리 접근이 잦아집니다(캐시 warm-up 비용).
+  </li>
+  <li>
+    <strong>TLB 무효화</strong>: 프로세스 전환이면 주소 공간이 바뀌므로 TLB(가상-물리 주소 변환 캐시)가
+    상당 부분 무효화됩니다. 같은 프로세스 내 스레드 전환은 이 비용이 없거나 훨씬 작습니다.
+  </li>
+</ul>
+<div class="callout warning">
+  <div class="callout-title">흔한 오해</div>
+  "context switch는 몇 마이크로초밖에 안 걸리니 무시해도 된다"는 오해입니다.
+  전환 자체의 명목 비용은 작지만, 전환 이후 <strong>캐시가 식어서(cold cache) 명령어들이 더 느리게 실행되는
+  간접 비용</strong>이 훨씬 큽니다. 초당 수만 번 전환이 일어나는 시스템에서는 이 간접 비용이 누적되어
+  체감 성능 저하로 나타납니다.
+</div>
+
+<h3>5. 스케줄러가 "많은 실행 단위"를 다루는 방식: Runnable Queue와 Run Queue Length</h3>
+<p>
+  실행 가능한(runnable) 스레드가 CPU 코어 수보다 많으면, 나머지는 <strong>run queue</strong>에서 자기 차례를 기다립니다.
+  <code>vmstat</code>의 <code>r</code> 컬럼이 이 대기 큐 길이입니다. 코어가 4개인데 <code>r</code>이 40이면,
+  평균적으로 스레드 하나가 실행 기회를 얻기까지 9개의 다른 스레드가 앞서 실행되기를 기다려야 합니다.
+  스레드를 늘릴수록 각 스레드가 "자기 차례"를 얻는 간격이 늘어나므로, 개별 요청의 응답 시간(latency)은 나빠집니다.
+</p>
+
+<h3>6. CPU-bound vs I/O-bound와 스케줄링의 상호작용</h3>
+<p>
+  스레드 풀 크기를 늘리는 것이 유리한 경우와 해로운 경우를 가르는 기준이 워크로드 특성입니다.
+</p>
+<ul>
+  <li>
+    <strong>I/O-bound 워크로드</strong>: 스레드가 대부분 시간을 네트워크/디스크 응답을 기다리며 보냅니다.
+    이때는 스레드 수가 코어 수보다 훨씬 많아도 됩니다 — 어차피 대부분 스레드가 "대기" 상태이고,
+    실제로 CPU를 놓고 경쟁하는 스레드는 적기 때문입니다.
+  </li>
+  <li>
+    <strong>CPU-bound 워크로드</strong>: 스레드 대부분이 계속 계산 중이라 항상 CPU를 원합니다.
+    이때 스레드 수가 코어 수를 넘어서면, 늘어난 만큼 순수하게 run queue 대기 시간과 context switch
+    횟수만 늘어납니다. 코어 수를 초과하는 CPU-bound 스레드는 처리량에 도움이 되지 않고
+    오버헤드만 더합니다.
+  </li>
+</ul>
+<div class="callout">
+  <div class="callout-title">이번 사례에 적용하면</div>
+  질문의 서버는 CPU 사용률이 이미 100%에 가깝습니다. 즉 스레드들이 대기가 아니라
+  <strong>계속 CPU를 쓰고 있다는 뜻</strong>이므로 CPU-bound에 가까운 워크로드입니다.
+  이 상태에서 스레드를 32 → 200으로 늘리면, 코어 수를 훨씬 초과하는 스레드들이 run queue에서
+  경쟁하며 context switch만 폭증시키고, 캐시는 계속 식어서 개별 요청 처리 시간이 늘어나
+  처리량 자체가 떨어질 수 있습니다.
+</div>
+
+<!-- ============================================================ -->
+<h2>왜 면접에서 이 질문을 묻는가</h2>
+<ol>
+  <li>
+    <strong>"많을수록 좋다"는 직관을 깨는지 확인</strong> — 스레드/커넥션/워커 수를 무작정 늘리는 것은
+    주니어가 흔히 저지르는 실수입니다. 시니어는 자원(CPU 코어 수)과 동시성 수준의 관계를 이해합니다.
+  </li>
+  <li>
+    <strong>지표를 근거로 진단하는지 확인</strong> — "느낌"이 아니라 <code>vmstat</code>의 <code>r</code>, <code>cs</code>,
+    <code>us/sy</code> 비율, 스레드 dump 등 실제 관측 가능한 지표로 가설을 세우고 검증하는 사고를 봅니다.
+  </li>
+  <li>
+    <strong>용량 산정(capacity sizing) 능력 확인</strong> — 스레드 풀 크기를 "코어 수 근처" 또는
+    "Little's Law" 기반으로 산정할 수 있는지, 즉 경험이 아니라 원리로 숫자를 도출하는지를 봅니다.
+  </li>
+</ol>
+
+<!-- ============================================================ -->
+<h2>실무 연결</h2>
+<ul>
+  <li>
+    <strong>DB 커넥션 풀 크기 산정</strong>: HikariCP 공식 문서는 커넥션 풀 크기를
+    "<code>코어 수 * 2 + 디스크 수</code>" 같은 공식을 제안하며, 무작정 풀을 키우면 오히려
+    DB 서버의 context switch와 lock contention만 늘려 처리량이 떨어진다고 명시합니다.
+  </li>
+  <li>
+    <strong>CPU-bound 배치 작업의 워커 수</strong>: 이미지 리사이징, 인코딩 같은 CPU-bound 배치는
+    워커 수를 코어 수(또는 코어 수 - 1, 시스템 프로세스 여유분 고려)로 맞추는 것이 처리량 기준 최적입니다.
+  </li>
+  <li>
+    <strong>Thread pool vs event loop 선택</strong>: Node.js, Nginx가 이벤트 루프 방식을 쓰는 이유 중 하나가
+    "스레드 수 = 코어 수"로 고정하고, I/O 대기는 커널의 비동기 알림(epoll)에 맡겨
+    스레드 경쟁과 context switch 자체를 최소화하는 설계이기 때문입니다.
+  </li>
+  <li>
+    <strong>컨테이너 CPU limit과 스케줄링 상호작용</strong>: 쿠버네티스에서 CPU limit(cgroup CFS quota)을
+    낮게 설정하면, 애플리케이션이 스스로는 스레드를 늘렸다고 생각해도 실제 할당된 CPU 시간이 부족해
+    CFS 쓰로틀링이 걸리고, 이는 다시 컨텍스트 스위치 패턴을 왜곡시켜 지연을 유발합니다.
+  </li>
+</ul>
+
+<!-- ============================================================ -->
+<h2>답변 사고 순서</h2>
+<ol class="step-flow">
+  <li>
+    <strong>증상 재정의</strong><br>
+    "스레드를 늘렸는데 느려졌다"를 "동시성 수준을 늘렸는데 처리량이 감소했다"로 바꿔 생각합니다.
+    CPU 사용률이 100%라는 것은 자원이 남아서가 아니라 <strong>스케줄링 오버헤드</strong> 문제일 가능성을 시사합니다.
+  </li>
+  <li>
+    <strong>워크로드 성격 확인</strong><br>
+    <code>top</code>/<code>vmstat</code>의 <code>us</code>(user) vs <code>sy</code>(system) 비율을 봅니다.
+    <code>sy</code>(커널 시간) 비중이 비정상적으로 늘었다면 context switch, 스케줄러, lock 처리에
+    시간을 뺏기고 있다는 신호입니다.
+  </li>
+  <li>
+    <strong>Context switch 수 확인</strong><br>
+    <code>vmstat 1</code>의 <code>cs</code> 컬럼과 <code>/proc/&lt;pid&gt;/status</code>의
+    <code>voluntary_ctxt_switches</code> / <code>nonvoluntary_ctxt_switches</code>를 확인합니다.
+    involuntary가 급증했다면 CPU 경쟁으로 강제로 뺏기고 있다는 뜻입니다.
+  </li>
+  <li>
+    <strong>코어 수 대비 활성 스레드 수 비교</strong><br>
+    <code>r</code>(run queue 길이)과 물리 코어 수를 비교합니다. 코어 수를 몇 배 초과하는 실행 가능
+    스레드가 있다면, 그만큼이 대기하며 context switch만 발생시키고 있는 것입니다.
+  </li>
+  <li>
+    <strong>가설 검증(축소 실험)</strong><br>
+    스레드 풀 크기를 원래 값(32) 또는 코어 수 근처로 되돌려 처리량/지연을 비교합니다.
+    Little's Law(<code>동시성 = 처리량 × 응답시간</code>)를 이용해 목표 처리량에 필요한
+    최소 동시성 수준을 역산합니다.
+  </li>
+  <li>
+    <strong>해결안 비교와 결론</strong><br>
+    "코어 수에 맞춘 고정 풀 크기 + 큐잉"과 "이벤트 기반 비동기 처리로 전환" 중 워크로드에 맞는
+    방향을 근거와 함께 제시합니다.
+  </li>
+</ol>
+
+<!-- ============================================================ -->
+<h2>핵심 답변 예시</h2>
+
+<h3>짧은 버전 (30초 답변)</h3>
+<div class="answer-box strong">
+  <div class="answer-label">강한 답변 (짧은 버전)</div>
+  <p>
+    "CPU 사용률이 이미 100%라는 것은 자원이 남아있지 않다는 뜻이라, 스레드를 늘리면 코어 수를
+    초과하는 스레드들이 run queue에서 경쟁하며 context switch와 캐시 미스만 늘어나 처리량이
+    오히려 떨어질 수 있습니다. 저는 먼저 vmstat의 cs, r, us/sy 비율로 이를 확인하고,
+    워크로드가 CPU-bound라면 스레드 풀 크기를 코어 수 근처로 되돌리거나 Little's Law로
+    필요한 동시성 수준을 다시 계산하겠습니다."
+  </p>
+</div>
+
+<h3>깊이 있는 버전 (2분 답변)</h3>
+<div class="answer-box strong">
+  <div class="answer-label">강한 답변 (깊이 있는 버전)</div>
+  <p>
+    "이 현상은 스레드 수와 CPU 코어 수의 관계로 설명됩니다. CPU 코어 하나는 한 순간에
+    하나의 실행 흐름만 처리할 수 있고, 그 이상의 동시성은 스케줄러가 짧은 시간 단위로
+    스레드를 번갈아 실행시켜 만들어내는 착시입니다. 이 전환(context switch)에는 두 가지 비용이 있는데,
+    하나는 레지스터 저장/복원 같은 직접 비용이고 다른 하나가 훨씬 큰데, 바로 전환 후 CPU 캐시가
+    식어서(cold cache) 다시 데이터를 채워야 하는 간접 비용입니다.
+  </p>
+  <p>
+    CPU 사용률이 이미 100%라는 것은 스레드들이 I/O를 기다리는 게 아니라 계속 계산 중이라는 뜻이므로
+    이 워크로드는 CPU-bound에 가깝습니다. CPU-bound 워크로드에서는 실행 가능한 스레드 수가
+    코어 수를 넘는 순간부터는 처리량에 도움이 되지 않고, 오히려 run queue 대기와 context switch,
+    캐시 미스만 늘립니다. 스레드를 32에서 200으로 늘린 것은 이미 포화 상태인 자원에 경쟁자만
+    추가한 셈입니다.
+  </p>
+  <p>
+    저라면 먼저 vmstat으로 cs(context switch 수)와 r(run queue 길이)이 급증했는지, /proc의
+    voluntary/involuntary context switch 비율에서 involuntary가 늘었는지 확인해 가설을 검증하겠습니다.
+    그다음 스레드 풀 크기를 코어 수 근처(또는 HikariCP 방식처럼 코어 수 기반 공식)로 되돌리고,
+    Little's Law로 목표 처리량에 필요한 최소 동시성을 계산해 다시 튜닝하겠습니다.
+    만약 이 워크로드가 실제로는 I/O 대기가 섞여 있다면, 스레드 기반보다 이벤트 루프나 비동기 처리로
+    전환해 코어 수만큼의 스레드로도 훨씬 많은 요청을 동시에 처리하는 방향을 검토하겠습니다."
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<h2>좋은 답변과 약한 답변의 차이</h2>
+
+<div class="answer-box weak">
+  <div class="answer-label">약한 답변</div>
+  <p>"스레드를 너무 많이 만들면 오버헤드가 생기니까 적당히 줄이면 될 것 같습니다."</p>
+</div>
+<p><strong>왜 약한가:</strong>
+  결론은 맞을 수 있지만 "오버헤드"가 무엇인지(context switch, 캐시 미스, run queue 경쟁) 설명이 없고,
+  왜 이 상황(CPU 100%)에서 특히 그런지 근거가 없습니다. 지표를 확인하겠다는 진단 절차도 빠졌습니다.
+</p>
+
+<div class="answer-box weak">
+  <div class="answer-label">약한 답변</div>
+  <p>"스레드는 많을수록 병렬성이 좋아지니 이상한 현상입니다. 코드에 버그가 있을 것 같습니다."</p>
+</div>
+<p><strong>왜 약한가:</strong>
+  "스레드가 많으면 항상 좋다"는 잘못된 전제에서 출발해 OS 스케줄링 원리 자체를 놓치고 있습니다.
+  문제를 애플리케이션 버그로 성급히 단정하기 전에 OS 지표로 스케줄링 오버헤드 가능성을
+  먼저 배제해야 합니다.
+</p>
+
+<div class="answer-box strong">
+  <div class="answer-label">강한 답변의 패턴</div>
+  <p>
+    ① CPU 사용률로 워크로드 성격(CPU-bound) 추정 → ② context switch 비용의 두 축(직접/간접) 설명 →
+    ③ 코어 수 대비 스레드 수 관계로 원인 설명 → ④ 지표(cs, r, us/sy, ctxt_switches)로 검증 절차 제시 →
+    ⑤ Little's Law/코어 수 기반 공식으로 구체적 해결안 제시
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<h2>Senior-level Follow-up 질문</h2>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "Little's Law가 무엇이고, 스레드 풀 크기 산정에 어떻게 쓰입니까?"
+  </div>
+  <div class="followup-a">
+    Little's Law는 <code>L = λ × W</code>로 표현되는 대기행렬 이론의 법칙입니다.
+    시스템 관점에서는 <strong>필요한 동시성 수준(L) = 처리량(λ, 초당 요청 수) × 평균 응답시간(W, 초)</strong>으로
+    바꿔 씁니다. 예를 들어 초당 1000건을 처리해야 하고 평균 응답시간이 50ms(0.05초)라면,
+    필요한 동시 처리 슬롯(스레드 풀 크기)은 <code>1000 × 0.05 = 50</code>입니다.
+    이 공식의 핵심은 "무작정 크게"가 아니라 <strong>목표 처리량과 실측 응답시간으로 필요한 동시성을 역산</strong>한다는 점이며,
+    CPU-bound 워크로드라면 이 값이 코어 수를 넘지 않는지 다시 검증해야 합니다.
+  </div>
+</div>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "선점형(preemptive)과 비선점형(non-preemptive) 스케줄링의 차이가 이 문제와 어떤 관련이 있습니까?"
+  </div>
+  <div class="followup-a">
+    선점형 스케줄링(대부분의 범용 OS, Linux CFS 포함)은 스레드가 스스로 CPU를 반납하지 않아도
+    타임 슬라이스가 끝나면 스케줄러가 강제로 다른 스레드로 전환합니다. 이는 하나의 스레드가
+    CPU를 독점해 시스템 전체가 멈추는 것을 막아주지만, 대신 <strong>강제 전환(involuntary context switch)이
+    필연적으로 발생</strong>합니다. CPU-bound 스레드가 코어 수보다 많으면 이 강제 전환 빈도가
+    스레드 수에 비례해 늘어나므로, 선점형 스케줄링 자체가 "스레드를 늘릴수록 오버헤드가 느는" 구조적 이유입니다.
+    비선점형(협력형) 스케줄링(예: 이벤트 루프에서 콜백이 스스로 제어권을 넘길 때까지 실행)은
+    전환 시점을 코드가 통제하므로 이런 강제 전환 오버헤드가 없지만, 대신 콜백 하나가 오래 걸리면
+    전체가 지연되는 다른 위험이 있습니다.
+  </div>
+</div>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "멀티코어 환경에서 스케줄러가 스레드를 다른 코어로 옮기는 것(마이그레이션)도 비용입니까?"
+  </div>
+  <div class="followup-a">
+    맞습니다. Linux 스케줄러는 코어 간 부하 균형을 위해 실행 중인 스레드를 다른 코어로 옮길 수 있는데,
+    이때 그 스레드가 쓰던 L1/L2 캐시(코어별로 독립)는 새 코어에서 전혀 재사용할 수 없어
+    캐시 warm-up 비용이 같은 코어 내 전환보다 더 큽니다. 이를 줄이기 위한 기법이 <strong>CPU affinity</strong>
+    (특정 스레드를 특정 코어에 고정)이며, 레이턴시에 민감한 고성능 시스템(트레이딩 시스템, 저지연 네트워크 장비)에서
+    자주 사용합니다. 다만 affinity를 과도하게 고정하면 반대로 부하 불균형이 생길 수 있어 트레이드오프가 있습니다.
+  </div>
+</div>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "컨테이너의 CPU limit(cgroup)이 걸려 있으면 이 문제가 어떻게 달라집니까?"
+  </div>
+  <div class="followup-a">
+    쿠버네티스/도커에서 CPU limit을 예를 들어 "2 코어"로 설정하면, 실제 노드에는 코어가 32개
+    있어도 그 컨테이너 안의 프로세스는 cgroup CFS 쿼터에 의해 특정 주기(period, 보통 100ms) 동안
+    할당된 시간(quota)만큼만 실행되고 이후엔 강제로 <strong>쓰로틀링(throttling)</strong>됩니다.
+    이 상태에서 애플리케이션이 스레드를 32개로 설정해도, 스케줄러 관점에서 실제 쓸 수 있는 CPU는
+    2 코어 분량뿐이므로 스레드 수 대비 실질 병렬성은 컨테이너 밖에서 보는 것보다 훨씬 낮습니다.
+    이 경우 스레드 풀 크기는 호스트의 물리 코어 수가 아니라 <strong>컨테이너에 할당된 CPU limit</strong> 기준으로
+    산정해야 하며, 그렇지 않으면 애플리케이션이 "코어가 많다"고 착각하고 과도한 스레드를 만들어
+    쓰로틀링과 context switch 오버헤드가 겹치는 최악의 상황을 만듭니다. 이 주제는 Day 9(컨테이너와 OS 격리)에서
+    cgroup을 더 깊이 다룹니다.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>자기 점검 Rubric</h2>
+
+<table class="rubric-table">
+  <thead>
+    <tr>
+      <th>점검 항목</th>
+      <th>강한 답변 기준</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>원리 연결</td>
+      <td>"코어 하나는 한 순간에 하나의 흐름만 실행한다"는 전제에서 출발해 설명했는가</td>
+    </tr>
+    <tr>
+      <td>비용 구분</td>
+      <td>context switch의 직접 비용(레지스터)과 간접 비용(캐시/TLB 냉각)을 구분해 설명했는가</td>
+    </tr>
+    <tr>
+      <td>워크로드 판단</td>
+      <td>CPU 사용률 100%라는 단서로 CPU-bound 워크로드임을 추론했는가</td>
+    </tr>
+    <tr>
+      <td>지표 기반 진단</td>
+      <td>vmstat의 cs/r, us/sy, voluntary/involuntary ctxt switch 등 구체적 지표를 언급했는가</td>
+    </tr>
+    <tr>
+      <td>정량적 해결안</td>
+      <td>"적당히 줄인다"가 아니라 코어 수 기준 또는 Little's Law로 숫자를 도출했는가</td>
+    </tr>
+    <tr>
+      <td>일반화 경계</td>
+      <td>"스레드는 많을수록 좋다/context switch는 무시해도 된다" 같은 절대적 주장을 피했는가</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2>확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <div class="quiz-question">
+    Q1. CPU-bound 워크로드에서 스레드 수가 코어 수를 초과할 때 일반적으로 나타나는 현상은?
+  </div>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> 처리량이 스레드 수에 비례해 계속 증가한다</label></li>
+    <li><label><input type="radio" name="q1" value="1"> run queue 대기와 context switch만 늘어나고 처리량 개선은 제한적이거나 오히려 감소한다</label></li>
+    <li><label><input type="radio" name="q1" value="2"> CPU 사용률이 낮아진다</label></li>
+    <li><label><input type="radio" name="q1" value="3"> context switch 횟수가 줄어든다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <div class="quiz-question">
+    Q2. Context switch에서 명목 비용(레지스터 저장/복원)보다 실무에서 더 크게 체감되는 비용은 무엇입니까?
+  </div>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> 디스크 I/O 대기 시간</label></li>
+    <li><label><input type="radio" name="q2" value="1"> CPU 캐시가 식어(cold cache) 재적재되며 발생하는 캐시 미스 비용</label></li>
+    <li><label><input type="radio" name="q2" value="2"> 네트워크 패킷 전송 지연</label></li>
+    <li><label><input type="radio" name="q2" value="3"> 파일 디스크립터 테이블 복사 비용</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <div class="quiz-question">
+    Q3. vmstat 지표에서 involuntary context switch가 급증했다면 가장 먼저 의심할 것은?
+  </div>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> 스레드들이 lock이나 I/O를 기다리며 스스로 양보하고 있다</label></li>
+    <li><label><input type="radio" name="q3" value="1"> 실행 가능한 스레드 수가 코어 수보다 많아 타임 슬라이스가 끝나 강제로 전환되고 있다</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 디스크 공간이 부족하다</label></li>
+    <li><label><input type="radio" name="q3" value="3"> 네트워크 연결이 끊겼다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">추천 1차 자료</div>
+  <p>
+    <strong>OSTEP (Operating Systems: Three Easy Pieces)</strong> — "CPU Scheduling: Introduction" 및
+    "Multi-CPU Scheduling" 챕터. 타임 슬라이스, run queue, 멀티코어 스케줄링과 캐시 친화도를 다룹니다.
+  </p>
+  <p style="margin-top:0.5rem">
+    <strong>Brendan Gregg, "Systems Performance"</strong> — CPU 스케줄링과 run queue latency를
+    실제 프로덕션 진단 사례와 함께 설명하는 챕터가 있습니다.
+  </p>
+</div>
+
+<div class="ask-teacher">
+  이해가 안 되는 부분이 있으면 Claude에게 바로 물어보세요. "Little's Law를 우리 서버 숫자로 계산해줘",
+  "CFS 스케줄러가 실제로 어떻게 타임 슬라이스를 정하는지 더 설명해줘"처럼 구체적으로 질문하면 더 깊이 답변해드립니다.
+</div>
+
+<!-- ============================================================ -->
+<div class="progress-section">
+  <h3>이 레슨의 커리큘럼 위치</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 30%"></div>
+  </div>
+  <div class="progress-label">Day 3 / 10 완료 — 다음: Day 4 동시성 제어 (race condition)</div>
+</div>
+
+<div class="lesson-footer">
+  <div>운영체제 10년차 이상 개발자 Interview · Day 3</div>
+  <div class="lesson-nav">
+    <a href="./0012-day2-process-vs-thread-design.html">← Day 2</a>
+    <a href="./index.html">목록</a>
+    <a href="./0004-cpu-scheduling.html">기존 Day 4 (CS 기초) →</a>
+  </div>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1,
+    'CPU 코어 하나는 한 순간에 하나의 실행 흐름만 처리할 수 있으므로, CPU-bound 스레드가 코어 수를 초과하면 ' +
+    '추가된 스레드는 실제 병렬 계산에 기여하지 못하고 run queue에서 대기하며 context switch 횟수만 늘립니다. ' +
+    '전환 후 캐시가 식어 재적재되는 비용까지 더해져 처리량이 오히려 떨어질 수 있습니다.'
+  );
+
+  initQuiz('q2', 1,
+    '레지스터 저장/복원 자체는 매우 빠릅니다. 실무에서 체감되는 진짜 비용은 전환 이후 CPU 캐시(L1/L2)가 ' +
+    '식어(cold cache) 이전 스레드의 데이터로 다시 채워지는 과정에서 발생하는 캐시 미스입니다. ' +
+    '프로세스 전환의 경우 TLB 무효화까지 더해져 이 비용이 더 큽니다.'
+  );
+
+  initQuiz('q3', 1,
+    'involuntary context switch는 스레드가 스스로 CPU를 양보한 것이 아니라 스케줄러가 타임 슬라이스가 끝나 ' +
+    '강제로 다른 스레드에게 CPU를 넘긴 경우입니다. 이는 실행 가능한(runnable) 스레드가 코어 수보다 많아 ' +
+    'CPU 경쟁이 심하다는 신호이며, voluntary context switch(스레드가 lock/I/O를 기다리며 스스로 양보)와 ' +
+    '구분해서 원인을 진단해야 합니다.'
+  );
+</script>
+</body>
+</html>
