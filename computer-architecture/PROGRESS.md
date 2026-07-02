@@ -10,14 +10,12 @@
 
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
-
-아직 완료한 인터뷰 레슨이 없다.
+| 1 | 2026-07-02 | 코드 성능과 하드웨어 사고 프레임워크 | [0011-code-performance-hardware-framework.html](lessons/0011-code-performance-hardware-framework.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 1 | 코드 성능과 하드웨어 사고 프레임워크 | "같은 Big-O인데 한 구현이 훨씬 빠른 이유를 어떻게 설명하겠습니까?" | locality, cache, branch, allocation, 측정 기준 |
 | 2 | CPU 실행 모델 | "CPU가 코드를 실행한다는 말을 개발자 관점에서 설명해보세요." | instruction, register, ALU, load/store |
 | 3 | 메모리 계층 | "메모리 접근이 성능 병목이 되는 이유는 무엇입니까?" | cache/RAM/disk latency, locality, bandwidth |
 | 4 | 캐시와 데이터 배치 | "배열이 연결 리스트보다 빠를 수 있는 하드웨어적 이유는 무엇입니까?" | cache line, spatial locality, pointer chasing |
@@ -30,14 +28,30 @@
 
 ## 현재 학습 위치
 
-**Day 1 시작 전** — 코드 성능과 하드웨어 사고 프레임워크부터 시작한다.
+**Day 1 완료** — 다음은 Day 2 CPU 실행 모델부터 진행한다.
 
 ## Interview 답변 체크리스트
 
-- [ ] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다.
-- [ ] 왜 면접에서 이 질문을 묻는지 설명한다.
-- [ ] 실제 운영 상황과 연결한다.
-- [ ] 답변 순서를 단계적으로 제시한다.
-- [ ] trade-off를 최소 2개 이상 비교한다.
-- [ ] 흔한 오해와 약한 답변을 구분한다.
-- [ ] follow-up 질문까지 대비한다.
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1)
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1)
+- [x] 실제 운영 상황과 연결한다. (Day 1)
+- [x] 답변 순서를 단계적으로 제시한다. (Day 1)
+- [x] trade-off를 최소 2개 이상 비교한다. (Day 1)
+- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1)
+- [x] follow-up 질문까지 대비한다. (Day 1)
+
+## 습득한 핵심 개념
+
+- [x] Big-O와 실제 실행 시간의 차이 (상수 항, 하드웨어 비용) (Day 1)
+- [x] 메모리 계층(register/L1/L2/L3/RAM)과 지연 시간 자릿수 (Day 1)
+- [x] 시간적/공간적 지역성, cache line, prefetching (Day 1)
+- [x] pointer chasing과 cache miss (Day 1)
+- [ ] CPU 실행 모델, register, ALU, load/store (예정 Day 2)
+- [ ] 메모리 계층 심화와 bandwidth (예정 Day 3)
+- [ ] cache line과 데이터 배치 심화 (예정 Day 4)
+- [ ] pipeline과 branch prediction (예정 Day 5)
+- [ ] multicore와 cache coherence, false sharing (예정 Day 6)
+- [ ] SIMD와 벡터화 (예정 Day 7)
+- [ ] profiling과 성능 측정 (예정 Day 8)
+- [ ] 컴퓨터 구조와 시스템 설계 연결 (예정 Day 9)
+- [ ] 종합 모의 면접 (예정 Day 10)
