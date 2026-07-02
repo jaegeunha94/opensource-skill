@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — 인덱스 최적화: 언제 인덱스가 오히려 느려지나 | 성능 최적화 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; color: #c8dae8; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">성능 최적화 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 3
+  </nav>
+
+  <h1>Day 3 — 인덱스 최적화: 언제 인덱스가 오히려 느려지나</h1>
+  <p class="subtitle">"인덱스를 걸면 빨라진다"가 아니라 인덱스의 구조와 비용을 근거로 설계하는 능력 · 2026-07-02</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#composite">Composite Index와 컬럼 순서</a></li>
+      <li><a href="#cost">인덱스의 숨은 비용</a></li>
+      <li><a href="#practice">실무 연결</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"Composite Index(복합 인덱스)를 만들 때 컬럼 순서가 왜 중요한가요? 순서를 잘못 정하면 어떤 일이 벌어지나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"쓰기(INSERT/UPDATE)가 많은 테이블에 인덱스를 무분별하게 추가하면 왜 문제가 될 수 있나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"Covering Index가 무엇이고, 언제 성능에 실질적인 도움이 되나요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"인덱스를 걸 줄 아느냐"</strong>가 아니라 <strong>"인덱스가 내부적으로 어떻게 동작하고, 어떤 비용을 대가로 얻는 이득인지 아느냐"</strong>를 봅니다. Day 2에서 "인덱스는 만능이 아니다"를 EXPLAIN 결과로 확인했다면, Day 3은 그 이유를 인덱스 내부 구조 수준까지 설명할 수 있는지를 요구합니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>B-Tree 구조를 이해하고 있는가</strong> — 인덱스가 정렬된 트리 구조라는 것을 알고, 그로부터 "왜 컬럼 순서가 중요한지", "왜 범위 조건 뒤 컬럼은 인덱스를 못 타는지"를 스스로 유추할 수 있는가.</li>
+      <li><strong>인덱스를 공짜라고 생각하지 않는가</strong> — 인덱스는 읽기를 빠르게 하는 대신 쓰기(INSERT/UPDATE/DELETE)마다 인덱스 구조도 함께 갱신해야 하는 비용이 있다는 것을 아는가.</li>
+      <li><strong>설계 단계에서 트레이드오프를 말할 수 있는가</strong> — "이 컬럼에 인덱스를 걸지 말지"를 읽기 빈도, 쓰기 빈도, 선택도, 테이블 크기를 근거로 판단하는가.</li>
+      <li><strong>실측 없이 인덱스를 추가하지 않는가</strong> — "일단 인덱스부터 걸어보자"가 아니라 실행 계획과 쿼리 패턴을 먼저 확인하는 습관이 있는가.</li>
+    </ul>
+
+    <p>10년차 이하의 전형적인 약한 패턴: "WHERE 절에 쓰는 컬럼마다 인덱스를 걸겠습니다." 이 답변은 인덱스의 이득만 보고 비용은 고려하지 않은 것으로, 면접관에게는 "실무에서 쓰기 성능 저하를 겪어본 적이 없다"는 신호로 읽힙니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>인덱스는 왜 필요한가 — 책의 "찾아보기"에 비유</h3>
+    <p>인덱스가 없는 테이블에서 특정 행을 찾는 것은 목차도 찾아보기도 없는 두꺼운 책에서 특정 단어가 나온 페이지를 처음부터 한 장씩 넘기며 찾는 것과 같습니다(Seq Scan). 인덱스는 이 책 뒤에 "단어 — 페이지 번호"를 정렬해서 모아 둔 <strong>찾아보기(색인)</strong>입니다. 찾아보기가 있으면 원하는 단어를 훨씬 빨리 찾지만, 책 내용이 바뀔 때마다(행이 추가/수정/삭제될 때마다) 찾아보기도 함께 고쳐 써야 한다는 대가가 있습니다.</p>
+
+    <h3>B-Tree 구조 감 잡기</h3>
+    <p>대부분의 RDB(PostgreSQL, MySQL InnoDB 등)는 인덱스를 <strong>B-Tree(균형 트리)</strong> 구조로 저장합니다. 핵심 특성 두 가지만 기억하면 됩니다.</p>
+
+    <ul>
+      <li><strong>정렬되어 있다</strong> — B-Tree의 리프 노드(맨 아래 단계)는 인덱스를 건 컬럼 값 순서대로 정렬되어 있습니다. 그래서 <code>WHERE age &gt; 30</code>처럼 범위 조건이나 <code>ORDER BY age</code> 정렬에도 인덱스를 그대로 활용할 수 있습니다.</li>
+      <li><strong>트리를 타고 내려가며 찾는다(로그 시간)</strong> — 루트에서 시작해 조건에 맞는 값이 있을 만한 가지로만 내려가므로, 테이블 크기가 100배가 되어도 탐색 깊이는 조금만 늘어납니다. 이것이 Seq Scan(테이블 크기에 비례해서 느려짐)과의 근본적인 차이입니다.</li>
+    </ul>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> "인덱스가 정렬되어 있다"는 사실 하나가 Composite Index의 컬럼 순서 문제, 범위 조건 뒤 컬럼이 인덱스를 못 타는 이유, ORDER BY 최적화까지 모두 설명해줍니다. 이 레슨의 나머지는 사실 이 한 문장을 여러 상황에 적용하는 연습입니다.
+    </div>
+
+    <h3>인덱스가 걸리는 대가 — 쓰기 비용</h3>
+    <p>인덱스는 읽기 전용 데이터 구조가 아닙니다. 테이블에 행을 <code>INSERT</code>하면, DB는 테이블에 행을 쓰는 것과 별개로 그 테이블에 걸린 <strong>모든 인덱스</strong>에도 새 항목을 정렬된 위치에 끼워 넣어야 합니다. <code>UPDATE</code>로 인덱스 걸린 컬럼 값이 바뀌면 기존 인덱스 항목을 지우고 새 위치에 다시 써야 합니다. 인덱스가 5개 걸린 테이블에 행 하나를 쓰면, 실제로는 테이블 쓰기 1번 + 인덱스 쓰기 5번이 발생하는 셈입니다.</p>
+  </section>
+
+  <!-- 4. Composite Index -->
+  <section id="composite">
+    <h2>4. Composite Index와 컬럼 순서</h2>
+
+    <p>Composite Index(복합 인덱스)는 여러 컬럼을 묶어서 하나의 인덱스로 만든 것입니다. 예를 들어 <code>(status, created_at)</code> 순서로 인덱스를 만들면, B-Tree는 먼저 <code>status</code> 값으로 정렬되고, <strong>같은 status 안에서</strong> <code>created_at</code>으로 정렬됩니다. 전화번호부가 "성 → 이름" 순으로 정렬된 것과 같은 원리입니다 — 이름만으로는 전화번호부를 빠르게 뒤질 수 없지만, 성을 먼저 알면 그 안에서 이름 순으로 빠르게 찾을 수 있습니다.</p>
+
+    <div class="card">
+      <h4>왼쪽 우선 원칙 (Leftmost Prefix Rule)</h4>
+      <p><code>(status, created_at)</code> 인덱스가 있을 때:</p>
+      <ul>
+        <li><code>WHERE status = 'active'</code> → 인덱스 사용 가능 (왼쪽 컬럼만 사용)</li>
+        <li><code>WHERE status = 'active' AND created_at &gt; '2026-01-01'</code> → 인덱스 완전히 사용 가능</li>
+        <li><code>WHERE created_at &gt; '2026-01-01'</code> → <strong>인덱스 사용 불가</strong> (전화번호부에서 성 없이 이름만으로 찾으려는 것과 같음)</li>
+      </ul>
+    </div>
+
+    <pre><code><span class="comment">-- 인덱스: (status, created_at)</span>
+
+<span class="comment">-- 인덱스 활용: status로 좁힌 뒤 그 안에서 created_at 범위 탐색</span>
+SELECT * FROM orders
+WHERE status = <span class="string">'pending'</span> AND created_at &gt; <span class="string">'2026-06-01'</span>;
+
+<span class="comment">-- 인덱스 활용 불가: 왼쪽 컬럼(status) 조건이 없음</span>
+SELECT * FROM orders
+WHERE created_at &gt; <span class="string">'2026-06-01'</span>;</code></pre>
+
+    <h3>범위 조건 뒤의 컬럼은 인덱스를 못 탄다</h3>
+    <p><code>(a, b, c)</code> 순서의 인덱스에서 <code>a</code>는 등호(<code>=</code>) 조건, <code>b</code>는 범위(<code>&gt;</code>, <code>BETWEEN</code>) 조건으로 쓰이면, <code>c</code>는 인덱스로 좁혀지지 않습니다. B-Tree가 정렬된 것은 "<code>a</code> 안에서 <code>b</code> 순"까지이지, <code>b</code>가 범위로 흩어지는 순간 그 안에서의 <code>c</code> 정렬은 더 이상 연속적이지 않기 때문입니다. 그래서 실무에서는 <strong>등호 조건 컬럼을 앞에, 범위 조건 컬럼을 뒤에</strong> 두는 것이 원칙입니다.</p>
+
+    <h3>Covering Index</h3>
+    <p>Day 2에서 다룬 Index Only Scan을 만드는 조건이 바로 Covering Index입니다. <code>SELECT</code>하는 모든 컬럼이 인덱스 안에 이미 포함되어 있으면, DB는 인덱스만 읽고 실제 테이블 데이터 페이지에 접근할 필요가 없습니다.</p>
+
+    <pre><code><span class="comment">-- 인덱스: (status, created_at) INCLUDE (id, total_amount)</span>
+<span class="comment">-- 아래 쿼리는 테이블 데이터 페이지에 접근하지 않고 인덱스만으로 완결됨</span>
+SELECT id, total_amount FROM orders
+WHERE status = <span class="string">'pending'</span> AND created_at &gt; <span class="string">'2026-06-01'</span>;</code></pre>
+
+    <div class="why-box">
+      <strong>주의:</strong> Covering Index는 <code>SELECT *</code>처럼 모든 컬럼을 가져오는 쿼리에는 적용하기 어렵습니다. 컬럼을 인덱스에 포함시킬수록 인덱스 자체의 크기와 쓰기 비용도 커지므로, "자주 실행되는 특정 쿼리"를 위한 좁고 명확한 최적화로 접근해야 합니다.
+    </div>
+  </section>
+
+  <!-- 5. 인덱스의 숨은 비용 -->
+  <section id="cost">
+    <h2>5. 인덱스의 숨은 비용</h2>
+
+    <h3>쓰기 성능 저하</h3>
+    <p>인덱스가 많을수록 <code>INSERT</code>/<code>UPDATE</code>/<code>DELETE</code>는 느려집니다. 읽기 위주(주문 조회 페이지)와 쓰기 위주(로그 적재, 이벤트 스트림 저장) 테이블은 인덱스 전략이 달라야 합니다 — 후자는 인덱스를 최소화하는 것이 원칙입니다.</p>
+
+    <h3>저장 공간과 캐시 오염</h3>
+    <p>인덱스는 그 자체로 디스크 공간을 차지합니다. 테이블보다 인덱스가 더 큰 경우도 흔합니다. 더 중요한 문제는 <strong>메모리(버퍼 캐시)</strong>입니다. DB는 자주 쓰는 데이터/인덱스 페이지를 메모리에 캐싱하는데, 불필요한 인덱스가 많으면 정작 자주 쓰이는 인덱스가 캐시에서 밀려나 디스크 I/O가 늘어날 수 있습니다.</p>
+
+    <h3>플래너 혼란</h3>
+    <p>비슷한 조건을 커버하는 인덱스가 여러 개 있으면, 쿼리 플래너가 항상 최선의 인덱스를 고르지 못하고 통계 오차로 인해 차선의 인덱스를 선택하는 경우가 생깁니다. 인덱스가 많다고 무조건 유리한 것이 아닙니다.</p>
+
+    <h3>락(Lock)과 인덱스 생성 비용</h3>
+    <p>운영 중인 대형 테이블에 인덱스를 새로 만드는 작업 자체가 부하입니다. PostgreSQL의 <code>CREATE INDEX CONCURRENTLY</code>나 MySQL의 온라인 DDL처럼 락을 최소화하는 방법을 쓰지 않으면, 인덱스 생성 도중 테이블 쓰기가 막혀 장애로 이어질 수 있습니다.</p>
+  </section>
+
+  <!-- 6. 실무 연결 -->
+  <section id="practice">
+    <h2>6. 실무 연결</h2>
+
+    <h3>상황 1: 대시보드 쿼리 3종에 맞춰 인덱스 3개를 각각 추가했더니 쓰기가 느려짐</h3>
+    <p>쿼리마다 인덱스를 하나씩 대응시키는 대신, 공통 접두어(왼쪽 우선 원칙)를 공유하는 Composite Index로 통합할 수 있는지 먼저 검토합니다. <code>(status)</code>, <code>(status, created_at)</code>, <code>(status, created_at, user_id)</code> 세 인덱스는 사실상 마지막 하나로 앞의 두 쿼리 패턴도 커버할 수 있습니다.</p>
+
+    <h3>상황 2: 로그/이벤트 테이블에 인덱스를 걸었더니 INSERT 처리량이 급감함</h3>
+    <p>초당 수천 건씩 쓰는 로그성 테이블은 인덱스를 최소화하고, 조회는 별도의 조회 최적화 저장소(예: 검색엔진, 집계 테이블, 컬럼 스토어)로 분리하는 것이 정석입니다. "쓰기 테이블"과 "조회 테이블"의 인덱스 전략을 같은 기준으로 가져가면 안 됩니다.</p>
+
+    <h3>상황 3: 대형 테이블에 인덱스를 하나 추가했더니 서비스 응답이 잠깐 멎음</h3>
+    <p>기본 <code>CREATE INDEX</code>는 테이블에 쓰기 락을 걸 수 있습니다. 운영 중인 테이블이라면 <code>CREATE INDEX CONCURRENTLY</code>(PostgreSQL) 같은 온라인 생성 방식을 쓰고, 트래픽이 적은 시간대에 진행하며, 생성 진행률과 실패 가능성(concurrently 생성은 실패 시 invalid 인덱스가 남을 수 있음)까지 고려합니다.</p>
+
+    <h3>상황 4: 쿼리 조건 순서를 SQL에서 바꿨더니 실행 계획도 바뀔 거라 기대했지만 아무 변화 없음</h3>
+    <p>흔한 오해입니다. <code>WHERE b = 1 AND a = 2</code>처럼 SQL 문장에서 조건 순서를 바꿔도 플래너는 인덱스 <code>(a, b)</code>를 그대로 활용합니다. 중요한 것은 <strong>SQL에 조건을 나열한 순서가 아니라 인덱스 자체에 컬럼을 정의한 순서</strong>입니다.</p>
+  </section>
+
+  <!-- 7. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>7. 답변 사고 순서</h2>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>실제 쿼리 패턴을 먼저 확인한다</strong>
+          <p style="margin-top:0.3rem">어떤 컬럼이 WHERE/JOIN/ORDER BY에 자주 쓰이는지, 얼마나 자주 실행되는 쿼리인지를 슬로우 쿼리 로그나 <code>pg_stat_statements</code> 같은 도구로 근거를 확보합니다. "느릴 것 같아서"가 아니라 실제로 자주 실행되고 느린 쿼리를 대상으로 합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>선택도를 확인해 인덱스 효과가 있을지 판단한다</strong>
+          <p style="margin-top:0.3rem">조건 컬럼의 카디널리티(값의 종류 수)와 선택도를 봅니다. 선택도가 낮으면(예: boolean) 인덱스를 걸어도 플래너가 안 쓸 수 있으므로 Composite Index로 다른 컬럼과 조합하는 것을 고려합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>Composite Index라면 컬럼 순서를 정한다</strong>
+          <p style="margin-top:0.3rem">등호 조건 컬럼을 앞에, 범위 조건 컬럼을 뒤에 둡니다. 여러 쿼리 패턴이 있다면 왼쪽 우선 원칙으로 하나의 인덱스가 여러 쿼리를 커버할 수 있는지 검토합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>쓰기 비용과 저장 비용을 함께 고려한다</strong>
+          <p style="margin-top:0.3rem">이 테이블의 쓰기 빈도가 얼마나 되는지, 이미 인덱스가 몇 개 있는지 확인합니다. 쓰기가 잦은 테이블이라면 인덱스 추가가 정말 필요한 최소한인지 재검토합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>운영 환경에 안전하게 적용하고 효과를 검증한다</strong>
+          <p style="margin-top:0.3rem">대형 테이블이면 온라인 인덱스 생성 방식을 쓰고, 적용 후 EXPLAIN ANALYZE로 실행 계획이 실제로 바뀌었는지, 목표 쿼리의 실행 시간이 개선됐는지 확인합니다.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 8. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>8. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "Composite Index를 만들 때 컬럼 순서가 왜 중요한가요? 순서를 잘못 정하면 어떤 일이 벌어지나요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>대부분의 RDB 인덱스는 B-Tree로 저장되고, B-Tree는 정렬된 구조입니다. Composite Index <code>(a, b)</code>는 먼저 <code>a</code> 값으로 정렬되고, 같은 <code>a</code> 값 안에서 <code>b</code>가 정렬됩니다. 그래서 <code>a</code> 조건 없이 <code>b</code>만으로 조회하면, 이 정렬 구조를 활용할 수 없어 인덱스를 타지 못합니다 — 전화번호부에서 성 없이 이름만으로 빠르게 찾을 수 없는 것과 같은 이유입니다. 이를 왼쪽 우선 원칙이라고 부릅니다.</p>
+      <br>
+      <p>순서를 정할 때는 두 가지를 봅니다. 첫째, 등호 조건으로 쓰이는 컬럼을 앞에, 범위 조건(<code>&gt;</code>, <code>BETWEEN</code>)으로 쓰이는 컬럼을 뒤에 둡니다. 범위 조건이 걸리는 순간 그 뒤 컬럼의 정렬 연속성이 깨지기 때문입니다. 둘째, 여러 쿼리 패턴이 있다면 왼쪽 우선 원칙을 활용해 하나의 인덱스로 여러 쿼리를 커버할 수 있는 순서를 찾습니다. <code>(status, created_at)</code> 인덱스는 <code>status</code>만 쓰는 쿼리와 <code>status + created_at</code>을 함께 쓰는 쿼리를 모두 커버합니다.</p>
+      <br>
+      <p>순서를 잘못 정하면 인덱스는 존재하지만 플래너가 활용하지 못해 Seq Scan으로 빠지고, 인덱스 유지 비용(쓰기 비용, 저장 공간)만 부담하고 이득은 못 얻는 상황이 됩니다. 그래서 실제 쿼리 패턴을 먼저 확인한 다음 순서를 정하고, EXPLAIN ANALYZE로 의도한 인덱스가 실제로 사용되는지 검증합니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>B-Tree의 정렬 특성이라는 근본 원리에서 컬럼 순서 규칙을 유도함(암기가 아니라 이해)</li>
+      <li>등호 vs 범위 조건 배치 원칙을 명시</li>
+      <li>왼쪽 우선 원칙으로 인덱스 개수를 줄이는 실무적 사고까지 포함</li>
+      <li>순서를 잘못 정했을 때의 구체적인 손해(인덱스 유지 비용은 지불하되 이득은 없음)를 언급</li>
+      <li>검증 단계(EXPLAIN ANALYZE)를 포함</li>
+    </ul>
+  </section>
+
+  <!-- 9. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>9. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"자주 조회되는 컬럼 순서대로 인덱스에 넣으면 됩니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>B-Tree 정렬 구조를 근거로 들지 않아 "왜"에 대한 답이 없음</li>
+        <li>등호 조건과 범위 조건을 구분하지 않음 — 순서 규칙의 핵심을 놓침</li>
+        <li>"자주 조회된다"는 것과 "왼쪽 우선 원칙을 만족한다"는 것은 다른 기준인데 이를 혼동함</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"WHERE 절에 쓰는 컬럼은 모두 인덱스를 걸어두는 게 안전합니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>인덱스의 쓰기 비용, 저장 비용을 전혀 고려하지 않음</li>
+        <li>선택도가 낮은 컬럼에는 인덱스가 무용할 수 있다는 것을 모름</li>
+        <li>"안전하다"는 표현 자체가 트레이드오프 사고 없이 리스크 회피로만 접근했다는 신호</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>B-Tree의 정렬 구조로 컬럼 순서 규칙을 설명한다</li>
+        <li>등호 조건 컬럼을 앞, 범위 조건 컬럼을 뒤에 두는 이유를 근거와 함께 말한다</li>
+        <li>인덱스의 읽기 이득과 쓰기/저장 비용을 함께 언급한다</li>
+        <li>왼쪽 우선 원칙으로 인덱스 개수를 통합하는 실무적 판단을 보여준다</li>
+        <li>운영 환경 적용 시 락/온라인 생성 이슈까지 고려한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. Follow-up -->
+  <section id="followups">
+    <h2>10. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: 인덱스를 5개 걸어둔 테이블에 대량 INSERT를 해야 합니다. 성능을 어떻게 지킬까요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 대량 적재 시에는 가능하면 인덱스를 임시로 제거하고 데이터를 적재한 뒤 인덱스를 재생성하는 방법이 각 행마다 인덱스를 갱신하는 것보다 훨씬 빠른 경우가 많습니다(배치 인덱스 빌드가 증분 갱신보다 효율적). 다만 이 테이블이 서비스 중이라 인덱스 제거 구간에 조회 성능 저하를 감수할 수 없다면, 트래픽이 적은 시간대에 배치로 나눠 적재하거나 파티셔닝된 신규 테이블에 적재 후 스왑하는 방식을 검토합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: Covering Index를 만들면 항상 더 빠른가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 항상은 아닙니다. Covering Index는 자주 실행되는 특정 쿼리의 Index Only Scan을 위해 컬럼을 인덱스에 추가로 포함시키는 것인데, 포함되는 컬럼이 많아질수록 인덱스 크기와 쓰기 비용이 커집니다. 게다가 포함된 컬럼이 자주 갱신되는 컬럼이라면, 그 갱신마다 인덱스도 함께 갱신해야 해서 오히려 손해가 될 수 있습니다. 실행 빈도가 매우 높고 갱신이 적은 컬럼 조합에 한해 적용하는 것이 원칙입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: (a, b) 인덱스가 있는데 WHERE a = 1 OR b = 2 조건은 인덱스를 잘 활용하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 아닙니다. Composite Index는 AND로 연결된 조건에서 왼쪽 우선 원칙을 따라 활용되지만, OR 조건은 각 컬럼을 독립적으로 만족하는 행을 모두 찾아야 하므로 이 정렬 구조를 그대로 쓸 수 없습니다. 이런 경우 플래너는 Seq Scan을 택하거나, DB에 따라 각 컬럼에 대해 별도로 인덱스를 스캔한 뒤 결과를 합치는 Bitmap Index Scan/Index Merge 같은 전략을 쓰기도 합니다. OR가 잦은 쿼리라면 컬럼별 단일 인덱스를 따로 두는 것이 더 예측 가능할 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 운영 중인 대형 테이블에 인덱스를 새로 만들어야 합니다. 어떻게 접근하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 기본 <code>CREATE INDEX</code>는 테이블에 쓰기를 막는 락을 걸 수 있으므로, PostgreSQL이라면 <code>CREATE INDEX CONCURRENTLY</code> 같은 온라인 생성 방식을 씁니다. 이 방식은 락을 최소화하는 대신 시간이 더 걸리고, 중간에 실패하면 invalid 상태의 인덱스가 남을 수 있어 실패 시 정리 절차도 함께 준비합니다. 가능하면 트래픽이 적은 시간대에 진행하고, 생성 중 테이블 상태와 진행률을 모니터링합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 인덱스가 있는데도 정렬(ORDER BY) 쿼리가 여전히 느립니다. 왜일까요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 인덱스의 정렬 순서와 ORDER BY의 정렬 순서(컬럼, 오름차순/내림차순)가 일치하지 않으면 인덱스를 정렬에 활용하지 못하고 별도의 정렬 작업(Sort 단계)이 추가로 발생합니다. 또한 WHERE 조건에서 이미 인덱스의 왼쪽 컬럼들을 다 소진했는지도 확인해야 합니다 — 예를 들어 <code>(a, b)</code> 인덱스에서 <code>WHERE a IN (1,2,3) ORDER BY b</code>는 <code>a</code>가 여러 값이라 <code>b</code> 기준 전역 정렬을 인덱스만으로 보장하지 못할 수 있습니다. EXPLAIN에서 Sort 노드가 보이는지 직접 확인하는 것이 가장 확실합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>11. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"인덱스는 많을수록 좋다"</strong></p>
+      <p>인덱스는 읽기를 빠르게 하는 대신 모든 쓰기(INSERT/UPDATE/DELETE)마다 갱신 비용이 붙습니다. 쓰기가 잦은 테이블에서는 꼭 필요한 인덱스만 최소한으로 유지해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"SQL 문장에서 WHERE 조건을 쓴 순서가 인덱스 활용 순서를 결정한다"</strong></p>
+      <p>플래너가 참고하는 것은 SQL 문장의 조건 나열 순서가 아니라 인덱스 자체에 정의된 컬럼 순서입니다. <code>WHERE b = 1 AND a = 2</code>로 써도 인덱스 <code>(a, b)</code>는 그대로 활용됩니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"Composite Index (a, b)가 있으면 b만으로 조회할 때도 어느 정도는 빨라진다"</strong></p>
+      <p>왼쪽 우선 원칙에 따라 왼쪽 컬럼(a) 조건 없이 b만으로 조회하면 이 인덱스는 사실상 활용되지 않습니다(일부 DB의 Index Skip Scan 같은 예외적 최적화를 제외하면). b만 자주 단독으로 조회된다면 별도 인덱스가 필요합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"Primary Key는 인덱스와 별개다"</strong></p>
+      <p>대부분의 RDB에서 Primary Key는 자동으로 (Unique) 인덱스가 생성됩니다. 이미 커버되는 조회 패턴에 중복 인덱스를 또 만드는 실수를 피해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"인덱스를 걸면 즉시 효과가 나타난다"</strong></p>
+      <p>인덱스를 새로 만든 직후에는 통계 정보가 갱신되지 않아 플래너가 여전히 옛 계획을 쓸 수 있습니다. DB에 따라 <code>ANALYZE</code>를 명시적으로 실행해 통계를 갱신해야 플래너가 새 인덱스를 제대로 고려합니다.</p>
+    </div>
+  </section>
+
+  <!-- 12. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>12. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 3을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>인덱스가 B-Tree로 정렬되어 있다는 사실에서 왼쪽 우선 원칙을 스스로 유도해서 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Composite Index에서 등호 조건 컬럼을 앞에, 범위 조건 컬럼을 뒤에 두는 이유를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Covering Index와 Index Only Scan의 관계, 그리고 Covering Index의 비용을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>인덱스가 읽기 성능을 높이는 대신 쓰기 성능과 저장 공간에 어떤 비용을 지우는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>여러 쿼리 패턴을 하나의 Composite Index로 통합할 수 있는 상황을 예시로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>운영 중인 대형 테이블에 인덱스를 안전하게 추가하는 방법(온라인 생성)을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>OR 조건에서 Composite Index가 왜 잘 활용되지 못하는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>인덱스를 걸지 말지를 선택도, 읽기/쓰기 빈도, 테이블 크기 기준으로 판단하는 사고 과정을 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 4</h3>
+      <p><strong>느린 API 분석 — latency 분해와 병목 특정</strong></p>
+      <p>Day 1~3에서 병목 분석 프레임워크와 DB 레벨(쿼리, 인덱스)의 튜닝을 다뤘다면, Day 4는 시야를 API 전체로 넓혀 하나의 요청이 처리되는 동안 시간이 어디에 쓰이는지(DB, 외부 API, 직렬화, 네트워크, 애플리케이션 로직)를 분해하고 추적하는 방법을 다룹니다.</p>
+      <p>면접 질문 예고: "API 응답 시간이 300ms인데, 이 중 실제로 어디서 시간이 쓰이는지 어떻게 분해해서 확인하시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    성능 최적화 시니어 인터뷰 · Day 3 of 20 · 2026-07-02
+  </p>
+
+</div>
+</body>
+</html>
