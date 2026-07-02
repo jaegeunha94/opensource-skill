@@ -58,6 +58,7 @@ Examples:
 - `senior-docker-kubernetes-virtualization-interview`
 - `senior-cicd-deployment-strategy-interview`
 - `senior-performance-optimization-interview`
+- `senior-http-web-protocol-interview`
 - `senior-redis-cache-strategy-interview`
 - `senior-message-queue-async-processing-interview`
 
@@ -104,6 +105,13 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `CI/CD Deployment Strategy Interview` -> `senior-cicd-deployment-strategy-interview`
 - `성능 최적화` -> `senior-performance-optimization-interview`
 - `Performance Optimization Interview` -> `senior-performance-optimization-interview`
+- `HTTP / Web Protocol & API Traffic` -> `senior-http-web-protocol-interview`
+- `HTTP / Web Protocol Interview` -> `senior-http-web-protocol-interview`
+- `HTTP API 트래픽 Interview` -> `senior-http-web-protocol-interview`
+- `HTTP 학습` -> `senior-http-web-protocol-interview`
+- `HTTP Interview` -> `senior-http-web-protocol-interview`
+- `HTTP 시니어 인터뷰` -> `senior-http-web-protocol-interview`
+- `HTTP 10년차 이상 개발자 Interview` -> `senior-http-web-protocol-interview`
 - `Redis / 캐시 전략` -> `senior-redis-cache-strategy-interview`
 - `Redis 캐시 전략` -> `senior-redis-cache-strategy-interview`
 - `Redis Cache Strategy Interview` -> `senior-redis-cache-strategy-interview`
@@ -132,6 +140,7 @@ For specialized senior interview subjects, keep the same 10+ year practitioner i
 - `senior-docker-kubernetes-virtualization-interview`: containers, images, volumes, networks, Dockerfile, Compose, Kubernetes Pod, Deployment, Service, Ingress, rollout behavior, resource limits, and production troubleshooting.
 - `senior-cicd-deployment-strategy-interview`: GitHub Actions, Jenkins, build automation, test automation, artifact management, Blue-Green, Rolling, Canary, rollback strategy, deployment risk control, and release ownership.
 - `senior-performance-optimization-interview`: slow API analysis, DB query tuning, index optimization, caching, asynchronous processing, load testing, bottleneck analysis, profiling, and measurable performance trade-offs.
+- `senior-http-web-protocol-interview`: HTTP/1.1, HTTP/2, HTTP/3, request/response semantics, methods, status codes, headers, content negotiation, cookies and sessions, CORS, Cache-Control, ETag, compression, keep-alive, connection pooling, timeout/retry/idempotency, reverse proxies, API gateways, CDN behavior, TLS termination, observability, and production traffic debugging.
 - `senior-redis-cache-strategy-interview`: Redis data structures, TTL, cache invalidation, session stores, distributed locks, ranking, Pub/Sub, cache stampede prevention, persistence modes, and failure behavior.
 - `senior-message-queue-async-processing-interview`: Kafka, RabbitMQ, SQS, Celery, asynchronous job design, retries, idempotency, dead-letter queues, ordering, backpressure, failure isolation, and large-scale processing.
 

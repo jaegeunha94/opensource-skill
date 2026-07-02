@@ -22,6 +22,26 @@
 - 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-cs-interview-computer-networking` 브랜치에 push해줘. `main`에는 직접 push하지 마.
 ```
 
+## HTTP / Web Protocol Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 HTTP / Web Protocol & API Traffic 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: HTTP / Web Protocol & API Traffic
+폴더 slug: `senior-http-web-protocol-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- HTTP를 메서드/상태코드 암기로만 좁게 다루지 말고, 10년차 이상 개발자 인터뷰에서 평가하는 API 트래픽 해석, 성능/캐시 판단, 프록시/CDN/TLS 경계, 장애 분석 중심으로 진행해줘.
+- HTTP/1.1, HTTP/2, HTTP/3, request/response, method semantics, status code, headers, content negotiation, cookies/session, CORS, Cache-Control, ETag, compression, keep-alive, connection pooling, timeout/retry/idempotency, reverse proxy, API gateway, CDN, TLS termination, observability를 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — HTTP 트래픽 분석과 시니어 답변 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-http-web-protocol-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
 ## 운영체제
 
 ```text
