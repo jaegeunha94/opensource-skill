@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — 캐시 스탬피드와 Hot Key 문제</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 3 · Redis / 캐시 전략 Interview</div>
+    <h1>캐시 스탬피드와 Hot Key 문제</h1>
+    <div class="subtitle">캐시가 오히려 DB를 무너뜨리는 순간을 막는 설계 — dog-pile effect, mutex lock, local cache 계층</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "트래픽이 많은 캐시 키의 TTL이 만료되는 순간, 어떤 문제가 생길 수 있습니까? 겪어보셨거나 방지해보신 적이 있나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "타임세일이나 이벤트로 특정 상품 하나에 트래픽이 몰려서 Redis 노드 하나만 부하가 튀는 상황을 본 적 있나요? 어떻게 대응하시겠습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "캐시 서버를 재시작했더니 DB가 순간적으로 뻗었습니다. 왜 이런 일이 생기고, 어떻게 미리 막을 수 있었을까요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>캐시가 "DB를 지키는 방패"에서 "DB를 무너뜨리는 방아쇠"로 바뀌는 순간</h2>
+
+    <p>
+      캐시를 쓰는 이유는 DB에 몰릴 요청을 줄이기 위함이다. 그런데 특정 조건에서는 캐시가 있기 <strong>때문에</strong> DB가 순간적으로
+      무너지는 역설적인 상황이 생긴다. 이 Day에서는 그 대표적인 두 가지 현상 — <strong>캐시 스탬피드(cache stampede)</strong>와
+      <strong>hot key</strong> — 를 구분하고, 각각을 방어하는 방법을 다룬다.
+    </p>
+
+    <h3>캐시 스탬피드(Cache Stampede) = Dog-pile Effect</h3>
+    <p>
+      "stampede"는 소 떼가 한꺼번에 우르르 몰려 뛰는 것을, "dog-pile"은 여러 사람이 한 사람 위에 무더기로 올라타는 것을 뜻하는
+      영어 표현이다. 캐시 맥락에서는 <strong>인기 있는 캐시 키 하나가 만료(또는 삭제)되는 순간, 그 키를 요청하던 수백~수만 개의
+      동시 요청이 전부 캐시 미스를 만나 한꺼번에 DB로 몰려가는 현상</strong>을 말한다.
+    </p>
+    <pre><code><span class="comment">// Cache-aside 패턴에서 흔히 쓰는 순진한 구현</span>
+<span class="func">function</span> getProduct(id) {
+  <span class="keyword">let</span> data = redis.get(<span class="string">`product:${id}`</span>);
+  <span class="keyword">if</span> (data == <span class="keyword">null</span>) {
+    data = db.query(<span class="string">`SELECT * FROM products WHERE id=?`</span>, id); <span class="comment">// 캐시 미스 시 DB 조회</span>
+    redis.setex(<span class="string">`product:${id}`</span>, <span class="number">60</span>, data);
+  }
+  <span class="keyword">return</span> data;
+}
+<span class="comment">// 이 상품 키에 초당 5,000건이 몰리는 상황에서 TTL이 만료되는 그 1ms 동안
+// 5,000개 요청이 "동시에" data == null 을 보고 전부 db.query()를 실행한다.</span></code></pre>
+
+    <div class="callout callout-danger">
+      <strong>왜 위험한가:</strong> 캐시는 평소 초당 5,000건의 조회를 DB 대신 흡수해서 DB를 <strong>보호</strong>하고 있었다.
+      그런데 만료되는 그 순간만큼은 그 5,000건이 <strong>동시에</strong> DB로 꽂힌다. 평소 초당 몇 건 수준의 조회만 받던
+      DB 커넥션 풀이 순식간에 고갈되고, 느려진 쿼리들이 서로 얽혀 <strong>DB 전체 장애</strong>로 번질 수 있다.
+    </div>
+
+    <h3>Hot Key — "만료"와 무관하게 발생하는 또 다른 문제</h3>
+    <p>
+      캐시 스탬피드가 "만료 순간"의 문제라면, hot key는 <strong>특정 키 하나에 대한 요청량이 다른 키들보다 압도적으로 많아서,
+      그 키를 처리하는 Redis 노드(샤드) 하나에만 부하가 쏠리는 현상</strong>이다. TTL이 남아있어도, 캐시가 정상적으로 히트해도
+      발생한다.
+    </p>
+    <div class="callout callout-info">
+      <strong>핵심 차이:</strong> Redis Cluster는 키를 해시 슬롯(hash slot) 단위로 여러 노드에 분산한다.
+      하지만 <strong>같은 키는 항상 같은 슬롯, 같은 노드</strong>에만 저장된다. 노드를 아무리 늘려도(scale-out) 특정 키 하나에
+      대한 요청은 결국 그 키를 담당하는 노드 하나로만 몰린다. 즉, hot key는 "서버를 늘리면 자동으로 풀리는 문제"가 아니다.
+    </div>
+    <p>
+      예를 들어 인플루언서 라이브 방송의 "현재 시청자 수" 카운터, 타임세일 시작 시각의 "재고 수량" 키, 급상승 뉴스 기사의
+      조회수 캐시 키는 그 키 하나에 초당 수만 건의 요청이 집중될 수 있다. 이때 Redis 클러스터 전체 CPU 평균은 낮아 보이는데,
+      그 키를 담당하는 노드 하나만 CPU 100%를 찍는 비대칭 현상이 나타난다.
+    </p>
+
+    <h3>완화 전략 ① Mutex Lock (Request Coalescing) — "한 명만 DB에 가고 나머지는 기다린다"</h3>
+    <p>
+      캐시 미스가 나면, <strong>가장 먼저 도착한 요청 하나만</strong> DB 조회를 하도록 락을 걸고, 나머지 요청은 그 결과를 기다리거나
+      잠깐 재시도한다. Redis의 <code>SET key value NX EX ttl</code> 명령으로 간단한 락을 구현할 수 있다.
+    </p>
+    <pre><code><span class="func">function</span> getProduct(id) {
+  <span class="keyword">let</span> data = redis.get(<span class="string">`product:${id}`</span>);
+  <span class="keyword">if</span> (data != <span class="keyword">null</span>) <span class="keyword">return</span> data;
+
+  <span class="comment">// 락 획득 시도 — 이미 누군가 락을 잡고 있으면 false</span>
+  <span class="keyword">const</span> gotLock = redis.set(<span class="string">`lock:product:${id}`</span>, <span class="string">"1"</span>, <span class="string">"NX"</span>, <span class="string">"EX"</span>, <span class="number">5</span>);
+  <span class="keyword">if</span> (gotLock) {
+    <span class="keyword">try</span> {
+      data = db.query(<span class="string">`SELECT * FROM products WHERE id=?`</span>, id);
+      redis.setex(<span class="string">`product:${id}`</span>, <span class="number">60</span>, data);
+    } <span class="keyword">finally</span> {
+      redis.del(<span class="string">`lock:product:${id}`</span>);
+    }
+  } <span class="keyword">else</span> {
+    <span class="comment">// 락을 못 잡은 요청들: 짧게 대기 후 캐시 재조회 (또는 stale 값 반환)</span>
+    sleep(<span class="number">50</span>);
+    <span class="keyword">return</span> getProduct(id);
+  }
+  <span class="keyword">return</span> data;
+}</code></pre>
+    <div class="callout callout-warn">
+      락 자체도 실패 지점이 될 수 있다. DB 조회가 락 TTL보다 오래 걸리면 락이 먼저 풀려 <strong>다른 요청이 또 락을 잡고
+      중복 조회</strong>가 발생할 수 있고, 락을 잡은 프로세스가 죽으면 <code>finally</code>의 <code>DEL</code>이 실행되지 않아
+      락 TTL이 끝날 때까지 다른 요청이 계속 대기해야 한다. 락은 "완벽한 차단"이 아니라 "동시 조회 수를 크게 줄이는 완화책"으로
+      다뤄야 한다.
+    </div>
+
+    <h3>완화 전략 ② Stale-While-Revalidate — "옛 값을 먼저 주고, 뒤에서 몰래 갱신한다"</h3>
+    <p>
+      논리적 만료 시각(logical TTL)과 실제 삭제 시각(physical TTL)을 분리하는 방식이다. 캐시 값에 "진짜 최신인지" 여부를
+      같이 저장해두고, 논리적으로 만료되었어도 <strong>일단 그 값을 즉시 사용자에게 돌려준 뒤</strong>, 그중 딱 한 요청만
+      백그라운드에서 DB를 조회해 캐시를 갱신한다.
+    </p>
+    <pre><code><span class="comment">// 캐시 값에 "logical_expire" 필드를 함께 저장</span>
+{ <span class="string">"data"</span>: {...}, <span class="string">"logical_expire"</span>: 1719900000 }
+
+<span class="func">function</span> getProduct(id) {
+  <span class="keyword">const</span> cached = redis.get(<span class="string">`product:${id}`</span>); <span class="comment">// physical TTL은 넉넉하게(예: 1시간) 설정</span>
+  <span class="keyword">if</span> (cached.logical_expire > now()) {
+    <span class="keyword">return</span> cached.data; <span class="comment">// 아직 신선함</span>
+  }
+  <span class="comment">// 논리적으로는 만료됨. 하지만 값은 즉시 반환한다 (사용자는 기다리지 않음)</span>
+  <span class="keyword">if</span> (redis.set(<span class="string">`lock:product:${id}`</span>, <span class="string">"1"</span>, <span class="string">"NX"</span>, <span class="string">"EX"</span>, <span class="number">5</span>)) {
+    asyncRefreshInBackground(id); <span class="comment">// 딱 한 요청만 백그라운드 갱신 시작</span>
+  }
+  <span class="keyword">return</span> cached.data; <span class="comment">// 모든 요청은 즉시 (약간 오래된) 값을 받는다</span>
+}</code></pre>
+    <div class="callout callout-tip">
+      Mutex lock은 "정확한 최신값을 위해 사용자를 잠깐 기다리게" 하는 방식이고, stale-while-revalidate는
+      "사용자는 절대 기다리지 않게 하고 대신 데이터가 몇 초 더 오래될 수 있음을 감수"하는 방식이다.
+      <strong>응답 지연을 절대 허용할 수 없는 트래픽</strong>(메인 페이지, 실시간 피드)에는 후자가 자주 쓰인다.
+    </div>
+
+    <h3>완화 전략 ③ 확률적 조기 갱신 (Probabilistic Early Expiration / XFetch)</h3>
+    <p>
+      TTL이 정확히 끝나는 순간이 아니라, <strong>만료 시각에 가까워질수록 조기에 갱신을 시도할 확률을 점점 높이는</strong> 방식이다.
+      그러면 동시에 만료되는 대신, 만료 시각 이전 구간에 걸쳐 갱신 요청이 자연스럽게 분산된다. 하나의 요청이 "이번엔 내가
+      미리 갱신해볼게"라고 확률적으로 결정하기 때문에, 대부분의 요청은 평소처럼 캐시를 그냥 읽고 지나간다.
+    </p>
+
+    <h3>완화 전략 ④ Hot Key 전용 — Local Cache(L1) 계층과 키 복제(Key Replication)</h3>
+    <p>
+      Hot key는 <strong>애초에 Redis까지 요청이 도달하기 전에</strong> 흡수해야 근본적으로 완화된다.
+    </p>
+    <ul>
+      <li>
+        <strong>Local Cache(L1, in-process cache)</strong>: 애플리케이션 서버 프로세스 메모리 안에 아주 짧은 TTL(예: 1~3초)로
+        값을 캐싱한다. 서버가 100대면 Redis에 도달하는 요청이 이론상 100분의 1 수준으로 줄어든다.
+      </li>
+      <li>
+        <strong>키 복제(Key Replication / Key Splitting)</strong>: <code>product:1</code> 하나로 몰리는 요청을,
+        <code>product:1:0</code> ~ <code>product:1:9</code>처럼 같은 값을 여러 키에 복제해두고 요청 시 무작위로 분산 조회한다.
+        같은 노드일 수도 있지만, Redis Cluster에서는 해시 슬롯이 달라져 여러 노드로 물리적으로 분산될 수 있다.
+      </li>
+    </ul>
+    <div class="callout callout-warn">
+      Local cache를 추가하면 새로운 문제가 생긴다. 서버마다 로컬 캐시를 들고 있으므로, 값이 바뀌었을 때 <strong>모든 서버의
+      로컬 캐시를 동시에 무효화</strong>해야 한다. 이건 Redis 하나만 지우는 것보다 훨씬 어렵다 — 그래서 로컬 캐시 TTL은
+      아주 짧게 잡거나, Redis Pub/Sub으로 무효화 이벤트를 모든 서버에 브로드캐스트하는 방식을 함께 쓴다(Pub/Sub은 Day 7에서
+      더 다룬다).
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <p>
+      캐시 스탬피드/hot key 질문은 <strong>"캐시를 붙이는 것"과 "트래픽 규모에서 캐시가 살아남게 설계하는 것"의 차이</strong>를
+      평가하는 질문이다. 트래픽이 적은 환경에서는 절대 드러나지 않는 문제이기 때문에, 이 질문에 구체적으로 답할 수 있다는 것 자체가
+      <strong>실제로 규모 있는 트래픽을 운영해본 경험</strong>의 신호가 된다.
+    </p>
+
+    <ul>
+      <li>
+        <strong>캐시의 역설을 이해하는가:</strong> 캐시가 평소엔 DB를 지키지만, 특정 순간엔 오히려 DB를 무너뜨릴 수 있다는
+        구조적 위험을 인지하는가
+      </li>
+      <li>
+        <strong>스탬피드와 hot key를 구분하는가:</strong> 하나는 "만료 시점"의 문제, 하나는 "특정 키 자체"의 문제임을
+        구분해서 서로 다른 해법을 제시하는가
+      </li>
+      <li>
+        <strong>단일 해법에 의존하지 않는가:</strong> "락 하나면 끝"이 아니라 mutex lock, stale-while-revalidate, jitter,
+        local cache 등 상황에 맞는 여러 계층의 방어를 조합할 수 있는가
+      </li>
+      <li>
+        <strong>trade-off를 설명하는가:</strong> 정합성(항상 최신) vs 가용성/지연(사용자를 기다리게 하지 않음) 사이에서
+        비즈니스 요구에 맞게 선택할 수 있는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      이 주제는 실제로 대형 서비스의 장애 회고(postmortem)에 반복적으로 등장하는 패턴이다. "배포 직후 캐시가 비어서 DB가
+      죽었다", "타임세일 상품 하나 때문에 Redis 노드 하나가 다운됐다"는 이야기는 시니어 면접관 다수가 직접 겪어본 상황이기
+      때문에, 피상적인 답변은 바로 드러난다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 배포/재시작 직후 캐시가 텅 비어(Cold Cache) DB가 순간 뻗음</h3>
+    <p>
+      Redis를 재시작하거나 새 캐시 클러스터로 전환하면, 그 순간 모든 키가 캐시 미스 상태가 된다. 평소 캐시가 흡수하던
+      트래픽 전부가 한꺼번에 DB로 몰리는, <strong>스탬피드의 극단적인 형태(cold start stampede)</strong>다.
+      → 배포 전 <strong>캐시 워밍업(cache warm-up)</strong> 스크립트로 인기 키를 미리 채워두거나, 트래픽을 점진적으로
+      전환(canary)하며 DB 부하를 모니터링한다.
+    </p>
+
+    <h3>상황 2: 타임세일 시작 시각, 재고 수량 키 하나에 트래픽 집중</h3>
+    <p>
+      "10시 정각 한정판 100개" 이벤트에서 재고 확인 API가 특정 상품 key 하나에 초당 수만 건 몰린다. 해당 키를 담당하는
+      Redis 노드만 CPU가 튀고, 다른 노드는 한가하다.
+      → 재고 수량처럼 자주 바뀌는 값은 <strong>local cache(1~2초 TTL)</strong>로 1차 흡수하고, 정확한 차감은 별도의
+      원자적 연산(예: <code>DECR</code>)으로만 처리해 값을 읽는 트래픽과 값을 깎는 트래픽을 분리한다.
+    </p>
+
+    <h3>상황 3: 인기 게시물의 "좋아요 수" 캐시가 만료되는 순간 DB 커넥션 풀 고갈</h3>
+    <p>
+      팔로워 수백만인 인플루언서 게시물의 좋아요 수 캐시가 만료되는 순간, 동시 조회 요청이 전부 DB로 몰려 DB 커넥션 풀이
+      바닥나고, 이 게시물과 무관한 다른 API까지 같은 DB를 쓰다가 함께 느려진다(장애의 전파, blast radius 확산).
+      → mutex lock으로 DB 조회를 1건으로 제한하거나, stale-while-revalidate로 사용자에게는 즉시 옛 값을 보여주고
+      뒤에서 갱신한다.
+    </p>
+
+    <h3>상황 4: 뉴스 속보/급상승 검색어 — 갑자기 하나의 키가 hot key가 됨</h3>
+    <p>
+      평소엔 트래픽이 고르게 분산돼 있다가, 특정 이슈가 터지면 그 기사 하나의 조회수 캐시 키에 트래픽이 순간적으로 집중된다.
+      → 사전에 예측 불가능한 hot key이므로, 상시 <strong>hot key 탐지 모니터링</strong>(특정 키의 초당 요청 수 추적)을
+      깔아두고, 감지되면 자동으로 그 키만 local cache TTL을 늘리거나 key replication을 적용하는 운영 자동화가 필요하다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>두 문제를 구분해서 정의하기</strong>
+        "캐시 스탬피드는 인기 키 하나가 만료되는 순간 동시 요청이 전부 DB로 몰리는 문제이고, hot key는 만료 여부와 무관하게
+        특정 키의 요청량 자체가 커서 그 키를 담당하는 노드 하나에 부하가 쏠리는 문제입니다. 원인이 다르므로 대응도 다릅니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>캐시 스탬피드 대응 — 동시 DB 조회를 1건으로 제한</strong>
+        "만료 시 mutex lock으로 첫 요청만 DB를 조회하게 하거나, 지연을 절대 허용할 수 없다면
+        stale-while-revalidate로 옛 값을 즉시 주고 백그라운드에서 갱신합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Hot key 대응 — Redis에 도달하기 전에 흡수</strong>
+        "hot key는 서버를 늘려도 해결되지 않습니다. 애플리케이션 레벨의 짧은 TTL local cache로 요청 자체를 줄이거나,
+        같은 값을 여러 키로 복제해 분산 조회하는 방식을 씁니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Trade-off 명시</strong>
+        "mutex lock은 정확성을 지키지만 사용자를 잠깐 기다리게 할 수 있고, stale-while-revalidate는 지연은 없지만
+        잠깐 오래된 데이터를 보여줍니다. 어떤 방식을 쓸지는 데이터의 신선도 요구 수준에 따라 다릅니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>단일 방어선에 의존하지 않는다는 것 강조 (Senior 포인트)</strong>
+        "실무에서는 TTL jitter, mutex lock, local cache를 함께 겹쳐 씁니다. 하나가 뚫려도 다른 계층이 완충 역할을
+        하도록 defense in depth로 설계합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "캐시 스탬피드와 hot key는 원인이 다른 별개의 문제입니다. 캐시 스탬피드는 트래픽이 많은 키 하나의 TTL이 만료되는
+        순간, 그 키를 기다리던 요청들이 동시에 캐시 미스를 만나 전부 DB로 몰리는 현상입니다. Hot key는 만료와 무관하게
+        특정 키의 요청량 자체가 압도적으로 많아서, Redis Cluster에서 그 키를 담당하는 노드 하나에만 부하가 쏠리는
+        문제입니다. Redis는 같은 키를 항상 같은 노드에 두기 때문에, 노드를 늘려도 hot key는 자동으로 해결되지 않습니다.
+      </p>
+      <p>
+        스탬피드는 동시 DB 조회를 1건으로 제한하는 방식으로 완화합니다. Redis의 <code>SET NX EX</code>로 락을 잡아
+        가장 먼저 도착한 요청만 DB를 조회하고, 나머지는 짧게 대기 후 갱신된 캐시를 읽게 합니다. 응답 지연을 전혀
+        허용할 수 없는 트래픽이라면 stale-while-revalidate 방식으로, 논리적으로 만료된 값이라도 일단 즉시 반환하고
+        그중 한 요청만 백그라운드에서 캐시를 갱신하게 합니다.
+      </p>
+      <p>
+        Hot key는 애초에 Redis에 요청이 도달하기 전에 줄이는 게 핵심입니다. 애플리케이션 서버 프로세스 안에 1~2초짜리
+        짧은 local cache를 두어 서버 대수만큼 Redis 요청을 나누거나, 같은 값을 여러 키에 복제해두고 무작위로 분산
+        조회하는 key replication을 씁니다.
+      </p>
+      <p>
+        실무에서는 이 방법들을 하나만 쓰지 않고 겹쳐서 씁니다. TTL에 jitter를 줘서 동시 만료를 애초에 줄이고,
+        그래도 몰리는 순간엔 mutex lock으로 DB 조회를 제한하고, hot key로 의심되는 키는 모니터링으로 감지해서
+        local cache나 key replication을 적용하는 식으로 여러 계층의 방어선을 둡니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "Mutex lock을 잡은 프로세스가 DB 조회 도중 죽어버리면 어떻게 되나요?"</h3>
+    <p><strong>약한 답변:</strong> "그런 경우는 별로 없을 것 같습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "락에 <code>EX</code>로 TTL을 반드시 걸어둬야 합니다. 락을 잡은 프로세스가 죽어서 <code>DEL</code>이 실행되지 못해도,
+      락 TTL이 지나면 자동으로 풀려서 다음 요청이 다시 시도할 수 있습니다. 락 TTL이 없으면 그 키는 영원히 잠긴 채로 남아
+      모든 요청이 DB 조회도 캐시 히트도 못 하는 상태(deadlock에 가까운 상황)가 됩니다."
+    </p>
+
+    <h3>F2. "Stale-while-revalidate와 mutex lock을 같이 쓸 수도 있나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "네, 오히려 이 둘을 조합하는 게 일반적입니다. 논리적 만료를 감지하면 값은 즉시 반환(stale-while-revalidate)하고,
+      백그라운드 갱신을 시작할 때 mutex lock으로 '갱신 작업 자체'가 중복 실행되지 않게 막습니다. 즉 사용자 응답 경로에는
+      락이 개입하지 않고, 갱신 경로에서만 중복 방지용으로 락을 씁니다."
+    </p>
+
+    <h3>F3. "TTL에 jitter(무작위 값)를 추가하면 스탬피드가 완전히 사라지나요?"</h3>
+    <p><strong>약한 답변:</strong> "네, jitter를 주면 스탬피드는 해결됩니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "jitter는 '동시에 세팅된 여러 키가 동시에 만료되는' 경우(cache avalanche)를 완화하는 데는 효과적이지만,
+      트래픽이 극단적으로 몰리는 <strong>단일 hot key 하나</strong>의 스탬피드는 여전히 발생할 수 있습니다. 그 키 하나가
+      만료되는 순간엔 jitter와 무관하게 동시 요청이 몰리기 때문에, hot key급 트래픽에는 mutex lock이나
+      stale-while-revalidate 같은 별도의 방어가 함께 필요합니다."
+    </p>
+
+    <h3>F4. "Hot key인지 아닌지는 어떻게 알아채나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "Redis Cluster의 노드별 CPU/네트워크 사용량이 유독 한 노드만 튀는지를 먼저 봅니다. 그다음
+      <code>redis-cli --hotkeys</code>나 <code>MONITOR</code>, 최신 버전의 hotkey 감지 기능으로 특정 키의 접근 빈도를
+      직접 확인합니다. 운영 환경에서는 애플리케이션 레벨에서 키별 접근 횟수를 샘플링해서 임계값을 넘는 키를 알림으로
+      띄우는 방식도 함께 씁니다."
+    </p>
+
+    <h3>F5. "Local cache(L1)를 추가했을 때 생기는 데이터 정합성 문제는 어떻게 푸나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "서버 대수만큼 로컬 캐시가 흩어져 있으니, 값이 바뀌어도 각 서버가 알아서 짧은 TTL(1~2초)로 만료될 때까지는
+      서버마다 다른 값을 볼 수 있습니다. 이 정도의 짧은 불일치를 감수할 수 있는 데이터(조회수, 좋아요 수 같은 근사치
+      허용 데이터)에만 local cache를 적용하고, 정확해야 하는 데이터는 local cache를 쓰지 않거나 Redis Pub/Sub으로
+      무효화 이벤트를 모든 서버에 브로드캐스트해서 능동적으로 지웁니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>캐시 스탬피드와 hot key를 <strong>원인이 다른 별개의 문제</strong>로 구분한다</li>
+          <li>"캐시가 DB를 지키지만, 만료 순간엔 오히려 DB를 무너뜨릴 수 있다"는 <strong>구조적 역설</strong>을 이해한다</li>
+          <li>mutex lock, stale-while-revalidate, jitter, local cache를 <strong>trade-off와 함께</strong> 설명한다</li>
+          <li>hot key는 <strong>서버를 늘려도 해결되지 않는다</strong>는 것을 안다(같은 키는 같은 노드)</li>
+          <li>여러 방어 계층을 <strong>겹쳐서</strong> 쓴다는 관점(defense in depth)을 갖고 있다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"캐시를 쓰면 DB 부하가 줄어드니 문제없다"는 <strong>단순 낙관</strong></li>
+          <li>스탬피드와 hot key를 같은 문제로 뭉뚱그린다</li>
+          <li>"TTL을 늘리면 된다" 또는 "서버를 늘리면 된다"는 <strong>근본 원인을 못 짚은 해법</strong></li>
+          <li>락을 걸면 무조건 안전하다고 생각하고, 락 TTL·데드락 가능성을 고려하지 않는다</li>
+          <li>local cache를 추가했을 때 생기는 <strong>새로운 정합성 문제</strong>를 인지하지 못한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 캐시를 "항상 안전한 장치"가 아니라, <strong>특정 조건에서 위험이 집중되는
+      시스템 구성요소</strong>로 본다. 어떤 조건에서 위험이 커지는지 구체적인 메커니즘으로 설명하고, 그 조건을
+      좁히는 여러 대응책을 제시할 수 있는지가 시니어와 중급의 갈림길이다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "TTL을 늘리면 스탬피드 문제가 해결된다"</h3>
+    <p>
+      <strong>사실:</strong> TTL을 늘리면 만료가 발생하는 <strong>빈도</strong>는 줄지만, 만료가 발생하는 그 순간의
+      <strong>충격</strong>은 그대로다. 오히려 TTL이 길어지는 동안 트래픽이 더 쌓여서, 만료되는 순간의 동시 요청 수가
+      더 커질 수도 있다. 근본 해법은 만료 순간의 동시 조회 자체를 제한하는 것(mutex lock, stale-while-revalidate)이다.
+    </p>
+
+    <h3>오해 2: "Redis 노드를 늘리면(scale-out) hot key도 해결된다"</h3>
+    <p>
+      <strong>사실:</strong> Redis Cluster에서 하나의 키는 하나의 해시 슬롯에 고정되고, 그 슬롯은 하나의 노드에만
+      배정된다. 노드를 100개로 늘려도 특정 키 하나에 대한 요청은 여전히 그 키를 담당하는 노드 하나로만 몰린다.
+      hot key는 <strong>애플리케이션 레벨의 요청 분산</strong>(local cache, key replication)으로만 근본적으로 완화된다.
+    </p>
+
+    <h3>오해 3: "Mutex lock을 걸면 완벽하게 안전하다"</h3>
+    <p>
+      <strong>사실:</strong> 락 TTL 설정을 빠뜨리면 락을 잡은 프로세스가 죽었을 때 다른 모든 요청이 락이 풀릴 때까지
+      막힌다. 또한 DB 조회가 락 TTL보다 오래 걸리면 락이 먼저 풀려 중복 조회가 일어날 수 있다. 락은
+      "동시 조회 수를 크게 줄이는 완화책"이지 "무조건적인 보장"이 아니다.
+    </p>
+
+    <h3>오해 4: "캐시가 있으니 DB 커넥션 풀은 여유 있게 잡을 필요 없다"</h3>
+    <p>
+      <strong>사실:</strong> 캐시가 평소 트래픽을 잘 흡수할수록, 오히려 DB는 "정말 적은 트래픽만 받는 상태"에 익숙해져
+      있다. 스탬피드가 발생하면 평소 대비 수십~수백 배의 트래픽이 갑자기 DB로 몰리는데, 이때 DB 커넥션 풀·쿼리
+      타임아웃 설정이 그 충격을 견딜 수 있는지 별도로 검증해둬야 한다. 캐시 설계와 DB 방어 설정은 같이 가야 한다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>스탬피드 / Hot Key 방어 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>상황</th>
+        <th>권장 접근</th>
+        <th>주의</th>
+      </tr>
+      <tr>
+        <td>동일 TTL 키가 대량으로 동시 만료</td>
+        <td><span class="badge badge-green">TTL jitter (±10~20%)</span></td>
+        <td><span class="badge badge-yellow">단일 초고트래픽 키에는 부족</span></td>
+      </tr>
+      <tr>
+        <td>초고트래픽 키 하나의 만료 순간</td>
+        <td><span class="badge badge-green">Mutex lock 또는 Stale-while-revalidate</span></td>
+        <td><span class="badge badge-red">락에 TTL 없으면 deadlock 위험</span></td>
+      </tr>
+      <tr>
+        <td>응답 지연을 절대 허용 불가</td>
+        <td><span class="badge badge-green">Stale-while-revalidate</span></td>
+        <td><span class="badge badge-yellow">데이터가 몇 초 오래될 수 있음을 감수</span></td>
+      </tr>
+      <tr>
+        <td>Hot key로 특정 노드만 부하 집중</td>
+        <td><span class="badge badge-green">Local cache(L1) + Key replication</span></td>
+        <td><span class="badge badge-red">서버 scale-out만으로는 해결 안 됨</span></td>
+      </tr>
+      <tr>
+        <td>배포/재시작 직후 캐시 전체 비움(cold cache)</td>
+        <td><span class="badge badge-green">캐시 워밍업 + 점진적 트래픽 전환</span></td>
+        <td><span class="badge badge-yellow">DB 커넥션 풀 여유치 별도 확인</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>캐시 스탬피드와 hot key라는 용어 자체를 모르고, "캐시가 있으면 DB는 안전하다"고만 답함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>캐시 만료 순간 동시 요청이 DB로 몰릴 수 있다는 것은 알지만, 구체적인 완화 방법을 제시하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>Mutex lock이나 TTL jitter 같은 방법을 하나 이상 설명할 수 있고, hot key와 스탬피드를 구분할 수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>mutex lock, stale-while-revalidate, local cache, key replication을 trade-off와 함께 설명하고,
+      hot key가 scale-out으로 해결되지 않는 이유(해시 슬롯 고정)까지 근거를 들어 설명하며, 여러 방어 계층을
+      조합하는 defense in depth 관점을 자연스럽게 제시함</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. 캐시 스탬피드와 hot key의 원인 차이를 한 문장으로 설명할 수 있는가?<br>
+      2. Mutex lock에 TTL이 반드시 필요한 이유를 설명할 수 있는가?<br>
+      3. Stale-while-revalidate가 mutex lock과 다르게 사용자 경험을 어떻게 바꾸는지 설명할 수 있는가?<br>
+      4. Hot key가 Redis 노드를 늘려도 해결되지 않는 이유를 해시 슬롯 개념으로 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>캐시 스탬피드 = 만료 순간</strong>의 문제. 인기 키 하나가 만료되면 동시 요청이 전부 DB로 몰린다.</li>
+      <li><strong>Hot key = 특정 키 자체</strong>의 문제. 만료와 무관하게 한 키에 트래픽이 집중돼 그 키를 담당하는
+      노드 하나만 부하가 튄다.</li>
+      <li><strong>Hot key는 scale-out으로 해결되지 않는다.</strong> 같은 키는 항상 같은 해시 슬롯·노드에 고정된다.</li>
+      <li><strong>Mutex lock</strong>은 동시 DB 조회를 1건으로 줄이지만, 락 TTL이 없으면 deadlock 위험이 있다.</li>
+      <li><strong>Stale-while-revalidate</strong>는 사용자를 기다리게 하지 않는 대신, 짧은 시간 오래된 데이터를 감수한다.</li>
+      <li><strong>Local cache(L1) + Key replication</strong>은 Redis에 요청이 도달하기 전에 hot key 트래픽을 흡수한다.</li>
+      <li><strong>단일 방어책에 의존하지 않는다.</strong> jitter, lock, local cache를 겹쳐 쓰는 defense in depth가 실무 정석이다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 3 완료 · 다음: Day 4 — Redis 자료구조 실무 선택 기준</span>
+  </div>
+
+</div>
+</body>
+</html>
