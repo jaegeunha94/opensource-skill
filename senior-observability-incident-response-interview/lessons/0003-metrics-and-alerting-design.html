@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — 메트릭과 알림 설계</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #6c8aff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    /* Header */
+    .day-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #3b4fd8, #6c8aff);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #f1f5f9;
+      line-height: 1.3;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Sections */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-icon {
+      font-size: 1.25rem;
+    }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 1.25rem 0 0.5rem;
+    }
+    h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin: 1rem 0 0.4rem;
+    }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    p:last-child { margin-bottom: 0; }
+
+    /* Interview question box */
+    .interview-q {
+      background: linear-gradient(135deg, #1a2040, #1e2a4a);
+      border: 1px solid #3b4fd8;
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .interview-q .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .interview-q .question {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    /* Callout boxes */
+    .callout {
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+    }
+    .callout.info {
+      background: #0f2744;
+      border-left: 3px solid #3b82f6;
+    }
+    .callout.warning {
+      background: #2d1f00;
+      border-left: 3px solid var(--yellow);
+    }
+    .callout.success {
+      background: #052e1a;
+      border-left: 3px solid var(--green);
+    }
+    .callout.danger {
+      background: #2d0f0f;
+      border-left: 3px solid var(--red);
+    }
+    .callout-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .callout.info .callout-title { color: #60a5fa; }
+    .callout.warning .callout-title { color: var(--yellow); }
+    .callout.success .callout-title { color: var(--green); }
+    .callout.danger .callout-title { color: var(--red); }
+
+    /* Code */
+    code {
+      background: var(--code-bg);
+      color: #a5f3fc;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.88em;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      border: 1px solid #1e2a3a;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid #1e2a3a;
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+    }
+    pre code { background: none; border: none; padding: 0; color: inherit; }
+
+    /* Lists */
+    ul, ol { padding-left: 1.4rem; margin: 0.6rem 0; }
+    li { margin-bottom: 0.4rem; color: var(--text); }
+    li::marker { color: var(--accent); }
+
+    /* Comparison table */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .compare-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .compare-box.good { border-top: 3px solid var(--green); }
+    .compare-box.bad { border-top: 3px solid var(--red); }
+    .compare-box .compare-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+    .compare-box.good .compare-label { color: var(--green); }
+    .compare-box.bad .compare-label { color: var(--red); }
+    .compare-box p { font-size: 0.9rem; color: var(--text-muted); }
+    .compare-box .quote {
+      font-style: italic;
+      color: var(--text);
+      background: var(--bg);
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Steps */
+    .steps { counter-reset: step-counter; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step-counter);
+      background: var(--accent);
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 700;
+      min-width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .steps li div { flex: 1; }
+    .steps li strong { color: #f1f5f9; display: block; margin-bottom: 0.2rem; }
+
+    /* Pillar grid */
+    .pillar-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .pillar {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .pillar-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .pillar-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 0.5rem;
+    }
+    .pillar-desc { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* Tag */
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      margin: 0.15rem;
+    }
+    .tag.blue { background: #1e3a6e; color: #93c5fd; }
+    .tag.purple { background: #2d1f5e; color: #c4b5fd; }
+    .tag.green { background: #0f3326; color: #6ee7b7; }
+    .tag.orange { background: #3d2000; color: #fdba74; }
+
+    /* Rubric */
+    .rubric-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .rubric-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+    }
+    .rubric-title { font-weight: 600; font-size: 0.95rem; }
+    .rubric-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+    }
+    .badge-must { background: #7c3aed; color: #ede9fe; }
+    .badge-strong { background: #1d4ed8; color: #dbeafe; }
+    .badge-bonus { background: #065f46; color: #d1fae5; }
+    .rubric-item p { font-size: 0.88rem; color: var(--text-muted); margin: 0; }
+
+    /* Follow-up */
+    .followup {
+      background: #1a1030;
+      border: 1px solid #4c1d95;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .followup .fq { font-weight: 600; color: #c4b5fd; margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .followup .fa { font-size: 0.9rem; color: var(--text-muted); }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th {
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+    td {
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #141720; }
+
+    /* Nav */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2rem;
+      gap: 1rem;
+    }
+    .nav a {
+      display: inline-block;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      text-decoration: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+    }
+    .nav a:hover { border-color: var(--accent); }
+
+    @media (max-width: 640px) {
+      .compare-grid, .pillar-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="day-badge">DAY 3 · Observability / 장애 대응 인터뷰</div>
+  <h1>메트릭과 알림 설계</h1>
+  <p class="subtitle">RED / USE / Golden Signals, Percentile, 알림 임계값, False Positive/Negative — "무엇을 측정하고 언제 울릴 것인가"를 설계하는 사고방식</p>
+
+  <!-- ===================== INTERVIEW QUESTIONS ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🎯</span>
+      <h2>오늘의 핵심 면접 질문</h2>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">질문 1 — 자주 출제 (방법론 + 적용 기준)</div>
+      <div class="question">"RED 방법론과 USE 방법론이 무엇인가요? 서비스를 모니터링할 때 어떤 메트릭을 어떤 기준으로 수집하시나요?"</div>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">질문 2 — 자주 출제 (설계 판단 + 트레이드오프)</div>
+      <div class="question">"알림 임계값은 어떻게 정하시나요? False Positive와 False Negative 사이에서 어떻게 균형을 잡으시나요?"</div>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">질문 3 — 시니어 추가 질문 (통계적 사고)</div>
+      <div class="question">"평균 응답 시간이 정상인데도 사용자 불만이 들어옵니다. 어떻게 이 상황을 설명하고, 어떤 메트릭을 봐야 하나요?"</div>
+    </div>
+  </div>
+
+  <!-- ===================== WHY ASK ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🔍</span>
+      <h2>왜 인터뷰에서 묻는가</h2>
+    </div>
+
+    <p>메트릭과 알림은 "대시보드에 그래프 몇 개 띄워놓는 것"처럼 보이지만, 시니어 인터뷰에서는 이 주제로 지원자의 <strong>운영 판단력</strong>을 검증한다. 면접관이 실제로 보는 것은 다음 세 가지다.</p>
+
+    <h3>1. 무엇을 측정해야 하는지 스스로 결정할 수 있는가</h3>
+    <p>주니어는 "CPU, 메모리 사용률을 본다"는 식으로 눈에 보이는 리소스 지표를 나열한다. 시니어는 <strong>이 서비스가 실패하는 방식이 무엇인지 먼저 정의하고, 그것을 드러내는 지표를 역으로 설계</strong>한다. RED/USE 같은 방법론을 아는 것 자체보다, "왜 이 서비스에는 이 지표가 맞는가"를 설명할 수 있는지가 핵심이다.</p>
+
+    <h3>2. 통계를 다루는 방식 — 평균의 함정을 아는가</h3>
+    <p>"평균 응답시간이 200ms라서 문제 없다"는 흔한 착각이다. 실제 사용자 100명 중 5명이 5초씩 기다리고 있어도 평균은 낮게 나올 수 있다. 시니어는 percentile(p50/p95/p99) 개념으로 <strong>분포</strong>를 이해하고, "평균이 정상이어도 꼬리(tail)가 나쁠 수 있다"는 것을 안다.</p>
+
+    <h3>3. 알림 설계가 조직의 신뢰와 직결된다는 것을 이해하는가</h3>
+    <p>알림을 너무 민감하게 만들면(threshold를 낮게 잡으면) 사소한 변동에도 알림이 울려서 온콜 담당자가 무시하게 되고(Alert Fatigue, Day 2에서 다룬 개념과 직결), 반대로 너무 둔감하게 만들면(threshold를 높게 잡으면) 진짜 장애를 놓친다. 이 둘 사이의 균형을 <strong>의도적으로 설계</strong>했는지가 실무 경험의 증거다.</p>
+
+    <div class="callout info">
+      <div class="callout-title">인터뷰어가 듣고 싶어하는 신호</div>
+      "저는 메트릭을 고를 때 '이 지표가 이상해지면 실제로 사용자가 영향을 받는가'를 먼저 묻습니다. 리소스 사용률 자체보다 사용자가 체감하는 증상(요청 실패율, 응답 지연)을 우선 알림으로 걸고, 리소스 지표는 원인 분석용 대시보드로 분리해서 봅니다."
+    </div>
+  </div>
+
+  <!-- ===================== PREREQUISITE ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📚</span>
+      <h2>전제 개념 — 쉬운 언어로 먼저 이해하기</h2>
+    </div>
+
+    <h3>메트릭(Metric)이란?</h3>
+    <p>특정 시점에 측정한 <strong>숫자</strong>를 시간 순서대로 모아놓은 데이터다. 로그는 "무슨 일이 있었는지" 이야기를 담고, 메트릭은 "지금 수치가 얼마인지"를 담는다. 로그 한 줄 한 줄을 읽는 대신, 메트릭은 "지난 5분간 에러율이 몇 %였는가"처럼 <strong>집계된 숫자</strong>로 상태를 빠르게 파악하게 해준다.</p>
+
+    <p>메트릭에는 크게 세 가지 형태가 있다.</p>
+    <table>
+      <thead>
+        <tr><th>종류</th><th>의미</th><th>예시</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Counter</strong></td>
+          <td>계속 증가만 하는 누적 값 (재시작 시 리셋)</td>
+          <td>총 요청 수, 총 에러 수</td>
+        </tr>
+        <tr>
+          <td><strong>Gauge</strong></td>
+          <td>오르내리는 현재 값</td>
+          <td>현재 메모리 사용량, 현재 대기 중인 큐 길이</td>
+        </tr>
+        <tr>
+          <td><strong>Histogram</strong></td>
+          <td>값의 분포를 구간(bucket)별로 기록</td>
+          <td>응답 시간 분포 (0-100ms, 100-500ms, 500ms+ 구간별 개수)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warning">
+      <div class="callout-title">흔한 실수</div>
+      응답 시간을 Gauge(마지막 값만)로 기록하면 순간의 값만 남고 분포를 알 수 없다. 응답 시간처럼 "분포가 중요한 값"은 반드시 Histogram으로 기록해야 나중에 percentile을 계산할 수 있다.
+    </div>
+
+    <h3>RED 방법론이란?</h3>
+    <p><strong>요청을 처리하는 서비스(API, 마이크로서비스)</strong>를 모니터링할 때 쓰는 3가지 핵심 지표다. Weaveworks의 Tom Wilkie가 정리해서 널리 퍼졌다.</p>
+
+    <div class="pillar-grid">
+      <div class="pillar">
+        <div class="pillar-icon">📈</div>
+        <div class="pillar-name">Rate</div>
+        <div class="pillar-desc">초당 처리하는 요청 수 (Throughput)</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">🚨</div>
+        <div class="pillar-name">Errors</div>
+        <div class="pillar-desc">실패한 요청의 비율/개수</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">⏱️</div>
+        <div class="pillar-name">Duration</div>
+        <div class="pillar-desc">요청 처리에 걸린 시간 (Latency)</div>
+      </div>
+    </div>
+
+    <p>이 세 가지만 있어도 "지금 이 API가 정상인가?"라는 질문에 대부분 답할 수 있다. 요청이 갑자기 줄었다면(Rate 급감) 클라이언트 쪽 문제일 수 있고, 에러가 늘었다면(Errors 급증) 서버 로직이나 의존성 문제이며, 느려졌다면(Duration 증가) 병목이 생긴 것이다.</p>
+
+    <h3>USE 방법론이란?</h3>
+    <p><strong>CPU, 메모리, 디스크, 네트워크 같은 리소스(Resource)</strong>를 모니터링할 때 쓰는 3가지 지표다. Brendan Gregg가 정리했다.</p>
+
+    <div class="pillar-grid">
+      <div class="pillar">
+        <div class="pillar-icon">🔧</div>
+        <div class="pillar-name">Utilization</div>
+        <div class="pillar-desc">리소스가 바쁜 시간의 비율 (예: CPU 사용률 80%)</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">📦</div>
+        <div class="pillar-name">Saturation</div>
+        <div class="pillar-desc">처리하지 못해 대기 중인 작업의 양 (큐 길이, Run Queue)</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">❌</div>
+        <div class="pillar-name">Errors</div>
+        <div class="pillar-desc">리소스 레벨의 에러 (디스크 I/O 에러 등)</div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-title">Utilization과 Saturation을 헷갈리지 말 것</div>
+      Utilization은 "얼마나 바쁜가"이고, Saturation은 "얼마나 밀려있는가"다. CPU 사용률이 70%(Utilization)여도 대기 큐(Saturation)가 계속 쌓이고 있다면 이미 처리 능력의 한계에 다다른 것이다. 톨게이트에 비유하면, Utilization은 "게이트가 몇 % 가동 중인가"이고 Saturation은 "게이트 앞에 차가 얼마나 밀려 있는가"다. 게이트 가동률이 70%여도 밀려있는 차가 계속 늘어나고 있으면 곧 정체가 심해진다는 뜻이다.
+    </div>
+
+    <h3>RED vs USE, 언제 무엇을 쓰는가</h3>
+    <p>둘은 경쟁 관계가 아니라 <strong>측정 대상이 다르다</strong>. 서비스(요청을 처리하는 것)는 RED로, 리소스(요청을 처리하기 위해 쓰는 것)는 USE로 본다. 실무에서는 둘을 함께 쓴다 — RED로 "사용자가 겪는 증상"을 보고, USE로 "그 증상의 리소스 레벨 원인"을 찾는다.</p>
+
+    <h3>Golden Signals란?</h3>
+    <p>Google SRE Book에서 제시한 4가지 핵심 지표로, RED와 USE를 아우르는 상위 개념에 가깝다: <strong>Latency(지연), Traffic(트래픽), Errors(에러), Saturation(포화도)</strong>. RED의 Duration/Rate/Errors에 USE의 Saturation 개념을 더한 것으로 이해하면 된다. 인터뷰에서는 이 세 방법론이 서로 겹치는 개념이라는 것, 그리고 회사마다 부르는 이름이 다를 뿐 핵심 사고는 같다는 것을 설명할 수 있으면 좋은 신호다.</p>
+
+    <h3>Percentile(p50, p95, p99)이란?</h3>
+    <p>전체 값을 크기 순으로 줄 세웠을 때, 특정 위치에 있는 값을 뜻한다. <code>p95 = 500ms</code>라는 것은 "요청의 95%는 500ms 이내에 끝났고, 나머지 5%는 500ms보다 오래 걸렸다"는 뜻이다.</p>
+
+    <div class="callout warning">
+      <div class="callout-title">평균(Average)의 함정</div>
+      요청 100개 중 95개가 50ms, 5개가 5000ms 걸렸다고 하자. 평균은 (95×50 + 5×5000) / 100 ≈ 297ms로 "그럭저럭 괜찮아 보이는" 숫자가 나온다. 하지만 p95를 보면 5000ms 근처가 나오고, 실제로 5%의 사용자는 5초를 기다린 것이다. 평균은 소수의 극단값을 다수의 정상값이 희석시켜 문제를 숨긴다.
+    </div>
+
+    <p>그래서 실무에서는 응답 시간, 지연 시간처럼 "느린 소수가 중요한" 지표는 반드시 percentile(주로 p50, p95, p99)로 본다. p50은 일반적인 사용자 경험, p99는 최악에 가까운 사용자 경험을 보여준다.</p>
+
+    <h3>알림 임계값(Alert Threshold), False Positive/Negative란?</h3>
+    <p>알림은 "특정 지표가 어떤 기준(threshold)을 넘으면 사람에게 알린다"는 규칙이다. 이 기준을 어디에 두느냐에 따라 두 가지 실패가 생긴다.</p>
+
+    <table>
+      <thead>
+        <tr><th>구분</th><th>의미</th><th>결과</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>False Positive (오탐)</strong></td>
+          <td>실제로는 문제가 아닌데 알림이 울림</td>
+          <td>threshold가 너무 낮음 → 알림 남발 → Alert Fatigue</td>
+        </tr>
+        <tr>
+          <td><strong>False Negative (미탐)</strong></td>
+          <td>실제로 문제인데 알림이 안 울림</td>
+          <td>threshold가 너무 높음 → 장애를 늦게 알아챔 → MTTD 증가</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout danger">
+      <div class="callout-title">둘은 반비례 관계다</div>
+      threshold를 조여서(민감하게) False Negative를 줄이면 False Positive가 늘고, threshold를 풀어서(둔감하게) False Positive를 줄이면 False Negative가 늘어난다. "정답"인 threshold는 없고, 서비스의 중요도와 조직이 감당할 수 있는 알림 피로도 사이에서 <strong>의도적으로 선택</strong>하는 것이다.
+    </div>
+  </div>
+
+  <!-- ===================== DESIGN PRINCIPLES ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🧩</span>
+      <h2>메트릭과 알림 설계 원칙</h2>
+    </div>
+
+    <p>면접에서 "메트릭/알림을 어떻게 설계하나요?"라는 질문에 이 원칙들로 답하면 구조가 잡힌다.</p>
+
+    <h3>1. 증상 기반 알림(Symptom-based)을 우선한다</h3>
+    <p>알림은 원칙적으로 <strong>사용자가 실제로 영향을 받는 증상</strong>에 대해서만 울려야 한다 (예: 에러율 5% 초과, p99 지연 2초 초과). CPU 사용률처럼 "원인이 될 수 있는" 지표는 알림보다는 대시보드로 두고, 증상이 발생했을 때 원인 분석용으로 들여다본다.</p>
+
+    <h3>2. 원인 기반 알림(Cause-based)은 최소화하고 예방적으로만 쓴다</h3>
+    <p>디스크 사용률 90% 같은 지표는 아직 사용자에게 증상이 나타나지 않았지만 곧 문제가 될 것을 예고한다. 이런 알림은 "지금 당장 깨워야 할 알림"이 아니라 "업무 시간에 확인해야 할 예방적 알림"으로 심각도를 다르게 분리한다.</p>
+
+    <h3>3. 모든 알림은 actionable해야 한다</h3>
+    <p>알림을 받은 사람이 "그래서 지금 뭘 해야 하지?"라고 되묻게 만들면 나쁜 알림이다. 알림에는 runbook(대응 절차 문서) 링크를 함께 붙이고, "무엇을 확인하고, 무엇을 실행해야 하는지"가 명확해야 한다.</p>
+
+    <h3>4. 평균이 아니라 percentile로 알림을 건다</h3>
+    <p>지연 시간 알림은 평균이 아니라 p95 또는 p99 기준으로 건다. 평균 기준 알림은 소수의 사용자가 겪는 심각한 지연을 놓치기 때문이다.</p>
+
+    <h3>5. 라벨(카디널리티)을 신중하게 설계한다</h3>
+    <p>메트릭에 <code>user_id</code>처럼 값의 종류가 무한히 늘어나는 라벨을 붙이면, 시계열 데이터베이스가 각 조합마다 별도의 시계열을 만들어야 해서(카디널리티 폭발) 메트릭 시스템 자체가 느려지거나 다운될 수 있다. 라벨은 <code>service</code>, <code>endpoint</code>, <code>status_code</code>처럼 <strong>값의 종류가 유한한</strong>것만 쓴다. 사용자 단위 추적은 메트릭이 아니라 로그/트레이스의 역할이다.</p>
+
+    <h3>6. 단일 window 알림의 한계를 인식한다 (SLO 예고)</h3>
+    <p>"5분간 에러율 5% 초과"처럼 짧은 시간 창(window)만 보면 순간적인 스파이크에도 알림이 울리기 쉽다. 반대로 긴 시간 창만 보면 알림이 늦게 온다. 성숙한 조직은 여러 시간 창을 조합한 <strong>Multi-window, Multi-burn-rate 알림</strong>을 쓴다 (Day 7 SLO/Error Budget에서 자세히 다룬다).</p>
+
+    <div class="callout success">
+      <div class="callout-title">시니어 답변에서 나와야 하는 내용</div>
+      "저희는 알림을 심각도(Severity)로 나눠서, 사용자 영향이 확실한 증상 기반 알림만 온콜 페이지로 보내고, 리소스 예방 지표는 업무 시간 슬랙 채널로 분리했습니다. 그리고 모든 페이지 알림에는 runbook 링크를 필수로 붙이도록 템플릿을 강제했습니다. 이후 온콜 담당자의 알림 피로도가 눈에 띄게 줄었습니다."
+    </div>
+  </div>
+
+  <!-- ===================== ANSWER REASONING ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🧠</span>
+      <h2>답변 사고 순서 — 면접장에서 어떻게 풀어나가는가</h2>
+    </div>
+
+    <h3>질문 1: "RED와 USE, 어떤 메트릭을 어떤 기준으로 수집하나요?"</h3>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>측정 대상을 먼저 구분 (10초)</strong>
+          "저는 먼저 측정 대상이 '요청을 처리하는 서비스'인지 '요청을 처리하기 위한 리소스'인지 구분합니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>RED 설명 (15초)</strong>
+          "서비스는 RED로 봅니다. Rate(초당 요청 수), Errors(에러율), Duration(응답 시간)만 있어도 '이 API가 정상인가'를 대부분 판단할 수 있습니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>USE 설명 (15초)</strong>
+          "리소스는 USE로 봅니다. Utilization(사용률), Saturation(대기량), Errors(리소스 에러)를 보고, 특히 Saturation을 중요하게 봅니다. Utilization은 낮아도 Saturation이 쌓이면 이미 한계입니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>연결 관계 설명 (15초)</strong>
+          "RED로 사용자가 느끼는 증상을 먼저 보고, 이상이 감지되면 USE로 내려가서 리소스 레벨 원인을 찾는 순서로 씁니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>실무 경험 연결 (20초)</strong>
+          본인이 특정 지표(예: DB connection pool saturation)로 장애를 사전에 예측했거나, RED 지표만으로 장애를 빠르게 특정한 경험을 구체적으로 말한다.
+        </div>
+      </li>
+    </ol>
+
+    <h3>질문 2: "알림 임계값을 어떻게 정하고, False Positive/Negative는 어떻게 다루나요?"</h3>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>트레이드오프 인정 (10초)</strong>
+          "False Positive와 False Negative는 반비례 관계이기 때문에, 완벽한 threshold는 없다고 생각합니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>기준 제시 (15초)</strong>
+          "그래서 저는 서비스의 중요도에 따라 다르게 접근합니다. 결제처럼 중요한 경로는 민감하게(threshold를 낮게), 덜 중요한 배치 작업은 둔감하게 설정합니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>구체적 설계 방법 (20초)</strong>
+          "정적 threshold보다는 과거 트래픽 패턴 대비 이상치(anomaly)를 보거나, 여러 시간 창을 조합한 multi-window 알림을 써서 순간 스파이크와 진짜 추세를 구분합니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>운영 프로세스로 보완 (15초)</strong>
+          "그리고 알림이 울렸는데 조치가 필요 없었던 경우를 주기적으로 리뷰해서 threshold를 계속 튜닝합니다. 알림 설계는 한 번 정하고 끝나는 것이 아니라 지속적으로 조정하는 과정이라고 생각합니다."
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ===================== MODEL ANSWERS ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">💬</span>
+      <h2>핵심 답변 예시</h2>
+    </div>
+
+    <h3>질문 1 모범 답변: "RED와 USE"</h3>
+
+    <div class="callout success">
+      <div class="callout-title">강한 답변</div>
+      <p>"저는 측정 대상을 서비스와 리소스로 나눠서 접근합니다. API 서버 같은 서비스는 RED(Rate, Errors, Duration)로 보고, 이 세 지표만으로 '지금 이 서비스가 정상인가'를 대부분 판단할 수 있습니다. 반면 DB, 큐, 서버 리소스 같은 것은 USE(Utilization, Saturation, Errors)로 봅니다.</p>
+      <p>실제 경험으로는, 한 번 결제 서비스의 응답 시간이 늘어났을 때 RED의 Duration이 먼저 튀는 걸 알림으로 받았고, 바로 이어서 DB 커넥션 풀의 Saturation(대기 중인 요청 수)이 함께 올라가는 것을 보고 커넥션 풀 고갈이 원인이라는 것을 5분 안에 특정할 수 있었습니다. RED로 증상을 먼저 잡고 USE로 원인을 찾아 내려가는 흐름이 실제로 유효했던 사례입니다."</p>
+    </div>
+
+    <h3>질문 2 모범 답변: "알림 임계값 설계"</h3>
+
+    <div class="callout success">
+      <div class="callout-title">강한 답변</div>
+      <p>"완벽한 threshold는 없다고 생각합니다. False Positive를 줄이려고 threshold를 높이면 False Negative가 늘어나는 트레이드오프가 항상 있기 때문입니다. 그래서 저는 서비스 중요도에 따라 다르게 설계합니다.</p>
+      <p>결제, 로그인처럼 핵심 경로는 에러율 1% 초과, p99 지연 2초 초과처럼 민감하게 걸고 온콜 페이지로 바로 연결합니다. 반면 배치 작업이나 내부 관리 도구는 임계값을 넓게 잡고 슬랙 알림 정도로만 둡니다.</p>
+      <p>또한 5분 단기 window만 보면 순간 스파이크에도 알림이 울리기 때문에, 5분과 1시간 두 window를 함께 만족할 때만 페이지를 보내도록 해서 노이즈를 줄였습니다. 그리고 매주 발생한 알림을 리뷰해서, 조치가 필요 없었던 알림의 비율을 추적하며 threshold를 계속 조정하고 있습니다."</p>
+    </div>
+  </div>
+
+  <!-- ===================== STRONG VS WEAK ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">⚖️</span>
+      <h2>좋은 답변 vs 약한 답변의 차이</h2>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-box good">
+        <div class="compare-label">강한 답변 — 메트릭 선택</div>
+        <div class="quote">"서비스는 RED, 리소스는 USE로 구분해서 보고, RED로 증상을 먼저 감지한 뒤 USE로 내려가 원인을 찾습니다."</div>
+        <p>측정 대상에 따라 방법론을 구분하고, 둘을 연결하는 사고 흐름이 있다.</p>
+      </div>
+      <div class="compare-box bad">
+        <div class="compare-label">약한 답변 — 메트릭 선택</div>
+        <div class="quote">"CPU, 메모리, 디스크 사용률을 그라파나 대시보드에 띄워놓고 봅니다."</div>
+        <p>왜 그 지표를 보는지, 사용자 영향과 어떻게 연결되는지에 대한 설명이 없다. 도구 나열에 그친다.</p>
+      </div>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-box good">
+        <div class="compare-label">강한 답변 — 알림 설계</div>
+        <div class="quote">"핵심 경로는 민감하게, 비핵심 경로는 둔감하게 차등을 두고, multi-window로 순간 스파이크를 걸러내며, 정기적으로 알림을 리뷰해서 threshold를 조정합니다."</div>
+        <p>트레이드오프 인식, 차등 설계, 지속적 개선 프로세스까지 담겨있다.</p>
+      </div>
+      <div class="compare-box bad">
+        <div class="compare-label">약한 답변 — 알림 설계</div>
+        <div class="quote">"에러율이 5%를 넘으면 알림이 오도록 설정했습니다."</div>
+        <p>왜 5%인지, 서비스별 차등이 있는지, false positive는 어떻게 관리하는지 근거가 없다.</p>
+      </div>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-box good">
+        <div class="compare-label">강한 답변 — 평균 vs Percentile</div>
+        <div class="quote">"평균은 극단값을 다수의 정상값이 희석시키기 때문에, 지연 시간은 항상 p95/p99로 봅니다. 평균이 정상이어도 p99가 나쁘면 소수의 사용자가 심각한 지연을 겪고 있다는 뜻입니다."</div>
+        <p>평균의 한계와 percentile의 역할을 정확히 설명한다.</p>
+      </div>
+      <div class="compare-box bad">
+        <div class="compare-label">약한 답변 — 평균 vs Percentile</div>
+        <div class="quote">"평균 응답 시간이 괜찮으면 대체로 서비스는 정상이라고 봅니다."</div>
+        <p>평균의 함정을 모르는 답변이다. 소수 사용자의 심각한 지연을 놓칠 수 있다는 인식이 없다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== FOLLOW-UP ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🎓</span>
+      <h2>Senior-level Follow-up 질문과 답변 방향</h2>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "정적 임계값(static threshold) 대신 이상 탐지(anomaly detection)를 써 본 경험이 있나요?"</div>
+      <div class="fa">
+        핵심 논리: 트래픽 패턴이 요일/시간대에 따라 크게 변하는 서비스(예: 커머스의 새벽 vs 저녁)는 고정된 threshold가 항상 맞지 않는다. 과거 같은 요일/시간대 대비 편차를 기준으로 삼는 것이 더 정확할 수 있다.
+        <br><br>
+        실무 답변 방향: "트래픽이 요일별로 크게 다른 서비스에서는 전날 같은 시간대 대비 편차(예: 평소보다 3배 표준편차 이상 벗어남)를 기준으로 알림을 걸었습니다. 다만 이상 탐지는 설명 가능성이 떨어져서, 왜 알림이 울렸는지 온콜 담당자가 바로 이해하기 어려운 단점도 있어 핵심 경로에는 여전히 명시적 threshold를 함께 씁니다."
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "메트릭 시스템의 카디널리티가 폭발해서 장애가 난 적 있나요?"</div>
+      <div class="fa">
+        핵심 논리: user_id, request_id처럼 무한히 늘어나는 값을 라벨로 쓰면 시계열 데이터베이스가 감당할 수 없는 수의 시계열을 생성한다. 이는 메트릭 시스템 자체의 장애로 이어진다.
+        <br><br>
+        실무 답변 방향: "한 번 개발자가 실수로 user_id를 메트릭 라벨에 추가했다가, Prometheus의 메모리 사용량이 폭증해서 메트릭 수집 자체가 멈춘 적이 있습니다. 이후 라벨에 사용할 수 있는 값을 화이트리스트로 관리하고, CI에서 카디널리티가 높은 라벨 추가를 자동으로 감지해서 리뷰를 거치도록 했습니다."
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "알림이 너무 많이 와서 팀이 무시하기 시작한 경험이 있나요? 어떻게 개선했나요?"</div>
+      <div class="fa">
+        핵심 논리: Alert Fatigue는 한 번 생기면 진짜 장애 알림도 무시하게 만드는 심각한 문제다. 개선은 알림 감소가 아니라 '조치 가능한 알림만 남기는 것'이 목표여야 한다.
+        <br><br>
+        실무 답변 방향: "한 달간 울린 알림을 전수 조사해서, 실제로 조치가 필요했던 알림의 비율을 계산했더니 20%도 안 됐습니다. 원인 기반(리소스) 알림을 대부분 페이지에서 제거하고 증상 기반 알림만 남겼더니, 알림 수는 70% 줄었지만 놓친 장애는 없었습니다."
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "Symptom-based 알림과 Cause-based 알림을 어떻게 구분해서 운영하나요?"</div>
+      <div class="fa">
+        핵심 논리: 증상 기반은 "사용자가 지금 영향을 받고 있다"는 신호이므로 즉시 대응(페이지), 원인 기반은 "곧 문제가 될 수 있다"는 예고이므로 예방적 대응(업무시간 확인)으로 심각도를 분리한다.
+        <br><br>
+        실무 답변 방향: "에러율, 지연 시간 같은 증상 기반 알림만 온콜 페이지로 보내고, 디스크 사용률, 커넥션 풀 사용률 같은 원인 기반 지표는 대시보드와 낮은 심각도의 슬랙 알림으로만 남겼습니다. 이렇게 하니 새벽에 깨어나야 하는 알림이 실제로 조치가 필요한 것들로만 좁혀졌습니다."
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "Burn rate 알림이 무엇이고, 일반적인 threshold 알림과 어떻게 다른가요?"</div>
+      <div class="fa">
+        핵심 논리: Burn rate는 Error Budget(허용 가능한 실패 예산)을 얼마나 빠르게 소진하고 있는지를 보는 알림 방식이다. 단순 threshold보다 "이 속도로 계속 가면 이번 달 SLO를 못 지킨다"는 미래 예측이 가능하다.
+        <br><br>
+        실무 답변 방향: "이 부분은 Day 7에서 SLO와 함께 더 깊게 다룰 계획이지만, 핵심만 말씀드리면 단순 threshold는 순간의 상태만 보고, burn rate는 '이 소진 속도가 얼마나 위험한가'를 여러 시간 창으로 함께 봐서 급한 장애와 서서히 나빠지는 문제를 구분해서 알림 심각도를 다르게 줍니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== COMMON MISCONCEPTIONS ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">⚠️</span>
+      <h2>흔한 오해와 Trade-off</h2>
+    </div>
+
+    <h3>오해 1: "CPU 사용률이 높으면 무조건 장애다"</h3>
+    <p><strong>현실:</strong> CPU 사용률 90%는 오히려 리소스를 잘 활용하고 있다는 신호일 수 있다. 오토스케일링 환경에서는 일부러 높은 사용률까지 활용하도록 설계하기도 한다. 진짜 위험 신호는 사용률이 아니라 <strong>Saturation(대기량)</strong>이 계속 쌓이는 것이다.</p>
+    <p><strong>올바른 접근:</strong> Utilization은 참고 지표로, Saturation과 실제 사용자 영향(RED의 Duration/Errors)을 함께 봐야 진짜 문제인지 판단할 수 있다.</p>
+
+    <h3>오해 2: "알림은 최대한 많이 걸어두는 것이 안전하다"</h3>
+    <p><strong>현실:</strong> Day 2에서 다룬 Alert Fatigue와 정확히 같은 문제다. 알림이 많아질수록 팀은 알림을 확인하는 대신 무시하는 습관이 생기고, 이는 오히려 진짜 장애를 놓치는 결과로 이어진다.</p>
+    <p><strong>올바른 접근:</strong> 알림의 목표는 "많이"가 아니라 "정확하게, 조치 가능하게"이다. 정기적으로 알림 발생 이력을 리뷰해서 불필요한 알림을 제거하는 것이 알림을 추가하는 것보다 중요하다.</p>
+
+    <h3>오해 3: "메트릭이 있으면 로그나 트레이싱은 덜 중요하다"</h3>
+    <p><strong>현실:</strong> 메트릭은 "무엇이 이상한가(what)"는 빠르게 보여주지만 "왜 이상한가(why)"는 알려주지 않는다. 에러율이 올랐다는 것은 메트릭으로 알 수 있어도, 어떤 요청이 어떤 이유로 실패했는지는 로그나 트레이스를 봐야 한다.</p>
+    <p><strong>올바른 접근:</strong> 메트릭으로 탐지(Detect) → 로그/트레이스로 진단(Diagnose)하는 역할 분담으로 이해한다.</p>
+
+    <h3>Trade-off: 알림 민감도(Sensitivity) vs 알림 신뢰도(Precision)</h3>
+    <p>threshold를 낮추면(민감하게) 실제 장애를 놓칠 확률(False Negative)은 줄지만, 정상 상황에서도 알림이 울릴 확률(False Positive)이 늘어난다. 반대로 threshold를 높이면 알림 신뢰도는 올라가지만 장애 탐지가 늦어질 수 있다.</p>
+    <p>핵심 Trade-off: <strong>"빠르게 알아채는 것 vs 잘못된 알림에 시달리지 않는 것"</strong>. 실무에서는 서비스 중요도별 차등, multi-window 알림, 정기적 threshold 리뷰로 이 균형을 지속적으로 관리한다. 완벽한 균형점은 없고, <strong>조직이 감당할 수 있는 알림량과 감당할 수 없는 장애 지연 리스크 사이의 의도적 선택</strong>이라는 것이 시니어급 이해다.</p>
+  </div>
+
+  <!-- ===================== RUBRIC ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">✅</span>
+      <h2>자기 점검 Rubric</h2>
+    </div>
+    <p>이 답변들을 자신있게 말할 수 있으면 Day 3를 완료한 것이다.</p>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">RED와 USE 방법론의 구성 요소와, 각각 언제 사용하는지 설명할 수 있다</span>
+        <span class="rubric-badge badge-must">필수</span>
+      </div>
+      <p>서비스는 RED, 리소스는 USE라는 구분과 그 이유(측정 대상이 다름)를 말할 수 있어야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">Utilization과 Saturation의 차이를 구체적 예시로 설명할 수 있다</span>
+        <span class="rubric-badge badge-must">필수</span>
+      </div>
+      <p>"사용률이 낮아도 대기량이 쌓이면 위험하다"는 논리를 설명할 수 있어야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">평균과 percentile(p50/p95/p99)의 차이와, 왜 지연 시간은 percentile로 봐야 하는지 설명할 수 있다</span>
+        <span class="rubric-badge badge-must">필수</span>
+      </div>
+      <p>평균이 극단값을 희석시켜 소수의 나쁜 경험을 숨긴다는 논리가 포함되어야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">False Positive와 False Negative의 트레이드오프 관계를 설명할 수 있다</span>
+        <span class="rubric-badge badge-strong">강함</span>
+      </div>
+      <p>threshold를 조정하면 둘이 반비례한다는 것과, 정답이 없고 의도적 선택이라는 점을 말할 수 있어야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">증상 기반(symptom-based)과 원인 기반(cause-based) 알림을 구분해서 설계할 수 있다</span>
+        <span class="rubric-badge badge-strong">강함</span>
+      </div>
+      <p>증상 기반은 즉시 대응, 원인 기반은 예방적 대응으로 심각도를 분리한다는 설계 판단이 있어야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">메트릭 카디널리티 문제와 라벨 설계 원칙을 설명할 수 있다</span>
+        <span class="rubric-badge badge-bonus">보너스</span>
+      </div>
+      <p>user_id 같은 무한 카디널리티 라벨을 피해야 하는 이유를 설명할 수 있으면 시니어급 답변이 된다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">알림 피로도를 줄이기 위한 실제 개선 경험(리뷰 프로세스, multi-window 등)을 말할 수 있다</span>
+        <span class="rubric-badge badge-bonus">보너스</span>
+      </div>
+      <p>일회성 설정이 아니라 지속적으로 튜닝한 운영 경험이면 더 좋다.</p>
+    </div>
+  </div>
+
+  <!-- ===================== REAL WORLD ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🏭</span>
+      <h2>실무 연결 — 이 개념이 실제 어디에 쓰이는가</h2>
+    </div>
+
+    <h3>스타트업 (소규모 팀)</h3>
+    <p>API 서버 몇 개, DB 한두 대인 초기에는 RED 지표(요청 수, 에러율, 응답 시간) 몇 개와 기본 리소스 알림만으로도 충분하다. 알림 채널도 슬랙 하나로 단순하게 유지하되, 결제처럼 핵심 경로만이라도 증상 기반 알림을 먼저 갖추는 것이 우선순위다.</p>
+
+    <h3>성장기 회사 (수백만 사용자)</h3>
+    <p>서비스 수가 늘어나면서 알림이 급격히 늘어나기 시작하는 시기다. 이때 심각도 체계(Severity)와 온콜 로테이션, runbook 연결이 필수가 된다. 알림 피로도 관리(정기 리뷰, 불필요한 알림 제거)가 본격적으로 필요해진다.</p>
+
+    <h3>대형 플랫폼 (수천만 사용자)</h3>
+    <p>수백 개 서비스, 수만 개 메트릭 시계열을 다루면서 카디널리티 관리가 인프라 전담 조직의 과제가 된다. Multi-window, multi-burn-rate 알림, 그리고 SLO 기반 알림 체계(Day 7)가 표준으로 자리잡는다. 이 규모에서는 메트릭 저장/쿼리 비용 자체도 큰 인프라 예산 항목이 된다.</p>
+  </div>
+
+  <!-- ===================== NEXT ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">➡️</span>
+      <h2>다음 학습 예고 — Day 4</h2>
+    </div>
+    <p><strong>분산 트레이싱 심화</strong></p>
+    <p>Trace ID 전파의 내부 동작, Span 설계 원칙, 병목 구간을 트레이스로 찾아내는 방법, 그리고 트레이스를 100% 수집하지 못하는 이유와 Sampling 전략을 다룬다. 면접에서 "분산 트레이싱을 어떻게 활용해서 병목을 찾으시나요?"라는 질문에 답변하는 방법을 익힌다.</p>
+    <div style="margin-top:0.75rem;">
+      <span class="tag blue">Trace / Span</span>
+      <span class="tag blue">Context Propagation</span>
+      <span class="tag purple">Bottleneck Analysis</span>
+      <span class="tag purple">Sampling</span>
+      <span class="tag green">OpenTelemetry</span>
+    </div>
+  </div>
+
+  <div class="nav">
+    <a href="./0002-structured-logging-log-design-strategy.html">← Day 2</a>
+    <a href="./index.html">목록으로 →</a>
+  </div>
+
+</div>
+</body>
+</html>

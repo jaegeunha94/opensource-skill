@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 장애 대응과 관측성 설계 프레임워크 | [0001-observability-incident-response-framework.html](lessons/0001-observability-incident-response-framework.html) |
 | 2 | 2026-07-01 | 구조화 로깅과 로그 설계 전략 | [0002-structured-logging-log-design-strategy.html](lessons/0002-structured-logging-log-design-strategy.html) |
+| 3 | 2026-07-02 | 메트릭과 알림 설계 | [0003-metrics-and-alerting-design.html](lessons/0003-metrics-and-alerting-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | 메트릭과 알림 설계 | RED/USE 방법론, 알림 임계값, false positive/negative |
 | 4 | 분산 트레이싱 심화 | Trace ID 전파, span 설계, 병목 분석, sampling |
 | 5 | 장애 원인 분석 (RCA) | 5 Whys, 타임라인 재구성, 원인 vs 증상 구분 |
 | 6 | 대시보드 설계 원칙 | 역할별 대시보드, Golden Signal, 지표 선택 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — Day 3 (메트릭과 알림 설계) 예정.
+**Day 3 완료** — Day 4 (분산 트레이싱 심화) 예정.
 
 ## 습득한 핵심 개념
 
@@ -33,7 +33,9 @@
 - [x] SLO / SLI / SLA 기초 개념 (Day 1)
 - [x] 구조화 로깅과 correlation ID (Day 2)
 - [x] 로그 레벨 전략과 Alert Fatigue 연관성 (Day 2)
-- [ ] RED/USE 메트릭 방법론 (예정 Day 3)
+- [x] RED/USE 메트릭 방법론과 Golden Signals (Day 3)
+- [x] Percentile(p50/p95/p99)과 평균의 함정 (Day 3)
+- [x] 알림 임계값 설계와 False Positive/Negative 트레이드오프 (Day 3)
 - [ ] 분산 트레이싱 전파 원리 (예정 Day 4)
 - [ ] RCA 5 Whys 적용 (예정 Day 5)
 - [ ] Error Budget 소진율 알림 (예정 Day 7)
