@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — RAG 시스템 설계와 검색 품질 진단 프레임워크</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 1 · RAG Interview</div>
+    <h1>RAG 시스템 설계와 검색 품질 진단 프레임워크</h1>
+    <div class="subtitle">RAG 파이프라인 전체 구조를 설계하고, 답변 품질 문제가 발생했을 때 검색 실패와 생성 실패를 구조적으로 분리해서 진단하는 능력</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "사내 문서 기반 챗봇을 RAG로 만들었는데, 사용자들이 답변이 부정확하다고 불만을 제기합니다. 어느 단계부터 점검하시겠습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "RAG 파이프라인 전체 구조를 설계해주세요. 어떤 컴포넌트가 필요하고, 각각 왜 필요한가요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "RAG와 fine-tuning 중 어떤 상황에서 무엇을 선택하시겠습니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>RAG가 왜 필요한지부터 이해하기</h2>
+
+    <h3>LLM 단독 사용의 한계</h3>
+    <p>
+      LLM(대형 언어 모델)은 학습 시점까지의 데이터로 지식을 습득한다. 이 때문에 세 가지 근본적인
+      한계가 있다. 첫째, <strong>지식 단절(knowledge cutoff)</strong> — 학습 이후 생긴 정보를 모른다.
+      둘째, <strong>사적 데이터 부재</strong> — 회사 내부 문서, 고객 데이터는 학습에 포함되지 않는다.
+      셋째, <strong>환각(hallucination)</strong> — 모르는 내용도 그럴듯하게 지어내서 답한다.
+    </p>
+
+    <div class="callout callout-info">
+      <strong>핵심 전제:</strong> RAG(Retrieval-Augmented Generation)는 질문에 답하기 전에
+      <strong>관련 문서를 먼저 검색해서 LLM에게 근거로 제공</strong>하는 구조다.
+      LLM의 파라미터에 지식을 넣는 대신(fine-tuning), 필요할 때마다 외부 저장소에서
+      지식을 "찾아서 읽혀준다"는 접근이다.
+    </div>
+
+    <h3>RAG 파이프라인의 두 단계</h3>
+    <p>
+      RAG는 <strong>오프라인 단계(색인 생성)</strong>와 <strong>온라인 단계(질의 처리)</strong>로 나뉜다.
+      이 둘을 분리해서 이해하는 것이 진단의 출발점이다.
+    </p>
+
+    <h3>① 오프라인 단계 — Ingestion Pipeline</h3>
+    <pre><code><span class="comment"># 오프라인: 문서를 검색 가능한 형태로 변환해서 저장</span>
+<span class="keyword">문서 수집</span>(원본 문서, PDF, Confluence, DB 등)
+  <span class="func">→</span> <span class="keyword">정제</span>(HTML 태그 제거, 중복 제거, 노이즈 필터링)
+  <span class="func">→</span> <span class="keyword">Chunking</span>(문서를 검색 단위로 분할)
+  <span class="func">→</span> <span class="keyword">Embedding</span>(chunk를 벡터로 변환)
+  <span class="func">→</span> <span class="keyword">인덱싱</span>(Vector DB / 역색인에 저장, metadata 부착)</code></pre>
+
+    <h3>② 온라인 단계 — Query Pipeline</h3>
+    <pre><code><span class="comment"># 온라인: 사용자 질문이 들어올 때마다 실행</span>
+<span class="keyword">사용자 질문</span>
+  <span class="func">→</span> <span class="keyword">질문 임베딩</span>(질문을 벡터로 변환)
+  <span class="func">→</span> <span class="keyword">검색(Retrieval)</span>(Vector DB에서 관련 chunk top-k 조회, 필요 시 hybrid + filter)
+  <span class="func">→</span> <span class="keyword">Reranking</span>(선택적, 후보 재정렬)
+  <span class="func">→</span> <span class="keyword">Context 구성</span>(선택된 chunk를 prompt에 삽입)
+  <span class="func">→</span> <span class="keyword">생성(Generation)</span>(LLM이 context를 참고해서 답변 작성)
+  <span class="func">→</span> <span class="keyword">근거 표시</span>(출처 citation 첨부)</code></pre>
+
+    <div class="callout callout-warn">
+      <strong>이 구조를 기억해야 하는 이유:</strong> 답변 품질 문제가 생기면
+      <strong>어느 화살표(→)에서 문제가 생겼는지</strong>를 좁혀나가는 것이 진단의 본질이다.
+      "AI가 이상하게 답해요"라는 증상 하나로 전체 파이프라인을 다 뜯어보는 것은 비효율적이다.
+    </div>
+
+    <h3>검색 실패 vs 생성 실패 — 가장 중요한 구분</h3>
+    <p>
+      RAG 답변이 틀렸을 때, 원인은 크게 두 갈래로 나뉜다. 이 둘을 구분하지 못하면
+      엉뚱한 곳을 고치게 된다.
+    </p>
+
+    <table>
+      <tr>
+        <th>구분</th>
+        <th>증상</th>
+        <th>원인 위치</th>
+      </tr>
+      <tr>
+        <td><strong>Retrieval 실패</strong></td>
+        <td>정답이 담긴 문서가 애초에 검색 결과(top-k)에 없음</td>
+        <td>Embedding 모델, Chunking, 인덱스, 검색 알고리즘</td>
+      </tr>
+      <tr>
+        <td><strong>Generation 실패</strong></td>
+        <td>정답 문서는 검색됐지만 LLM이 무시하거나 잘못 요약함</td>
+        <td>Context 구성, Prompt 설계, LLM 자체 한계</td>
+      </tr>
+    </table>
+
+    <p>
+      두 실패는 <strong>완전히 다른 해결책</strong>을 필요로 한다. Retrieval 실패인데 prompt를
+      아무리 고쳐도 소용없고, Generation 실패인데 chunking을 바꿔도 소용없다.
+      그래서 진단은 반드시 <strong>"정답 문서가 top-k 안에 있었는가?"</strong>부터 확인해야 한다.
+    </p>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <p>
+      이 질문은 <strong>"RAG API를 호출해봤느냐"</strong>가 아니라
+      <strong>"블랙박스처럼 보이는 AI 시스템을 구조적으로 분해해서 디버깅할 수 있느냐"</strong>를 본다.
+    </p>
+
+    <ul>
+      <li>
+        <strong>파이프라인 전체를 아는가:</strong> RAG를 "벡터 DB에 넣고 검색하는 것" 정도로만
+        알고 있는지, 아니면 ingestion부터 citation까지 각 단계와 실패 지점을 아는지
+      </li>
+      <li>
+        <strong>증상을 원인 단계로 좁힐 수 있는가:</strong> "답변이 이상함" → "검색인지 생성인지"
+        → "검색이면 embedding인지 chunking인지"로 가설을 좁혀나가는 사고를 하는가
+      </li>
+      <li>
+        <strong>측정 가능한 지표로 말하는가:</strong> "느낌상 이상하다"가 아니라
+        recall@k, 근거 인용 여부 같은 <strong>측정 가능한 신호</strong>로 진단하는가
+      </li>
+      <li>
+        <strong>RAG의 한계를 아는가:</strong> RAG가 모든 문제를 해결하지 않는다는 것,
+        fine-tuning·프롬프트 엔지니어링과의 선택 기준을 아는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      Senior 엔지니어는 "RAG를 붙였다"가 아니라,
+      <strong>"어느 단계에서 정보 손실이 일어나는지 재현 가능한 방식으로 찾아낸다"</strong>는 것을
+      보여줘야 한다. AI 시스템도 결국 데이터 파이프라인 + 검색 시스템이라는 관점이 핵심이다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 사내 지식베이스 챗봇의 "모른다" 응답 폭증</h3>
+    <p>
+      사용자가 존재하는 정책을 물었는데 챗봇이 "관련 정보를 찾을 수 없습니다"라고 답한다.
+      → 정답 문서가 애초에 인덱스에 없거나(수집 누락), chunk 분할 시 핵심 문장이 잘렸거나(chunking 실패),
+      질문과 문서의 표현 차이가 커서 벡터 유사도가 낮은(embedding-질문 불일치) 경우다.
+      <strong>Retrieval 실패</strong>로 분류하고 top-k 검색 결과를 직접 눈으로 확인하는 것이 첫 단계다.
+    </p>
+
+    <h3>상황 2: 검색은 맞는데 답변이 엉뚱함</h3>
+    <p>
+      로그를 보니 정답 문서가 top-3 안에 들어와 있다. 그런데도 LLM이 다른 문서 내용으로 답하거나
+      질문과 무관한 내용을 섞는다.
+      → <strong>Generation 실패</strong>다. context에 여러 문서가 섞여 있어 LLM이 헷갈리거나,
+      가장 관련 있는 문서가 context 중간에 묻혀 있거나(Lost in the middle), prompt가
+      "제공된 문서만 근거로 답하라"는 지시를 명확히 하지 않은 경우다.
+    </p>
+
+    <h3>상황 3: 신규 정책 문서가 반영되지 않음</h3>
+    <p>
+      어제 업데이트된 정책을 물었는데 예전 답변이 나온다.
+      → RAG 자체의 문제가 아니라 <strong>인덱스 갱신 주기(freshness)</strong> 문제다.
+      Ingestion pipeline이 배치로 하루 1번 도는지, 실시간 반영이 필요한 영역인지부터 확인해야 한다.
+    </p>
+
+    <h3>상황 4: RAG vs Fine-tuning 선택</h3>
+    <p>
+      "회사 문체로 이메일을 써주는 기능"과 "최신 사내 정책을 답하는 기능"은 다른 문제다.
+      전자는 <strong>스타일/형식</strong> 학습이 목적이라 fine-tuning이 적합할 수 있고,
+      후자는 <strong>최신·가변 지식 조회</strong>가 목적이라 RAG가 적합하다.
+      실무에서는 <strong>RAG(지식 최신성) + 경량 프롬프트 튜닝(스타일)</strong>을 함께 쓰는 경우가 많다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>증상을 Retrieval / Generation으로 먼저 분류</strong>
+        "저는 먼저 정답 문서가 검색 결과 top-k 안에 있었는지부터 확인합니다.
+        이걸로 검색 문제인지 생성 문제인지를 가릅니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Retrieval 실패라면 단계별로 좁히기</strong>
+        "문서가 아예 인덱스에 없는지(수집 문제), 있지만 chunk가 질문과 관련된 문장을
+        포함 못 하는지(chunking 문제), chunk는 맞는데 벡터 유사도가 낮게 나오는지
+        (embedding-질문 표현 불일치) 순서로 확인합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Generation 실패라면 context와 prompt 점검</strong>
+        "context에 불필요한 문서가 섞여 있는지, 정답 문서가 context 중간에 묻혀 있는지,
+        prompt가 '제공된 문서만 근거로 답하라'를 명확히 지시하는지 확인합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>데이터 파이프라인 관점도 점검</strong>
+        "최신 문서가 반영 안 됐을 가능성, 즉 인덱스 갱신 주기와 수집 파이프라인의
+        누락 여부도 함께 확인합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>측정 지표로 재현 가능하게 만들기</strong>
+        "감으로 판단하지 않고, 실패 케이스를 모아 recall@k, 근거 인용율 같은 지표로
+        정량화해서 회귀 테스트 셋을 만듭니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>RAG의 적용 범위도 함께 언급 (Senior 포인트)</strong>
+        "RAG가 만능은 아니라는 점도 말합니다. 스타일 학습이나 매우 좁은 도메인의
+        반복 패턴은 fine-tuning이나 프롬프트 튜닝이 더 적합할 수 있습니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "답변 품질 문제가 들어오면 저는 먼저 RAG 파이프라인을 오프라인 색인 단계와
+        온라인 질의 단계로 나누고, 실패를 Retrieval 실패와 Generation 실패로 분류합니다.
+        가장 먼저 하는 일은 문제가 된 질문에 대해 실제 검색 결과 top-k를 로그로 뽑아서
+        정답 문서가 그 안에 있었는지 눈으로 확인하는 것입니다.
+      </p>
+      <p>
+        정답 문서가 top-k에 없었다면 Retrieval 실패로 보고, 문서가 애초에 인덱스에
+        수집됐는지, chunk 분할 시 핵심 문장이 다른 chunk로 잘렸는지, 질문과 문서의
+        표현 차이 때문에 임베딩 유사도가 낮게 나오는지를 순서대로 확인합니다.
+      </p>
+      <p>
+        정답 문서가 top-k에 있었는데 답변이 틀렸다면 Generation 실패로 보고, context에
+        노이즈 문서가 섞였는지, 정답 문서가 context 중간에 위치해서 모델이 덜 주목했는지,
+        prompt가 제공된 문서만 근거로 삼으라는 지시를 명확히 했는지 점검합니다.
+      </p>
+      <p>
+        마지막으로 이런 실패 케이스들을 모아서 recall@k와 근거 인용율 같은 측정 가능한
+        지표로 만든 회귀 테스트 셋을 구축합니다. 그래야 다음에 chunking이나 프롬프트를
+        바꿀 때 개선인지 악화인지 감이 아니라 수치로 판단할 수 있습니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "RAG와 fine-tuning 중 어떤 기준으로 선택하시나요?"</h3>
+    <p><strong>약한 답변:</strong> "RAG가 최신 정보를 반영할 수 있어서 더 좋습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "저는 지식이 <strong>얼마나 자주 바뀌는지</strong>와 <strong>얼마나 사실 근거가 중요한지</strong>로
+      판단합니다. 정책 문서처럼 자주 바뀌고 오답이 곧 신뢰 문제로 이어지는 영역은 RAG가 적합합니다.
+      근거를 문서로 추적할 수 있고, 문서를 갱신하면 재학습 없이 바로 반영되기 때문입니다.
+      반대로 답변의 말투, 형식, 특정 도메인의 반복적인 패턴처럼 <strong>스타일이나 구조를
+      학습</strong>시키는 목적이라면 fine-tuning이 더 안정적입니다. 실무에서는 지식은 RAG로,
+      스타일은 가벼운 fine-tuning이나 few-shot 프롬프트로 나눠 함께 쓰는 경우가 많습니다."
+    </p>
+
+    <h3>F2. "검색은 정상인데 답변 품질이 낮으면 어디를 먼저 보시겠어요?"</h3>
+    <p><strong>약한 답변:</strong> "프롬프트를 조금 더 자세히 씁니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "세 가지를 순서대로 봅니다. (1) <strong>context 내 정답 문서의 위치</strong> —
+      'Lost in the Middle' 현상처럼 관련 문서가 context 중간에 있으면 모델이 덜 활용하는
+      경향이 있어서, 가장 관련도 높은 문서를 앞이나 뒤에 배치합니다. (2) <strong>context 내
+      노이즈 비율</strong> — 관련 없는 chunk가 많이 섞여 있으면 top-k를 줄이거나 reranking을
+      추가합니다. (3) <strong>prompt의 grounding 지시</strong> — '제공된 문서에 없으면 모른다고
+      답하라'는 명시적 지시가 있는지 확인합니다. 이 세 가지를 점검한 후에도 안 되면
+      LLM 자체의 instruction-following 한계로 보고 모델 교체나 few-shot 예시 추가를 검토합니다."
+    </p>
+
+    <h3>F3. "RAG 파이프라인에서 가장 먼저 병목이 생기는 곳은 어디입니까?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "서비스 초기에는 대부분 <strong>chunking과 embedding 품질</strong>에서 병목이 생깁니다.
+      chunk가 너무 크면 관련 없는 내용이 섞여 검색 정밀도가 떨어지고, 너무 작으면 문맥이
+      끊겨 재현율이 떨어집니다. 트래픽이 커지면 <strong>벡터 검색 지연시간과 인덱스 갱신
+      비용</strong>이 병목이 되고, 그 다음은 <strong>LLM 생성 지연시간과 비용</strong>이 병목이
+      됩니다. 그래서 저는 단계별로 지표를 따로 관측합니다 — 검색 지연, context 크기,
+      생성 지연, 토큰 비용을 분리해서 봐야 정확히 어디를 최적화할지 알 수 있습니다."
+    </p>
+
+    <h3>F4. "RAG를 쓰면 hallucination이 완전히 없어지나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "아니요. RAG는 hallucination을 <strong>줄이는</strong> 구조이지 없애는 구조가 아닙니다.
+      검색된 문서가 관련 없거나 부정확하면 그 문서를 근거로 그럴듯한 오답을 만들 수 있고,
+      정답 문서가 검색됐어도 모델이 그 내용을 무시하고 사전 학습된 지식으로 답할 수도 있습니다.
+      그래서 저는 RAG를 붙이는 것과 별개로, 답변에 근거 문서를 인용(citation)하게 하고,
+      문서에 없는 내용이면 '모른다'고 답하도록 명시적으로 지시하며, faithfulness 지표로
+      생성된 답변이 실제로 context에 근거했는지 별도로 평가합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>Retrieval 실패와 Generation 실패를 <strong>먼저 분리</strong>해서 접근한다</li>
+          <li>"top-k 안에 정답 문서가 있었는가"를 <strong>가장 먼저</strong> 확인한다</li>
+          <li>파이프라인의 각 단계(수집→정제→chunking→embedding→인덱싱→검색→생성)를
+          <strong>구체적으로</strong>말할 수 있다</li>
+          <li>감이 아니라 <strong>recall@k, faithfulness 같은 지표</strong>로 근거를 댄다</li>
+          <li>RAG의 <strong>한계</strong>를 알고 fine-tuning과의 선택 기준을 설명한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"벡터 DB에 넣고 검색하면 됩니다" — <strong>파이프라인 이해 부족</strong></li>
+          <li>"프롬프트를 더 잘 써보겠습니다" — <strong>원인 분류 없이 즉흥 대응</strong></li>
+          <li>검색과 생성 실패를 구분하지 않고 뭉뚱그려 설명한다</li>
+          <li>"RAG를 쓰면 hallucination이 없어집니다"라는 잘못된 전제로 답한다</li>
+          <li>측정 지표나 회귀 테스트 없이 "고쳐보고 확인하겠습니다"로 끝난다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 "RAG를 안다"가 아니라
+      <strong>"블랙박스로 보이는 AI 답변 문제를 재현 가능하고 측정 가능한 방식으로 분해한다"</strong>는
+      것을 보여준다. 면접관은 프레임워크 사용법이 아니라 시스템 디버깅 사고력을 본다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "RAG를 붙이면 hallucination이 사라진다"</h3>
+    <p>
+      <strong>사실:</strong> RAG는 근거 문서를 제공할 뿐, LLM이 그 문서를 실제로
+      따르도록 강제하지 않는다. 검색이 부정확하거나, 모델이 문서를 무시하고
+      사전 지식으로 답하면 여전히 hallucination이 발생한다. grounding 강제와
+      faithfulness 평가가 별도로 필요하다.
+    </p>
+
+    <h3>오해 2: "벡터 검색(dense retrieval)만 있으면 충분하다"</h3>
+    <p>
+      <strong>사실:</strong> 벡터 검색은 의미적으로 유사한 내용은 잘 찾지만,
+      정확한 코드명·에러 코드·고유명사처럼 <strong>정확한 키워드 일치</strong>가
+      중요한 질의에는 약하다. 실무에서는 BM25 같은 sparse 검색과 결합한
+      hybrid search를 많이 쓴다(Day 6에서 다룬다).
+    </p>
+
+    <h3>오해 3: "Chunk 크기는 클수록 더 많은 문맥을 담아서 좋다"</h3>
+    <p>
+      <strong>사실:</strong> chunk가 크면 문맥은 풍부해지지만, 하나의 chunk에
+      여러 주제가 섞여 벡터 유사도가 흐려지고 검색 정밀도가 떨어진다. chunk
+      크기는 문서 특성과 질의 유형에 맞춰 실험적으로 정해야 하는 trade-off다
+      (Day 3에서 자세히 다룬다).
+    </p>
+
+    <h3>오해 4: "RAG는 항상 fine-tuning보다 낫다"</h3>
+    <p>
+      <strong>사실:</strong> RAG는 "지식을 조회"하는 데 강하고, fine-tuning은
+      "행동 패턴이나 형식을 학습"하는 데 강하다. 목적이 다르므로 우열의 문제가
+      아니라 적합성의 문제이며, 실무에서는 종종 함께 쓰인다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>답변 품질 문제 진단 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>확인 항목</th>
+        <th>Retrieval 실패 신호</th>
+        <th>Generation 실패 신호</th>
+      </tr>
+      <tr>
+        <td>정답 문서가 top-k에 있는가</td>
+        <td><span class="badge badge-red">없음</span></td>
+        <td><span class="badge badge-green">있음</span></td>
+      </tr>
+      <tr>
+        <td>답변에 근거 인용(citation)이 있는가</td>
+        <td><span class="badge badge-yellow">확인 불가</span></td>
+        <td><span class="badge badge-red">있어도 근거와 불일치</span></td>
+      </tr>
+      <tr>
+        <td>동일 질문을 다른 표현으로 물으면 결과가 바뀌는가</td>
+        <td><span class="badge badge-red">크게 바뀜 (임베딩 민감도 문제)</span></td>
+        <td><span class="badge badge-yellow">유사</span></td>
+      </tr>
+      <tr>
+        <td>정답이 여러 chunk에 걸쳐 나뉘어 있는가</td>
+        <td><span class="badge badge-red">그렇다 (chunking 문제)</span></td>
+        <td><span class="badge badge-green">아니다</span></td>
+      </tr>
+      <tr>
+        <td>context 내 문서 개수/노이즈 비율</td>
+        <td><span class="badge badge-green">문제 아님</span></td>
+        <td><span class="badge badge-red">노이즈 다수 포함</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"벡터 DB에 문서 넣고 검색하면 RAG입니다" 정도로만 설명하고, 실패 시 어디를
+      봐야 하는지 말하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>Ingestion → Chunking → Embedding → 검색 → 생성 흐름을 순서대로 나열할 수 있음.
+      Retrieval과 Generation을 구분한다는 개념은 알지만 실제 진단 절차는 막연함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>정답 문서가 top-k에 있는지부터 확인하는 절차를 설명할 수 있고, Retrieval/Generation
+      실패에 따른 원인 후보를 나눠 말할 수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>증상을 Retrieval/Generation으로 즉시 분류하고, 각 실패 유형 안에서 원인을 단계적으로
+      좁혀나가며, 이를 recall@k·faithfulness 같은 측정 가능한 지표와 회귀 테스트로 연결한다.
+      RAG의 적용 한계와 fine-tuning과의 선택 기준까지 자연스럽게 답변에 포함시킴</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. RAG 파이프라인의 오프라인/온라인 단계를 각각의 세부 단계와 함께 설명할 수 있는가?<br>
+      2. 답변 품질 문제가 들어왔을 때 Retrieval 실패와 Generation 실패를 무엇으로 구분하는가?<br>
+      3. RAG와 fine-tuning을 언제 선택하는지 이유와 함께 설명할 수 있는가?<br>
+      4. "RAG를 쓰면 hallucination이 사라진다"는 말이 왜 틀렸는지 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>RAG = 검색 + 생성.</strong> LLM에게 지식을 파라미터로 학습시키는 대신,
+      질의마다 관련 문서를 찾아 근거로 제공하는 구조다.</li>
+      <li><strong>파이프라인은 오프라인(수집→정제→chunking→embedding→인덱싱)과
+      온라인(질문 임베딩→검색→reranking→context 구성→생성→근거 표시)으로 나뉜다.</strong></li>
+      <li><strong>답변 품질 문제는 Retrieval 실패와 Generation 실패로 먼저 분리</strong>해야 한다.
+      "정답 문서가 top-k에 있었는가"가 첫 번째 확인 지점이다.</li>
+      <li><strong>RAG는 hallucination을 줄이지, 없애지 않는다.</strong> grounding 강제와
+      citation, faithfulness 평가가 별도로 필요하다.</li>
+      <li><strong>RAG와 fine-tuning은 우열이 아니라 목적의 차이.</strong> 지식 최신성은 RAG,
+      스타일/패턴 학습은 fine-tuning이 유리하다.</li>
+      <li>진단은 감이 아니라 <strong>recall@k, 근거 인용율 같은 측정 가능한 지표</strong>로
+      재현 가능하게 만들어야 한다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 1 완료 · 다음: Day 2 — 문서 수집과 정제 파이프라인</span>
+  </div>
+
+</div>
+</body>
+</html>
