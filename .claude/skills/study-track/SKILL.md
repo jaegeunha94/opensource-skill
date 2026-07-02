@@ -65,6 +65,7 @@ Examples:
 - `senior-frontend-interview`
 - `senior-redis-cache-strategy-interview`
 - `senior-message-queue-async-processing-interview`
+- `senior-rag-interview`
 
 If the user gives a Korean subject name, map it to a stable English slug. Prefer common CS course names:
 
@@ -150,6 +151,11 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `메시지 큐 / 비동기 처리` -> `senior-message-queue-async-processing-interview`
 - `메시지 큐 비동기 처리` -> `senior-message-queue-async-processing-interview`
 - `Message Queue Async Processing Interview` -> `senior-message-queue-async-processing-interview`
+- `RAG` -> `senior-rag-interview`
+- `RAG Interview` -> `senior-rag-interview`
+- `RAG 10년차 이상 개발자 Interview` -> `senior-rag-interview`
+- `RAG 시니어 인터뷰` -> `senior-rag-interview`
+- `Retrieval Augmented Generation Interview` -> `senior-rag-interview`
 
 If the slug is ambiguous, ask one short clarifying question before creating the folder.
 
@@ -179,6 +185,7 @@ For specialized senior interview subjects, keep the same 10+ year practitioner i
 - `senior-frontend-interview`: integrated frontend architecture across HTML, CSS, JavaScript, React, Next.js, browser rendering, accessibility, performance, API integration, state/data design, design systems, testing, frontend security, observability, UX trade-offs, and technical leadership.
 - `senior-redis-cache-strategy-interview`: Redis data structures, TTL, cache invalidation, session stores, distributed locks, ranking, Pub/Sub, cache stampede prevention, persistence modes, and failure behavior.
 - `senior-message-queue-async-processing-interview`: Kafka, RabbitMQ, SQS, Celery, asynchronous job design, retries, idempotency, dead-letter queues, ordering, backpressure, failure isolation, and large-scale processing.
+- `senior-rag-interview`: RAG architecture, document ingestion and cleaning, chunking strategy, embedding model selection, vector databases, hybrid search, metadata filtering, reranking, context construction, prompt design, hallucination mitigation, answer grounding, offline and online evaluation, access control, privacy, caching, cost/performance trade-offs, observability, and production incident response.
 
 For senior frontend interview subjects, assume the learner already knows beginner syntax and basic framework usage. Focus on 10+ year practitioner expectations: browser/platform constraints, accessibility, performance budgets, rendering behavior, architecture trade-offs, maintainability, testing strategy, frontend security, production debugging, cross-functional communication, and senior-level design review. Do not turn these tracks into beginner tag/property/API drills unless the topic is used to evaluate production reasoning.
 
