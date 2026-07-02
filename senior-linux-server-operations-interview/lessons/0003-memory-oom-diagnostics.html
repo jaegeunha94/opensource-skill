@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — 메모리 진단 & OOM | Linux 서버 운영 인터뷰</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<header class="lesson-header">
+  <div class="header-inner">
+    <span class="subject-label">Linux 서버 운영 인터뷰 · Day 3</span>
+    <h1>메모리 진단 &amp; OOM</h1>
+    <p class="subtitle">
+      "메모리 사용률 90%"라는 숫자 뒤에서 실제로 무슨 일이 벌어지는지 구분하고,
+      OOM Killer가 왜 그 프로세스를 죽였는지, swap 사용이 정상인지 위험 신호인지 판단하는 사고방식
+    </p>
+    <p style="margin-top:1rem; font-size:0.82rem; color:#64748b;">
+      <span class="tag">free available vs used</span>
+      <span class="tag">vmstat si/so</span>
+      <span class="tag">/proc/meminfo</span>
+      <span class="tag">OOM Killer</span>
+      <span class="tag">swappiness</span>
+    </p>
+  </div>
+</header>
+
+<nav class="lesson-nav">
+  <ul>
+    <li><a href="#questions">면접 질문</a></li>
+    <li><a href="#concepts">전제 개념</a></li>
+    <li><a href="#why">왜 묻는가</a></li>
+    <li><a href="#realworld">실무 연결</a></li>
+    <li><a href="#framework">답변 사고 순서</a></li>
+    <li><a href="#model-answer">핵심 답변 예시</a></li>
+    <li><a href="#followup">Senior Follow-up</a></li>
+    <li><a href="#comparison">좋은 vs 약한 답변</a></li>
+    <li><a href="#misconceptions">흔한 오해</a></li>
+    <li><a href="#rubric">자기 점검 Rubric</a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <!-- ══════════════════════════════════════
+       SECTION 1: 오늘의 면접 질문
+  ══════════════════════════════════════ -->
+  <section id="questions">
+    <h2><span class="icon">❓</span> 오늘의 면접 질문</h2>
+
+    <div class="question-card">
+      <span class="q-label main">핵심 질문</span>
+      <p class="q-text">
+        "모니터링에서 서버 메모리 사용률이 90%라는 알림이 왔습니다.
+        <code>free -h</code>를 확인했더니 정말 used가 90%였습니다. 이게 실제로 위험한 상황인지
+        어떻게 판단하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="question-card">
+      <span class="q-label related">관련 질문</span>
+      <p class="q-text">
+        "OOM Killer가 프로세스를 강제 종료했습니다. 로그에서 무엇을 확인하고,
+        왜 하필 그 프로세스가 죽었는지 어떻게 설명하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="question-card">
+      <span class="q-label related">관련 질문</span>
+      <p class="q-text">
+        "서버가 swap을 쓰고 있습니다. 이 자체가 문제인가요? 언제 정상이고 언제 위험 신호인가요?"
+      </p>
+    </div>
+
+    <div class="callout info">
+      <span class="icon">💡</span>
+      <p>Day 1~2가 "CPU가 병목인가, 그 프로세스는 무엇을 하는가"였다면, Day 3는 리눅스 메모리 회계 모델 자체를 정확히 이해해서 "숫자가 높다"는 표면적 사실과 "실제로 메모리가 부족하다"는 진짜 위험을 구분하는 능력을 다룹니다.</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 2: 전제 개념
+  ══════════════════════════════════════ -->
+  <section id="concepts">
+    <h2><span class="icon">📚</span> 전제 개념 — 이것을 먼저 이해해야 한다</h2>
+
+    <div class="concept-box">
+      <h3>1. free -h — used가 높아도 괜찮은 이유: 리눅스는 "노는 메모리"를 싫어한다</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 리눅스 커널은 "지금 당장 안 쓰는 메모리는 낭비"라고 생각해서,
+        한 번 읽은 파일 내용을 메모리(캐시)에 남겨둡니다. 다음에 또 그 파일을 읽으면 디스크까지 가지 않고
+        메모리에서 바로 꺼내주려는 것입니다. 이 캐시는 <strong>다른 프로세스가 메모리를 필요로 하면
+        즉시 반납되는</strong> "임시로 빌려 쓰는 공간"입니다. 그래서 캐시가 커서 used가 높아 보여도
+        실제로는 여유 메모리나 다름없습니다.
+      </p>
+      <pre><code><span class="cmd">$ free -h</span>
+<span class="output">              total        used        free      shared  buff/cache   available
+Mem:           31Gi       28Gi       412Mi       1.2Gi        3.1Gi        2.4Gi
+Swap:         4.0Gi       512Mi       3.5Gi</span></code></pre>
+      <ul>
+        <li><code>total</code>: 물리 메모리 총량.</li>
+        <li><code>used</code>: 프로세스가 실제로 점유한 메모리 + 캐시 일부. <strong>이 값만 보고 판단하면 안 됩니다.</strong></li>
+        <li><code>free</code>: 아무것도 쓰지 않은 완전히 빈 메모리. 리눅스는 이 값을 일부러 작게 유지하려 합니다(캐시로 돌려쓰기 때문).</li>
+        <li><code>buff/cache</code>: 파일 시스템 캐시 + 버퍼. 필요하면 커널이 즉시 회수해서 다른 용도로 씁니다.</li>
+        <li><code>available</code>: <strong>지금 새 프로세스가 시작될 때 swap 없이 즉시 쓸 수 있다고 추정되는 메모리</strong>. 캐시 중 회수 가능한 부분을 이미 반영한 값이라, "실제 여유"를 보려면 이 컬럼을 봐야 합니다.</li>
+      </ul>
+      <div class="callout warn">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>중요:</strong> 위 예시에서 <code>used</code>는 28GB(90%)로 위험해 보이지만
+          <code>available</code>이 2.4GB나 남아 있다면, 캐시가 대부분을 차지하고 있어서 당장은
+          여유가 있는 상태일 수 있습니다. 반대로 <code>available</code>이 몇백 MB까지 떨어졌다면
+          진짜 압박 신호입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>2. /proc/meminfo — free의 숫자가 어디서 왔는지 뜯어보기</h3>
+      <p>
+        <code>free</code>는 사실 <code>/proc/meminfo</code>를 읽기 좋게 요약한 것입니다.
+        더 정밀한 판단이 필요하면 이 파일을 직접 봅니다.
+      </p>
+      <pre><code><span class="cmd">$ cat /proc/meminfo | head -20</span>
+<span class="output">MemTotal:       32856616 kB
+MemFree:          421904 kB
+MemAvailable:    2516432 kB
+Buffers:          182340 kB
+Cached:          2980112 kB
+SwapCached:        14200 kB
+Dirty:             48812 kB
+Writeback:             0 kB
+SwapTotal:       4194300 kB
+SwapFree:        3612880 kB
+Slab:             612480 kB
+SReclaimable:     498200 kB
+SUnreclaim:       114280 kB
+Committed_AS:   41230840 kB</span></code></pre>
+      <ul>
+        <li><code>MemAvailable</code>: <code>free -h</code>의 available과 같은 값. 커널이 계산하는 "실질 여유".</li>
+        <li><code>Dirty</code>: 아직 디스크에 쓰이지 않은(수정된) 페이지 캐시. 이 값이 계속 크게 쌓이면 디스크 쓰기가 밀리고 있다는 신호(Day 4 디스크 I/O와 연결).</li>
+        <li><code>Slab</code> / <code>SReclaimable</code> / <code>SUnreclaim</code>: 커널 내부 자료구조(inode, dentry 캐시 등)가 쓰는 메모리. <code>SReclaimable</code>은 회수 가능, <code>SUnreclaim</code>은 회수 불가능. <code>SUnreclaim</code>이 비정상적으로 크면 커널 메모리 누수(드라이버 버그 등)를 의심합니다.</li>
+        <li><code>Committed_AS</code>: 커널이 프로세스들에게 "약속한" 메모리 총량(오버커밋 포함). 이 값이 실제 <code>MemTotal + SwapTotal</code>을 크게 초과하면, 모든 프로세스가 동시에 약속받은 만큼 실제로 요구할 경우 시스템이 감당하지 못할 수 있다는 잠재적 위험 신호입니다.</li>
+      </ul>
+      <div class="callout tip">
+        <span class="icon">✅</span>
+        <p>
+          면접 팁: "<code>free</code>의 available 컬럼도 결국 <code>/proc/meminfo</code>의 MemAvailable을
+          읽은 것"이라고 설명할 수 있으면, 도구를 표면적으로 아는 것이 아니라 그 뒤의 메커니즘까지
+          이해하고 있다는 신호를 줍니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>3. vmstat si/so — swap "사용량"이 아니라 swap "활동"이 진짜 신호다</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> <code>free</code>의 Swap used는 "지금 스왑에 얼마나 넣어놨는가"라는
+        누적된 재고량입니다. 반면 <code>vmstat</code>의 si(swap-in)/so(swap-out)는
+        "지금 이 순간에도 계속 스왑을 들락날락하고 있는가"라는 실시간 활동입니다.
+        재고가 있어도 활동이 없으면 위험하지 않고, 재고가 적어도 활동이 계속되면 위험합니다.
+      </p>
+      <pre><code><span class="cmd">$ vmstat 1 5</span>
+<span class="output">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 2  1  524288 421904 182340 2980112    0    0    45    120  980  1500 12  4 78  6  0
+ 3  4  524288 398220 182100 2975800  180  340    60    340 1100  1600 10  6 60 24  0
+ 5  6  531200 372480 181900 2968100  220  410    55    290 1050  1580  9  7 55 29  0</span></code></pre>
+      <ul>
+        <li><code>si</code> (swap in): 초당 디스크(스왑)에서 메모리로 읽어들인 양(KB). 프로세스가 스왑아웃된 데이터를 다시 필요로 해서 불러오는 중입니다.</li>
+        <li><code>so</code> (swap out): 초당 메모리에서 디스크(스왑)로 내보낸 양(KB). 커널이 물리 메모리가 부족해서 덜 쓰이는 페이지를 디스크로 밀어내는 중입니다.</li>
+        <li><code>swpd</code>: 현재 스왑에 들어가 있는 총량(누적 재고). 값 자체보다 <strong>추세</strong>가 중요합니다.</li>
+      </ul>
+      <div class="callout warn">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>핵심 판단 기준:</strong> <code>swpd</code>가 0이 아니어도 <code>si</code>/<code>so</code>가
+          지속적으로 0에 가깝다면, 시스템 시작 초기나 한가한 시점에 한 번 스왑아웃된 뒤 그대로 방치된
+          "차가운(cold)" 페이지일 뿐 문제가 아닙니다. 반대로 <code>si</code>/<code>so</code>가
+          <strong>계속 큰 값을 반복</strong>한다면 메모리가 실제로 부족해서 페이지를 계속 밀어내고
+          다시 불러오는 "스래싱(thrashing)" 상태이며, 이때는 CPU가 실제 작업 대신 페이지 교체에
+          시간을 쓰느라 <code>wa</code>(iowait)가 치솟고 응답 지연이 심해집니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>4. swappiness — "얼마나 적극적으로 스왑을 쓸 것인가"의 정책 손잡이</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> <code>vm.swappiness</code>는 0~100 사이 값으로, 커널에게
+        "메모리가 빠듯해질 때 파일 캐시를 줄일지, 프로세스 메모리를 스왑으로 보낼지"에 대한
+        상대적 선호도를 알려주는 힌트입니다. 숫자가 높을수록 스왑을 더 적극적으로 씁니다.
+      </p>
+      <pre><code><span class="cmd">$ cat /proc/sys/vm/swappiness</span>
+<span class="output">60</span>
+<span class="comment"># 일시적으로 변경 (재부팅 시 초기화)</span>
+<span class="cmd">$ sudo sysctl vm.swappiness=10</span></code></pre>
+      <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="padding:0.5rem 0.75rem; text-align:left; border-bottom:2px solid #e2e8f0;">설정</th>
+            <th style="padding:0.5rem 0.75rem; text-align:left; border-bottom:2px solid #e2e8f0;">효과</th>
+            <th style="padding:0.5rem 0.75rem; text-align:left; border-bottom:2px solid #e2e8f0;">Trade-off</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:0.5rem 0.75rem; border-bottom:1px solid #e2e8f0;">낮은 값 (예: 10)</td>
+            <td style="padding:0.5rem 0.75rem; border-bottom:1px solid #e2e8f0;">가능한 한 프로세스 메모리를 물리 메모리에 유지, 스왑 최후 수단</td>
+            <td style="padding:0.5rem 0.75rem; border-bottom:1px solid #e2e8f0;">응답 지연은 줄지만, 메모리가 정말 부족해지면 <strong>OOM Killer가 더 빨리 발동</strong></td>
+          </tr>
+          <tr style="background:#f8fafc;">
+            <td style="padding:0.5rem 0.75rem;">높은 값 (예: 60, 기본값)</td>
+            <td style="padding:0.5rem 0.75rem;">여유 있게 스왑을 사용해 OOM을 늦춤</td>
+            <td style="padding:0.5rem 0.75rem;">스왑 활동이 늘어나면 디스크 I/O 지연이 애플리케이션 응답 시간에 영향</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout warn">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>흔한 착각:</strong> "DB 서버는 swappiness=0으로 설정해야 한다"는 조언을 그대로 외워서
+          쓰는 경우가 많은데, 이것은 "스왑을 아예 안 쓴다"가 아니라 "정말 필요할 때만 최후 수단으로 쓴다"는
+          뜻입니다. 그리고 값을 낮출수록 메모리 여유가 실제로 부족한 순간에는 스왑이라는 완충 장치 없이
+          바로 OOM Killer로 이어질 수 있다는 trade-off를 반드시 함께 설명해야 합니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>5. OOM Killer — 커널이 "누구를 희생시킬지" 결정하는 기준</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 배가 가라앉기 직전, 무게를 줄이기 위해 짐을 버려야 하는데
+        어떤 짐을 버릴지 정하는 규칙이 있는 것과 같습니다. 리눅스는 물리 메모리와 스왑을 모두 소진해서
+        더 이상 메모리를 할당할 수 없는 상황(진짜 OOM)이 오면, 프로세스 하나를 강제로 죽여서
+        시스템 전체가 멈추는 것을 막습니다. 어떤 프로세스를 죽일지는 <code>oom_score</code>라는
+        점수로 결정됩니다.
+      </p>
+      <pre><code><span class="comment"># OOM Killer 발동 로그 확인 (커널 메시지)</span>
+<span class="cmd">$ dmesg -T | grep -i "killed process"</span>
+<span class="output">[Tue Jul  1 03:14:22 2026] Out of memory: Killed process 4821 (java) total-vm:4523120kB, anon-rss:3021440kB, file-rss:0kB, shmem-rss:0kB, UID:1000 pgtables:8912kB oom_score_adj:0</span>
+
+<span class="comment"># journalctl로 커널 로그 확인 (systemd 환경)</span>
+<span class="cmd">$ journalctl -k --since "10 min ago" | grep -i oom</span>
+
+<span class="comment"># 특정 프로세스의 현재 oom_score 확인</span>
+<span class="cmd">$ cat /proc/4821/oom_score</span>
+<span class="output">824</span>
+<span class="cmd">$ cat /proc/4821/oom_score_adj</span>
+<span class="output">0</span></code></pre>
+      <ul>
+        <li><code>oom_score</code>: 프로세스가 실제로 쓰는 메모리 비중(RSS 등)을 기반으로 커널이 실시간 계산하는 점수. <strong>점수가 높을수록 먼저 죽습니다.</strong></li>
+        <li><code>oom_score_adj</code>: 사람이 조정할 수 있는 가중치(-1000 ~ 1000). 값을 낮추면(예: -500) 그 프로세스는 상대적으로 보호되고, 높이면(예: 500) 우선적으로 희생됩니다. <code>-1000</code>은 절대 죽지 않도록 완전히 제외합니다.</li>
+        <li>단순히 "메모리를 가장 많이 쓰는 프로세스"가 죽는 것이 아니라, <strong>메모리 사용량과 oom_score_adj를 함께 반영한 점수</strong>로 결정됩니다.</li>
+      </ul>
+      <div class="callout tip">
+        <span class="icon">✅</span>
+        <p>
+          면접 팁: OOM 로그의 <code>total-vm</code>, <code>anon-rss</code>, <code>oom_score_adj</code>
+          필드를 언급하며 "이 로그만 보고도 왜 이 프로세스가 선택됐는지 설명할 수 있다"는 것을
+          보여주면, 사후 대응이 아니라 근거 있는 원인 분석 능력으로 평가됩니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>6. 메모리 누수 vs 정상적인 캐시 증가 — 같은 "메모리가 는다"도 다르다</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 캐시가 느는 것은 "책을 다 읽고도 책상 위에 계속 쌓아두는 것"이고,
+        메모리 누수는 "다 읽은 책을 서랍에 넣고 잠가버려서 아무도 그 공간을 다시 쓸 수 없는 것"입니다.
+        전자는 필요하면 즉시 치울 수 있지만, 후자는 시간이 지날수록 회수 불가능한 공간이 계속 늘어납니다.
+      </p>
+      <ul>
+        <li><strong>정상(캐시 증가):</strong> <code>buff/cache</code>가 늘어도 <code>available</code>은 크게 줄지 않음. 다른 프로세스가 메모리를 요구하면 캐시가 즉시 줄어듦.</li>
+        <li><strong>누수 의심:</strong> 특정 프로세스의 <code>/proc/PID/status</code>의 <code>VmRSS</code>가 시간이 지날수록 <strong>계속 증가만 하고 절대 줄지 않음</strong>. 요청이 없는 한가한 시간에도 줄지 않는다면 누수 가능성이 높습니다.</li>
+      </ul>
+      <pre><code><span class="comment"># 5분 간격으로 특정 프로세스 RSS 추세 관찰</span>
+<span class="cmd">$ watch -n 300 'cat /proc/4821/status | grep VmRSS'</span></code></pre>
+      <div class="callout warn">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>중요:</strong> 한 시점의 스냅샷만으로는 누수인지 정상 증가인지 판단할 수 없습니다.
+          반드시 <strong>시간에 따른 추세</strong>(30분, 1시간 단위)를 보고, 트래픽이 줄어드는 새벽 시간대에도
+          RSS가 내려가지 않는지를 확인해야 신뢰할 수 있는 판단이 됩니다.
+        </p>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 3: 왜 면접에서 묻는가
+  ══════════════════════════════════════ -->
+  <section id="why">
+    <h2><span class="icon">🎯</span> 왜 면접에서 묻는가</h2>
+
+    <p>
+      메모리 진단 질문은 리눅스 커널의 메모리 회계 모델을 정확히 이해하고 있는지, 그리고
+      "숫자가 높다"는 표면적 현상과 "실제로 자원이 부족하다"는 본질을 구분할 수 있는지를 평가합니다.
+    </p>
+
+    <h3>면접관이 실제로 평가하는 것</h3>
+    <ol>
+      <li>
+        <strong>used와 available을 혼동하지 않는가?</strong><br>
+        리눅스가 캐시로 메모리를 적극 활용한다는 사실을 모르면, 정상적인 서버를 보고도
+        "메모리가 부족하다"고 잘못 경보를 울리게 됩니다. 이것은 리눅스 메모리 모델에 대한
+        근본적인 이해 부족 신호입니다.
+      </li>
+      <li>
+        <strong>스왑 "재고"와 "활동"을 구분하는가?</strong><br>
+        <code>swpd</code> 값만 보고 놀라는 것이 아니라 <code>si</code>/<code>so</code>로 지금도
+        활발히 스와핑 중인지를 봐야 진짜 위험을 판단할 수 있습니다.
+      </li>
+      <li>
+        <strong>OOM Killer의 동작 원리를 근거 있게 설명하는가?</strong><br>
+        "메모리 제일 많이 쓰는 애가 죽는다"는 식의 단순화가 아니라, <code>oom_score</code>와
+        <code>oom_score_adj</code>가 함께 작용한다는 것, 그리고 로그에서 그 근거를 읽어낼 수 있는지를 봅니다.
+      </li>
+      <li>
+        <strong>정책 조정의 trade-off를 이해하는가?</strong><br>
+        swappiness를 낮추면 무조건 좋은 것이 아니라 OOM 위험이 앞당겨질 수 있다는 것처럼,
+        모든 튜닝에는 대가가 있다는 사고방식을 갖고 있는지가 시니어와 주니어를 가릅니다.
+      </li>
+    </ol>
+
+    <div class="callout info">
+      <span class="icon">💡</span>
+      <p>
+        이 질문의 본질은 "모니터링 대시보드의 숫자 하나를 보고 성급하게 결론 내리지 않고,
+        여러 지표를 교차 검증해서 진짜 원인과 진짜 위험을 가려낼 수 있는가"입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 4: 실무 연결
+  ══════════════════════════════════════ -->
+  <section id="realworld">
+    <h2><span class="icon">🏭</span> 실무 연결 — 이런 상황에서 실제로 쓴다</h2>
+
+    <h3>시나리오 A: "메모리 90%" 알림에 새벽에 깨어났지만 실제로는 정상이었던 경우</h3>
+    <p>
+      모니터링 알림이 <code>used/total</code> 비율만 기준으로 설정되어 있어서 새벽마다 오탐 알림이 왔습니다.
+      <code>free -h</code>의 <code>available</code> 컬럼을 확인해보니 실제로는 2GB 이상의 여유가 있었고,
+      대부분이 로그 파일과 정적 자산을 서빙하며 쌓인 <code>buff/cache</code>였습니다.
+      이후 알림 기준을 <code>MemAvailable</code> 기반으로 바꿔서 오탐을 없앴습니다.
+    </p>
+
+    <h3>시나리오 B: OOM Killer가 애플리케이션이 아니라 모니터링 에이전트를 죽인 경우</h3>
+    <p>
+      메모리 부족 상황에서 OOM Killer가 정작 무거운 애플리케이션이 아니라 상대적으로 가벼운
+      모니터링 에이전트를 반복적으로 죽였습니다. <code>dmesg</code> 로그의 <code>oom_score_adj</code>를
+      확인해보니 애플리케이션 프로세스에는 배포 스크립트가 <code>-500</code>으로 보호 설정을 해뒀지만,
+      정작 이 상황을 관측해야 할 모니터링 에이전트는 보호되지 않아 먼저 희생된 것이었습니다.
+      "무엇을 보호할지"를 설계할 때 관측 도구 자체가 죽으면 안 된다는 교훈을 얻었습니다.
+    </p>
+
+    <h3>시나리오 C: 메모리 누수로 하루에 한 번씩 서비스가 재시작되던 문제</h3>
+    <p>
+      특정 서비스가 항상 배포 후 20시간 전후로 OOM Killer에 의해 죽었습니다.
+      <code>/proc/PID/status</code>의 <code>VmRSS</code>를 몇 시간 간격으로 기록해보니
+      트래픽이 적은 새벽에도 절대 줄지 않고 선형적으로 증가하는 패턴을 확인했고,
+      이는 캐시 증가가 아니라 애플리케이션 레벨의 메모리 누수(커넥션 객체 미해제)임을 확정할 수 있었습니다.
+    </p>
+
+    <h3>실무에서 배운 핵심 교훈</h3>
+    <ul>
+      <li>메모리 모니터링/알림은 <code>used</code>가 아니라 <strong><code>available</code>(MemAvailable)</strong> 기준으로 설계해야 오탐이 줄어듭니다.</li>
+      <li>스왑은 존재 자체가 문제가 아니라 <strong>si/so 활동의 지속 여부</strong>가 진짜 신호입니다.</li>
+      <li>중요한 프로세스(핵심 애플리케이션, 관측 도구)는 사전에 <code>oom_score_adj</code>로 보호 우선순위를 명시적으로 설계해둬야 합니다.</li>
+      <li>메모리 누수는 한 시점의 값이 아니라 <strong>장시간 추세</strong>로만 확정할 수 있습니다.</li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 5: 답변 사고 순서
+  ══════════════════════════════════════ -->
+  <section id="framework">
+    <h2><span class="icon">🧠</span> 답변 사고 순서 — 메모리 압박 진단 흐름</h2>
+
+    <ul class="steps">
+      <li>
+        <div class="step-content">
+          <h3>used가 아니라 available로 실제 여유를 먼저 확인</h3>
+          <p>
+            <code>free -h</code>의 <code>available</code> 컬럼, 또는 <code>/proc/meminfo</code>의
+            <code>MemAvailable</code>을 확인합니다. 이 값이 충분하다면 대부분 캐시로 인한
+            정상적인 used 증가입니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>스왑 활동을 재고가 아니라 활동으로 판단</h3>
+          <p>
+            <code>vmstat 1 5</code>로 <code>si</code>/<code>so</code>를 몇 초간 관찰합니다.
+            지속적으로 큰 값이 반복되면 실제 메모리 압박(스래싱)이고, 0에 가깝다면
+            과거의 스왑 재고일 뿐 지금은 안정적입니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>OOM 발생 이력 확인</h3>
+          <p>
+            <code>dmesg -T | grep -i "killed process"</code> 또는 <code>journalctl -k</code>로
+            최근 OOM Killer 발동 여부와 어떤 프로세스가 죽었는지, <code>oom_score_adj</code>
+            값이 무엇이었는지 확인합니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>범인 프로세스를 특정하고 누수 여부를 추세로 판단</h3>
+          <p>
+            <code>ps aux --sort=-%mem</code>으로 메모리 상위 프로세스를 확인한 뒤,
+            <code>/proc/PID/status</code>의 <code>VmRSS</code>를 일정 간격으로 반복 관찰해서
+            지속적인 증가(누수)인지, 트래픽에 따라 오르내리는 정상 패턴인지 구분합니다.
+          </p>
+          <pre><code><span class="cmd">$ ps aux --sort=-%mem | head -5</span>
+<span class="comment"># 30분~1시간 간격으로 반복 측정하여 추세 확인</span>
+<span class="cmd">$ cat /proc/4821/status | grep VmRSS</span></code></pre>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>근본 조치와 재발 방지 설계</h3>
+          <p>
+            애플리케이션 누수라면 힙 덤프/프로파일링으로 코드 원인을 찾고, 구조적 문제라면
+            <code>oom_score_adj</code>로 중요 프로세스를 보호하거나 cgroup으로 메모리 상한을 명확히 설정합니다.
+            모니터링 알림 기준도 <code>MemAvailable</code> 기반으로 재설계합니다.
+          </p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 6: 핵심 답변 예시
+  ══════════════════════════════════════ -->
+  <section id="model-answer">
+    <h2><span class="icon">💬</span> 핵심 답변 예시</h2>
+
+    <p>면접에서 자연스럽게 말할 수 있는 구조입니다. 외우지 말고 논리의 흐름을 이해하세요.</p>
+
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:1.5rem; box-shadow:0 1px 3px rgba(0,0,0,.06);">
+      <p style="font-size:0.88rem; color:#64748b; margin-bottom:1rem;">💬 면접관: "메모리 사용률이 90%라는 알림이 왔습니다. 실제로 위험한 상황인지 어떻게 판단하시겠습니까?"</p>
+
+      <p>
+        "가장 먼저 <code>free -h</code>에서 <strong>used가 아니라 available 컬럼</strong>을 확인합니다.
+        리눅스는 여유 메모리를 파일 캐시로 적극 활용하기 때문에 used가 높아도 캐시가 대부분이라면
+        실제로는 여유가 있는 상태일 수 있습니다. available이 충분하다면 알림 자체가 오탐일 가능성이 큽니다.
+      </p>
+      <p>
+        available이 실제로 부족하다고 판단되면, <code>vmstat 1 5</code>로 <strong>si/so 값의 추세</strong>를 봅니다.
+        스왑에 재고가 있어도 si/so가 0에 가깝다면 과거에 한 번 스왑아웃된 것일 뿐 지금은 안정적입니다.
+        반대로 si/so가 지속적으로 큰 값을 반복하면 실제로 메모리 압박으로 인한 스래싱이 진행 중이라고 판단합니다.
+      </p>
+      <p>
+        그 다음 <code>dmesg -T | grep -i "killed process"</code>나 <code>journalctl -k</code>로
+        <strong>OOM Killer가 이미 발동한 이력이 있는지</strong> 확인합니다. 있다면 로그의
+        <code>oom_score_adj</code>와 메모리 사용량을 보고 왜 그 프로세스가 선택됐는지 근거를 확인합니다.
+      </p>
+      <p>
+        마지막으로 <code>ps aux --sort=-%mem</code>으로 상위 프로세스를 특정하고,
+        <strong><code>/proc/PID/status</code>의 VmRSS를 시간 간격을 두고 반복 관찰</strong>해서
+        지속적으로 증가만 하는 메모리 누수인지, 트래픽에 따라 자연스럽게 오르내리는 정상 패턴인지 구분합니다.
+        누수라면 애플리케이션 프로파일링으로 코드 원인을 찾고, 구조적 문제라면 <code>oom_score_adj</code>로
+        핵심 프로세스를 보호하거나 모니터링 알림 기준 자체를 MemAvailable 기반으로 재설계합니다."
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 7: Senior Follow-up
+  ══════════════════════════════════════ -->
+  <section id="followup">
+    <h2><span class="icon">🔍</span> Senior-level Follow-up 질문과 모범 답변</h2>
+
+    <div class="followup-block">
+      <p class="fq">Q. "used가 90%인데 왜 걱정 안 해도 될 수 있다는 건가요? 구체적으로 설명해주세요."</p>
+      <div class="fa">
+        <p>
+          "리눅스 커널은 남는 메모리를 그냥 두지 않고 파일 캐시(<code>buff/cache</code>)로 사용합니다.
+          이 캐시는 다른 프로세스가 메모리를 필요로 하면 즉시 회수되는 '빌려 쓰는' 공간이기 때문에,
+          used에 포함되어 있어도 실질적으로는 여유 자원입니다. 그래서 저는 used 대신
+          <code>/proc/meminfo</code>의 MemAvailable, 즉 free의 available 컬럼을 기준으로 판단합니다.
+          이 값은 캐시 중 회수 가능한 부분을 이미 계산에 넣은, 커널이 추정하는 실질 가용량입니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 리눅스 메모리 회계 모델(캐시 회수 가능성)을 정확히 이해하는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "oom_score_adj를 조정해서 특정 프로세스를 OOM으로부터 보호할 수 있습니다. 이게 항상 좋은 선택인가요?"</p>
+      <div class="fa">
+        <p>
+          "항상 좋은 것은 아닙니다. 한 프로세스를 <code>-1000</code>으로 완전히 보호하면,
+          진짜 OOM 상황이 왔을 때 그 부담이 다른 프로세스로 넘어가서 오히려 예상치 못한
+          프로세스(모니터링 에이전트, 사이드카 등)가 대신 죽을 수 있습니다.
+          그래서 저는 '어떤 프로세스가 죽어도 되는지'를 명시적으로 설계하고 우선순위를 정한 뒤에만
+          조정합니다. 그리고 근본적으로는 보호 설정에 의존하기보다 cgroup으로 메모리 상한을 두거나
+          애플리케이션 자체의 메모리 사용을 안정화하는 것이 우선입니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 설정 하나의 부작용이 다른 곳으로 전가된다는 시스템적 사고</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "swappiness를 0으로 설정하면 OOM이 절대 발생하지 않나요?"</p>
+      <div class="fa">
+        <p>
+          "오히려 반대에 가깝습니다. swappiness를 0에 가깝게 낮추면 커널이 스왑을 최후의 수단으로만
+          사용하기 때문에, 물리 메모리가 부족해지는 순간 스왑이라는 완충 장치 없이 곧바로
+          OOM Killer가 발동할 가능성이 높아집니다. swappiness는 OOM을 막는 설정이 아니라
+          '응답 지연(스왑으로 인한 디스크 I/O)'과 'OOM 발생 시점' 사이의 trade-off를 조정하는
+          손잡이일 뿐입니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: swappiness를 만능 안전장치가 아니라 trade-off 조정 도구로 이해</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "메모리 누수와 정상적인 캐시 증가를 실제로 어떻게 구분하시나요? 한 번의 free 결과로 알 수 있나요?"</p>
+      <div class="fa">
+        <p>
+          "한 시점의 스냅샷만으로는 구분할 수 없습니다. 캐시 증가인지 누수인지는
+          시간에 따른 추세로만 확정할 수 있습니다. 저는 의심되는 프로세스의
+          <code>/proc/PID/status</code>의 VmRSS를 30분~1시간 간격으로 기록해서,
+          트래픽이 줄어드는 새벽 시간대에도 값이 내려가지 않고 계속 증가만 한다면 누수로 판단합니다.
+          반면 캐시 증가라면 시스템 전체의 available은 크게 줄지 않고, 특정 프로세스의 RSS도
+          트래픽에 따라 자연스럽게 오르내립니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 절대값이 아니라 추세 기반으로 판단하는 사고, 관찰 방법의 구체성</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "컨테이너(cgroup) 환경에서는 메모리 진단이 호스트와 어떻게 다른가요?"</p>
+      <div class="fa">
+        <p>
+          "컨테이너 안에서 <code>free</code>를 실행하면 호스트 전체의 메모리 정보가 보일 수 있어서
+          착각하기 쉽습니다. 실제로 컨테이너에 적용되는 제한은 cgroup의
+          <code>memory.max</code>(cgroup v2) 또는 <code>memory.limit_in_bytes</code>(v1)이고,
+          이 상한에 도달하면 호스트 전체 메모리와 무관하게 해당 cgroup 안에서 컨테이너 프로세스가
+          OOM Killer(cgroup 레벨)에 의해 종료됩니다. 그래서 컨테이너 환경에서는
+          <code>free</code>보다 <code>cat /sys/fs/cgroup/memory.max</code>와
+          <code>memory.current</code>(또는 <code>docker stats</code>)를 함께 확인해야 정확합니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 컨테이너 환경의 메모리 격리 모델을 실무 수준으로 이해하는가</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 8: 좋은 vs 약한 답변
+  ══════════════════════════════════════ -->
+  <section id="comparison">
+    <h2><span class="icon">⚖️</span> 좋은 답변 vs 약한 답변 분석</h2>
+
+    <div class="answer-box weak">
+      <span class="box-label">약한 답변 (Junior 수준)</span>
+      <blockquote>
+        "free -h로 확인했을 때 used가 90%면 메모리가 부족한 것이니 프로세스를 재시작하거나
+        서버를 스케일업하겠습니다."
+      </blockquote>
+      <div class="analysis">
+        <strong>왜 약한 답변인가:</strong>
+        <ul>
+          <li>used에 캐시가 포함된다는 사실을 모르고 표면적 숫자만으로 결론을 내립니다.</li>
+          <li>available, vmstat si/so 등 실제 압박 여부를 검증할 지표를 전혀 언급하지 않습니다.</li>
+          <li>OOM 이력 확인 없이 바로 조치(재시작, 스케일업)로 넘어가서 근본 원인을 놓칩니다.</li>
+          <li>스케일업은 비용이 드는 조치인데, 실제로는 오탐일 수 있다는 가능성을 검토하지 않습니다.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="answer-box good">
+      <span class="box-label">좋은 답변 (Senior 수준)</span>
+      <blockquote>
+        "used가 아니라 available로 실제 여유를 먼저 확인하고, vmstat의 si/so 추세로 스왑 활동을 봅니다.
+        OOM 발동 이력을 확인한 뒤 의심 프로세스의 RSS 추세로 누수 여부를 판단하고,
+        근본 원인에 따라 코드 수정, oom_score_adj 조정, 알림 기준 재설계로 대응합니다."
+      </blockquote>
+      <div class="analysis">
+        <strong>왜 좋은 답변인가:</strong>
+        <ul>
+          <li>표면적 지표(used)와 실질 지표(available)를 구분해서 오탐 가능성부터 검증합니다.</li>
+          <li>재고(swpd)와 활동(si/so)을 구분해서 진짜 위험 신호를 판별합니다.</li>
+          <li>OOM 이력, 프로세스별 추세까지 단계적으로 근거를 쌓아갑니다.</li>
+          <li>즉각 조치뿐 아니라 재발 방지(알림 기준 재설계, 보호 우선순위 설계)까지 연결합니다.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 9: 흔한 오해
+  ══════════════════════════════════════ -->
+  <section id="misconceptions">
+    <h2><span class="icon">🚫</span> 흔한 오해와 정확한 이해</h2>
+
+    <div class="misconception">
+      <p class="myth">오해 1: "free -h의 used가 높으면 메모리가 부족한 것이다"</p>
+      <p class="truth">
+        used에는 파일 캐시(buff/cache)가 포함되어 있고, 이 캐시는 필요할 때 즉시 회수됩니다.
+        실질적인 여유는 <code>available</code> 컬럼(또는 <code>/proc/meminfo</code>의 MemAvailable)으로
+        판단해야 합니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 2: "swap을 조금이라도 쓰고 있으면 메모리 부족 상태다"</p>
+      <p class="truth">
+        <code>swpd</code>(스왑 재고)는 과거 한 번 스왑아웃된 뒤 그대로 남아있는 값일 수 있습니다.
+        진짜 위험 신호는 <code>vmstat</code>의 si/so가 <strong>지속적으로</strong> 큰 값을 보이는
+        "활동"이지, 재고량 자체가 아닙니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 3: "OOM Killer는 메모리를 가장 많이 쓰는 프로세스를 죽인다"</p>
+      <p class="truth">
+        메모리 사용량뿐 아니라 사람이 설정할 수 있는 <code>oom_score_adj</code>가 함께 반영된
+        <code>oom_score</code>로 결정됩니다. 메모리를 적게 쓰더라도 oom_score_adj가 높게 설정된
+        프로세스가 먼저 희생될 수 있습니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 4: "swappiness를 0으로 설정하면 더 안전하다"</p>
+      <p class="truth">
+        swappiness를 낮추면 스왑이라는 완충 장치를 덜 쓰게 되어, 물리 메모리가 부족해지는 순간
+        곧바로 OOM Killer가 발동할 위험이 커집니다. swappiness는 안전 스위치가 아니라
+        "응답 지연 vs OOM 발생 시점" 사이의 trade-off 조정 값입니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 5: "메모리 사용량이 계속 늘어나면 무조건 메모리 누수다"</p>
+      <p class="truth">
+        트래픽 증가에 따른 정상적인 캐시/커넥션 풀 증가일 수도 있습니다. 한가한 시간대에도
+        절대 줄어들지 않고 선형적으로 계속 증가하는지, 그리고 available 전체가 실제로 줄어드는지를
+        시간 추세로 확인해야 누수인지 정상 증가인지 확정할 수 있습니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 10: 자기 점검 Rubric
+  ══════════════════════════════════════ -->
+  <section id="rubric">
+    <h2><span class="icon">📊</span> 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변을 점검해보세요. 각 항목에서 어느 수준인지 솔직하게 평가하세요.</p>
+
+    <div style="overflow-x:auto;">
+      <table class="rubric-table">
+        <thead>
+          <tr>
+            <th>평가 항목</th>
+            <th class="score-senior">Senior (3점)</th>
+            <th class="score-mid">Mid (2점)</th>
+            <th class="score-junior">Junior (1점)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>used vs available 구분</strong></td>
+            <td class="score-senior">캐시 회수 가능성을 근거로 available을 실질 지표로 설명</td>
+            <td class="score-mid">available이 중요하다는 것은 알지만 이유 설명이 약함</td>
+            <td class="score-junior">used만 보고 위험 여부를 단정</td>
+          </tr>
+          <tr>
+            <td><strong>swap 재고 vs 활동 구분</strong></td>
+            <td class="score-senior">vmstat si/so로 지속적 활동 여부를 판단 근거로 제시</td>
+            <td class="score-mid">swap 자체가 문제일 수도 아닐 수도 있다는 것은 알지만 판단 도구 언급 부족</td>
+            <td class="score-junior">swap 사용 = 무조건 문제로 단정</td>
+          </tr>
+          <tr>
+            <td><strong>OOM Killer 동작 이해</strong></td>
+            <td class="score-senior">oom_score/oom_score_adj를 근거로 왜 그 프로세스가 죽었는지 설명</td>
+            <td class="score-mid">OOM 로그는 확인하지만 선정 기준 설명이 약함</td>
+            <td class="score-junior">단순히 "메모리 제일 많이 써서 죽었다"고만 답함</td>
+          </tr>
+          <tr>
+            <td><strong>swappiness trade-off 이해</strong></td>
+            <td class="score-senior">응답 지연 vs OOM 발생 시점 사이의 trade-off로 설명</td>
+            <td class="score-mid">낮추면 좋다/나쁘다 한쪽만 언급</td>
+            <td class="score-junior">swappiness 개념 자체를 모르거나 안전장치로 오해</td>
+          </tr>
+          <tr>
+            <td><strong>메모리 누수 판단 방법</strong></td>
+            <td class="score-senior">시간 추세 관찰 방법(RSS 반복 측정)을 구체적으로 제시</td>
+            <td class="score-mid">추세가 중요하다는 것은 알지만 관찰 방법이 모호함</td>
+            <td class="score-junior">한 시점의 값만으로 누수 여부를 판단</td>
+          </tr>
+          <tr>
+            <td><strong>조치의 근본성</strong></td>
+            <td class="score-senior">근본 원인(코드/설정)과 재발 방지(알림 기준, 보호 설계)까지 연결</td>
+            <td class="score-mid">원인 분석은 하지만 재발 방지 설계까지는 부족</td>
+            <td class="score-junior">재시작, 스케일업 등 임시방편으로 답변 종료</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top:1rem; font-size:0.9rem; color:#64748b;">
+      <strong>점수 해석:</strong> 6개 항목 × 3점 = 최대 18점.
+      15점 이상 → Senior 수준 답변 완성.
+      11~14점 → 구조는 있지만 일부 키워드/관점 보완 필요.
+      10점 이하 → 이 레슨을 다시 읽고, 모범 답변을 소리 내어 말해보세요.
+    </p>
+
+    <div class="key-points" style="margin-top:2rem;">
+      <h3>Day 3 핵심 포인트 요약</h3>
+      <ul>
+        <li><code>free</code>의 <strong>used가 아니라 available</strong>(MemAvailable)이 실질 여유 메모리다.</li>
+        <li>스왑은 존재(<code>swpd</code>) 자체보다 <code>vmstat</code>의 <strong>si/so 활동</strong>이 진짜 위험 신호다.</li>
+        <li>OOM Killer는 메모리 사용량과 사람이 조정 가능한 <code>oom_score_adj</code>를 함께 반영한 <code>oom_score</code>로 희생자를 정한다.</li>
+        <li><code>vm.swappiness</code>는 안전장치가 아니라 <strong>응답 지연 vs OOM 시점</strong>의 trade-off 손잡이다.</li>
+        <li>메모리 누수는 한 시점이 아니라 <strong>시간에 따른 RSS 추세</strong>로만 확정할 수 있다.</li>
+        <li>컨테이너 환경은 cgroup의 <code>memory.max</code>/<code>memory.current</code>를 별도로 확인해야 한다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 다음 레슨 링크 -->
+  <div style="margin-top:2.5rem; padding:1.2rem 1.5rem; background:#fff; border:1px solid #e2e8f0; border-radius:10px; text-align:center;">
+    <p style="margin:0; color:#64748b; font-size:0.9rem;">
+      다음 레슨: <strong>Day 4 — 디스크 I/O 진단</strong> (iostat util, await, iotop, lsof 열린 파일, inode 고갈, df vs du 차이)
+    </p>
+    <p style="margin:0.4rem 0 0; font-size:0.82rem; color:#94a3b8;">레슨 목록으로 돌아가기: <a href="./index.html">index.html</a></p>
+  </div>
+
+</main>
+
+<footer>
+  <p>Linux 서버 운영 인터뷰 · Day 3 · 2026-07-02 |
+    <a href="../RESOURCES.md">참고 자료</a> ·
+    <a href="../PROGRESS.md">학습 진행 현황</a>
+  </p>
+  <p style="margin-top:0.3rem;">궁금한 점은 Claude에게 바로 물어보세요. 이 레슨의 개념, follow-up 질문, 모범 답변 피드백 모두 도와드립니다.</p>
+</footer>
+
+</body>
+</html>

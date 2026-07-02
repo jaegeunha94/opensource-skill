@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 리눅스 서버 장애 대응 프레임워크 | [0001-linux-incident-response-framework.html](lessons/0001-linux-incident-response-framework.html) |
 | 2 | 2026-07-01 | 프로세스 & CPU 진단 심화 | [0002-process-cpu-diagnostics.html](lessons/0002-process-cpu-diagnostics.html) |
+| 3 | 2026-07-02 | 메모리 진단 & OOM | [0003-memory-oom-diagnostics.html](lessons/0003-memory-oom-diagnostics.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | 메모리 진단 & OOM | free available vs used, vmstat si/so, /proc/meminfo, OOM Killer 로그 해석, swap 정책 |
 | 4 | 디스크 I/O 진단 | iostat util, await, iotop, lsof 열린 파일, inode 고갈, df vs du 차이 |
 | 5 | 로그 분석 & journalctl | journalctl 필터 옵션, rsyslog, /var/log 구조, grep/awk/sed 조합, 로그 로테이션 |
 | 6 | systemd 서비스 관리 | systemctl start/stop/enable/status, unit 파일 구조, ExecStart, Restart 정책, 의존성 After= |
@@ -21,7 +21,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — Day 3: 메모리 진단 & OOM 예정.
+**Day 3 완료** — Day 4: 디스크 I/O 진단 예정.
 
 ## 습득한 핵심 개념
 
@@ -36,7 +36,11 @@
 - [x] /proc/PID 활용 (status, stat, fd, limits로 메모리/스레드/fd 고갈 진단) (Day 2)
 - [x] strace 활용과 프로덕션 위험 (syscall 패턴 해석, ptrace 오버헤드, 요약 모드) (Day 2)
 - [x] CPU 바운드 vs I/O 바운드 구분 (syscall 유무, busy-wait 함정) (Day 2)
-- [ ] 메모리 진단 & OOM Killer (예정 Day 3)
+- [x] free available vs used 구분 (캐시 회수 가능성, MemAvailable 근거) (Day 3)
+- [x] vmstat si/so로 swap 재고 vs 활동 구분 (스래싱 판단 기준) (Day 3)
+- [x] OOM Killer 동작 원리 (oom_score/oom_score_adj, 로그 해석) (Day 3)
+- [x] swappiness trade-off (응답 지연 vs OOM 발생 시점) (Day 3)
+- [x] 메모리 누수 vs 정상 캐시 증가 (VmRSS 추세 관찰법) (Day 3)
 - [ ] 디스크 I/O 진단 심화 (예정 Day 4)
 - [ ] 로그 분석 & journalctl (예정 Day 5)
 - [ ] systemd 서비스 관리 (예정 Day 6)
