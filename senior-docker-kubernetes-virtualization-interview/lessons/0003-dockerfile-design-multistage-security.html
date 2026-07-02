@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — Dockerfile 설계: 레이어 최적화, 멀티스테이지, 보안</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3347;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #3ecf8e;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --code-bg: #141824;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 16px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 2rem 2rem;
+      text-align: center;
+    }
+    .hero .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .hero h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .hero p { color: var(--muted); max-width: 640px; margin: 0 auto; }
+    .container { max-width: 860px; margin: 0 auto; padding: 2rem; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--accent);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--text); }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      color: #93c5fd;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.88em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.2rem;
+    }
+    pre code { background: none; padding: 0; color: #a5f3fc; font-size: 0.85rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-accent { border-left: 4px solid var(--accent); }
+    .card-green { border-left: 4px solid var(--green); }
+    .card-red { border-left: 4px solid var(--red); }
+    .card-yellow { border-left: 4px solid var(--yellow); }
+    .card-purple { border-left: 4px solid var(--accent2); }
+
+    .question-box {
+      background: var(--surface2);
+      border: 1px solid var(--accent2);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1.5rem 0;
+    }
+    .question-box .q-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+    .question-box .q-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.4rem;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--accent);
+      text-align: left;
+      padding: 0.65rem 1rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+    }
+    td {
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0 1.4rem;
+    }
+    @media (max-width: 640px) { .answer-grid { grid-template-columns: 1fr; } }
+    .answer-good {
+      background: #0d2b1e;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-bad {
+      background: #2b0d0d;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-good .label { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .answer-bad .label { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+
+    .rubric {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-item .check { color: var(--green); font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .rubric-item .text { font-size: 0.9rem; }
+
+    .section-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+    .tag-why { background: #1a2840; color: var(--accent); }
+    .tag-concept { background: #1a1a2e; color: var(--accent2); }
+    .tag-answer { background: #0d2b1e; color: var(--green); }
+    .tag-followup { background: #2b1a00; color: var(--orange); }
+    .tag-rubric { background: #2b2000; color: var(--yellow); }
+
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+      font-size: 0.85rem;
+    }
+    .nav-bar a { color: var(--accent); text-decoration: none; }
+    .nav-bar a:hover { text-decoration: underline; }
+
+    .hl-green { color: var(--green); font-weight: 600; }
+    .hl-red { color: var(--red); font-weight: 600; }
+    .hl-yellow { color: var(--yellow); font-weight: 600; }
+    .hl-accent { color: var(--accent); font-weight: 600; }
+    .hl-orange { color: var(--orange); font-weight: 600; }
+
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem 1.6rem; margin-bottom: 2rem; }
+    .toc h3 { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.7rem; }
+    .toc ol { margin-bottom: 0; }
+    .toc li { font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="day-badge">Day 3</div>
+  <h1>Dockerfile 설계 — 레이어 최적화, 멀티스테이지, 보안</h1>
+  <p>"이 Dockerfile을 리뷰해달라"는 요청에 체크리스트가 아니라 원리로 답하기 — 빌드 환경과 런타임 환경을 왜, 어떻게 분리하는가</p>
+</div>
+
+<div class="container">
+
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#recap">Day 2 복기 — 오늘 다루는 것</a></li>
+      <li><a href="#question1">면접 질문 1 — 멀티스테이지 빌드가 왜 필요한가</a></li>
+      <li><a href="#question2">면접 질문 2 — non-root user와 컨테이너 권한 모델</a></li>
+      <li><a href="#question3">면접 질문 3 — 베이스 이미지 선택: alpine vs slim vs distroless vs scratch</a></li>
+      <li><a href="#mental-model">시니어의 정신 모델 — Dockerfile 리뷰 체크리스트</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- ========== SECTION 1 ========== -->
+  <h2 id="recap">1. Day 2 복기 — 오늘 다루는 것</h2>
+
+  <p>Day 2에서는 이미지 레이어가 "파일시스템 diff"이고, 캐시가 순차적으로 깨진다는 메커니즘을 다뤘다. 오늘은 그 메커니즘을 실제 <strong>프로덕션 Dockerfile 설계</strong>로 확장한다. 세 개의 질문을 통해 확인할 것: 빌드 환경과 런타임 환경을 왜 분리해야 하는가, 컨테이너를 root로 실행하면 실제로 어떤 위험이 생기는가, 베이스 이미지 선택이 왜 단순한 취향이 아니라 trade-off 판단인가.</p>
+
+  <div class="card card-accent">
+    <p>시니어 면접관이 "이 Dockerfile을 리뷰해보라"고 던지는 이유는 단순하다. <strong>주니어는 "동작하는" Dockerfile을 짜고, 시니어는 "공격 표면이 작고, 캐시가 잘 재사용되고, 장애 시 디버깅 가능한" Dockerfile을 짠다.</strong> 세 가지 축 — 이미지 크기, 보안, 운영 가능성(operability) — 사이의 trade-off를 실무 근거로 설명할 수 있는가를 이 섹션에서 확인한다.</p>
+  </div>
+
+  <!-- ========== SECTION 2 ========== -->
+  <h2 id="question1">2. 면접 질문 1 — 멀티스테이지 빌드가 왜 필요한가</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"Go나 Java 애플리케이션을 빌드하는 Dockerfile에서 멀티스테이지 빌드를 쓰는 이유가 뭔가요? 싱글스테이지로 빌드하면 실제로 어떤 문제가 생기나요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>"이미지가 작아져서요"라는 답은 절반짜리다. 면접관이 확인하려는 건 지원자가 <strong>빌드 시점에만 필요한 것과 런타임에 필요한 것을 구분하는 사고</strong>를 갖고 있는가다. 이 구분을 못 하면 프로덕션 이미지에 컴파일러, 소스 코드, 테스트 프레임워크, 심지어 사내 private registry 인증 토큰까지 실수로 포함시키는 사고를 낸다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>싱글스테이지 빌드의 구조적 문제</h3>
+    <p>가장 단순한 Dockerfile은 <strong>하나의 <code>FROM</code></strong>만 쓴다. 빌드 도구를 설치하고, 소스를 복사하고, 컴파일하고, 그 결과물을 그대로 실행하는 이미지가 된다. 문제는 <strong>빌드에 필요했던 모든 것이 최종 이미지에 그대로 남는다</strong>는 것이다.</p>
+    <ul>
+      <li>Go 애플리케이션은 컴파일하면 정적 바이너리 하나만 있으면 되는데, 싱글스테이지로 빌드하면 Go 컴파일러 전체(수백MB)가 최종 이미지에 남는다.</li>
+      <li>Java 애플리케이션은 Maven/Gradle과 전체 의존성 캐시(<code>~/.m2</code>), 심지어 <code>.git</code> 히스토리까지 실수로 포함되는 경우가 흔하다.</li>
+      <li>Node.js는 <code>devDependencies</code>(테스트 프레임워크, 번들러, 타입 체커)가 프로덕션 <code>node_modules</code>에 섞여 들어간다.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>멀티스테이지 빌드란 — "빌드용 컨테이너"와 "실행용 컨테이너"를 분리</h3>
+    <p>Dockerfile 안에 <strong>여러 개의 <code>FROM</code></strong>을 두고, 각 <code>FROM</code>을 이름 있는 스테이지로 구분한다. 앞 스테이지에서 빌드를 수행하고, <strong><code>COPY --from=&lt;stage&gt;</code></strong>으로 그 결과물(컴파일된 바이너리, 정적 파일 등)만 다음 스테이지로 옮긴다. 최종 이미지는 <strong>마지막 <code>FROM</code> 이후의 레이어만</strong>으로 구성되고, 앞선 빌드 스테이지의 레이어는 최종 이미지에 전혀 포함되지 않는다.</p>
+  </div>
+
+  <pre><code># 나쁜 예 — 싱글스테이지: 컴파일러와 소스가 최종 이미지에 그대로 남음
+FROM golang:1.22
+WORKDIR /app
+COPY . .
+RUN go build -o server .
+CMD ["./server"]
+
+# 좋은 예 — 멀티스테이지: 빌드 스테이지와 런타임 스테이지 분리
+FROM golang:1.22 AS builder
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -o server .
+
+FROM gcr.io/distroless/static-debian12
+COPY --from=builder /app/server /server
+ENTRYPOINT ["/server"]</code></pre>
+
+  <table>
+    <tr><th>비교 항목</th><th>싱글스테이지</th><th>멀티스테이지</th></tr>
+    <tr><td>최종 이미지 크기 (Go 예시)</td><td>~800MB (Go 툴체인 포함)</td><td>~15MB (바이너리 + distroless)</td></tr>
+    <tr><td>공격 표면(attack surface)</td><td>컴파일러, 셸, 패키지 매니저가 그대로 남아 있어 넓음</td><td>실행에 필요한 최소한만 남아 좁음</td></tr>
+    <tr><td>빌드 캐시</td><td>소스 변경 시 전체 재빌드 위험 (Day 2에서 다룬 캐시 순차 파괴)</td><td>스테이지별로 독립적으로 캐시 관리 가능</td></tr>
+    <tr><td>비밀 정보 유출 위험</td><td>빌드 중 사용한 인증 토큰이 레이어에 남을 수 있음</td><td>빌드 스테이지는 폐기되므로 런타임 이미지엔 남지 않음(단, <code>--mount=type=secret</code> 권장)</td></tr>
+  </table>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>문제 정의:</strong> 빌드 시점 요구사항(컴파일러, 소스, 테스트 도구)과 런타임 요구사항(실행 바이너리, 런타임 의존성)이 다르다는 것부터 짚는다.</li>
+    <li><strong>메커니즘 설명:</strong> 여러 <code>FROM</code>으로 스테이지를 나누고, <code>COPY --from</code>으로 결과물만 옮긴다는 것.</li>
+    <li><strong>정량적 효과 제시:</strong> 이미지 크기 감소 수치, 공격 표면 축소를 구체적으로.</li>
+    <li><strong>추가 이점으로 확장:</strong> 빌드 스테이지 폐기로 인한 비밀정보 유출 방지, 테스트 스테이지를 별도로 둬서 CI에서 재사용하는 패턴까지.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"멀티스테이지 빌드는 '빌드에 필요한 것'과 '실행에 필요한 것'을 물리적으로 분리하는 기법입니다. Dockerfile 안에 여러 개의 <code>FROM</code>을 두고 각각을 이름 있는 스테이지로 만든 다음, <code>COPY --from=builder</code>로 컴파일 결과물만 최종 스테이지로 옮깁니다. 마지막 <code>FROM</code> 이후의 레이어만 최종 이미지가 되기 때문에, 앞선 빌드 스테이지에서 설치한 컴파일러나 소스 코드는 최종 이미지에 전혀 남지 않습니다.</p>
+    <p style="margin-top:0.6rem;">저희 Go 서비스에서 싱글스테이지로 빌드했을 때 이미지가 800MB였는데, 멀티스테이지 + distroless 베이스로 바꾸니 15MB까지 줄었습니다. 크기만 문제가 아니라 셸도 패키지 매니저도 없는 이미지라 공격 표면이 크게 줄었고, 레지스트리 pull 시간과 노드 디스크 사용량도 함께 줄었습니다. Java 프로젝트에서는 빌드 스테이지에 private Maven 레포 인증 토큰을 <code>ARG</code>로 넘겼었는데, 멀티스테이지 덕분에 그 토큰이 최종 이미지 레이어에 남지 않는다는 것도 리뷰에서 중요하게 짚었습니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>빌드 요구사항과 런타임 요구사항의 구분을 명확히 정의</li>
+        <li><code>COPY --from</code> 메커니즘과 "마지막 FROM만 최종 이미지"라는 원리 설명</li>
+        <li>이미지 크기 감소를 구체적 수치로 제시</li>
+        <li>보안(비밀정보 유출 방지)까지 연결해서 설명</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"이미지가 작아져요"에서 설명이 끝남</li>
+        <li><code>COPY --from</code>의 동작 원리를 설명 못함</li>
+        <li>공격 표면이나 비밀정보 유출 같은 보안 관점을 언급 못함</li>
+        <li>실제 크기 변화나 실무 경험이 없음</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "멀티스테이지로 나누면 빌드 스테이지의 캐시(예: <code>go mod download</code>, <code>npm install</code> 결과)가 CI에서 매번 새로 받아지지 않나요? 이걸 어떻게 최적화하나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "두 가지 축으로 접근합니다. 첫째는 Day 2에서 다룬 레이어 캐시 순서 원칙을 빌드 스테이지 안에서도 그대로 적용하는 겁니다 — <code>go.mod</code>/<code>go.sum</code>이나 <code>package.json</code>을 먼저 COPY해서 의존성 다운로드 레이어를 소스 코드 변경과 분리합니다. 둘째는 BuildKit의 <code>--mount=type=cache</code>를 씁니다. 이건 레이어에 포함되지 않는 '빌드 전용 캐시 마운트'라서, Dockerfile 내용이 바뀌어도 <code>go mod</code> 캐시나 <code>npm</code> 캐시 디렉토리 자체는 재사용됩니다. CI 환경에서는 여기에 더해 <code>--cache-from</code>/<code>--cache-to</code>로 이전 빌드의 레이어를 레지스트리에서 끌어와 재사용하는 remote cache 전략까지 씁니다. 이 세 가지를 조합해서 저희 CI 빌드 시간을 안정적으로 1~2분대로 유지했습니다."</p>
+  </div>
+
+  <!-- ========== SECTION 3 ========== -->
+  <h2 id="question2">3. 면접 질문 2 — non-root user와 컨테이너 권한 모델</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"Dockerfile에 USER 지시어를 넣지 않으면 컨테이너는 어떤 권한으로 실행되나요? 그게 왜 위험한가요? Kubernetes에서는 이걸 어떻게 강제하나요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 Day 2의 USER 네임스페이스 논의와 직접 연결된다. 면접관은 "root로 실행하면 위험하다"는 문장을 암기했는지가 아니라, <strong>격리가 뚫렸을 때(container escape) 실제로 무슨 일이 벌어지는지</strong>를 구체적으로 설명할 수 있는지를 본다. 이건 순수 이론이 아니라 실제 CVE와 실무 보안 정책(Pod Security Standards)으로 이어지는 질문이다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 컨테이너 root는 "덜 위험한 root"가 아니다</span></h3>
+
+  <div class="card">
+    <h3>Dockerfile에 USER가 없으면 무슨 일이 생기는가</h3>
+    <p><code>USER</code> 지시어를 명시하지 않으면 컨테이너 프로세스는 <strong>UID 0(root)</strong>으로 실행된다. Day 2에서 다룬 USER 네임스페이스가 <strong>활성화되어 있지 않은 기본 설정</strong>에서는, 컨테이너 안의 UID 0은 <strong>호스트 커널이 인식하는 UID 0과 동일한 값</strong>이다. 네임스페이스가 프로세스 목록이나 마운트 지점은 격리해도, "이 프로세스가 root 권한을 가졌는가"라는 커널의 권한 판단 자체를 약화시키지는 않는다.</p>
+  </div>
+
+  <div class="card card-red">
+    <h3>왜 위험한가 — container escape 시나리오</h3>
+    <p>정상적인 상황에서는 컨테이너 프로세스가 네임스페이스 밖으로 나갈 수 없다. 하지만 <strong>커널 취약점, runc/containerd 버그, 잘못된 볼륨 마운트 설정</strong>이 결합되면 격리가 뚫린다. 이때 컨테이너 프로세스가 root였다면, 탈출한 프로세스는 <strong>호스트에서도 root 권한</strong>을 갖는다 — 노드 전체, 그리고 그 노드가 마운트한 다른 컨테이너의 볼륨까지 접근 가능해진다.</p>
+    <ul style="margin-top:0.6rem;">
+      <li><strong>CVE-2019-5736 (runc):</strong> 악의적인 이미지가 컨테이너 안에서 <code>runc</code> 바이너리 자체를 덮어써서 호스트에서 root 권한으로 임의 코드를 실행할 수 있었던 취약점. 컨테이너가 root로 실행 중이어야 성립하는 공격이었다.</li>
+      <li><strong>hostPath 볼륨 오남용:</strong> 컨테이너가 root면 <code>hostPath</code>로 마운트된 호스트 디렉토리에 마음대로 쓰기가 가능해서, 예를 들어 <code>/etc/crontab</code>이나 SSH authorized_keys를 조작하는 사례가 실전에서 보고된다.</li>
+    </ul>
+  </div>
+
+  <h3>방어 계층 — Dockerfile부터 Kubernetes SecurityContext까지</h3>
+  <table>
+    <tr><th>계층</th><th>설정</th><th>효과</th></tr>
+    <tr><td>Dockerfile</td><td><code>RUN adduser --uid 10001 app && USER app</code></td><td>이미지 자체가 기본적으로 non-root로 기동됨</td></tr>
+    <tr><td>Kubernetes Pod spec</td><td><code>securityContext.runAsNonRoot: true</code></td><td>이미지가 root로 정의돼 있어도 kubelet이 기동을 거부</td></tr>
+    <tr><td>Kubernetes Pod spec</td><td><code>securityContext.readOnlyRootFilesystem: true</code></td><td>런타임에 루트 파일시스템에 쓰기 자체를 차단 — 악성 코드 드롭 방지</td></tr>
+    <tr><td>Kubernetes Pod spec</td><td><code>capabilities.drop: ["ALL"]</code> 후 필요한 것만 add</td><td>root라도 실제로 위험한 커널 권한(예: <code>SYS_ADMIN</code>)을 제거해 피해 범위 축소</td></tr>
+    <tr><td>클러스터 정책</td><td>Pod Security Standards(<code>restricted</code>), OPA/Gatekeeper</td><td>위 설정을 강제하지 않은 Pod의 배포 자체를 admission 단계에서 거부</td></tr>
+  </table>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>기본 동작 확인:</strong> USER를 지정하지 않으면 UID 0으로 실행되고, 이는 호스트 커널이 인식하는 root와 (기본 설정에서는) 동일한 값이라는 사실.</li>
+    <li><strong>위험을 구체적 시나리오로:</strong> "위험하다"에서 멈추지 말고, 격리가 뚫렸을 때(escape) root 권한이 그대로 호스트로 이어진다는 인과관계, 가능하면 실제 CVE나 hostPath 오남용 사례로 뒷받침.</li>
+    <li><strong>계층적 방어로 확장:</strong> Dockerfile 레벨의 USER 지시어만으로는 부족하고, Kubernetes SecurityContext와 클러스터 admission 정책까지 계층적으로 강제해야 한다는 것.</li>
+    <li><strong>실무 판단 기준 제시:</strong> 왜 "이미지에서 root를 안 쓰는 것"과 "클러스터에서 root를 강제로 막는 것"을 둘 다 해야 하는지 — 이미지 하나만 믿을 수 없다는 defense in depth 사고.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"<code>USER</code>를 지정하지 않은 Dockerfile은 컨테이너를 UID 0, 즉 root로 실행합니다. USER 네임스페이스가 매핑돼 있지 않은 기본 설정에서는 이 UID 0이 호스트 커널이 인식하는 root와 같은 값입니다. 평소엔 네임스페이스가 격리해주지만, runc 같은 컨테이너 런타임 취약점이나 잘못된 <code>hostPath</code> 마운트로 격리가 뚫리면, 탈출한 프로세스가 곧바로 호스트 root 권한을 갖게 됩니다. 실제로 CVE-2019-5736이 이런 시나리오였고, 컨테이너가 root로 실행 중이어야 성립하는 공격이었습니다.</p>
+    <p style="margin-top:0.6rem;">그래서 저희는 이걸 한 계층으로 안 믿고 이중으로 막습니다. Dockerfile에서 <code>adduser</code>로 non-root 유저를 만들어 <code>USER</code>로 지정하고, Kubernetes에서는 <code>securityContext.runAsNonRoot: true</code>로 혹시 이미지가 root로 정의돼 있어도 kubelet이 기동 자체를 거부하게 합니다. 여기에 <code>readOnlyRootFilesystem</code>과 <code>capabilities.drop: [\"ALL\"]</code>을 기본으로 걸어서, 설령 root로 뭔가 뚫려도 실제로 할 수 있는 게 최소화되도록 설계합니다. 이 정책들은 저희 클러스터에서 Pod Security Standards로 강제해서, 개별 팀이 실수로 빠뜨려도 admission 단계에서 배포가 막힙니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>UID 0과 호스트 root의 관계를 정확히 설명</li>
+        <li>container escape라는 구체적 위협 모델로 위험성 설명</li>
+        <li>Dockerfile 레벨과 Kubernetes 레벨 방어를 계층적으로 구분</li>
+        <li>클러스터 정책(admission control)까지 언급해 조직 차원의 강제 방법 제시</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"root는 위험해서 USER를 써야 합니다"에서 멈춤</li>
+        <li>왜 위험한지 구체적 시나리오를 설명 못함</li>
+        <li>Dockerfile의 USER만으로 충분하다고 생각함</li>
+        <li>capabilities, readOnlyRootFilesystem 같은 세부 방어책을 모름</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "Linux capabilities가 정확히 뭔가요? '전부 다 root거나 전부 다 일반 유저'가 아니라 왜 세분화가 필요한가요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "전통적인 유닉스 권한 모델은 root냐 아니냐의 이분법이었습니다. root는 커널이 허용하는 모든 특권 작업(네트워크 인터페이스 조작, 시스템 시간 변경, 임의 프로세스 시그널 전송 등)을 할 수 있고, 일반 유저는 전혀 못했습니다. Linux capabilities는 이 root 권한을 <code>CAP_NET_BIND_SERVICE</code>(1024번 이하 포트 바인딩), <code>CAP_SYS_ADMIN</code>(다양한 관리 작업), <code>CAP_CHOWN</code> 같은 약 40개의 독립적인 권한 단위로 쪼갠 겁니다. 그래서 '80포트에 바인딩은 해야 하지만 그 외 아무 권한도 필요 없는' 웹 서버 컨테이너라면, root로 실행하는 대신 non-root 유저 + <code>CAP_NET_BIND_SERVICE</code>만 추가하는 최소 권한 설계가 가능합니다. Docker나 Kubernetes 모두 기본적으로 위험한 capability(<code>CAP_SYS_ADMIN</code> 등)는 빼고 최소한만 부여한 상태로 시작하고, 저희는 여기서 한 단계 더 나가 <code>drop: [\"ALL\"]</code> 후 정말 필요한 것만 <code>add</code>하는 화이트리스트 방식을 씁니다."</p>
+  </div>
+
+  <!-- ========== SECTION 4 ========== -->
+  <h2 id="question3">4. 면접 질문 3 — 베이스 이미지 선택: alpine vs slim vs distroless vs scratch</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"베이스 이미지로 alpine을 쓰는 게 항상 정답인가요? distroless나 scratch는 언제 쓰나요? 각각의 trade-off를 설명해주세요."</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>"alpine이 작아서 좋다"는 절반의 진실이다. 면접관은 지원자가 <strong>이미지 크기 하나만 보고 판단하지 않고, libc 호환성·디버깅 가능성·공격 표면이라는 세 축을 동시에 고려</strong>할 수 있는지 확인한다. alpine을 잘못 선택해서 프로덕션에서 미묘한 버그를 겪어본 적이 있는지가 진짜 시니어 여부를 가른다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 베이스 이미지의 차이는 "무엇이 빠져 있는가"의 차이</span></h3>
+
+  <div class="card">
+    <table>
+      <tr><th>베이스 이미지</th><th>포함된 것</th><th>크기 대략치</th></tr>
+      <tr><td><code>ubuntu</code>/<code>debian</code></td><td>완전한 셸, 패키지 매니저, glibc, 다양한 유틸리티</td><td>~70-120MB</td></tr>
+      <tr><td><code>-slim</code> 변형</td><td>패키지 매니저는 있지만 문서/락케일/불필요 유틸리티 제거</td><td>~30-50MB</td></tr>
+      <tr><td><code>alpine</code></td><td>최소 셸(<code>busybox</code>), <strong>musl libc</strong> (glibc 아님), <code>apk</code> 패키지 매니저</td><td>~5-8MB</td></tr>
+      <tr><td><code>distroless</code></td><td>애플리케이션 런타임(예: glibc, CA 인증서)만 있고 셸/패키지 매니저 없음</td><td>~2-20MB (언어별 상이)</td></tr>
+      <tr><td><code>scratch</code></td><td>정말 아무것도 없음 — 완전 정적 바이너리만 올릴 수 있음</td><td>0MB (베이스 자체는)</td></tr>
+    </table>
+  </div>
+
+  <div class="card card-red">
+    <h3>alpine의 함정 — musl libc는 glibc와 "거의 같지만 다르다"</h3>
+    <p>alpine이 작은 핵심 이유는 <strong>musl libc</strong>라는, glibc보다 훨씬 작은 C 표준 라이브러리를 쓰기 때문이다. 문제는 많은 언어 런타임(특히 Python의 일부 C 확장, Node.js의 네이티브 애드온, 일부 Java JIT 관련 바이너리)이 <strong>glibc를 전제로 컴파일된 바이너리</strong>를 배포한다는 것이다. 이런 바이너리를 alpine 위에서 그대로 실행하면 "동적 링크 실패" 같은 에러가 나거나, 더 나쁘게는 <strong>DNS 이름 해석(name resolution)에서 미묘하게 다르게 동작</strong>한다 — musl의 리졸버는 glibc와 타임아웃/재시도 정책이 달라서, 특정 네트워크 환경에서 간헐적인 DNS 실패를 일으킨 사례들이 잘 알려져 있다.</p>
+  </div>
+
+  <table>
+    <tr><th>선택지</th><th>강점</th><th>약점 / 언제 피해야 하는가</th></tr>
+    <tr><td>alpine</td><td>이미지 매우 작음, 셸 있어서 디버깅 용이</td><td>musl libc 비호환 이슈 위험 — glibc 의존 바이너리(많은 Python/Node 네이티브 패키지)에서 문제</td></tr>
+    <tr><td>-slim (debian 계열)</td><td>glibc 그대로 사용해 호환성 문제 없음, alpine보다는 크지만 여전히 작음</td><td>alpine만큼 작지는 않음</td></tr>
+    <tr><td>distroless</td><td>셸/패키지 매니저가 없어 공격 표면 최소화, glibc 기반이라 호환성 좋음</td><td><code>kubectl exec</code>로 셸 진입이 안 됨 — 디버깅에 별도 전략 필요</td></tr>
+    <tr><td>scratch</td><td>공격 표면 이론상 최소, CGO_ENABLED=0으로 빌드한 Go 등에 이상적</td><td>완전 정적 바이너리가 아니면 아예 실행 불가, CA 인증서도 직접 복사해야 함</td></tr>
+  </table>
+
+  <h3>distroless에서 디버깅하기 — "셸이 없는데 어떻게 들어가나"</h3>
+  <p>셸이 없는 이미지는 전통적인 <code>kubectl exec -it pod -- sh</code>가 불가능하다. 하지만 이건 대응이 없다는 뜻이 아니다:</p>
+  <ul>
+    <li><strong>Ephemeral Container (Kubernetes 1.23+ 기본 활성화):</strong> <code>kubectl debug pod -it --image=busybox --target=app</code>로 실행 중인 Pod에 디버깅 전용 컨테이너를 임시로 붙여, 대상 컨테이너와 같은 프로세스 네임스페이스를 공유하며 조사할 수 있다.</li>
+    <li><strong>distroless의 <code>:debug</code> 태그:</strong> 구글 distroless는 <code>gcr.io/distroless/base:debug</code>처럼 busybox 셸이 포함된 디버그 변형을 별도로 제공한다. 프로덕션에는 non-debug, 문제 재현이 필요할 때만 debug 태그로 임시 배포하는 전략을 쓴다.</li>
+  </ul>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>"작다"를 분해:</strong> 크기 차이가 어디서 오는지(포함된 유틸리티, libc 종류)부터 설명.</li>
+    <li><strong>alpine의 숨은 위험 제시:</strong> musl libc가 glibc와 다르다는 것, 실제로 어떤 증상(네이티브 모듈 빌드 실패, DNS 이슈)으로 나타나는지.</li>
+    <li><strong>세 가지 축으로 판단 기준 제시:</strong> 이미지 크기 vs 호환성(libc) vs 디버깅 가능성(셸 유무) — 어느 하나만으로 결정하지 않는다는 것.</li>
+    <li><strong>운영 대응까지 연결:</strong> distroless를 쓰더라도 ephemeral container나 debug 태그로 디버깅 경로를 확보해뒀다는 것.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"alpine이 항상 정답은 아닙니다. alpine이 작은 이유는 busybox 셸과 musl libc를 쓰기 때문인데, musl은 glibc와 API는 호환돼도 내부 동작이 달라서 문제가 생깁니다. 저희가 실제로 겪은 사례는 Python 이미지를 alpine으로 바꿨더니 일부 C 확장 패키지가 glibc 전제로 빌드된 wheel이라 alpine에서 아예 설치가 안 되거나, musl용으로 컴파일하느라 빌드 시간이 오히려 늘어난 겁니다. 게다가 musl의 DNS 리졸버가 glibc와 타임아웃 정책이 달라서 간헐적인 DNS 실패도 겪었습니다.</p>
+    <p style="margin-top:0.6rem;">그래서 판단 기준을 크기 하나가 아니라 세 축으로 봅니다. 호환성이 중요하면 <code>-slim</code>(glibc 유지, 어느 정도 작음)을 쓰고, 공격 표면을 최소화하면서도 glibc 호환은 유지하고 싶으면 distroless를 씁니다. 완전 정적 바이너리(Go에 <code>CGO_ENABLED=0</code>)라면 scratch까지 갑니다. distroless나 scratch는 셸이 없어서 디버깅이 걱정될 수 있는데, 저희는 <code>kubectl debug --image=busybox --target=app</code>로 ephemeral container를 붙이는 걸 기본 디버깅 절차로 문서화해뒀고, 필요하면 distroless의 <code>:debug</code> 태그로 임시 재배포해서 조사합니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>musl libc와 glibc의 차이를 구체적 증상(네이티브 빌드 실패, DNS)으로 설명</li>
+        <li>크기·호환성·디버깅 가능성 세 축의 trade-off로 판단</li>
+        <li>distroless/scratch의 디버깅 어려움을 인지하고 대응책(ephemeral container)까지 제시</li>
+        <li>실제 마이그레이션 경험과 겪은 문제를 구체적으로 서술</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"alpine이 제일 작아서 무조건 좋다"고 단정</li>
+        <li>musl libc의 존재나 문제를 전혀 모름</li>
+        <li>distroless/scratch의 디버깅 문제를 인지 못함</li>
+        <li>모든 상황에 하나의 베이스 이미지만 정답이라고 답함</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "베이스 이미지 취약점(CVE)을 어떻게 지속적으로 관리하나요? 빌드 시점에 한 번 스캔하는 것으로 충분한가요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "충분하지 않습니다. 빌드 시점 스캔(Trivy, Grype 같은 도구를 CI에 넣어 <code>docker build</code> 직후 취약점 스캔)은 '이 이미지를 만들 당시엔 알려진 심각한 취약점이 없었다'는 것만 보장합니다. 문제는 CVE가 이미지를 만든 이후에도 계속 새로 발견된다는 겁니다 — 베이스 이미지의 OS 패키지에서 새 CVE가 나오면, 6개월 전에 빌드해서 지금 운영 중인 이미지는 스캔 없이는 알 수 없습니다. 그래서 저희는 두 가지를 같이 합니다. 하나는 레지스트리에 저장된 이미지를 주기적으로 재스캔하는 것(예: ECR의 continuous scanning, 또는 별도 크론으로 Trivy 재실행), 다른 하나는 베이스 이미지를 정기적으로(주 단위) 재빌드해서 최신 보안 패치를 반영하고 재배포하는 파이프라인을 두는 겁니다. distroless나 scratch를 쓰면 애초에 OS 패키지 자체가 거의 없어서 이 표면이 크게 줄어드는 것도 선택 이유 중 하나입니다."</p>
+  </div>
+
+  <!-- ========== SECTION 5 ========== -->
+  <h2 id="mental-model">5. 시니어의 정신 모델 — Dockerfile 리뷰 체크리스트</h2>
+
+  <p>오늘 다룬 세 질문을 실제로 "이 Dockerfile을 리뷰해달라"는 실무형 면접 질문에 대응할 수 있는 하나의 체크리스트로 통합하면 다음과 같다.</p>
+
+  <div class="card card-purple">
+    <h3>프로덕션 Dockerfile 리뷰 체크리스트</h3>
+    <table>
+      <tr><th>축</th><th>확인 항목</th><th>근거 (오늘 배운 원리)</th></tr>
+      <tr><td>레이어 캐시</td><td>의존성 설치가 소스 COPY보다 먼저 오는가</td><td>Day 2 — 캐시는 순차적으로 깨짐</td></tr>
+      <tr><td>이미지 구조</td><td>빌드 도구가 최종 이미지에 남아있지 않은가 (멀티스테이지 여부)</td><td>Q1 — 빌드 요구사항 vs 런타임 요구사항 분리</td></tr>
+      <tr><td>권한</td><td><code>USER</code>가 non-root로 지정돼 있는가</td><td>Q2 — UID 0 = 호스트 root라는 위험</td></tr>
+      <tr><td>파일시스템</td><td>런타임에 쓰기가 필요 없다면 <code>readOnlyRootFilesystem</code> 전제로 설계됐는가</td><td>Q2 — defense in depth</td></tr>
+      <tr><td>베이스 이미지</td><td>alpine이라면 musl 비호환 리스크를 검토했는가, 아니면 distroless/slim이 더 적합한가</td><td>Q3 — libc 호환성 vs 크기 vs 디버깅</td></tr>
+      <tr><td>레이어 정리</td><td>패키지 설치와 캐시 삭제가 같은 <code>RUN</code> 안에서 이뤄지는가</td><td>Day 2 — 다른 레이어에서 지워도 용량은 그대로</td></tr>
+      <tr><td>비밀정보</td><td><code>ARG</code>/<code>ENV</code>로 시크릿을 넘기지 않고 <code>--mount=type=secret</code>을 쓰는가</td><td>Q1 — 빌드 레이어에 시크릿이 남는 문제</td></tr>
+      <tr><td>디버깅 경로</td><td>셸이 없는 이미지라면 ephemeral container 등 디버깅 절차가 문서화돼 있는가</td><td>Q3 — 운영 가능성(operability)</td></tr>
+    </table>
+    <p style="margin-top:0.8rem;"><strong>흔한 오해:</strong> "보안을 위해 무조건 scratch/distroless를 써야 한다"는 것도 과도한 단순화다. 팀의 디버깅 역량, 언어 런타임의 정적 링크 가능 여부, 운영 성숙도를 함께 고려해야 한다 — 시니어의 답변은 항상 "정답은 X입니다"가 아니라 "이 상황에서는 X가 Y보다 낫습니다, 왜냐하면..."의 형태여야 한다.</p>
+  </div>
+
+  <!-- ========== SECTION 6 ========== -->
+  <h2 id="rubric">6. 자기 점검 Rubric</h2>
+
+  <div class="rubric">
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">멀티스테이지 빌드에서 "마지막 FROM 이후 레이어만 최종 이미지가 된다"는 메커니즘을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">싱글스테이지 빌드가 이미지 크기뿐 아니라 비밀정보 유출 위험에도 영향을 준다는 것을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">BuildKit <code>--mount=type=cache</code>가 레이어 캐시와 무엇이 다른지 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">USER를 지정하지 않았을 때 UID 0이 호스트 root와 같은 값이라는 사실과 container escape 시나리오를 연결해서 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Dockerfile의 USER만으로는 부족하고 Kubernetes SecurityContext(runAsNonRoot, capabilities drop)까지 계층적으로 필요한 이유를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Linux capabilities가 root 이분법을 세분화한 권한 모델이라는 것과 최소 권한 설계 방법을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">alpine의 musl libc가 glibc와 다르다는 것과, 이게 실제로 어떤 증상(네이티브 빌드 실패, DNS)으로 나타나는지 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">베이스 이미지 선택을 크기·호환성·디버깅 가능성 세 축의 trade-off로 판단할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">셸이 없는 이미지에서 ephemeral container나 debug 태그로 디버깅하는 절차를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">"이 Dockerfile을 리뷰해달라"는 질문에 캐시/구조/권한/베이스 이미지/디버깅 다섯 축으로 체계적으로 답할 수 있다</span>
+    </div>
+  </div>
+
+  <div class="card card-accent" style="margin-top: 2rem;">
+    <h3>다음 Day 예고</h3>
+    <p><strong>Day 4 — 컨테이너 볼륨과 스토리지: PVC/PV, StatefulSet 설계.</strong> 오늘 다룬 "런타임 이미지는 최소화한다"는 원칙을 상태(state)를 다루는 문제로 확장한다. 컨테이너의 쓰기 가능 레이어가 왜 상태 저장에 부적합한지, emptyDir과 hostPath의 차이, PVC/PV/StorageClass가 실제로 어떤 문제를 해결하는지, StatefulSet이 Deployment와 근본적으로 다른 이유를 다룹니다.</p>
+  </div>
+
+</div>
+
+<div class="nav-bar">
+  <a href="./0002-container-isolation-namespace-cgroup.html">← Day 2</a>
+  <a href="../PROGRESS.md">PROGRESS.md</a>
+  <a href="./index.html">레슨 목록</a>
+  <a href="./0004-container-volume-storage-statefulset.html">Day 4 →</a>
+</div>
+
+</body>
+</html>
