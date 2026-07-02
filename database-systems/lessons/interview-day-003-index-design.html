@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — 인덱스 설계 | 데이터베이스 10년차 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3148;
+      --accent: #7c6af7;
+      --accent2: #4fa3e0;
+      --success: #3ecf8e;
+      --warn: #f5a623;
+      --danger: #e05c5c;
+      --text: #e2e4f0;
+      --text2: #a0a8c0;
+      --text3: #6b738f;
+      --code-bg: #13151f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1d27 0%, #161927 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 1rem 2rem;
+      text-align: center;
+    }
+    .page-header .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .page-header h1 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .page-header p {
+      color: var(--text2);
+      font-size: 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin: 2rem 0;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+    .toc ol { padding-left: 1.25rem; color: var(--accent2); }
+    .toc ol li { margin-bottom: 0.35rem; }
+    .toc ol li a { color: var(--accent2); text-decoration: none; font-size: 0.93rem; }
+    .toc ol li a:hover { text-decoration: underline; }
+
+    section { margin: 2.5rem 0; }
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section-title .icon {
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.75rem;
+    }
+    .card p, .card li { color: var(--text2); font-size: 0.95rem; }
+    .card ul, .card ol { padding-left: 1.2rem; }
+    .card li { margin-bottom: 0.4rem; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #1e1a3a 0%, #1a1d27 100%);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+    }
+    .interview-q p {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.6;
+    }
+
+    .concept-box {
+      background: var(--surface2);
+      border-left: 4px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 1.25rem 1.5rem;
+      margin: 1rem 0;
+    }
+    .concept-box h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.6rem;
+    }
+    .concept-box p, .concept-box li { font-size: 0.93rem; color: var(--text2); }
+    .concept-box ul { padding-left: 1.2rem; }
+    .concept-box li { margin-bottom: 0.35rem; }
+
+    .step-list { counter-reset: steps; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      align-items: flex-start;
+    }
+    .step-list li::before {
+      content: counter(steps);
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-top: 0.15rem;
+    }
+    .step-list li .step-content {}
+    .step-list li .step-content strong { color: #fff; font-size: 0.97rem; display: block; margin-bottom: 0.25rem; }
+    .step-list li .step-content p { color: var(--text2); font-size: 0.92rem; }
+    .step-list li .step-content ul { color: var(--text2); font-size: 0.92rem; padding-left: 1.1rem; margin-top: 0.3rem; }
+    .step-list li .step-content li { margin-bottom: 0.25rem; }
+
+    .answer-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1rem 0;
+      font-size: 0.92rem;
+      color: var(--text2);
+      line-height: 1.8;
+    }
+    .answer-block .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-short { background: #1e3a2e; color: var(--success); }
+    .tag-deep  { background: #1a2e3a; color: var(--accent2); }
+    .tag-good  { background: #1e3a2e; color: var(--success); }
+    .tag-weak  { background: #3a1e1e; color: var(--danger); }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+    .compare-card.good { border-top: 3px solid var(--success); }
+    .compare-card.weak { border-top: 3px solid var(--danger); }
+    .compare-card h4 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; }
+    .compare-card.good h4 { color: var(--success); }
+    .compare-card.weak h4 { color: var(--danger); }
+    .compare-card p { font-size: 0.88rem; color: var(--text2); line-height: 1.7; font-style: italic; }
+    .compare-card .why { font-size: 0.82rem; color: var(--text3); margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.6rem; font-style: normal; }
+
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .followup-card .q { color: var(--accent); font-size: 0.93rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .followup-card .intent { font-size: 0.82rem; color: var(--text3); margin-bottom: 0.75rem; }
+    .followup-card .a { font-size: 0.9rem; color: var(--text2); }
+
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      border-bottom: 2px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text2);
+      vertical-align: top;
+    }
+    .rubric-table tr:last-child td { border-bottom: none; }
+    .rubric-table tr:hover td { background: var(--surface2); }
+    .level-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .level-strong { background: #1e3a2e; color: var(--success); }
+    .level-mid    { background: #2a2a10; color: var(--warn); }
+    .level-weak   { background: #3a1e1e; color: var(--danger); }
+
+    .misconception {
+      background: #2a1e1e;
+      border: 1px solid #5a2e2e;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.85rem;
+    }
+    .misconception .myth { font-size: 0.88rem; color: var(--danger); font-weight: 600; margin-bottom: 0.4rem; }
+    .misconception .myth::before { content: "✗ 오해: "; }
+    .misconception .truth { font-size: 0.88rem; color: var(--success); }
+    .misconception .truth::before { content: "✓ 실제: "; }
+
+    .nav-footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav-footer a {
+      color: var(--accent2);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .nav-footer a:hover { text-decoration: underline; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.35rem;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.85em;
+      color: #a8d8f0;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: #a8d8f0;
+      line-height: 1.65;
+      margin: 0.75rem 0;
+    }
+    .highlight-keyword { color: #c792ea; }
+    .highlight-string  { color: #c3e88d; }
+    .highlight-comment { color: #546e7a; font-style: italic; }
+    .highlight-number  { color: #f78c6c; }
+    .highlight-fn      { color: #82aaff; }
+
+    .tip {
+      background: #1a2e1e;
+      border: 1px solid #2e5e3e;
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.88rem;
+      color: #7ed9a8;
+    }
+    .tip::before { content: "💡 "; }
+    .warn-box {
+      background: #2a2010;
+      border: 1px solid #5a4e20;
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.88rem;
+      color: var(--warn);
+    }
+    .warn-box::before { content: "⚠ "; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="day-badge">Day 3 · 인터뷰 커리큘럼</div>
+  <h1>인덱스 설계</h1>
+  <p>복합 인덱스 순서, selectivity, covering index를 근거 있게 설명하는 법</p>
+</div>
+
+<div class="container">
+
+  <nav class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#prerequisite">전제 개념</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-flow">답변 사고 순서</a></li>
+      <li><a href="#answer-example">핵심 답변 예시</a></li>
+      <li><a href="#tradeoff">Trade-off</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followup">Senior-level Follow-up</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </nav>
+
+  <!-- ① 면접 질문 -->
+  <section id="interview-question">
+    <h2 class="section-title"><span class="icon">💬</span> 면접 질문</h2>
+    <div class="interview-q">
+      <div class="label">Core Question</div>
+      <p>"복합 인덱스 순서는 어떤 기준으로 정합니까?"</p>
+    </div>
+    <div class="card">
+      <h3>함께 출제되는 변형 질문</h3>
+      <ul>
+        <li>"인덱스를 걸었는데 옵티마이저가 안 탑니다. 왜 그럴 수 있습니까?"</li>
+        <li>"인덱스를 추가했더니 조회는 빨라졌는데 쓰기가 느려졌습니다. 어떻게 판단하시겠습니까?"</li>
+        <li>"WHERE와 ORDER BY가 함께 있는 쿼리는 인덱스를 어떻게 설계합니까?"</li>
+        <li>"covering index가 뭔지, 언제 쓰는지 설명해주세요."</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ② 왜 면접에서 묻는가 -->
+  <section id="why-asked">
+    <h2 class="section-title"><span class="icon">🎯</span> 왜 면접에서 묻는가</h2>
+    <div class="card">
+      <p>이 질문은 "인덱스를 걸 줄 아는가"가 아니라 <strong style="color:#fff">인덱스 하나하나가 읽기/쓰기 비용의 균형점을 바꾼다는 것을 이해하고 설계하는가</strong>를 확인하기 위한 것입니다.</p>
+      <br>
+      <ul>
+        <li><strong>자료구조 이해:</strong> B+Tree가 왜 정렬된 구조이고, 왜 "왼쪽부터" 순서대로 값을 찾을 수 있는지 이해해야 복합 인덱스 순서를 설명할 수 있습니다. 이걸 모르면 "그냥 자주 쓰는 컬럼을 앞에 둔다"는 감으로만 답하게 됩니다.</li>
+        <li><strong>비용 감각:</strong> 주니어는 "느리면 인덱스 추가"로 끝내지만, 시니어는 인덱스가 쓰기마다 갱신되는 자료구조라는 것을 알고 "이 인덱스가 얻는 조회 이득이 잃는 쓰기 비용보다 큰가"를 판단합니다.</li>
+        <li><strong>운영 판단력:</strong> 인덱스가 너무 많으면 INSERT/UPDATE가 느려지고 저장 공간도 늘어납니다. 어떤 인덱스를 남기고 어떤 인덱스를 제거할지 판단하는 것 자체가 시니어의 역할입니다.</li>
+        <li><strong>실행 계획 연결력:</strong> 인덱스를 만들어도 옵티마이저가 안 탈 수 있습니다. 이 질문은 결국 다음 Day인 EXPLAIN 해석 능력과 이어지는 기초 체력을 확인합니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ③ 전제 개념 -->
+  <section id="prerequisite">
+    <h2 class="section-title"><span class="icon">📚</span> 전제 개념</h2>
+
+    <div class="concept-box">
+      <h4>인덱스는 왜 빠른가? — B+Tree를 쉬운 말로</h4>
+      <p>
+        인덱스가 없으면 DB는 원하는 행을 찾기 위해 테이블 전체를 처음부터 끝까지 훑어야 합니다(Full Table Scan).
+        인덱스는 <strong>특정 컬럼 값을 미리 정렬해서 별도의 자료구조에 저장</strong>해두고, 그 값을 빠르게 찾을 수 있는 "책의 색인"입니다.
+      </p>
+      <br>
+      <p>대부분의 RDB 인덱스는 <strong>B+Tree</strong> 구조를 씁니다. 핵심 특징은 세 가지입니다.</p>
+      <ul>
+        <li><strong>정렬되어 있다:</strong> 리프 노드(맨 아래 층)에 있는 값들이 오름차순으로 정렬되어 있습니다. 그래서 <code>WHERE age &gt; 30</code>처럼 범위 검색을 할 때도, 값을 하나 찾은 다음 옆으로 쭉 읽기만 하면 됩니다.</li>
+        <li><strong>균형 트리다:</strong> 어떤 값을 찾든 루트에서 리프까지 이동하는 깊이가 거의 같습니다. 데이터가 100만 건이든 1억 건이든, 트리 깊이는 로그 스케일로만 늘어나서 탐색 비용이 거의 일정하게 유지됩니다.</li>
+        <li><strong>리프 노드가 서로 연결되어 있다:</strong> 리프 노드끼리 링크드 리스트처럼 연결돼 있어서, 범위 검색이나 정렬된 결과를 순차적으로 읽는 데 유리합니다. <code>ORDER BY</code>가 인덱스 순서와 일치하면 별도 정렬 없이 리프를 그대로 읽으면 됩니다.</li>
+      </ul>
+      <p style="margin-top:0.75rem;">그리고 반드시 기억할 것: <strong>인덱스는 공짜가 아닙니다.</strong> INSERT/UPDATE/DELETE가 일어날 때마다 인덱스도 함께 갱신해야 하므로, 인덱스가 많을수록 쓰기 비용이 커집니다.</p>
+    </div>
+
+    <div class="concept-box">
+      <h4>Selectivity(선택도)란?</h4>
+      <p>
+        selectivity는 "이 컬럼 값으로 얼마나 데이터를 좁힐 수 있는가"를 나타냅니다.
+        <code>고유값 개수 / 전체 행 수</code>로 계산하며, 1에 가까울수록(고유값이 많을수록) selectivity가 높습니다.
+      </p>
+      <br>
+      <ul>
+        <li><strong>selectivity가 높은 예:</strong> <code>주민등록번호</code>, <code>이메일</code> — 값 하나가 거의 한 행만 가리킴. 인덱스 효율이 매우 좋음.</li>
+        <li><strong>selectivity가 낮은 예:</strong> <code>성별</code>, <code>상태값(활성/비활성)</code> — 값 하나가 테이블의 절반, 또는 대부분을 가리킴. 인덱스를 걸어도 옵티마이저가 Full Scan을 선택할 수 있음(전체의 30~40% 이상을 읽어야 한다면 인덱스로 한 건씩 찾아가는 것보다 순차적으로 다 읽는 게 더 빠를 수 있기 때문).</li>
+      </ul>
+      <p style="margin-top:0.75rem;">복합 인덱스를 설계할 때 selectivity가 높은 컬럼을 <strong>일반적으로</strong> 앞쪽에 두면 초반에 후보 행을 크게 줄일 수 있습니다. 다만 이는 "항상 옳은 규칙"이 아니라 실제 쿼리 패턴과 함께 고려해야 하는 기준 중 하나입니다(아래 Leftmost Prefix 참고).</p>
+    </div>
+
+    <div class="concept-box">
+      <h4>Leftmost Prefix Rule (최좌측 접두 규칙)</h4>
+      <p>
+        복합 인덱스 <code>(a, b, c)</code>는 컬럼 <code>a</code>를 기준으로 먼저 정렬하고, 같은 <code>a</code> 값 안에서 <code>b</code>로 정렬하고, 같은 <code>a, b</code> 안에서 <code>c</code>로 정렬한 하나의 구조입니다.
+        전화번호부가 "성 → 이름" 순으로 정렬되어 있으면 성으로는 바로 찾을 수 있지만, 이름만으로는 전화번호부를 처음부터 훑어야 하는 것과 같은 원리입니다.
+      </p>
+      <br>
+      <p>그래서 이 인덱스는 다음 조건에서만 온전히 활용됩니다:</p>
+      <ul>
+        <li><code>WHERE a = ?</code> → 사용 가능</li>
+        <li><code>WHERE a = ? AND b = ?</code> → 사용 가능</li>
+        <li><code>WHERE a = ? AND b = ? AND c = ?</code> → 완전히 사용 가능</li>
+        <li><code>WHERE b = ?</code> (a 없이 b만) → <strong>기본적으로 사용 불가</strong> (인덱스를 처음부터 스캔해야 함)</li>
+        <li><code>WHERE a = ? AND c = ?</code> (중간 b 생략) → <code>a</code>까지만 활용, <code>c</code>는 인덱스 내에서 필터링만 가능(범위 탐색 자체는 못 좁힘)</li>
+      </ul>
+      <p style="margin-top:0.75rem;">이 규칙 때문에 복합 인덱스 순서를 정할 때는 "이 인덱스를 어떤 쿼리들이 쓸 것인가"를 먼저 나열하고, 그 쿼리들의 <code>WHERE</code> 조건에서 <strong>공통으로 등호(=)로 쓰이는 컬럼</strong>을 앞에 두는 것이 selectivity보다 우선하는 경우가 많습니다.</p>
+    </div>
+
+    <div class="concept-box">
+      <h4>Covering Index(커버링 인덱스)란?</h4>
+      <p>
+        쿼리가 요구하는 모든 컬럼(<code>SELECT</code>, <code>WHERE</code>, <code>ORDER BY</code>에 쓰인 컬럼)이 인덱스 자체에 다 포함되어 있으면, DB는 <strong>실제 테이블 데이터(원본 행)를 읽지 않고 인덱스만 읽고 응답</strong>할 수 있습니다.
+        이를 "인덱스만으로 커버된다"고 해서 covering index라고 부릅니다.
+      </p>
+      <br>
+      <p>
+        일반적으로 인덱스에서 조건에 맞는 위치를 찾은 뒤, 실제 컬럼 값을 읽으려면 원본 테이블의 해당 행을 다시 찾아가야 합니다(이 과정을 흔히 "북마크 조회" 또는 InnoDB 기준으로는 <em>2차 인덱스 → 클러스터드 인덱스 조회</em>라고 부릅니다). 이 추가 조회가 랜덤 I/O라서 비용이 큽니다. covering index는 이 추가 조회 자체를 없애버립니다.
+      </p>
+      <div class="tip">실무 팁: 자주 실행되는 조회 쿼리에서 <code>SELECT</code>절 컬럼 수가 적다면, <code>WHERE</code> 조건 컬럼 뒤에 조회하는 컬럼을 추가로 포함시켜 covering index로 만드는 것이 효과적인 튜닝 기법입니다.</div>
+    </div>
+
+    <div class="concept-box">
+      <h4>클러스터드 인덱스 vs 세컨더리(보조) 인덱스</h4>
+      <p>
+        <strong>클러스터드 인덱스</strong>는 테이블의 실제 데이터 행 자체가 인덱스(보통 PK) 순서대로 물리적으로 정렬되어 저장되는 방식입니다(MySQL InnoDB가 대표적). 테이블당 하나만 가능합니다.
+        <strong>세컨더리 인덱스</strong>는 그 외의 인덱스로, 리프 노드에 실제 데이터 대신 "이 값을 가진 행은 PK가 얼마다"라는 포인터(InnoDB 기준으로는 PK 값 자체)를 저장합니다.
+      </p>
+      <br>
+      <p>
+        그래서 세컨더리 인덱스로 조회하면 리프에서 PK를 얻은 뒤, 그 PK로 클러스터드 인덱스를 한 번 더 타서 실제 데이터를 가져옵니다. 이것이 covering index가 필요한 이유입니다 — covering index는 이 "한 번 더 타는" 과정을 생략시켜줍니다.
+      </p>
+    </div>
+
+    <div class="concept-box">
+      <h4>쓰기 비용: 인덱스는 왜 "많을수록 좋다"가 아닌가</h4>
+      <p>
+        <code>INSERT</code> 한 번은 테이블에 값을 추가하는 것뿐 아니라, <strong>그 테이블에 걸린 모든 인덱스에도 값을 추가</strong>하는 작업입니다.
+        인덱스가 5개면 INSERT 한 번에 최대 5개의 B+Tree를 갱신해야 하고, 트리 재조정(페이지 분할 등)이 일어날 수 있어 쓰기 지연이 커집니다.
+        <code>UPDATE</code>도 변경된 컬럼이 인덱스에 포함되어 있으면 해당 인덱스를 함께 갱신해야 합니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ④ 실무 연결 -->
+  <section id="real-world">
+    <h2 class="section-title"><span class="icon">🏭</span> 실무 연결</h2>
+    <div class="card">
+      <h3>시나리오: 주문 목록 API — "특정 유저의 최근 주문 조회"</h3>
+      <p>
+        쿼리가 <code>WHERE user_id = ? ORDER BY created_at DESC LIMIT 20</code> 형태라면, 복합 인덱스 <code>(user_id, created_at)</code>를 고려합니다.
+        <code>user_id</code>로 먼저 좁히고, 같은 <code>user_id</code> 안에서는 <code>created_at</code>으로 이미 정렬되어 있으므로 별도 정렬 없이 리프를 뒤에서부터(또는 DESC 인덱스 방향으로) 읽기만 하면 됩니다.
+        만약 인덱스를 <code>(created_at, user_id)</code> 순서로 걸면 <code>created_at</code> 전체를 훑으면서 <code>user_id</code>를 걸러야 해서 selectivity 이득을 못 봅니다.
+      </p>
+    </div>
+    <div class="card">
+      <h3>시나리오: 관리자 검색 화면 — 여러 조건 조합 검색</h3>
+      <p>
+        상태값, 날짜 범위, 담당자 등 여러 조건을 관리자가 자유롭게 조합해서 검색하는 화면은 인덱스 설계가 까다롭습니다.
+        모든 조합에 맞는 인덱스를 다 만들면 인덱스 개수가 폭발적으로 늘어나서 쓰기 성능이 크게 저하됩니다.
+      </p>
+      <ul>
+        <li>실제 로그에서 가장 많이 쓰이는 조합 2~3개를 추려서 복합 인덱스를 설계</li>
+        <li>드물게 쓰이는 조합은 Full Scan을 감수하거나, 검색 전용 저장소(Elasticsearch 등)로 분리</li>
+        <li>관리자 화면처럼 트래픽이 낮고 지연에 덜 민감한 경우, 모든 조건에 완벽한 인덱스를 만드는 것보다 "허용 가능한 지연"을 먼저 합의하는 것이 현실적</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>시나리오: 인덱스를 걸었는데도 느린 경우</h3>
+      <p>
+        컬럼에 <code>LOWER(email) = ?</code>처럼 함수를 씌우거나, <code>LIKE '%keyword%'</code>처럼 앞에 와일드카드를 쓰면 일반 B+Tree 인덱스를 탈 수 없습니다(정렬된 순서를 활용할 수 없기 때문).
+        이럴 때는 함수 기반 인덱스(표현식 인덱스)를 만들거나, 검색 요구사항 자체를 전문 검색(full-text search) 엔진으로 옮기는 것을 검토합니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ⑤ 답변 사고 순서 -->
+  <section id="answer-flow">
+    <h2 class="section-title"><span class="icon">🔍</span> 답변 사고 순서</h2>
+    <div class="tip">인덱스 설계 질문은 "어떤 컬럼에 인덱스를 걸지"가 아니라, 그 인덱스를 실제로 사용할 쿼리 패턴부터 역산하는 사고 과정을 보여주는 것이 핵심입니다.</div>
+
+    <ol class="step-list">
+      <li>
+        <div class="step-content">
+          <strong>1단계 — 이 인덱스를 탈 쿼리 목록 나열</strong>
+          <p>어떤 쿼리(들)가 이 인덱스를 사용할 것인지 먼저 구체화한다. 하나의 쿼리만 보고 결정하지 않고, 같은 테이블에 자주 실행되는 쿼리들을 함께 고려한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>2단계 — WHERE 등호 조건 컬럼 식별</strong>
+          <p>쿼리들에서 공통으로 등호(=)로 필터링하는 컬럼을 찾는다. 이 컬럼들이 복합 인덱스의 앞쪽 후보가 된다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>3단계 — Selectivity와 leftmost prefix 함께 고려</strong>
+          <p>등호 조건 컬럼이 여러 개면, selectivity가 높은 컬럼을 우선 배치하되, 여러 쿼리가 이 인덱스를 공유해야 한다면 leftmost prefix 규칙상 "가장 많은 쿼리에서 공통으로 쓰이는 컬럼"을 더 앞에 둘지 판단한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>4단계 — 정렬(ORDER BY) 요구사항 반영</strong>
+          <p>쿼리에 ORDER BY가 있다면, 등호 조건 컬럼 뒤에 정렬 기준 컬럼을 이어 붙여서 별도 정렬(filesort) 없이 인덱스 순서 그대로 결과를 낼 수 있는지 확인한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>5단계 — Covering index 가능성 검토</strong>
+          <p>SELECT절에서 조회하는 컬럼 수가 적다면, 그 컬럼들을 인덱스에 포함시켜 테이블 재조회(북마크 조회) 자체를 없앨 수 있는지 검토한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>6단계 — 쓰기 비용과 기존 인덱스 중복 확인</strong>
+          <p>이 테이블의 쓰기 빈도를 확인하고, 새 인덱스가 기존 인덱스와 겹치거나(예: 기존 인덱스의 leftmost prefix로 이미 커버되는 경우) 불필요한 중복은 아닌지 점검한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>7단계 — 실제 데이터로 검증</strong>
+          <p>실제(또는 유사 규모의) 데이터로 EXPLAIN을 실행해서 예상한 인덱스가 실제로 선택되는지, rows 예측치와 실제 실행 시간이 기대한 대로인지 확인한다. 추측으로 끝내지 않는다.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ⑥ 핵심 답변 예시 -->
+  <section id="answer-example">
+    <h2 class="section-title"><span class="icon">💡</span> 핵심 답변 예시</h2>
+
+    <div class="answer-block">
+      <span class="tag tag-short">짧은 버전 (1분)</span>
+      <p>
+        "복합 인덱스 순서는 selectivity만 보고 정하지 않습니다. 먼저 이 인덱스를 탈 쿼리들의 WHERE 절에서 등호로 비교되는 컬럼이 뭔지 확인하고, 그 컬럼들을 앞에 둡니다. 여러 컬럼이 등호 조건이면 그중 selectivity가 높은 컬럼을 우선 배치합니다. 그리고 ORDER BY가 있으면 그 정렬 컬럼을 뒤에 이어 붙여서 별도 정렬 비용을 없앨 수 있는지 확인합니다. 마지막으로 SELECT절 컬럼까지 인덱스에 포함시켜 covering index로 만들 수 있는지 보고, 쓰기 비용 대비 이득이 충분한지 EXPLAIN으로 검증합니다."
+      </p>
+    </div>
+
+    <div class="answer-block">
+      <span class="tag tag-deep">깊이 있는 버전 (3~4분)</span>
+      <p>
+        "인덱스 설계는 '이 컬럼이 자주 조회된다'가 아니라 '이 인덱스가 실제로 어떤 쿼리에서, 어떻게 스캔될 것인가'를 기준으로 접근합니다.<br><br>
+        <strong>첫째, B+Tree는 정렬된 구조이기 때문에 복합 인덱스는 leftmost prefix rule을 따릅니다.</strong> 예를 들어 <code>(user_id, created_at)</code> 인덱스가 있으면 <code>WHERE user_id = ?</code>는 인덱스를 탈 수 있지만 <code>WHERE created_at = ?</code>만으로는 인덱스 전체를 훑어야 합니다. 그래서 저는 이 인덱스를 사용할 쿼리들의 WHERE 절을 먼저 나열하고, 공통으로 등호 조건에 쓰이는 컬럼을 앞쪽에 배치합니다.<br><br>
+        <strong>둘째, selectivity를 함께 고려합니다.</strong> 등호 조건 컬럼이 여러 개라면, 고유값이 많아 후보 행을 크게 줄여주는 컬럼을 앞에 두는 것이 일반적으로 유리합니다. 다만 여러 쿼리가 같은 인덱스를 재사용해야 하는 상황이면, selectivity보다 '여러 쿼리에서 공통으로 등호 조건에 쓰이는가'를 더 우선할 때도 있습니다.<br><br>
+        <strong>셋째, ORDER BY와 covering index를 검토합니다.</strong> 정렬 요구사항이 있으면 등호 조건 뒤에 정렬 컬럼을 붙여서 filesort를 없애고, SELECT절 컬럼 수가 적다면 그 컬럼까지 인덱스에 포함시켜 테이블 재조회(북마크 조회) 자체를 생략시킵니다.<br><br>
+        <strong>마지막으로, 이 모든 판단을 실제 데이터로 검증합니다.</strong> 인덱스는 쓰기 비용을 늘리는 트레이드오프이기 때문에, 조회 이득이 실제로 EXPLAIN과 실행 시간 측정에서 확인될 때만 인덱스를 추가하고, 기존 인덱스로 이미 커버되는 중복 인덱스는 정리합니다."
+      </p>
+    </div>
+  </section>
+
+  <!-- ⑦ Trade-off -->
+  <section id="tradeoff">
+    <h2 class="section-title"><span class="icon">⚖️</span> Trade-off</h2>
+    <div class="card">
+      <h3>인덱스 추가 vs 유지</h3>
+      <ul>
+        <li><strong>인덱스 추가 이득:</strong> 특정 조회 패턴의 응답 속도 대폭 개선, Full Scan 회피</li>
+        <li><strong>인덱스 추가 비용:</strong> INSERT/UPDATE/DELETE마다 인덱스 갱신 필요(쓰기 지연 증가), 저장 공간 증가, 옵티마이저의 실행 계획 선택 후보가 늘어나 통계 관리 부담 증가</li>
+        <li><strong>판단 기준:</strong> 읽기가 압도적으로 많은 테이블(카탈로그, 이력 조회)은 인덱스를 적극 활용. 쓰기가 매우 잦은 테이블(로그 적재, 카운터)은 인덱스를 최소한으로 유지.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Selectivity 우선 vs Leftmost Prefix 재사용 우선</h3>
+      <ul>
+        <li><strong>Selectivity 우선:</strong> 단일 쿼리 관점에서는 가장 빠르게 후보를 좁히는 순서. 다만 이 인덱스를 다른 쿼리가 재사용하지 못할 수 있음.</li>
+        <li><strong>공통 컬럼 우선(재사용 우선):</strong> 인덱스 개수를 줄이고 쓰기 비용을 아낄 수 있음. 다만 특정 쿼리 입장에서는 이론상 최적 순서가 아닐 수 있음.</li>
+        <li><strong>판단 기준:</strong> 인덱스가 단일 핵심 쿼리 전용이면 selectivity 우선, 여러 쿼리가 동일 컬럼 조합을 공유하면 재사용 우선으로 인덱스 개수를 줄이는 쪽이 실무에서 더 자주 선택됨.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Covering Index로 넓히기 vs 인덱스 크기 유지</h3>
+      <ul>
+        <li><strong>컬럼을 더 포함(covering) 이득:</strong> 테이블 재조회 제거로 조회 속도 향상, 특히 랜덤 I/O가 비싼 디스크 기반 스토리지에서 효과 큼</li>
+        <li><strong>컬럼을 더 포함 비용:</strong> 인덱스 자체 크기 증가 → 메모리(버퍼 풀)에 올라가는 인덱스 페이지 수 증가, 쓰기 시 갱신해야 할 데이터량 증가</li>
+        <li><strong>판단 기준:</strong> 매우 자주 실행되는 조회 쿼리이고 SELECT절 컬럼이 몇 개 안 되면 covering index로 확장할 가치가 큼. 가끔 실행되거나 SELECT절이 넓으면(예: <code>SELECT *</code>) covering index로 만드는 비용이 이득보다 클 수 있음.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ⑧ 흔한 오해 -->
+  <section id="misconceptions">
+    <h2 class="section-title"><span class="icon">🚫</span> 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="myth">인덱스는 많이 걸어둘수록 조회가 빨라지니 좋다.</div>
+      <div class="truth">인덱스는 쓰기 작업마다 함께 갱신되는 자료구조입니다. 인덱스가 많을수록 INSERT/UPDATE/DELETE가 느려지고 저장 공간도 늘어납니다. 실제로 사용되지 않는 인덱스는 이득 없이 비용만 발생시키므로 주기적으로 사용 통계를 확인해 정리해야 합니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">WHERE 절에 있는 컬럼은 다 인덱스에 넣으면 된다.</div>
+      <div class="truth">복합 인덱스는 순서가 있는 구조입니다. leftmost prefix rule 때문에 컬럼을 아무 순서로나 넣으면 일부 쿼리에서 인덱스를 활용하지 못합니다. 어떤 컬럼이 등호 조건으로 쓰이는지, 범위 조건으로 쓰이는지에 따라 순서를 다르게 설계해야 합니다(일반적으로 등호 조건 컬럼을 범위 조건 컬럼보다 앞에 둡니다).</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">selectivity가 높은 컬럼을 무조건 맨 앞에 두면 된다.</div>
+      <div class="truth">selectivity는 인덱스 순서를 정하는 중요한 기준이지만 유일한 기준은 아닙니다. 여러 쿼리가 같은 인덱스를 공유해야 하거나, ORDER BY 요구사항이 있는 경우에는 selectivity보다 실제 쿼리 패턴과의 정합성이 더 중요할 수 있습니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">인덱스를 걸었으면 옵티마이저가 항상 그 인덱스를 사용한다.</div>
+      <div class="truth">옵티마이저는 통계 정보를 바탕으로 여러 실행 계획의 비용을 추정해서 더 싼 쪽을 선택합니다. selectivity가 낮은 컬럼이거나, 통계가 오래되어 실제 분포와 다르거나, 컬럼에 함수를 씌우면 인덱스가 있어도 Full Scan을 선택할 수 있습니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">PRIMARY KEY에는 인덱스가 자동으로 있으니 신경 쓸 게 없다.</div>
+      <div class="truth">PK에 인덱스(주로 클러스터드 인덱스)가 자동 생성되는 것은 맞지만, PK 선택 자체가 성능에 영향을 줍니다. 예를 들어 무작위(UUID 등) 값을 PK로 쓰면 삽입 시 트리 곳곳에 랜덤하게 끼워 넣어야 해서 페이지 분할이 잦아지고 쓰기 성능이 저하될 수 있습니다. 순차 증가 값(auto-increment) 대비 이런 trade-off를 인지해야 합니다.</div>
+    </div>
+  </section>
+
+  <!-- ⑨ 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2 class="section-title"><span class="icon">📊</span> 좋은 답변 vs 약한 답변</h2>
+    <div class="compare-grid">
+      <div class="compare-card good">
+        <h4>강한 답변</h4>
+        <p>"이 인덱스를 탈 쿼리들의 WHERE 절을 먼저 나열하고, 등호 조건으로 쓰이는 컬럼을 앞에 둡니다. 여러 등호 조건이 있으면 selectivity가 높은 컬럼을 우선하되, 여러 쿼리가 이 인덱스를 공유해야 하면 공통 컬럼을 우선합니다. ORDER BY가 있으면 정렬 컬럼을 뒤에 이어 붙이고, SELECT절 컬럼이 적으면 covering index로 확장할지 검토합니다. 마지막으로 EXPLAIN으로 실제 실행 계획을 확인하고, 쓰기 비용 대비 이득이 충분한지 판단합니다."</p>
+        <p class="why">
+          왜 강한가: 순서 결정 기준(leftmost prefix, selectivity, 재사용성)을 명확히 언급하고, ORDER BY·covering index까지 확장해서 생각합니다. 마지막에 검증 단계까지 포함해 "추측이 아니라 근거로 판단"하는 태도를 보여줍니다.
+        </p>
+      </div>
+      <div class="compare-card weak">
+        <h4>약한 답변</h4>
+        <p>"자주 조회되는 컬럼을 앞에 두고 나머지를 뒤에 붙입니다. WHERE 절에 있는 컬럼은 다 인덱스에 넣어주면 됩니다."</p>
+        <p class="why">
+          왜 약한가: leftmost prefix rule을 언급하지 않아 "왜 그 순서인지"에 대한 근거가 없습니다. selectivity, ORDER BY, covering index, 쓰기 비용 같은 트레이드오프도 전혀 언급하지 않습니다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑩ Follow-up -->
+  <section id="followup">
+    <h2 class="section-title"><span class="icon">🎓</span> Senior-level Follow-up 질문</h2>
+
+    <div class="followup-card">
+      <div class="q">Q. <code>(a, b, c)</code> 복합 인덱스가 있는데 쿼리는 <code>WHERE a = ? AND c = ?</code>입니다. 이 인덱스가 얼마나 도움이 됩니까?</div>
+      <div class="intent">의도: leftmost prefix rule을 기계적으로 외웠는지, 아니면 "부분적으로 도움이 되는 상황"까지 세밀하게 이해하는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> <code>a</code>까지는 인덱스 탐색(range/ref access)으로 후보를 좁힐 수 있습니다. 하지만 <code>b</code> 조건이 없으므로 <code>c</code>는 인덱스 순서상 바로 좁혀지지 않고, <code>a</code>로 좁혀진 범위 안에서 <code>c</code> 값을 하나씩 필터링(index condition pushdown 등으로 인덱스 내부에서 걸러지긴 하지만, 트리 탐색으로 직접 좁히는 것과는 다름)하는 방식으로 동작합니다. <code>b</code>의 selectivity가 낮다면 인덱스를 <code>(a, c, b)</code>로 바꾸는 것이 이 쿼리에는 더 유리할 수 있습니다 — 다만 이는 다른 쿼리가 <code>b</code>를 <code>a</code> 다음에 필요로 하지 않는지 함께 확인해야 합니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. 인덱스를 새로 추가하기 전에 기존 인덱스와 중복되는지 어떻게 확인하시겠습니까?</div>
+      <div class="intent">의도: 인덱스를 무작정 추가하는지, 기존 인덱스 구조를 먼저 점검하는 습관이 있는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 기존 복합 인덱스의 leftmost prefix로 새 인덱스 요구사항이 이미 커버되는지 먼저 확인합니다. 예를 들어 <code>(a, b)</code> 인덱스가 있는데 <code>WHERE a = ?</code> 조회만 필요하다면 별도로 <code>(a)</code> 인덱스를 추가할 필요가 없습니다. 시스템 카탈로그(예: <code>information_schema.statistics</code>, <code>pg_indexes</code>)나 인덱스 사용 통계(예: <code>sys.schema_unused_indexes</code>, PostgreSQL의 <code>pg_stat_user_indexes</code>)로 실제 사용 여부도 함께 점검합니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. UUID를 PK로 쓰는 것과 auto-increment 정수를 PK로 쓰는 것, 인덱스 관점에서 어떤 차이가 있습니까?</div>
+      <div class="intent">의도: PK 선택이 클러스터드 인덱스 구조와 쓰기 성능에 미치는 영향까지 이해하는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 클러스터드 인덱스를 쓰는 엔진(예: InnoDB)에서는 PK 순서대로 데이터가 물리적으로 정렬 저장됩니다. auto-increment는 항상 오른쪽 끝에 순차적으로 추가되므로 페이지 분할이 적지만, UUID(특히 랜덤 UUID)는 값이 무작위라 트리 중간 곳곳에 삽입되면서 페이지 분할과 단편화가 잦아져 쓰기 성능이 저하되고 캐시 효율도 떨어집니다. 분산 환경에서 전역 유일성이 필요해 UUID를 꼭 써야 한다면, 시간 정렬성을 가진 UUID(UUIDv7 등)나 별도의 순차 대체키를 함께 검토합니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. 인덱스 추가 이후 쓰기 성능이 얼마나 나빠질지 어떻게 사전에 가늠하시겠습니까?</div>
+      <div class="intent">의도: 인덱스 추가를 "일단 걸어보고 문제되면 빼자"는 식으로 접근하는지, 사전에 근거를 갖고 판단하는지 봅니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 해당 테이블의 초당 쓰기 건수(INSERT/UPDATE/DELETE)와 현재 인덱스 개수를 파악합니다. staging 환경에서 실제(또는 유사 규모의) 데이터로 인덱스 추가 전후 쓰기 처리량과 지연을 벤치마크로 비교합니다. 특히 대량 배치 INSERT가 있는 테이블이라면 그 배치 작업 시간이 얼마나 늘어나는지도 함께 측정합니다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑪ Rubric -->
+  <section id="rubric">
+    <h2 class="section-title"><span class="icon">✅</span> 자기 점검 Rubric</h2>
+    <div style="overflow-x: auto;">
+      <table class="rubric-table">
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>강한 답변</th>
+            <th>중간 답변</th>
+            <th>약한 답변</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>순서 결정 근거</td>
+            <td><span class="level-badge level-strong">leftmost prefix + selectivity + 재사용성 함께 고려</span></td>
+            <td><span class="level-badge level-mid">selectivity만 언급</span></td>
+            <td><span class="level-badge level-weak">"자주 쓰는 컬럼을 앞에" 정도</span></td>
+          </tr>
+          <tr>
+            <td>B+Tree 이해</td>
+            <td><span class="level-badge level-strong">정렬 구조와 leftmost prefix rule 원리를 설명</span></td>
+            <td><span class="level-badge level-mid">B+Tree라는 용어만 언급</span></td>
+            <td><span class="level-badge level-weak">자료구조 언급 없음</span></td>
+          </tr>
+          <tr>
+            <td>ORDER BY / Covering index</td>
+            <td><span class="level-badge level-strong">정렬·조회 컬럼까지 포함해 설계 확장</span></td>
+            <td><span class="level-badge level-mid">covering index 용어만 언급</span></td>
+            <td><span class="level-badge level-weak">언급 없음</span></td>
+          </tr>
+          <tr>
+            <td>쓰기 비용 인식</td>
+            <td><span class="level-badge level-strong">쓰기 지연·저장공간·중복 인덱스까지 고려</span></td>
+            <td><span class="level-badge level-mid">"쓰기가 느려질 수 있다" 정도</span></td>
+            <td><span class="level-badge level-weak">쓰기 비용 언급 없음</span></td>
+          </tr>
+          <tr>
+            <td>검증 태도</td>
+            <td><span class="level-badge level-strong">EXPLAIN·벤치마크로 실제 검증</span></td>
+            <td><span class="level-badge level-mid">"확인이 필요하다"고만 언급</span></td>
+            <td><span class="level-badge level-weak">검증 단계 없음</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem;">
+      <h3>이 Day 레슨 이후 스스로 확인할 것</h3>
+      <ul>
+        <li>본인이 최근에 만든 인덱스(또는 자주 쓰는 테이블의 인덱스) 하나를 골라 leftmost prefix 관점에서 순서가 타당한지 점검해보기</li>
+        <li>그 인덱스가 covering index로 확장할 수 있는지, 확장했을 때 인덱스 크기가 얼마나 늘어날지 어림잡아보기</li>
+        <li>Day 3 면접 질문을 소리 내어 2분 내로 답변해보기. "leftmost prefix + selectivity + 재사용성" 세 가지가 자연스럽게 나오는지 확인하기</li>
+        <li>위 Rubric 기준으로 본인 답변을 스스로 채점하기</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="nav-footer">
+    <a href="./interview-day-002-schema-design.html">← Day 2 — 스키마 설계와 정규화</a>
+    <a href="./interview-day-004-transactions-isolation.html">Day 4 — 트랜잭션과 격리 수준 →</a>
+  </div>
+
+</div>
+</body>
+</html>
