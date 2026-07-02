@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — 프론트엔드 시니어 인터뷰 답변 프레임워크와 브라우저 기반 사고 | 프론트엔드 10년차 이상 개발자 Interview</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">프론트엔드 10년차 이상 개발자 Interview</a> › <a href="./">레슨 목록</a> › Day 1
+  </nav>
+
+  <h1>Day 1 — 프론트엔드 시니어 인터뷰 답변 프레임워크와 브라우저 기반 사고</h1>
+  <p class="subtitle">UI 구현 팁이 아니라 플랫폼 제약에서 출발하는 사고법 · 2026-07-02</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#request-path">사용자 상호작용 → 화면 갱신 전체 지도</a></li>
+      <li><a href="#framework">6단계 프론트엔드 문제 진단 프레임워크</a></li>
+      <li><a href="#layer-types">증상별 원인 계층 분류표</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"프로덕션 대시보드 페이지가 특정 고객사에서만 가끔 느리다는 리포트를 받았습니다. 리액트로 만들어진 페이지입니다. 프론트엔드 관점에서 어떻게 접근하시겠습니까?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"사용자가 버튼을 클릭한 순간부터 화면이 실제로 바뀌기까지, 브라우저 안에서 어떤 일이 순서대로 일어나는지 설명해주세요."</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"React를 쓰면 이런 브라우저 내부 동작을 몰라도 되는 것 아닌가요? 왜 알아야 한다고 생각하세요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"컴포넌트를 만들 줄 아는가"가 아니라 "브라우저라는 플랫폼 위에서 무슨 일이 벌어지는지 이해하고 있는가"</strong>를 테스트합니다. React 문서에 나온 패턴만 따라 해본 사람과, 그 패턴이 실제로 브라우저에게 어떤 작업을 시키는지(DOM 변경, 스타일 재계산, 레이아웃, 페인트)까지 그릴 수 있는 사람을 구분하는 질문입니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>플랫폼 기반 사고</strong> — 프레임워크가 감춘 아래층(브라우저 렌더링, 네트워크, 메인 스레드)을 인지하고 있는가.</li>
+      <li><strong>모호한 문제를 좁혀나가는 절차</strong> — "느려요", "가끔 그래요" 같은 애매한 리포트를 받았을 때, 바로 코드를 고치러 뛰어들지 않고 원인을 계층 단위로 좁혀가는 습관이 있는가.</li>
+      <li><strong>도구를 직접 다루는 능력</strong> — DevTools Performance/Network 패널로 실제로 증상을 재현하고 수치를 확인하는가, 아니면 감으로 추측하는가.</li>
+      <li><strong>트레이드오프 언어</strong> — "빠르게 만들자"가 아니라 "이 최적화는 어떤 비용(복잡도, 개발 속도, 접근성)을 치르는가"를 함께 말하는가.</li>
+      <li><strong>10년차다운 책임 범위</strong> — 자신이 짠 컴포넌트 코드뿐 아니라, 그 코드가 배포되는 전체 프론트엔드 시스템(번들, 서드파티 스크립트, 캐시, 배포 파이프라인)까지 책임지는 시야가 있는가.</li>
+    </ul>
+
+    <p>주니어~중니어에서 자주 나오는 답변 패턴: "메모이제이션을 추가하겠습니다" 또는 "이미지를 최적화하겠습니다." 이런 답변은 원인을 특정하지 않은 채 흔한 처방을 던지는 것입니다. 특정 고객사에서만 느리다는 단서를 무시하면 틀린 처방이 될 수 있습니다(예: 그 고객사만 데이터가 커서 느린 것이라면 메모이제이션은 효과가 없습니다). 시니어는 원인을 계층 단위로 좁힌 뒤 조치합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>브라우저는 무엇으로 이루어져 있는가</h3>
+    <p>브라우저는 하나의 덩어리가 아니라 여러 엔진이 협업하는 프로그램입니다. 주방에 비유하면, <strong>네트워크 스택</strong>은 재료를 배달받는 배송 담당, <strong>렌더링 엔진(예: Blink, WebKit)</strong>은 재료로 요리(화면)를 만드는 조리사, <strong>JavaScript 엔진(예: V8)</strong>은 레시피대로 계산과 판단을 수행하는 부주방장입니다. 이 셋이 각자 다른 속도와 다른 실패 모드를 가지고 있다는 것이 이번 레슨의 핵심 전제입니다.</p>
+    <p>React 같은 프레임워크는 이 주방 위에 놓인 "레시피 자동화 도구"입니다. 도구가 편리해도 재료 배송이 늦거나 조리사가 바쁘면 요리는 늦게 나옵니다. 프레임워크를 안다고 주방 자체를 아는 것은 아닙니다.</p>
+
+    <h3>DOM과 CSSOM — 브라우저가 이해하는 두 개의 설계도</h3>
+    <p>브라우저는 HTML을 읽어 <strong>DOM(Document Object Model)</strong>이라는 요소들의 트리 구조로 바꾸고, CSS를 읽어 <strong>CSSOM(CSS Object Model)</strong>이라는 스타일 규칙의 트리로 바꿉니다. 편지에 비유하면 DOM은 "편지에 무슨 내용이 있는가(문단, 제목, 목록)"이고 CSSOM은 "그 내용을 어떤 서체·색·간격으로 보여줄 것인가"입니다. 이 둘이 합쳐져야 비로소 "무엇을 어떻게 그릴지"가 결정됩니다.</p>
+
+    <h3>화면에 그려지기까지의 다섯 단계 (개요)</h3>
+    <p>DOM과 CSSOM이 준비된 후, 브라우저는 대략 다음 순서로 실제 픽셀을 만듭니다:</p>
+    <ol>
+      <li><strong>Style(스타일 계산)</strong> — DOM의 각 요소에 어떤 CSS 규칙이 최종 적용되는지 계산 (Cascade, Specificity 반영)</li>
+      <li><strong>Layout(레이아웃, 흔히 Reflow)</strong> — 각 요소가 화면의 어디에, 얼마나 큰 크기로 위치할지 계산</li>
+      <li><strong>Paint(페인트)</strong> — 텍스트, 색, 그림자, 테두리 등을 실제 픽셀로 그리는 단계</li>
+      <li><strong>Composite(컴포지트)</strong> — 여러 레이어로 나뉘어 그려진 결과를 GPU가 하나의 화면으로 합성</li>
+    </ol>
+    <p>이 단계들 각각이 시간을 소모하고, 각각 다른 이유로 느려질 수 있습니다. "화면이 버벅인다"는 리포트를 받았을 때, 이 단계 중 어디서 시간이 소모되는지 구분하는 것이 프론트엔드 성능 진단의 출발점입니다. (각 단계의 구체적인 비용과 최적화는 Day 3에서 심화합니다.)</p>
+
+    <h3>메인 스레드 — 왜 하나의 길에서 모든 일이 줄을 서는가</h3>
+    <p>브라우저의 JavaScript 실행, 스타일 계산, 레이아웃, 대부분의 페인트 작업은 기본적으로 <strong>같은 스레드(메인 스레드)</strong>에서 순서대로 처리됩니다. 계산대가 하나뿐인 마트를 떠올리면 됩니다 — 계산원이 한 명이면, 한 손님의 계산이 오래 걸리면 뒤에 줄 선 손님(사용자 클릭, 스크롤, 화면 갱신)은 모두 기다려야 합니다. 무거운 JavaScript 연산이 실행되는 동안 사용자의 클릭에 화면이 반응하지 않는 "멈춤" 현상이 바로 이 때문에 발생합니다. (메인 스레드와 이벤트 루프의 세부 동작은 Day 4에서 다룹니다.)</p>
+
+    <h3>왜 "전체 경로"를 알아야 하는가</h3>
+    <p>초보적인 사고 모델은 "컴포넌트 코드 → 화면"이라는 2단계 그림입니다. 하지만 실제로 사용자의 클릭이 화면 변화로 이어지기까지는 이벤트 처리, 프레임워크의 상태 갱신, 브라우저의 렌더링 파이프라인, 경우에 따라 네트워크 재요청까지 여러 구간을 거칩니다. 택배에 비유하면, 주문(클릭) 후 물건(픽셀)이 도착하기까지 물류센터·배송기사 같은 여러 중개 단계가 있는 것과 같습니다. "느려요"라는 신고를 받았을 때 어느 구간이 병목인지 알아야 정확한 처방을 내릴 수 있습니다.</p>
+  </section>
+
+  <!-- 4. 사용자 상호작용 → 화면 갱신 전체 지도 -->
+  <section id="request-path">
+    <h2>4. 사용자 상호작용 → 화면 갱신 전체 지도</h2>
+
+    <p>실무에서 "화면이 바뀌는 사건" 하나는 보통 다음 계층을 순서대로(또는 일부를 생략하며) 통과합니다. 이 표는 이후 Day 2~6에서 각 계층을 깊게 다룰 때의 지도 역할을 합니다.</p>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>계층</th>
+          <th>대표 역할</th>
+          <th>대표 기술/개념</th>
+          <th>흔한 실패·병목 신호</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Network</strong></td>
+          <td>초기 HTML/CSS/JS/이미지 로드, API 응답 수신</td>
+          <td>HTTP 캐시, CDN, 번들 크기</td>
+          <td>느린 TTFB, 큰 번들, render-blocking 리소스</td>
+        </tr>
+        <tr>
+          <td><strong>Parse / Construct</strong></td>
+          <td>HTML → DOM, CSS → CSSOM 변환</td>
+          <td>HTML Parser, CSS Parser</td>
+          <td>인라인 <code>&lt;script&gt;</code>로 인한 파싱 중단, 거대한 CSS</td>
+        </tr>
+        <tr>
+          <td><strong>JS Runtime / Event Loop</strong></td>
+          <td>이벤트 핸들링, 상태 갱신 로직 실행</td>
+          <td>Call Stack, Task/Microtask Queue</td>
+          <td>메인 스레드 블로킹, 긴 Task로 인한 입력 지연(INP 저하)</td>
+        </tr>
+        <tr>
+          <td><strong>Framework Layer</strong></td>
+          <td>가상 DOM diff, 리렌더링 범위 결정, 배치 업데이트</td>
+          <td>React reconciliation, 훅 의존성</td>
+          <td>불필요한 리렌더링 전파, 과도한 컴포넌트 트리 재계산</td>
+        </tr>
+        <tr>
+          <td><strong>Style Recalc</strong></td>
+          <td>변경된 DOM에 CSS 규칙 재적용</td>
+          <td>Cascade, Specificity, Selector 비용</td>
+          <td>복잡한 선택자, 광범위한 클래스 토글</td>
+        </tr>
+        <tr>
+          <td><strong>Layout (Reflow)</strong></td>
+          <td>요소의 위치·크기 재계산</td>
+          <td>Box Model, Flow Layout</td>
+          <td>Layout Thrashing(읽기·쓰기 반복), 큰 서브트리 영향</td>
+        </tr>
+        <tr>
+          <td><strong>Paint / Composite</strong></td>
+          <td>픽셀 생성 및 GPU 레이어 합성</td>
+          <td>Layer 승격, <code>transform</code>/<code>opacity</code></td>
+          <td>과도한 페인트 영역, 레이어 폭증으로 인한 GPU 부담</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>이 지도가 실무에서 중요한 이유</h4>
+      <p>"화면이 느리다/버벅인다"는 보고를 받았을 때, 위 7개 계층 중 어디인지 특정하지 않으면 엉뚱한 곳을 고치게 됩니다. 예를 들어 실제 병목이 Style Recalc/Layout 구간(복잡한 CSS 선택자와 잦은 클래스 토글)인데 API 응답 속도만 개선하면 사용자 체감은 거의 바뀌지 않습니다. 이 경로 지도를 항상 먼저 그리는 것이 시니어와 주니어를 가르는 습관입니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. 6단계 프레임워크 -->
+  <section id="framework">
+    <h2>5. 6단계 프론트엔드 문제 진단 프레임워크</h2>
+
+    <p>시니어가 "느려요/이상해요" 류의 모호한 프론트엔드 리포트를 받았을 때 실제로 따르는 순서입니다. 이후 커리큘럼(Day 2~17)의 모든 주제는 이 프레임워크의 한 단계를 깊게 파는 것과 같습니다.</p>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>증상을 측정 가능한 사실로 재정의 (Symptom → Metric)</strong>
+          <p style="margin-top:0.3rem">"가끔 느리다"는 주관적입니다. 어떤 지표(LCP, INP, 특정 인터랙션의 응답 시간)가, 어떤 조건(특정 브라우저·기기·네트워크·데이터 규모)에서, 얼마나 자주 나타나는지 확인합니다.</p>
+          <p><em>질문 예시</em>: "느리다는 게 첫 로딩인가요, 클릭 후 반응인가요? 특정 고객사에서만 그런가요? 그 고객사의 데이터 규모가 다른가요?"</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>경로 재현 (Path Reproduction)</strong>
+          <p style="margin-top:0.3rem">Chrome DevTools Performance 패널로 실제 인터랙션을 녹화해 플레임 차트를 확인합니다. Network 패널로 요청 크기·순서·타이밍을 확인하고, 네트워크/CPU Throttling으로 저사양 환경을 재현합니다.</p>
+          <pre><code>// Performance 탭 사용 흐름 (개념)
+1. Record 시작
+2. 문제 인터랙션 수행 (예: 특정 버튼 클릭)
+3. Record 중지 → Main 트랙에서 Long Task(빨간 삼각형) 확인
+4. Bottom-Up / Call Tree로 어떤 함수가 시간을 소모했는지 추적</code></pre>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>병목 계층 특정 (Which Layer)</strong>
+          <p style="margin-top:0.3rem">플레임 차트에서 시간이 어디 몰려 있는지로 계층을 특정합니다. Scripting(노란색)이 크면 JS/프레임워크 로직, Rendering(보라색)이 크면 Style/Layout, Painting(초록색)이 크면 Paint/Composite, 막대 시작 전 여백이 크면 Network입니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>계층 간 상관 확인 (Cross-layer Correlation)</strong>
+          <p style="margin-top:0.3rem">RUM(실사용자 모니터링) 데이터로 이 증상이 특정 브라우저/지역/디바이스/고객사 세그먼트에 몰려 있는지 확인합니다. 특정 고객사에서만 발생한다면 데이터 규모, 특정 기능 사용 여부 등 그 세그먼트만의 조건을 의심합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>격리 재현 (Layer Isolation)</strong>
+          <p style="margin-top:0.3rem">의심되는 원인을 하나씩 꺼서 재현되는지 확인합니다. 예: 특정 서드파티 스크립트를 차단하고 재현 — 사라지면 그 스크립트가 원인, 여전하면 자체 코드 문제입니다. React DevTools Profiler로 어떤 컴포넌트가 왜 리렌더링됐는지 확인하는 것도 이 단계입니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div>
+          <strong>근본 원인 확정, 수정, 회귀 방지 (Root Cause, Fix &amp; Guardrail)</strong>
+          <p style="margin-top:0.3rem">원인을 확정한 뒤 수정하고, 동일한 재현 시나리오로 다시 확인합니다. 더 나아가 성능 예산(Day 6)과 CI 게이트로 같은 문제가 재발하지 않도록 자동 감시를 추가합니다. "메모이제이션을 추가했다"처럼 증상만 가리는 조치가 아니라 원인 자체를 제거했는지, 그리고 재발 방지 장치를 뒀는지가 핵심입니다.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 6. 증상별 원인 계층 분류표 -->
+  <section id="layer-types">
+    <h2>6. 증상별 원인 계층 분류표</h2>
+
+    <p>증상만 보고도 어느 계층 문제일 확률이 높은지 좁힐 수 있는 표입니다. 각 항목은 이후 Day에서 더 깊게 다룹니다.</p>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>증상</th>
+          <th>의미</th>
+          <th>1차 의심 계층</th>
+          <th>흔한 원인</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>느린 LCP</strong></td>
+          <td>가장 큰 콘텐츠가 화면에 그려지기까지 오래 걸림</td>
+          <td>Network / Parse</td>
+          <td>느린 서버 응답, render-blocking CSS/JS, 최적화 안 된 이미지 (Day 6 심화)</td>
+        </tr>
+        <tr>
+          <td><strong>높은 CLS</strong></td>
+          <td>레이아웃이 예고 없이 이동</td>
+          <td>Layout</td>
+          <td>크기 미지정 이미지/광고, 폰트 로딩 후 레이아웃 재배치(FOIT/FOUT) (Day 6 심화)</td>
+        </tr>
+        <tr>
+          <td><strong>긴 INP / 클릭 후 멈춤</strong></td>
+          <td>사용자 입력에 화면이 늦게 반응</td>
+          <td>JS Runtime / Framework</td>
+          <td>메인 스레드를 오래 점유하는 Long Task, 과도한 리렌더링 (Day 4, 9 심화)</td>
+        </tr>
+        <tr>
+          <td><strong>스크롤 버벅임</strong></td>
+          <td>스크롤 중 프레임 드랍</td>
+          <td>Layout / Paint / Composite</td>
+          <td>Layout Thrashing, 레이어 승격 없이 무거운 페인트 반복 (Day 3 심화)</td>
+        </tr>
+        <tr>
+          <td><strong>시간이 갈수록 느려짐, 탭 다운</strong></td>
+          <td>메모리 사용량이 계속 증가</td>
+          <td>JS Runtime</td>
+          <td>이벤트 리스너 미정리, 클로저가 큰 객체 참조 유지 (Day 4 심화)</td>
+        </tr>
+        <tr>
+          <td><strong>특정 고객사/데이터 규모에서만 느림</strong></td>
+          <td>데이터량에 비례해 악화</td>
+          <td>Framework / Layout</td>
+          <td>가상화(virtualization) 없는 대량 리스트 렌더링, O(n²) 렌더링 로직 (Day 9 심화)</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 7. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>7. 답변 사고 순서</h2>
+
+    <p>면접에서 이 순서대로 30초~1분 정도로 요약해 말하면 됩니다.</p>
+
+    <ol>
+      <li><strong>증상을 구체적인 사실로 바꿉니다.</strong> 어떤 지표/인터랙션이, 어떤 조건(브라우저·기기·데이터 규모·고객사)에서 느린지 확인합니다.</li>
+      <li><strong>DevTools로 재현합니다.</strong> Performance/Network 패널로 플레임 차트와 요청 타이밍을 직접 확인합니다.</li>
+      <li><strong>병목 계층을 특정합니다.</strong> Scripting/Rendering/Painting/Network 중 시간이 몰린 구간을 찾습니다.</li>
+      <li><strong>세그먼트 상관을 확인합니다.</strong> RUM 데이터로 특정 사용자군에서만 나타나는지 확인해 원인 후보를 좁힙니다.</li>
+      <li><strong>의심 원인을 격리해 재현합니다.</strong> 서드파티 스크립트 차단, Profiler로 리렌더링 원인 추적 등으로 원인을 확정합니다.</li>
+      <li><strong>근본 원인을 수정하고, 성능 예산 같은 회귀 방지 장치로 재발을 막습니다.</strong></li>
+    </ol>
+  </section>
+
+  <!-- 8. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>8. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "프로덕션 대시보드 페이지가 특정 고객사에서만 가끔 느리다는 리포트를 받았습니다. 리액트로 만들어진 페이지입니다. 어떻게 접근하시겠습니까?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>먼저 증상을 구체화합니다. "느리다"가 첫 로딩(LCP)인지, 특정 버튼 클릭 후 반응(INP)인지, 스크롤 버벅임인지 확인하고, 그 고객사와 다른 고객사의 차이(데이터 규모, 사용하는 기능, 브라우저·기기)를 먼저 파악합니다. 특정 고객사에서만 발생한다는 단서는 "그 고객사만의 조건"이 원인일 가능성이 높다는 신호이기 때문에, 무작정 전체 코드를 최적화하기 전에 이 단서부터 좁힙니다.</p>
+      <br>
+      <p>그다음 해당 고객사와 비슷한 데이터 규모로 로컬에서 재현하면서 Chrome DevTools Performance 패널로 녹화합니다. 플레임 차트에서 Long Task가 어디서 발생하는지, Scripting인지 Rendering(Layout/Style)인지 구분합니다. 만약 리스트나 테이블 컴포넌트에서 Scripting 시간이 데이터 개수에 비례해 늘어난다면, 리렌더링 범위나 알고리즘 복잡도를 의심합니다.</p>
+      <br>
+      <p>React DevTools Profiler로 어떤 컴포넌트가 왜 리렌더링되는지 확인합니다. 예를 들어 대시보드 상단의 필터 상태가 바뀔 때마다 전체 테이블이 리렌더링되고 있고, 그 테이블 행 개수가 이 고객사에서만 수천 건이라면, "리렌더링 범위 문제"와 "가상화(virtualization) 부재"가 결합된 것으로 원인이 좁혀집니다.</p>
+      <br>
+      <p>원인 후보가 좁혀지면, 실제로 가상화를 임시로 적용하거나 메모이제이션 경계를 좁혀서 같은 데이터로 다시 측정해 개선 여부를 확인합니다. 재현되지 않으면 다른 계층(네트워크나 서드파티 스크립트)을 의심합니다.</p>
+      <br>
+      <p>원인을 확정한 뒤에는 리스트 가상화나 메모이제이션 경계 조정 같은 근본 수정을 적용하고, 이후 유사한 회귀를 막기 위해 대시보드 페이지에 성능 예산(예: 특정 인터랙션의 P75 응답 시간 임계값)을 설정해 CI나 RUM 알림으로 감시합니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>6단계 진단 프레임워크를 자연스럽게 녹여서 말함</li>
+      <li>"특정 고객사에서만"이라는 단서를 놓치지 않고 데이터 규모라는 변수로 연결함</li>
+      <li>DevTools Performance/React Profiler 같은 실제 도구를 구체적으로 언급</li>
+      <li>메모이제이션을 무작정 추천하지 않고, 원인을 확정한 뒤에 처방을 결정함</li>
+      <li>수정 후 검증과 성능 예산을 통한 회귀 방지까지 포함</li>
+    </ul>
+  </section>
+
+  <!-- 9. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>9. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"리액트 컴포넌트에 <code>React.memo</code>와 <code>useMemo</code>를 추가해서 리렌더링을 줄이겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>원인을 확인하지 않고 흔한 처방부터 던집니다 — 병목이 리렌더링이 아니라 네트워크나 서드파티 스크립트라면 아무 효과가 없습니다.</li>
+        <li>"특정 고객사에서만"이라는 핵심 단서를 활용하지 않았습니다. 이 단서가 원인 범위를 크게 좁혀주는데도 무시하고 있습니다.</li>
+        <li>측정 없이 처방하고 있습니다 — 수정 전후 비교할 지표(LCP, INP, 렌더링 시간)가 없으면 실제로 개선됐는지 알 수 없습니다.</li>
+        <li><code>useMemo</code>를 남발하면 오히려 메모리 사용량과 코드 복잡도가 늘어나는 트레이드오프도 언급하지 않았습니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"이미지를 WebP로 바꾸고 CDN을 적용하겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>문제가 초기 로딩(LCP)이라는 가정을 먼저 했습니다. 하지만 리포트는 "클릭 후 반응"일 수도 있고, 이 경우 이미지 최적화는 무관합니다.</li>
+        <li>일반적인 성능 체크리스트를 그대로 적용하는 패턴입니다 — 이 특정 상황(리액트 대시보드, 특정 고객사)에 맞춘 진단이 아닙니다.</li>
+        <li>"가끔"이라는 단서(항상이 아니라 간헐적)를 설명하지 못합니다. 이미지 최적화는 간헐성을 설명하지 못하는 처방입니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>"느리다"를 구체적 지표(LCP/INP/스크롤)와 조건으로 재정의한다</li>
+        <li>"특정 고객사에서만"같은 단서를 원인 후보를 좁히는 데 적극 활용한다</li>
+        <li>DevTools/RUM 등 실제 도구로 측정한 뒤 처방을 결정한다</li>
+        <li>처방의 트레이드오프(복잡도, 메모리, 유지보수 비용)를 함께 언급한다</li>
+        <li>수정 후 동일한 조건으로 재현·검증하고, 회귀 방지 장치를 추가한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. Follow-up -->
+  <section id="followups">
+    <h2>10. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: React를 쓰면 이런 브라우저 내부 동작을 몰라도 되는 것 아닌가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> React는 "무엇을 그릴지"에 대한 선언과 "언제 다시 그릴지"에 대한 스케줄링을 도와줄 뿐, 실제로 DOM을 변경하고 스타일을 재계산하고 레이아웃을 다시 잡는 작업은 여전히 브라우저가 수행합니다. React가 100번 리렌더링을 계산해도, 그 결과가 DOM에 반영되는 순간 브라우저의 Style/Layout/Paint 비용은 그대로 발생합니다. 따라서 React를 잘 쓰는 것과 브라우저 렌더링 비용을 이해하는 것은 서로 다른 층의 지식이며, 시니어는 두 층을 모두 연결해서 사고해야 성능 문제를 정확히 진단할 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 성능 문제인지 아닌지, 먼저 나서서 개선을 제안한 경험이 있나요? 어떻게 우선순위를 정했나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> RUM 데이터에서 P75/P95 같은 상위 백분위 지표를 정기적으로 확인하는 습관을 갖고, 사용자 불만이 없어도 특정 페이지의 지표가 목표 성능 예산을 넘으면 먼저 이슈를 제기합니다. 우선순위는 "얼마나 많은 사용자에게 영향을 주는가(트래픽 비중) × 얼마나 나쁜가(지표 악화 정도) × 비즈니스 임팩트(전환율에 영향을 주는 핵심 플로우인가)"를 기준으로 정합니다. 모든 성능 이슈를 동시에 고칠 수 없기 때문에, 이 우선순위 기준을 명시적으로 세우는 것 자체가 시니어의 역할입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 모바일에서만 느리다는 리포트를 받았습니다. 어떻게 접근할까요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 데스크톱과 모바일은 CPU 성능, 네트워크 환경, 메모리가 크게 다르기 때문에 먼저 DevTools의 CPU/Network Throttling으로 저사양 환경을 시뮬레이션해 재현을 시도합니다. 데스크톱에서 문제없던 코드가 모바일에서만 느리다면, 메인 스레드 연산량(무거운 JS 로직)이나 리소스 크기(이미지, 번들) 문제일 가능성이 높습니다. 또한 실제 저사양 기기(RUM에서 디바이스별 지표를 분리해서 봄)에서의 데이터를 함께 확인해, 시뮬레이션과 실제 사용자 데이터가 일치하는지 교차 검증합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 서드파티 스크립트(광고, 분석 툴) 때문에 성능이 나쁜 것 같은데 비즈니스팀이 제거를 거부합니다. 어떻게 하겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 먼저 Performance 패널이나 <code>PerformanceObserver</code>로 각 서드파티 스크립트가 실제로 얼마나 메인 스레드 시간과 네트워크 대역폭을 소모하는지 수치로 측정합니다. "느낌"이 아니라 "이 스크립트가 LCP를 300ms 지연시키고 있다"처럼 구체적 수치로 비즈니스팀과 대화합니다. 제거가 어렵다면 대안(지연 로딩, <code>async</code>/<code>defer</code>, 사용자 인터랙션 이후 로드, 서드파티 스크립트를 자체 서버로 프록시해 캐싱)을 제시해 "제거 vs 유지"의 이분법이 아니라 "성능 비용을 줄이면서 유지하는 방법"으로 대화를 전환합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q (비기술적): 디자이너가 제안한 애니메이션이 성능에 안 좋아 보입니다. 어떻게 대화하겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 먼저 왜 안 좋아 보이는지 구체적으로 확인합니다(예: <code>width</code>/<code>top</code> 같은 Layout을 유발하는 속성을 애니메이션하고 있는가). 디자이너에게 "안 된다"고 하기보다 "이 효과를 유지하면서 Layout 대신 <code>transform</code>/<code>opacity</code>로 구현하면 GPU 레이어에서 처리되어 동일한 시각 효과를 더 부드럽게 낼 수 있다"처럼 대안을 함께 제시합니다. 즉, 성능 제약을 이유로 디자인 의도를 꺾는 것이 아니라, 같은 사용자 경험 목표를 다른 구현 방식으로 달성하는 협업으로 프레이밍합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>11. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"React 같은 프레임워크를 쓰면 브라우저 렌더링을 몰라도 된다"</strong></p>
+      <p>프레임워크는 DOM 조작을 자동화할 뿐, 그 결과가 Style/Layout/Paint 비용으로 이어지는 것은 그대로입니다. 프레임워크 위에서 잘못된 패턴(과도한 리렌더링, 잦은 인라인 스타일 변경)을 쓰면 브라우저 비용은 그대로, 혹은 더 커질 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"느리다는 건 항상 JavaScript 코드 문제다"</strong></p>
+      <p>실제로는 네트워크 지연, render-blocking 리소스, 복잡한 CSS 선택자로 인한 Style Recalc, 서드파티 스크립트 등 코드 로직 외의 계층에서 발생하는 경우도 매우 흔합니다. 코드로 뛰어들기 전에 어느 계층인지부터 확인해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"Lighthouse 점수가 100점이면 실제 사용자도 빠르다"</strong></p>
+      <p>Lighthouse는 특정 조건(고정된 네트워크/CPU 시뮬레이션, 특정 기기)에서의 랩(Lab) 데이터입니다. 실제 사용자는 다양한 기기·네트워크·데이터 규모를 가지므로, RUM(실사용자 모니터링) 데이터와 함께 봐야 진짜 사용자 경험을 알 수 있습니다. (Day 6, 14에서 심화)</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"성능 최적화는 항상 나중에, 필요할 때만 하면 된다"</strong></p>
+      <p>성능 예산 없이 개발하면 여러 작은 회귀가 누적되어 어느 순간 "전체가 느려진" 상태로 발견됩니다. 이 시점에는 원인이 하나가 아니라 여러 개가 얽혀 있어 디버깅 비용이 훨씬 커집니다. 시니어는 처음부터 측정 가능한 예산을 세우고 CI에서 감시합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"내 로컬 개발 환경에서 빠르면 사용자에게도 빠르다"</strong></p>
+      <p>개발자의 로컬 환경은 대개 고성능 기기, 빠른 네트워크, 캐시가 이미 채워진 상태입니다. 실제 사용자는 저사양 기기, 느린 네트워크, 첫 방문(캐시 없음)인 경우가 많습니다. Throttling 시뮬레이션과 실사용자 데이터로 이 간극을 항상 검증해야 합니다.</p>
+    </div>
+  </section>
+
+  <!-- 12. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>12. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 1을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>사용자 클릭부터 화면 갱신까지 거치는 계층(Event → JS Runtime → Framework → Style → Layout → Paint → Composite)을 순서대로 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>6단계 프론트엔드 문제 진단 프레임워크를 순서대로 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>DOM과 CSSOM이 무엇이고 왜 둘 다 있어야 화면이 그려지는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>메인 스레드가 하나라는 사실이 왜 "클릭해도 반응 없음" 현상으로 이어지는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Chrome DevTools Performance 패널에서 Scripting/Rendering/Painting을 구분해서 볼 수 있다고 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"특정 고객사/조건에서만 느리다"는 단서를 원인 후보를 좁히는 데 활용하는 방법을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>React를 쓴다고 브라우저 렌더링 비용이 사라지지 않는 이유를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"메모이제이션/이미지 최적화부터 추가하겠다"가 왜 약한 답변인지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Lighthouse 랩 데이터와 RUM 실사용자 데이터의 차이를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>디자이너/비즈니스팀과 성능 트레이드오프를 대립이 아닌 대안 제시로 대화하는 방법을 말할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 2</h3>
+      <p><strong>HTML/CSS 아키텍처 — 시맨틱 마크업, Cascade/Specificity, 크로스 브라우저 레이아웃 사고</strong></p>
+      <p>Day 1에서 "화면이 그려지는 전체 경로"를 그렸다면, Day 2에서는 그 경로의 입력값인 HTML/CSS 자체를 아키텍처 관점에서 다룹니다. 시맨틱 마크업이 접근성·SEO와 어떻게 연결되는지, Cascade와 Specificity가 왜 대규모 프로젝트에서 유지보수 문제를 일으키는지, 크로스 브라우저 레이아웃 이슈를 구조적으로 다루는 법을 살펴봅니다.</p>
+      <p>면접 질문 예고: "우리 CSS가 점점 <code>!important</code>로 뒤덮이고 있습니다. 왜 이런 일이 생기고, 시니어라면 어떻게 이 흐름을 되돌리시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    프론트엔드 10년차 이상 개발자 Interview · Day 1 of 17 · 2026-07-02
+  </p>
+
+</div>
+</body>
+</html>
