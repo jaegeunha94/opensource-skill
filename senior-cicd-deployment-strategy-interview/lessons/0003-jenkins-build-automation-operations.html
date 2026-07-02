@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — Jenkins와 빌드 자동화 실무 | CI/CD 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* header */
+    .lesson-header {
+      border-left: 4px solid var(--accent);
+      padding: 1.5rem 1.5rem 1.5rem 2rem;
+      background: var(--surface);
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .lesson-title { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
+    .lesson-subtitle { color: var(--muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    /* section */
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 1.2rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.8rem; color: var(--text); }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.35rem; }
+
+    /* cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    /* interview question highlight */
+    .interview-q {
+      background: linear-gradient(135deg, #1e2a4a 0%, #1a2035 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .interview-q .label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .interview-q .question {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.5;
+    }
+
+    /* comparison grid */
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .strategy-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .strategy-card .name {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .strategy-card.blue-green .name { color: #60a5fa; }
+    .strategy-card.rolling .name { color: #34d399; }
+    .strategy-card.canary .name { color: #f59e0b; }
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-right: 0.3rem;
+      margin-bottom: 0.3rem;
+    }
+    .tag-green { background: #14532d; color: #4ade80; }
+    .tag-red { background: #450a0a; color: #f87171; }
+    .tag-yellow { background: #422006; color: #fbbf24; }
+    .tag-blue { background: #1e3a5f; color: #93c5fd; }
+
+    /* answer example */
+    .answer-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+    .answer-block .speaker {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    /* good vs weak */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .compare-card.good {
+      background: #052e16;
+      border: 1px solid #166534;
+    }
+    .compare-card.weak {
+      background: #2d0a0a;
+      border: 1px solid #7f1d1d;
+    }
+    .compare-label {
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .compare-card.good .compare-label { color: #4ade80; }
+    .compare-card.weak .compare-label { color: #f87171; }
+
+    /* reasoning steps */
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent2);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.1rem;
+    }
+
+    /* follow-up */
+    .followup-item {
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .followup-item .q {
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 0.5rem;
+    }
+    .followup-item .a {
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    /* rubric */
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:last-child td { border-bottom: none; }
+    .rubric-table tr:nth-child(even) td { background: #12141e; }
+    .level-badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .level-1 { background: #450a0a; color: #fca5a5; }
+    .level-2 { background: #422006; color: #fcd34d; }
+    .level-3 { background: #14532d; color: #86efac; }
+    .level-4 { background: #1e3a5f; color: #93c5fd; }
+
+    /* callout */
+    .callout {
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .callout-warn {
+      background: #2d1b00;
+      border: 1px solid var(--yellow);
+      color: #fef3c7;
+    }
+    .callout-info {
+      background: #0c1a3a;
+      border: 1px solid var(--accent);
+      color: #dbeafe;
+    }
+    .callout-icon { font-weight: 700; margin-right: 0.4rem; }
+
+    /* flow diagram (ascii-style) */
+    .flow-diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #a5b4fc;
+      overflow-x: auto;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      white-space: pre;
+    }
+
+    /* code block */
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      color: #d1d5db;
+      overflow-x: auto;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      white-space: pre;
+    }
+
+    /* nav */
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .nav-bar a {
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-bar a:hover { text-decoration: underline; }
+    .nav-center { color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-header">
+    <div class="lesson-meta">CI/CD와 배포 전략 인터뷰 · Day 3</div>
+    <div class="lesson-title">Jenkins와 빌드 자동화 실무</div>
+    <div class="lesson-subtitle">Jenkinsfile과 선언적 파이프라인, 멀티브랜치 구조, 플러그인 생태계의 명암, 자체 호스팅 운영까지 — "Jenkins UI를 클릭할 줄 안다"가 아니라 "Jenkins를 인프라로 운영해봤다"는 것을 증명하는 수준을 목표로 한다.</div>
+  </div>
+
+  <!-- ─── SECTION 1: 면접 질문 ─── -->
+  <section>
+    <h2>🎯 오늘의 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">주질문 (Main Question)</div>
+      <div class="question">
+        "온프레미스 규제 때문에 GitHub Actions에서 Jenkins로 전환해야 합니다.<br>
+        Jenkins 파이프라인을 프로덕션 레벨로 설계하고 운영한다면 어떻게 하시겠습니까?"
+      </div>
+    </div>
+
+    <div class="interview-q" style="border-color: var(--accent2);">
+      <div class="label" style="color: var(--accent2);">변형 질문 (Variation)</div>
+      <div class="question" style="font-size: 1rem;">
+        "Jenkins 마스터 노드가 점점 느려지고, 플러그인 업데이트 후 파이프라인이 자주 깨집니다.<br>
+        어떻게 진단하고 안정화하시겠습니까?"
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 2: 왜 면접에서 묻는가 ─── -->
+  <section>
+    <h2>🔍 왜 면접에서 이 질문을 하는가</h2>
+
+    <p>Jenkins는 역사가 길고 자유도가 높은 만큼, "UI에서 job을 클릭해서 만들어본 적 있는가"와 "Jenkins를 하나의 운영 인프라로 다뤄본 적 있는가" 사이의 격차가 매우 크게 벌어지는 도구다. 면접관은 이 질문으로 <strong>지원자가 Jenkins를 스크립트 실행기로 보는지, 관리해야 할 시스템으로 보는지</strong>를 구분한다.</p>
+
+    <div class="card">
+      <div class="card-title">면접관이 실제로 평가하는 것</div>
+      <ul>
+        <li><strong>Pipeline as Code 습관:</strong> UI로 job을 손수 설정하는 대신 Jenkinsfile로 파이프라인을 코드화·버전관리하는가</li>
+        <li><strong>재사용 설계:</strong> 수십~수백 개 서비스에 파이프라인 로직을 복붙하지 않고 Shared Library로 추출할 줄 아는가</li>
+        <li><strong>인프라 감각:</strong> Controller(Master)와 Agent를 분리해서 생각하고, 확장·장애 지점을 아는가</li>
+        <li><strong>플러그인 리스크 관리:</strong> 플러그인을 "설치하면 끝"이 아니라 버전 고정, 업데이트 검증이 필요한 대상으로 다루는가</li>
+        <li><strong>재해 복구 감각:</strong> Jenkins 자체가 죽었을 때 무엇을 잃고, 무엇으로 복구할지 설계해봤는가</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>주니어 vs 시니어 차이:</strong> 주니어는 "Freestyle job이나 UI에서 파이프라인을 만들 수 있다"에서 멈춘다. 시니어는 "Jenkinsfile로 코드화하고, 공통 로직은 Shared Library로 뽑고, Controller/Agent를 분리하고, 플러그인과 백업까지 운영 대상으로 관리한다"는 이야기를 구체적인 사고 과정과 함께 말한다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 3: 전제 개념 ─── -->
+  <section>
+    <h2>📚 전제 개념: Jenkins는 왜 "그냥 도구"가 아니라 "운영 대상"인가</h2>
+
+    <h3>Controller(Master)와 Agent(Slave) — 쉬운 설명</h3>
+    <p>Jenkins는 하나의 서버가 다 하는 것처럼 보이지만, 실제로는 <strong>지휘자(Controller)</strong>와 <strong>실행자(Agent)</strong>가 나뉘는 구조로 설계해야 한다. Controller는 "무엇을, 언제, 어떤 순서로 실행할지" 조율하는 역할만 맡고, 실제 빌드·테스트 명령은 별도로 붙은 Agent(예전 이름은 Slave) 서버에서 실행된다.</p>
+    <p>이 분리를 하지 않고 Controller에서 직접 빌드를 실행하면, 무거운 빌드 하나가 전체 Jenkins UI 응답 속도와 스케줄링 능력을 갉아먹는다. 회사 전체 CI가 느려지는 원인의 상당수가 "Controller에 executor를 그대로 두고 빌드까지 실행시켰기 때문"이다.</p>
+
+    <h3>Jenkinsfile — 파이프라인을 "코드"로 만든다는 것</h3>
+    <div class="card">
+      <ul>
+        <li><strong>선언적(Declarative) 파이프라인:</strong> <code>pipeline { stages { ... } }</code> 형태의 구조화된 문법. 읽기 쉽고 제약이 있어 팀 표준화에 유리하다</li>
+        <li><strong>스크립트(Scripted) 파이프라인:</strong> Groovy 코드를 자유롭게 쓰는 방식. 유연하지만 복잡도가 커지면 유지보수가 어려워진다</li>
+        <li><strong>Multibranch Pipeline:</strong> 저장소의 각 브랜치를 자동으로 스캔해서, 브랜치별 Jenkinsfile을 찾아 파이프라인을 자동 생성한다. PR/브랜치가 많은 팀에서 job을 수동으로 만들 필요가 없어진다</li>
+        <li><strong>Shared Library:</strong> 여러 저장소가 공유하는 파이프라인 로직(공통 빌드 단계, 공통 알림 로직 등)을 별도 Git 저장소로 뽑아 <code>@Library</code>로 불러쓰는 방식</li>
+      </ul>
+    </div>
+    <p>여기서 시니어급 이해가 갈리는 지점은 "Jenkinsfile을 쓴다"는 사실 자체가 아니라, <strong>파이프라인 로직의 중복을 어떻게 제거하는가</strong>다. 서비스마다 Jenkinsfile을 복붙하면, 공통 로직 하나를 고칠 때 수십 개 저장소를 전부 고쳐야 하는 상황이 생긴다.</p>
+
+    <div class="code-block">// Jenkinsfile (Declarative Pipeline 예시)
+@Library('shared-pipeline-lib') _   // 팀 공용 Shared Library 로드
+
+pipeline {
+    agent { label 'linux-docker' }   // Controller가 아닌 지정된 Agent에서 실행
+
+    options {
+        timeout(time: 20, unit: 'MINUTES')
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Checkout') {
+            steps { checkout scm }
+        }
+        stage('Build & Test') {
+            parallel {
+                stage('Unit Test') {
+                    steps { sh 'make test-unit' }
+                }
+                stage('Lint') {
+                    steps { sh 'make lint' }
+                }
+            }
+        }
+        stage('Package') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-registry-cred',
+                    usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh 'make docker-build-and-push'
+                }
+            }
+        }
+    }
+
+    post {
+        failure { commonNotify.slackAlert('빌드 실패') }  // Shared Library 함수 호출
+        always  { cleanWs() }
+    }
+}</div>
+  </section>
+
+  <!-- ─── SECTION 4: 자체 호스팅 운영의 네 가지 축 ─── -->
+  <section>
+    <h2>🏗️ Jenkins 자체 호스팅 운영의 네 가지 축</h2>
+
+    <h3>1. Controller/Agent 구조 설계 — "어디서 실행할 것인가"</h3>
+    <div class="flow-diagram">[Controller]  ── 스케줄링, UI, job 상태 관리만 담당 (executor = 0 이상적)
+      │
+      ├── [Agent: linux-docker]   ── Docker 빌드 전용 (고정 또는 동적)
+      ├── [Agent: linux-heavy]    ── 무거운 통합 테스트 전용
+      └── [Agent: k8s-ephemeral]  ── Kubernetes Plugin으로 pod 단위 임시 생성/삭제</div>
+    <div class="card">
+      <ul>
+        <li><strong>고정(Static) Agent:</strong> 상시 켜져 있는 서버. 캐시가 예열되어 있어 빌드가 빠르지만, 유휴 시간에도 리소스를 점유해 비용이 든다</li>
+        <li><strong>동적(Dynamic) Agent:</strong> Kubernetes Plugin 등으로 빌드가 필요할 때만 pod를 띄우고 끝나면 없앤다. 온디맨드 확장에 유리하지만 pod 기동 오버헤드와 캐시 웜업 문제가 있다</li>
+        <li><strong>라벨(label) 기반 라우팅:</strong> job이 요구하는 리소스(Docker, GPU, 특정 OS)에 맞는 Agent로만 스케줄링되도록 라벨을 명시한다</li>
+      </ul>
+    </div>
+
+    <h3>2. 플러그인 관리 — "무엇을 신뢰하고 어떻게 검증할 것인가"</h3>
+    <div class="card">
+      <ul>
+        <li><strong>최소 설치 원칙:</strong> 필요한 기능만 설치한다. 플러그인이 많을수록 보안 취약점 표면과 상호 충돌 가능성이 커진다</li>
+        <li><strong>버전 고정:</strong> 자동 업데이트를 끄고, 플러그인 버전을 명시적으로 관리한다 (Configuration as Code의 <code>plugins.txt</code> 등)</li>
+        <li><strong>스테이징 검증:</strong> 프로덕션 Jenkins에 바로 업데이트하지 않고, 스테이징 Jenkins에서 먼저 회귀 테스트를 거친다</li>
+        <li><strong>보안 어드바이저리 추적:</strong> Jenkins 보안 공지를 주기적으로 확인해 critical 취약점이 있는 플러그인은 우선순위로 패치한다</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>흔한 사고:</strong> 플러그인을 별다른 검증 없이 즉시 업데이트했다가, 의존하는 다른 플러그인과의 API 호환성이 깨져 전체 파이프라인이 며칠간 실패하는 사고가 실무에서 반복적으로 발생한다.
+    </div>
+
+    <h3>3. Credential 관리 — "비밀 값을 어떻게 다룰 것인가"</h3>
+    <div class="card">
+      <ul>
+        <li><strong>Jenkins Credentials Store 사용:</strong> API 키, 배포 계정 정보를 Jenkinsfile이나 스크립트에 하드코딩하지 않고 Credentials Store에 등록해 <code>credentialsId</code>로만 참조한다</li>
+        <li><strong>Folder 단위 권한 분리:</strong> 팀/프로젝트별 폴더를 나누고, 해당 폴더의 credential은 그 폴더의 job만 접근하도록 스코프를 제한한다</li>
+        <li><strong>로그 마스킹 신뢰의 한계:</strong> Jenkins가 credential 값을 로그에서 자동 마스킹해주지만, <code>echo</code>나 디버그 스크립트로 값을 직접 출력하면 마스킹을 우회해 노출될 수 있다</li>
+        <li><strong>최소 권한 원칙:</strong> 배포 계정은 필요한 리소스에만 접근 가능하도록 범위를 제한하고, 정기적으로 회전(rotation)한다</li>
+      </ul>
+    </div>
+
+    <h3>4. 백업과 재해 복구 — "Jenkins 자체가 죽으면 어떻게 되는가"</h3>
+    <div class="card">
+      <ul>
+        <li><strong>JENKINS_HOME 백업:</strong> job 설정, 빌드 히스토리, credential(암호화 상태), 플러그인 목록이 모두 이 디렉터리에 있다. 정기 백업이 없으면 Controller 디스크 장애 시 전체 CI/CD 이력이 소실된다</li>
+        <li><strong>Configuration as Code(JCasC):</strong> Jenkins 자체 설정(시스템 설정, 플러그인 목록, 보안 정책)을 YAML로 코드화해서, 신규 Controller를 빠르게 재현할 수 있게 한다</li>
+        <li><strong>Pipeline as Code와의 결합:</strong> job 정의 자체는 Jenkinsfile(코드 저장소)에 있으므로, Controller가 완전히 새로 뜨더라도 Multibranch 설정과 JCasC만 있으면 job들이 자동으로 재구성된다</li>
+        <li><strong>RTO/RPO 정의:</strong> "Jenkins가 몇 시간 안에 복구되어야 하는가"를 먼저 정의하고, 그에 맞는 백업 주기와 이중화 수준(active-passive 등)을 설계한다</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>실무 판단:</strong> Pipeline as Code + JCasC를 함께 쓰면 "Controller는 언제든 다시 만들 수 있는 대체 가능한 자원"이 된다. 반대로 UI에서 손수 만든 Freestyle job이 많으면, Controller 자체가 대체 불가능한 단일 장애점이 된다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 5: 답변 사고 순서 ─── -->
+  <section>
+    <h2>🧠 답변 사고 순서</h2>
+    <p>면접 질문을 받았을 때 아래 순서로 생각을 전개하면 시니어 수준의 답변 구조가 된다.</p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>Controller/Agent 분리부터 언급</strong><br>
+          빌드 실행은 Controller가 아니라 별도 Agent에서 하고, Controller는 오케스트레이션에만 집중시킨다고 먼저 말한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Pipeline as Code + Shared Library로 표준화</strong><br>
+          Jenkinsfile로 파이프라인을 코드화하고, 여러 서비스에 반복되는 로직은 Shared Library로 추출해 중복을 없앤다고 설명한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>플러그인을 리스크로 관리</strong><br>
+          최소 설치, 버전 고정, 스테이징 검증 절차를 언급하며 플러그인을 "설치하면 끝"이 아니라 지속 관리 대상으로 다룬다는 것을 보여준다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Credential 최소 권한 원칙</strong><br>
+          Credentials Store, folder 단위 스코프 분리, 로그 마스킹의 한계를 구체적으로 짚는다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>재해 복구까지 설계 범위에 포함</strong><br>
+          JENKINS_HOME 백업, JCasC로 Controller 자체를 대체 가능한 자원으로 만든다는 점으로 마무리하고, 필요하면 GitHub Actions 대비 Jenkins를 선택하는 기준(온프레미스, 규제, 커스텀 플러그인 생태계)을 언급한다.
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ─── SECTION 6: 핵심 답변 예시 ─── -->
+  <section>
+    <h2>💬 핵심 답변 예시</h2>
+
+    <div class="answer-block">
+      <div class="speaker">답변 예시 (시니어 수준)</div>
+      <p>"Jenkins를 프로덕션 레벨로 운영할 때 가장 먼저 지키는 원칙은 Controller와 Agent를 명확히 분리하는 것입니다. Controller에서는 executor를 두지 않거나 최소화해서 스케줄링과 UI 응답성만 담당하게 하고, 실제 빌드·테스트는 Docker 전용, 무거운 통합 테스트 전용처럼 목적별로 라벨링된 Agent에서 실행합니다. 트래픽이 일정하지 않은 팀이라면 Kubernetes Plugin으로 동적 Agent를 구성해서 온디맨드로 확장하되, pod 기동 오버헤드가 크면 일부는 고정 Agent로 유지하는 하이브리드 구성을 고려합니다.</p>
+      <p>파이프라인은 반드시 Jenkinsfile로 코드화하고 Multibranch Pipeline으로 브랜치별 job이 자동 생성되게 합니다. 서비스가 여러 개면 공통 빌드·알림·배포 로직을 Shared Library로 뽑아, 로직을 바꿀 때 저장소 하나만 수정하면 전체에 반영되도록 설계합니다.</p>
+      <p>플러그인은 필요한 것만 최소로 설치하고 자동 업데이트는 끕니다. 업데이트가 필요하면 스테이징 Jenkins에서 먼저 회귀 테스트를 거친 뒤 프로덕션에 반영합니다. Credential은 Jenkins Credentials Store에 저장하고 folder 단위로 접근 범위를 제한하며, 로그 마스킹을 과신하지 않고 디버그 스크립트에서 credential 값을 직접 출력하지 않도록 코드 리뷰 단계에서 체크합니다.</p>
+      <p>마지막으로 JENKINS_HOME 백업과 Configuration as Code(JCasC)를 함께 운영해서, Controller가 완전히 죽어도 짧은 시간 안에 동일한 설정으로 재구성할 수 있게 합니다. 온프레미스나 규제 요구가 없다면 관리형인 GitHub Actions가 운영 부담이 적지만, 이번처럼 온프레미스가 필수인 환경에서는 Jenkins의 자체 호스팅 유연성과 플러그인 생태계가 더 맞다고 판단해서 이 방향으로 설계하겠습니다."</p>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 7: Senior Follow-up ─── -->
+  <section>
+    <h2>🔺 Senior-Level Follow-up 질문</h2>
+
+    <div class="followup-item">
+      <div class="q">Q. "Jenkins 마스터(Controller)가 완전히 다운됐습니다. 어떻게 복구하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> "백업이 있다"는 답으로 끝내면 안 되고, 복구 시간(RTO)과 데이터 손실 허용 범위(RPO)를 먼저 정의하는 사고를 보여줘야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 평소 JCasC로 시스템 설정을 코드화해두고 JENKINS_HOME(특히 credential, 빌드 히스토리)을 정기 백업해뒀다면, 신규 Controller를 띄우고 JCasC를 적용한 뒤 백업을 복원하는 것으로 대부분 해결된다. job 정의 자체는 Jenkinsfile이 각 저장소에 있으므로 Multibranch 스캔만 다시 실행하면 자동 재구성된다. 더 높은 가용성이 필요하면 active-passive Controller 이중화나 정기적인 DR 리허설(실제로 복구가 되는지 주기적으로 검증)을 도입한다고 언급한다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "플러그인 업데이트 후 파이프라인이 깨지는 사고가 반복됩니다. 재발을 어떻게 막으시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> "업데이트를 안 한다"는 회피책이 아니라, 검증 프로세스를 만드는 방향으로 답해야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 자동 업데이트를 끄고 플러그인 버전을 명시적으로 관리한다. 프로덕션과 동일한 구성의 스테이징 Jenkins를 두고, 업데이트는 항상 스테이징에서 먼저 대표 파이프라인 몇 개를 돌려 회귀를 확인한 뒤에만 프로덕션에 반영한다. 업데이트 이력과 실패 이력을 기록해, 특정 플러그인이 반복적으로 문제를 일으키면 대체재를 검토한다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "수백 개 마이크로서비스 저장소마다 비슷한 Jenkinsfile을 복붙해서 쓰고 있습니다. 어떻게 개선하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 중복 제거의 기본 답은 Shared Library지만, 팀별 차이를 어떻게 흡수할지까지 말해야 시니어답다.
+        <br><br>
+        <strong>핵심 답변:</strong> 공통 빌드·테스트·알림·배포 로직을 Shared Library로 추출하고, 각 저장소의 Jenkinsfile은 파라미터(언어 버전, 배포 대상, 알림 채널 등)만 지정하는 얇은 래퍼로 만든다. Shared Library 자체도 버전 태그로 관리해서, 한 서비스가 새 버전으로 먼저 검증하고 문제가 없으면 나머지 서비스가 순차적으로 따라가는 점진적 롤아웃이 가능하게 한다. Shared Library를 깨뜨리면 전체 조직의 CI가 동시에 멈출 수 있다는 점도 리스크로 언급한다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "GitHub Actions로 이미 파이프라인이 잘 돌아가고 있는데, 왜 Jenkins로 전환해야 한다고 생각하십니까? 혹은 반대로 언제 유지해야 합니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 도구 선호가 아니라 운영 제약(호스팅 위치, 커스터마이징, 플러그인 생태계, 조직 역량)으로 답한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 사내 네트워크 안에서만 접근 가능한 인프라에 배포해야 하거나, 감사·규제 요구로 완전한 온프레미스 운영이 필수인 경우 Jenkins의 자체 호스팅 유연성이 필요하다. 반대로 그런 제약이 없다면 관리형인 GitHub Actions가 운영 부담(Controller 이중화, 플러그인 관리, 백업)을 회사가 직접 지지 않아도 되어 대부분의 팀에 더 적합하다. 이미 Jenkins 생태계에 강하게 의존하는 레거시 플러그인·워크플로우가 많다면, 전환 비용과 유지 비용을 비교해서 판단해야 한다고 덧붙인다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 8: 좋은 답변 vs 약한 답변 ─── -->
+  <section>
+    <h2>⚖️ 좋은 답변과 약한 답변의 차이</h2>
+
+    <div class="compare-grid">
+      <div class="compare-card good">
+        <div class="compare-label">✅ 좋은 답변</div>
+        <ul>
+          <li>Controller와 Agent를 분리해서 설명하고, 그 이유(성능·보안)를 설명</li>
+          <li>Jenkinsfile + Shared Library로 중복 제거 설계를 구체적으로 제시</li>
+          <li>플러그인을 "설치하면 끝"이 아니라 버전 고정·스테이징 검증 대상으로 다룸</li>
+          <li>Credential 관리와 로그 마스킹의 한계를 구체적으로 언급</li>
+          <li>JENKINS_HOME 백업 + JCasC로 재해 복구까지 설계 범위에 포함</li>
+          <li>Jenkins/GitHub Actions 선택을 운영 제약 기준으로 설명</li>
+        </ul>
+      </div>
+      <div class="compare-card weak">
+        <div class="compare-label">❌ 약한 답변</div>
+        <ul>
+          <li>"Jenkins UI에서 job 만들면 됩니다" — Pipeline as Code 개념 없음</li>
+          <li>Controller에서 빌드까지 직접 실행하는 것을 문제로 인식 못 함</li>
+          <li>플러그인은 필요하면 그때그때 설치하면 된다고만 생각</li>
+          <li>Credential을 스크립트에 직접 넣거나 관리 방식을 언급 안 함</li>
+          <li>Jenkins가 죽으면 어떻게 되는지 생각해본 적 없음</li>
+          <li>"Jenkins가 낡았다/GitHub Actions가 무조건 낫다" 식 단정</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>핵심 차이:</strong> 좋은 답변은 Jenkins를 "코드로 관리하고 장애에 대비해야 하는 인프라 시스템"으로 다룬다. 약한 답변은 Jenkins를 "UI에서 클릭해서 쓰는 빌드 도구"로 다룬다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 9: 실무 연결 ─── -->
+  <section>
+    <h2>🏭 실무 연결 — 이런 상황에서 이렇게 설계</h2>
+
+    <div class="card">
+      <div class="card-title">상황별 Jenkins 운영 가이드</div>
+      <table class="rubric-table">
+        <thead>
+          <tr><th>상황</th><th>설계 포인트</th><th>이유</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Controller의 빌드 응답이 점점 느려진다</td>
+            <td>Controller의 executor를 0으로 줄이고 Agent로 실행 이관</td>
+            <td>Controller 리소스를 스케줄링/UI에만 전념시킴</td>
+          </tr>
+          <tr>
+            <td>서비스 수가 빠르게 늘어나는 조직</td>
+            <td>Shared Library로 공통 로직 추출 + Multibranch로 job 자동 생성</td>
+            <td>Jenkinsfile 복붙과 job 수동 생성 부담 제거</td>
+          </tr>
+          <tr>
+            <td>보안 감사에서 credential 노출 이력이 지적됨</td>
+            <td>Folder 단위 credential 스코프 분리 + 정기 회전</td>
+            <td>최소 권한 원칙과 사고 반경 축소</td>
+          </tr>
+          <tr>
+            <td>빌드 부하가 시간대별로 크게 변한다</td>
+            <td>Kubernetes Plugin 기반 동적 Agent 도입</td>
+            <td>유휴 리소스 비용 절감과 탄력적 확장</td>
+          </tr>
+          <tr>
+            <td>Jenkins 장애 대응 절차가 문서화되어 있지 않다</td>
+            <td>JCasC + JENKINS_HOME 백업 + 정기 DR 리허설</td>
+            <td>Controller를 대체 가능한 자원으로 만들어 복구 시간 단축</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 10: 자기 점검 Rubric ─── -->
+  <section>
+    <h2>📋 자기 점검 Rubric</h2>
+    <p>아래 기준으로 자신의 답변 수준을 체크하라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>레벨</th>
+          <th>할 수 있는 것</th>
+          <th>부족한 것</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="level-badge level-1">Lv 1</span></td>
+          <td>Jenkins UI에서 Freestyle job이나 간단한 파이프라인을 만들 수 있다</td>
+          <td>Jenkinsfile, Controller/Agent 분리, Shared Library 개념 없음</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-2">Lv 2</span></td>
+          <td>Declarative Pipeline과 Multibranch를 사용할 수 있다</td>
+          <td>플러그인 리스크 관리, credential 스코프, 재해 복구 개념 부족</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-3">Lv 3</span></td>
+          <td>Shared Library로 중복을 제거하고 Agent를 목적별로 분리해 운영한다</td>
+          <td>동적 Agent 운영 경험, JCasC 기반 재현 가능한 복구 경험 부족</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-4">Lv 4 (목표)</span></td>
+          <td>Controller/Agent 아키텍처 설계 + 플러그인을 리스크로 관리 + credential 최소 권한 + JCasC/백업으로 재해 복구 설계 + 도구 선택을 제약 조건으로 설명</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>셀프 체크리스트</h3>
+    <div class="card">
+      <ul>
+        <li>☐ Controller에서 빌드를 직접 실행하면 안 되는 이유를 설명할 수 있는가</li>
+        <li>☐ Shared Library로 파이프라인 로직을 재사용하는 설계를 그릴 수 있는가</li>
+        <li>☐ 플러그인 업데이트를 왜 스테이징에서 먼저 검증해야 하는지 말할 수 있는가</li>
+        <li>☐ Credential을 folder 단위로 분리해야 하는 이유를 설명할 수 있는가</li>
+        <li>☐ Jenkins Controller가 다운됐을 때 복구 절차를 구체적으로 그릴 수 있는가</li>
+        <li>☐ Jenkins와 GitHub Actions를 도구 선호가 아닌 제약 조건으로 비교할 수 있는가</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 11: 흔한 오해 ─── -->
+  <section>
+    <h2>🚫 흔한 오해와 교정</h2>
+
+    <div class="card">
+      <div class="card-title">오해 1</div>
+      <p><strong>"Jenkins는 UI로 job을 설정하면 끝이다."</strong></p>
+      <p>→ UI로 만든 Freestyle job은 코드로 관리되지 않아 버전 이력을 추적할 수 없고, Controller가 죽으면 재현이 매우 어렵다. Jenkinsfile로 코드화하고 Git에 커밋해야 감사 가능성과 재현성이 확보된다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 2</div>
+      <p><strong>"플러그인은 많이 깔수록 기능이 풍부해져서 좋다."</strong></p>
+      <p>→ 플러그인이 많아질수록 보안 취약점 표면이 넓어지고, 플러그인 간 버전 호환성 문제로 업데이트가 점점 위험해진다. 실제로 쓰는 플러그인만 최소로 유지하는 것이 장기적으로 안정적이다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 3</div>
+      <p><strong>"Controller에서 executor를 늘려서 빌드를 직접 실행해도 상관없다."</strong></p>
+      <p>→ Controller가 빌드까지 담당하면 무거운 빌드 하나가 전체 Jenkins의 스케줄링과 UI 응답성을 저하시킨다. 또한 빌드 스크립트가 실행되는 환경이 Controller와 같아지므로 보안 격리도 약해진다. Agent로 실행을 분리하는 것이 기본이다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 4</div>
+      <p><strong>"Jenkinsfile 하나만 잘 짜두면 모든 서비스에 그대로 재사용할 수 있다."</strong></p>
+      <p>→ 서비스마다 언어, 배포 대상, 알림 채널이 다르면 하나의 Jenkinsfile을 그대로 복붙하는 것은 결국 유지보수 부담으로 돌아온다. 공통 로직은 Shared Library로 뽑고, 서비스별 차이는 파라미터로 흡수하는 구조가 필요하다.</p>
+    </div>
+  </section>
+
+  <div class="nav-bar">
+    <a href="./0002-github-actions-pipeline-design-automation-quality.html">← Day 2</a>
+    <span class="nav-center">Day 3 / 10 — CI/CD와 배포 전략 인터뷰</span>
+    <a href="./index.html">목록으로 →</a>
+  </div>
+
+</div>
+</body>
+</html>
