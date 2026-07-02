@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interview Day 3 — TCP vs UDP와 연결 관리</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.72; color: #1a1d23; background: #fff; }
+    h1 { margin: 0 0 8px; font-size: 2rem; line-height: 1.25; }
+    .subtitle { color: #57606a; margin: 0 0 32px; font-size: 1.05rem; }
+    h2 { margin-top: 48px; padding-top: 12px; border-top: 2px solid #e5e7eb; font-size: 1.4rem; }
+    h3 { margin-top: 32px; color: #1a1d23; }
+    h4 { margin-top: 20px; color: #444; font-size: 1rem; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.93rem; }
+    th, td { border: 1px solid #d8dee4; padding: 9px 12px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 18px; background: #0d1117; color: #e6edf3; border-radius: 8px; font-size: 0.88rem; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.35em; border-radius: 4px; border: 1px solid #d8dee4; }
+    blockquote { margin: 20px 0; padding: 4px 20px; border-left: 4px solid #0b57d0; background: #f0f4ff; color: #2d3748; }
+    blockquote.warn { border-left-color: #e3a008; background: #fffbeb; }
+    blockquote.good { border-left-color: #16a34a; background: #f0fdf4; }
+    blockquote.bad  { border-left-color: #dc2626; background: #fef2f2; }
+    details { margin: 20px 0; padding: 14px 18px; border: 1px solid #d8dee4; border-radius: 8px; background: #fafafa; }
+    summary { cursor: pointer; font-weight: 600; font-size: 1rem; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 36px 0; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-right: 6px; }
+    .badge-senior { background: #dbeafe; color: #1d4ed8; }
+    .badge-tool   { background: #fce7f3; color: #9d174d; }
+    .badge-trap   { background: #fee2e2; color: #991b1b; }
+    .badge-tip    { background: #dcfce7; color: #15803d; }
+    .back { margin-bottom: 32px; font-size: 0.95rem; }
+    .rubric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+    .rubric-col { padding: 16px; border-radius: 8px; }
+    .rubric-col.weak  { background: #fef2f2; border: 1px solid #fca5a5; }
+    .rubric-col.strong { background: #f0fdf4; border: 1px solid #86efac; }
+    .rubric-col h4 { margin-top: 0; }
+    @media (max-width: 640px) { .rubric-grid { grid-template-columns: 1fr; } }
+    .step-list { counter-reset: step; padding: 0; list-style: none; }
+    .step-list li { counter-increment: step; padding: 10px 0 10px 52px; position: relative; border-bottom: 1px solid #f0f0f0; }
+    .step-list li::before { content: counter(step); position: absolute; left: 0; top: 10px; width: 32px; height: 32px; background: #0b57d0; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+    .interview-q { background: #1a1d23; color: #e6edf3; padding: 20px 24px; border-radius: 8px; margin: 20px 0; font-size: 1.05rem; font-style: italic; }
+    .interview-q::before { content: "💬 면접 질문"; display: block; font-size: 0.78rem; font-style: normal; font-weight: 700; color: #8b949e; margin-bottom: 8px; letter-spacing: 0.05em; }
+    .toc { background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 8px; padding: 20px 24px; margin: 24px 0 40px; }
+    .toc h3 { margin-top: 0; font-size: 1rem; }
+    .toc ol { margin: 0; padding-left: 20px; }
+    .toc li { margin: 4px 0; font-size: 0.93rem; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+
+  <h1>Interview Day 3</h1>
+  <p class="subtitle">TCP vs UDP와 연결 관리 — "신뢰성이라는 말 뒤에 숨은 실제 메커니즘과 그 대가"</p>
+
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#interview-q">면접 질문</a></li>
+      <li><a href="#prerequisite">전제 개념 — 알아야 할 기초</a></li>
+      <li><a href="#why-asked">왜 면접에서 이걸 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#thinking-order">답변 사고 순서</a></li>
+      <li><a href="#answer-example">핵심 답변 예시</a></li>
+      <li><a href="#tradeoff">Trade-off</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#followup">Senior-level Follow-up 질문</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <h2 id="interview-q">1. 면접 질문</h2>
+
+  <div class="interview-q">
+    "TCP가 UDP와 다르게 '신뢰성 있는 전송'을 제공한다고 하죠. 정확히 무엇을 보장하고, 그 보장을 위해 어떤 대가를 치릅니까? 그리고 그 대가가 실제 서비스에서 문제가 된 적이 있습니까?"
+  </div>
+
+  <p>"TCP는 신뢰성 있고 UDP는 신뢰성 없다"는 문장은 교과서 첫 줄에 나온다. 그래서 대부분의 지원자가 이 문장을 그대로 되풀이하는 것으로 답을 끝낸다. 하지만 면접관이 진짜 알고 싶은 것은 <strong>"신뢰성"이라는 단어가 구체적으로 어떤 메커니즘(순서 보장, 손실 복구, 흐름 제어, 혼잡 제어)의 합인지, 그리고 그 메커니즘 하나하나가 지연·처리량·구현 복잡도에 어떤 대가를 요구하는지</strong>다. 이걸 설명하지 못하면 "TCP는 좋고 UDP는 나쁘다"는 이분법에 갇힌 사람으로 보인다.</p>
+
+  <hr>
+
+  <!-- 2. 전제 개념 -->
+  <h2 id="prerequisite">2. 전제 개념 — 알아야 할 기초</h2>
+
+  <h3>2-1. "연결(connection)"이라는 것은 실제로 무엇을 의미하는가</h3>
+  <p>IP 계층은 각 패킷을 독립적으로 취급한다 — 이전 패킷과 지금 패킷이 같은 대화의 일부인지 IP는 모른다(비연결형, connectionless). TCP는 그 위에 "이 두 지점 사이에 순서가 있는 대화가 진행 중"이라는 <strong>상태(state)</strong>를 양쪽 호스트의 메모리에 만든다. 이 상태에는 시퀀스 번호, 윈도우 크기, 혼잡 윈도우, 타이머 등이 들어있다. UDP는 이런 상태를 전혀 만들지 않고 패킷을 그냥 보낸다.</p>
+
+  <blockquote>
+    <strong>비유:</strong> UDP로 메시지를 보내는 것은 엽서를 우체통에 넣는 것과 같다 — 보내고 나면 도착했는지, 순서가 맞는지 알 방법이 없다. TCP는 전화 통화와 비슷하다 — 먼저 상대가 받았는지 확인하고("여보세요?"), 대화 중에는 "네, 들려요"를 계속 주고받으며, 잡음이 있으면 "방금 뭐라고 하셨죠?"라고 되묻는다. 이 확인 절차 자체가 신뢰성이고, 동시에 통화 시간(지연)을 늘리는 원인이다.
+  </blockquote>
+
+  <h3>2-2. TCP의 "신뢰성"은 하나의 기능이 아니라 4가지 메커니즘의 합이다</h3>
+  <p>면접에서 좋은 인상을 주는 핵심은 "신뢰성"을 뭉뚱그리지 않고 아래처럼 쪼개서 설명하는 것이다.</p>
+
+  <table>
+    <thead>
+      <tr><th>메커니즘</th><th>보장하는 것</th><th>핵심 동작</th><th>대가</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>연결 수립</strong></td><td>양쪽이 통신할 준비가 됐다는 상호 확인</td><td>3-way handshake (SYN → SYN-ACK → ACK)</td><td>데이터 전송 전 1 RTT 지연</td></tr>
+      <tr><td><strong>순서 보장 + 손실 복구</strong></td><td>보낸 순서대로, 빠짐없이 도착</td><td>시퀀스 번호, ACK, 타임아웃 기반 재전송, 중복 ACK 기반 빠른 재전송</td><td>손실 시 재전송 대기(RTO)로 지연 발생, 순서 보장을 위해 먼저 도착한 패킷도 대기(HOL blocking)</td></tr>
+      <tr><td><strong>흐름 제어(Flow Control)</strong></td><td>수신자가 처리할 수 있는 만큼만 전송 (수신자 보호)</td><td>슬라이딩 윈도우, 수신 윈도우(rwnd) 광고</td><td>수신자 버퍼가 작으면 송신자가 아무리 빨라도 전송 속도 제한</td></tr>
+      <tr><td><strong>혼잡 제어(Congestion Control)</strong></td><td>네트워크 전체가 감당할 수 있는 만큼만 전송 (네트워크 보호)</td><td>slow start, congestion avoidance, fast retransmit/recovery, cwnd</td><td>연결 초기와 손실 직후에는 대역폭을 다 쓰지 못함</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>여기서 중요한 구분:</strong> 흐름 제어는 "상대방(수신자)이 못 버티게 만들지 않기 위한" 제어이고, 혼잡 제어는 "네트워크 경로(라우터, 링크) 전체가 못 버티게 만들지 않기 위한" 제어다. 둘 다 "너무 빨리 보내지 마라"는 결과로 보이지만 <strong>보호 대상이 다르다.</strong> 이 구분을 못하면 시니어 답변으로 인정받기 어렵다.</p>
+
+  <h3>2-3. 3-way handshake — 왜 2번이 아니라 3번인가</h3>
+  <pre><code>Client                          Server
+  |------ SYN (seq=x) --------->|   "나는 x부터 시작할 거야"
+  |<--- SYN-ACK (seq=y, ack=x+1)-|   "알겠고, 나는 y부터 시작할게. 네 x는 받았어"
+  |------ ACK (ack=y+1) -------->|   "네 y도 받았어. 이제 대화 시작"</code></pre>
+  <p>2-way(SYN → ACK)로는 부족한 이유는, 서버가 클라이언트의 SYN을 받았다는 사실을 클라이언트가 확인할 방법이 없기 때문이다. 3번째 ACK가 있어야 <strong>양쪽 모두</strong> "상대가 내 시작 번호를 알고 있다"는 것을 확신하고 대화를 시작할 수 있다. 이것이 "신뢰성"의 가장 첫 단계 — <strong>대화를 시작하기 전에 서로의 상태를 동기화</strong>하는 것이다.</p>
+
+  <h3>2-4. 재전송은 "언제" 일어나는가 — 두 가지 트리거</h3>
+  <ul>
+    <li><strong>타임아웃 기반 재전송(RTO)</strong>: ACK가 정해진 시간(RTO, Retransmission Timeout) 안에 오지 않으면 재전송한다. RTO는 고정값이 아니라 RTT의 평균과 변동성(RTT variance)을 계속 측정해서 동적으로 조정된다. RTO가 지나야 재전송하므로 <strong>가장 느린 복구 방법</strong>이다.</li>
+    <li><strong>빠른 재전송(Fast Retransmit)</strong>: 같은 ACK 번호가 3번 중복으로 오면("나는 아직 세그먼트 5를 못 받았어"를 3번 반복해서 말하는 것) 타임아웃을 기다리지 않고 즉시 재전송한다. 이게 훨씬 빠르다.</li>
+  </ul>
+  <p>실무에서 "TCP 재전송이 느리다"고 느껴지는 대부분의 경우는 <strong>타임아웃 기반 재전송</strong>에 걸린 것이다. RTO는 보통 200ms~1초 수준에서 시작하므로, 패킷 손실이 발생하면 사용자는 그 시간만큼 응답 지연을 체감한다.</p>
+
+  <h3>2-5. 슬라이딩 윈도우와 혼잡 윈도우 — 왜 처음엔 느리다가 빨라지는가</h3>
+  <p>연결 초기에는 네트워크 상태를 모르기 때문에 아주 작은 혼잡 윈도우(cwnd)로 시작해서(slow start), ACK를 받을 때마다 지수적으로 늘린다. 어느 시점(임계값, ssthresh)부터는 선형으로 천천히 늘린다(congestion avoidance). 손실이 감지되면 cwnd를 큰 폭으로 줄인다(TCP Reno/Cubic 등 알고리즘마다 감소 폭이 다름). <strong>실제 전송 속도는 min(수신 윈도우, 혼잡 윈도우)로 결정된다</strong> — 즉 수신자가 아무리 버퍼가 커도 네트워크가 혼잡하다고 판단되면 속도는 못 올라간다.</p>
+
+  <blockquote>
+    <strong>실무 함의:</strong> 짧은 연결(예: 매 요청마다 새 TCP 연결)에서는 slow start가 끝나기도 전에 전송이 끝나버려 대역폭을 제대로 활용하지 못한다. 이것이 "커넥션 재사용(keep-alive, connection pooling)"이 성능에 중요한 이유 중 하나 — 한 번 데워진(warm) 연결의 cwnd를 재사용할 수 있기 때문이다.
+  </blockquote>
+
+  <h3>2-6. UDP는 무엇을 "포기"하고 무엇을 "얻는가"</h3>
+  <p>UDP는 3-way handshake, 재전송, 순서 보장, 흐름/혼잡 제어를 모두 하지 않는다. 그 대신 <strong>지연이 없고(핸드셰이크 불필요), 헤더가 작고(8바이트), 순서가 뒤바뀌어도 애플리케이션이 즉시 처리할 수 있다.</strong> 이건 "품질이 낮다"가 아니라 <strong>"신뢰성을 애플리케이션 계층으로 넘긴다"는 설계 선택</strong>이다. DNS, 실시간 영상/음성(WebRTC), 게임 서버, QUIC(HTTP/3의 기반)이 UDP를 쓰는 이유가 여기 있다 — 오래된 데이터를 재전송받는 것보다 최신 데이터를 빨리 받는 게 더 중요한 경우가 있기 때문이다.</p>
+
+  <hr>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <h2 id="why-asked">3. 왜 면접에서 이걸 묻는가</h2>
+
+  <ol>
+    <li><strong>1단계 필터 (암기 vs 분해)</strong> — "TCP는 신뢰성, UDP는 비신뢰성"이라는 이분법에서 멈추는지, 아니면 신뢰성을 연결 수립/순서 보장/흐름 제어/혼잡 제어로 쪼개서 설명할 수 있는지 확인한다.</li>
+    <li><strong>2단계 필터 (지식 vs 대가 인식)</strong> — 신뢰성에는 반드시 대가(지연, 처리량 제한, HOL blocking)가 따른다는 것을 알고 있는지 본다. "TCP가 무조건 더 좋다"고 말하면 trade-off 감각이 없다는 신호다.</li>
+    <li><strong>3단계 필터 (지식 vs 실전 판단)</strong> — 실제로 프로토콜 선택이나 설정(keep-alive, timeout, buffer size) 때문에 장애나 성능 문제를 겪어본 적이 있는지, 그리고 그때 어떻게 진단했는지를 follow-up으로 확인한다.</li>
+  </ol>
+
+  <blockquote class="warn">
+    <strong>면접관이 피하고 싶은 답변:</strong> "TCP는 연결형이고 신뢰성이 있어서 데이터가 순서대로 정확하게 전달됩니다. UDP는 비연결형이고 빠르지만 신뢰성이 없습니다." 이 문장에는 오답이 하나도 없지만, <strong>왜 그런지, 무엇을 대가로 치르는지, 언제 반대 선택을 하는지</strong>가 전혀 없다. 위키백과 요약과 구분되지 않는다.
+  </blockquote>
+
+  <hr>
+
+  <!-- 4. 실무 연결 -->
+  <h2 id="real-world">4. 실무 연결</h2>
+
+  <h3>실제 장애 시나리오 A — "가끔 한 요청만 3초씩 느려진다"</h3>
+  <p>API 응답 시간 대시보드에서 p50은 정상인데 p99만 튀는 패턴이 있었다. tcpdump로 캡처해보니 특정 요청에서만 패킷 손실 후 <strong>RTO 기반 재전송</strong>이 발생하고 있었고, 그 RTO가 약 1초로 잡혀 있어 재전송이 2~3회 겹치면 3초까지 늘어났다. 애플리케이션 로그만 봤다면 "가끔 느린 원인 불명"으로 끝났겠지만, TCP 재전송 타이머의 존재를 알고 있었기 때문에 네트워크 구간(특정 AZ 간 손실률 증가)으로 원인을 좁힐 수 있었다.</p>
+
+  <h3>실제 장애 시나리오 B — 대량 파일 업로드에서 처리량이 기대보다 낮음</h3>
+  <p>고대역폭·고지연(장거리 리전 간) 구간에서 대용량 업로드 처리량이 이론적 대역폭의 일부밖에 안 나온 적이 있다. 원인은 <strong>TCP 수신 윈도우 크기가 BDP(Bandwidth-Delay Product = 대역폭 × RTT)보다 작아서</strong> 송신자가 ACK를 기다리며 노는 시간이 생긴 것이었다. 소켓 버퍼 크기(윈도우 스케일링 포함)를 조정하거나 병렬 연결을 사용해서 해결했다. 이건 "네트워크가 느리다"가 아니라 "설정된 윈도우가 이 RTT/대역폭 조합에 비해 작다"는 정량적 문제였다.</p>
+
+  <h3>실제 장애 시나리오 C — 실시간 화상회의 품질 저하를 TCP로 "고쳐서" 오히려 나빠진 사례</h3>
+  <p>초기 설계에서 화상회의 미디어 스트림을 신뢰성을 위해 TCP로 보냈더니, 손실이 발생할 때마다 재전송을 기다리며 <strong>뒤에 있는 최신 프레임까지 함께 지연</strong>되는 현상(Head-of-Line blocking)이 발생했다. 사용자 입장에서는 화면이 끊기다가 갑자기 몰아서 재생되는 형태로 체감됐다. UDP 기반(WebRTC)으로 바꾸고 애플리케이션 레벨에서 "오래된 프레임은 버리고 최신 프레임 우선"으로 처리하도록 바꾸자 체감 품질이 개선됐다. <strong>신뢰성이 항상 사용자 경험을 개선하는 것은 아니라는 것</strong>을 보여주는 사례다.</p>
+
+  <hr>
+
+  <!-- 5. 답변 사고 순서 -->
+  <h2 id="thinking-order">5. 답변 사고 순서</h2>
+
+  <ol class="step-list">
+    <li>
+      <strong>"신뢰성"을 정의부터 분해한다</strong>
+      <br>뭉뚱그리지 않고 연결 수립 / 순서 보장·손실 복구 / 흐름 제어 / 혼잡 제어 4가지로 나눠 말한다.
+    </li>
+    <li>
+      <strong>각 메커니즘의 동작 원리를 한 문장으로 압축</strong>
+      <br>3-way handshake, 시퀀스 번호+ACK+재전송, 슬라이딩 윈도우, cwnd(slow start/congestion avoidance)를 순서대로 짚는다.
+    </li>
+    <li>
+      <strong>각 메커니즘의 "대가"를 바로 이어서 말한다</strong>
+      <br>연결 수립 → 1 RTT 지연, 순서 보장 → HOL blocking, 재전송 → RTO 지연, 혼잡 제어 → 초기 저속.
+    </li>
+    <li>
+      <strong>UDP가 이 모든 걸 포기하는 이유(설계 의도)를 설명</strong>
+      <br>신뢰성을 포기하는 게 아니라 "신뢰성 구현 책임을 애플리케이션으로 옮기는 것"이라는 프레이밍을 사용한다.
+    </li>
+    <li>
+      <strong>실제 겪은 사례로 연결</strong>
+      <br>재전송 지연, 윈도우 크기, 또는 TCP → UDP 전환 경험 중 하나를 구체적 수치와 함께 제시한다.
+    </li>
+    <li>
+      <strong>"어떻게 선택하는가"로 마무리</strong>
+      <br>손실 허용 가능 여부, 지연 민감도, 순서 중요도, 트래픽 패턴(짧은 요청 vs 스트리밍)을 기준으로 프로토콜/설정을 고른다고 요약한다.
+    </li>
+  </ol>
+
+  <hr>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <h2 id="answer-example">6. 핵심 답변 예시</h2>
+
+  <h3>짧은 답변 (60초 버전)</h3>
+  <blockquote class="good">
+    "TCP의 신뢰성은 하나의 기능이 아니라 네 가지 메커니즘의 합이라고 생각합니다. 3-way handshake로 연결 상태를 동기화하고, 시퀀스 번호와 ACK로 순서와 손실을 관리하고, 흐름 제어로 수신자를 보호하고, 혼잡 제어로 네트워크 경로를 보호합니다. 각각은 대가가 있습니다 — 핸드셰이크는 1 RTT 지연을, 순서 보장은 head-of-line blocking을, 혼잡 제어는 연결 초반 저속 구간을 만듭니다. UDP는 이걸 다 포기하는 대신 지연 없이 바로 보내고, 신뢰성이 필요하면 애플리케이션이 직접 구현하도록 넘깁니다. 그래서 저는 '순서와 손실 복구가 중요한가 vs 최신성이 더 중요한가'를 기준으로 프로토콜을 고릅니다."
+  </blockquote>
+
+  <h3>깊이 있는 답변 (면접관이 "더 자세히"라고 물을 때)</h3>
+  <blockquote class="good">
+    "조금 더 구체적으로 말씀드리면, TCP의 재전송에는 두 가지 경로가 있습니다. 하나는 RTO(타임아웃) 기반 재전송인데, 이건 RTT 평균과 변동성을 계속 추정해서 타이머를 동적으로 잡기 때문에 최소 200ms에서 수 초까지 걸릴 수 있습니다. 다른 하나는 같은 ACK가 3번 중복되면 타임아웃을 기다리지 않고 즉시 재전송하는 빠른 재전송인데, 이게 훨씬 빠릅니다. 실무에서 'p99만 몇 초씩 튄다'는 증상은 대부분 전자, 즉 RTO 기반 재전송에 걸렸을 가능성이 높습니다.
+
+    흐름 제어와 혼잡 제어도 구분해서 설명드리고 싶은데, 흐름 제어는 수신자의 처리 능력(rwnd)을 보호하는 것이고 혼잡 제어는 중간 네트워크 경로의 용량(cwnd)을 보호하는 것입니다. 실제 전송 속도는 이 둘 중 작은 값으로 제한됩니다. 그래서 대역폭도 충분하고 수신 버퍼도 큰데 처리량이 안 나온다면, RTT가 큰 구간에서 윈도우 크기가 BDP(대역폭×RTT)보다 작게 설정된 건 아닌지 확인해야 합니다.
+
+    실제로 리전 간 대용량 업로드에서 이 문제를 겪었는데, 소켓 버퍼와 윈도우 스케일링을 조정하고 나서야 이론 대역폭에 근접했습니다. 반대로 화상회의 미디어 스트림을 TCP로 보냈을 때는 손실 시 재전송을 기다리느라 최신 프레임까지 지연되는 head-of-line blocking이 체감 품질을 떨어뜨려서, UDP 기반으로 바꾸고 오래된 프레임은 버리는 방식으로 개선한 경험도 있습니다. 결국 '신뢰성'은 공짜가 아니고, 트래픽 특성에 따라 어떤 대가를 감수할지 선택하는 문제라고 봅니다."
+  </blockquote>
+
+  <hr>
+
+  <!-- 7. Trade-off -->
+  <h2 id="tradeoff">7. Trade-off</h2>
+
+  <table>
+    <thead>
+      <tr><th>선택</th><th>장점</th><th>단점 / 주의사항</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>TCP 사용</strong></td>
+        <td>순서 보장, 손실 자동 복구, 혼잡 상황에서 네트워크 전체 안정성에 기여</td>
+        <td>연결 수립 지연(1 RTT, TLS까지 포함하면 더 늘어남), head-of-line blocking, 짧은 연결에서는 slow start로 대역폭 활용도 낮음</td>
+      </tr>
+      <tr>
+        <td><strong>UDP 사용</strong></td>
+        <td>지연 최소화, 헤더 오버헤드 작음, 최신 데이터 우선 전달 가능</td>
+        <td>순서/손실 복구를 애플리케이션이 직접 구현해야 함, 혼잡 제어가 없어 네트워크를 과도하게 점유할 위험(그래서 QUIC 등은 자체 혼잡 제어를 둠)</td>
+      </tr>
+      <tr>
+        <td><strong>커넥션 재사용 (Keep-alive / Pooling)</strong></td>
+        <td>핸드셰이크·slow start 반복을 피해 지연과 처리량 모두 개선</td>
+        <td>유휴 연결이 서버 자원(파일 디스크립터, 메모리)을 점유, 방화벽/LB의 idle timeout과 충돌 가능</td>
+      </tr>
+      <tr>
+        <td><strong>재전송 타이머를 짧게 설정</strong></td>
+        <td>손실 복구가 빨라짐</td>
+        <td>정상 지연을 손실로 오판해 불필요한 재전송(spurious retransmission) 증가, 네트워크 부하 가중</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 8. 흔한 오해 -->
+  <h2 id="misconceptions">8. 흔한 오해</h2>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 1</span> "TCP는 신뢰성이 있으니 무조건 UDP보다 좋은 선택이다"</summary>
+    <p>신뢰성은 순서와 손실 복구를 보장하지만, 그 대가로 지연과 head-of-line blocking을 만든다. 실시간성이 정확성보다 중요한 경우(음성/영상, 게임 상태 동기화)에는 오래된 데이터를 재전송받는 것보다 최신 데이터를 즉시 받는 것이 사용자 경험에 더 좋다. "신뢰성 있음 = 항상 우월함"은 성립하지 않는다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 2</span> "흐름 제어와 혼잡 제어는 같은 것이다"</summary>
+    <p>흐름 제어는 수신자의 버퍼(처리 능력)를 보호하기 위한 것이고, 혼잡 제어는 중간 네트워크 경로(라우터, 링크)의 용량을 보호하기 위한 것이다. 하나는 종단 간(end-to-end) 문제고 다른 하나는 네트워크 전체의 문제다. 실제 전송 속도는 두 윈도우 중 더 작은 값(min(rwnd, cwnd))으로 결정되므로, 성능 문제를 진단할 때 어느 쪽이 병목인지 구분해야 한다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 3</span> "패킷 손실이 생기면 TCP가 항상 빠르게 재전송해서 복구한다"</summary>
+    <p>빠른 재전송(중복 ACK 3회)은 상대적으로 빠르지만, 손실된 패킷이 스트림의 마지막 부분이거나 후속 패킷이 충분히 도착하지 않아 중복 ACK가 3개 안 모이면 <strong>타임아웃 기반 재전송(RTO)</strong>으로 넘어가고, 이건 수백 ms에서 초 단위까지 걸릴 수 있다. "TCP니까 알아서 빠르게 복구된다"는 전제로 지연 문제를 접근하면 원인을 놓친다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 4</span> "UDP는 신뢰성이 전혀 없으니 중요한 데이터에는 절대 쓸 수 없다"</summary>
+    <p>DNS, QUIC(HTTP/3), WebRTC 모두 UDP 기반이지만 매우 중요한 트래픽을 처리한다. 이들은 UDP 위에 <strong>애플리케이션 레벨에서 필요한 만큼만</strong> 재전송, 순서 보장, 심지어 자체 혼잡 제어(QUIC)를 구현한다. "UDP = 아무 보장 없음"이 아니라 "OS 커널이 아니라 애플리케이션이 무엇을 보장할지 선택할 수 있다"가 정확한 이해다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 5</span> "연결이 많아지면 그냥 커넥션 풀을 키우면 된다"</summary>
+    <p>커넥션을 늘리면 핸드셰이크·slow start 비용은 줄지만, 각 연결이 유휴 상태로 서버의 파일 디스크립터와 메모리를 점유한다. 또한 클라이언트-서버 사이에 로드밸런서나 방화벽의 idle timeout이 있으면, 응용 계층의 keep-alive 주기와 그 timeout이 어긋나 예상치 못한 연결 끊김(RST)이 발생할 수 있다. 커넥션 풀 크기는 "많을수록 좋다"가 아니라 서버 자원, 중간 장비의 timeout, 트래픽 패턴을 함께 고려해서 정해야 한다.</p>
+  </details>
+
+  <hr>
+
+  <!-- 9. Follow-up 질문 -->
+  <h2 id="followup">9. Senior-level Follow-up 질문</h2>
+
+  <table>
+    <thead>
+      <tr><th>Follow-up 질문</th><th>면접관의 의도</th><th>답변 포인트</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>"TCP 연결이 4-way handshake로 종료되는 이유는? 그리고 TIME_WAIT은 왜 필요합니까?"</td>
+        <td>연결 생명주기 전체를 이해하는지, 상태 관리 실무 이슈까지 아는지</td>
+        <td>각 방향(양방향 연결이므로)이 독립적으로 FIN을 보내야 하므로 4단계다. TIME_WAIT은 마지막 ACK가 유실됐을 때 재전송된 FIN을 처리하고, 지연 도착한 옛 패킷이 새 연결과 혼동되지 않도록 하기 위한 대기 시간이다. 대량 요청 서버에서 TIME_WAIT 소켓이 쌓여 포트가 고갈되는 문제(특히 짧은 연결을 많이 여는 구조)와 연결 지어 설명한다.</td>
+      </tr>
+      <tr>
+        <td>"슬로우 스타트가 매번 처음부터 다시 시작되는 게 왜 문제가 됩니까? 어떻게 완화합니까?"</td>
+        <td>프로토콜 지식을 성능 최적화 실무로 연결할 수 있는지</td>
+        <td>짧은 요청/응답이 반복되는 서비스는 매번 처음부터 slow start를 거치느라 대역폭을 다 못 쓴다. HTTP keep-alive/커넥션 풀링, HTTP/2의 멀티플렉싱(연결 하나 재사용), TCP Fast Open 등으로 완화한다.</td>
+      </tr>
+      <tr>
+        <td>"멀티플렉싱을 도입한 HTTP/2가 특정 상황에서 오히려 성능이 나빠질 수 있는 이유는?"</td>
+        <td>TCP의 순서 보장 특성을 상위 프로토콜 설계와 연결할 수 있는지</td>
+        <td>HTTP/2는 하나의 TCP 연결 위에서 여러 스트림을 멀티플렉싱하는데, TCP 자체는 세그먼트 순서를 보장하므로 한 스트림의 패킷 손실이 같은 연결의 다른 스트림까지 막는다(TCP 레벨 head-of-line blocking). 이게 QUIC/HTTP3가 UDP 기반으로 스트림별 독립적인 손실 복구를 하는 이유다.</td>
+      </tr>
+      <tr>
+        <td>"수신자가 처리 속도를 못 따라가는데 송신자가 계속 보내면 어떤 일이 벌어집니까?"</td>
+        <td>흐름 제어의 실제 동작(Zero Window)까지 아는지</td>
+        <td>수신 버퍼가 가득 차면 수신자는 윈도우 크기 0(Zero Window)을 광고해 송신을 멈추게 한다. 이후 여유가 생기면 Window Update를 보내 재개시킨다. 이 과정에서 Window Update 패킷이 유실되면 데드락처럼 보이는 지연이 생길 수 있어 송신자는 주기적으로 probe를 보낸다.</td>
+      </tr>
+      <tr>
+        <td>"주니어 개발자가 '손실 안 나면 되니까 그냥 다 TCP로 통일하자'고 하면 어떻게 지도하겠습니까?"</td>
+        <td>기술 리딩 역량, trade-off를 언어화해서 설득하는 능력</td>
+        <td>트래픽 특성(실시간성 vs 정확성 요구, 요청 크기와 빈도, RTT)에 따라 적합한 프로토콜이 다르다는 것을 구체적 사례(화상회의, DNS, 대용량 배치 전송)로 설명하고, "통일"보다 "용도별 선택 기준을 문서화"하는 방향으로 유도한다고 답한다.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 10. Rubric -->
+  <h2 id="rubric">10. 자기 점검 Rubric</h2>
+
+  <div class="rubric-grid">
+    <div class="rubric-col weak">
+      <h4>약한 답변 (Junior 수준)</h4>
+      <ul>
+        <li>"TCP는 연결형·신뢰성, UDP는 비연결형·비신뢰성"이라고 말하고 끝냄</li>
+        <li>흐름 제어와 혼잡 제어를 구분하지 못하거나 같은 것으로 설명</li>
+        <li>재전송이 "언제, 얼마나 걸려서" 일어나는지 구체적으로 말하지 못함</li>
+        <li>신뢰성의 대가(지연, HOL blocking, 초기 저속)를 언급하지 않음</li>
+        <li>UDP를 "품질이 낮은 선택"으로만 이해하고 설계 의도를 설명하지 못함</li>
+      </ul>
+    </div>
+    <div class="rubric-col strong">
+      <h4>강한 답변 (Senior 수준)</h4>
+      <ul>
+        <li>신뢰성을 연결 수립/순서·손실 복구/흐름 제어/혼잡 제어로 분해해서 설명</li>
+        <li>RTO 기반 재전송과 빠른 재전송의 차이와 각각의 지연 규모를 안다</li>
+        <li>흐름 제어(수신자 보호)와 혼잡 제어(네트워크 보호)를 구분해서 설명</li>
+        <li>커넥션 재사용이 slow start 회피와 어떻게 연결되는지 성능 관점에서 설명</li>
+        <li>UDP를 "신뢰성을 애플리케이션으로 위임하는 설계"로 프레이밍</li>
+        <li>실제 겪은 지연/처리량/품질 문제를 프로토콜 메커니즘으로 설명 가능</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>자기 점검 체크리스트</h3>
+  <ul>
+    <li>☐ "신뢰성"을 4가지 메커니즘(연결 수립, 순서/손실 복구, 흐름 제어, 혼잡 제어)으로 쪼개 설명했는가?</li>
+    <li>☐ 각 메커니즘의 대가(지연, HOL blocking, 초기 저속 등)를 함께 언급했는가?</li>
+    <li>☐ RTO 기반 재전송과 빠른 재전송의 차이를 설명했는가?</li>
+    <li>☐ 흐름 제어와 혼잡 제어를 명확히 구분했는가?</li>
+    <li>☐ UDP를 "포기"가 아니라 "책임 위임"으로 설명했는가?</li>
+    <li>☐ 실무 사례(지연, 처리량, 실시간성 문제)를 구체적 수치나 상황으로 제시했는가?</li>
+  </ul>
+
+  <hr>
+
+  <h2>다음 레슨 예고</h2>
+  <blockquote>
+    <strong>Interview Day 4</strong> — DNS와 서비스 발견
+    <br>핵심 질문: "DNS 장애와 애플리케이션 장애를 어떻게 구분합니까?"
+    <br>캐싱, TTL, 재귀 질의, failover, split-horizon DNS를 실무 판단 기준으로 다룬다.
+  </blockquote>
+
+  <nav class="back" style="margin-top:48px;"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+</body>
+</html>

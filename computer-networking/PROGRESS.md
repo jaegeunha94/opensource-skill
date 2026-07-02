@@ -12,12 +12,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 네트워크 장애 분석 프레임워크 | `lessons/interview-day-01-network-failure-analysis-framework.html` |
 | 2 | 2026-07-01 | OSI/TCP-IP 계층과 실무 장애 분석 | `lessons/interview-day-02-osi-tcpip-layers-troubleshooting.html` |
+| 3 | 2026-07-02 | TCP vs UDP와 연결 관리 | `lessons/interview-day-03-tcp-udp-connection-management.html` |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 3 | TCP vs UDP와 연결 관리 | "TCP가 신뢰성을 제공한다는 말은 정확히 무엇을 의미합니까?" | 3-way handshake, 재전송, 흐름/혼잡 제어, 지연 trade-off |
 | 4 | DNS와 서비스 발견 | "DNS 장애와 애플리케이션 장애를 어떻게 구분합니까?" | 캐싱, TTL, 재귀 질의, failover, split-horizon DNS |
 | 5 | HTTP/HTTPS와 TLS | "TLS 핸드셰이크가 성능과 보안에 주는 영향을 설명해보세요." | 인증서 체인, 세션 재사용, HTTP/2/3, 보안 설정 |
 | 6 | 로드밸런싱과 프록시 | "L4와 L7 로드밸런서를 어떤 기준으로 선택합니까?" | 성능, 기능, 관측성, 장애 범위 trade-off |
@@ -28,7 +28,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 예정** — TCP vs UDP와 연결 관리.
+**Day 3 완료, Day 4 예정** — DNS와 서비스 발견.
 
 ## Interview 답변 체크리스트
 
