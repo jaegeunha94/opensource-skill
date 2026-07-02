@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — SQL Injection: 탐지, 방어, 실무 패턴</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #252836;
+      --border: #2e3147;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --blue: #3b82f6;
+      --cyan: #06b6d4;
+      --orange: #f97316;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 0 2rem;
+      margin-bottom: 3rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      margin-bottom: 1rem;
+    }
+    h1 { font-size: 2rem; font-weight: 800; line-height: 1.25; margin-bottom: 0.75rem; }
+    .subtitle { color: var(--muted); font-size: 1rem; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 3rem 0 1.25rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--accent-light);
+    }
+    h3 { font-size: 1.1rem; font-weight: 700; margin: 2rem 0 0.75rem; color: var(--cyan); }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--yellow); }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.4rem; }
+    strong { color: #fff; font-weight: 700; }
+    code {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.88em;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      color: var(--cyan);
+    }
+    pre {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    pre code { background: none; border: none; padding: 0; color: var(--text); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin: 1.25rem 0;
+    }
+    .card-accent { border-left: 4px solid var(--accent); }
+    .card-green { border-left: 4px solid var(--green); }
+    .card-red { border-left: 4px solid var(--red); }
+    .card-yellow { border-left: 4px solid var(--yellow); }
+    .card-blue { border-left: 4px solid var(--blue); }
+    .card-cyan { border-left: 4px solid var(--cyan); }
+    .card-orange { border-left: 4px solid var(--orange); }
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+    .card-title.green { color: var(--green); }
+    .card-title.red { color: var(--red); }
+    .card-title.yellow { color: var(--yellow); }
+    .card-title.blue { color: var(--blue); }
+    .card-title.accent { color: var(--accent-light); }
+    .card-title.cyan { color: var(--cyan); }
+    .card-title.orange { color: var(--orange); }
+    .interview-q {
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin: 2rem 0 1rem;
+    }
+    .interview-q .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent-light);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q .q-text {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.4;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+    .step-list { counter-reset: steps; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .step-list li::before {
+      content: counter(steps);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .rubric-table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    .rubric-table th, .rubric-table td {
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    .rubric-table th { background: var(--surface2); font-size: 0.85rem; color: var(--muted); }
+    .rubric-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .tag {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 0.1rem;
+    }
+    .tag-purple { background: rgba(99,102,241,0.2); color: var(--accent-light); border: 1px solid rgba(99,102,241,0.3); }
+    .tag-green { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    .tag-red { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .toc h2 { margin: 0 0 1rem; border: none; font-size: 1rem; color: var(--muted); }
+    .toc ol { margin: 0; }
+    .toc a { color: var(--accent-light); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
+    .misconception {
+      background: rgba(239,68,68,0.05);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-left: 4px solid var(--red);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin: 1rem 0;
+    }
+    .misconception .label { color: var(--red); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="day-badge">DAY 3</div>
+  <h1>SQL Injection<br>— 탐지, 방어, 실무 패턴</h1>
+  <p class="subtitle">백엔드 보안 / Secure Coding — 10년차 이상 개발자 Interview 대비</p>
+</header>
+
+<nav class="toc">
+  <h2>목차</h2>
+  <ol>
+    <li><a href="#why-matters">왜 20년 된 취약점을 아직도 시니어에게 묻는가</a></li>
+    <li><a href="#mechanism">SQL Injection의 원리 — 코드와 데이터의 경계 붕괴</a></li>
+    <li><a href="#types">공격 유형 — Union-based, Error-based, Blind</a></li>
+    <li><a href="#defense">근본 방어 — Parameterized Query가 escaping과 다른 이유</a></li>
+    <li><a href="#orm">ORM을 쓰면 안전하다는 착각</a></li>
+    <li><a href="#identifiers">파라미터화할 수 없는 경우 — 동적 정렬/컬럼명</a></li>
+    <li><a href="#response">발견 시 실무 대응 순서</a></li>
+    <li><a href="#interview-q1">면접 질문 1 — ORM은 SQL Injection에서 안전한가</a></li>
+    <li><a href="#interview-q2">면접 질문 2 — Blind SQL Injection 탐지와 방어</a></li>
+    <li><a href="#interview-q3">면접 질문 3 — 동적 정렬 컬럼을 안전하게 받는 API</a></li>
+    <li><a href="#rubric">자기 점검 Rubric</a></li>
+  </ol>
+</nav>
+
+<!-- ===== SECTION 1 ===== -->
+<section id="why-matters">
+  <h2>1. 왜 20년 된 취약점을 아직도 시니어에게 묻는가</h2>
+
+  <p>
+    SQL Injection은 1998년에 처음 공개적으로 문서화됐다. 그런데도 OWASP Top 10에서 여전히 상위권(Injection 카테고리)에 남아 있고,
+    실무 침해 사고 리포트에도 매년 등장한다. 면접관이 이 주제를 묻는 이유는 <strong>"정의를 아는가"</strong>가 아니라
+    <strong>"왜 해결된 문제가 계속 재발하는지, 그리고 그 재발 지점을 구조적으로 어떻게 차단하는가"</strong>를 보기 위해서다.
+  </p>
+
+  <div class="card card-yellow">
+    <div class="card-title yellow">실무 상황</div>
+    <p>
+      신입 개발자가 관리자 페이지에 "매출 검색" 기능을 추가하면서 검색어를 문자열로 이어붙여 쿼리를 만들었다.
+      코드 리뷰에서 아무도 지적하지 않고 배포됐다. 6개월 뒤 자동화된 스캐너가 이 엔드포인트를 찾아내 전체 고객 테이블을 덤프해갔다.
+      이 사고의 원인은 "몰라서"가 아니라 <strong>"팀 전체가 안전한 패턴을 기본값으로 강제하지 않아서"</strong>였다.
+    </p>
+  </div>
+
+  <p>
+    즉 시니어에게 기대하는 것은 개인이 안전한 코드를 짜는 능력을 넘어,
+    <strong>"팀이 실수해도 사고로 이어지지 않는 구조"</strong>(코드 리뷰 체크리스트, 린터 규칙, ORM 기본 설정, WAF)를 설계할 수 있는가다.
+  </p>
+
+  <div class="misconception">
+    <div class="label">흔한 오해 — "요즘은 다 ORM 쓰니까 SQL Injection은 옛날 얘기다"</div>
+    <p>
+      ORM은 기본 CRUD를 안전하게 만들어줄 뿐, <strong>raw query, 동적 정렬/컬럼명, 복잡한 검색 조건</strong>을 다룰 때
+      개발자가 여전히 문자열을 직접 이어붙이는 경로를 열어둔다. 최신 침해 사고에도 ORM을 쓰는 서비스가 다수 포함된다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 2 ===== -->
+<section id="mechanism">
+  <h2>2. SQL Injection의 원리 — 코드와 데이터의 경계 붕괴</h2>
+
+  <h3>전제 개념: SQL 엔진은 "문자열"과 "명령어"를 어떻게 구분하는가?</h3>
+  <p>
+    데이터베이스는 문자열로 받은 쿼리를 그대로 파싱해서 실행한다. 문제는 <strong>사용자가 입력한 "데이터"가
+    쿼리 문자열 안에 그대로 섞여 들어가면, DB 엔진 입장에서는 그것이 원래 "데이터"였는지 "명령어의 일부"였는지 구분할 방법이 없다</strong>는 점이다.
+    SQL Injection은 이 경계를 공격자가 의도적으로 무너뜨리는 것이다.
+  </p>
+
+  <pre><code># 취약한 코드 — 문자열 결합
+query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+
+# 정상 입력: username=admin, password=1234
+SELECT * FROM users WHERE username = 'admin' AND password = '1234'
+
+# 공격 입력: username=admin' -- , password=(아무거나)
+SELECT * FROM users WHERE username = 'admin' -- ' AND password = '아무거나'
+#                                              └─ 여기부터 주석 처리되어 비밀번호 검사 자체가 사라짐</code></pre>
+
+  <div class="card card-red">
+    <div class="card-title red">핵심 원리</div>
+    <p>
+      공격자가 넣은 <code>'</code>(작은따옴표)가 문자열 리터럴을 조기 종료시키고, 그 뒤에 <strong>새로운 SQL 문법</strong>이 이어진다.
+      <code>--</code>(주석)로 원래 쿼리의 나머지 부분을 무력화하면 인증 로직 전체를 우회할 수 있다.
+      이것이 "데이터인 줄 알았던 입력이 명령어로 실행되는" 것 — Injection의 본질이다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 3 ===== -->
+<section id="types">
+  <h2>3. 공격 유형 — Union-based, Error-based, Blind</h2>
+
+  <p>
+    면접에서 "SQL Injection이 뭔가요"에서 끝나지 않고 "그럼 에러 메시지를 다 막아놨는데도 뚫을 수 있나요?"까지 이어지는 경우가 많다.
+    공격자가 <strong>화면에 아무 정보도 노출되지 않는 상황에서도 데이터를 뽑아낼 수 있다</strong>는 것을 이해해야 이 follow-up에 답할 수 있다.
+  </p>
+
+  <div class="two-col">
+    <div class="card card-blue">
+      <div class="card-title blue">Union-based</div>
+      <p><code>UNION SELECT</code>로 공격자가 원하는 테이블의 데이터를 원래 쿼리 결과에 이어붙여 화면에 그대로 노출시킨다.</p>
+      <p><strong>전제 조건:</strong> 쿼리 결과가 응답 화면에 그대로 출력되어야 함, 컬럼 개수/타입이 맞아야 함</p>
+    </div>
+    <div class="card card-cyan">
+      <div class="card-title cyan">Error-based</div>
+      <p>일부러 잘못된 쿼리를 주입해 DB 에러 메시지에 데이터를 실어 나오게 만든다 (예: <code>CAST</code> 타입 에러에 서브쿼리 결과 포함).</p>
+      <p><strong>전제 조건:</strong> 상세 에러 메시지가 클라이언트에 그대로 노출되어야 함</p>
+    </div>
+  </div>
+
+  <div class="card card-orange">
+    <div class="card-title orange">Blind SQL Injection — 화면에 아무것도 안 보여도 뚫리는 이유</div>
+    <p>
+      화면에 결과도, 에러 메시지도 전혀 노출되지 않아도 공격은 가능하다. 응답이 <strong>"참/거짓" 또는 "응답 시간"</strong>만 다르면
+      그 차이 자체가 정보가 되기 때문이다.
+    </p>
+    <ul>
+      <li>
+        <strong>Boolean-based Blind:</strong> <code>AND 1=1</code>(정상 화면)과 <code>AND 1=2</code>(빈 화면/다른 화면)의 응답 차이로
+        참/거짓을 판별한다. 이걸 반복해서 <code>AND SUBSTRING(password,1,1)='a'</code>처럼 한 글자씩 맞춰나가며 데이터를 통째로 복원한다.
+      </li>
+      <li>
+        <strong>Time-based Blind:</strong> 화면 차이조차 없을 때, <code>AND IF(SUBSTRING(password,1,1)='a', SLEEP(5), 0)</code>처럼
+        조건이 참일 때만 응답을 5초 지연시켜, <strong>응답 시간의 차이</strong>만으로 데이터를 한 글자씩 추출한다.
+      </li>
+    </ul>
+  </div>
+
+  <div class="misconception">
+    <div class="label">흔한 오해 — "화면에 쿼리 결과나 에러가 안 보이면 안전하다"</div>
+    <p>
+      Boolean/Time-based Blind는 <strong>참/거짓 신호 하나</strong>만 있으면 성립한다.
+      "결과를 안 보여준다"는 완화책일 뿐, 근본 방어(Parameterized Query)를 대체하지 못한다.
+      느리지만(수천 번의 요청) 자동화 도구(sqlmap 등)로는 몇 분 안에 데이터베이스 전체를 추출할 수 있다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 4 ===== -->
+<section id="defense">
+  <h2>4. 근본 방어 — Parameterized Query가 escaping과 다른 이유</h2>
+
+  <h3>전제 개념: "이스케이프 처리"와 "파라미터화"는 다른 층위의 방어다</h3>
+  <p>
+    많은 사람이 "특수문자를 이스케이프하면 안전하다"고 생각하지만, 이스케이프는 <strong>"어떤 문자를 이스케이프해야 하는가"를
+    개발자가 매번 정확히 알아야 하는 블랙리스트 방식</strong>이라 DB 엔진, 인코딩, 컨텍스트에 따라 우회 사례가 계속 나온다.
+    Parameterized Query(Prepared Statement)는 접근 자체가 다르다 — <strong>쿼리 구조(명령어)와 값(데이터)을 애초에 분리된 채널로 DB에 전달</strong>한다.
+  </p>
+
+  <pre><code># 취약 — 문자열 결합 (이스케이프를 직접 해도 근본적으로 같은 층위)
+query = f"SELECT * FROM users WHERE username = '{username}'"
+
+# 안전 — Parameterized Query
+cursor.execute(
+    "SELECT * FROM users WHERE username = %s",
+    (username,)
+)
+# DB 드라이버가 쿼리 구조를 먼저 컴파일하고, username 값은 "데이터"로만 바인딩된다.
+# username에 '  OR '1'='1가 들어와도 SQL 문법으로 해석되지 않고 그냥 통째로 "문자열 값"으로 취급된다.</code></pre>
+
+  <div class="card card-green">
+    <div class="card-title green">왜 이게 "근본" 방어인가</div>
+    <p>
+      Parameterized Query는 DB 엔진 레벨에서 쿼리 구문 분석(파싱)이 값 바인딩보다 먼저 끝난다.
+      즉 <strong>공격자의 입력이 아무리 SQL 문법처럼 생겼어도, 이미 "구조가 확정된 쿼리"에 값으로만 끼워 넣어지므로
+      추가 SQL 문법으로 해석될 여지 자체가 없다.</strong> 이스케이프처럼 "어떤 패턴을 막을까"를 고민할 필요가 없어지는 게 핵심 차이다.
+    </p>
+  </div>
+
+  <div class="card card-accent">
+    <div class="card-title accent">계층적 방어(Defense in Depth)</div>
+    <ul class="step-list">
+      <li><div><strong>1차 방어 — Parameterized Query</strong>: 모든 쿼리의 기본값으로 강제(코드 리뷰/린터 규칙)</div></li>
+      <li><div><strong>2차 방어 — 입력 검증</strong>: 타입/길이/형식 검증으로 명백히 이상한 입력을 조기 차단</div></li>
+      <li><div><strong>3차 방어 — 최소 권한 DB 계정</strong>: 애플리케이션 DB 계정에 DROP/불필요한 스키마 접근 권한을 주지 않음</div></li>
+      <li><div><strong>4차 방어 — WAF</strong>: 알려진 Injection 패턴을 네트워크 레벨에서 1차 필터링(우회 가능하므로 근본 방어는 아님)</div></li>
+      <li><div><strong>5차 방어 — 에러 메시지 최소화 + 로깅/알림</strong>: 공격 시도를 조기에 탐지</div></li>
+    </ul>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 5 ===== -->
+<section id="orm">
+  <h2>5. ORM을 쓰면 안전하다는 착각</h2>
+
+  <p>
+    ORM(SQLAlchemy, Django ORM, JPA/Hibernate 등)은 기본 CRUD 메서드(<code>filter</code>, <code>save</code>, <code>find</code>)를 쓰면
+    내부적으로 Parameterized Query를 생성하기 때문에 안전하다. 문제는 <strong>ORM이 표현하기 어려운 요구사항</strong>에서
+    개발자가 다시 문자열 결합으로 돌아가는 지점이다.
+  </p>
+
+  <div class="two-col">
+    <div class="card card-red">
+      <div class="card-title red">위험한 ORM 사용 패턴</div>
+      <pre><code># Django — raw()에 문자열 결합
+User.objects.raw(
+    f"SELECT * FROM users WHERE name = '{name}'"
+)
+
+# SQLAlchemy — text()에 문자열 결합
+db.execute(
+    text(f"SELECT * FROM users WHERE name = '{name}'")
+)
+
+# 동적 정렬 컬럼을 그대로 삽입
+User.objects.raw(
+    f"SELECT * FROM users ORDER BY {sort_column}"
+)</code></pre>
+    </div>
+    <div class="card card-green">
+      <div class="card-title green">안전한 ORM 사용 패턴</div>
+      <pre><code># Django — ORM 필터 사용
+User.objects.filter(name=name)
+
+# raw()를 써야 한다면 파라미터 바인딩
+User.objects.raw(
+    "SELECT * FROM users WHERE name = %s",
+    [name]
+)
+
+# SQLAlchemy — text()에도 바인딩 파라미터
+db.execute(
+    text("SELECT * FROM users WHERE name = :name"),
+    {"name": name}
+)</code></pre>
+    </div>
+  </div>
+
+  <div class="card card-yellow">
+    <div class="card-title yellow">실무 연결</div>
+    <p>
+      복잡한 리포트 쿼리, 성능 때문에 ORM을 우회해 직접 SQL을 짜야 하는 경우, "정렬 기준을 사용자가 고르게" 하는 기능처럼
+      ORM의 표준 API로 표현이 안 되는 요구사항에서 raw query가 등장한다. 코드 리뷰에서 <strong>"raw() / text() / execute()가 보이면
+      바인딩 파라미터를 쓰는지부터 확인"</strong>하는 체크리스트가 실무에서 실제로 사고를 막는 지점이다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 6 ===== -->
+<section id="identifiers">
+  <h2>6. 파라미터화할 수 없는 경우 — 동적 정렬/컬럼명</h2>
+
+  <h3>전제 개념: Parameterized Query는 "값"만 바인딩할 수 있다</h3>
+  <p>
+    Prepared Statement의 파라미터 바인딩은 <code>WHERE column = ?</code>처럼 <strong>값(리터럴)</strong> 자리에만 쓸 수 있다.
+    테이블명, 컬럼명, <code>ORDER BY</code> 뒤에 오는 정렬 기준 컬럼, <code>ASC/DESC</code> 같은 <strong>식별자(identifier)나 키워드</strong>는
+    파라미터 바인딩 문법 자체가 지원하지 않는다. 이 지점에서 많은 개발자가 다시 문자열 결합으로 돌아가 취약점을 만든다.
+  </p>
+
+  <pre><code># 안전 — 화이트리스트 매핑으로 식별자를 검증
+ALLOWED_SORT_COLUMNS = {"created_at", "name", "price"}
+ALLOWED_ORDER = {"asc", "desc"}
+
+def build_query(sort_column: str, order: str):
+    if sort_column not in ALLOWED_SORT_COLUMNS:
+        raise ValueError("허용되지 않은 정렬 컬럼")
+    if order.lower() not in ALLOWED_ORDER:
+        raise ValueError("허용되지 않은 정렬 방향")
+    # 화이트리스트를 통과한 값만 문자열에 삽입 — 사용자 입력이 그대로 들어가지 않음
+    return f"SELECT * FROM products ORDER BY {sort_column} {order}"</code></pre>
+
+  <div class="card card-accent">
+    <div class="card-title accent">핵심 원칙</div>
+    <p>
+      식별자는 바인딩할 수 없으니 <strong>사용자 입력을 직접 쿼리에 넣지 않고, 사전에 정의한 허용 목록(화이트리스트)에서
+      "선택"만 하게 한다.</strong> 사용자가 문자열을 자유롭게 입력하는 게 아니라 서버가 이미 아는 안전한 값 중 하나를 고르는 구조이므로,
+      Injection이 성립할 문자열 결합 지점 자체가 사라진다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 7 ===== -->
+<section id="response">
+  <h2>7. 발견 시 실무 대응 순서</h2>
+
+  <div class="card card-accent">
+    <div class="card-title accent">SQL Injection 발견 시 대응 흐름</div>
+    <ol class="step-list">
+      <li><div><strong>범위 파악</strong> — 취약한 엔드포인트가 어떤 테이블/권한에 접근 가능한지, 실제 악용 흔적(비정상 쿼리 로그, 대량 SELECT)이 있는지 확인</div></li>
+      <li><div><strong>긴급 완화</strong> — 패치 배포 전까지 WAF 룰로 해당 패턴 차단 또는 해당 엔드포인트 일시 비활성화</div></li>
+      <li><div><strong>근본 패치</strong> — 문자열 결합을 Parameterized Query로 교체, 동일 패턴이 다른 곳에도 없는지 코드베이스 전체 검색</div></li>
+      <li><div><strong>침해 여부 조사</strong> — 실제로 데이터가 유출됐다면 유출 범위 확인, 비밀번호 해시가 노출됐다면 전체 사용자 비밀번호 재설정 강제</div></li>
+      <li><div><strong>재발 방지</strong> — 린터/CI에 raw query 탐지 규칙 추가, 코드 리뷰 체크리스트 갱신, 팀 공유</div></li>
+    </ol>
+  </div>
+
+  <div class="misconception">
+    <div class="label">흔한 오해 — "패치만 하면 끝이다"</div>
+    <p>
+      취약점을 막는 것과 <strong>이미 뚫렸을 가능성을 조사하는 것</strong>은 별개의 작업이다.
+      시니어 면접에서는 종종 "패치 이후 뭘 더 하시겠어요?"로 이 부분을 따로 확인한다.
+      쿼리 로그, 접근 로그, 비정상 트래픽 패턴을 함께 점검하지 않으면 이미 유출된 데이터를 놓칠 수 있다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== INTERVIEW Q1 ===== -->
+<section id="interview-q1">
+  <h2>8. 면접 질문 1 — ORM은 SQL Injection에서 안전한가</h2>
+
+  <div class="interview-q">
+    <div class="label">면접 질문</div>
+    <div class="q-text">
+      "우리 서비스는 ORM을 쓰고 있으니 SQL Injection 걱정은 안 해도 되지 않나요?"
+    </div>
+  </div>
+
+  <h3>왜 면접에서 묻는가?</h3>
+  <p>
+    이 질문은 "ORM = 안전"이라는 단순화된 믿음을 얼마나 정확히 반박할 수 있는지를 본다.
+    면접관은 실무에서 raw query가 등장하는 구체적인 상황을 아는지, 그리고 그 상황에서도 안전 패턴을 유지할 수 있는지를 확인한다.
+  </p>
+
+  <h3>답변 사고 순서</h3>
+  <ol class="step-list">
+    <li><div><strong>부분적으로 맞다는 것 인정</strong> — 표준 ORM API는 기본적으로 파라미터화된 쿼리를 생성함을 짚는다.</div></li>
+    <li><div><strong>예외 지점 제시</strong> — raw query, 동적 정렬/컬럼명, 복잡한 서브쿼리에서 우회 경로가 생긴다는 것을 설명한다.</div></li>
+    <li><div><strong>팀 차원의 안전장치 제시</strong> — 개인의 주의력에 의존하지 않고 코드 리뷰/린터로 구조적으로 막는 방법을 제시한다.</div></li>
+  </ol>
+
+  <div class="card card-green">
+    <div class="card-title green">강한 답변 예시</div>
+    <p>
+      "표준 ORM 메서드(filter, save 등)를 쓰는 한 파라미터화된 쿼리가 생성되므로 그 범위 안에서는 안전합니다.
+      하지만 raw()나 text() 같은 원시 쿼리 인터페이스를 쓸 때, 특히 복잡한 리포트 쿼리나 동적 정렬 기능을 구현할 때
+      문자열 결합으로 돌아가는 경우가 실무에서 자주 생깁니다.
+      그래서 저희 팀은 raw query에도 반드시 바인딩 파라미터를 쓰도록 코드 리뷰 체크리스트에 명시하고,
+      정적 분석 도구로 문자열 포매팅이 SQL 실행 함수에 직접 들어가는 패턴을 CI에서 잡아냅니다."
+    </p>
+  </div>
+
+  <div class="card card-red">
+    <div class="card-title red">약한 답변 예시</div>
+    <p>"네, ORM을 쓰면 자동으로 안전하게 처리해줘서 걱정 없습니다."</p>
+    <p><strong>왜 약한가?</strong> raw query 사용 가능성 자체를 인지하지 못하고 있다는 신호다. 실무 경험이 있다면 이 예외 지점을 반드시 경험했을 것이다.</p>
+  </div>
+
+  <h3>Senior-level Follow-up 질문들</h3>
+  <div class="card card-accent">
+    <div class="card-title accent">Follow-up: "팀원이 실수로 raw query에 문자열 결합을 쓰는 걸 코드 리뷰에서 매번 사람이 잡아야 하나요?"</div>
+    <p>
+      <strong>모범 답변 방향:</strong> "사람이 매번 잡는 건 확장 가능한 방법이 아닙니다.
+      정적 분석 도구(예: Bandit, Semgrep)로 문자열 포매팅이 SQL 실행 함수의 인자로 바로 들어가는 패턴을 CI 파이프라인에서 자동 탐지하도록 규칙을 넣고,
+      해당 패턴이 발견되면 빌드를 실패시켜서 리뷰어의 주의력에 의존하지 않는 구조를 만드는 게 맞다고 생각합니다."
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== INTERVIEW Q2 ===== -->
+<section id="interview-q2">
+  <h2>9. 면접 질문 2 — Blind SQL Injection 탐지와 방어</h2>
+
+  <div class="interview-q">
+    <div class="label">면접 질문</div>
+    <div class="q-text">
+      "에러 메시지도 안 보여주고 쿼리 결과도 화면에 노출하지 않는데, 그래도 SQL Injection이 가능한가요? 어떻게 막나요?"
+    </div>
+  </div>
+
+  <h3>왜 면접에서 묻는가?</h3>
+  <p>
+    "결과를 숨기면 안전하다"는 흔한 오해를 넘어서는 이해를 확인하는 질문이다.
+    Blind Injection의 원리를 설명할 수 있는지, 그리고 이것이 <strong>완화책과 근본 방어의 차이</strong>를 이해하는지를 함께 본다.
+  </p>
+
+  <h3>답변 사고 순서</h3>
+  <ol class="step-list">
+    <li><div><strong>가능하다고 명확히 답변</strong> — 참/거짓 신호나 응답 시간 차이만으로도 데이터 추출이 가능함을 설명한다.</div></li>
+    <li><div><strong>동작 원리 설명</strong> — Boolean-based와 Time-based를 구체적으로 짚는다.</div></li>
+    <li><div><strong>결론</strong> — 에러 숨김/결과 숨김은 "완화책"일 뿐 근본 방어(Parameterized Query)를 대체할 수 없음을 명시한다.</div></li>
+  </ol>
+
+  <div class="card card-green">
+    <div class="card-title green">강한 답변 예시</div>
+    <p>
+      "가능합니다. 화면에 정보가 전혀 없어도 응답이 '참일 때'와 '거짓일 때' 다르게 동작하기만 하면 그 차이 자체가 정보가 됩니다.
+      예를 들어 조건이 참일 때만 결과가 있는 화면이 뜨거나, Time-based라면 조건이 참일 때만 SLEEP으로 응답을 지연시켜서
+      한 글자씩 데이터를 추출할 수 있습니다. 자동화 도구를 쓰면 수천 번의 요청으로 짧은 시간 안에 데이터베이스 전체를 복원할 수 있어요.
+      그래서 에러 메시지를 숨기거나 결과를 노출하지 않는 건 공격을 조금 더 어렵고 느리게 만드는 완화책일 뿐이고,
+      근본 방어는 여전히 Parameterized Query로 애초에 Injection 자체가 성립하지 않게 만드는 것입니다."
+    </p>
+  </div>
+
+  <div class="card card-red">
+    <div class="card-title red">약한 답변 예시</div>
+    <p>"에러 메시지도 안 보여주고 결과도 안 나오면 공격자가 아무 정보도 못 얻으니 안전합니다."</p>
+    <p><strong>왜 약한가?</strong> Blind Injection의 존재 자체를 모르고 있다는 신호다. "정보 노출이 없다 = 안전"이라는 결론은 틀렸다.</p>
+  </div>
+
+  <h3>Senior-level Follow-up 질문들</h3>
+  <div class="card card-accent">
+    <div class="card-title accent">Follow-up: "Blind SQL Injection 시도를 로그에서 어떻게 탐지하시겠습니까?"</div>
+    <p>
+      <strong>모범 답변 방향:</strong> "같은 IP/세션에서 짧은 시간 안에 유사한 쿼리 파라미터가 반복적으로,
+      그리고 조금씩 변형되며 대량으로 들어오는 패턴을 탐지 규칙으로 만듭니다. 특히 SLEEP, WAITFOR, BENCHMARK 같은
+      시간 지연 함수 키워드가 파라미터에 포함되거나, 응답 시간이 비정상적으로 튀는 요청이 반복되면 알림을 겁니다.
+      WAF나 APM에서 이런 패턴 기반 탐지 규칙을 설정해두는 게 실무 대응입니다."
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== INTERVIEW Q3 ===== -->
+<section id="interview-q3">
+  <h2>10. 면접 질문 3 — 동적 정렬 컬럼을 안전하게 받는 API</h2>
+
+  <div class="interview-q">
+    <div class="label">면접 질문</div>
+    <div class="q-text">
+      "사용자가 목록 API에서 정렬 기준 컬럼을 쿼리 파라미터로 직접 지정할 수 있어야 합니다. Parameterized Query로 컬럼명을 바인딩할 수 없는데, 어떻게 안전하게 구현하시겠습니까?"
+    </div>
+  </div>
+
+  <h3>왜 면접에서 묻는가?</h3>
+  <p>
+    "Parameterized Query를 쓰면 된다"는 표면적 답변만으로는 풀리지 않는 케이스를 던져서,
+    <strong>근본 원리(값과 식별자의 차이)를 이해하고 다른 방어 전략(화이트리스트)으로 전환할 수 있는지</strong>를 확인하는 질문이다.
+  </p>
+
+  <h3>답변 사고 순서</h3>
+  <ol class="step-list">
+    <li><div><strong>제약 인정</strong> — 컬럼명/식별자는 바인딩 파라미터로 처리할 수 없다는 것을 먼저 짚는다.</div></li>
+    <li><div><strong>대안 원칙 제시</strong> — 사용자 입력을 쿼리에 직접 넣지 않고, 화이트리스트에서 매핑해 선택하게 한다.</div></li>
+    <li><div><strong>구현 방식 설명</strong> — 허용 목록 밖의 값은 명시적으로 거부(400 에러)하고 기본값으로 대체하지 않는다.</div></li>
+  </ol>
+
+  <div class="card card-green">
+    <div class="card-title green">강한 답변 예시</div>
+    <p>
+      "컬럼명 같은 식별자는 Prepared Statement의 값 바인딩 문법이 지원하지 않기 때문에 다른 방식으로 접근합니다.
+      서버에서 허용할 정렬 컬럼과 방향을 화이트리스트(예: created_at, name, price / asc, desc)로 미리 정의해두고,
+      사용자 입력값이 이 목록에 있는지만 검증합니다. 목록에 없으면 400 에러로 명확히 거부하고,
+      임의로 기본값으로 대체하지 않습니다 — 조용히 대체하면 공격자가 어떤 입력이 통과됐는지 추론하기 어려워지는 대신
+      정당한 사용자에게는 예상치 못한 동작으로 보일 수 있기 때문입니다. 검증을 통과한 값만 쿼리 문자열에 삽입하므로,
+      사용자가 통제할 수 있는 임의 문자열이 쿼리 구조에 들어가는 지점 자체가 없습니다."
+    </p>
+  </div>
+
+  <div class="card card-red">
+    <div class="card-title red">약한 답변 예시</div>
+    <p>"컬럼명에 있는 특수문자만 걸러내고(예: 세미콜론 제거) 그대로 씁니다."</p>
+    <p><strong>왜 약한가?</strong> 블랙리스트 방식은 예상 못 한 우회 패턴에 취약하다. 화이트리스트처럼 "허용된 것만 통과"가 아니라 "위험해 보이는 것만 차단"하는 접근은 근본적으로 취약하다.</p>
+  </div>
+
+  <h3>Senior-level Follow-up 질문들</h3>
+  <div class="card card-accent">
+    <div class="card-title accent">Follow-up: "정렬 가능한 컬럼이 수십 개라서 화이트리스트 관리가 부담스럽다면 어떻게 하겠습니까?"</div>
+    <p>
+      <strong>모범 답변 방향:</strong> "컬럼 개수가 많아도 원칙은 같습니다. API에서 노출하는 '정렬 키' 이름(예: sort=latest)과
+      실제 DB 컬럼명(created_at)을 분리한 매핑 테이블을 코드에 상수로 관리하면, 사용자는 애초에 실제 컬럼명을 알 필요도 없고
+      서버는 매핑에 있는 키만 처리합니다. 이렇게 하면 화이트리스트가 커져도 관리는 매핑 딕셔너리 하나로 집중되고,
+      동시에 실제 스키마 구조(컬럼명)를 API 응답에서 숨기는 부가 효과도 있습니다."
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== RUBRIC ===== -->
+<section id="rubric">
+  <h2>11. 자기 점검 Rubric</h2>
+
+  <p>아래 기준으로 오늘 학습한 내용을 점검한다. 각 항목을 스스로 말로 설명할 수 있어야 한다.</p>
+
+  <table class="rubric-table">
+    <thead>
+      <tr><th>점검 항목</th><th>미달 (주니어 수준)</th><th>달성 (시니어 수준)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Injection 원리</td>
+        <td>"특수문자를 잘못 다뤄서 생기는 버그"</td>
+        <td>데이터와 명령어의 경계가 문자열 결합으로 무너지는 구조적 원리를 설명</td>
+      </tr>
+      <tr>
+        <td>Blind SQL Injection</td>
+        <td>"화면에 정보가 없으면 안전하다"</td>
+        <td>Boolean/Time-based로 참/거짓 신호만으로 데이터 추출이 가능함을 설명</td>
+      </tr>
+      <tr>
+        <td>근본 방어</td>
+        <td>"특수문자 이스케이프하면 된다"</td>
+        <td>Parameterized Query가 값과 쿼리 구조를 분리 전달하는 원리를 설명하고 이스케이프와의 차이를 구분</td>
+      </tr>
+      <tr>
+        <td>ORM 이해</td>
+        <td>"ORM 쓰면 무조건 안전하다"</td>
+        <td>raw query, 동적 정렬/컬럼명 등 예외 지점을 구체적으로 제시</td>
+      </tr>
+      <tr>
+        <td>식별자 처리</td>
+        <td>컬럼명도 바인딩하면 된다고 착각</td>
+        <td>식별자는 바인딩 불가하다는 것을 알고 화이트리스트 매핑으로 대안 제시</td>
+      </tr>
+      <tr>
+        <td>사고 대응</td>
+        <td>"패치만 하면 끝"</td>
+        <td>침해 여부 조사, 로그 감사, 재발 방지(린터/CI)까지 대응 범위를 확장</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card card-green">
+    <div class="card-title green">다음 레슨 예고 — Day 4: XSS와 CSRF</div>
+    <p>
+      데이터 계층 다음은 클라이언트를 겨냥하는 공격이다. 인증/세션에서 다룬 쿠키·토큰 저장 방식과 직접 연결된다.
+    </p>
+    <ul>
+      <li>Reflected / Stored / DOM 기반 XSS의 차이와 각각의 공격 벡터</li>
+      <li>Content Security Policy(CSP)로 XSS 발생 확률을 낮추는 방법</li>
+      <li>CSRF 공격 원리와 SameSite 쿠키, CSRF 토큰 방어 설계</li>
+      <li>SPA/API 서버 구조에서 CSRF 위협이 달라지는 이유</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+</body>
+</html>

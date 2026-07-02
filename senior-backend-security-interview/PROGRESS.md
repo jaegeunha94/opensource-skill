@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 백엔드 보안 사고 프레임워크와 인증/인가 | [0001-security-framework-authn-authz.html](lessons/0001-security-framework-authn-authz.html) |
 | 2 | 2026-07-01 | 세션 관리와 JWT — 설계 판단 | [0002-session-management-jwt.html](lessons/0002-session-management-jwt.html) |
+| 3 | 2026-07-02 | SQL Injection — 탐지, 방어, 실무 패턴 | [0003-sql-injection.html](lessons/0003-sql-injection.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | SQL Injection | Parameterized Query, ORM 한계, Blind SQLi, 방어 계층 |
 | 4 | XSS와 CSRF | Reflected/Stored/DOM XSS, SameSite 쿠키, CSRF 토큰 |
 | 5 | 파일 업로드 보안과 SSRF | 파일 검증, MIME sniffing, SSRF 방어 |
 | 6 | API 보안 | Rate Limiting, 과도한 데이터 노출, Mass Assignment |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — Day 3 (SQL Injection)이 다음 차례.
+**Day 3 완료** — Day 4 (XSS와 CSRF)가 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -36,7 +36,11 @@
 - [x] 토큰 저장 위치 — localStorage vs httpOnly Cookie, XSS/CSRF trade-off (Day 2)
 - [x] Access/Refresh Token 갱신 전략, Refresh Token Rotation (Day 2)
 - [x] JWT 취소 문제 — 블랙리스트, 토큰 버전 관리 (Day 2)
-- [ ] SQL Injection 방어 계층 (예정 Day 3)
+- [x] SQL Injection 원리 — 데이터/명령어 경계 붕괴 (Day 3)
+- [x] Union/Error/Blind(Boolean, Time-based) SQL Injection 유형 (Day 3)
+- [x] Parameterized Query가 이스케이프와 다른 근본 방어인 이유 (Day 3)
+- [x] ORM raw query/동적 정렬 컬럼에서의 Injection 잔존 위험 (Day 3)
+- [x] 식별자(컬럼명/테이블명) 화이트리스트 방어 패턴 (Day 3)
 - [ ] XSS 3가지 유형 (예정 Day 4)
 - [ ] CSRF 방어 설계 (예정 Day 4)
 - [ ] bcrypt/Argon2 비교 (예정 Day 7)
