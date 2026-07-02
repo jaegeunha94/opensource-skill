@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — 인덱스 기본 구조 | 파일구조 면접 준비</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222535;
+      --border: #2e3147;
+      --accent: #5b8dee;
+      --accent2: #7c5cbf;
+      --green: #3ecf8e;
+      --red: #e25c5c;
+      --yellow: #f5a623;
+      --text: #e2e4f0;
+      --muted: #8b90a8;
+      --code-bg: #12141f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1f3c 0%, #12141f 100%);
+      border-bottom: 2px solid var(--accent2);
+      padding: 2.5rem 2rem;
+      margin: 0 -1rem 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .icon-q  { background: #2b1f4a; color: var(--accent2); }
+    .icon-pre { background: #1a2f3a; color: var(--accent); }
+    .icon-why { background: #2a2010; color: var(--yellow); }
+    .icon-real { background: #112a1f; color: var(--green); }
+    .icon-think { background: #1f2a3a; color: #a8c5f0; }
+    .icon-ans  { background: #1a2a1a; color: var(--green); }
+    .icon-trade { background: #2a1a1a; color: var(--red); }
+    .icon-myth  { background: #2a1f10; color: var(--yellow); }
+    .icon-follow { background: #1a1a2a; color: var(--accent2); }
+    .icon-diff  { background: #202020; color: #c0c0c0; }
+    .icon-rub  { background: #0e1e1a; color: var(--green); }
+
+    h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 1.25rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    li { margin-bottom: 0.35rem; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #2b1f4a 0%, #1a1d27 100%);
+      border: 1.5px solid var(--accent2);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #d4c8f5;
+      margin-bottom: 0.75rem;
+    }
+    .interview-sub {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.88rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+      font-size: 0.87rem;
+      line-height: 1.6;
+    }
+    pre code { background: none; border: none; padding: 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.85rem 0;
+      font-size: 0.92rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+    .answer-block {
+      border-left: 3px solid;
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 0.85rem 0;
+    }
+    .answer-strong { border-color: var(--green); background: rgba(62,207,142,0.06); }
+    .answer-weak   { border-color: var(--red);   background: rgba(226,92,92,0.06); }
+    .answer-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+    .label-strong { color: var(--green); }
+    .label-weak   { color: var(--red); }
+
+    .step-list { counter-reset: step; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-list li:last-child { border-bottom: none; }
+    .step-list li::before {
+      content: counter(step);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0;
+    }
+    .followup-q {
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .score-high { background: rgba(62,207,142,0.2); color: var(--green); }
+    .score-mid  { background: rgba(245,166,35,0.2); color: var(--yellow); }
+    .score-low  { background: rgba(226,92,92,0.2);  color: var(--red); }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.85rem 0;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+    .callout-info { background: rgba(91,141,238,0.08); border-left: 3px solid var(--accent); }
+    .callout-warn { background: rgba(245,166,35,0.08); border-left: 3px solid var(--yellow); }
+    .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin: 0.1rem;
+    }
+    .tag-blue { background: rgba(91,141,238,0.15); color: var(--accent); }
+    .tag-green { background: rgba(62,207,142,0.15); color: var(--green); }
+    .tag-yellow { background: rgba(245,166,35,0.15); color: var(--yellow); }
+
+    .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      color: #c9d0e8;
+      margin: 0.85rem 0;
+      white-space: pre;
+    }
+
+    nav.breadcrumb {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    nav.breadcrumb a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <nav class="breadcrumb">
+      <a href="../">파일구조 면접 준비</a> › <a href="./index.html">레슨 목록</a>
+    </nav>
+    <div class="day-badge">Interview Day 3</div>
+    <h1>인덱스 기본 구조 — Dense Index vs Sparse Index</h1>
+    <p class="subtitle">저장 공간, 탐색 비용, 정렬 파일 전제로 인덱스 밀도(density)를 판단하는 훈련</p>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-q">Q</div>
+      <h2>면접 질문</h2>
+    </div>
+    <div class="interview-q">
+      "Dense index와 sparse index는 어떤 상황에서 유리합니까?
+      왜 모든 인덱스를 sparse로 만들 수는 없습니까?"
+    </div>
+    <p class="interview-sub">변형 질문 유형</p>
+    <ul>
+      <li>"primary index에는 sparse를, secondary index에는 dense를 쓰는 이유가 무엇입니까?"</li>
+      <li>"인덱스에 모든 키를 다 넣지 않아도 검색이 되는 이유는 무엇입니까?"</li>
+      <li>"정렬되지 않은 컬럼에 인덱스를 걸 때 sparse index를 쓸 수 없는 이유를 설명해보세요."</li>
+      <li>"인덱스 크기를 줄이면서도 조회 성능을 유지하려면 어떤 선택을 하겠습니까?"</li>
+    </ul>
+  </div>
+
+  <!-- 2. 전제 개념 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">📖</div>
+      <h2>전제 개념 — 쉬운 한국어로 먼저 이해하기</h2>
+    </div>
+
+    <h3>3-1. 인덱스 "밀도(density)"라는 개념</h3>
+    <p>
+      Day 2에서 indexed file은 (key → 위치)만 담은 별도의 작은 파일이라고 배웠습니다.
+      그런데 이 인덱스에 <strong>데이터 파일의 모든 레코드에 대해 항목을 하나씩 넣을지</strong>,
+      아니면 <strong>일부만 대표로 넣을지</strong>는 완전히 다른 선택입니다.
+      이 선택을 "인덱스 밀도(density)"라고 부르고, 전자를 <strong>dense index</strong>,
+      후자를 <strong>sparse index</strong>라고 합니다. 둘 다 정답이 아니라, 각자 다른 비용 구조를 가진 trade-off입니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>3-2. Dense Index — 레코드마다 항목 하나</h3>
+    <p>
+      데이터 파일의 <strong>모든 레코드</strong>에 대해 인덱스 항목을 하나씩 만듭니다.
+      정렬 여부와 무관하게 동작하는 것이 핵심 특징입니다. 인덱스만 보고도 특정 키가 존재하는지,
+      정확히 어디 있는지 바로 알 수 있습니다.
+    </p>
+    <div class="diagram">[ Dense Index — 모든 레코드마다 항목 존재 ]
+
+Index (레코드 수만큼 항목 존재)
+┌───────────────┐
+│ id=3   → ●    │
+│ id=12  → ●    │
+│ id=44  → ●    │
+│ id=57  → ●    │
+│ id=91  → ●    │
+│ id=200 → ●    │
+└───────────────┘
+       │ 각 항목이 레코드 위치를 정확히 가리킴 (정렬 여부 무관)
+       ▼
+Data File (정렬돼 있지 않아도 됨)
+Block 0          Block 1          Block 2
+┌────────────┐  ┌────────────┐  ┌────────────┐
+│ id=57      │  │ id=3       │  │ id=91      │
+│ id=12      │  │ id=200     │  │ id=44      │
+└────────────┘  └────────────┘  └────────────┘
+
+조회(id=57): 인덱스에서 id=57 항목을 정확히 찾고 그 위치로 바로 점프
+  → 데이터 블록 안에서 추가로 스캔할 필요 없음
+공간: 인덱스 항목 수 = 전체 레코드 수 → 인덱스 자체가 상당히 커짐</div>
+    <p>
+      dense index의 결정적 장점은 <strong>데이터 파일이 정렬돼 있지 않아도 동작</strong>한다는 것입니다.
+      인덱스 항목이 레코드 하나하나를 직접 가리키기 때문에, 데이터가 어느 순서로 있든 상관없습니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>3-3. Sparse Index — 블록마다 대표 키 하나만 (정렬 파일 전제)</h3>
+    <p>
+      데이터 파일의 <strong>모든 블록마다 대표 키 하나</strong>(보통 그 블록의 첫 번째 키)만 인덱스에 등록합니다.
+      항목 수가 훨씬 적어 인덱스 자체가 작습니다. 그런데 이 방식이 성립하려면
+      <strong>반드시 데이터 파일이 인덱스 키 기준으로 물리적으로 정렬돼 있어야</strong> 합니다.
+      정렬돼 있지 않으면 "이 블록에는 A~Z 사이의 값이 들어 있다"는 보장이 없어서 인덱스가 무의미해지기 때문입니다.
+    </p>
+    <div class="diagram">[ Sparse Index — 블록당 대표 키 하나 (데이터는 반드시 정렬) ]
+
+Index (block 개수만큼만 항목 존재)
+┌───────────────┐
+│ id=3  → Block0│  ← Block0의 첫 키
+│ id=44 → Block1│  ← Block1의 첫 키
+│ id=91 → Block2│  ← Block2의 첫 키
+└───────────────┘
+
+Data File (반드시 id 기준으로 정렬돼 있어야 함)
+Block 0          Block 1          Block 2
+┌────────────┐  ┌────────────┐  ┌────────────┐
+│ id=3       │  │ id=44      │  │ id=91      │
+│ id=12      │  │ id=57      │  │ id=200     │
+└────────────┘  └────────────┘  └────────────┘
+
+조회(id=57):
+  1) 인덱스에서 "57보다 크지 않은 가장 큰 키" 탐색 → 44 → Block1
+  2) Block1을 통째로 읽어(1 I/O) 블록 내부를 순차 탐색 → id=57 발견
+공간: 인덱스 항목 수 = 블록 수 (레코드 수보다 훨씬 적음) → 인덱스가 매우 작음</div>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span><strong>면접관이 보는 것:</strong> "sparse index는 그냥 dense보다 항목이 적은 버전"이라는 얕은 답변이 아니라,
+      <strong>"데이터 파일이 정렬돼 있다는 전제가 없으면 sparse index는 성립하지 않는다"</strong>는 인과관계를 아는지를 봅니다.
+      정렬이 전제이기 때문에 sparse index는 사실상 primary index(정렬 기준 키)에만 쓸 수 있습니다.</span>
+    </div>
+
+    <div class="divider"></div>
+    <h3>3-4. Primary Index vs Secondary Index — 정렬 기준인가 아닌가</h3>
+    <p>
+      <strong>Primary index</strong>는 데이터 파일을 물리적으로 정렬하는 데 사용된 바로 그 키에 대한 인덱스입니다.
+      데이터가 이미 그 키로 정렬돼 있으므로 sparse index를 쓸 수 있습니다.
+    </p>
+    <p>
+      <strong>Secondary index</strong>는 그 외의 컬럼(정렬 기준이 아닌 컬럼)에 대한 인덱스입니다.
+      데이터 파일은 secondary index의 키 기준으로는 정렬돼 있지 않으므로,
+      "이 블록에 어떤 범위의 값이 있다"는 보장이 전혀 없습니다.
+      따라서 secondary index는 <strong>반드시 dense</strong>여야 합니다. 그렇지 않으면 특정 레코드가
+      어느 블록에 있는지 확정할 방법이 없습니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>구분</th><th>정렬 기준과의 관계</th><th>쓸 수 있는 밀도</th><th>예시</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Primary Index</strong></td>
+          <td>데이터 파일을 정렬하는 기준 키</td>
+          <td>Sparse (또는 Dense도 가능)</td>
+          <td>주문 테이블의 order_id (PK, 정렬 기준)</td>
+        </tr>
+        <tr>
+          <td><strong>Secondary Index</strong></td>
+          <td>정렬 기준이 아닌 컬럼</td>
+          <td>반드시 Dense</td>
+          <td>같은 테이블의 customer_email (검색용)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      실무 DB에서 "Primary Key = 정렬 기준"이라는 말이 여기서 나옵니다. InnoDB의 클러스터드 인덱스가
+      대표적인 primary index/sparse index 조합이고, 그 위에 걸리는 나머지 인덱스(email, status 등)는
+      모두 secondary index이자 dense index입니다. (clustered index의 구체적 비용은 Day 6에서 다룹니다.)
+    </p>
+
+    <div class="divider"></div>
+    <h3>3-5. 왜 sparse index가 "충분"한가 — 정렬이 주는 보장</h3>
+    <p>
+      dense index는 항목 하나가 레코드 하나를 정확히 가리키므로 블록 안에서 더 찾을 필요가 없습니다.
+      sparse index는 블록의 "시작점"만 알려주고, 그 블록 안에서 원하는 키를 찾는 것은
+      데이터 파일 자체가 <strong>정렬돼 있다는 보장</strong>에 의존합니다.
+      정렬돼 있기 때문에 "이 블록의 첫 키보다 크거나 같고, 다음 블록의 첫 키보다 작다"는 조건만으로
+      원하는 레코드가 반드시 그 블록 안에 있다는 것이 수학적으로 보장됩니다.
+      이 보장 덕분에 인덱스 항목을 블록 수만큼만 두어도 정확성을 잃지 않습니다.
+    </p>
+  </div>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-why">?</div>
+      <h2>왜 면접에서 이 질문을 묻는가</h2>
+    </div>
+    <p>
+      이 질문은 인덱스를 "빠르게 해주는 마법 상자"가 아니라, <strong>공간-속도 trade-off를 계산 가능한 근거로 설명할 수 있는가</strong>를 봅니다.
+    </p>
+    <ol>
+      <li>
+        <strong>전제 조건을 정확히 아는가</strong><br>
+        sparse index가 정렬을 전제한다는 인과관계를 모르면, "왜 secondary index는 항상 dense여야 하는가"에서 막힙니다.
+      </li>
+      <li>
+        <strong>저장 공간과 갱신 비용을 계산할 수 있는가</strong><br>
+        dense index는 레코드 수만큼, sparse index는 블록 수만큼 커집니다. 이 차이를 대략적인 숫자로 말할 수 있는지 봅니다.
+      </li>
+      <li>
+        <strong>실제 DB 인덱스 설계와 연결되는가</strong><br>
+        Primary key(클러스터드, sparse에 가까움)와 나머지 인덱스(secondary, dense)를
+        같은 테이블 안에서 구분해 설명할 수 있어야 합니다.
+      </li>
+    </ol>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span>
+        주니어 수준 답변: "dense index는 다 넣는 거고 sparse index는 조금만 넣는 겁니다."<br>
+        10년차 기대 답변: "sparse index는 데이터 파일이 인덱스 키로 정렬돼 있다는 전제가 있어야 성립합니다.
+        그래서 정렬 기준인 primary key에는 sparse를 쓸 수 있지만, 정렬 기준이 아닌 컬럼의 secondary index는
+        반드시 dense여야 합니다. 대신 dense index는 레코드 수만큼 항목이 필요해 저장 공간과 갱신 비용이 커집니다."
+      </span>
+    </div>
+  </div>
+
+  <!-- 4. 실무 연결 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-real">⚙</div>
+      <h2>실무 연결</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>실무 상황</th>
+          <th>인덱스 밀도 판단</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>InnoDB Primary Key (클러스터드 인덱스)</strong></td>
+          <td>
+            데이터 자체가 PK 순서로 물리 정렬되므로 primary index는 사실상 sparse에 가깝게 동작합니다
+            (leaf가 곧 데이터 블록). 별도의 공간을 크게 차지하지 않습니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>InnoDB Secondary Index (email, status 등)</strong></td>
+          <td>
+            데이터가 그 컬럼 기준으로는 정렬돼 있지 않으므로 반드시 dense이며,
+            "값 → PK" 매핑을 모두 저장합니다. 그래서 secondary index가 많을수록 저장 공간과 쓰기 비용이 크게 늘어납니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>대용량 로그 파일의 타임스탬프 인덱스</strong></td>
+          <td>
+            로그는 보통 쓰여진 순서(시간 순)로 이미 정렬돼 있습니다. 시간 컬럼은 sparse index로 충분히
+            빠른 조회가 가능해 인덱스 크기를 크게 절약합니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>커버링 인덱스(covering index) 설계</strong></td>
+          <td>
+            조회에 필요한 컬럼을 모두 dense index에 포함시키면, 데이터 블록까지 갈 필요 없이
+            인덱스만 읽고 응답할 수 있습니다(index-only scan). 공간을 더 쓰는 대신 I/O를 한 번 더 줄이는 선택입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>테이블 재구성/파티셔닝 시 인덱스 재설계</strong></td>
+          <td>
+            테이블을 다른 키로 재정렬(파티션 키 변경)하면, 기존 primary index였던 컬럼이 secondary index로
+            내려가면서 sparse에서 dense로 바뀌어야 하는 경우가 생깁니다. 이 비용을 사전에 계산해야 합니다.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-think">→</div>
+      <h2>답변 사고 순서 — 면접에서 이렇게 생각하면서 말한다</h2>
+    </div>
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>이 컬럼이 데이터 파일의 정렬 기준인지 확인</strong><br>
+          정렬 기준 키(primary index 대상)인가, 아니면 다른 컬럼(secondary index 대상)인가?
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>정렬 기준이라면 sparse 가능 여부 판단</strong><br>
+          정렬돼 있다면 sparse index로 항목 수를 블록 수만큼으로 줄일 수 있는지 검토합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>정렬 기준이 아니라면 dense가 필수임을 인지</strong><br>
+          정렬 보장이 없으므로 레코드 단위로 정확히 가리키는 dense index만 정확성을 보장합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>저장 공간과 갱신 비용 추정</strong><br>
+          dense는 O(레코드 수), sparse는 O(블록 수)만큼 인덱스 항목이 필요하다는 것을 근거로 크기를 어림잡습니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>조회 비용까지 비교해 결론</strong><br>
+          dense는 블록 내 추가 스캔이 없고, sparse는 블록을 찾은 뒤 블록 내부 순차 탐색이 한 번 더 필요하다는
+          차이까지 말하고 최종 선택 근거를 제시합니다.
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-ans">✓</div>
+      <h2>핵심 답변 예시</h2>
+    </div>
+
+    <h3>짧은 버전 (1~2분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Short)</div>
+      <p>
+        dense index는 데이터 파일의 모든 레코드에 항목을 하나씩 두기 때문에 정렬 여부와 상관없이 동작하지만,
+        레코드 수만큼 인덱스가 커집니다. sparse index는 블록마다 대표 키 하나만 두기 때문에 인덱스가 훨씬 작지만,
+        데이터 파일이 그 키 기준으로 정렬돼 있어야만 정확하게 동작합니다.
+      </p>
+      <p>
+        그래서 데이터 파일을 정렬하는 기준 키인 primary index에는 sparse를 쓸 수 있고,
+        정렬 기준이 아닌 컬럼의 secondary index는 반드시 dense여야 합니다.
+        결국 선택 기준은 "이 컬럼이 데이터 파일의 물리적 정렬 순서와 일치하는가"입니다.
+      </p>
+    </div>
+
+    <h3>깊이 있는 버전 (3~5분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Deep)</div>
+      <p>
+        인덱스 밀도는 "저장 공간을 얼마나 쓸 것인가"와 "정렬이라는 전제를 만족하는가"의 문제로 봅니다.
+        dense index는 데이터 파일의 모든 레코드마다 항목을 하나씩 두므로 정렬 여부와 무관하게 정확한 위치를
+        바로 알려줍니다. 대신 항목 수가 레코드 수와 같아서, 레코드가 수억 건이면 인덱스도 그만큼 커지고,
+        모든 삽입/삭제마다 인덱스 항목도 함께 갱신해야 합니다.
+      </p>
+      <p>
+        sparse index는 블록마다 대표 키(보통 첫 키) 하나만 두므로 항목 수가 블록 수에 비례해 훨씬 작습니다.
+        하지만 이것이 정확히 동작하려면 데이터 파일이 그 인덱스 키 기준으로 물리적으로 정렬돼 있어야 합니다.
+        정렬돼 있어야 "이 블록에는 특정 범위의 값만 들어 있다"는 것이 보장되고, 그 보장 위에서
+        블록을 먼저 찾은 뒤 블록 내부를 순차 탐색해서 정확한 레코드를 찾을 수 있기 때문입니다.
+      </p>
+      <p>
+        이 전제 때문에 실무에서는 데이터 파일을 정렬하는 기준 키, 즉 primary index에만 sparse index를 쓸 수 있습니다.
+        그 외의 컬럼, 즉 secondary index는 데이터 파일이 그 컬럼 기준으로는 정렬돼 있지 않으므로
+        반드시 dense여야 정확성이 보장됩니다. InnoDB로 예를 들면, PK 기준 클러스터드 인덱스는 sparse에 가깝게
+        동작해 별도 공간 부담이 적지만, email이나 status 같은 컬럼에 건 secondary index는 전부 dense이고
+        (값 → PK) 매핑을 레코드 수만큼 저장하기 때문에, secondary index를 여러 개 걸수록 저장 공간과
+        쓰기 비용이 누적됩니다.
+      </p>
+      <p>
+        결론적으로 저는 "이 컬럼이 데이터 파일의 물리적 정렬 순서와 일치하는가"를 먼저 확인하고,
+        일치하면 sparse로 공간을 아끼고, 일치하지 않으면 dense로 정확성을 확보하되 그 공간·쓰기 비용을
+        인덱스 설계 시점에 명시적으로 감안합니다.
+      </p>
+    </div>
+
+    <div class="answer-block answer-weak">
+      <div class="answer-label label-weak">약한 답변</div>
+      <p>
+        "dense index는 다 넣는 거라 정확하고, sparse index는 조금만 넣는 거라 빠릅니다. 그래서 sparse가 더 좋습니다."
+      </p>
+      <p>
+        <strong>왜 약한가:</strong> sparse index가 성립하려면 데이터 파일이 정렬돼 있어야 한다는 전제를
+        전혀 언급하지 않았습니다. "sparse가 더 좋다"는 결론도 틀렸습니다. secondary index처럼 정렬 기준이 아닌
+        컬럼에는 sparse를 아예 쓸 수 없다는 점을 몰라서 나온 답입니다. 두 구조를 우열로 비교했을 뿐,
+        전제 조건에 따라 선택이 갈린다는 사고 과정이 없습니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 7. Trade-off -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-trade">⇄</div>
+      <h2>Trade-off 정리</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>Dense Index</th>
+          <th>Sparse Index</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>전제 조건</td>
+          <td>없음 (정렬 여부 무관)</td>
+          <td>데이터 파일이 인덱스 키로 정렬돼 있어야 함</td>
+        </tr>
+        <tr>
+          <td>항목 수</td>
+          <td>레코드 수만큼 (O(N))</td>
+          <td>블록 수만큼 (O(N/B), B=블록당 레코드 수)</td>
+        </tr>
+        <tr>
+          <td>저장 공간</td>
+          <td>큼</td>
+          <td>작음 (레코드 수 대비 1/B 수준)</td>
+        </tr>
+        <tr>
+          <td>조회 시 블록 내 스캔</td>
+          <td>불필요 (정확히 위치를 가리킴)</td>
+          <td>필요 (블록을 찾은 뒤 블록 내부 순차 탐색)</td>
+        </tr>
+        <tr>
+          <td>삽입/삭제 갱신 비용</td>
+          <td>항목마다 갱신 필요 → 비쌈</td>
+          <td>블록 첫 키가 바뀔 때만 갱신 → 상대적으로 저렴</td>
+        </tr>
+        <tr>
+          <td>적용 대상</td>
+          <td>모든 인덱스 (특히 secondary index는 필수)</td>
+          <td>정렬 기준 키(primary index)에 한정</td>
+        </tr>
+        <tr>
+          <td>Covering index 활용</td>
+          <td>가능 (데이터 접근 없이 인덱스만으로 응답)</td>
+          <td>제한적 (블록 내 실제 레코드 확인이 필요)</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span>
+        Dense와 sparse는 우열 관계가 아니라 <strong>적용 가능 조건이 다른 선택지</strong>입니다.
+        정렬 보장이 있는 곳(primary index)에서는 공간을 아끼는 sparse가 유리하고,
+        정렬 보장이 없는 곳(secondary index)에서는 dense가 유일한 선택입니다.
+      </span>
+    </div>
+  </div>
+
+  <!-- 8. 흔한 오해 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-myth">✗</div>
+      <h2>흔한 오해와 바로잡기</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 1: "sparse index가 항목이 적으니 무조건 더 좋은 선택이다"</div>
+      <p>
+        sparse index는 정렬 기준 키에만 쓸 수 있는 제한된 선택지입니다.
+        정렬 기준이 아닌 컬럼(secondary index)에는 애초에 sparse index를 적용할 수 없습니다.
+        "적어서 좋다"가 아니라 "적용 가능한 조건이 있는지"가 먼저입니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 2: "인덱스는 다 dense로 만들면 안전하니 항상 dense가 낫다"</div>
+      <p>
+        정렬이 보장된 primary index까지 dense로 만들면 불필요하게 큰 인덱스를 유지하게 됩니다.
+        정렬 보장이 있다면 sparse로도 정확성을 잃지 않으면서 공간을 크게 아낄 수 있습니다.
+        "항상 dense가 안전하다"는 것은 공간 비용을 무시한 판단입니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 3: "secondary index도 정렬만 잘 해두면 sparse로 만들 수 있다"</div>
+      <p>
+        데이터 파일은 물리적으로 단 하나의 순서만 가질 수 있습니다. 그 순서가 이미 primary key 기준이라면,
+        같은 데이터 파일이 동시에 secondary index 컬럼 기준으로도 정렬돼 있을 수는 없습니다.
+        그래서 secondary index는 구조적으로 sparse가 될 수 없고 반드시 dense여야 합니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 4: "dense index는 항목이 많으니 조회가 sparse보다 느리다"</div>
+      <p>
+        오히려 반대입니다. dense index는 항목이 레코드를 정확히 가리켜 블록 내부를 추가로 스캔할 필요가 없지만,
+        sparse index는 블록을 찾은 뒤에도 블록 내부를 순차 탐색해야 합니다. dense index가 항목은 많아도
+        조회 경로는 더 짧습니다. 다만 인덱스 자체가 커서 메모리에 다 올리기 어려울 수 있다는 것이 진짜 trade-off입니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- 9. Follow-up 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-follow">↓</div>
+      <h2>Senior-Level Follow-up 질문과 답변 방향</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "sparse index 자체도 커지면 어떻게 합니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        sparse index도 블록 수가 많아지면 하나의 인덱스 블록에 다 담기지 않을 수 있습니다.
+        이 경우 그 sparse index 파일 자체를 다시 정렬된 파일로 보고, 그 위에 한 단계 더 작은
+        sparse index를 얹습니다(2-level index). 이렇게 인덱스를 계층적으로 쌓아 올리는 것을
+        multi-level index라고 하고, 이를 균형 잡힌 트리 구조로 일반화한 것이 B-Tree/B+Tree입니다. (Day 4)
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "같은 secondary key 값을 가진 레코드가 여러 개면 dense index는 어떻게 구성합니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        두 가지 방식이 있습니다. 첫째는 중복된 키마다 각각 레코드를 가리키는 항목을 두는 것(항목 수 = 레코드 수 그대로).
+        둘째는 키 하나당 항목 하나만 두고, 그 항목이 "해당 키를 가진 레코드 목록(포인터 리스트)"을 가리키게 하는 것입니다.
+        후자가 저장 공간을 아끼지만 리스트 관리(추가/삭제) 로직이 더 필요합니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "테이블에 정렬 기준(PK)이 없거나 UUID처럼 정렬 의미가 없는 키를 쓰면 sparse index를 쓸 수 있습니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        UUID처럼 무작위성이 강한 키를 PK로 써도 "그 값 기준으로 정렬"은 여전히 가능하므로 이론적으로는
+        sparse index를 적용할 수 있습니다. 다만 UUID는 삽입 순서와 정렬 순서가 무관해 삽입마다 파일 중간에
+        레코드를 끼워 넣어야 하는 문제(page split, 랜덤 쓰기 증가)가 생깁니다. 그래서 실무에서는 auto-increment
+        정수나 시간 기반 정렬 가능한 키(ULID 등)를 선호하는 이유가 여기서 나옵니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "커버링 인덱스(covering index)는 dense/sparse 논의와 어떻게 연결됩니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        커버링 인덱스는 조회에 필요한 컬럼을 인덱스 항목 자체에 포함시켜, 데이터 블록까지 가지 않고
+        인덱스만 읽어 응답을 완성하는 기법입니다. dense index는 이미 레코드를 정확히 가리키는 항목을 갖고 있으므로,
+        여기에 필요한 컬럼 값을 더 싣기만 하면 index-only scan이 가능해집니다. 저장 공간을 더 쓰는 대신
+        데이터 블록 접근이라는 I/O 한 번을 완전히 제거하는 선택입니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 10. 좋은 답변과 약한 답변 차이 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-diff">≠</div>
+      <h2>좋은 답변과 약한 답변의 차이</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>약한 답변 (5년차 이하)</th>
+          <th>강한 답변 (10년차 이상)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>판단 시작점</td>
+          <td>"sparse가 작으니 더 좋다"</td>
+          <td>"이 컬럼이 데이터 파일의 정렬 기준인지부터 확인한다"</td>
+        </tr>
+        <tr>
+          <td>전제 조건</td>
+          <td>언급 없음</td>
+          <td>"sparse는 정렬돼 있다는 보장이 있어야만 정확하다"</td>
+        </tr>
+        <tr>
+          <td>primary vs secondary</td>
+          <td>구분하지 않음</td>
+          <td>"secondary index는 구조적으로 반드시 dense여야 한다"</td>
+        </tr>
+        <tr>
+          <td>비용 계산</td>
+          <td>"크다/작다" 정성적 표현만</td>
+          <td>항목 수를 O(N) vs O(N/B)로 근거를 들어 비교</td>
+        </tr>
+        <tr>
+          <td>실무 연결</td>
+          <td>이론만 말함</td>
+          <td>InnoDB 클러스터드 인덱스와 secondary index 저장 비용 차이로 연결</td>
+        </tr>
+        <tr>
+          <td>follow-up 대비</td>
+          <td>추가 질문에 막힘</td>
+          <td>multi-level index, 중복 키 처리, covering index까지 연결</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 11. Self-check Rubric -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-rub">✓</div>
+      <h2>자기 점검 Rubric</h2>
+    </div>
+    <p>답변 연습 후 아래 기준으로 자신을 평가하세요.</p>
+
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>sparse index의 정렬 전제를 명확히 설명했다</strong><br>
+        데이터 파일이 정렬돼 있어야만 sparse index가 정확하게 동작한다는 인과관계를 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>primary index와 secondary index의 밀도 제약을 구분했다</strong><br>
+        secondary index는 구조적으로 dense여야 한다는 이유를 설명했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>저장 공간을 레코드 수/블록 수 기준으로 비교했다</strong><br>
+        dense는 O(N), sparse는 O(N/B)라는 근거를 제시했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>조회 시 블록 내 스캔 차이를 언급했다</strong><br>
+        dense는 블록 내 추가 스캔이 불필요하고, sparse는 블록을 찾은 뒤 순차 탐색이 필요하다는 차이를 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>실무 사례를 1개 이상 언급했다</strong><br>
+        InnoDB 클러스터드/secondary 인덱스, 로그 타임스탬프 인덱스, covering index 중 하나 이상 연결했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>삽입/삭제 갱신 비용 차이를 명시했다</strong><br>
+        dense는 항목마다, sparse는 블록 첫 키가 바뀔 때만 갱신이 필요하다는 차이를 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>Follow-up에서 multi-level index를 설명했다</strong><br>
+        sparse index 자체가 커질 때 계층적으로 인덱스를 쌓는 방식을 근거로 답했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>Covering index 또는 중복 키 처리 방식을 언급했다</strong><br>
+        dense index의 응용(index-only scan, 포인터 리스트)까지 연결했다.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="callout callout-info">
+      <span class="callout-icon">📊</span>
+      <span>
+        <strong>자가 평가:</strong>
+        '필수' 3개 모두 → 합격 수준 |
+        '권장' 3개 추가 → 좋은 인상 |
+        '심화' 포함 → 탑티어 후보
+      </span>
+    </div>
+  </div>
+
+  <!-- 12. 다음 레슨 예고 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">→</div>
+      <h2>다음 레슨 예고 — Day 4: B-Tree와 B+Tree</h2>
+    </div>
+    <p>
+      다음 레슨에서는 sparse index가 그 자체로 다시 커질 때 쌓아 올리는 multi-level index를
+      균형 트리로 일반화한 B-Tree와, DB 인덱스가 실제로 채택하는 B+Tree의 차이를 다룹니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>주제</th><th>면접 핵심 질문</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Fanout과 트리 높이</td>
+          <td>fanout이 커질수록 I/O 횟수가 왜 줄어드는가?</td>
+        </tr>
+        <tr>
+          <td>B-Tree vs B+Tree</td>
+          <td>왜 DB 인덱스는 데이터를 internal node에도 두는 B-Tree 대신 B+Tree를 쓰는가?</td>
+        </tr>
+        <tr>
+          <td>Leaf Linkage</td>
+          <td>B+Tree의 리프 노드 연결이 range scan 성능에 어떤 영향을 주는가?</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <span class="tag tag-blue">B-Tree</span>
+      <span class="tag tag-green">B+Tree</span>
+      <span class="tag tag-green">Fanout</span>
+      <span class="tag tag-yellow">Leaf Linkage</span>
+      개념이 이번 레슨의 multi-level index 위에서 다루어집니다.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>
