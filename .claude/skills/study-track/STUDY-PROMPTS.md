@@ -503,10 +503,53 @@
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 LLM 용어 암기나 데모 구현이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 검색 품질, 데이터 파이프라인, 운영 안정성, 비용/성능 trade-off, 제품 품질 판단 중심으로 진행해줘.
 - RAG 아키텍처, 문서 수집/정제, chunking 전략, embedding 모델 선택, vector database, hybrid search, metadata filtering, reranking, context 구성, prompt 설계, hallucination 완화, 답변 근거 표시, 평가 지표, offline/online evaluation, 권한/보안, 개인정보 처리, 캐시, 비용 최적화, 관측성, 장애 대응을 다뤄줘.
+- RAG는 빠르게 변하는 분야이므로 레슨 생성 시점의 최신 공식 문서, changelog/release note, deprecation/migration guide, 주요 production 사례를 먼저 확인하고 커리큘럼과 예시를 조정해줘. 위 기술 목록은 최소 기준이며, 최신 인터뷰 트렌드나 실무 표준과 충돌하면 최신 근거를 우선해줘.
 - 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
 - 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
 - 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
 - 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
 - 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — RAG 시스템 설계와 검색 품질 진단 프레임워크부터 진행해줘.
 - 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-rag-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## LangChain / LangGraph Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 LangChain / LangGraph 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: LangChain / LangGraph
+폴더 slug: `senior-langchain-langgraph-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 튜토리얼 따라하기나 API 호출 예제가 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 LLM 애플리케이션 아키텍처, agent 설계, 상태 관리, 운영 안정성, 평가/관측성, 비용/성능 trade-off 중심으로 진행해줘.
+- LangChain agent 구성, model/tool/message abstraction, middleware, retrieval, memory, structured output, streaming, guardrails, context engineering, tool calling, LangGraph StateGraph, node/edge 설계, state schema, persistence, checkpointer, store, interrupt, human-in-the-loop, subgraph, fault tolerance, retry, LangSmith tracing/evaluation, 배포, 운영 장애 대응을 다뤄줘.
+- LangChain과 LangGraph는 빠르게 변하는 분야이므로 레슨 생성 시점의 최신 공식 문서, changelog/release note, deprecation/migration guide, 주요 production 사례를 먼저 확인하고 커리큘럼과 예시를 조정해줘. 위 기술 목록은 최소 기준이며, 최신 인터뷰 트렌드나 실무 표준과 충돌하면 최신 근거를 우선해줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — LangChain과 LangGraph 기반 Agent 설계/운영 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-langchain-langgraph-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## AI Harness / Agent Harness Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 AI Harness / Agent Harness 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: AI Harness / Agent Harness
+폴더 slug: `senior-ai-harness-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 SDK 사용법이나 prompt template 암기가 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 AI agent runtime 설계, model/tool/runtime 경계, orchestration, 운영 안정성, 평가/관측성, 비용/성능 trade-off 중심으로 진행해줘.
+- AI harness와 agent harness 개념, agent loop, prompt/tool/memory/control-flow scaffolding, provider abstraction, tool calling, handoff, guardrail, session/memory, sandboxed workspace execution, MCP, streaming, telemetry, tracing, evaluation harness, replay, human-in-the-loop, multi-agent coordination, 권한/보안, 비용 최적화, 장애 대응을 다뤄줘.
+- AI Harness 분야는 빠르게 변하므로 레슨 생성 시점의 최신 공식 문서, changelog/release note, deprecation/migration guide, 주요 production 사례를 먼저 확인하고 커리큘럼과 예시를 조정해줘. 위 기술 목록은 최소 기준이며, 최신 인터뷰 트렌드나 실무 표준과 충돌하면 최신 근거를 우선해줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — AI Harness와 Agent Runtime 설계/운영 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-ai-harness-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
 ```

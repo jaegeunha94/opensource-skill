@@ -66,6 +66,8 @@ Examples:
 - `senior-redis-cache-strategy-interview`
 - `senior-message-queue-async-processing-interview`
 - `senior-rag-interview`
+- `senior-langchain-langgraph-interview`
+- `senior-ai-harness-interview`
 
 If the user gives a Korean subject name, map it to a stable English slug. Prefer common CS course names:
 
@@ -156,6 +158,17 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `RAG 10년차 이상 개발자 Interview` -> `senior-rag-interview`
 - `RAG 시니어 인터뷰` -> `senior-rag-interview`
 - `Retrieval Augmented Generation Interview` -> `senior-rag-interview`
+- `LangChain / LangGraph Interview` -> `senior-langchain-langgraph-interview`
+- `LangChain LangGraph Interview` -> `senior-langchain-langgraph-interview`
+- `LangChain LangGraph 10년차 이상 개발자 Interview` -> `senior-langchain-langgraph-interview`
+- `Langchain, Langgraph 10년차 이상 개발자 Interview` -> `senior-langchain-langgraph-interview`
+- `랭체인 랭그래프 인터뷰` -> `senior-langchain-langgraph-interview`
+- `AI Harness / Agent Harness Interview` -> `senior-ai-harness-interview`
+- `AI Harness Interview` -> `senior-ai-harness-interview`
+- `Agent Harness Interview` -> `senior-ai-harness-interview`
+- `AI Harness 10년차 이상 개발자 Interview` -> `senior-ai-harness-interview`
+- `Agent Harness 10년차 이상 개발자 Interview` -> `senior-ai-harness-interview`
+- `AI 하네스 인터뷰` -> `senior-ai-harness-interview`
 
 If the slug is ambiguous, ask one short clarifying question before creating the folder.
 
@@ -186,6 +199,10 @@ For specialized senior interview subjects, keep the same 10+ year practitioner i
 - `senior-redis-cache-strategy-interview`: Redis data structures, TTL, cache invalidation, session stores, distributed locks, ranking, Pub/Sub, cache stampede prevention, persistence modes, and failure behavior.
 - `senior-message-queue-async-processing-interview`: Kafka, RabbitMQ, SQS, Celery, asynchronous job design, retries, idempotency, dead-letter queues, ordering, backpressure, failure isolation, and large-scale processing.
 - `senior-rag-interview`: RAG architecture, document ingestion and cleaning, chunking strategy, embedding model selection, vector databases, hybrid search, metadata filtering, reranking, context construction, prompt design, hallucination mitigation, answer grounding, offline and online evaluation, access control, privacy, caching, cost/performance trade-offs, observability, and production incident response.
+- `senior-langchain-langgraph-interview`: LangChain agent construction, model/tool/message abstractions, middleware, retrieval, memory, structured output, streaming, guardrails, context engineering, LangGraph StateGraph design, nodes and edges, persistence, checkpointers, stores, interrupts, human-in-the-loop, subgraphs, fault tolerance, deployment, LangSmith tracing/evaluation, and production troubleshooting.
+- `senior-ai-harness-interview`: AI harness and agent harness architecture, agent loops, model/tool/runtime boundaries, prompt/tool/memory/control-flow scaffolding, provider abstraction, tool calling, handoffs, guardrails, sessions, sandboxed workspace execution, MCP, streaming, telemetry, tracing, evaluation harnesses, cost/performance trade-offs, security, and incident response.
+
+For fast-moving AI application subjects such as `senior-rag-interview`, `senior-langchain-langgraph-interview`, and `senior-ai-harness-interview`, treat the listed topic scope as a baseline, not a frozen syllabus. Before creating or extending lessons, check current official documentation, changelogs or release notes, deprecation and migration guides, and credible production practice references. If the stored curriculum conflicts with current guidance, update `PROGRESS.md`, `RESOURCES.md`, and the new lesson plan to follow the current evidence, while noting the reason for the adjustment.
 
 For senior frontend interview subjects, assume the learner already knows beginner syntax and basic framework usage. Focus on 10+ year practitioner expectations: browser/platform constraints, accessibility, performance budgets, rendering behavior, architecture trade-offs, maintainability, testing strategy, frontend security, production debugging, cross-functional communication, and senior-level design review. Do not turn these tracks into beginner tag/property/API drills unless the topic is used to evaluate production reasoning.
 
