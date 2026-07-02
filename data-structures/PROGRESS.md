@@ -12,6 +12,7 @@
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 자료구조 선택 프레임워크 | [interview-day01-data-structure-selection-framework.html](lessons/interview-day01-data-structure-selection-framework.html) |
 | 2 | 2026-07-01 | 배열과 연결 리스트 | [interview-day02-arrays-and-linked-lists.html](lessons/interview-day02-arrays-and-linked-lists.html) |
+| 3 | 2026-07-02 | 스택과 큐 | [interview-day03-stack-and-queue.html](lessons/interview-day03-stack-and-queue.html) |
 
 ## 다음 예정 학습
 
@@ -30,7 +31,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — 다음은 Day 3: 스택과 큐 (큐를 직접 구현할 때 고려할 경계 조건과 운영 이슈).
+**Day 3 완료** — 다음은 Day 4: 해시 테이블 (해시 테이블이 평균 O(1)이라는 말의 전제와 위험).
 
 ## Interview 답변 체크리스트
 
@@ -49,6 +50,6 @@
 - [x] 메모리 locality와 CPU 캐시 효율 — Day 1
 - [x] amortized O(1) vs worst-case O(1) 구분 — Day 1
 - [x] 배열 vs 연결 리스트 실무 성능 차이 (locality, pointer chasing, resize spike, 포인터 오버헤드) — Day 2
-- [ ] 스택/큐 bounded/unbounded, backpressure (예정 Day 3)
+- [x] 스택/큐 bounded/unbounded, backpressure, 원형 큐 경계 조건, call stack과 재귀 깊이 — Day 3
 - [ ] 해시 테이블 충돌, load factor, resize (예정 Day 4)
 - [ ] 균형 트리 rebalancing 비용 (예정 Day 5)
