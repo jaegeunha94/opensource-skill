@@ -7,12 +7,12 @@
 | 1 | 2026-06-29 | Python Data Model — `__dunder__` 메서드와 객체 프로토콜 | [0001-python-data-model.html](lessons/0001-python-data-model.html) |
 | 2 | 2026-06-30 | 메모리 관리 — 레퍼런스 카운팅, 가비지 컬렉션, 순환 참조, `__del__` | [0002-memory-management.html](lessons/0002-memory-management.html) |
 | 3 | 2026-07-01 | GIL(Global Interpreter Lock) — 동시성 한계와 우회 전략 | [0003-gil-concurrency.html](lessons/0003-gil-concurrency.html) |
+| 4 | 2026-07-02 | Iterator/Generator 프로토콜과 lazy evaluation | [0004-iterator-generator.html](lessons/0004-iterator-generator.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | Iterator/Generator 프로토콜과 lazy evaluation | `__iter__`, `__next__`, `yield`, `send()`, `throw()` |
 | 5 | asyncio와 이벤트 루프 — 비동기 프로그래밍의 핵심 | event loop, coroutine, Task, Future, `await`, `gather` |
 | 6 | Context Manager — 리소스 관리 패턴 | `__enter__`, `__exit__`, `contextlib`, 예외 처리 |
 | 7 | Descriptor 프로토콜 | `__get__`, `__set__`, `__delete__`, data/non-data descriptor |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — Day 4 (Iterator/Generator)부터 계속.
+**Day 4 완료** — Day 5 (asyncio와 이벤트 루프)부터 계속.
 
 ## 습득한 핵심 개념
 
@@ -47,8 +47,11 @@
 - [x] threading vs multiprocessing 선택 기준과 비용 (Day 3)
 - [x] C 확장의 GIL 해제 메커니즘 (Day 3)
 - [x] Python 3.13+ No-GIL(PEP 703) 개요 (Day 3)
+- [x] Iterable vs Iterator 프로토콜 구분 (Day 4)
+- [x] Generator와 lazy evaluation, 메모리 곡선 (Day 4)
+- [x] `send()`/`throw()`/`close()`, priming, `GeneratorExit` (Day 4)
+- [x] `yield from` 위임과 코루틴의 역사적 연결 (Day 4)
 
-- [ ] Iterator/Generator 프로토콜 (예정 Day 4)
 - [ ] asyncio 이벤트 루프 (예정 Day 5)
 - [ ] Context Manager 프로토콜 (예정 Day 6)
 - [ ] Descriptor 프로토콜 (예정 Day 7)

@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — Iterator/Generator 프로토콜 | 파이썬 경력자 Interview</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="lesson-header">
+    <span class="lesson-tag">Day 4</span>
+    <h1>Iterator / Generator 프로토콜<br><span style="font-size:0.7em;color:var(--text-muted)">lazy evaluation과 <code>yield</code>의 실행 모델</span></h1>
+    <p class="lesson-meta">파이썬 경력자 Interview · 2026-07-02 · 약 60–80분 소요</p>
+  </header>
+
+  <!-- ── 왜 이 주제인가 ── -->
+  <section>
+    <h2>왜 면접에서 Iterator/Generator를 묻는가</h2>
+    <p>
+      <code>for x in obj:</code>를 쓸 줄 아는 것과, <strong>왜 그게 동작하는지, 언제 제너레이터를 써야
+      메모리와 응답 시간이 실제로 개선되는지</strong>를 아는 것은 완전히 다른 수준이다.
+      면접관은 "제너레이터가 뭐예요?"라는 정의 질문 뒤에, 반드시 <strong>"그래서 언제 씁니까?
+      리스트로 하면 안 되나요?"</strong>라는 실무 판단 질문을 이어 붙인다.
+    </p>
+    <p>
+      Iterator/Generator를 깊이 아는지 확인하는 진짜 목적은, <strong>메모리와 시간을 맞바꾸는 lazy evaluation 사고를
+      코드 설계에 반영할 수 있는가</strong>를 보기 위해서다. 대용량 로그 파일을 한 줄씩 처리하는 코드,
+      DB 커서로 수백만 건을 순회하는 배치 작업, API 페이지네이션을 감싸는 래퍼 — 이런 실무 코드는
+      전부 이 프로토콜 위에서 동작한다.
+    </p>
+    <div class="callout tip">
+      <div class="callout-title">실무 연결</div>
+      "10GB짜리 로그 파일을 분석하는데 서버 메모리가 2GB밖에 없어요. 어떻게 처리하시겠습니까?"
+      혹은 "제너레이터로 만든 파이프라인을 두 번 순회했더니 두 번째부터 아무것도 안 나와요, 왜죠?"라는
+      질문에 즉시 원인을 짚어낼 수 있는가가 이 레슨의 핵심이다.
+    </div>
+  </section>
+
+  <!-- ── 전제 개념 1: Iterable vs Iterator ── -->
+  <section>
+    <h2>전제 개념 ① — Iterable과 Iterator는 다른 것이다</h2>
+    <p>
+      많은 경력자도 이 둘을 섞어서 말한다. 정확히 구분하는 것 자체가 첫 번째 신호다.
+    </p>
+    <div class="card accent">
+      <div class="card-label">Iterable (반복 가능한 객체)</div>
+      <p style="margin-bottom:0">
+        <code>__iter__()</code> 메서드를 가진 객체. <code>__iter__()</code>를 호출하면 <strong>Iterator를 반환</strong>한다.
+        리스트, 튜플, 딕셔너리, 문자열, 파일 객체 등이 여기 해당한다.
+        Iterable 자체는 "순회할 수 있다"는 능력만 있을 뿐, <strong>현재 어디까지 순회했는지 상태를 갖지 않는다.</strong>
+      </p>
+    </div>
+    <div class="card success">
+      <div class="card-label">Iterator (실제로 순회 중인 객체)</div>
+      <p style="margin-bottom:0">
+        <code>__iter__()</code>와 <code>__next__()</code>를 모두 가진 객체.
+        <code>__next__()</code>를 호출할 때마다 다음 값을 하나 반환하고, <strong>더 이상 값이 없으면
+        <code>StopIteration</code> 예외를 던진다.</strong> Iterator는 "지금까지 어디까지 진행했는지"를
+        내부 상태로 기억한다. <strong>Iterator의 <code>__iter__()</code>는 관례적으로 자기 자신(<code>self</code>)을 반환</strong>한다 —
+        이것이 "모든 Iterator는 Iterable이다"라는 말의 근거다.
+      </p>
+    </div>
+
+    <pre><span class="kw">class</span> <span class="cls">CountUp</span>:
+    <span class="cm">"""리스트를 만들지 않고 0부터 n-1까지 순회하는 이터레이터"""</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, n):
+        self.n = n
+        self.i = <span class="num">0</span>
+
+    <span class="kw">def</span> <span class="fn">__iter__</span>(self):
+        <span class="cm"># Iterator는 자기 자신을 반환한다</span>
+        <span class="kw">return</span> self
+
+    <span class="kw">def</span> <span class="fn">__next__</span>(self):
+        <span class="kw">if</span> self.i >= self.n:
+            <span class="kw">raise</span> <span class="cls">StopIteration</span>
+        value = self.i
+        self.i += <span class="num">1</span>
+        <span class="kw">return</span> value
+
+it = <span class="fn">CountUp</span>(<span class="num">3</span>)
+<span class="fn">print</span>(<span class="fn">next</span>(it))  <span class="cm"># 0</span>
+<span class="fn">print</span>(<span class="fn">next</span>(it))  <span class="cm"># 1</span>
+<span class="fn">print</span>(<span class="fn">next</span>(it))  <span class="cm"># 2</span>
+<span class="fn">print</span>(<span class="fn">next</span>(it))  <span class="cm"># StopIteration 발생</span></pre>
+
+    <h3><code>for</code> 문이 실제로 하는 일</h3>
+    <p>
+      <code>for x in obj:</code>는 문법 설탕(syntactic sugar)이다. 인터프리터는 내부적으로 다음과 동일하게 동작한다.
+    </p>
+    <pre><span class="cm"># for x in obj: ... 는 실제로 이렇게 풀린다</span>
+_iterator = <span class="fn">iter</span>(obj)       <span class="cm"># obj.__iter__() 호출</span>
+<span class="kw">while</span> <span class="cls">True</span>:
+    <span class="kw">try</span>:
+        x = <span class="fn">next</span>(_iterator)   <span class="cm"># _iterator.__next__() 호출</span>
+    <span class="kw">except</span> <span class="cls">StopIteration</span>:
+        <span class="kw">break</span>
+    <span class="cm"># 루프 본문 실행</span></pre>
+    <div class="callout info">
+      <div class="callout-title">왜 이 구분이 중요한가</div>
+      Iterable(예: 리스트)은 <strong>몇 번이든 새로 순회를 시작</strong>할 수 있다 — <code>iter(list)</code>를 호출할 때마다
+      새 Iterator가 생기기 때문이다. 반면 Iterator는 <strong>한 번 소진되면 다시 처음으로 되돌릴 수 없다</strong>.
+      이 차이를 모르면 "제너레이터를 두 번 순회했는데 두 번째는 빈 결과가 나온다"는 버그를 이해하지 못한다.
+    </div>
+  </section>
+
+  <!-- ── 면접 Q1 ── -->
+  <section>
+    <h2>면접 질문 ① — Iterable과 Iterator의 차이를 설명해보세요</h2>
+    <div class="interview-q">
+      Iterable과 Iterator는 어떻게 다른가요? 리스트는 왜 둘 다로 취급될 수 있죠?
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li><code>__iter__</code>/<code>__next__</code> 프로토콜을 정확히 구분해서 설명하는가</li>
+      <li>"리스트는 Iterable이지 Iterator가 아니다"라는 정확한 위치를 아는가</li>
+      <li>Iterator가 상태(현재 위치)를 가지며 소진되면 재사용 불가하다는 점을 아는가</li>
+    </ul>
+
+    <h3>답변 구조 — 생각의 순서</h3>
+    <ol>
+      <li><strong>정의</strong>: Iterable = <code>__iter__</code>만, Iterator = <code>__iter__</code> + <code>__next__</code></li>
+      <li><strong>관계</strong>: Iterable의 <code>__iter__()</code>가 Iterator를 만들어 반환</li>
+      <li><strong>상태</strong>: Iterator만 "지금 어디까지 순회했는지" 상태를 가짐</li>
+      <li><strong>재사용성</strong>: Iterable은 반복해서 새 순회 가능, Iterator는 1회용</li>
+    </ol>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변</div>
+      <p>
+        "Iterable은 <code>__iter__()</code> 메서드를 구현해서 <strong>'순회를 시작할 수 있다'</strong>는 능력만 제공하는 객체입니다.
+        리스트가 대표적인 예죠. 리스트 자체는 지금 어디까지 순회했는지 상태를 갖지 않습니다.
+        반면 Iterator는 <code>__iter__()</code>와 <code>__next__()</code>를 모두 구현하고,
+        <strong>다음 값과 현재 진행 상태를 함께 관리</strong>합니다. <code>__next__()</code>를 호출할 때마다 값을 하나 내주고,
+        더 없으면 <code>StopIteration</code>을 던집니다.
+      </p>
+      <p style="margin-bottom:0">
+        리스트가 둘 다처럼 보이는 이유는, <code>list</code>는 Iterable이지만 <code>list_iterator</code>라는
+        <strong>별도의 Iterator 객체</strong>가 존재하기 때문입니다. <code>iter(my_list)</code>를 호출할 때마다
+        새 Iterator가 만들어지므로 리스트는 몇 번이든 다시 순회할 수 있는 겁니다.
+        반면 제너레이터 객체 자체는 Iterator라서, 한 번 다 순회하면 다시 처음부터 돌릴 수 없고
+        새로 만들어야 합니다."
+      </p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변</div>
+      <p>
+        "Iterable은 반복 가능한 거고 Iterator는 그걸 실행하는 거예요. <code>for</code>문에서 쓰는 거요."
+      </p>
+      <p style="margin-bottom:0">
+        <strong>왜 약한가:</strong> "실행하는 거"라는 표현이 모호하다. <code>__iter__</code>/<code>__next__</code> 프로토콜에 대한
+        언급이 전혀 없고, 리스트가 왜 재사용 가능한지(새 Iterator 생성)와 제너레이터가 왜 1회용인지(자기 자신이 Iterator)의
+        차이를 설명하지 못한다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── 전제 개념 2: Generator와 lazy evaluation ── -->
+  <section>
+    <h2>전제 개념 ② — Generator는 함수를 "일시정지 가능한 상태 기계"로 바꾼다</h2>
+    <p>
+      제너레이터 함수(<code>yield</code>가 있는 함수)를 호출하면 함수 본문이 즉시 실행되지 <strong>않는다</strong>.
+      대신 제너레이터 객체가 반환된다. 이 객체가 <code>__iter__</code>와 <code>__next__</code>를 자동으로 구현한
+      Iterator다. <code>next()</code>가 호출될 때마다 <strong>직전에 멈췄던 지점부터</strong> 실행을 재개하고,
+      다음 <code>yield</code>를 만나면 값을 내주고 다시 멈춘다.
+    </p>
+    <pre><span class="kw">def</span> <span class="fn">read_large_file</span>(path):
+    <span class="cm"># 함수를 호출해도 아래 코드는 즉시 실행되지 않는다</span>
+    <span class="kw">with</span> <span class="fn">open</span>(path) <span class="kw">as</span> f:
+        <span class="kw">for</span> line <span class="kw">in</span> f:
+            <span class="kw">yield</span> line.<span class="fn">strip</span>()  <span class="cm"># 여기서 값을 내주고 멈춘다</span>
+
+gen = <span class="fn">read_large_file</span>(<span class="st">"access.log"</span>)  <span class="cm"># 아직 파일을 열지도 않음!</span>
+<span class="fn">print</span>(<span class="fn">next</span>(gen))  <span class="cm"># 이제서야 실행 시작 → 첫 줄까지 읽고 멈춤</span>
+<span class="fn">print</span>(<span class="fn">next</span>(gen))  <span class="cm"># 멈췄던 지점(for 루프 내부)부터 재개 → 두 번째 줄</span></pre>
+
+    <h3>왜 "lazy(지연)"인가 — 메모리 곡선이 완전히 다르다</h3>
+    <p>
+      리스트 컴프리헨션은 <strong>모든 결과를 한꺼번에 메모리에 만든다.</strong> 제너레이터는
+      <strong>한 번에 값 하나만 만들고, 그 값을 소비한 뒤에야 다음 값을 계산</strong>한다.
+      10GB 로그 파일을 읽는다면, 리스트로 읽으면 10GB(+α)가 메모리에 그대로 올라가지만
+      제너레이터로 읽으면 한 줄 분량의 메모리만 사용한다.
+    </p>
+    <pre><span class="cm"># 리스트 컴프리헨션: 즉시 전체 결과를 메모리에 생성 (eager)</span>
+lines = [line.<span class="fn">strip</span>() <span class="kw">for</span> line <span class="kw">in</span> <span class="fn">open</span>(<span class="st">"huge.log"</span>)]
+<span class="cm"># → 파일 전체가 메모리에 리스트로 올라감 (10GB 파일이면 10GB+)</span>
+
+<span class="cm"># 제너레이터 표현식: 값이 필요할 때만 계산 (lazy)</span>
+lines = (line.<span class="fn">strip</span>() <span class="kw">for</span> line <span class="kw">in</span> <span class="fn">open</span>(<span class="st">"huge.log"</span>))
+<span class="cm"># → 이 시점엔 아무 계산도 안 됨. 순회할 때 한 줄씩만 메모리에 존재</span>
+
+<span class="kw">for</span> line <span class="kw">in</span> lines:
+    <span class="kw">if</span> <span class="st">"ERROR"</span> <span class="kw">in</span> line:
+        <span class="fn">process</span>(line)
+<span class="cm"># 이 시점에도 메모리에는 "현재 처리 중인 한 줄"만 존재한다</span></pre>
+
+    <div class="callout warn">
+      <div class="callout-title">제너레이터는 "한 번 쓰고 버리는" 스트림이다</div>
+      제너레이터 객체는 Iterator이므로 <code>len()</code>을 쓸 수 없고, 인덱싱(<code>gen[0]</code>)도 안 되고,
+      <strong>한 번 다 순회하면 재순회가 불가능</strong>하다. 다시 처음부터 순회하려면 제너레이터 함수를
+      다시 호출해서 새 객체를 만들어야 한다. 이것이 "제너레이터를 두 번 순회했더니 두 번째는 비어있다"는
+      흔한 버그의 원인이다.
+    </div>
+
+    <pre><span class="kw">def</span> <span class="fn">squares</span>(n):
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n):
+        <span class="kw">yield</span> i * i
+
+gen = <span class="fn">squares</span>(<span class="num">3</span>)
+<span class="fn">print</span>(<span class="fn">list</span>(gen))  <span class="cm"># [0, 1, 4] — 여기서 이미 소진됨</span>
+<span class="fn">print</span>(<span class="fn">list</span>(gen))  <span class="cm"># [] — 다시 순회해도 아무것도 안 나옴!</span></pre>
+  </section>
+
+  <!-- ── 면접 Q2 ── -->
+  <section>
+    <h2>면접 질문 ② — 10GB 로그 파일을 2GB 메모리 서버에서 분석해야 합니다</h2>
+    <div class="interview-q">
+      10GB짜리 로그 파일에서 특정 패턴을 가진 줄만 추출하고 집계해야 하는데,
+      서버 메모리는 2GB밖에 없습니다. 어떻게 처리하시겠습니까?
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li>파일 전체를 <code>read()</code>나 <code>readlines()</code>로 읽지 않는다는 것을 즉시 인지하는가</li>
+      <li>제너레이터 파이프라인(여러 단계를 지연 평가로 연결)을 설계할 수 있는가</li>
+      <li>집계 결과(최종 카운트 등)는 작으므로 메모리에 남는다는 걸 구분하는가</li>
+      <li><code>itertools</code>를 활용한 실전 최적화까지 아는가</li>
+    </ul>
+
+    <h3>답변 구조 — 생각의 순서</h3>
+    <ol>
+      <li><strong>문제 재정의</strong>: "10GB를 메모리에 올리는 게 아니라 스트리밍으로 한 줄씩 처리해야 한다"</li>
+      <li><strong>파일 순회 자체가 이미 lazy</strong>: 파일 객체는 그 자체로 Iterator, <code>for line in f</code>가 한 줄씩만 읽음</li>
+      <li><strong>파이프라인 설계</strong>: 필터링 → 파싱 → 집계를 제너레이터로 체이닝</li>
+      <li><strong>집계 결과와 원본 데이터의 크기 차이 구분</strong>: 최종 카운터/합계는 작아서 메모리에 남아도 무방</li>
+    </ol>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변</div>
+      <p>
+        "핵심은 <strong>파일 전체를 메모리에 올리지 않는 것</strong>입니다. 파이썬 파일 객체는 그 자체로 Iterator라서
+        <code>for line in f:</code>로 순회하면 한 줄씩만 읽고, 이전 줄은 참조가 없으면 바로 GC 대상이 됩니다.
+        <code>f.read()</code>나 <code>f.readlines()</code>를 쓰면 전체가 메모리에 올라가므로 절대 쓰면 안 됩니다.
+      </p>
+      <p>
+        그 다음 <strong>제너레이터 파이프라인</strong>으로 필터링과 파싱을 단계별로 연결합니다.
+      </p>
+      <pre style="margin:0.5rem 0"><span class="kw">def</span> <span class="fn">filtered_lines</span>(path, pattern):
+    <span class="kw">with</span> <span class="fn">open</span>(path) <span class="kw">as</span> f:
+        <span class="kw">for</span> line <span class="kw">in</span> f:
+            <span class="kw">if</span> pattern <span class="kw">in</span> line:
+                <span class="kw">yield</span> line
+
+<span class="kw">def</span> <span class="fn">parsed_records</span>(lines):
+    <span class="kw">for</span> line <span class="kw">in</span> lines:
+        <span class="kw">yield</span> <span class="fn">parse_log_line</span>(line)
+
+<span class="cm"># 각 단계는 '연결'만 될 뿐 아직 아무 것도 실행 안 됨</span>
+records = <span class="fn">parsed_records</span>(<span class="fn">filtered_lines</span>(<span class="st">"huge.log"</span>, <span class="st">"ERROR"</span>))
+
+<span class="cm"># 실제 순회 시점에 파일 한 줄 → 필터 → 파싱이 한 번에 하나씩 흘러감</span>
+counter = {}
+<span class="kw">for</span> rec <span class="kw">in</span> records:
+    counter[rec.code] = counter.<span class="fn">get</span>(rec.code, <span class="num">0</span>) + <span class="num">1</span></pre>
+      <p style="margin-bottom:0">
+        이 구조에서 어느 순간이든 메모리에 존재하는 건 <strong>현재 처리 중인 한 줄과 집계용 딕셔너리</strong>뿐입니다.
+        집계 딕셔너리는 고유 코드 개수만큼만 커지므로 원본 10GB와 무관하게 작게 유지됩니다.
+        더 정교하게는 <code>itertools.islice</code>로 청크 단위 처리를 하거나, 멀티프로세스로 파일을
+        나눠 읽는 방식도 검토할 수 있지만, 기본은 '전체를 절대 메모리에 올리지 않는 스트리밍 파이프라인'입니다."
+      </p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변</div>
+      <p>
+        "제너레이터를 쓰면 메모리를 적게 씁니다. <code>yield</code>로 한 줄씩 처리하면 됩니다."
+      </p>
+      <p style="margin-bottom:0">
+        <strong>왜 약한가:</strong> 맞는 방향이지만 <strong>왜</strong> 적게 쓰는지(각 줄이 처리 후 GC됨),
+        파이프라인을 어떻게 구성하는지, 집계 결과와 원본 데이터 크기의 차이를 구분하는 설명이 없어서
+        실제로 설계해본 적이 있는지 의심스러운 인상을 준다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── 전제 개념 3: send/throw/yield from ── -->
+  <section>
+    <h2>전제 개념 ③ — 제너레이터는 값을 "받을" 수도 있다 (<code>send</code>, <code>throw</code>, <code>yield from</code>)</h2>
+    <p>
+      대부분은 제너레이터를 "값을 내보내기만 하는 것"으로 안다. 하지만 <code>yield</code>는 사실
+      <strong>표현식(expression)</strong>이고, <code>send()</code>로 값을 되돌려 넣을 수 있다.
+      이것이 asyncio가 등장하기 전(Python 3.4 이전) 코루틴을 흉내내던 방식이며,
+      지금도 <code>async def</code>/<code>await</code>의 내부 구현 원리와 직결된다.
+    </p>
+    <pre><span class="kw">def</span> <span class="fn">running_average</span>():
+    total = <span class="num">0</span>
+    count = <span class="num">0</span>
+    average = <span class="cls">None</span>
+    <span class="kw">while</span> <span class="cls">True</span>:
+        <span class="cm"># yield는 값을 '내보내는' 동시에, send()로 들어온 값을 '받는' 표현식이다</span>
+        value = <span class="kw">yield</span> average
+        total += value
+        count += <span class="num">1</span>
+        average = total / count
+
+avg = <span class="fn">running_average</span>()
+<span class="fn">next</span>(avg)             <span class="cm"># 첫 next()로 첫 yield까지 실행 (초기 구동, priming)</span>
+<span class="fn">print</span>(avg.<span class="fn">send</span>(<span class="num">10</span>))  <span class="cm"># 10.0 — value=10으로 재개, 다음 yield까지 실행</span>
+<span class="fn">print</span>(avg.<span class="fn">send</span>(<span class="num">20</span>))  <span class="cm"># 15.0</span>
+<span class="fn">print</span>(avg.<span class="fn">send</span>(<span class="num">30</span>))  <span class="cm"># 20.0</span></pre>
+
+    <div class="callout warn">
+      <div class="callout-title">왜 "priming"(첫 next() 호출)이 필요한가</div>
+      갓 생성된 제너레이터는 함수 본문의 <strong>맨 처음</strong>에 멈춰있다. 아직 첫 번째 <code>yield</code>에도
+      도달하지 못한 상태이므로, 이 상태에서 바로 <code>send(값)</code>을 호출하면
+      <code>TypeError: can't send non-None value to a just-started generator</code>가 난다.
+      반드시 <code>next()</code>(또는 <code>send(None)</code>)를 한 번 호출해서 첫 <code>yield</code>까지
+      실행시켜야 그 이후로 <code>send()</code>가 의미를 가진다.
+    </div>
+
+    <h3><code>throw()</code>와 <code>close()</code> — 제너레이터 내부에 예외를 주입한다</h3>
+    <pre><span class="kw">def</span> <span class="fn">transaction_worker</span>():
+    <span class="kw">try</span>:
+        <span class="kw">while</span> <span class="cls">True</span>:
+            item = <span class="kw">yield</span>
+            <span class="fn">print</span>(<span class="st">f"처리 중: {item}"</span>)
+    <span class="kw">except</span> <span class="cls">GeneratorExit</span>:
+        <span class="cm"># close() 호출 시 이 지점에서 GeneratorExit이 발생 → 정리 로직</span>
+        <span class="fn">print</span>(<span class="st">"롤백하고 리소스 정리"</span>)
+        <span class="kw">raise</span>  <span class="cm"># 관례상 다시 raise (억제하면 RuntimeError)</span>
+
+w = <span class="fn">transaction_worker</span>()
+<span class="fn">next</span>(w)
+w.<span class="fn">send</span>(<span class="st">"item-1"</span>)
+w.<span class="fn">close</span>()  <span class="cm"># 내부에서 GeneratorExit 발생 → 정리 코드 실행</span></pre>
+    <p>
+      <code>throw(exc)</code>는 제너레이터가 멈춰있는 <code>yield</code> 지점에 예외를 강제로 발생시킨다.
+      제너레이터 내부의 <code>try/except</code>로 잡아서 정리 작업을 할 수 있고, 잡지 않으면 그대로
+      호출자에게 전파된다. <strong>이 메커니즘이 나중에 <code>async def</code> 코루틴이 취소(cancel)될 때
+      내부적으로 동작하는 방식과 정확히 같다</strong> — asyncio의 <code>Task.cancel()</code>도 결국
+      코루틴 내부에 <code>CancelledError</code>를 <code>throw</code>하는 방식으로 구현되어 있다.
+    </p>
+
+    <h3><code>yield from</code> — 제너레이터 위임(delegation)</h3>
+    <pre><span class="kw">def</span> <span class="fn">read_section</span>(lines):
+    <span class="kw">for</span> line <span class="kw">in</span> lines:
+        <span class="kw">yield</span> line
+
+<span class="kw">def</span> <span class="fn">read_report</span>():
+    <span class="kw">yield from</span> <span class="fn">read_section</span>([<span class="st">"header-1"</span>, <span class="st">"header-2"</span>])
+    <span class="kw">yield from</span> <span class="fn">read_section</span>([<span class="st">"body-1"</span>, <span class="st">"body-2"</span>])
+    <span class="kw">yield</span> <span class="st">"footer"</span>
+
+<span class="fn">print</span>(<span class="fn">list</span>(<span class="fn">read_report</span>()))
+<span class="cm"># ['header-1', 'header-2', 'body-1', 'body-2', 'footer']</span></pre>
+    <p>
+      <code>yield from sub_gen</code>은 단순히 <code>for x in sub_gen: yield x</code>의 축약이 <strong>아니다.</strong>
+      <code>send()</code>, <code>throw()</code>, 반환값(<code>return</code>)까지 서브 제너레이터로 <strong>투명하게 전달</strong>한다.
+      제너레이터를 부품처럼 조립하는 실무 패턴(예: 여러 파서를 조합해서 하나의 스트림처럼 만들기)의 기반이 된다.
+    </p>
+  </section>
+
+  <!-- ── 면접 Q3 ── -->
+  <section>
+    <h2>면접 질문 ③ — 제너레이터 기반 코루틴과 <code>async def</code>는 어떤 관계인가요?</h2>
+    <div class="interview-q">
+      Python 3.4 이전에는 코루틴을 <code>yield</code>로 구현했다고 들었습니다.
+      지금의 <code>async def</code>/<code>await</code>와는 어떤 관계가 있나요?
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li>제너레이터의 "실행을 멈추고 재개하는" 능력이 코루틴의 본질이라는 걸 이해하는가</li>
+      <li>역사적 흐름(PEP 342 → PEP 380 → PEP 492)을 대략이라도 아는가</li>
+      <li><code>async def</code>가 문법적으로 명확해진 것이지, 근본 메커니즘은 연속선상이라는 걸 아는가</li>
+    </ul>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변</div>
+      <p>
+        "제너레이터의 본질은 <strong>함수 실행을 임의의 지점에서 멈추고, 나중에 그 지점부터 다시 재개할 수 있다</strong>는 것입니다.
+        이 능력이 바로 코루틴에 필요한 능력과 같습니다. 그래서 <code>asyncio</code>가 표준화되기 전에는
+        <code>yield</code>로 멈추고 <code>send()</code>로 값을 넣어주는 방식(<code>@asyncio.coroutine</code> +
+        <code>yield from</code>, PEP 342/380)으로 코루틴을 구현했습니다.
+      </p>
+      <p style="margin-bottom:0">
+        Python 3.5부터는 PEP 492로 <code>async def</code>/<code>await</code>라는 <strong>전용 문법</strong>이 생겼는데,
+        이건 완전히 새로운 메커니즘이 아니라 <strong>제너레이터 기반 코루틴을 명확하게 구분되는 문법으로 정리한 것</strong>입니다.
+        내부적으로 코루틴 객체도 여전히 '멈추고 재개하는' 동일한 프레임 저장 방식을 쓰고,
+        <code>await</code>는 <code>yield from</code>과 유사하게 동작합니다. 실제로 <code>Task.cancel()</code>이
+        코루틴 내부에 <code>CancelledError</code>를 <code>throw</code>하는 방식으로 구현된 것도
+        제너레이터의 <code>throw()</code> 메커니즘을 그대로 물려받은 것입니다. 즉 <code>async def</code>는
+        '제너레이터를 코루틴처럼 오용하지 않도록 문법적으로 명확히 분리'한 것이지, 근본 실행 모델은 연속선상에 있습니다."
+      </p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변</div>
+      <p>
+        "예전에는 <code>yield</code>로 비동기를 흉내냈는데 지금은 <code>async</code>/<code>await</code>가 생겨서 안 씁니다."
+      </p>
+      <p style="margin-bottom:0">
+        <strong>왜 약한가:</strong> "흉내냈다"는 표현이 두 메커니즘을 완전히 별개로 취급한다.
+        제너레이터의 '멈추고 재개' 능력이 코루틴의 본질이라는 연결 고리를 짚지 못했고,
+        <code>Task.cancel()</code>이 <code>throw()</code> 메커니즘 위에서 동작한다는 실무적으로 유용한 통찰이 빠져 있다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Senior Follow-up ── -->
+  <section>
+    <h2>Senior-level Follow-up 질문</h2>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 1</div>
+      <p>
+        <strong>"제너레이터 함수 안에서 <code>return value</code>를 쓰면 어떻게 되나요?"</strong>
+      </p>
+      <p style="margin-bottom:0">
+        일반 함수와 달리 제너레이터에서 <code>return value</code>는 함수를 끝내면서
+        <code>StopIteration(value)</code>를 발생시킨다. 이 값은 <code>for</code> 루프로는 접근할 수 없고
+        (<code>StopIteration</code>이 조용히 루프를 끝냄), <code>yield from</code>으로 위임했을 때
+        <code>result = yield from sub_gen()</code>처럼 <strong>표현식의 결과값으로 받을 수 있다.</strong>
+        이것이 서브 제너레이터의 최종 결과를 상위로 전달하는 공식 통로다.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 2</div>
+      <p>
+        <strong>"제너레이터가 GC에 의해 수거되기 전에 <code>close()</code>가 자동으로 호출되나요?"</strong>
+      </p>
+      <p style="margin-bottom:0">
+        그렇다 — CPython은 제너레이터 객체가 레퍼런스 카운트 0이 되어 소멸될 때 <code>__del__</code>에서
+        자동으로 <code>close()</code>를 호출해 <code>GeneratorExit</code>을 주입한다.
+        하지만 <strong>순환 참조로 묶여 cyclic GC를 기다려야 하는 경우</strong>(Day 2에서 다룬 내용과 연결),
+        정리 시점이 예측 불가능하게 늦어질 수 있다. <code>with open(...)</code>처럼 컨텍스트 매니저에 의존하는
+        정리 로직이 있다면, 명시적으로 <code>close()</code>를 호출하거나 <code>contextlib.closing</code>을
+        쓰는 게 안전하다는 걸 짚으면 좋은 신호다.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 3</div>
+      <p>
+        <strong>"제너레이터 표현식과 리스트 컴프리헨션의 성능 차이를 실제로 측정한다면 어떻게 하시겠습니까?"</strong>
+      </p>
+      <p style="margin-bottom:0">
+        단순 순회 총 시간은 큰 차이가 없을 수 있다(제너레이터는 오히려 <code>yield</code> 오버헤드로 순수 순회가
+        살짝 느릴 수도 있음). <strong>진짜 차이는 메모리</strong>다. <code>tracemalloc</code>이나
+        <code>sys.getsizeof()</code>로 피크 메모리를 비교하고, <strong>조기 종료(early exit)</strong> 시나리오
+        (예: 조건에 맞는 첫 값만 필요한 경우 <code>next(filter(...))</code>)에서는 제너레이터가
+        전체를 계산하지 않아도 되므로 시간도 절약된다는 점까지 구분해서 답하면 좋다.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 4</div>
+      <p>
+        <strong>"제너레이터는 스레드 안전(thread-safe)한가요?"</strong>
+      </p>
+      <p style="margin-bottom:0">
+        아니다. 제너레이터는 내부 상태(현재 실행 위치, 로컬 변수)를 하나만 가지므로,
+        여러 스레드가 동시에 같은 제너레이터 객체의 <code>next()</code>를 호출하면 <code>ValueError:
+        generator already executing</code>이 나거나 상태가 꼬인다. 여러 스레드/태스크가 동시에 접근해야 한다면
+        스레드마다 별도 제너레이터 인스턴스를 만들거나, 락으로 접근을 직렬화해야 한다.
+        GIL이 있어도 "동시 접근으로부터 안전하다"는 것과는 다른 문제라는 점을 구분해서 답하는 게 핵심이다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Trade-off와 흔한 오해 ── -->
+  <section>
+    <h2>Trade-off와 흔한 오해</h2>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 1 — "제너레이터는 항상 리스트보다 빠르다"</div>
+      <p>
+        틀렸다. 제너레이터의 이점은 <strong>메모리</strong>와 <strong>조기 종료 시 계산량 절감</strong>이지,
+        무조건적인 속도 우위가 아니다. 전체 데이터를 어차피 다 순회해야 하고 여러 번 접근해야 한다면,
+        리스트로 한 번 계산해두는 게 반복 접근 시 더 빠르다. "메모리가 부족하거나 데이터가 매우 크거나
+        조기 종료 가능성이 있을 때" 제너레이터를 선택한다고 조건을 명시해야 한다.
+      </p>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 2 — "제너레이터도 여러 번 순회할 수 있다"</div>
+      <p>
+        제너레이터 객체는 Iterator이므로 <strong>1회용</strong>이다. 재사용하려면 제너레이터 <em>함수</em>를
+        다시 호출해서 새 객체를 만들거나, 애초에 클래스 기반으로 <code>__iter__</code>에서 매번 새 제너레이터를
+        만들어 반환하는 Iterable 래퍼를 만들어야 한다.
+      </p>
+      <pre style="margin-top:0.5rem"><span class="kw">class</span> <span class="cls">Lines</span>:
+    <span class="cm">"""매번 새 제너레이터를 만들어 재순회 가능한 Iterable"""</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, path):
+        self.path = path
+
+    <span class="kw">def</span> <span class="fn">__iter__</span>(self):
+        <span class="kw">with</span> <span class="fn">open</span>(self.path) <span class="kw">as</span> f:
+            <span class="kw">for</span> line <span class="kw">in</span> f:
+                <span class="kw">yield</span> line.<span class="fn">strip</span>()
+
+lines = <span class="fn">Lines</span>(<span class="st">"a.log"</span>)
+<span class="fn">list</span>(lines); <span class="fn">list</span>(lines)  <span class="cm"># 둘 다 정상 동작 — 매번 __iter__가 새 제너레이터 생성</span></pre>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 3 — "제너레이터는 예외를 잡으면 자동으로 재개된다"</div>
+      <p>
+        <code>StopIteration</code>이나 일반 예외가 제너레이터 내부에서 발생하면 제너레이터는
+        <strong>영구적으로 종료</strong>된다. 다시 <code>next()</code>를 호출해도 계속 <code>StopIteration</code>만 나온다.
+        일시정지는 오직 <code>yield</code>에서만 일어나며, 예외로 함수가 끝나면 그 실행 프레임 자체가 소멸한다.
+      </p>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 4 — "함수 안에 <code>yield</code>가 있어도 일반 함수처럼 호출하면 바로 실행된다"</div>
+      <p>
+        가장 흔한 실수다. <code>yield</code>가 함수 본문 어디에든 있으면, 그 함수는 호출 즉시
+        본문을 실행하지 않고 <strong>제너레이터 객체만 반환</strong>한다. 함수 안에 유효성 검증 코드를
+        앞부분에 넣어놓고 "호출하면 바로 검증되겠지"라고 기대했다가, 실제로는 <code>next()</code>를
+        처음 호출하는 시점까지 검증이 미뤄져서 에러가 예상치 못한 곳에서 터지는 버그가 실무에서 자주 생긴다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Self-check Rubric ── -->
+  <section>
+    <h2>Self-check Rubric</h2>
+    <table class="rubric">
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>상 (Senior)</th>
+          <th>중 (Mid)</th>
+          <th>하 (Junior)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Iterable vs Iterator 구분</td>
+          <td><span class="badge high">상</span> 프로토콜 차이와 재사용성 차이까지 정확히 구분</td>
+          <td><span class="badge mid">중</span> 개념은 알지만 재사용성 차이는 설명 못함</td>
+          <td><span class="badge low">하</span> 두 용어를 혼용해서 사용</td>
+        </tr>
+        <tr>
+          <td>Lazy evaluation과 메모리</td>
+          <td><span class="badge high">상</span> 파이프라인 설계와 메모리 곡선 차이를 구체적으로 설명</td>
+          <td><span class="badge mid">중</span> "메모리를 적게 쓴다"는 결론만 알고 원리 설명 부족</td>
+          <td><span class="badge low">하</span> 언제 써야 하는지 판단 기준이 없음</td>
+        </tr>
+        <tr>
+          <td><code>send</code>/<code>throw</code>/<code>yield from</code></td>
+          <td><span class="badge high">상</span> priming, GeneratorExit, 코루틴과의 연결까지 설명</td>
+          <td><span class="badge mid">중</span> <code>send()</code> 존재는 알지만 실전 활용 예 없음</td>
+          <td><span class="badge low">하</span> 들어본 적 없거나 <code>yield</code>와 구분 못함</td>
+        </tr>
+        <tr>
+          <td>제너레이터의 한계</td>
+          <td><span class="badge high">상</span> 1회성, 스레드 비안전성, 재사용 패턴까지 설명</td>
+          <td><span class="badge mid">중</span> 1회성은 알지만 해결 패턴 제시 못함</td>
+          <td><span class="badge low">하</span> 제너레이터가 리스트처럼 재사용 가능하다고 오해</td>
+        </tr>
+        <tr>
+          <td>실무 판단력</td>
+          <td><span class="badge high">상</span> 제너레이터 vs 리스트를 상황별 trade-off로 선택</td>
+          <td><span class="badge mid">중</span> 무조건 제너레이터가 낫다고 답함</td>
+          <td><span class="badge low">하</span> 언제 무엇을 써야 하는지 기준이 없음</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── 핵심 요약 ── -->
+  <section>
+    <h2>핵심 요약 — 1분 복습 카드</h2>
+    <div class="card success">
+      <div class="card-label">오늘 반드시 기억할 것</div>
+      <ol style="margin:0.5rem 0 0 1.2rem">
+        <li>Iterable = <code>__iter__</code>만, Iterator = <code>__iter__</code> + <code>__next__</code> (+ 진행 상태)</li>
+        <li>리스트는 매번 새 Iterator를 만들어 재순회 가능, 제너레이터 객체 자체는 <strong>1회용</strong></li>
+        <li>제너레이터는 <code>yield</code>에서 실행을 멈추고, <code>next()</code>로 그 지점부터 재개 — <strong>lazy evaluation</strong></li>
+        <li>대용량 데이터 처리 = 파일 순회 자체가 이미 lazy → 제너레이터 파이프라인으로 스트리밍 처리</li>
+        <li><code>send()</code>로 값 주입(priming 필수), <code>throw()</code>로 예외 주입, <code>yield from</code>으로 위임</li>
+        <li>제너레이터의 '멈추고 재개' 능력이 <code>async def</code>/<code>await</code> 코루틴의 근본 메커니즘</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ── Navigation ── -->
+  <nav class="lesson-nav">
+    <a href="./0003-gil-concurrency.html">← Day 3: GIL과 동시성</a>
+    <a href="./index.html">목록으로</a>
+    <span style="color:var(--text-muted)">Day 5: asyncio →</span>
+  </nav>
+
+</div>
+</body>
+</html>
