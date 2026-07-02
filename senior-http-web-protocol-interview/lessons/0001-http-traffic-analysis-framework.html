@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — HTTP 트래픽 분석과 시니어 답변 프레임워크 | HTTP / Web Protocol & API Traffic 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">HTTP / Web Protocol & API Traffic 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 1
+  </nav>
+
+  <h1>Day 1 — HTTP 트래픽 분석과 시니어 답변 프레임워크</h1>
+  <p class="subtitle">요청 경로 전체를 그리는 사고법 · 2026-07-02</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#request-path">프로덕션 요청 경로 전체 지도</a></li>
+      <li><a href="#framework">6단계 HTTP 트래픽 분석 프레임워크</a></li>
+      <li><a href="#layer-types">계층별 실패 신호 분류표</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"프로덕션에서 특정 API가 간헐적으로 502/504를 반환한다는 리포트를 받았습니다. HTTP 트래픽 관점에서 어떻게 접근하시겠습니까?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"<code>curl -v</code>로 어떤 API를 호출했을 때, 응답 헤더만 보고 무엇을 알 수 있나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"이 서비스는 브라우저, 모바일 앱, 서버-투-서버 클라이언트 세 종류가 있습니다. HTTP 레벨에서 이 셋을 다르게 다뤄야 하는 지점이 있을까요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"HTTP 스펙을 외웠는가"가 아니라 "HTTP를 실제로 네트워크를 가로지르는 프로토콜로 이해하고 있는가"</strong>를 테스트합니다. 프레임워크의 <code>request</code> 객체만 다뤄본 사람과, 요청이 클라이언트를 떠나 여러 중개자를 거쳐 응답으로 돌아오는 전체 여정을 그릴 수 있는 사람을 구분하는 질문입니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>전체 경로를 그리는 시야</strong> — API 서버 코드만 보는 것이 아니라 CDN, 로드밸런서, 게이트웨이까지 포함한 요청의 전체 여정을 그릴 수 있는가.</li>
+      <li><strong>계층별 원인 격리(isolation) 능력</strong> — "느려요", "가끔 에러나요" 같은 애매한 증상을 어느 계층 문제인지 좁혀가는 절차를 갖고 있는가.</li>
+      <li><strong>Raw 프로토콜 도구 사용 능력</strong> — 프레임워크 로그만 보는 게 아니라 <code>curl -v</code>, 헤더, 타이밍 분해로 직접 확인하는 습관이 있는가.</li>
+      <li><strong>추론 능력</strong> — 상태 코드와 헤더만 보고 "누가 이 응답을 만들었는지"를 역추적할 수 있는가.</li>
+      <li><strong>증상 구체화 습관</strong> — 모호한 버그 리포트를 받았을 때 바로 코드를 고치러 가지 않고, 먼저 사실을 확인하는 질문을 던지는가.</li>
+    </ul>
+
+    <p>10년차 이하에서 자주 나오는 답변 패턴: "로그를 보고 재배포해보겠습니다" 또는 "타임아웃 값을 늘려보겠습니다." 이 답변들은 문제가 어디서 발생하는지 특정하지 않은 채 증상을 임시로 덮는 조치입니다. 시니어는 원인을 계층 단위로 좁힌 뒤 조치합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>HTTP란 무엇인가</h3>
+    <p>HTTP(HyperText Transfer Protocol)는 클라이언트가 요청(Request)을 보내면 서버가 응답(Response)을 돌려주는 텍스트/바이너리 기반 통신 규칙입니다. 우편엽서를 주고받는 것과 비슷합니다 — 요청 하나를 보내고 답장 하나를 받으면 그 대화는 끝입니다. 서버는 기본적으로 "이 사람이 방금 무엇을 물어봤는지"만 알 뿐, 이전에 무엇을 물어봤는지는 기억하지 못합니다. 이것을 <strong>Stateless(무상태)</strong> 라고 부릅니다.</p>
+    <p>Stateless라는 특성 때문에 "로그인 상태 유지" 같은 기능을 구현하려면 별도의 장치(쿠키, 세션, 토큰)가 필요해집니다. 이 내용은 Day 6에서 깊게 다룹니다. 지금은 "HTTP 자체는 이전 요청을 기억하지 않는다"는 사실만 기억하면 됩니다.</p>
+
+    <h3>Request/Response의 구조</h3>
+    <p>요청과 응답은 모두 세 부분으로 구성됩니다: <strong>시작줄(Start Line)</strong>, <strong>헤더(Headers)</strong>, <strong>바디(Body, 선택적)</strong>. 편지에 비유하면 시작줄은 "받는 사람/보내는 사람" 정보, 헤더는 봉투에 붙은 부가 정보(우편번호, 등기 여부), 바디는 편지 내용물입니다.</p>
+    <pre><code>GET /api/orders/1024 HTTP/1.1          ← 시작줄: 메서드 + 경로 + 버전
+Host: api.example.com                   ← 헤더
+Authorization: Bearer eyJhbGciOi...
+Accept: application/json
+
+(바디 없음 — GET은 보통 바디를 쓰지 않음)</code></pre>
+    <p>응답도 동일한 구조입니다: 상태 줄(버전 + 상태 코드 + 이유 구문), 헤더, 바디.</p>
+
+    <h3>연결이 만들어지는 과정 (개요)</h3>
+    <p>클라이언트가 <code>https://api.example.com/orders</code>를 호출할 때, 실제로는 다음 단계를 거칩니다:</p>
+    <ol>
+      <li><strong>DNS 조회</strong> — 도메인 이름을 IP 주소로 변환</li>
+      <li><strong>TCP 3-way handshake</strong> — 클라이언트와 서버가 연결을 수립 (SYN → SYN-ACK → ACK)</li>
+      <li><strong>TLS handshake</strong> — HTTPS인 경우 암호화 채널을 협상 (Day 19에서 심화)</li>
+      <li><strong>HTTP 요청/응답 왕복</strong> — 실제 데이터 교환</li>
+    </ol>
+    <p>이 네 단계 각각이 시간을 소모하고, 각각 다른 이유로 실패할 수 있습니다. "API가 느리다"는 리포트를 받았을 때, 이 네 단계 중 어디서 시간이 소모되는지를 구분하는 것이 성능 진단의 출발점입니다. (구체적인 분해 방법은 4~5절에서 다룹니다.)</p>
+
+    <h3>왜 "경로 전체"를 알아야 하는가</h3>
+    <p>초보적인 사고 모델은 "클라이언트 → 앱 서버"라는 2단계 그림입니다. 하지만 실제 프로덕션 트래픽은 그렇게 단순하지 않습니다. 택배에 비유하면, 물건이 나(발신자)에서 받는 사람에게 직접 가지 않고 물류센터·터미널·배송기사를 거치는 것과 같습니다. "택배가 안 왔어요"라는 신고를 받았을 때 어느 구간에서 멈췄는지 알아야 하듯, HTTP 요청도 실제로는 여러 중개자(intermediary)를 거치며 각 중개자가 서로 다른 책임과 실패 모드를 갖습니다.</p>
+  </section>
+
+  <!-- 4. 프로덕션 요청 경로 전체 지도 -->
+  <section id="request-path">
+    <h2>4. 프로덕션 요청 경로 전체 지도</h2>
+
+    <p>실무에서 클라이언트의 요청 하나는 보통 다음 계층을 순서대로(또는 일부를 생략하며) 통과합니다. 이 표는 이후 Day 16~20에서 각 계층을 깊게 다룰 때의 지도 역할을 합니다.</p>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>계층</th>
+          <th>대표 역할</th>
+          <th>대표 기술</th>
+          <th>흔한 실패 신호</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Client</strong></td>
+          <td>요청 생성, 로컬 캐시 확인, TLS 협상 시작</td>
+          <td>브라우저, 모바일 SDK, <code>curl</code></td>
+          <td>클라이언트 자체 타임아웃, 로컬 캐시 오염</td>
+        </tr>
+        <tr>
+          <td><strong>DNS</strong></td>
+          <td>도메인 이름 → IP 주소 해석</td>
+          <td>Route53, CoreDNS</td>
+          <td>오래된 레코드, TTL 문제, 전파 지연</td>
+        </tr>
+        <tr>
+          <td><strong>CDN / Edge</strong></td>
+          <td>정적·캐시 가능 응답을 사용자와 가까운 위치에서 처리</td>
+          <td>Cloudflare, CloudFront, Fastly</td>
+          <td>캐시 미스 폭주, stale 응답, edge 오류</td>
+        </tr>
+        <tr>
+          <td><strong>Reverse Proxy / LB</strong></td>
+          <td>TLS termination, 여러 앱 서버로 트래픽 분산, 업스트림 타임아웃 관리</td>
+          <td>Nginx, Envoy, ALB</td>
+          <td>502 (업스트림 연결 실패), 504 (업스트림 응답 지연)</td>
+        </tr>
+        <tr>
+          <td><strong>API Gateway</strong></td>
+          <td>인증, rate limiting, 라우팅, 프로토콜 변환</td>
+          <td>Kong, AWS API Gateway, Spring Cloud Gateway</td>
+          <td>401/403 오탐, rate limit 오탐, 라우팅 오설정</td>
+        </tr>
+        <tr>
+          <td><strong>App Server</strong></td>
+          <td>비즈니스 로직 처리</td>
+          <td>Spring, FastAPI, Express, Django</td>
+          <td>5xx, 느린 처리, connection pool 고갈</td>
+        </tr>
+        <tr>
+          <td><strong>Downstream</strong></td>
+          <td>데이터 저장/조회, 외부 연동</td>
+          <td>PostgreSQL, Redis, 결제 API 등</td>
+          <td>느린 쿼리, 외부 서비스 장애 전파</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>이 지도가 실무에서 중요한 이유</h4>
+      <p>"API가 느리다/에러난다"는 보고를 받았을 때, 위 7개 계층 중 어디인지 특정하지 않으면 엉뚱한 곳을 고치게 됩니다. 예를 들어 실제 병목이 리버스 프록시의 업스트림 타임아웃 설정인데 앱 서버 코드를 최적화하면 아무 효과가 없습니다. 이 경로 지도를 항상 먼저 그리는 것이 시니어와 주니어를 가르는 습관입니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. 6단계 프레임워크 -->
+  <section id="framework">
+    <h2>5. 6단계 HTTP 트래픽 분석 프레임워크</h2>
+
+    <p>시니어가 HTTP 트래픽 이상 리포트를 받았을 때 실제로 따르는 순서입니다. 이후 커리큘럼(Day 2~20)의 모든 주제는 이 프레임워크의 한 단계를 깊게 파는 것과 같습니다.</p>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>증상을 프로토콜 언어로 재정의 (Symptom → Protocol Facts)</strong>
+          <p style="margin-top:0.3rem">"가끔 에러난다"는 주관적입니다. 상태 코드가 몇 번인지, 얼마나 자주(비율)인지, 특정 클라이언트/지역/시간대에 집중되는지를 먼저 확인합니다.</p>
+          <p><em>질문 예시</em>: "정확히 어떤 상태 코드인가요? 502인가요 504인가요? 전체 요청의 몇 %인가요? 특정 엔드포인트에 몰려 있나요?"</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>경로 재현 (Path Reproduction)</strong>
+          <p style="margin-top:0.3rem"><code>curl -v</code>로 raw 요청/응답을 직접 재현합니다. <code>curl -w</code>로 DNS/connect/TLS/TTFB(Time To First Byte)/total 시간을 분해합니다.</p>
+          <pre><code>curl -w "\ndns: %{time_namelookup}s\nconnect: %{time_connect}s\ntls: %{time_appconnect}s\nttfb: %{time_starttransfer}s\ntotal: %{time_total}s\n" \
+  -o /dev/null -s https://api.example.com/orders/1024</code></pre>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>응답자 특정 (Who Responded)</strong>
+          <p style="margin-top:0.3rem">상태 코드와 헤더로 "이 응답을 실제로 만든 것이 CDN인지, 프록시인지, 앱 서버인지"를 추론합니다. CDN은 <code>CF-RAY</code>, <code>X-Cache</code> 같은 헤더를 붙이고, 프록시는 <code>Server: nginx</code>를, 앱은 커스텀 <code>X-Upstream</code> 헤더를 붙이는 경우가 많습니다. 502/504는 애초에 앱까지 도달하지 못했다는 신호이므로 프록시/게이트웨이 로그부터 봐야 합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>계층 간 상관 확인 (Cross-layer Correlation)</strong>
+          <p style="margin-top:0.3rem">동일한 요청을 나타내는 Request ID / Trace ID를 CDN → 프록시 → 게이트웨이 → 앱 로그에서 각각 찾아 시간 차이를 비교합니다. 어느 구간에서 시간이 튀는지, 혹은 어느 구간에서 로그 자체가 끊기는지(= 그 지점에서 요청이 죽었다는 뜻)를 확인합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>계층 격리 재현 (Layer Isolation)</strong>
+          <p style="margin-top:0.3rem">의심되는 계층을 건너뛰고 직접 호출해 문제가 재현되는지 확인합니다. 예: 로드밸런서를 건너뛰고 앱 서버에 직접 요청 — 재현되면 앱 문제, 재현 안 되면 LB/네트워크 구간 문제입니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div>
+          <strong>근본 원인 확정과 수정 후 검증 (Root Cause &amp; Verification)</strong>
+          <p style="margin-top:0.3rem">원인을 확정한 뒤 수정하고, 동일한 재현 시나리오로 다시 확인합니다. "타임아웃 값을 늘렸다"처럼 증상만 가리는 조치가 아니라 원인 자체(느린 다운스트림, 죽은 커넥션 재사용 등)를 제거했는지 검증합니다.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 6. 계층별 실패 신호 분류표 -->
+  <section id="layer-types">
+    <h2>6. 계층별 실패 신호 분류표</h2>
+
+    <p>상태 코드와 증상만 보고도 어느 계층 문제일 확률이 높은지 좁힐 수 있는 표입니다. 이후 Day에서 각 항목을 더 깊게 다룹니다.</p>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>신호</th>
+          <th>의미</th>
+          <th>발생 위치</th>
+          <th>흔한 원인</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>502 Bad Gateway</strong></td>
+          <td>프록시가 업스트림(앱 서버)에 연결 자체를 실패</td>
+          <td>Reverse Proxy / LB</td>
+          <td>앱 서버 다운, 커넥션 거부, 헬스체크 실패로 풀에서 제외</td>
+        </tr>
+        <tr>
+          <td><strong>504 Gateway Timeout</strong></td>
+          <td>프록시는 연결했지만 응답을 기다리다 자체 타임아웃 초과</td>
+          <td>Reverse Proxy / LB ↔ App</td>
+          <td>앱이 느림, DB 쿼리 지연, dead connection 재사용</td>
+        </tr>
+        <tr>
+          <td><strong>499 (Nginx 전용)</strong></td>
+          <td>서버가 응답하기 전에 클라이언트가 연결을 끊음</td>
+          <td>Client ↔ Reverse Proxy</td>
+          <td>클라이언트 타임아웃이 서버 처리 시간보다 짧음</td>
+        </tr>
+        <tr>
+          <td><strong>CORS 에러 (브라우저 콘솔)</strong></td>
+          <td>서버는 정상 응답했지만 브라우저가 응답을 스크립트에 넘겨주지 않음</td>
+          <td>Client(브라우저)의 정책 검사</td>
+          <td><code>Access-Control-Allow-Origin</code> 누락 (Day 7 심화)</td>
+        </tr>
+        <tr>
+          <td><strong>Stale 응답</strong></td>
+          <td>오래된 캐시된 데이터를 서빙</td>
+          <td>CDN / 브라우저 캐시</td>
+          <td><code>Cache-Control</code>/<code>Vary</code> 설정 문제 (Day 8~9 심화)</td>
+        </tr>
+        <tr>
+          <td><strong>Connection reset</strong></td>
+          <td>Keep-alive 커넥션이 서버 쪽에서 먼저 끊김</td>
+          <td>Client pool ↔ Server</td>
+          <td>서버 idle timeout보다 오래된 커넥션 재사용 (Day 11~12 심화)</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 7. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>7. 답변 사고 순서</h2>
+
+    <p>면접에서 이 순서대로 30초~1분 정도로 요약해 말하면 됩니다.</p>
+
+    <ol>
+      <li><strong>증상을 구체적인 사실로 바꿉니다.</strong> 상태 코드, 발생 빈도, 특정 엔드포인트/클라이언트/시간대 집중 여부를 확인합니다.</li>
+      <li><strong>Raw 트래픽으로 재현합니다.</strong> <code>curl -v</code>/<code>-w</code>로 헤더와 타이밍을 직접 확인합니다.</li>
+      <li><strong>누가 응답했는지 특정합니다.</strong> 상태 코드와 헤더로 CDN/프록시/게이트웨이/앱 중 어디서 응답(혹은 실패)이 만들어졌는지 추론합니다.</li>
+      <li><strong>계층 간 로그를 상관 분석합니다.</strong> Request/Trace ID로 각 계층의 로그를 연결해 시간이 튀는 구간을 찾습니다.</li>
+      <li><strong>의심 계층을 격리해 재현합니다.</strong> 프록시를 건너뛰고 앱을 직접 호출하는 식으로 원인을 좁힙니다.</li>
+      <li><strong>근본 원인을 수정하고 재현 시나리오로 검증합니다.</strong> 타임아웃 값을 늘리는 임시 조치가 아니라 원인을 제거했는지 확인합니다.</li>
+    </ol>
+  </section>
+
+  <!-- 8. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>8. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "프로덕션에서 특정 API가 간헐적으로 502/504를 반환한다는 리포트를 받았습니다. 어떻게 접근하시겠습니까?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>먼저 증상을 구체화합니다. 정확히 502인지 504인지, 전체 요청 대비 비율이 얼마인지, 특정 엔드포인트나 시간대에 몰려 있는지를 모니터링 대시보드와 로그에서 확인합니다. 502와 504는 원인이 다르기 때문에 이 구분이 첫 단계입니다.</p>
+      <br>
+      <p>그다음 <code>curl -v</code>와 <code>curl -w</code>로 직접 재현하면서 DNS, connect, TLS, TTFB 구간별 시간을 봅니다. 응답 헤더도 함께 확인하는데, 예를 들어 <code>Server: nginx</code>만 있고 앱이 붙이는 커스텀 헤더가 없다면 요청이 애초에 앱까지 도달하지 못했다는 뜻입니다.</p>
+      <br>
+      <p>이 서비스는 CDN → 로드밸런서 → API 게이트웨이 → 앱 서버 순서로 트래픽이 흐르기 때문에, Request ID를 기준으로 각 계층의 로그를 상관 분석합니다. 로드밸런서 로그에는 요청이 찍혔는데 앱 서버 로그에는 없다면, 그 구간에서 연결이 끊어진 것이므로 로드밸런서의 업스트림 타임아웃 설정과 앱 서버의 실제 처리 시간을 비교합니다.</p>
+      <br>
+      <p>원인 후보가 좁혀지면, 로드밸런서를 건너뛰고 앱 서버에 직접 요청을 보내 같은 증상이 재현되는지 확인합니다. 재현되지 않는다면 문제는 로드밸런서와 앱 사이 구간, 재현된다면 앱 자체의 문제로 확정할 수 있습니다.</p>
+      <br>
+      <p>원인을 확정한 뒤에는 타임아웃 값을 무작정 늘리는 대신, 근본 원인(예: 커넥션 풀 고갈, 다운스트림 DB 지연)을 고치고 동일한 부하 패턴으로 재현 테스트를 돌려서 실제로 502/504 비율이 줄었는지 검증합니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>6단계 프레임워크를 자연스럽게 녹여서 말함</li>
+      <li>502와 504를 구분해서 접근한다는 프로토콜 수준 이해를 보여줌</li>
+      <li><code>curl -v</code>/<code>-w</code> 같은 실제 도구를 구체적으로 언급</li>
+      <li>Request ID 기반 계층 간 상관 분석 — 실무 관측성 개념과 연결</li>
+      <li>격리 재현(Isolation)으로 원인을 확정하는 절차를 포함</li>
+      <li>타임아웃을 늘리는 임시방편이 아니라 근본 원인 제거와 검증까지 포함</li>
+    </ul>
+  </section>
+
+  <!-- 9. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>9. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"로그를 확인하고, 문제가 있으면 서버를 재배포하겠습니다. 계속 발생하면 타임아웃 값을 늘려보겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"로그를 확인한다"가 너무 막연합니다 — 어느 계층의 어느 로그를, 무엇을 기준으로 볼지가 없습니다.</li>
+        <li>재배포는 원인을 특정하지 않은 상태의 도박성 조치입니다. 문제가 앱 코드가 아니라 프록시 설정이면 재배포는 아무 효과가 없습니다.</li>
+        <li>"타임아웃을 늘린다"는 증상을 감출 뿐, 왜 느려졌는지에 대한 설명이 없습니다. 오히려 느린 요청이 더 오래 리소스를 잡아 상황을 악화시킬 수 있습니다.</li>
+        <li>502와 504를 구분하지 않았습니다 — 둘은 원인이 다른데 동일하게 취급하고 있습니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"DB 커넥션 풀을 늘리고 앱 서버 인스턴스 수를 늘리겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>문제가 앱/DB 계층이라는 가정을 먼저 했습니다. 실제로는 CDN 캐시 미스 폭주나 로드밸런서 헬스체크 오설정일 수도 있습니다.</li>
+        <li>"늘린다"는 해결책은 원인을 모른 채 리소스로 문제를 덮는 접근입니다. 근본 원인이 커넥션 leak이라면 풀을 늘려도 다시 고갈됩니다.</li>
+        <li>계층을 특정하지 않고 바로 인프라 스케일업으로 뛰어드는 패턴입니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>502/504처럼 겉보기에 비슷한 증상도 구분해서 접근한다</li>
+        <li>"어디서 응답이 만들어졌는지"를 헤더/상태 코드로 먼저 특정한다</li>
+        <li>Request ID 기반으로 여러 계층의 로그를 연결해서 본다</li>
+        <li>격리 재현(한 계층을 건너뛰고 직접 호출)으로 원인을 확정한다</li>
+        <li>수정 후 동일한 시나리오로 재현 테스트를 돌려 검증한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. Follow-up -->
+  <section id="followups">
+    <h2>10. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: 502와 504의 차이를 설명하고, 각각 어떤 계층에서 발생할 가능성이 높은지 말해보세요.</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 502 Bad Gateway는 프록시가 업스트림(앱 서버)에 연결 자체를 맺지 못했을 때 발생합니다 — 앱 서버가 죽어있거나, 헬스체크 실패로 풀에서 제외됐거나, 포트가 닫혀 있는 경우입니다. 504 Gateway Timeout은 연결은 됐지만 프록시가 정해진 시간 안에 응답을 받지 못했을 때 발생합니다 — 앱이 느리거나, DB 쿼리가 지연되거나, 죽은 커넥션을 재사용해서 응답이 영영 오지 않는 경우입니다. 502는 "연결의 문제", 504는 "속도/응답의 문제"로 나눠서 접근하면 원인 후보를 절반으로 줄일 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: CDN을 쓰는데 캐시가 계속 미스가 나고 있어요. 원인을 어떻게 좁히시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 먼저 CDN 응답 헤더의 캐시 상태 표시(예: <code>CF-Cache-Status</code>, <code>X-Cache</code>)로 실제로 MISS가 나는지, 아니면 헤더 표기와 달리 애초에 캐시 가능 응답이 아닌지를 확인합니다. <code>Cache-Control</code>이 <code>no-store</code>거나 <code>private</code>로 내려가고 있지 않은지, <code>Vary</code> 헤더 때문에 캐시 키가 매번 달라지고 있지 않은지 확인합니다. 이 부분은 Day 8~9(Cache-Control, ETag)와 Day 18(CDN)에서 구체적으로 다룹니다. 지금 단계에서는 "캐시 미스"라는 증상도 결국 어느 계층(오리진 응답 헤더, CDN 설정)의 문제인지 특정해야 한다는 원칙만 기억하면 됩니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 같은 API인데 curl로는 정상 응답, 브라우저에서는 에러가 나요. 왜일까요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> curl은 브라우저의 동일 출처 정책(Same-Origin Policy)이나 CORS 검사를 하지 않기 때문에, 서버가 실제로는 정상 응답을 보냈어도 브라우저가 자바스크립트에 그 응답을 넘겨주지 않는 경우가 흔합니다. 응답에 <code>Access-Control-Allow-Origin</code> 헤더가 없거나 요청 Origin과 일치하지 않으면 브라우저 콘솔에만 CORS 에러가 찍히고, 서버 로그에는 정상 응답(200)으로 남아 있을 수 있습니다. 이 경우 "서버 문제"가 아니라 "브라우저 정책 문제"라는 것을 구분하는 것이 핵심입니다. (CORS 자체의 동작 원리는 Day 7에서 심화합니다.)</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 로드밸런서 뒤에 앱 서버가 3대 있는데 그 중 1대만 느립니다. 어떻게 확인하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 로드밸런서의 인스턴스별 응답시간 메트릭(또는 access log에 기록된 upstream 주소)을 확인해서 특정 인스턴스로 가는 요청만 느린지 확인합니다. 확인되면 그 인스턴스에 한해 <code>curl</code>로 직접(로드밸런서를 우회해) 호출해서 재현되는지 봅니다. 재현되면 해당 인스턴스의 CPU/메모리/커넥션 풀 상태를 확인하고, 재현이 안 되면 로드밸런서가 그 인스턴스로 가는 경로에서만 문제가 있는 것(예: 헬스체크 오탐, 특정 AZ 네트워크 이슈)으로 좁힙니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: Request ID(트레이스 ID)가 왜 프록시부터 앱까지 전파되어야 하나요? 없으면 어떤 문제가 생기나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 하나의 사용자 요청은 CDN, 프록시, 게이트웨이, 앱, DB 등 여러 계층의 로그에 각각 별도로 남습니다. Request ID가 모든 계층에 동일하게 전파되지 않으면, 특정 사용자 요청이 어느 계층에서 시간이 튀었는지, 혹은 어느 계층에서 아예 사라졌는지 연결할 방법이 없습니다. 이 경우 "5xx가 늘었다"는 사실은 알아도 원인 계층을 특정하지 못하고 전체 시스템을 의심하며 시간을 낭비하게 됩니다. Request ID 전파는 Day 20(Observability)에서 다루는 분산 트레이싱의 가장 기초적인 전제 조건입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>11. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"API가 느리거나 에러나면 무조건 앱 코드나 DB 문제다"</strong></p>
+      <p>실제로는 DNS 전파 지연, TLS 재협상, 프록시의 업스트림 타임아웃 설정, 커넥션 풀 고갈 등 트래픽 경계(경로 중간)에서 발생하는 경우도 매우 흔합니다. 앱 코드로 뛰어들기 전에 경로 지도를 먼저 그려야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"502와 504는 같은 문제다"</strong></p>
+      <p>502는 프록시가 업스트림에 연결 자체를 실패한 것이고, 504는 연결은 됐지만 응답을 기다리다 시간 초과된 것입니다. 원인이 다르므로 접근 방법도 달라야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"curl로 재현이 안 되면 문제가 없는 것이다"</strong></p>
+      <p>curl은 브라우저 전용 헤더(Origin, Referer, 쿠키), 특정 클라이언트 SDK의 커넥션 재사용 패턴, 특정 지역의 DNS 경로 등을 그대로 재현하지 못할 수 있습니다. 재현 실패는 "문제 없음"이 아니라 "재현 조건이 다르다"는 신호로 봐야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"타임아웃 값을 늘리면 해결된다"</strong></p>
+      <p>타임아웃을 늘리는 것은 근본 원인(느린 다운스트림, 커넥션 leak)을 제거하지 않고 증상을 감출 뿐입니다. 오히려 느린 요청이 리소스(스레드, 커넥션)를 더 오래 점유하게 만들어 전체 시스템의 고갈을 앞당길 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"모니터링 대시보드에 이상이 없으면 문제가 없는 것이다"</strong></p>
+      <p>대시보드는 보통 평균이나 집계된 값을 보여주기 때문에, 특정 소수의 요청이나 특정 인스턴스/계층에 국한된 문제는 전체 평균에 묻혀 보이지 않을 수 있습니다. p99 latency, 인스턴스별/계층별 세분화 지표를 함께 봐야 합니다.</p>
+    </div>
+  </section>
+
+  <!-- 12. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>12. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 1을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>실제 프로덕션 트래픽이 클라이언트에서 앱 서버까지 거치는 계층(CDN, 프록시, 게이트웨이 등)을 순서대로 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>6단계 HTTP 트래픽 분석 프레임워크를 순서대로 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>502와 504의 차이와 각각 어느 계층 문제일 확률이 높은지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>curl -v</code>/<code>curl -w</code>로 무엇을 확인할 수 있는지 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>상태 코드와 헤더만으로 "누가 이 응답을 만들었는지" 추론하는 방법을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Request ID/Trace ID가 계층 간 상관 분석에 왜 필요한지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>계층 격리(Layer Isolation) 재현이 무엇이고 왜 원인 확정에 필요한지 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"타임아웃 값만 늘리면 해결된다"가 왜 임시방편에 불과한지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>HTTP가 Stateless라는 것이 실무에서 어떤 결과(쿠키/세션 필요성)로 이어지는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>curl로는 재현되는데 브라우저에서만 실패하는 경우를 어떻게 진단할지 말할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 2</h3>
+      <p><strong>Method Semantics와 Idempotency</strong></p>
+      <p>Day 1에서 "요청이 어느 경로를 거치는지"를 그렸다면, Day 2에서는 그 요청 자체의 의미론을 다룹니다. GET/POST/PUT/PATCH/DELETE가 왜 Safe와 Idempotent로 구분되는지, 그리고 이 구분이 재시도(retry) 설계와 어떻게 직결되는지 살펴봅니다.</p>
+      <p>면접 질문 예고: "네트워크 오류로 응답을 못 받은 POST 요청을 재시도해도 안전한가요? 안전하게 만들려면 어떻게 설계해야 하나요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    HTTP / Web Protocol & API Traffic 시니어 인터뷰 · Day 1 of 20 · 2026-07-02
+  </p>
+
+</div>
+</body>
+</html>
