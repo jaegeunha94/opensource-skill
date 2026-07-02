@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — IAM 권한 설계와 최소 권한 원칙</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #222538;
+      --border: #2e3150;
+      --accent: #7c83ff;
+      --accent2: #50e3c2;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #e2e4f0;
+      --text2: #9da3c8;
+      --text3: #6b7099;
+      --good: #50e3c2;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card {
+      border-left: 4px solid var(--accent);
+    }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card {
+      border-left: 4px solid var(--accent2);
+      background: #1a2430;
+    }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card {
+      border-left: 4px solid var(--warn);
+      background: #1f1d10;
+    }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card {
+      border-left: 4px solid #a07bff;
+      background: #1a1828;
+    }
+    .answer-card .card-label { color: #a07bff; }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box {
+      background: #0f2420;
+      border: 1px solid var(--good);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box {
+      background: #28100f;
+      border: 1px solid var(--weak);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.91rem;
+      margin-top: 0.5rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:nth-child(odd) td { background: #15182a; }
+    .rubric-table tr:nth-child(even) td { background: #1a1d2e; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .pillar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1.2rem;
+    }
+    .pillar-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+    }
+    .pillar-name { font-weight: 700; color: var(--accent); margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .pillar-key { font-size: 0.83rem; color: var(--text2); }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.2rem;
+      margin-bottom: 0.7rem;
+    }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.1rem;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.78rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .misconception {
+      background: #1f1520;
+      border: 1px solid #6e3880;
+      border-radius: 8px;
+      padding: 1rem 1.3rem;
+      margin-bottom: 0.9rem;
+    }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 0.75rem;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      margin: 0.15rem 0.15rem 0.15rem 0;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 3 · AWS / Cloud Architecture 인터뷰 대비</div>
+    <h1>IAM 권한 설계와 최소 권한 원칙</h1>
+    <p class="subtitle">
+      Role vs User vs Group · 정책 평가 우선순위 · SCP와 Permission Boundary · 자격증명 유출 대응
+    </p>
+  </header>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "EC2에서 실행되는 애플리케이션이 S3와 DynamoDB에 접근해야 합니다. 권한을 어떻게 설계하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"IAM User, Group, Role의 차이를 설명하고, 실무에서 각각 언제 쓰시나요?"</li>
+        <li>"동일한 리소스에 대해 Allow 정책과 Deny 정책이 동시에 있으면 어떻게 됩니까?"</li>
+        <li>"SCP(Service Control Policy)는 무엇이고, 일반 IAM 정책과 무엇이 다릅니까?"</li>
+        <li>"개발자가 실수로 GitHub 공개 저장소에 AWS Access Key를 커밋했습니다. 어떻게 대응하시겠습니까?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">IAM</span>
+      <span class="tag">Role vs User</span>
+      <span class="tag">정책 평가 로직</span>
+      <span class="tag">SCP</span>
+      <span class="tag">Permission Boundary</span>
+      <span class="tag">최소 권한</span>
+      <span class="tag">자격증명 유출 대응</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>IAM의 세 가지 질문: 누가, 무엇을, 어디에</h3>
+    <p>
+      IAM(Identity and Access Management)은 결국 세 가지 질문에 답하는 시스템이다. <strong>Principal</strong>(누가 요청하는가), <strong>Action</strong>(무엇을 하려는가), <strong>Resource</strong>(어떤 대상에 대해서인가).
+      이 세 가지를 조합한 규칙이 <strong>Policy(정책)</strong>이고, Policy는 JSON 문서로 작성된다.
+    </p>
+    <div class="card concept-card">
+      <div class="card-label">Policy 문서의 최소 구성</div>
+      <p><code>Effect</code>(Allow/Deny) · <code>Action</code>(예: <code>s3:GetObject</code>) · <code>Resource</code>(예: 특정 S3 버킷 ARN) · <code>Condition</code>(예: 특정 IP 대역에서만, MFA 필수 등 선택적 제약)</p>
+    </div>
+
+    <h3>User, Group, Role — 신원의 세 가지 형태</h3>
+    <p>
+      셋 다 "권한을 가질 수 있는 신원"이라는 점은 같지만, 존재 목적이 다르다. 회사 조직에 비유하면 이해가 쉽다.
+    </p>
+    <ul>
+      <li><strong>IAM User</strong>: 특정 사람이나 애플리케이션에 부여되는 <strong>장기 신원</strong>이다. 고정된 로그인 정보(비밀번호)와 장기 Access Key를 가질 수 있다. 회사의 정규직 사원증과 비슷하다 — 한 번 발급되면 계속 유효하다.</li>
+      <li><strong>IAM Group</strong>: User를 묶어서 정책을 한 번에 관리하는 용도다. Group 자체는 로그인하거나 API를 호출할 수 있는 신원이 아니다. "개발팀 사원증에 공통으로 붙는 출입 권한 스티커" 같은 것이다.</li>
+      <li><strong>IAM Role</strong>: 고정된 자격증명이 없는 <strong>임시 신원</strong>이다. 누군가(사람, EC2, Lambda, 다른 AWS 계정)가 Role을 <code>AssumeRole</code>하면, STS(Security Token Service)가 유효 시간이 정해진 임시 Access Key/Secret Key/Session Token을 발급한다. "방문증" 같은 것이다 — 필요할 때 빌려 쓰고, 시간이 지나면 자동으로 만료된다.</li>
+    </ul>
+
+    <div class="card concept-card">
+      <div class="card-label">핵심 포인트</div>
+      <p>
+        Role이 User보다 안전한 이유는 단순히 "AWS가 권장해서"가 아니다. <strong>자격증명이 코드나 서버에 영구히 저장되지 않고, 짧은 시간(기본 1시간, 최대 12시간) 후 자동으로 무효화</strong>되기 때문이다.
+        EC2 인스턴스에 Access Key를 하드코딩하거나 환경변수로 박아두면, 그 서버가 뚫리는 순간 그 키는 로테이션되기 전까지 영구히 유효한 만능 열쇠가 된다. Instance Profile을 통해 Role을 붙이면, 애플리케이션 코드는 자격증명을 전혀 몰라도 되고, 탈취되어도 짧은 유효 시간 안에서만 위험이 제한된다.
+      </p>
+    </div>
+
+    <h3>정책의 두 종류: Identity-based와 Resource-based</h3>
+    <p>
+      권한은 "권한을 받는 쪽(신원)"에 붙일 수도 있고, "권한이 걸리는 대상(자원)"에 붙일 수도 있다.
+    </p>
+    <ul>
+      <li><strong>Identity-based Policy</strong>: User, Group, Role에 직접 붙는 정책. "이 Role은 S3 버킷 A를 읽을 수 있다"처럼 신원 쪽에서 정의한다.</li>
+      <li><strong>Resource-based Policy</strong>: S3 버킷 정책, KMS 키 정책처럼 자원 쪽에 붙는 정책. "이 버킷은 계정 X의 Role Y가 읽을 수 있다"처럼 자원 쪽에서 정의한다. 특히 <strong>다른 AWS 계정</strong>에서의 접근을 허용할 때는 Resource-based Policy가 필요한 경우가 많다.</li>
+    </ul>
+
+    <h3>정책 평가 로직 — 왜 순서가 중요한가</h3>
+    <p>
+      한 요청에 여러 정책이 동시에 적용될 수 있다(Identity Policy, Resource Policy, Permission Boundary, SCP 등). AWS는 이걸 정해진 순서로 평가한다.
+    </p>
+    <ol class="step-list">
+      <li><strong>기본은 암묵적 거부(Implicit Deny)</strong>: 아무 정책도 명시적으로 허용하지 않으면 요청은 자동으로 거부된다.</li>
+      <li><strong>명시적 Deny가 있는지 확인</strong>: 관련된 어느 정책에서든 <code>Effect: Deny</code>가 하나라도 매치되면, 다른 모든 Allow와 상관없이 <strong>즉시 거부</strong>된다. Deny는 항상 최우선이다.</li>
+      <li><strong>명시적 Allow가 있는지 확인</strong>: Deny가 없다면, 관련된 정책 중 하나라도 <code>Effect: Allow</code>로 매치되면 허용된다.</li>
+    </ol>
+    <div class="card why-card">
+      <div class="card-label">실무에서 자주 놓치는 지점</div>
+      <p>
+        "정책을 하나 더 추가했는데 왜 갑자기 접근이 막히지?"라는 질문의 답은 대부분 <strong>어딘가에 명시적 Deny가 걸려 있다</strong>는 것이다. Deny는 SCP, Permission Boundary, Identity Policy, Resource Policy, VPC Endpoint Policy 어디에든 있을 수 있어서, 디버깅할 때는 이 다섯 곳을 모두 확인해야 한다.
+      </p>
+    </div>
+
+    <h3>SCP와 Permission Boundary — "권한을 주는 것"이 아니라 "천장을 긋는 것"</h3>
+    <p>
+      시니어 인터뷰에서 가장 자주 틀리는 개념이다. SCP와 Permission Boundary는 <strong>권한을 부여하지 않는다</strong>. 이미 부여된 권한의 <strong>최대 한도(guardrail)</strong>를 설정할 뿐이다.
+    </p>
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">SCP (Service Control Policy)</div>
+        <p>AWS Organizations 수준에서 <strong>계정 전체</strong>에 적용되는 상한선이다.</p>
+        <p>예: "이 OU(조직 단위)에 속한 모든 계정은 특정 리전 밖에서는 아무것도 할 수 없다"처럼 조직 전체 거버넌스에 쓴다.</p>
+        <p>SCP가 허용하지 않으면, 그 계정 안에서 아무리 강력한 IAM 정책(심지어 AdministratorAccess)을 줘도 소용없다.</p>
+      </div>
+      <div class="good-box" style="border-color: var(--accent2); background: #0f2420;">
+        <div class="box-label" style="color:var(--accent2);">Permission Boundary</div>
+        <p>특정 <strong>User나 Role 하나</strong>에 적용되는 상한선이다.</p>
+        <p>예: "이 Role은 Permission Boundary 안에서, 그리고 실제로 부여받은 Identity Policy 안에서, 두 개의 교집합만큼만 할 수 있다"</p>
+        <p>주로 위임 관리 시나리오에 쓴다. "주니어 관리자가 새로운 Role을 만들 수는 있지만, 자기 자신보다 강한 권한의 Role은 절대 못 만들게" 제한할 때 유용하다.</p>
+      </div>
+    </div>
+
+    <h3>Confused Deputy Problem과 ExternalId</h3>
+    <p>
+      다른 AWS 계정(예: 서드파티 SaaS 벤더)에게 내 계정의 Role을 맡길 때(Cross-account Role), "Confused Deputy(혼동된 대리인)" 문제가 생길 수 있다.
+      벤더가 여러 고객의 리소스를 관리하는 동일한 Role ARN을 재사용하면, 악의적인 제3자가 그 벤더를 속여서 자신의 계정이 아닌 다른 고객의 계정에 접근하도록 유도할 수 있다.
+      이를 막기 위해 Trust Policy에 <code>ExternalId</code> 조건을 넣는다 — 벤더가 나에게 발급해준 고유 문자열을 AssumeRole 요청에 반드시 포함하도록 강제해서, 엉뚱한 계정으로의 요청이 성공하지 못하게 막는다.
+    </p>
+
+    <h3>자격증명이 유출됐을 때 무엇이 위험한가</h3>
+    <p>
+      IAM User의 Access Key가 GitHub 같은 공개 저장소에 노출되면, 자동화된 스캐너 봇이 수 분 안에 이를 탐지해서 악용한다. 흔한 패턴은 저렴한 리전에 대규모 GPU/컴퓨팅 인스턴스를 띄워 암호화폐 채굴에 쓰는 것이다.
+      Access Key는 로테이션하기 전까지 <strong>영구히 유효</strong>하다는 점이 핵심 위험이다. 이것이 바로 Role(임시 자격증명)을 우선하고, User의 장기 Access Key 발급 자체를 최소화해야 하는 이유다.
+    </p>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>최소 권한 원칙을 체화했는가:</strong> "일단 되게 하려고 AdministratorAccess를 붙였다가 나중에 줄이겠다"는 사고방식은 시니어 답변으로 인정받지 못한다. 처음부터 필요한 Action/Resource만 명시할 수 있는가를 본다.</li>
+        <li><strong>정책 평가 로직의 정확한 이해:</strong> Deny 우선, SCP와 Permission Boundary가 권한을 "주는 것"이 아니라 "제한하는 것"이라는 구분을 정확히 아는가. 이 개념을 헷갈리면 실무에서 "왜 관리자 권한을 줬는데도 안 되지?" 같은 장애를 디버깅하지 못한다.</li>
+        <li><strong>Blast Radius(피해 범위) 사고:</strong> 하나의 자격증명이 유출됐을 때 공격자가 할 수 있는 최대 범위를 스스로 예측하고, 그 범위를 최소화하는 설계를 하는가.</li>
+        <li><strong>사고 대응 경험:</strong> Access Key 유출 같은 실제 인시던트를 겪어봤는지, 탐지-차단-복구의 순서를 체계적으로 말할 수 있는지를 본다.</li>
+      </ul>
+    </div>
+
+    <p>
+      이 질문은 "IAM 콘솔에서 정책을 어떻게 붙이는지"를 묻는 게 아니다. <strong>"신뢰를 어떻게 최소 단위로 쪼개서 부여하고, 그 신뢰가 깨졌을 때 피해를 어떻게 제한할 것인가"</strong>라는 권한 설계 사고를 묻는다. VPC의 네트워크 경계 설계(Day 2)와 정확히 짝을 이루는 주제다 — 하나는 "누가 들어올 수 있는가"이고, 다른 하나는 "들어온 뒤 무엇을 할 수 있는가"이다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 1 — GitHub에 노출된 Access Key로 인한 크립토마이닝 사고</div>
+      <p>
+        신입 개발자가 로컬 테스트 편의를 위해 <code>.env</code> 파일에 AWS Access Key를 저장했는데, <code>.gitignore</code>에 등록하지 않고 실수로 공개 저장소에 커밋했다.
+        20분도 안 되어 자동화된 봇이 이를 탐지했고, 여러 리전에 걸쳐 대형 GPU 인스턴스가 대량으로 생성되어 청구서에 수천 달러가 찍혔다.
+        사고 후 팀은 IAM User의 장기 Access Key 발급을 원칙적으로 금지하고, 로컬 개발조차 <code>aws sso</code> 기반 임시 자격증명으로 전환했다. 또한 GitHub 저장소에 pre-commit 훅으로 시크릿 스캐너(git-secrets류)를 강제 적용했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 2 — 과도하게 권한을 준 EC2 Role이 SSRF로 탈취된 사고</div>
+      <p>
+        웹 애플리케이션에 SSRF(Server-Side Request Forgery) 취약점이 있었고, 공격자가 이를 이용해 EC2 인스턴스 메타데이터 서비스(IMDS)에 접근해 그 인스턴스에 붙어 있던 Role의 임시 자격증명을 탈취했다.
+        문제는 그 Role에 <code>AdministratorAccess</code>에 가까운 광범위한 권한이 붙어 있었다는 점이었다 — "귀찮으니 일단 다 열어두고 나중에 줄이자"는 관행 때문이었다.
+        사고 이후 모든 EC2/Lambda Role에 필요한 Action과 Resource ARN을 구체적으로 명시하는 최소 권한 정책으로 전면 재작업했고, IMDSv2(토큰 기반 메타데이터 접근, SSRF로 단순 GET 요청만으로는 탈취 불가능하게 하는 방식)를 강제했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 3 — SCP 설정 실수로 조직 전체 계정이 잠긴 사고</div>
+      <p>
+        보안 강화를 위해 루트 OU에 "특정 리전 밖의 모든 서비스 호출을 차단"하는 SCP를 적용했는데, 예외로 둬야 했던 IAM(글로벌 서비스)까지 실수로 포함시켰다.
+        배포 직후 여러 계정에서 IAM 관련 콘솔 작업 자체가 막혔고, 심지어 SCP를 되돌리는 작업(Organizations API 호출)까지 일부 영향을 받아 복구에 시간이 걸렸다.
+        이후 팀은 SCP 변경 시 반드시 소수의 테스트 계정에 먼저 적용하고, IAM/Organizations/STS 같은 글로벌·거버넌스 서비스는 기본적으로 SCP 리전 제한에서 예외 처리하는 표준을 만들었다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 4 — ExternalId 없이 벤더에게 Cross-account Role을 내준 사고</div>
+      <p>
+        모니터링 SaaS 벤더에게 리소스 조회용 Cross-account Role을 만들어줬는데, 급하게 처리하느라 Trust Policy에 <code>ExternalId</code> 조건을 넣지 않았다.
+        보안 감사에서 이 설정이 Confused Deputy 공격에 취약하다는 지적을 받았다 — 벤더가 동일한 Role ARN을 여러 고객에게 재사용하고 있었기 때문에, 이론적으로 악의적인 제3자가 벤더를 속여 이 계정에 접근할 경로가 존재했다.
+        모든 Cross-account Role Trust Policy에 벤더가 발급한 고유 ExternalId를 필수 조건으로 넣는 것을 표준 체크리스트에 추가했다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>면접에서 "권한을 어떻게 설계하시겠습니까"라는 질문을 받으면, 아래 순서로 생각하고 답변하라.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>Principal 파악</strong>
+        <p>요청 주체가 사람인지, EC2/Lambda 같은 AWS 서비스인지, 다른 AWS 계정인지 먼저 구분한다. 사람이면 User(가급적 SSO 연동 Federated 접근)를, 서비스나 애플리케이션이면 무조건 Role을 먼저 고려한다.</p>
+      </li>
+      <li>
+        <strong>필요한 Action과 Resource를 구체적으로 나열</strong>
+        <p>"S3 접근 필요" 수준이 아니라 "이 버킷의 이 prefix에 대해 GetObject, PutObject만" 수준으로 구체화한다. 와일드카드(<code>s3:*</code>, <code>Resource: *</code>)는 최후의 수단이다.</p>
+      </li>
+      <li>
+        <strong>Identity Policy로 최소 권한 작성</strong>
+        <p>Role에 Identity-based Policy를 붙여 앞서 나열한 Action/Resource만 Allow한다. 필요하면 Condition으로 시간대, IP, MFA 여부 등을 추가 제약한다.</p>
+      </li>
+      <li>
+        <strong>Cross-account가 필요하면 Resource Policy + Trust Policy + ExternalId</strong>
+        <p>다른 계정이나 서드파티가 접근해야 한다면 Resource-based Policy(예: S3 버킷 정책) 또는 Role의 Trust Policy를 사용하고, Confused Deputy 방지를 위해 ExternalId를 반드시 포함한다.</p>
+      </li>
+      <li>
+        <strong>조직 차원의 상한선 고려</strong>
+        <p>여러 계정/팀을 운영한다면 SCP로 조직 전체의 절대적 한도(예: 특정 리전만 허용)를, 위임 관리 시나리오라면 Permission Boundary로 개별 신원의 한도를 설정한다.</p>
+      </li>
+      <li>
+        <strong>자격증명 유출 대비책을 함께 설계</strong>
+        <p>CloudTrail로 모든 API 호출을 기록하고, GuardDuty로 비정상 행위(평소 안 쓰던 리전에서의 활동 등)를 탐지한다. Access Key를 부득이하게 발급해야 한다면 정기 로테이션과 미사용 키 자동 비활성화 정책을 함께 둔다.</p>
+      </li>
+    </ol>
+
+    <div class="card why-card">
+      <div class="card-label">핵심 팁</div>
+      <p>"어떤 정책을 붙였는가"보다 <strong>"왜 그만큼만 허용했는가, 이 자격증명이 탈취되면 피해가 어디까지 번지는가"</strong>를 항상 함께 설명하라.</p>
+    </div>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — EC2 애플리케이션의 S3/DynamoDB 접근 설계</div>
+      <p>
+        "먼저 IAM User와 Access Key는 쓰지 않겠습니다. EC2 인스턴스에 IAM Role을 Instance Profile로 붙여서, 애플리케이션이 자격증명을 코드나 환경변수로 다루지 않고 EC2 메타데이터를 통해 자동으로 임시 자격증명을 받도록 하겠습니다. 이때 IMDSv2를 강제해서 SSRF로 메타데이터가 탈취되는 경로를 막습니다.
+      </p>
+      <p>
+        Role의 Identity Policy는 필요한 만큼만 씁니다. S3는 <code>s3:GetObject</code>, <code>s3:PutObject</code>를 특정 버킷의 특정 prefix ARN으로 한정하고, DynamoDB는 <code>dynamodb:GetItem</code>, <code>dynamodb:PutItem</code>, <code>dynamodb:Query</code>를 해당 테이블 ARN으로 한정합니다. <code>Resource: "*"</code>나 서비스 전체 와일드카드는 쓰지 않습니다.
+      </p>
+      <p>
+        만약 이 애플리케이션이 여러 팀의 리소스를 공유해서 접근해야 한다면, S3 버킷 정책(Resource-based Policy)으로 이 Role의 ARN만 명시적으로 허용하는 것도 함께 검토하겠습니다.
+      </p>
+      <p>
+        조직 차원에서는, 이 계정이 특정 리전 밖에서 리소스를 만들 수 없도록 SCP로 제한하는 것을 조직 관리자와 논의하겠습니다.
+      </p>
+      <p>
+        마지막으로, CloudTrail을 활성화해 이 Role이 실제로 어떤 API를 호출하는지 로그를 남기고, 나중에 실사용 패턴을 보고 처음에 부여한 권한 중 실제로 안 쓰는 것이 있으면(IAM Access Analyzer의 정책 생성 기능으로 확인 가능) 정책을 더 좁히는 과정을 반복하겠습니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① User/Access Key 대신 Role을 기본값으로 선택함 ② IMDSv2까지 언급해 SSRF 방어를 함께 고려함 ③ Action/Resource를 구체적으로 한정해 최소 권한을 실제로 적용함 ④ Cross-team 접근 시 Resource Policy 옵션까지 고려함 ⑤ SCP로 조직 차원의 상한선을 함께 언급함 ⑥ CloudTrail/Access Analyzer로 사후 권한 축소(권한을 지속적으로 좁혀가는) 프로세스까지 제시함
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "SCP와 Permission Boundary는 둘 다 '제한'인데, 실무에서 어떤 기준으로 구분해서 쓰시나요?"</div>
+      <div class="followup-a">
+        <p>SCP는 AWS Organizations 안에서 <strong>계정 단위 또는 OU 단위</strong>로 적용되는 조직 차원의 거버넌스 도구다. "이 사업부의 모든 계정은 특정 리전만 쓸 수 있다"처럼, 그 계정 안의 어떤 IAM 정책으로도 뚫을 수 없는 절대적 상한선을 정할 때 쓴다.</p>
+        <p>Permission Boundary는 <strong>계정 안의 특정 User나 Role 하나</strong>에 붙는 개별 상한선이다. 주로 위임 관리에 쓴다. 예를 들어 플랫폼팀이 각 서비스팀에게 "너희 팀 안에서 IAM Role을 자유롭게 만들어도 되지만, Permission Boundary 안에서만"이라고 위임하면, 서비스팀이 실수로 또는 의도적으로 자기 자신보다 강한 권한의 Role을 만드는 권한 상승(Privilege Escalation)을 막을 수 있다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "Explicit Deny가 항상 Allow보다 우선한다고 하셨는데, 이 설계가 왜 실무에서 위험한 실수로 이어지나요?"</div>
+      <div class="followup-a">
+        <p>가장 흔한 실수는 "안전하게 하려고" 넓은 범위에 Deny를 걸었다가, 의도치 않게 필요한 접근까지 막는 것이다. 예를 들어 특정 팀의 실수를 막으려고 <code>iam:*</code>에 대한 Deny를 특정 조건 없이 걸었는데, 그 Deny가 SCP 레벨에 있어서 나중에 그 SCP를 만든 관리자 본인의 IAM 작업까지 막혀버리는 경우다.</p>
+        <p>Deny 정책을 쓸 때는 반드시 <code>Condition</code>으로 예외 범위를 명확히 하고(예: 특정 Role ARN은 예외), 배포 전에 영향 범위를 시뮬레이션(IAM Policy Simulator)으로 검증해야 한다. "일단 막고 보자" 식의 넓은 Deny는 SCP 실수 장애의 가장 흔한 원인이다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "Access Key가 GitHub 공개 저장소에 노출된 것을 방금 발견했습니다. 어떤 순서로 대응하시겠습니까?"</div>
+      <div class="followup-a">
+        <p>순서가 중요하다. 첫째, 해당 Access Key를 <strong>즉시 비활성화(deactivate) 또는 삭제</strong>한다 — 조사보다 차단이 먼저다. 둘째, CloudTrail에서 그 Access Key로 수행된 모든 API 호출을 시간순으로 조회해서 어떤 리소스가 생성/변경/삭제됐는지 파악한다. 특히 새로 생성된 EC2 인스턴스, IAM User/Role, 비활성화된 로깅 설정이 있는지 우선 확인한다.</p>
+        <p>셋째, 발견된 악의적 리소스(크립토마이닝 인스턴스 등)를 정리하고, 공격자가 추가로 만들었을 수 있는 백도어성 IAM User나 Role이 없는지 전체 계정을 감사한다. 넷째, GitHub 커밋 히스토리에서 해당 키를 완전히 제거(git filter-repo 등)하고, 재발 방지를 위해 pre-commit 훅 기반 시크릿 스캐너와 GuardDuty를 상시 활성화한다. 마지막으로 사고 원인과 대응을 문서화해 팀에 공유한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "왜 EC2/Lambda에는 User 대신 Role을 쓰라고 하는데, 그런데도 여전히 Access Key를 발급해야 하는 경우가 있나요?"</div>
+      <div class="followup-a">
+        <p>Role은 AWS 내부(EC2, Lambda, ECS 등)에서 실행되는 워크로드나, AssumeRole을 지원하는 주체(다른 AWS 계정, SSO 연동 사용자)에게만 유효하다. 문제는 <strong>AWS 밖에서 실행되는 프로그램</strong>이 AWS API를 호출해야 하는 경우다 — 예를 들어 온프레미스 서버의 배치 스크립트나, AWS를 지원하지 않는 레거시 CI 도구.</p>
+        <p>이런 경우에도 가능하면 IAM Roles Anywhere(X.509 인증서 기반으로 온프레미스에서도 임시 자격증명을 받는 기능)나 OIDC 연동(GitHub Actions의 경우 OIDC로 Role을 assume하는 방식)을 우선 검토한다. 정말 불가피하게 장기 Access Key를 써야 한다면, 최소 권한 + 정기 로테이션(예: 90일) + 미사용 키 자동 감지(IAM Access Analyzer, Credential Report)를 반드시 함께 운영해야 한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "Cross-account Role에 ExternalId가 왜 필요한가요? 구체적으로 어떤 공격을 막나요?"</div>
+      <div class="followup-a">
+        <p>Confused Deputy Problem을 막기 위해서다. 예를 들어 모니터링 SaaS 벤더가 자기 계정에서 여러 고객의 계정으로 Role을 assume하는 구조를 생각해보자. 벤더가 고객마다 별도의 Role ARN을 만들지 않고 동일한 중개 Role을 재사용한다면, 벤더의 시스템 자체를 신뢰하는 것과 별개로, 벤더에게 "고객 A의 Role을 assume해줘"라고 요청만 하면 그 요청이 실제로 고객 A가 보낸 것인지 벤더 입장에서는 구분하기 어려운 상황이 생길 수 있다.</p>
+        <p>ExternalId는 내가 벤더에게만 알려준 고유한 비밀 문자열을 Trust Policy의 <code>Condition</code>에 넣어서, AssumeRole 요청에 그 값이 정확히 포함되지 않으면 거부하게 만드는 장치다. 이렇게 하면 다른 고객의 정보를 안다고 해서 내 계정의 Role을 assume할 수 없다 — 벤더가 실수하거나 속더라도 ExternalId를 모르면 내 계정은 안전하다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>서비스/애플리케이션에는 기본적으로 Role을 쓰고, User와 장기 Access Key는 최후의 수단으로 취급한다</li>
+          <li>Action과 Resource를 구체적인 ARN 단위로 한정하고, 와일드카드 사용을 스스로 지양한다</li>
+          <li>SCP와 Permission Boundary가 "권한을 주는 것"이 아니라 "상한선을 긋는 것"이라는 점을 정확히 구분한다</li>
+          <li>Cross-account 접근에서 ExternalId, Confused Deputy 같은 구체적 위험을 스스로 짚는다</li>
+          <li>자격증명 유출 시 탐지-차단-조사-복구의 순서를 체계적으로 설명한다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"일단 필요한 권한을 다 주고 나중에 줄이면 됩니다"라고 말한다</li>
+          <li>User, Group, Role을 "다 비슷한 거 아닌가요"로 뭉뚱그린다</li>
+          <li>SCP를 "IAM 정책이랑 비슷한 건데 조직 레벨인 것" 정도로만 설명하고 권한을 주는지 제한하는지 구분 못 한다</li>
+          <li>Access Key 유출 대응을 "키를 바꾼다" 한 문장으로 끝낸다</li>
+          <li>Cross-account 접근을 그냥 "Role을 assume하게 하면 됩니다"로만 답하고 Confused Deputy를 모른다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        "일단 필요한 권한을 다 준다"는 접근은 개발 속도만 본 판단이고, <strong>이 신원이 탈취됐을 때의 피해 범위</strong>를 전혀 고려하지 않은 것이다.
+        시니어 면접에서는 처음부터 최소한으로 설계하고, 실사용 패턴을 관찰하며 점진적으로 조정하는 프로세스 자체를 설계할 수 있어야 한다. 권한 설계는 "한 번 설정하고 끝"이 아니라 지속적으로 좁혀가는 운영 프로세스라는 것을 이해하고 있는지가 핵심이다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"Role은 User보다 그냥 조금 더 편리한 기능일 뿐이다."</p>
+      <div class="mc-right">실제</div>
+      <p>Role의 핵심 가치는 편의성이 아니라 <strong>임시성</strong>이다. STS가 발급하는 자격증명은 짧은 시간(기본 1시간) 후 자동으로 만료되므로, 탈취되더라도 피해가 시간적으로 제한된다. User의 장기 Access Key는 로테이션하지 않는 한 영구히 유효하다는 근본적인 차이가 있다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"SCP를 계정에 붙이면 그 계정에 해당 권한이 생긴다."</p>
+      <div class="mc-right">실제</div>
+      <p>SCP는 권한을 주지 않는다. 그 계정 안에서 IAM 정책으로 실제 부여된 권한의 <strong>상한선</strong>일 뿐이다. SCP로 <code>s3:*</code>를 허용해도, 그 계정 안의 어떤 User/Role에도 S3 Identity Policy가 없다면 아무도 S3에 접근할 수 없다. 반대로 SCP가 특정 서비스를 막으면, 계정 안에 아무리 강력한 IAM 정책이 있어도 그 서비스는 쓸 수 없다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"Deny 정책이 없으면 기본적으로 다 막혀있으니 안전하다, 굳이 Deny를 쓸 필요가 없다."</p>
+      <div class="mc-right">실제</div>
+      <p>암묵적 거부(Implicit Deny)가 기본값인 것은 맞지만, 명시적 Deny가 필요한 상황이 분명히 있다. 예를 들어 "특정 Role은 Allow 정책이 광범위하게 걸려 있지만, MFA 없이는 절대 삭제 작업을 못 하게" 만들고 싶을 때는 <code>Condition</code>이 붙은 명시적 Deny로 예외를 만들어야 한다. Deny는 넓은 Allow 위에 정교한 예외를 두는 도구로도 쓰인다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"Access Key를 로테이션(재발급)하기만 하면 유출 사고 대응은 끝난 것이다."</p>
+      <div class="mc-right">실제</div>
+      <p>키를 바꾸는 것은 재발을 막는 조치일 뿐, <strong>이미 유출된 동안 무엇을 당했는지</strong>는 별개로 조사해야 한다. 공격자가 그 키로 새로운 IAM User나 Role, 백도어성 Lambda를 만들어뒀다면 키만 바꿔서는 그 백도어가 그대로 남는다. CloudTrail 로그로 유출 기간 동안의 모든 활동을 반드시 추적해야 한다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"루트 계정은 평소에 로그인하지 않으니 보안 설정을 신경 쓰지 않아도 된다."</p>
+      <div class="mc-right">실제</div>
+      <p>루트 계정은 어떤 IAM 정책이나 SCP로도 제한할 수 없는 계정 안의 최상위 권한을 가진다. 평소에 안 쓰더라도 MFA를 반드시 활성화하고, 루트 계정의 Access Key는 애초에 발급하지 않거나 즉시 삭제해야 한다. 루트 계정이 뚫리면 계정 전체가 뚫린 것과 같다 — "잘 안 쓰니까 안전하다"는 정반대로, "잘 안 쓰는데 뚫리면 늦게 발견된다"는 위험으로 봐야 한다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Role vs User 선택 기준</strong></td>
+          <td>임시성/자동 만료를 근거로 Role을 기본값으로 삼고, Access Key는 최후 수단으로 취급한다</td>
+          <td>Role이 더 안전하다는 것은 알지만 이유를 정확히 설명 못 한다</td>
+          <td>User와 Role을 편의성 차이 정도로만 이해한다</td>
+        </tr>
+        <tr>
+          <td><strong>최소 권한 적용 수준</strong></td>
+          <td>Action/Resource를 구체적 ARN 단위로 한정하고 지속적으로 좁혀가는 프로세스를 제시한다</td>
+          <td>최소 권한이 중요하다는 것은 알지만 실제로는 넓게 설정한다</td>
+          <td>"일단 다 열고 나중에 줄인다"는 방식을 기본값으로 삼는다</td>
+        </tr>
+        <tr>
+          <td><strong>SCP / Permission Boundary 이해</strong></td>
+          <td>권한을 주는 것이 아니라 상한선이라는 것을 정확히 구분하고 적용 단위(조직 vs 개별 신원) 차이를 안다</td>
+          <td>둘 다 "제한하는 것"이라는 것은 알지만 적용 단위를 헷갈린다</td>
+          <td>SCP를 일반 IAM 정책과 같은 것으로 이해한다</td>
+        </tr>
+        <tr>
+          <td><strong>정책 평가 로직</strong></td>
+          <td>Deny 우선 원칙과, 이것이 실무 장애로 이어지는 구체적 사례를 설명한다</td>
+          <td>Deny가 우선이라는 것은 알지만 실무 영향은 설명 못 한다</td>
+          <td>정책 평가 순서를 모른다</td>
+        </tr>
+        <tr>
+          <td><strong>Cross-account 보안</strong></td>
+          <td>ExternalId와 Confused Deputy Problem을 구체적으로 설명한다</td>
+          <td>Cross-account Role은 알지만 ExternalId의 필요성은 모른다</td>
+          <td>Cross-account 접근 시 보안 고려사항을 생각하지 못한다</td>
+        </tr>
+        <tr>
+          <td><strong>자격증명 유출 대응</strong></td>
+          <td>차단→조사(CloudTrail)→백도어 확인→재발 방지의 순서를 체계적으로 제시한다</td>
+          <td>키 로테이션만 언급하고 사후 조사는 빠뜨린다</td>
+          <td>대응 절차를 구조화하지 못한다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면, Day 4 EC2 운영과 Auto Scaling 설계에서 실제로 Role을 워크로드에 어떻게 붙이고 운영하는지를 더 깊게 다룬다. IAM의 권한 경계와 EC2/Auto Scaling의 운영 설계는 함께 봐야 완전한 그림이 된다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./0002-vpc-network-boundary-design.html">← Day 2</a>
+    <a href="./index.html">목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>

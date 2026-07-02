@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | AWS 아키텍처 설계 프레임워크 | [0001-aws-architecture-design-framework.html](lessons/0001-aws-architecture-design-framework.html) |
 | 2 | 2026-07-01 | VPC 네트워크 경계 설계 | [0002-vpc-network-boundary-design.html](lessons/0002-vpc-network-boundary-design.html) |
+| 3 | 2026-07-02 | IAM 권한 설계와 최소 권한 원칙 | [0003-iam-least-privilege-design.html](lessons/0003-iam-least-privilege-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | IAM 권한 설계와 최소 권한 원칙 | Role vs User vs Group, 정책 우선순위, SCP, 자격증명 유출 대응 |
 | 4 | EC2 운영과 Auto Scaling 설계 | Launch Template, Scaling Policy, ALB 연동, 예약 인스턴스 vs Spot, 비용 최적화 |
 | 5 | RDS 고가용성과 데이터 보호 | Multi-AZ, 읽기 복제본, 자동 백업, 페일오버 시나리오, 비용 trade-off |
 | 6 | S3 설계와 보안 | 버킷 정책, ACL vs 버킷 정책, 정적 호스팅, 버전 관리, 수명 주기 정책, 비용 계층 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — Day 3: IAM 권한 설계와 최소 권한 원칙으로 진행 예정.
+**Day 3 완료** — Day 4: EC2 운영과 Auto Scaling 설계로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -34,7 +34,11 @@
 - [x] 보안 그룹 vs NACL (Stateful/Stateless) (Day 2)
 - [x] NAT Gateway 고가용성/비용 trade-off (Day 2)
 - [x] Bastion Host 한계와 Session Manager 대안 (Day 2)
-- [ ] IAM 최소 권한 설계 (예정 Day 3)
+- [x] IAM 최소 권한 설계 (Day 3)
+- [x] Role vs User vs Group 임시/장기 자격증명 구분 (Day 3)
+- [x] SCP vs Permission Boundary (권한 부여가 아닌 상한선) (Day 3)
+- [x] Confused Deputy Problem과 ExternalId (Day 3)
+- [x] Access Key 유출 사고 대응 절차 (Day 3)
 - [ ] EC2 Auto Scaling 비용/가용성 trade-off (예정 Day 4)
 - [ ] RDS Multi-AZ 페일오버 (예정 Day 5)
 - [ ] S3 보안 설계 (예정 Day 6)
