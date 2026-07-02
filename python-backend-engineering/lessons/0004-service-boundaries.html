@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — 서비스 경계 설계: 레이어드 아키텍처와 Repository 패턴</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="lesson-wrap">
+
+  <!-- ── Header ────────────────────────────────────── -->
+  <header class="lesson-header">
+    <div class="lesson-meta">
+      <span class="tag tag-day">Day 4</span>
+      <span class="tag tag-level">실무자 기준</span>
+      <span class="tag tag-time">약 55분</span>
+    </div>
+    <h1 class="lesson-title">서비스 경계 설계<br>레이어드 아키텍처 · Repository 패턴</h1>
+    <p class="lesson-subtitle">
+      라우터에 비즈니스 로직을 다 넣어도 당장은 동작한다. 문제는 팀이 커지고
+      요구사항이 바뀔 때다. 이 레슨은 "어디에 무슨 코드를 둘 것인가"를
+      레이어드 아키텍처, Repository 패턴, 도메인/응용 서비스 구분으로 정리한다.
+    </p>
+  </header>
+
+  <!-- ── 1. 왜 경계가 필요한가 ──────────────────────── -->
+  <h2>1. "라우터에 다 넣기"가 무너지는 지점</h2>
+
+  <p>
+    소규모 프로젝트에서는 FastAPI 라우터 함수 안에 쿼리, 검증, 비즈니스 규칙,
+    응답 조립을 모두 넣어도 문제가 없어 보인다. 하지만 아래 상황이 하나라도
+    생기면 비용이 드러난다.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>상황</th><th>라우터에 로직을 다 넣었을 때 문제</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>같은 로직을 배치 작업(CLI)에서도 써야 함</td>
+        <td>HTTP 요청 객체에 묶여 있어 재사용 불가 → 복붙</td>
+      </tr>
+      <tr>
+        <td>비즈니스 규칙을 단위 테스트하고 싶음</td>
+        <td>테스트하려면 HTTP 클라이언트와 DB를 통째로 띄워야 함</td>
+      </tr>
+      <tr>
+        <td>DB를 PostgreSQL에서 다른 저장소로 바꿔야 함</td>
+        <td>SQLAlchemy 쿼리가 라우터 곳곳에 흩어져 있어 변경 범위를 특정 못함</td>
+      </tr>
+      <tr>
+        <td>같은 도메인 규칙을 REST API와 gRPC 양쪽에서 노출</td>
+        <td>규칙이 FastAPI 코드에 종속되어 있어 그대로 재사용 불가</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <blockquote class="callout info">
+    <div class="callout-title">경계를 나누는 목적은 "우아함"이 아니다</div>
+    레이어를 나누는 이유는 각 레이어가 <strong>독립적으로 변경되고, 독립적으로
+    테스트될 수 있게</strong> 하기 위해서다. 변경 이유가 하나뿐인 코드 뭉치를
+    만드는 것 — 이것이 단일 책임 원칙(SRP)을 실무에 적용하는 방식이다.
+  </blockquote>
+
+  <!-- ── 2. 레이어드 아키텍처 ───────────────────────── -->
+  <h2>2. 레이어드 아키텍처 — 네 개의 층</h2>
+
+  <div class="diagram">
+Presentation      (FastAPI 라우터)
+      │  HTTP 요청/응답, Pydantic 검증, 상태 코드 결정
+      ▼
+Application       (응용 서비스, Use Case)
+      │  트랜잭션 경계, 여러 도메인 객체 오케스트레이션, 권한 확인
+      ▼
+Domain            (도메인 모델, 도메인 서비스)
+      │  비즈니스 규칙 그 자체 — 프레임워크/DB를 전혀 모름
+      ▼
+Infrastructure    (Repository 구현체, 외부 API 클라이언트)
+         SQLAlchemy 쿼리, 캐시, 메시지 큐, 외부 결제 API 호출
+  </div>
+
+  <p>
+    핵심 규칙은 <strong>의존성 방향이 항상 위에서 아래로만 향한다</strong>는 것이다.
+    Domain 레이어는 Infrastructure를 몰라야 한다. Infrastructure가
+    Domain이 정의한 인터페이스(Repository 추상화)를 구현해서 "거꾸로" 의존한다 —
+    이것이 <strong>의존성 역전 원칙(DIP)</strong>이다.
+  </p>
+
+  <div class="code-block">
+<pre>
+app/
+├── api/                    # Presentation
+│   └── routers/order_router.py
+├── application/            # Application
+│   └── services/order_service.py
+├── domain/                 # Domain — 프레임워크 의존성 없음
+│   ├── models/order.py
+│   ├── services/pricing_service.py
+│   └── repositories/order_repository.py   # 추상 인터페이스만 정의
+└── infrastructure/         # Infrastructure
+    └── repositories/sqlalchemy_order_repository.py  # 실제 구현
+</pre>
+  </div>
+
+  <blockquote class="callout warn">
+    <div class="callout-title">4계층이 항상 정답은 아니다</div>
+    CRUD 위주의 단순한 서비스에 이 구조를 그대로 적용하면 파일 수만 늘어난다.
+    "도메인 규칙이 복잡한가?", "여러 진입점(HTTP, CLI, 이벤트)에서 같은 로직을
+    재사용하는가?"에 "예"일 때 레이어를 분리할 가치가 커진다.
+  </blockquote>
+
+  <!-- ── 3. Repository 패턴 ─────────────────────────── -->
+  <h2>3. Repository 패턴 — 영속성을 인터페이스 뒤로 숨긴다</h2>
+
+  <p>
+    Day 3에서 SQLAlchemy가 Data Mapper 패턴을 따른다고 했다. Repository 패턴은
+    그 위에 한 겹을 더 씌워, <strong>도메인/응용 레이어가 SQLAlchemy를
+    직접 알지 못하게</strong> 만든다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# domain/repositories/order_repository.py
+from abc import ABC, abstractmethod
+from domain.models.order import Order
+
+class OrderRepository(ABC):
+    """도메인이 정의하는 '저장소가 할 수 있어야 하는 일' — 구현 방법은 모른다."""
+
+    @abstractmethod
+    async def get_by_id(self, order_id: int) -> Order | None: ...
+
+    @abstractmethod
+    async def add(self, order: Order) -> None: ...
+
+    @abstractmethod
+    async def list_by_user(self, user_id: int) -> list[Order]: ...
+</pre>
+  </div>
+
+  <div class="code-block">
+<pre>
+# infrastructure/repositories/sqlalchemy_order_repository.py
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from domain.repositories.order_repository import OrderRepository
+from domain.models.order import Order as DomainOrder
+from infrastructure.orm.order_model import OrderModel
+
+class SqlAlchemyOrderRepository(OrderRepository):
+    def __init__(self, session: AsyncSession):
+        self._session = session
+
+    async def get_by_id(self, order_id: int) -> DomainOrder | None:
+        stmt = select(OrderModel).options(
+            selectinload(OrderModel.items)
+        ).where(OrderModel.id == order_id)
+        row = await self._session.scalar(stmt)
+        return row.to_domain() if row else None
+
+    async def add(self, order: DomainOrder) -> None:
+        self._session.add(OrderModel.from_domain(order))
+
+    async def list_by_user(self, user_id: int) -> list[DomainOrder]:
+        stmt = select(OrderModel).where(OrderModel.user_id == user_id)
+        rows = await self._session.scalars(stmt)
+        return [r.to_domain() for r in rows]
+</pre>
+  </div>
+
+  <blockquote class="callout tip">
+    <div class="callout-title">테스트에서 얻는 실질적 이득</div>
+    응용 서비스를 테스트할 때 <code>InMemoryOrderRepository</code>(딕셔너리 기반
+    가짜 구현체)로 교체하면, DB 없이 순수 Python 객체만으로 비즈니스 로직을
+    검증할 수 있다. 통합 테스트와 단위 테스트를 명확히 분리하는 근거가 된다.
+  </blockquote>
+
+  <blockquote class="callout danger">
+    <div class="callout-title">흔한 안티패턴 — "Repository인데 SQLAlchemy Query가 새어 나옴"</div>
+    Repository 메서드가 <code>Query</code> 객체나 <code>Session</code>을 그대로
+    반환하면 추상화가 깨진다. 호출자가 <code>.filter()</code>를 이어붙일 수 있게
+    하면, 사실상 SQLAlchemy에 직접 의존하는 것과 다르지 않다. Repository는
+    항상 완결된 도메인 객체(또는 리스트)를 반환해야 한다.
+  </blockquote>
+
+  <!-- ── 4. 도메인 서비스 vs 응용 서비스 ────────────── -->
+  <h2>4. 도메인 서비스 vs 응용 서비스 — 가장 자주 헷갈리는 구분</h2>
+
+  <p>
+    두 종류의 "서비스"는 이름은 비슷하지만 책임이 다르다. 실무에서 이 둘을
+    섞으면 도메인 규칙이 트랜잭션/인프라 코드에 오염된다.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th></th><th>도메인 서비스 (Domain Service)</th><th>응용 서비스 (Application Service)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>책임</strong></td>
+        <td>단일 모델에 자연스럽게 속하지 않는 비즈니스 규칙 그 자체</td>
+        <td>유스케이스 하나를 오케스트레이션 (트랜잭션, 권한, Repository 호출 순서)</td>
+      </tr>
+      <tr>
+        <td><strong>예시</strong></td>
+        <td>"할인 정책 계산", "재고 배분 규칙", "가격 정책"</td>
+        <td>"주문 생성" (재고 확인 → 가격 계산 → 결제 요청 → 주문 저장 → 이벤트 발행)</td>
+      </tr>
+      <tr>
+        <td><strong>DB/HTTP 인지 여부</strong></td>
+        <td>모른다 — 순수 Python 함수/클래스</td>
+        <td>안다 — Repository, 외부 API 클라이언트를 주입받아 호출</td>
+      </tr>
+      <tr>
+        <td><strong>트랜잭션 경계</strong></td>
+        <td>관여하지 않는다</td>
+        <td>여기서 commit/rollback을 결정한다</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="code-block">
+<pre>
+# domain/services/pricing_service.py — 도메인 서비스
+# 순수 함수: 입력 → 출력. DB도, 세션도, HTTP도 모른다.
+def calculate_order_total(items: list[OrderItem], coupon: Coupon | None) -> Money:
+    subtotal = sum(item.unit_price * item.quantity for item in items)
+    if coupon and coupon.is_valid_for(subtotal):
+        return coupon.apply(subtotal)
+    return subtotal
+</pre>
+  </div>
+
+  <div class="code-block">
+<pre>
+# application/services/order_service.py — 응용 서비스
+class CreateOrderService:
+    def __init__(
+        self,
+        order_repo: OrderRepository,
+        inventory_repo: InventoryRepository,
+        payment_client: PaymentGatewayClient,
+        session: AsyncSession,
+    ):
+        self._order_repo = order_repo
+        self._inventory_repo = inventory_repo
+        self._payment_client = payment_client
+        self._session = session
+
+    async def execute(self, user_id: int, items: list[OrderItemInput]) -> Order:
+        # 1. 인프라 조회 (재고)
+        stock = await self._inventory_repo.check_availability(items)
+        if not stock.all_available:
+            raise InsufficientStockError(stock.unavailable_items)
+
+        # 2. 도메인 규칙 호출 (순수 계산)
+        total = calculate_order_total(items, coupon=None)
+
+        # 3. 외부 시스템 연동
+        payment_result = await self._payment_client.charge(user_id, total)
+
+        # 4. 영속화 + 트랜잭션 경계
+        order = Order.create(user_id, items, total, payment_result.transaction_id)
+        await self._order_repo.add(order)
+        await self._session.commit()   # 응용 서비스가 트랜잭션을 확정한다
+
+        return order
+</pre>
+  </div>
+
+  <blockquote class="callout info">
+    <div class="callout-title">판별 질문</div>
+    "이 로직이 DB나 외부 API 없이 입력값만으로 테스트 가능한가?" → 예면
+    도메인 서비스 후보다. "이 로직이 여러 Repository/클라이언트를 순서대로
+    호출하고 트랜잭션을 커밋하는가?" → 예면 응용 서비스다.
+  </blockquote>
+
+  <!-- ── 5. 라우터의 역할 축소 ──────────────────────── -->
+  <h2>5. 라우터는 얇아야 한다</h2>
+
+  <div class="code-block">
+<pre>
+# api/routers/order_router.py
+@router.post("/orders", response_model=OrderResponse, status_code=201)
+async def create_order(
+    payload: CreateOrderRequest,
+    current_user: User = Depends(get_current_user),
+    service: CreateOrderService = Depends(get_create_order_service),
+):
+    try:
+        order = await service.execute(current_user.id, payload.items)
+    except InsufficientStockError as e:
+        raise HTTPException(409, detail={"error": "insufficient_stock", "items": e.items})
+    return OrderResponse.model_validate(order)
+</pre>
+  </div>
+
+  <p>
+    라우터가 하는 일은 세 가지뿐이다: <strong>입력 검증(Pydantic이 이미 처리),
+    응용 서비스 호출, 도메인 예외 → HTTP 상태 코드 변환.</strong> 비즈니스 규칙은
+    한 줄도 없다. Day 2에서 다룬 에러 응답 표준화가 여기서 실제로 연결된다.
+  </p>
+
+  <!-- ── 6. Dependency Injection으로 레이어 연결 ────── -->
+  <h2>6. FastAPI Depends로 레이어를 조립한다</h2>
+
+  <div class="code-block">
+<pre>
+# api/deps.py
+async def get_order_repository(
+    session: AsyncSession = Depends(get_db_session),
+) -> OrderRepository:
+    return SqlAlchemyOrderRepository(session)
+
+async def get_create_order_service(
+    order_repo: OrderRepository = Depends(get_order_repository),
+    inventory_repo: InventoryRepository = Depends(get_inventory_repository),
+    payment_client: PaymentGatewayClient = Depends(get_payment_client),
+    session: AsyncSession = Depends(get_db_session),
+) -> CreateOrderService:
+    return CreateOrderService(order_repo, inventory_repo, payment_client, session)
+</pre>
+  </div>
+
+  <blockquote class="callout tip">
+    <div class="callout-title">테스트에서의 이점</div>
+    통합 테스트에서는 <code>app.dependency_overrides[get_payment_client] = lambda: FakePaymentClient()</code>
+    로 실제 결제 API 호출을 대체할 수 있다. 레이어 경계가 명확하면
+    "무엇을 가짜로 바꿀지"가 코드 구조에서 바로 드러난다.
+  </blockquote>
+
+  <!-- ── 7. 실무 체크리스트 ─────────────────────────── -->
+  <h2>7. 서비스 경계 셀프 리뷰 체크리스트</h2>
+
+  <blockquote class="callout info">
+    <div class="callout-title">코드 리뷰 시 확인할 것</div>
+    <ul style="margin:0;padding-left:1.4rem;">
+      <li>라우터 함수 안에 <code>if</code>로 표현되는 비즈니스 규칙이 없다</li>
+      <li>Repository 인터페이스가 SQLAlchemy 타입(Query, Session)을 반환하지 않는다</li>
+      <li>도메인 서비스 함수가 DB 세션이나 HTTP 클라이언트를 인자로 받지 않는다</li>
+      <li>트랜잭션 commit/rollback이 응용 서비스 레이어 한 곳에서만 일어난다</li>
+      <li>같은 유스케이스를 CLI나 배치 작업에서도 재사용할 수 있는 구조다</li>
+      <li>레이어 수가 프로젝트 복잡도에 비해 과도하지 않다 (단순 CRUD까지 4계층을 강제하지 않는다)</li>
+    </ul>
+  </blockquote>
+
+  <!-- ── 8. 퀴즈 ────────────────────────────────────── -->
+  <section class="quiz-section">
+    <h2>🧠 이해도 점검</h2>
+
+    <div class="quiz-question"
+         data-answer="c"
+         data-explanation="의존성 역전 원칙(DIP)에 따라 Domain 레이어가 추상 인터페이스(Repository)를 정의하고, Infrastructure 레이어가 그것을 구현해 '거꾸로' 의존한다. Domain은 Infrastructure의 구체적인 구현(SQLAlchemy 등)을 알지 못한다.">
+      <p>Q1. 레이어드 아키텍처에서 Domain 레이어와 Infrastructure 레이어의 의존 관계로 옳은 것은?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>Domain이 Infrastructure의 구체 클래스를 직접 import해서 사용한다</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>두 레이어는 서로 완전히 독립적이며 아무 관계가 없다</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>Domain이 추상 인터페이스를 정의하고, Infrastructure가 이를 구현해 역방향으로 의존한다</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>Infrastructure가 Presentation 레이어에 직접 의존한다</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="b"
+         data-explanation="도메인 서비스는 DB, HTTP, 세션 등 인프라를 전혀 모르는 순수 함수/클래스여야 한다. 인프라를 알게 되는 순간 단위 테스트를 위해 DB나 외부 API를 모킹해야 하고, 이는 응용 서비스의 책임이다.">
+      <p>Q2. 도메인 서비스(Domain Service)에 대한 설명으로 옳은 것은?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>Repository를 주입받아 DB 조회 후 트랜잭션을 커밋한다</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>DB나 HTTP를 모르는 순수 비즈니스 규칙으로, 입력값만으로 테스트 가능하다</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>FastAPI 라우터와 동일한 계층에 위치한다</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>항상 외부 결제 API를 직접 호출해야 한다</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="d"
+         data-explanation="Repository가 Query나 Session 같은 SQLAlchemy 타입을 그대로 반환하면 호출자가 쿼리를 이어붙일 수 있게 되어 추상화가 깨진다. Repository는 항상 완결된 도메인 객체를 반환해야 상위 레이어가 영속성 기술을 몰라도 된다.">
+      <p>Q3. Repository 패턴에서 "추상화가 깨졌다"고 판단할 수 있는 신호는?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>Repository 메서드 이름이 <code>get_by_id</code>, <code>add</code>처럼 단순하다</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>Repository가 도메인 객체 리스트를 반환한다</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>Repository 인터페이스가 domain 패키지에 정의되어 있다</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>Repository 메서드가 SQLAlchemy Query 객체를 그대로 반환해 호출자가 필터를 이어붙일 수 있다</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="a"
+         data-explanation="응용 서비스는 유스케이스 하나를 오케스트레이션하는 책임을 지며, 여러 Repository/외부 클라이언트 호출 순서를 정하고 트랜잭션 commit/rollback을 결정한다. 라우터는 HTTP 계층 변환만, 도메인 서비스는 순수 규칙만 담당한다.">
+      <p>Q4. 트랜잭션의 commit/rollback을 결정하는 책임은 어느 레이어에 있어야 하는가?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>응용 서비스 (유스케이스 오케스트레이션 레이어)</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>Presentation 레이어 (FastAPI 라우터)</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>도메인 서비스</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>Repository 인터페이스 정의부</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </section>
+
+  <!-- ── 1차 자료 ────────────────────────────────────── -->
+  <h2>권장 1차 자료</h2>
+  <ul>
+    <li>
+      <a href="https://www.cosmicpython.com/book/chapter_02_repository.html" target="_blank" rel="noopener">Cosmic Python — Repository Pattern</a> —
+      Python 예제로 Repository 패턴과 의존성 역전을 다루는 무료 온라인 북.
+    </li>
+    <li>
+      <a href="https://www.cosmicpython.com/book/chapter_04_service_layer.html" target="_blank" rel="noopener">Cosmic Python — Service Layer</a> —
+      응용 서비스(Service Layer)가 오케스트레이션 책임을 지는 이유.
+    </li>
+    <li>
+      <a href="https://fastapi.tiangolo.com/tutorial/dependencies/" target="_blank" rel="noopener">FastAPI 공식 문서 — Dependencies</a> —
+      Depends를 이용한 레이어 조립과 테스트 시 override 방법.
+    </li>
+  </ul>
+
+  <!-- ── Ask teacher ────────────────────────────────── -->
+  <div class="ask-teacher">
+    <strong>질문이 있으신가요?</strong><br>
+    어떤 로직이 도메인 서비스이고 어떤 게 응용 서비스인지 애매하거나,
+    현재 프로젝트에 이 정도 레이어 분리가 과한지 판단이 안 서면 질문하세요.
+    예시: "단일 CRUD API에도 Repository 패턴을 적용해야 하나요?"
+  </div>
+
+  <!-- ── Footer ─────────────────────────────────────── -->
+  <footer class="lesson-footer">
+    <a href="./0003-data-modeling-and-orm.html">← Day 3: 데이터 모델링과 ORM</a>
+    <span style="color:var(--text-dim);font-size:0.85rem;">Day 4 — 서비스 경계 설계</span>
+    <span style="color:var(--text-dim);font-size:0.85rem;">Day 5: 트랜잭션과 동시성 →</span>
+  </footer>
+
+</main>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

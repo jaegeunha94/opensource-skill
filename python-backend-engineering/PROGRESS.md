@@ -7,12 +7,12 @@
 | 1 | 2026-06-29 | Python 백엔드 아키텍처 전체 구조 개요 | [0001-python-backend-architecture-overview.html](lessons/0001-python-backend-architecture-overview.html) |
 | 2 | 2026-06-30 | API 설계 원칙 — REST, OpenAPI, FastAPI 실전 | [0002-api-design-principles.html](lessons/0002-api-design-principles.html) |
 | 3 | 2026-07-01 | 데이터 모델링과 ORM — SQLAlchemy 2.x, Alembic 실전 | [0003-data-modeling-and-orm.html](lessons/0003-data-modeling-and-orm.html) |
+| 4 | 2026-07-02 | 서비스 경계 설계 — 레이어드 아키텍처, Repository 패턴 | [0004-service-boundaries.html](lessons/0004-service-boundaries.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | 서비스 경계 설계 | 레이어드 아키텍처, Repository 패턴, 도메인 서비스 vs 응용 서비스 |
 | 5 | 트랜잭션과 동시성 | ACID, 격리 수준, 낙관적/비관적 잠금, 데드락 방지 |
 | 6 | 인증과 인가 | JWT 구조와 검증, OAuth2 Password Flow, RBAC, 토큰 갱신 전략 |
 | 7 | 백그라운드 작업 | Celery + Redis 아키텍처, 재시도 전략, 태스크 幂等성 |
@@ -21,7 +21,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — Day 4 (서비스 경계 설계)로 진행 예정.
+**Day 4 완료** — Day 5 (트랜잭션과 동시성)로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -42,7 +42,10 @@
 - [x] N+1 문제와 로딩 전략 (selectinload, joinedload) (Day 3)
 - [x] Async Engine/Session 설정 (Day 3)
 - [x] Alembic 마이그레이션과 무중단 배포 순서 (Day 3)
-- [ ] 레이어드 아키텍처 (예정 Day 4)
+- [x] 레이어드 아키텍처와 의존성 역전 원칙 (Day 4)
+- [x] Repository 패턴 — 영속성 추상화 (Day 4)
+- [x] 도메인 서비스 vs 응용 서비스 구분 (Day 4)
+- [x] FastAPI Depends를 이용한 레이어 조립 (Day 4)
 - [ ] ACID와 격리 수준 (예정 Day 5)
 - [ ] JWT 인증 흐름 (예정 Day 6)
 - [ ] Celery 태스크 설계 (예정 Day 7)
