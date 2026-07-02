@@ -59,6 +59,10 @@ Examples:
 - `senior-cicd-deployment-strategy-interview`
 - `senior-performance-optimization-interview`
 - `senior-http-web-protocol-interview`
+- `senior-html-css-interview`
+- `senior-javascript-interview`
+- `senior-react-nextjs-interview`
+- `senior-frontend-interview`
 - `senior-redis-cache-strategy-interview`
 - `senior-message-queue-async-processing-interview`
 
@@ -112,6 +116,34 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `HTTP Interview` -> `senior-http-web-protocol-interview`
 - `HTTP 시니어 인터뷰` -> `senior-http-web-protocol-interview`
 - `HTTP 10년차 이상 개발자 Interview` -> `senior-http-web-protocol-interview`
+- `HTML / CSS Interview` -> `senior-html-css-interview`
+- `HTML CSS Interview` -> `senior-html-css-interview`
+- `html css Interview` -> `senior-html-css-interview`
+- `HTML 10년차 이상 개발자 Interview` -> `senior-html-css-interview`
+- `html 10년차 이상 개발자 Interview` -> `senior-html-css-interview`
+- `HTML 시니어 인터뷰` -> `senior-html-css-interview`
+- `CSS 10년차 이상 개발자 Interview` -> `senior-html-css-interview`
+- `css 10년차 이상 개발자 Interview` -> `senior-html-css-interview`
+- `CSS 시니어 인터뷰` -> `senior-html-css-interview`
+- `JavaScript 10년차 이상 개발자 Interview` -> `senior-javascript-interview`
+- `javascript 10년차 이상 개발자 Interview` -> `senior-javascript-interview`
+- `자바스크립트 10년차 이상 개발자 Interview` -> `senior-javascript-interview`
+- `JavaScript 시니어 인터뷰` -> `senior-javascript-interview`
+- `React 10년차 이상 개발자 Interview` -> `senior-react-nextjs-interview`
+- `react 10년차 이상 개발자 Interview` -> `senior-react-nextjs-interview`
+- `React 시니어 인터뷰` -> `senior-react-nextjs-interview`
+- `리액트 10년차 이상 개발자 Interview` -> `senior-react-nextjs-interview`
+- `Next.js 10년차 이상 개발자 Interview` -> `senior-react-nextjs-interview`
+- `NextJS 10년차 이상 개발자 Interview` -> `senior-react-nextjs-interview`
+- `nextjs 10년차 이상 개발자 Interview` -> `senior-react-nextjs-interview`
+- `Next.js 시니어 인터뷰` -> `senior-react-nextjs-interview`
+- `React / Next.js Interview` -> `senior-react-nextjs-interview`
+- `react nextjs Interview` -> `senior-react-nextjs-interview`
+- `프론트엔드 10년차 이상 개발자 Interview` -> `senior-frontend-interview`
+- `프론트엔드 Interview` -> `senior-frontend-interview`
+- `프론트엔드 시니어 인터뷰` -> `senior-frontend-interview`
+- `Frontend Developer Interview` -> `senior-frontend-interview`
+- `Senior Frontend Developer Interview` -> `senior-frontend-interview`
 - `Redis / 캐시 전략` -> `senior-redis-cache-strategy-interview`
 - `Redis 캐시 전략` -> `senior-redis-cache-strategy-interview`
 - `Redis Cache Strategy Interview` -> `senior-redis-cache-strategy-interview`
@@ -141,12 +173,18 @@ For specialized senior interview subjects, keep the same 10+ year practitioner i
 - `senior-cicd-deployment-strategy-interview`: GitHub Actions, Jenkins, build automation, test automation, artifact management, Blue-Green, Rolling, Canary, rollback strategy, deployment risk control, and release ownership.
 - `senior-performance-optimization-interview`: slow API analysis, DB query tuning, index optimization, caching, asynchronous processing, load testing, bottleneck analysis, profiling, and measurable performance trade-offs.
 - `senior-http-web-protocol-interview`: HTTP/1.1, HTTP/2, HTTP/3, request/response semantics, methods, status codes, headers, content negotiation, cookies and sessions, CORS, Cache-Control, ETag, compression, keep-alive, connection pooling, timeout/retry/idempotency, reverse proxies, API gateways, CDN behavior, TLS termination, observability, and production traffic debugging.
+- `senior-html-css-interview`: semantic HTML, accessibility, forms, document structure, browser parsing, CSS cascade, specificity, layout, responsive design, design systems, maintainable styling, cross-browser issues, rendering performance, and production UI trade-offs.
+- `senior-javascript-interview`: execution context, event loop, microtasks/macrotasks, closures, prototypes, `this`, modules, promises, `async`/`await`, DOM/browser APIs, memory leaks, browser performance, error handling, and production debugging.
+- `senior-react-nextjs-interview`: React rendering model, hooks, component boundaries, state and data fetching, hydration, SSR/SSG/ISR, Server and Client Components, routing, caching, streaming, bundle optimization, authentication, security, testing, and production troubleshooting.
+- `senior-frontend-interview`: integrated frontend architecture across HTML, CSS, JavaScript, React, Next.js, browser rendering, accessibility, performance, API integration, state/data design, design systems, testing, frontend security, observability, UX trade-offs, and technical leadership.
 - `senior-redis-cache-strategy-interview`: Redis data structures, TTL, cache invalidation, session stores, distributed locks, ranking, Pub/Sub, cache stampede prevention, persistence modes, and failure behavior.
 - `senior-message-queue-async-processing-interview`: Kafka, RabbitMQ, SQS, Celery, asynchronous job design, retries, idempotency, dead-letter queues, ordering, backpressure, failure isolation, and large-scale processing.
 
+For senior frontend interview subjects, assume the learner already knows beginner syntax and basic framework usage. Focus on 10+ year practitioner expectations: browser/platform constraints, accessibility, performance budgets, rendering behavior, architecture trade-offs, maintainability, testing strategy, frontend security, production debugging, cross-functional communication, and senior-level design review. Do not turn these tracks into beginner tag/property/API drills unless the topic is used to evaluate production reasoning.
+
 For Python experienced interview subjects, assume the learner already knows basic Python syntax. Focus on experienced developer interview expectations: Python data model, object model, execution model, memory management, reference counting and garbage collection, GIL, concurrency, `asyncio`, iterators, generators, context managers, descriptors, decorators, typing, packaging, testing, debugging, profiling, performance, standard library depth, maintainability, and production troubleshooting. Include mock interview questions, answer frameworks, senior-level follow-ups, strong/weak answer examples, and self-check rubrics. Do not turn the track into beginner syntax drills.
 
-Interview lessons for senior backend, specialized senior interview, and Python experienced subjects must be detailed enough for a learner who finds the interview question difficult. Do not only list definitions, answer bullets, or comparison tables. For each hard concept or interview question, explain:
+Interview lessons for senior backend, senior frontend, specialized senior interview, and Python experienced subjects must be detailed enough for a learner who finds the interview question difficult. Do not only list definitions, answer bullets, or comparison tables. For each hard concept or interview question, explain:
 
 - the real production situation behind the question
 - the prerequisite concept in plain Korean before using senior-level terms

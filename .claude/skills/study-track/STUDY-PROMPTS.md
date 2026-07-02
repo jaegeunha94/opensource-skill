@@ -157,6 +157,86 @@
 - 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/ui-ux-terms` 브랜치에 push해줘. `main`에는 직접 push하지 마.
 ```
 
+## HTML / CSS Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 HTML / CSS 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: HTML / CSS
+폴더 slug: `senior-html-css-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 태그/속성 암기나 CSS 선택자 문법 퀴즈가 아니라, 10년차 이상 프론트엔드 개발자 인터뷰에서 평가하는 semantic structure, 접근성, 브라우저 렌더링, 반응형 레이아웃, 유지보수 가능한 스타일링, 성능 trade-off 중심으로 진행해줘.
+- Semantic HTML, 문서 구조, form, ARIA, accessibility tree, SEO 기본 판단, CSS cascade, specificity, inheritance, box model, Flexbox, Grid, stacking context, responsive design, design token, CSS architecture, reflow/repaint, cross-browser issue를 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — Semantic HTML과 CSS 렌더링/접근성 답변 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-html-css-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## JavaScript Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 JavaScript 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: JavaScript
+폴더 slug: `senior-javascript-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 문법 퀴즈나 코딩 테스트 암기가 아니라, 10년차 이상 프론트엔드 개발자 인터뷰에서 평가하는 실행 모델, 비동기 동작, 브라우저 성능, 유지보수 가능한 애플리케이션 로직, production debugging 중심으로 진행해줘.
+- Execution context, scope, closure, prototype/object model, `this`, module, event loop, microtask/macrotask, Promise, `async`/`await`, cancellation, DOM event, event delegation, browser API, memory leak, error handling, performance profiling, TypeScript와의 경계 판단을 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — JavaScript 실행 모델과 이벤트 루프 답변 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-javascript-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## React / Next.js Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 React / Next.js 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: React / Next.js
+폴더 slug: `senior-react-nextjs-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 Hook 사용법이나 파일 기반 라우팅 암기가 아니라, 10년차 이상 프론트엔드 개발자 인터뷰에서 평가하는 렌더링 모델, 데이터 흐름, hydration, 캐싱, 앱 아키텍처, 운영 장애 대응 중심으로 진행해줘.
+- React rendering model, reconciliation, component boundary, hooks, state management, data fetching, Suspense, error boundary, hydration, SSR, SSG, ISR, Server Component, Client Component, App Router, routing, caching, streaming, bundle optimization, authentication, frontend security, testing, observability를 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — React 렌더링 모델과 Next.js 실행 경계 답변 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-react-nextjs-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## 프론트엔드 Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 프론트엔드 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: 프론트엔드 10년차 이상 개발자 Interview
+폴더 slug: `senior-frontend-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 UI 구현 팁이나 라이브러리 사용법이 아니라, 10년차 이상 프론트엔드 개발자 인터뷰에서 평가하는 브라우저 제약, 제품 품질, 성능 예산, 접근성, 애플리케이션 아키텍처, 기술 리딩, 장애 분석 중심으로 진행해줘.
+- HTML, CSS, JavaScript, browser rendering pipeline, accessibility, Web Vitals, performance budget, API integration, state/data architecture, React, Next.js, design system, frontend security, testing strategy, observability/RUM, deployment, SEO, i18n, cross-functional communication을 다뤄줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — 프론트엔드 시니어 인터뷰 답변 프레임워크와 브라우저 기반 사고부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-frontend-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
 ## Python 백엔드 실무
 
 ```text
