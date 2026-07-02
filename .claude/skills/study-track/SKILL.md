@@ -68,6 +68,7 @@ Examples:
 - `senior-rag-interview`
 - `senior-langchain-langgraph-interview`
 - `senior-ai-harness-interview`
+- `senior-llm-engineering-interview`
 
 If the user gives a Korean subject name, map it to a stable English slug. Prefer common CS course names:
 
@@ -169,6 +170,12 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `AI Harness 10년차 이상 개발자 Interview` -> `senior-ai-harness-interview`
 - `Agent Harness 10년차 이상 개발자 Interview` -> `senior-ai-harness-interview`
 - `AI 하네스 인터뷰` -> `senior-ai-harness-interview`
+- `LLM` -> `senior-llm-engineering-interview`
+- `LLM Interview` -> `senior-llm-engineering-interview`
+- `LLM Engineering Interview` -> `senior-llm-engineering-interview`
+- `LLM 10년차 이상 개발자 Interview` -> `senior-llm-engineering-interview`
+- `LLM 시니어 인터뷰` -> `senior-llm-engineering-interview`
+- `Large Language Model Interview` -> `senior-llm-engineering-interview`
 
 If the slug is ambiguous, ask one short clarifying question before creating the folder.
 
@@ -201,8 +208,9 @@ For specialized senior interview subjects, keep the same 10+ year practitioner i
 - `senior-rag-interview`: RAG architecture, document ingestion and cleaning, chunking strategy, embedding model selection, vector databases, hybrid search, metadata filtering, reranking, context construction, prompt design, hallucination mitigation, answer grounding, offline and online evaluation, access control, privacy, caching, cost/performance trade-offs, observability, and production incident response.
 - `senior-langchain-langgraph-interview`: LangChain agent construction, model/tool/message abstractions, middleware, retrieval, memory, structured output, streaming, guardrails, context engineering, LangGraph StateGraph design, nodes and edges, persistence, checkpointers, stores, interrupts, human-in-the-loop, subgraphs, fault tolerance, deployment, LangSmith tracing/evaluation, and production troubleshooting.
 - `senior-ai-harness-interview`: AI harness and agent harness architecture, agent loops, model/tool/runtime boundaries, prompt/tool/memory/control-flow scaffolding, provider abstraction, tool calling, handoffs, guardrails, sessions, sandboxed workspace execution, MCP, streaming, telemetry, tracing, evaluation harnesses, cost/performance trade-offs, security, and incident response.
+- `senior-llm-engineering-interview`: LLM application engineering, model selection, model capability boundaries, tokenization and context windows, prompt engineering, reasoning models, structured outputs, function and tool calling, multimodal input/output, embeddings, fine-tuning and reinforcement fine-tuning, evaluation, hallucination mitigation, safety and guardrails, prompt injection defense, latency/cost optimization, caching, observability, rate limits, fallback design, vendor abstraction, and production incidents.
 
-For fast-moving AI application subjects such as `senior-rag-interview`, `senior-langchain-langgraph-interview`, and `senior-ai-harness-interview`, treat the listed topic scope as a baseline, not a frozen syllabus. Before creating or extending lessons, check current official documentation, changelogs or release notes, deprecation and migration guides, and credible production practice references. If the stored curriculum conflicts with current guidance, update `PROGRESS.md`, `RESOURCES.md`, and the new lesson plan to follow the current evidence, while noting the reason for the adjustment.
+For fast-moving AI application subjects such as `senior-rag-interview`, `senior-langchain-langgraph-interview`, `senior-ai-harness-interview`, and `senior-llm-engineering-interview`, treat the listed topic scope as a baseline, not a frozen syllabus. Before creating or extending lessons, check current official documentation, changelogs or release notes, deprecation and migration guides, and credible production practice references. If the stored curriculum conflicts with current guidance, update `PROGRESS.md`, `RESOURCES.md`, and the new lesson plan to follow the current evidence, while noting the reason for the adjustment.
 
 For senior frontend interview subjects, assume the learner already knows beginner syntax and basic framework usage. Focus on 10+ year practitioner expectations: browser/platform constraints, accessibility, performance budgets, rendering behavior, architecture trade-offs, maintainability, testing strategy, frontend security, production debugging, cross-functional communication, and senior-level design review. Do not turn these tracks into beginner tag/property/API drills unless the topic is used to evaluate production reasoning.
 
