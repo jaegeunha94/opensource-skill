@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — React 렌더링 모델과 Next.js 실행 경계 답변 프레임워크 | React / Next.js 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .data-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .data-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">React / Next.js 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 1
+  </nav>
+
+  <h1>Day 1 — React 렌더링 모델과 Next.js 실행 경계 답변 프레임워크</h1>
+  <p class="subtitle">코드가 어디서, 언제 실행되는지 그리는 사고법 · 2026-07-02</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#render-pipeline">React 렌더링 파이프라인 — render와 commit</a></li>
+      <li><a href="#execution-map">Next.js 실행 경계 전체 지도</a></li>
+      <li><a href="#framework">4단계 실행 경계 판단 프레임워크</a></li>
+      <li><a href="#location-table">실행 위치별 특성 분류표</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"이 Next.js 컴포넌트 트리를 보여드리겠습니다. 각 컴포넌트가 언제, 어디서 실행되는지 — 빌드 타임인지, 요청 시점에 서버에서인지, 브라우저에서인지 — 설명해 주시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"React가 상태를 업데이트할 때 화면이 실제로 갱신되기까지 내부적으로 어떤 단계를 거치나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"같은 코드인데 Server Component로 두는 것과 Client Component로 두는 것의 실행 시점과 결과물이 어떻게 다른가요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"Hook 사용법을 외웠는가"가 아니라 "React와 Next.js가 코드를 실제로 어디서, 언제 실행시키는지 정확한 모델을 갖고 있는가"</strong>를 테스트합니다. <code>useState</code>, <code>useEffect</code>를 능숙하게 쓰는 사람은 많지만, "이 줄은 서버에서 한 번 실행되고 이 줄은 사용자마다 브라우저에서 실행된다"는 것을 즉시 구분하는 사람은 훨씬 적습니다. 이 구분이 안 되면 아키텍처 설계, 성능 최적화, 장애 진단 전부가 흔들립니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>실행 경계에 대한 정확한 모델</strong> — Server Component(서버, 요청당 1회), Client Component 초기 렌더(서버 SSR + 클라이언트 hydration), Client Component 이후 상호작용(클라이언트만)을 구분할 수 있는가.</li>
+      <li><strong>렌더링 단계 분리 이해</strong> — React의 render 단계(순수 계산)와 commit 단계(실제 DOM 변경)가 분리되어 있다는 것을 알고, 그것이 왜 필요한지 설명할 수 있는가.</li>
+      <li><strong>비용 감각</strong> — 어떤 코드를 서버로 옮기면 무엇이 줄고(클라이언트 번들, 클라이언트 연산), 무엇이 늘어나는지(서버 부하, 요청당 렌더링 비용)를 trade-off로 설명할 수 있는가.</li>
+      <li><strong>디버깅 가능한 사고 모델</strong> — "이 값이 서버에서만 유효한 값인데 왜 클라이언트에서 에러가 나지?" 같은 문제를 실행 경계 개념으로 설명할 수 있는가.</li>
+      <li><strong>새 개념을 기존 지식에 연결하는 능력</strong> — Server Component라는 비교적 최근 개념을 SSR/CSR이라는 기존 개념과 혼동하지 않고 정확히 구분할 수 있는가.</li>
+    </ul>
+
+    <p>10년차 이하에서 자주 나오는 답변 패턴: "Server Component는 서버에서 렌더링되는 컴포넌트이고 Client Component는 <code>"use client"</code>를 붙인 컴포넌트입니다." 이 답변은 문법적 정의만 반복할 뿐, 언제 코드가 실행되는지 · 결과물이 무엇인지 · 왜 이 구분이 성능에 영향을 주는지를 설명하지 못합니다. 시니어는 "무엇을 붙이는가"가 아니라 "언제, 어디서, 몇 번 실행되고 무엇이 클라이언트로 전달되는가"로 답합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>렌더링이란 무엇인가</h3>
+    <p>"렌더링(rendering)"은 데이터(state, props)를 화면에 보여줄 형태(UI 트리)로 변환하는 작업입니다. 요리에 비유하면, 재료(state/props)를 가지고 실제로 먹을 수 있는 요리(화면에 그려진 UI)를 만드는 과정입니다. React에서 렌더링은 "컴포넌트 함수를 실행해서 무엇을 그릴지 계산하는 것"을 의미하며, 이것이 곧바로 화면에 그려지는 것은 아닙니다 — 이 부분은 4절에서 자세히 다룹니다.</p>
+
+    <h3>DOM과 Virtual DOM</h3>
+    <p>DOM(Document Object Model)은 브라우저가 화면에 그리기 위해 실제로 들고 있는 트리 구조입니다. DOM을 직접 조작하는 것은 비용이 큽니다 — 스타일 재계산(reflow/repaint)이 뒤따르기 때문입니다. React는 실제 DOM을 매번 통째로 새로 그리는 대신, 자바스크립트 객체로 만든 가벼운 트리(Virtual DOM)를 먼저 계산하고, 이전 트리와 비교해서 <strong>달라진 부분만</strong> 실제 DOM에 반영합니다. 이 "비교해서 달라진 부분만 반영하는" 과정을 <strong>reconciliation(재조정)</strong>이라 부르며, Day 2에서 diffing 알고리즘과 함께 깊게 다룹니다. 오늘은 "React는 매번 전체를 다시 그리지 않는다"는 사실만 기억하면 충분합니다.</p>
+
+    <h3>서버와 클라이언트, 그리고 "실행"이 의미하는 것</h3>
+    <p>웹 애플리케이션에는 코드가 실행될 수 있는 곳이 여러 군데 있습니다. 이 워크스페이스에서는 아래 세 가지를 명확히 구분합니다.</p>
+    <ul>
+      <li><strong>빌드 타임(Build Time)</strong> — 배포하기 전, 개발자의 CI 서버에서 미리 코드를 실행해 결과(HTML, JSON)를 만들어 두는 시점. 모든 사용자가 같은 결과를 공유합니다.</li>
+      <li><strong>요청 시점 서버(Request-time Server)</strong> — 사용자가 요청을 보낼 때마다 서버에서 코드를 실행하는 시점. 사용자마다 다른 결과(로그인 여부, 개인화 데이터)를 만들 수 있지만, 요청마다 서버 자원을 소모합니다.</li>
+      <li><strong>브라우저(Client)</strong> — 사용자의 기기에서 실행되는 시점. 서버 자원은 안 쓰지만, 사용자의 CPU/네트워크(다운로드해야 할 JS 번들)를 씁니다.</li>
+    </ul>
+    <p>이 세 곳 중 "이 코드가 어디서 실행되는가"를 헷갈리면, 브라우저 API(<code>window</code>, <code>localStorage</code>)를 서버 코드에서 쓰려다 에러를 내거나, 민감한 서버 로직(DB 접근, API 키)을 실수로 클라이언트 번들에 포함시키는 사고로 이어집니다. Day 13(Server Component 심화), Day 14(Client Component 경계)에서 이 실수를 구체적인 사례로 다룹니다.</p>
+
+    <h3>왜 "실행 경계"를 항상 먼저 그려야 하는가</h3>
+    <p>택배 비유를 다시 쓰면, "이 물건은 공장에서 미리 포장됐는지(빌드 타임), 주문할 때마다 그 자리에서 포장하는지(요청 시점 서버), 아니면 내가 집에서 직접 조립해야 하는지(클라이언트)"를 모르면 배송 지연의 원인도, 불량의 원인도 특정할 수 없습니다. React/Next.js 코드도 마찬가지로, "이 줄이 언제 실행되는가"라는 지도를 먼저 그려야 성능 문제, hydration 에러, 데이터 노출 사고를 진단할 수 있습니다.</p>
+  </section>
+
+  <!-- 4. React 렌더링 파이프라인 -->
+  <section id="render-pipeline">
+    <h2>4. React 렌더링 파이프라인 — render와 commit</h2>
+
+    <p>React가 상태 변화를 화면에 반영하는 과정은 명확히 두 단계로 나뉩니다. 이 구분을 모르면 "왜 <code>useEffect</code> 안에서 상태를 바꾸면 한 번 더 렌더링이 도는지", "왜 렌더링 중에 DOM을 직접 건드리면 안 되는지" 같은 질문에 답할 수 없습니다.</p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>단계</th>
+          <th>무엇을 하는가</th>
+          <th>특징</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Render (렌더 단계)</strong></td>
+          <td>컴포넌트 함수를 호출해서 "무엇을 화면에 그릴지"를 나타내는 트리(React Element 트리)를 계산</td>
+          <td>순수 계산에 가까워야 함. 실제 DOM은 아직 건드리지 않음. 이 단계는 중단되거나 버려질 수 있음(동시성 렌더링, Day 7에서 심화)</td>
+        </tr>
+        <tr>
+          <td><strong>Commit (커밋 단계)</strong></td>
+          <td>Render 단계에서 계산한 결과를 실제 DOM에 반영하고, DOM 변경 직후 필요한 부수효과(<code>useEffect</code> 등)를 실행</td>
+          <td>실제 화면이 바뀌는 시점. 한 번 시작하면 중간에 멈추지 않고 끝까지 실행됨</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>이 구분이 실무에서 중요한 이유</h4>
+      <p>Render 단계는 여러 번 호출되거나 도중에 버려질 수 있기 때문에, 컴포넌트 함수 본문에서 외부 변수를 직접 변경하거나 네트워크 요청을 날리면 예측 불가능한 부작용(중복 요청, 렌더링 중 상태 변경 경고)이 생깁니다. 반대로 "DOM에 실제로 반영된 후"에만 할 수 있는 작업(포커스 설정, 외부 라이브러리 초기화, 구독 등록)은 commit 이후에 실행되는 <code>useEffect</code>에서 해야 합니다. "왜 <code>useEffect</code>가 필요한가"라는 질문의 근본적인 답은 이 render/commit 분리에서 나옵니다.</p>
+    </div>
+
+    <h3>이 파이프라인이 서버에서는 어떻게 다른가</h3>
+    <p>서버에는 실제 DOM이 없습니다. 그래서 서버에서의 "렌더링"은 render 단계까지만 수행하고, 그 결과를 실제 DOM에 commit하는 대신 <strong>HTML 문자열로 직렬화</strong>합니다. 이 HTML은 브라우저로 전송되어 먼저 화면에 그려지고(비어있지 않은 첫 화면), 이후 브라우저에서 React가 다시 한번 render를 수행해 서버가 만든 HTML과 매칭시키는 것이 <strong>hydration</strong>입니다(Day 9에서 심화). 즉 hydration은 "commit을 다시 하는 것"이 아니라 "이미 그려진 DOM에 이벤트 핸들러와 내부 상태를 연결하는 것"에 가깝습니다.</p>
+  </section>
+
+  <!-- 5. Next.js 실행 경계 전체 지도 -->
+  <section id="execution-map">
+    <h2>5. Next.js 실행 경계 전체 지도</h2>
+
+    <p>App Router 기준으로, 하나의 페이지를 구성하는 컴포넌트들은 실제로 다음 시점 중 하나(또는 여러 시점에 걸쳐)에서 실행됩니다. 이 지도는 이후 Day 10~15에서 각 항목을 깊게 다룰 때의 기준점 역할을 합니다.</p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>실행 시점</th>
+          <th>대표 상황</th>
+          <th>실행 위치</th>
+          <th>클라이언트로 전달되는 것</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>빌드 타임</strong></td>
+          <td>SSG 페이지, <code>generateStaticParams</code>로 미리 생성한 경로</td>
+          <td>CI/빌드 서버 (Node.js)</td>
+          <td>완성된 HTML/JSON (모든 사용자 공통)</td>
+        </tr>
+        <tr>
+          <td><strong>요청 시점 서버 — Server Component</strong></td>
+          <td>DB 조회, 인증 확인이 들어간 컴포넌트 render</td>
+          <td>요청을 처리하는 서버(Node.js/Edge 런타임)</td>
+          <td>렌더링 결과(HTML 조각 + RSC 페이로드). 컴포넌트 소스 코드나 사용한 라이브러리 자체는 전달되지 않음</td>
+        </tr>
+        <tr>
+          <td><strong>요청 시점 서버 — SSR(Client Component 최초 렌더)</strong></td>
+          <td>Client Component도 최초 진입 시에는 서버에서 한 번 HTML로 렌더링됨</td>
+          <td>요청을 처리하는 서버</td>
+          <td>정적인 초기 HTML (아직 이벤트 핸들러는 동작하지 않음)</td>
+        </tr>
+        <tr>
+          <td><strong>클라이언트 — Hydration</strong></td>
+          <td>브라우저가 서버 HTML을 받은 뒤 React를 실행해 이벤트 핸들러/상태를 연결</td>
+          <td>브라우저</td>
+          <td>(해당 없음 — 이미 받은 HTML에 "생명"을 불어넣는 단계)</td>
+        </tr>
+        <tr>
+          <td><strong>클라이언트 — 상호작용 이후 렌더링</strong></td>
+          <td>버튼 클릭, 입력, 클라이언트 상태 변화로 인한 재렌더링</td>
+          <td>브라우저</td>
+          <td>(해당 없음 — 이미 브라우저에 있는 JS가 로컬에서 실행)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>이 지도가 실무에서 중요한 이유</h4>
+      <p>"이 페이지가 느리다"는 리포트를 받았을 때, 위 다섯 시점 중 어디가 느린지 특정하지 않으면 엉뚱한 곳을 고치게 됩니다. 예를 들어 실제 병목이 "요청 시점 서버에서 DB 쿼리가 느린 것"인데 클라이언트 번들 최적화를 하면 효과가 없습니다. 반대로 병목이 "클라이언트 번들이 너무 커서 hydration이 늦게 끝나는 것"인데 서버 쿼리를 최적화해도 체감 속도는 그대로입니다. 이 지도를 먼저 그리는 습관이 시니어와 주니어를 가르는 지점입니다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 4단계 프레임워크 -->
+  <section id="framework">
+    <h2>6. 4단계 실행 경계 판단 프레임워크</h2>
+
+    <p>면접에서 "이 컴포넌트는 어디서 실행되나요?"라는 질문을 받았을 때, 혹은 실제 코드 리뷰에서 "이 로직을 서버/클라이언트 중 어디에 둘지" 판단할 때 시니어가 실제로 쓰는 사고 순서입니다.</p>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>이 코드가 서버 전용 자원을 쓰는가? (Server-only Dependency Check)</strong>
+          <p style="margin-top:0.3rem">DB 클라이언트, 파일 시스템, 비밀 API 키, 서버 환경변수를 직접 참조하는가? 하나라도 해당되면 이 코드는 반드시 서버(Server Component 또는 서버 전용 함수)에 있어야 합니다. 클라이언트로 내려가는 순간 비밀 정보가 브라우저에 노출됩니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>이 코드가 브라우저 전용 API나 상호작용을 쓰는가? (Client-only Dependency Check)</strong>
+          <p style="margin-top:0.3rem"><code>window</code>, <code>document</code>, <code>localStorage</code>, 이벤트 핸들러(<code>onClick</code>), <code>useState</code>/<code>useEffect</code> 같은 상태·생명주기 Hook을 쓰는가? 하나라도 해당되면 이 부분은 Client Component여야 합니다. 서버에는 <code>window</code>가 없으므로 서버에서 실행하면 에러가 납니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>몇 번 실행되어야 하는가? (Execution Frequency)</strong>
+          <p style="margin-top:0.3rem">이 결과가 모든 사용자에게 동일해도 되는가(→ 빌드 타임에 한 번, SSG), 요청마다 달라져야 하는가(→ 요청 시점 서버, SSR/RSC), 아니면 사용자 상호작용마다 다시 계산돼야 하는가(→ 클라이언트)? 실행 빈도를 먼저 정하면 SSR/SSG/ISR 중 무엇을 쓸지가 거의 자동으로 결정됩니다(Day 10~12에서 심화).</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>클라이언트로 무엇이, 얼마나 전달되어야 하는가? (Payload Cost)</strong>
+          <p style="margin-top:0.3rem">Server Component는 결과(HTML/RSC 페이로드)만 클라이언트로 가고 컴포넌트 코드 자체나 그 안에서 쓴 라이브러리는 번들에 포함되지 않습니다. Client Component는 코드 자체가 JS 번들로 다운로드되어야 상호작용이 가능합니다. "이 컴포넌트가 상호작용이 필요 없다면, 굳이 클라이언트 번들 비용을 낼 이유가 있는가?"를 항상 마지막에 점검합니다.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 7. 실행 위치별 특성 분류표 -->
+  <section id="location-table">
+    <h2>7. 실행 위치별 특성 분류표</h2>
+
+    <p>실행 위치별로 "무엇을 할 수 있고 무엇을 할 수 없는지"를 정리한 표입니다. 이후 Day에서 각 항목을 더 깊게 다룹니다.</p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>실행 위치</th>
+          <th>상태(state) 사용</th>
+          <th>서버 자원 접근</th>
+          <th>브라우저 API 접근</th>
+          <th>클라이언트 번들 포함 여부</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Server Component</strong></td>
+          <td>불가 (<code>useState</code> 사용 불가)</td>
+          <td>가능 (DB, 파일시스템, 비밀 키)</td>
+          <td>불가</td>
+          <td>포함 안 됨 — 결과만 전달</td>
+        </tr>
+        <tr>
+          <td><strong>Client Component (초기 SSR)</strong></td>
+          <td>가능하지만 서버 렌더 시점엔 초기값만 반영</td>
+          <td>원칙적으로 지양 (있어도 서버 렌더 시 한정 사용)</td>
+          <td>불가 (서버 렌더 단계이므로)</td>
+          <td>포함됨</td>
+        </tr>
+        <tr>
+          <td><strong>Client Component (Hydration 이후)</strong></td>
+          <td>가능</td>
+          <td>불가 (직접 접근 시 보안 위험)</td>
+          <td>가능</td>
+          <td>포함됨</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>실무 판단 예시</h4>
+      <p>"상품 목록을 DB에서 읽어와 보여주기만 하는 컴포넌트"는 상태도, 브라우저 API도 필요 없으므로 Server Component가 기본 선택입니다. "좋아요 버튼처럼 클릭에 즉시 반응해야 하는 컴포넌트"는 이벤트 핸들러와 로컬 상태가 필요하므로 Client Component여야 합니다. 실무에서 흔한 실수는 페이지 전체를 <code>"use client"</code>로 감싸서, 상태가 필요 없는 정적인 부분까지 전부 클라이언트 번들로 내려버리는 것입니다(Day 3, Day 14에서 이 경계 설계를 집중적으로 다룹니다).</p>
+    </div>
+  </section>
+
+  <!-- 8. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>8. 답변 사고 순서</h2>
+
+    <p>면접에서 이 순서대로 30초~1분 정도로 요약해 말하면 됩니다.</p>
+
+    <ol>
+      <li><strong>질문받은 코드/컴포넌트를 앞의 4단계 프레임워크에 통과시킵니다.</strong> 서버 전용 자원 사용 여부 → 브라우저 전용 API/상태 사용 여부 → 실행 빈도 → 클라이언트 전달 비용 순으로 점검합니다.</li>
+      <li><strong>실행 시점을 명확한 용어로 특정합니다.</strong> "빌드 타임", "요청 시점 서버", "hydration 시점", "hydration 이후 클라이언트" 중 어디인지 명시적으로 말합니다.</li>
+      <li><strong>render/commit 분리를 근거로 왜 그렇게 동작하는지 설명합니다.</strong> 필요하다면 "React가 render 단계에서 계산하고 commit 단계에서 실제로 반영하기 때문에"라는 근거를 덧붙입니다.</li>
+      <li><strong>trade-off를 언급합니다.</strong> 서버로 옮기면 무엇이 줄고 무엇이 늘어나는지(번들 크기 ↓, 서버 부하 ↑ 등)를 함께 말합니다.</li>
+      <li><strong>실무 사고 사례로 연결합니다.</strong> "이 경계를 잘못 그으면 hydration mismatch가 나거나, 비밀 키가 클라이언트에 노출될 수 있다"처럼 실제 장애와 연결해서 마무리합니다.</li>
+    </ol>
+  </section>
+
+  <!-- 9. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>9. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "이 Next.js 컴포넌트 트리를 보여드리겠습니다. 각 컴포넌트가 언제, 어디서 실행되는지 설명해 주시겠어요?"</p>
+      <pre><code>// app/products/[id]/page.tsx (Server Component, 기본값)
+export default async function ProductPage({ params }) {
+  const product = await db.products.findById(params.id); // ① DB 직접 접근
+  return (
+    &lt;div&gt;
+      &lt;ProductInfo product={product} /&gt;      {/* Server Component */}
+      &lt;AddToCartButton productId={product.id} /&gt; {/* "use client" */}
+    &lt;/div&gt;
+  );
+}</code></pre>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>먼저 <code>ProductPage</code>와 <code>ProductInfo</code>는 <code>"use client"</code> 지시어가 없는 기본 Server Component입니다. 이 코드는 사용자가 요청을 보낼 때마다 서버에서 실행되고, 안에서 <code>db.products.findById</code>로 DB에 직접 접근합니다 — 이것이 4단계 프레임워크의 1번, 서버 전용 자원 사용에 해당하므로 서버에 있어야 맞습니다.</p>
+      <br>
+      <p>이 두 컴포넌트는 실행 결과(HTML 조각과 RSC 페이로드)만 클라이언트로 전달되고, 컴포넌트 소스 코드나 <code>db</code> 클라이언트 라이브러리 자체는 브라우저 번들에 포함되지 않습니다. 즉 이 부분은 "서버에서 렌더링해서 결과만 보내는" 요청 시점 서버 실행입니다.</p>
+      <br>
+      <p>반면 <code>AddToCartButton</code>은 <code>"use client"</code>가 붙어 있으므로, 클릭 이벤트 핸들러와 로컬 상태(장바구니 담기 중 로딩 상태 등)가 필요한 컴포넌트일 가능성이 높습니다. 이 컴포넌트는 최초에는 서버에서 한 번 정적인 HTML로 렌더링되어 내려오지만(SSR), 브라우저가 이 HTML을 받은 뒤 React가 다시 실행되어 이벤트 핸들러를 연결하는 hydration을 거쳐야 실제로 클릭이 동작합니다. 이후 사용자가 버튼을 클릭하면 그 이후의 재렌더링은 전부 클라이언트에서만 일어납니다.</p>
+      <br>
+      <p>이 구조의 장점은, <code>ProductInfo</code>처럼 상호작용이 필요 없는 부분은 클라이언트 JS 번들에 전혀 포함되지 않아 초기 로딩 비용이 줄어든다는 것입니다. 대신 <code>ProductPage</code>가 매 요청마다 서버에서 실행되므로, 트래픽이 몰리면 서버 렌더링 비용이 늘어난다는 trade-off가 있습니다. 만약 상품 정보가 자주 바뀌지 않는다면, 이 부분을 SSG나 ISR로 바꿔서 요청 시점 서버 렌더링 비용 자체를 없애는 것도 고려할 수 있습니다(Day 11~12에서 다루는 주제입니다).</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>각 컴포넌트를 개별적으로 짚으며 실행 시점을 명시적 용어(빌드 타임/요청 시점 서버/hydration/클라이언트)로 구분함</li>
+      <li>"왜 서버에 있어야 하는가"를 4단계 프레임워크(서버 전용 자원)로 근거를 댐</li>
+      <li>Server Component의 결과만 전달된다는 것과 Client Component는 코드 자체가 번들에 포함된다는 차이를 정확히 설명함</li>
+      <li>SSR과 hydration을 혼동하지 않고 "정적 HTML 전달 → 이벤트 핸들러 연결"로 순서를 구분함</li>
+      <li>trade-off(번들 감소 vs 서버 부하 증가)를 언급하고, 대안(SSG/ISR)까지 자연스럽게 연결함</li>
+    </ul>
+  </section>
+
+  <!-- 10. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>10. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"<code>ProductPage</code>랑 <code>ProductInfo</code>는 Server Component라서 서버에서 실행되고, <code>AddToCartButton</code>은 <code>"use client"</code>가 붙어서 클라이언트에서 실행됩니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"Server Component라서 서버에서 실행된다"는 정의를 그대로 반복한 것일 뿐, <em>왜</em> 서버에 있어야 하는지(DB 접근 같은 서버 전용 자원 사용) 근거가 없습니다.</li>
+        <li>Client Component가 "클라이언트에서만 실행된다"고 단정했는데, 실제로는 최초 진입 시 서버에서 SSR로 한 번 렌더링된 뒤 클라이언트에서 hydration을 거칩니다. 이 구분이 빠졌습니다.</li>
+        <li>클라이언트로 무엇이 전달되는지(결과만 vs 코드 자체)에 대한 언급이 없어, 번들 크기에 미치는 영향을 설명하지 못합니다.</li>
+        <li>trade-off나 대안(SSG/ISR)에 대한 언급이 전혀 없어 "정의는 아는데 판단은 못 하는" 인상을 줍니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"어차피 다 렌더링되는 거니까 <code>"use client"</code>를 최상단에 붙이면 편하고 문제없을 것 같습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"렌더링되니까 다 같다"는 실행 위치(서버/클라이언트)에 따른 비용 차이를 전혀 고려하지 않은 발언입니다.</li>
+        <li>최상단에 <code>"use client"</code>를 붙이면 그 하위 트리 전체가 클라이언트 번들에 포함되는 전이(propagation) 문제를 이해하지 못하고 있습니다(Day 14에서 심화).</li>
+        <li>편의성만을 기준으로 아키텍처를 결정하는 것은 시니어 레벨에서 지양해야 할 태도로 비칩니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>실행 시점을 "빌드 타임 / 요청 시점 서버 / hydration / hydration 이후 클라이언트"로 명확히 구분해서 말한다</li>
+        <li>서버에 있어야 하는 이유(서버 전용 자원)와 클라이언트에 있어야 하는 이유(상태/이벤트/브라우저 API)를 근거로 댄다</li>
+        <li>Server Component는 결과만, Client Component는 코드 자체가 번들에 포함된다는 차이를 설명한다</li>
+        <li>SSR과 hydration을 분리해서 순서대로 설명한다</li>
+        <li>trade-off와 대안(SSG/ISR 등)까지 자연스럽게 연결한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11. Follow-up -->
+  <section id="followups">
+    <h2>11. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: Server Component는 왜 <code>useState</code>를 쓸 수 없나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> <code>useState</code>는 리렌더링 사이에 값을 기억하고, 값이 바뀌면 해당 컴포넌트를 다시 렌더링하도록 React에 알리는 메커니즘입니다. 이 메커니즘이 동작하려면 "이 컴포넌트 인스턴스가 지금 화면에 떠 있고, 언제든 다시 실행될 수 있다"는 지속적인 런타임이 필요합니다. Server Component는 요청 하나당 한 번 실행되어 결과(HTML/RSC 페이로드)만 만들고 끝나는 실행 모델이기 때문에, "다시 렌더링을 트리거해서 화면을 갱신한다"는 개념 자체가 성립하지 않습니다. 상태가 필요한 상호작용은 반드시 지속적으로 실행되는 클라이언트 런타임, 즉 Client Component에서 처리해야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: Client Component 안에서 Server Component를 직접 import해서 쓸 수 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 원칙적으로 Client Component 파일 안에서 Server Component를 직접 import해서 사용할 수는 없습니다. Client Component 트리 전체는 클라이언트에서 다시 실행될 수 있어야 하는데, Server Component는 서버 전용 자원(DB 등)에 의존할 수 있으므로 클라이언트에서 재실행이 불가능하기 때문입니다. 대신 Server Component를 Client Component의 <code>children</code>이나 다른 prop으로 "이미 렌더링된 결과물"로 넘겨주는 패턴(composition pattern)을 사용합니다. 이렇게 하면 Server Component는 서버에서 미리 렌더링되고, Client Component는 그 결과를 그대로 배치만 하는 역할을 하게 됩니다. 이 패턴은 Day 13에서 구체적인 코드와 함께 다룹니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: "이 페이지 첫 로딩이 느려요"라는 리포트를 받으면 이 실행 경계 지도를 어떻게 활용해서 원인을 좁히시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 먼저 느린 구간이 "서버가 응답을 만들기까지(TTFB)"인지 "응답은 빨리 왔는데 화면이 상호작용 가능해지기까지(hydration 완료 시점)"인지를 구분합니다. TTFB가 느리면 요청 시점 서버 실행 단계(Server Component의 DB 쿼리, 외부 API 호출)를 의심하고, TTFB는 빠른데 클릭이 한동안 안 먹히면 클라이언트 번들 크기나 hydration 비용(Client Component가 과도하게 많은 경우)을 의심합니다. 이 두 구간을 먼저 나누지 않고 무작정 캐싱을 걸거나 코드를 최적화하면 엉뚱한 곳을 고치게 됩니다. Network 탭에서 문서 응답 시간과 Performance 탭에서 hydration/Long Task 구간을 각각 확인하는 것이 실제 절차입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: render 단계가 "여러 번 호출되거나 도중에 버려질 수 있다"는 게 무슨 의미이고, 왜 중요한가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> React의 동시성 렌더링 모델에서는, 더 급한 업데이트(예: 사용자 입력)가 들어오면 진행 중이던 낮은 우선순위의 render 계산을 중단하고 버린 뒤 다시 계산할 수 있습니다(Day 7의 transition에서 심화). 만약 컴포넌트 함수 본문에서 외부 변수를 직접 변경하거나(mutation), 네트워크 요청 같은 부수효과를 직접 실행한다면, render가 여러 번 불리거나 버려질 때 그 부수효과도 여러 번 실행되거나 일관성 없이 실행될 수 있습니다. 그래서 React는 컴포넌트 본문을 "순수 함수처럼" 작성하라고 강제하고, 부수효과는 commit 이후에만 실행이 보장되는 <code>useEffect</code>로 분리하도록 설계했습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: SSG로 만든 정적 HTML과 Server Component가 만드는 HTML은 근본적으로 뭐가 다른가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 겉보기 결과물(HTML)은 비슷해 보일 수 있지만 "언제 만들어지는가"가 다릅니다. SSG는 빌드 타임에 딱 한 번 실행되어 모든 사용자가 동일한 정적 파일을 받습니다. Server Component는 App Router에서 기본적으로 요청이 올 때마다(혹은 캐시 설정에 따라) 서버에서 실행될 수 있는 실행 모델이며, 사용자별로 다른 데이터(로그인 정보 등)를 반영한 결과를 만들 수 있습니다. 다만 Server Component도 캐싱 설정에 따라 사실상 SSG처럼 동작하게 만들 수 있습니다 — 이 부분은 Day 16(캐싱 계층)에서 <code>fetch</code> 캐시 옵션과 함께 자세히 다룹니다. 핵심은 "SSG/SSR/RSC는 서로 배타적인 카테고리가 아니라, 같은 실행 모델 위에서 캐싱 전략으로 조합되는 것"이라는 시각입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>12. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"Server Component는 그냥 예전 SSR을 이름만 바꾼 것이다"</strong></p>
+      <p>SSR은 "HTML을 서버에서 미리 만들어 보낸다"는 렌더링 결과물의 전달 방식에 가깝고, 전통적인 SSR에서는 결국 클라이언트에서도 같은 컴포넌트 코드가 다시 실행(hydration)됩니다. Server Component는 애초에 클라이언트에서 실행될 필요가 없는 컴포넌트라는 개념이며, 코드 자체가 클라이언트 번들에 포함되지 않습니다. 즉 SSR은 "언제/어떻게 HTML을 만드는가"의 문제이고, Server/Client Component는 "이 코드가 애초에 클라이언트에 존재해야 하는가"의 문제로, 서로 다른 축입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"state 업데이트는 화면을 즉시 바꾼다"</strong></p>
+      <p>state 업데이트 함수를 호출하는 순간 화면이 바뀌는 것이 아니라, React가 이를 예약해두고 render 단계에서 새 트리를 계산한 뒤 commit 단계에서 실제 DOM에 반영합니다. 같은 이벤트 핸들러 안에서 여러 번 state를 업데이트해도 대부분 batching(일괄 처리)되어 render/commit이 한 번만 일어납니다. "state를 바꾸면 즉시 그 값을 다시 읽을 수 있다"고 오해하면 이벤트 핸들러 안에서 업데이트 직후 같은 state 변수를 읽고 옛날 값이 나오는 것에 당황하게 됩니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"<code>"use client"</code>는 그 컴포넌트만 클라이언트에서 실행되게 만든다"</strong></p>
+      <p><code>"use client"</code>는 그 파일과 거기서 import되어 사용되는 모든 하위 컴포넌트를 클라이언트 번들 경계 안으로 포함시킵니다. 즉 최상위 근처에 <code>"use client"</code>를 붙이면 그 아래 트리 전체가 클라이언트 번들에 딸려 들어가는 전이(propagation) 효과가 있습니다. 이 오해 때문에 실무에서 클라이언트 번들이 불필요하게 커지는 경우가 매우 흔합니다(Day 14에서 구체적인 경계 설계를 다룹니다).</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"서버에서 렌더링하면 무조건 더 빠르다"</strong></p>
+      <p>서버 렌더링은 첫 화면(첫 HTML)을 더 빨리 보여줄 수 있다는 장점이 있지만, 요청마다 서버 자원을 소모합니다. 트래픽이 많은데 캐싱 전략 없이 매 요청마다 무거운 서버 렌더링을 수행하면 오히려 서버가 병목이 되어 전체적으로 느려질 수 있습니다. "빠르다/느리다"는 항상 무엇을 기준으로(TTFB인지, 상호작용 가능 시점인지) 어떤 트래픽 패턴에서인지를 함께 말해야 정확한 답변이 됩니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"Virtual DOM을 쓰기 때문에 React가 항상 순수 DOM 조작보다 빠르다"</strong></p>
+      <p>Virtual DOM/reconciliation은 "무엇이 바뀌었는지 몰라도 되게 해주는" 개발 편의성과, "매번 전체를 다시 그리는 순진한 방식"보다 나은 성능을 제공하는 장치이지, 손으로 최적화한 직접적인 DOM 조작보다 항상 빠르다는 뜻은 아닙니다. React의 장점은 "적당히 신경 쓰지 않아도 대체로 충분히 빠른 결과를 자동으로 얻을 수 있다"는 데 있습니다. 이 세부 내용은 Day 2(Reconciliation)에서 diffing 알고리즘과 함께 다룹니다.</p>
+    </div>
+  </section>
+
+  <!-- 13. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>13. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 1을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>React의 render 단계와 commit 단계가 각각 무엇을 하는지, 왜 분리되어 있는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>빌드 타임 / 요청 시점 서버 / hydration / hydration 이후 클라이언트, 이 네 실행 시점을 구분해서 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>4단계 실행 경계 판단 프레임워크(서버 전용 자원 → 브라우저 전용 API → 실행 빈도 → 전달 비용)를 순서대로 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Server Component는 결과만, Client Component는 코드 자체가 클라이언트 번들에 포함된다는 차이를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>SSR과 hydration이 서로 다른 단계라는 것을 순서대로("정적 HTML 전달 → 이벤트 핸들러 연결") 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Server Component에서 <code>useState</code>를 쓸 수 없는 이유를 실행 모델(요청당 1회 실행)로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>"use client"</code>가 하위 트리 전체에 전이된다는 것과 그로 인한 번들 크기 문제를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"페이지가 느리다"는 리포트를 TTFB 구간과 hydration/상호작용 구간으로 나눠서 원인을 좁히는 절차를 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"Server Component = 예전 SSR"이라는 오해가 왜 틀렸는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"서버 렌더링은 무조건 빠르다"는 주장에 어떤 전제 조건이 빠져 있는지 지적할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 2</h3>
+      <p><strong>Reconciliation과 Virtual DOM</strong></p>
+      <p>Day 1에서 "코드가 언제, 어디서 실행되는가"를 그렸다면, Day 2에서는 render 단계 안에서 실제로 무슨 일이 일어나는지 — React가 이전 트리와 새 트리를 어떻게 비교(diffing)하고, <code>key</code>가 왜 이 비교 과정에서 결정적인 역할을 하는지, 그리고 리스트 렌더링에서 잘못된 <code>key</code> 사용이 어떤 버그로 이어지는지를 다룹니다.</p>
+      <p>면접 질문 예고: "리스트를 렌더링할 때 <code>key</code>로 배열 인덱스를 쓰면 안 되는 이유를 reconciliation 관점에서 설명해 주세요."</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    React / Next.js 시니어 인터뷰 · Day 1 of 20 · 2026-07-02
+  </p>
+
+</div>
+</body>
+</html>
