@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | RAG 시스템 설계와 검색 품질 진단 프레임워크 | [0001-rag-architecture-retrieval-quality-diagnosis-framework.html](lessons/0001-rag-architecture-retrieval-quality-diagnosis-framework.html) |
+| 2 | 2026-07-02 | 문서 수집과 정제 파이프라인 | [0002-document-ingestion-and-cleaning-pipeline.html](lessons/0002-document-ingestion-and-cleaning-pipeline.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | 문서 수집과 정제 파이프라인 | Ingestion, 전처리, 중복 제거, 데이터 신선도 |
 | 3 | Chunking 전략 설계 | Fixed-size, Semantic, Recursive chunking, overlap 설계 |
 | 4 | Embedding 모델 선택과 트레이드오프 | Dense embedding, 차원, 도메인 적합성, 비용 |
 | 5 | Vector Database 선택과 운영 | ANN 인덱스, HNSW, 샤딩, 재인덱싱 운영 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — 다음: Day 2 — 문서 수집과 정제 파이프라인
+**Day 2 완료** — 다음: Day 3 — Chunking 전략 설계
 
 ## 습득한 핵심 개념
 
@@ -34,7 +34,9 @@
 - [x] Retrieval 실패 vs Generation 실패 진단 프레임워크 (Day 1)
 - [x] RAG vs Fine-tuning 선택 기준 (Day 1)
 - [x] RAG와 hallucination의 관계 (Day 1)
-- [ ] 문서 수집/정제 파이프라인 설계 (예정 Day 2)
+- [x] 문서 수집/정제 파이프라인 설계 (Day 2)
+- [x] 정확/근접 중복 탐지와 신선도(freshness) 전략 (Day 2)
+- [x] Ingestion 시점의 권한 메타데이터 설계 (Day 2)
 - [ ] Chunking 전략 (예정 Day 3)
 - [ ] Embedding 모델 선택 기준 (예정 Day 4)
 - [ ] Vector Database 운영 (예정 Day 5)

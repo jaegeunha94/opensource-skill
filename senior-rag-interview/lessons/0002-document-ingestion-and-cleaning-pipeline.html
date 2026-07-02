@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — 문서 수집과 정제 파이프라인</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 2 · RAG Interview</div>
+    <h1>문서 수집과 정제 파이프라인</h1>
+    <div class="subtitle">여러 소스에 흩어진 문서를 검색 가능한 형태로 안전하고 신선하게 유지하는 데이터 파이프라인을 설계하는 능력</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "Confluence, PDF, Slack, 사내 DB에 흩어진 문서를 RAG에 반영해야 합니다. 수집(ingestion) 파이프라인을 어떻게 설계하시겠습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "문서 정제 단계에서 무엇을 걸러내야 하나요? 정제를 대충 하면 뒤 단계에서 어떤 문제가 생기나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형 (운영형)</span>
+      "문서가 매일 수천 건씩 갱신됩니다. 매번 전체 재색인을 하기엔 비용이 부담스러운데 어떻게 설계하시겠습니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Ingestion이 RAG 품질의 상한선을 정한다</h2>
+
+    <h3>왜 Ingestion부터 시작해야 하는가</h3>
+    <p>
+      Day 1에서 RAG 실패의 대다수가 검색(Retrieval) 단계에서 비롯된다고 배웠다.
+      그런데 검색이 아무리 좋은 임베딩 모델과 reranker를 써도, <strong>애초에 인덱스에 들어간 문서가
+      지저분하거나, 오래됐거나, 중복돼 있으면</strong> 검색 품질은 절대 그 이상을 넘을 수 없다.
+      이것이 <strong>"Garbage In, Garbage Out"</strong>이며, Ingestion은 RAG 전체 품질의
+      <strong>상한선(ceiling)</strong>을 결정한다.
+    </p>
+
+    <div class="callout callout-info">
+      <strong>핵심 전제:</strong> Ingestion 파이프라인은 "문서를 벡터DB에 넣는 일"이 아니라
+      <strong>수집 → 파싱 → 정제 → 메타데이터 부착 → (Day 3의 chunking으로 이어지는) 데이터 엔지니어링 파이프라인</strong>이다.
+      AI 문제가 아니라 데이터 파이프라인 문제로 접근해야 한다.
+    </div>
+
+    <h3>수집(Collection) — 소스별 커넥터</h3>
+    <p>
+      실무에서 문서는 한 곳에 있지 않다. Confluence/Notion(구조화된 위키), PDF/Word(반구조화 문서),
+      스캔본 이미지(비구조화), Slack/이메일(대화형 텍스트), 사내 DB(정형 데이터)처럼 형태가 전부 다르다.
+      각 소스는 <strong>API 인증, 페이지네이션, rate limit, 증분 조회(최근 변경분만 가져오기)</strong> 방식이
+      다르므로 소스별 커넥터를 분리해서 설계해야 한다.
+    </p>
+
+    <h3>파싱(Parsing) — 구조를 보존하며 텍스트를 뽑아내기</h3>
+    <p>
+      PDF나 스캔본에서 텍스트만 뽑으면 제목/본문/표/코드블록 구분이 사라진다.
+      예를 들어 표(table)를 일반 텍스트로 풀어버리면 "행과 열의 관계"가 사라져서
+      숫자만 나열된 의미 없는 텍스트가 된다. 스캔된 이미지 문서는 OCR(광학 문자 인식)을 거쳐야 하는데,
+      OCR 오류(글자 깨짐, 표 인식 실패)가 그대로 검색 품질 저하로 이어진다.
+    </p>
+
+    <div class="callout callout-warn">
+      <strong>중요:</strong> 파싱 단계에서 문서의 <strong>구조(제목 계층, 표, 코드블록)</strong>를
+      최대한 보존해야 한다. 이 구조 정보는 Day 3의 chunking 전략(구조 기반 분할)의 입력이 된다.
+      파싱에서 구조를 뭉개버리면, 아무리 좋은 chunking 전략을 써도 복구할 수 없다.
+    </div>
+
+    <h3>정제(Cleaning) — 노이즈와 중복 제거</h3>
+    <p>실무에서 반드시 걸러야 하는 노이즈 유형:</p>
+
+    <table>
+      <tr>
+        <th>노이즈 유형</th>
+        <th>예시</th>
+        <th>방치 시 문제</th>
+      </tr>
+      <tr>
+        <td>보일러플레이트</td>
+        <td>페이지 헤더/푸터, 네비게이션 메뉴, "이 문서가 도움이 됐나요?" 같은 반복 문구</td>
+        <td>모든 chunk에 같은 문구가 섞여 임베딩이 흐려짐</td>
+      </tr>
+      <tr>
+        <td>정확 중복(exact duplicate)</td>
+        <td>동일 문서가 여러 시스템에 복사되어 존재</td>
+        <td>검색 결과 상위권이 같은 내용으로 도배됨, 임베딩 비용 낭비</td>
+      </tr>
+      <tr>
+        <td>근접 중복(near-duplicate)</td>
+        <td>초안과 최종본, 버전만 다른 정책 문서</td>
+        <td>서로 다른(때로 상충하는) 버전이 동시에 검색되어 답변이 모순됨</td>
+      </tr>
+      <tr>
+        <td>인코딩/포맷 깨짐</td>
+        <td>깨진 한글 인코딩, HTML 태그 잔존, 이상한 공백/개행</td>
+        <td>임베딩 품질 저하, chunk 경계가 이상하게 잘림</td>
+      </tr>
+    </table>
+
+    <h3>정확 중복 vs 근접 중복 탐지</h3>
+    <p>
+      <strong>정확 중복</strong>은 문서 내용의 해시값(예: SHA-256)이 같은지로 즉시 탐지할 수 있다.
+      <strong>근접 중복</strong>은 내용이 조금씩 다르므로(초안/최종본, 오탈자 수정본) 해시로는 못 잡는다.
+      SimHash/MinHash 같은 근사 유사도 기법이나, 문서 임베딩 간 코사인 유사도가 임계값 이상이면
+      근접 중복으로 판단하는 방식을 쓴다. 근접 중복을 발견하면 <strong>최신본만 남기고 나머지는
+      인덱스에서 제외</strong>하거나 "구버전" 메타데이터를 붙여 낮은 우선순위로 검색되게 한다.
+    </p>
+
+    <h3>메타데이터 부착 — 검색 이후를 위한 준비</h3>
+    <p>
+      정제된 문서에는 출처(source), 작성/수정일(freshness 판단용), 문서 버전, 그리고
+      <strong>접근 권한(ACL) 정보</strong>를 메타데이터로 함께 저장해야 한다.
+      이 메타데이터는 Day 6(Metadata Filtering)과 Day 11(권한/보안)에서 검색 시점에 필터링하는 데 쓰인다.
+      Ingestion 단계에서 권한 정보를 놓치면, 나중에 아무리 검색 로직을 잘 짜도
+      권한 없는 사용자에게 문서가 노출되는 사고로 이어질 수 있다.
+    </p>
+
+    <h3>신선도(Freshness)와 재색인 전략</h3>
+    <p>
+      문서는 계속 바뀐다. Ingestion 파이프라인은 두 가지 방식 중 선택하거나 조합해서 설계한다.
+    </p>
+
+    <table>
+      <tr>
+        <th>방식</th>
+        <th>동작</th>
+        <th>장점</th>
+        <th>단점</th>
+      </tr>
+      <tr>
+        <td><strong>배치(Batch) 재색인</strong></td>
+        <td>주기적으로(예: 매일 새벽) 전체 또는 변경분을 스캔해 재색인</td>
+        <td>구현 단순, 소스 시스템 부하 예측 가능</td>
+        <td>배치 주기 동안은 최신 정보 미반영 (최대 지연 발생)</td>
+      </tr>
+      <tr>
+        <td><strong>이벤트 기반(Event-driven) 증분 색인</strong></td>
+        <td>소스 시스템의 webhook/CDC(Change Data Capture)로 변경 즉시 색인 큐에 반영</td>
+        <td>거의 실시간 반영, 변경분만 처리해 비용 절감</td>
+        <td>구현 복잡도 증가, 멱등성(idempotency) 보장 필요</td>
+      </tr>
+    </table>
+
+    <div class="callout callout-danger">
+      <strong>삭제 반영을 잊지 말 것:</strong> 문서가 원본 시스템에서 삭제되거나 접근 권한이 회수됐는데
+      벡터 인덱스에는 그대로 남아있는 경우가 실무에서 매우 흔한 사고 원인이다.
+      Ingestion 파이프라인은 "추가/수정"뿐 아니라 <strong>"삭제 이벤트"도 반드시 처리</strong>해야 한다.
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <p>
+      이 질문은 <strong>"임베딩 모델 이름을 아느냐"</strong>가 아니라
+      <strong>"RAG를 데이터 파이프라인 엔지니어링 문제로 다룰 수 있느냐"</strong>를 본다.
+    </p>
+
+    <ul>
+      <li>
+        <strong>Garbage-in-garbage-out을 이해하는가:</strong> 검색·생성 품질 개선 전에
+        Ingestion 품질부터 점검하는 순서로 사고하는가
+      </li>
+      <li>
+        <strong>운영 관점을 갖췄는가:</strong> 신선도, 삭제 반영, 멱등성, 증분 처리처럼
+        "한 번 만들고 끝"이 아니라 지속 운영되는 파이프라인으로 설계하는가
+      </li>
+      <li>
+        <strong>권한/보안을 앞단에서 설계하는가:</strong> 접근 권한 메타데이터를 Ingestion
+        시점부터 부착해야 한다는 것을 아는가, 아니면 나중에 붙이면 된다고 생각하는가
+      </li>
+      <li>
+        <strong>비용/운영 부담을 트레이드오프로 설명하는가:</strong> 전체 재색인과 증분 색인의
+        비용·복잡도·최신성 트레이드오프를 구체적으로 설명할 수 있는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      Senior 엔지니어는 Ingestion을 "문서를 벡터DB에 넣는 전처리 스크립트"로 보지 않는다.
+      <strong>지속적으로 운영되는, 실패를 감지하고 복구할 수 있는 데이터 파이프라인</strong>으로 설계한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: Confluence 문서를 수집했는데 권한 없는 사용자가 기밀 문서 답변을 받음</h3>
+    <p>
+      Ingestion 시점에 문서 내용만 가져오고 <strong>"누가 볼 수 있는지"</strong> 정보를 저장하지 않았다.
+      → 접근 권한 메타데이터를 Ingestion 단계에서부터 부착하고, 검색 시점에 사용자 권한과 대조하는
+      필터링이 필요하다 (Day 6, Day 11에서 이어짐).
+    </p>
+
+    <h3>상황 2: 스캔된 계약서 PDF의 검색 정확도가 낮다</h3>
+    <p>
+      OCR 품질이 낮아 숫자와 문자가 뒤섞여 인식됐다.
+      → OCR 신뢰도 점수(confidence score)가 낮은 영역은 별도로 표시하거나 사람이 검수하는
+      워크플로우를 추가하고, 표는 별도 파서로 구조를 보존해야 한다.
+    </p>
+
+    <h3>상황 3: 초안과 최종 승인본이 둘 다 검색되어 답변이 오락가락함</h3>
+    <p>
+      같은 정책의 v1(초안)과 v2(최종본)이 모두 인덱스에 있어 질문마다 다른 버전이 검색된다.
+      → 근접 중복 탐지로 구버전을 식별하고, 최신 버전만 활성 인덱스에 남기거나
+      버전 메타데이터로 최신본에 가중치를 준다.
+    </p>
+
+    <h3>상황 4: 매일 수천 건의 문서 변경을 전체 재색인하다 임베딩 비용이 폭증</h3>
+    <p>
+      변경된 문서 몇십 건 때문에 전체 수백만 건을 매번 다시 임베딩했다.
+      → 변경 이벤트(webhook/CDC)를 받아 <strong>변경분만 증분 재처리</strong>하는 구조로 바꾸고,
+      대량 초기 적재는 배치로, 이후 운영은 이벤트 기반으로 전환한다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>소스를 구조 유형별로 분류하기</strong>
+        "먼저 소스를 구조화(DB, API), 반구조화(Confluence, PDF), 비구조화(스캔 이미지, 대화 로그)로
+        나누고, 소스별 커넥터와 증분 조회 방식을 설계합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>파싱에서 구조 보존을 최우선으로 두기</strong>
+        "제목 계층, 표, 코드블록 같은 구조를 최대한 보존해서 파싱합니다. 이 구조는 이후
+        chunking 품질에 직접 영향을 주기 때문입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>정제 규칙과 중복 제거 적용하기</strong>
+        "보일러플레이트를 제거하고, 정확 중복은 해시로, 근접 중복은 유사도 기반으로 탐지해
+        최신 버전만 남깁니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>메타데이터를 Ingestion 시점에 부착하기</strong>
+        "출처, 작성일, 버전, 접근 권한 정보를 이 시점에 함께 저장합니다. 나중에 붙이려면
+        원본 시스템을 다시 조회해야 해서 비효율적이고, 권한 누락 리스크도 커집니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>신선도 전략을 트레이드오프로 설계하기</strong>
+        "초기 대량 적재는 배치로, 이후 지속 갱신은 이벤트 기반 증분 색인으로 전환합니다.
+        삭제/권한 회수 이벤트도 반드시 함께 처리합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>운영 관측 포인트 언급하기 (Senior 포인트)</strong>
+        "파싱 실패율, OCR 신뢰도, 색인 지연시간, 중복 탐지율 같은 지표를 모니터링해서
+        Ingestion 자체의 건강 상태를 추적합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "저는 Ingestion을 RAG 품질의 상한선을 정하는 단계로 봅니다. 아무리 검색과 reranking을
+        잘 튜닝해도, 애초에 인덱스에 들어간 문서가 지저분하거나 오래됐으면 그 이상 좋아질 수 없습니다.
+      </p>
+      <p>
+        먼저 소스를 구조화/반구조화/비구조화로 나누고 소스별 커넥터를 설계합니다. 파싱 단계에서는
+        제목 계층이나 표 같은 구조를 최대한 보존하는 걸 최우선으로 둡니다. 구조가 파싱 단계에서
+        사라지면 이후 chunking으로도 복구할 수 없기 때문입니다.
+      </p>
+      <p>
+        정제 단계에서는 보일러플레이트를 제거하고, 정확 중복은 해시로, 초안/최종본 같은 근접
+        중복은 유사도 기반으로 탐지해서 최신 버전만 남깁니다. 그리고 이 시점에 출처, 버전,
+        접근 권한 같은 메타데이터를 함께 저장합니다. 권한 정보를 나중에 붙이려고 하면 원본
+        시스템을 또 조회해야 하고, 누락되면 보안 사고로 이어질 수 있습니다.
+      </p>
+      <p>
+        신선도는 초기 대량 적재는 배치로 처리하고, 이후 지속 갱신은 webhook이나 CDC 기반의
+        이벤트 드리븐 증분 색인으로 전환합니다. 이때 삭제나 권한 회수 이벤트도 반드시 반영해야
+        하고, 재처리가 중복 색인을 만들지 않도록 멱등성을 보장합니다. 마지막으로 파싱 실패율,
+        OCR 신뢰도, 색인 지연 같은 지표를 관측해서 Ingestion 파이프라인 자체의 건강 상태를
+        지속적으로 추적합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "전체 재색인과 증분 색인, 언제 무엇을 쓰나요?"</h3>
+    <p><strong>약한 답변:</strong> "증분 색인이 더 빠르니까 항상 증분으로 합니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "초기 대량 적재나, 임베딩 모델을 교체해서 전체 벡터를 다시 만들어야 하는 경우는
+      전체 재색인이 불가피합니다. 반면 운영 중 일상적인 문서 수정·추가는 증분 색인이 맞습니다.
+      다만 증분 색인은 <strong>멱등성</strong>이 핵심입니다 — 같은 변경 이벤트가 중복 전달돼도
+      중복 벡터가 쌓이지 않도록 문서 ID 기준으로 upsert(있으면 갱신, 없으면 추가)해야 합니다.
+      또한 증분 색인만으로는 '삭제'나 '정합성 어긋남'이 누적될 수 있어서, 저는 주기적으로
+      원본과 인덱스 상태를 대조하는 <strong>정합성 점검(reconciliation) 배치</strong>를
+      함께 돌리는 것을 권장합니다."
+    </p>
+
+    <h3>F2. "문서 접근 권한이 바뀌면 어떻게 반영하나요?"</h3>
+    <p><strong>약한 답변:</strong> "검색 결과를 화면에 보여줄 때 권한 체크해서 걸러줍니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "표시 단계에서만 필터링하면, 검색된 chunk가 이미 LLM 프롬프트에 들어가버려서
+      권한 없는 사용자가 답변 내용을 통해 정보를 유추할 수 있는 leak 위험이 있습니다.
+      그래서 권한 필터링은 <strong>검색(retrieval) 단계 자체</strong>에서 이뤄져야 합니다
+      (Day 6, 11에서 자세히 다룹니다). Ingestion 관점에서는 원본 시스템의 권한 변경 이벤트를
+      구독해서, 권한이 바뀌면 해당 문서의 메타데이터를 즉시 갱신하고, 주기적으로 원본과
+      권한 정보를 대조하는 배치도 함께 운영합니다."
+    </p>
+
+    <h3>F3. "정확 중복과 근접 중복을 어떻게 구분해서 탐지하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "정확 중복은 문서 내용의 해시값(SHA-256 등)이 완전히 같은지로 즉시 판단할 수 있어서
+      비용이 거의 들지 않습니다. 근접 중복은 내용이 조금씩 달라서 해시로는 못 잡기 때문에,
+      SimHash/MinHash 같은 근사 유사도 기법이나 문서 임베딩 간 코사인 유사도로 판단합니다.
+      임계값을 너무 낮게 잡으면 실제로 다른 문서를 중복으로 오판할 수 있어서, 저는 보통
+      높은 임계값(예: 0.95 이상)으로 시작해서 실제 샘플을 사람이 검수하며 조정합니다."
+    </p>
+
+    <h3>F4. "OCR 품질이 나쁜 스캔 문서는 어떻게 처리하시겠어요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "OCR 엔진이 제공하는 신뢰도(confidence) 점수를 저장해서, 신뢰도가 낮은 영역은
+      메타데이터로 표시해두거나 검색 우선순위를 낮춥니다. 표나 서명란처럼 OCR이 특히
+      약한 영역은 레이아웃 인식(layout-aware) OCR이나 별도 파서를 쓰는 걸 고려하고,
+      법률 계약서처럼 정확도가 절대적으로 중요한 문서는 사람 검수 워크플로우를
+      Ingestion 파이프라인에 포함시킵니다. 품질이 검증되지 않은 OCR 결과를 그대로
+      임베딩에 태우는 건 위험하다고 판단합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>Ingestion을 <strong>RAG 품질의 상한선</strong>으로 명확히 인식한다</li>
+          <li>파싱에서 <strong>구조 보존</strong>이 왜 중요한지 chunking과 연결해서 설명한다</li>
+          <li>정확 중복과 근접 중복을 <strong>다른 탐지 기법</strong>으로 구분해서 말한다</li>
+          <li>권한 메타데이터를 <strong>Ingestion 시점</strong>에 부착해야 한다고 말한다</li>
+          <li>배치/이벤트 기반 색인을 <strong>트레이드오프</strong>로 설명하고 삭제 반영·멱등성을 챙긴다</li>
+          <li>Ingestion 자체의 <strong>운영 지표</strong>(파싱 실패율 등)를 언급한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"문서를 긁어서 벡터DB에 넣습니다" — <strong>정제/메타데이터 개념 없음</strong></li>
+          <li>구조(표, 제목)를 보존해야 하는 이유를 설명하지 못한다</li>
+          <li>중복 제거를 "같은 문서면 하나만 남긴다" 수준으로만 설명한다</li>
+          <li>권한 필터링을 "화면에 보여줄 때 걸러주면 된다"고 답한다 (leak 위험 간과)</li>
+          <li>재색인을 "그냥 매번 다시 돌리면 된다"고 답한다 (비용/삭제 반영 간과)</li>
+          <li>Ingestion을 "한 번 세팅하고 끝나는 스크립트"로 취급한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 Ingestion을 "AI 붙이기 전 전처리"가 아니라
+      <strong>"지속 운영되는 데이터 파이프라인이자 보안 경계의 첫 지점"</strong>으로 다룬다.
+      면접관은 데이터 엔지니어링 기본기와 보안 감각을 함께 본다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "정제는 나중에 chunking할 때 대충 해도 된다"</h3>
+    <p>
+      <strong>사실:</strong> chunking은 이미 정제된 텍스트를 전제로 동작한다.
+      보일러플레이트나 깨진 인코딩이 남아 있으면 chunk 경계가 이상하게 잘리고,
+      모든 chunk에 같은 노이즈가 섞여 임베딩 유사도 자체가 흐려진다. 정제는 chunking 이전에
+      끝나 있어야 한다 (Day 3).
+    </p>
+
+    <h3>오해 2: "임베딩 모델이 좋으면 노이즈가 있어도 알아서 잘 찾는다"</h3>
+    <p>
+      <strong>사실:</strong> 좋은 임베딩 모델도 입력이 노이즈로 오염되면 그 노이즈까지
+      벡터에 반영한다. 모델 성능은 정제된 입력을 전제로 한 상한선이지, 정제를 대신해주지 않는다.
+    </p>
+
+    <h3>오해 3: "접근 권한은 검색 결과를 보여줄 때 필터링하면 충분하다"</h3>
+    <p>
+      <strong>사실:</strong> 표시 단계 필터링은 이미 LLM 프롬프트에 권한 없는 내용이
+      들어간 뒤의 조치라 늦다. 검색 단계에서 권한 기반으로 후보 자체를 제외해야 하며,
+      이를 위한 권한 메타데이터는 Ingestion 시점부터 정확히 부착돼야 한다.
+    </p>
+
+    <h3>오해 4: "한 번 색인하면 끝난다"</h3>
+    <p>
+      <strong>사실:</strong> 문서는 계속 바뀌고 삭제된다. 신선도 전략(배치/이벤트 기반),
+      삭제 반영, 정합성 점검이 없으면 시간이 지날수록 인덱스와 실제 문서 상태가
+      어긋나는 "drift"가 누적된다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Ingestion 파이프라인 설계 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>항목</th>
+        <th>확인할 것</th>
+        <th>누락 시 위험</th>
+      </tr>
+      <tr>
+        <td>구조 보존 파싱</td>
+        <td>제목 계층, 표, 코드블록이 텍스트로 뭉개지지 않는가</td>
+        <td><span class="badge badge-red">Chunking 품질 저하</span></td>
+      </tr>
+      <tr>
+        <td>중복 제거</td>
+        <td>정확/근접 중복을 각각 탐지하는 로직이 있는가</td>
+        <td><span class="badge badge-red">모순된 답변, 비용 낭비</span></td>
+      </tr>
+      <tr>
+        <td>권한 메타데이터</td>
+        <td>수집 시점에 ACL/출처 정보를 함께 저장하는가</td>
+        <td><span class="badge badge-red">권한 없는 사용자에게 정보 노출</span></td>
+      </tr>
+      <tr>
+        <td>신선도 전략</td>
+        <td>배치/이벤트 기반 갱신, 삭제 반영이 설계돼 있는가</td>
+        <td><span class="badge badge-yellow">오래된 정보 응답</span></td>
+      </tr>
+      <tr>
+        <td>멱등성</td>
+        <td>같은 이벤트가 중복 처리돼도 중복 벡터가 생기지 않는가</td>
+        <td><span class="badge badge-yellow">인덱스 오염, 비용 증가</span></td>
+      </tr>
+      <tr>
+        <td>운영 관측</td>
+        <td>파싱 실패율, 색인 지연, 큐 적체를 모니터링하는가</td>
+        <td><span class="badge badge-green">문제 아님 (있으면 조기 발견)</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"문서를 파싱해서 벡터DB에 넣습니다" 수준에서 멈추고, 정제/중복/권한/신선도 개념이 없음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>소스별로 파서가 다르다는 것과, 보일러플레이트 제거가 필요하다는 것을 알고 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>정확/근접 중복 탐지 방법을 구분해서 설명할 수 있고, 배치/이벤트 기반 재색인의
+      차이를 말할 수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>Ingestion을 RAG 품질의 상한선이자 보안 경계로 인식하고, 구조 보존이 chunking에 미치는
+      영향, 권한 메타데이터를 Ingestion 시점에 부착해야 하는 이유, 삭제 반영과 멱등성,
+      운영 관측 지표까지 하나의 파이프라인 설계로 자연스럽게 답변함</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. Ingestion 품질이 RAG 전체 품질의 상한선이 되는 이유를 설명할 수 있는가?<br>
+      2. 정확 중복과 근접 중복을 각각 어떻게 탐지하는지 설명할 수 있는가?<br>
+      3. 접근 권한 필터링을 왜 표시 단계가 아니라 검색 단계에서 해야 하는지 설명할 수 있는가?<br>
+      4. 배치 재색인과 이벤트 기반 증분 색인의 트레이드오프를 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>Ingestion은 RAG 품질의 상한선을 정한다.</strong> 검색·생성을 고치기 전에 수집 품질부터 의심한다.</li>
+      <li><strong>파싱에서 구조(제목/표/코드블록)를 보존</strong>해야 이후 chunking 품질이 확보된다.</li>
+      <li><strong>정확 중복은 해시로, 근접 중복은 유사도 기반</strong>으로 각각 다르게 탐지한다.</li>
+      <li><strong>권한 메타데이터는 Ingestion 시점</strong>에 부착해야 하고, 필터링은 검색 단계에서 이뤄져야 한다.</li>
+      <li><strong>신선도는 배치와 이벤트 기반을 조합</strong>한다. 삭제/권한 회수 이벤트 반영과 멱등성을 반드시 챙긴다.</li>
+      <li>Ingestion 자체도 <strong>파싱 실패율, 색인 지연 같은 운영 지표</strong>로 관측해야 한다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 2 완료 · 다음: Day 3 — Chunking 전략 설계</span>
+  </div>
+
+</div>
+</body>
+</html>
