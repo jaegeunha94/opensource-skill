@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — RabbitMQ Exchange 유형과 라우팅 설계</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    /* Header */
+    .lesson-header {
+      border-left: 4px solid #6366f1;
+      padding: 1rem 1.5rem;
+      background: #1e1f2e;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-header .day-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #818cf8;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .lesson-header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #f1f5f9;
+    }
+    .lesson-header .meta {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-top: 0.4rem;
+    }
+
+    /* Section */
+    .section {
+      background: #1a1b2e;
+      border: 1px solid #2d2e4a;
+      border-radius: 10px;
+      padding: 1.6rem 1.8rem;
+      margin-bottom: 1.8rem;
+    }
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6366f1;
+      margin-bottom: 0.6rem;
+    }
+    .section h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #c7d2fe;
+      margin-bottom: 1rem;
+    }
+    .section p { color: #cbd5e1; margin-bottom: 0.9rem; }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* Interview question box */
+    .interview-q {
+      background: #13141f;
+      border: 2px solid #4f46e5;
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.8rem;
+    }
+    .interview-q .q-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #a5b4fc;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q .q-text {
+      font-size: 1.08rem;
+      font-weight: 600;
+      color: #e0e7ff;
+      line-height: 1.6;
+    }
+
+    /* Callout */
+    .callout {
+      border-left: 3px solid #6366f1;
+      padding: 0.9rem 1.2rem;
+      background: #13141f;
+      border-radius: 0 6px 6px 0;
+      margin: 1rem 0;
+      color: #c7d2fe;
+    }
+    .callout.warn { border-left-color: #f59e0b; background: #1c1a10; color: #fde68a; }
+    .callout.good { border-left-color: #10b981; background: #0d1c16; color: #6ee7b7; }
+    .callout.bad  { border-left-color: #ef4444; background: #1c0d0d; color: #fca5a5; }
+
+    /* Steps */
+    .steps { list-style: none; counter-reset: step-counter; padding: 0; }
+    .steps li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step-counter);
+      min-width: 28px;
+      height: 28px;
+      background: #4f46e5;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .steps li .step-body { color: #cbd5e1; }
+    .steps li .step-body strong { color: #e2e8f0; }
+
+    /* Code block */
+    pre {
+      background: #0d0e1a;
+      border: 1px solid #2d2e4a;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      color: #a5f3fc;
+      line-height: 1.6;
+      margin: 1rem 0;
+    }
+    code { font-family: 'Fira Code', 'Cascadia Code', monospace; }
+
+    /* Comparison table */
+    .compare { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    .compare th {
+      background: #1e1f35;
+      color: #a5b4fc;
+      font-weight: 700;
+      padding: 0.7rem 1rem;
+      text-align: left;
+      border-bottom: 2px solid #3730a3;
+    }
+    .compare td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid #2d2e4a;
+      color: #cbd5e1;
+      vertical-align: top;
+    }
+    .compare tr:last-child td { border-bottom: none; }
+    .compare tr:hover td { background: #1e1f2e; }
+
+    /* Answer blocks */
+    .answer-block {
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .answer-block.strong {
+      background: #0a1f15;
+      border: 1px solid #059669;
+    }
+    .answer-block.weak {
+      background: #1c0e0e;
+      border: 1px solid #dc2626;
+    }
+    .answer-block .ab-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+    .answer-block.strong .ab-label { color: #34d399; }
+    .answer-block.weak .ab-label { color: #f87171; }
+    .answer-block p { font-size: 0.9rem; color: #cbd5e1; margin-bottom: 0.5rem; }
+
+    /* Rubric */
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid #2d2e4a;
+      align-items: flex-start;
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #6366f1;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .rubric-item .rubric-text { color: #cbd5e1; font-size: 0.9rem; }
+    .rubric-item .rubric-text strong { color: #e2e8f0; }
+
+    /* Follow-up */
+    .followup-item {
+      background: #13141f;
+      border: 1px solid #2d2e4a;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-item .fu-q {
+      font-weight: 600;
+      color: #a5b4fc;
+      margin-bottom: 0.5rem;
+      font-size: 0.92rem;
+    }
+    .followup-item .fu-a {
+      color: #94a3b8;
+      font-size: 0.88rem;
+      line-height: 1.65;
+    }
+
+    /* Tag pills */
+    .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
+    .tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.25rem 0.7rem;
+      border-radius: 999px;
+      background: #1e1f35;
+      color: #818cf8;
+      border: 1px solid #3730a3;
+    }
+
+    /* Nav */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #2d2e4a;
+      font-size: 0.85rem;
+    }
+    .nav a { color: #6366f1; text-decoration: none; }
+    .nav a:hover { text-decoration: underline; }
+
+    ul.bullets { list-style: disc; padding-left: 1.4rem; }
+    ul.bullets li { color: #cbd5e1; margin-bottom: 0.4rem; font-size: 0.92rem; }
+    ul.bullets li strong { color: #e2e8f0; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="lesson-header">
+    <div class="day-badge">Day 3 · 메시지 큐 / 비동기 처리 인터뷰</div>
+    <h1>RabbitMQ Exchange 유형과 라우팅 설계</h1>
+    <div class="meta">2026-07-02 · 예상 학습 시간 70분</div>
+    <div class="tags">
+      <span class="tag">RabbitMQ</span>
+      <span class="tag">Exchange</span>
+      <span class="tag">Routing Key</span>
+      <span class="tag">ACK/NACK</span>
+      <span class="tag">Dead Letter Exchange</span>
+    </div>
+  </div>
+
+  <!-- Interview Question -->
+  <div class="interview-q">
+    <div class="q-label">오늘의 면접 질문</div>
+    <div class="q-text">
+      "결제 완료 이벤트를 재고 서비스, 배송 서비스, 알림 서비스가 동시에 구독해서 각자 처리해야 합니다.
+      RabbitMQ로 이 구조를 어떻게 설계하시겠습니까? 만약 알림 서비스 Consumer가 특정 메시지를 처리하다가
+      반복적으로 실패한다면, 그 메시지가 큐를 막지 않도록 어떻게 처리하시겠습니까?"
+    </div>
+  </div>
+
+  <!-- 1. 전제 개념 -->
+  <div class="section">
+    <div class="section-label">전제 개념</div>
+    <h2>Exchange, Queue, Binding — RabbitMQ는 "우편 분류 시스템"이다</h2>
+
+    <p>
+      Kafka는 Producer가 Topic에 메시지를 쓰고 Consumer가 Partition을 직접 읽는 구조였다.
+      RabbitMQ는 이보다 한 단계 더 간접적이다. Producer는 <strong>Queue에 직접 메시지를 보내지 않는다.</strong>
+      대신 <strong>Exchange</strong>라는 우체국 분류 센터로 메시지를 보내고, Exchange가 규칙에 따라
+      메시지를 어떤 Queue로 보낼지 결정한다.
+    </p>
+    <p>
+      이 규칙을 정의하는 것이 <strong>Binding</strong>이다. Queue를 Exchange에 "이런 조건의 메시지를 나에게 보내줘"라고
+      등록해두는 것이 Binding이고, 메시지에 붙는 주소 라벨이 <strong>Routing Key</strong>다.
+      즉 Producer → Exchange(분류) → Binding(규칙) → Queue(수신함) → Consumer 순서로 흐른다.
+    </p>
+
+    <pre><code>Producer ──[routing key: "payment.completed"]──▶ Exchange
+                                                      │
+                              ┌───────────────────────┼───────────────────────┐
+                              ▼                        ▼                       ▼
+                        Queue: inventory         Queue: shipping        Queue: notification
+                       (Consumer: 재고 서비스)   (Consumer: 배송 서비스)  (Consumer: 알림 서비스)</code></pre>
+
+    <div class="callout">
+      <strong>핵심 직관:</strong> Kafka의 Consumer Group은 "같은 메시지를 그룹 내 한 명만 가져간다"가 기본이지만,
+      RabbitMQ에서 여러 서비스가 같은 이벤트를 각자 받으려면 <strong>Queue를 서비스 수만큼 만들고
+      하나의 Exchange에 모두 Binding</strong>해야 한다. Exchange 자체는 메시지를 저장하지 않는다 — 오직 라우팅만 한다.
+      "메시지가 어디에 쌓이는가"는 항상 Queue의 역할이라는 점이 이 구조를 이해하는 첫 번째 열쇠다.
+    </div>
+  </div>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label">왜 면접에서 묻는가</div>
+    <h2>이 질문이 평가하는 것</h2>
+
+    <p>
+      "RabbitMQ Exchange 종류가 뭔가요?"는 암기 확인이지만, "여러 서비스가 같은 이벤트를 구독하게 하려면
+      어떻게 설계하나요?"는 <strong>메시지 배포 패턴을 실제 요구사항에 매핑하는 능력</strong>을 본다.
+    </p>
+
+    <ul class="bullets">
+      <li>
+        <strong>Exchange 유형을 요구사항에 맞게 고르는가:</strong>
+        "여러 서비스가 동일 이벤트를 각자 처리" vs "조건별로 다른 큐로 분기" vs "특정 패턴 매칭"은
+        서로 다른 Exchange 유형이 필요하다. 유형을 외우는 게 아니라 요구사항에서 유형을 도출하는지 본다.
+      </li>
+      <li>
+        <strong>메시지 신뢰성 전달을 이해하는가:</strong>
+        ACK/NACK 없이 Consumer가 죽으면 메시지가 유실될 수 있다. 이 실패 시나리오를 스스로 떠올리고
+        방어 설계(수동 ACK, prefetch)를 아는지가 핵심이다.
+      </li>
+      <li>
+        <strong>독성 메시지(poison message) 격리를 설계하는가:</strong>
+        특정 메시지 하나가 계속 실패할 때, 이 메시지 때문에 큐 전체 처리가 막히지 않도록
+        Dead Letter Exchange(DLX)로 격리하는 설계를 아는지 본다. 이것이 "장애 격리" 평가의 핵심이다.
+      </li>
+    </ul>
+  </div>
+
+  <!-- 3. 실무 연결 -->
+  <div class="section">
+    <div class="section-label">실무 연결</div>
+    <h2>왜 결제 이벤트를 "하나의 메시지, 여러 소비자" 구조로 설계해야 하는가</h2>
+
+    <p>
+      결제가 완료되면 재고 차감, 배송 준비, 알림 발송이라는 세 가지 독립적인 작업이 동시에 일어나야 한다.
+      만약 결제 서비스가 이 세 서비스를 직접 동기 호출(HTTP)한다면, 알림 서비스가 느려지거나 장애가 나면
+      결제 완료 응답 자체가 지연되거나 실패한다. 이것이 Day 1에서 다룬 "장애 전파" 문제다.
+    </p>
+    <p>
+      메시지 큐로 분리하면 결제 서비스는 "결제 완료" 이벤트 하나만 발행하고 끝난다.
+      재고, 배송, 알림은 각자의 속도와 장애 상황에 맞춰 독립적으로 소비한다.
+      문제는 <strong>"하나의 이벤트를 여러 서비스가 각자 온전히 받게" 하는 방법</strong>이며,
+      이것이 Fanout 또는 Topic Exchange가 필요한 이유다.
+    </p>
+
+    <table class="compare">
+      <thead>
+        <tr>
+          <th>Exchange 유형</th>
+          <th>라우팅 방식</th>
+          <th>적합한 상황</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Direct</td>
+          <td>Routing Key가 정확히 일치하는 Queue로만 전달</td>
+          <td>1:1 작업 큐 (예: "order.created" → 주문 처리 큐 하나)</td>
+        </tr>
+        <tr>
+          <td>Fanout</td>
+          <td>Routing Key 무시, Binding된 모든 Queue에 복제 전달</td>
+          <td>결제 완료를 재고/배송/알림 서비스 전부에 방송 (오늘 사례에 최적)</td>
+        </tr>
+        <tr>
+          <td>Topic</td>
+          <td>Routing Key를 와일드카드(*, #) 패턴으로 매칭</td>
+          <td>"payment.*"는 받고 "payment.refund"만 특정 서비스가 추가로 받는 식의 세밀한 분기</td>
+        </tr>
+        <tr>
+          <td>Headers</td>
+          <td>Routing Key 대신 메시지 헤더 속성으로 매칭</td>
+          <td>라우팅 조건이 문자열 패턴이 아니라 여러 속성 조합일 때 (실무에서 드물게 사용)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <strong>흔한 오해:</strong> "RabbitMQ는 Kafka보다 기능이 적은 큐다."
+      실제로는 라우팅 표현력이 Kafka보다 훨씬 유연하다. Kafka는 "파티션 키로 분산"이 거의 유일한 라우팅 수단이지만,
+      RabbitMQ는 Exchange 유형과 Binding 조합으로 복잡한 팬아웃/조건부 라우팅을 브로커가 직접 처리한다.
+      대신 Kafka만큼의 처리량과 로그 재생(replay) 능력은 없다 — 이것이 둘의 핵심 트레이드오프다.
+    </div>
+  </div>
+
+  <!-- 4. ACK/NACK 신뢰성 전달 -->
+  <div class="section">
+    <div class="section-label">핵심 개념</div>
+    <h2>ACK / NACK — Consumer가 "처리 완료"를 알리는 방법</h2>
+
+    <p>
+      Queue가 Consumer에게 메시지를 전달했다고 해서 그 메시지가 안전하게 처리된 것은 아니다.
+      Consumer가 메시지를 받자마자 죽으면 그 메시지는 어떻게 될까? 이 질문에 답하려면
+      <strong>ACK(Acknowledgement)</strong> 개념이 필요하다.
+    </p>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <strong>Auto ACK (위험한 기본값)</strong><br>
+          메시지를 Consumer에게 전달하는 즉시 Queue가 "처리 완료"로 간주하고 메시지를 삭제한다.
+          Consumer가 처리 중 죽으면 그 메시지는 영원히 사라진다 — At-most-once에 가까운 위험한 설정이다.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>Manual ACK (실무 기본)</strong><br>
+          Consumer가 처리를 마친 후 명시적으로 <code>basic.ack</code>를 보내야 Queue가 메시지를 삭제한다.
+          ACK 전에 Consumer 연결이 끊기면 Queue는 그 메시지를 다른 Consumer에게 재전달한다 — At-least-once가 된다.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>NACK / Reject</strong><br>
+          처리 중 예외가 발생하면 Consumer는 <code>basic.nack</code>로 실패를 알린다.
+          이때 <code>requeue=true</code>면 큐 맨 앞이나 뒤로 재전달되고, <code>requeue=false</code>면
+          메시지가 버려지거나(설정에 따라) Dead Letter Exchange로 보내진다.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>Prefetch (QoS) 설정</strong><br>
+          Consumer가 ACK하지 않은 메시지를 몇 개까지 미리 받아둘지 제한하는 값이다.
+          Prefetch를 너무 높게 두면 느린 Consumer 하나가 대량의 메시지를 쥐고 있으면서 처리 못 하는
+          상황(불균형)이 생긴다. 이는 Day 8에서 다룰 Backpressure와 직결된다.
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout good">
+      <strong>면접 팁:</strong> "ACK를 씁니다"로 끝내지 말고, "Auto ACK는 처리 완료 전에 메시지가 삭제될 위험이 있어서
+      Manual ACK로 실제 비즈니스 로직(DB 커밋 등) 완료 후 ACK를 보내도록 설계합니다. 실패 시 NACK로
+      재시도 또는 DLQ로 보냅니다"까지 말하면 신뢰성 전달을 실제로 설계해본 사람으로 보인다.
+    </div>
+  </div>
+
+  <!-- 5. Dead Letter Exchange -->
+  <div class="section">
+    <div class="section-label">핵심 개념</div>
+    <h2>Dead Letter Exchange(DLX) — 독성 메시지가 큐를 막지 않게 격리하는 구조</h2>
+
+    <p>
+      알림 서비스 Consumer가 특정 메시지(예: 잘못된 전화번호 형식) 때문에 매번 예외를 던진다고 하자.
+      NACK 후 <code>requeue=true</code>로 계속 재시도하면 이 메시지는 큐 맨 앞으로 계속 돌아와서
+      뒤에 있는 정상 메시지들의 처리를 막는다. 이것이 <strong>독성 메시지(poison message)</strong> 문제이며,
+      Day 6에서 더 깊게 다룰 DLQ 설계의 출발점이다.
+    </p>
+    <p>
+      해결책은 Queue에 <strong>Dead Letter Exchange</strong>를 지정해두는 것이다.
+      메시지가 (1) NACK되고 requeue=false이거나, (2) TTL이 만료되거나, (3) 큐 길이 제한을 초과하면,
+      RabbitMQ는 그 메시지를 원래 큐가 아니라 지정된 DLX로 자동으로 라우팅한다.
+      DLX에 바인딩된 별도의 Dead Letter Queue가 이 메시지를 받아서 격리 보관한다.
+    </p>
+
+    <pre><code>정상 흐름:
+notification-exchange ──▶ notification-queue ──▶ 알림 Consumer
+
+실패 반복 시 (x-dead-letter-exchange 설정):
+notification-queue ──[NACK, requeue=false]──▶ dlx-exchange ──▶ notification-dlq
+
+notification-dlq에는 실패한 메시지 + 실패 이유(count, reason)가 헤더로 남는다.
+운영자는 별도 알림/대시보드로 이 큐를 모니터링해서 원인을 분석한다.</code></pre>
+
+    <table class="compare">
+      <thead>
+        <tr>
+          <th>DLX로 보내지는 조건</th>
+          <th>실무 의미</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>NACK/Reject + requeue=false</td>
+          <td>Consumer가 "이 메시지는 재시도해도 소용없다"고 명시적으로 판단한 경우</td>
+        </tr>
+        <tr>
+          <td>메시지 TTL 만료</td>
+          <td>일정 시간 안에 처리되지 못한 메시지 (예: 지연 처리 한도 초과)</td>
+        </tr>
+        <tr>
+          <td>Queue 길이 초과</td>
+          <td>Consumer가 못 따라가서 큐가 가득 찬 경우 — 오래된 메시지부터 DLX로 밀려남</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <strong>흔한 오해:</strong> "재시도는 requeue=true로 무한 반복하면 된다."
+      재시도 횟수를 세지 않고 무한 requeue하면, 실패하는 메시지가 큐를 계속 순환하며 CPU와 네트워크를 소모하고
+      정상 메시지 처리 순서를 어지럽힌다. 실무에서는 메시지 헤더에 재시도 횟수를 기록하고,
+      일정 횟수를 넘으면 requeue 대신 DLX로 보내 사람이 확인할 수 있게 격리하는 것이 정석이다
+      (구체적인 횟수·백오프 설계는 Day 7에서 다룬다).
+    </div>
+  </div>
+
+  <!-- 6. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label">답변 사고 순서</div>
+    <h2>면접에서 이 질문을 받았을 때 생각하는 순서</h2>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <strong>배포 패턴을 먼저 정의</strong><br>
+          "여러 서비스가 같은 이벤트를 각자 온전히 받아야 하므로 1:1 큐가 아니라 팬아웃(broadcast) 구조가 필요합니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>Exchange 유형을 선택하고 근거 제시</strong><br>
+          "Fanout Exchange 하나를 두고, 재고/배송/알림 각각의 전용 Queue를 만들어 모두 이 Exchange에 Binding합니다.
+          Routing Key 조건 분기가 필요 없으므로 Fanout이 가장 단순하고 명확합니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>신뢰성 전달 방식을 명시</strong><br>
+          "각 Consumer는 Manual ACK를 사용해서, 비즈니스 로직 처리(DB 반영 등)가 완료된 뒤에만 ACK를 보냅니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>독성 메시지 격리 설계로 연결</strong><br>
+          "알림 서비스가 특정 메시지를 반복 실패하면, 재시도 횟수를 헤더에 기록하고 한도를 넘으면
+          requeue 대신 Dead Letter Exchange로 보내 별도 큐에 격리합니다. 이 큐는 알림을 통해 운영자가 확인합니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>격리 효과를 다른 서비스와 연결해 마무리</strong><br>
+          "알림 서비스만 격리되고 재고/배송 서비스는 각자의 Queue에서 독립적으로 계속 처리되므로,
+          한 서비스의 장애가 다른 서비스의 처리를 막지 않는 구조입니다."
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 7. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label">핵심 답변 예시</div>
+    <h2>실제 면접 답변 예시</h2>
+
+    <div class="callout good">
+      <p>
+        "결제 완료 이벤트를 재고, 배송, 알림 서비스가 각자 온전히 받아야 하므로, 특정 조건으로 분기하는 구조가 아니라
+        방송(broadcast) 구조가 필요합니다. 이를 위해 Fanout Exchange 하나를 두고, 서비스별로 전용 Queue를 만들어
+        모두 이 Exchange에 Binding합니다. 결제 서비스는 Routing Key를 신경 쓸 필요 없이 이벤트를 한 번만 발행하면
+        Fanout이 Binding된 모든 큐에 복제해서 전달합니다.
+      </p>
+      <p>
+        신뢰성을 위해 각 Consumer는 Manual ACK를 사용합니다. 메시지를 받았다고 바로 ACK하지 않고,
+        재고 차감이나 알림 발송 같은 실제 비즈니스 로직이 완료된 뒤에 ACK를 보냅니다.
+        처리 중 예외가 발생하면 NACK를 보내되, 메시지 헤더에 재시도 횟수를 기록해서 관리합니다.
+      </p>
+      <p>
+        알림 서비스가 특정 메시지를 반복해서 실패한다면, 재시도 횟수가 한도(예: 5회)를 넘는 순간 requeue 대신
+        Dead Letter Exchange로 보내도록 Queue에 <code>x-dead-letter-exchange</code>를 설정합니다.
+        이 메시지는 별도의 Dead Letter Queue에 격리되고, 알림 채널을 통해 운영자가 원인을 확인합니다.
+        중요한 것은 이 격리가 알림 서비스에만 국한되고, 재고와 배송 서비스는 각자의 Queue에서
+        독립적으로 계속 처리를 이어간다는 점입니다 — 한 서비스의 장애가 전체 파이프라인을 막지 않습니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- 8. Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label">Senior-Level Follow-up</div>
+    <h2>면접관이 이어서 물어볼 수 있는 질문들</h2>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "Fanout 대신 Topic Exchange를 써야 하는 경우는 언제입니까?"</div>
+      <div class="fu-a">
+        모든 구독자가 항상 모든 메시지를 받아야 한다면 Fanout으로 충분합니다. 하지만 나중에
+        "환불(payment.refund) 이벤트는 알림 서비스만 추가로 받고, 재고/배송은 필요 없다"처럼
+        이벤트 종류별로 구독자가 달라져야 한다면 Topic Exchange가 필요합니다. Routing Key를
+        "payment.completed", "payment.refund"처럼 계층적으로 설계하고, 각 Queue는
+        "payment.#"(전체) 또는 "payment.refund"(특정)처럼 필요한 패턴만 Binding합니다.
+        Fanout으로 시작했다가 세분화 요구가 생기면 Topic으로 전환하는 것이 일반적인 진화 경로입니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "Prefetch 값을 1로 설정하는 것과 100으로 설정하는 것의 차이는 무엇입니까?"</div>
+      <div class="fu-a">
+        Prefetch 1은 Consumer가 메시지 하나를 ACK할 때까지 다음 메시지를 받지 않습니다.
+        처리 순서가 중요하거나 Consumer 처리 시간 편차가 클 때 안전하지만, 매 메시지마다 네트워크 왕복이
+        생겨 처리량이 낮아집니다. Prefetch 100은 한 번에 최대 100개를 미리 받아 처리량은 높아지지만,
+        Consumer가 죽으면 ACK 안 된 최대 100개가 한꺼번에 재전달되어 중복 처리 범위가 커지고,
+        느린 처리 로직이 섞이면 그 Consumer가 오래 메시지를 쥐고 있어 다른 Consumer와 부하가
+        불균형해질 수 있습니다. 처리 시간이 균일하고 처리량이 중요하면 값을 올리고,
+        지연에 민감하거나 처리 시간 편차가 크면 낮게 유지하는 트레이드오프입니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "Dead Letter Queue에 쌓인 메시지는 어떻게 재처리하시겠습니까?"</div>
+      <div class="fu-a">
+        DLQ는 "버리는 곳"이 아니라 "사람이 개입해서 판단하는 곳"입니다. 먼저 실패 원인을 헤더나 로그로
+        분류합니다 — 일시적 장애(다운스트림 서비스 재시작 등)인지, 메시지 자체의 데이터 문제(잘못된 전화번호)인지
+        구분해야 합니다. 일시적 장애라면 원인 해결 후 DLQ의 메시지를 원래 Exchange로 재발행하는
+        재처리 파이프라인을 둡니다. 데이터 문제라면 자동 재처리가 아니라 별도 보정 절차(데이터 수정 후
+        수동 재발행)가 필요합니다. 이 구분 없이 무조건 재발행하면 같은 실패가 반복될 뿐입니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "RabbitMQ Consumer가 다운되어 있는 동안 발행된 메시지는 어떻게 됩니까?"</div>
+      <div class="fu-a">
+        Queue가 살아있는 한(RabbitMQ 브로커가 정상이고 Queue가 durable하게 설정되어 있다면) 메시지는
+        Queue에 그대로 쌓여 있다가 Consumer가 복구되면 순서대로 전달됩니다. 다만 Queue 자체가
+        durable=false이거나 메시지가 persistent로 표시되지 않았다면 브로커 재시작 시 메시지가 유실될 수 있습니다.
+        따라서 신뢰성이 중요한 큐는 Queue를 durable로, 메시지를 persistent(delivery_mode=2)로 설정하는 것이
+        기본입니다. 다만 이는 디스크 쓰기를 수반하므로 처리량과 지연 사이의 트레이드오프가 있다는 점도
+        함께 언급하면 좋습니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label">답변 품질 비교</div>
+    <h2>좋은 답변과 약한 답변의 차이</h2>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변 — 이렇게 말하면 시니어로 보인다</div>
+      <p>"팬아웃이 필요하니 Fanout Exchange와 서비스별 전용 Queue를 두고, Manual ACK로 처리 완료 후 확인하며, 반복 실패 메시지는 재시도 횟수 한도를 넘으면 DLX로 격리해서 한 서비스의 장애가 다른 서비스 처리를 막지 않게 합니다."</p>
+      <p><em>→ 배포 패턴 정의 + Exchange 선택 근거 + 신뢰성 전달(ACK) + 독성 메시지 격리(DLX) + 장애 격리 효과까지 연결</em></p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변 — 이렇게 말하면 주니어로 보인다</div>
+      <p>"큐를 하나 만들고 세 서비스가 다 거기서 가져가면 됩니다."</p>
+      <p><em>→ RabbitMQ에서 하나의 Queue는 기본적으로 메시지를 한 Consumer에게만 전달한다는 사실을 모름(Kafka의 Consumer Group과 혼동). 팬아웃 개념이 없음.</em></p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변 — 실패 처리 누락</div>
+      <p>"Auto ACK로 두면 편하니까 그렇게 씁니다. 실패하면 그냥 로그만 남기겠습니다."</p>
+      <p><em>→ 처리 완료 전에 메시지가 삭제될 위험을 모름. 실패 메시지가 큐를 막을 수 있다는 것과 격리 필요성을 인지하지 못함.</em></p>
+    </div>
+  </div>
+
+  <!-- 10. 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label">자기 점검 Rubric</div>
+    <h2>내 답변을 이 기준으로 점검해보자</h2>
+
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>배포 패턴 인지:</strong>
+        RabbitMQ의 Queue는 기본적으로 1개 Consumer에게만 전달되며, 여러 서비스가 각자 받으려면
+        서비스별 Queue + Fanout(또는 Topic) Exchange가 필요하다는 것을 설명했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>Exchange 유형 선택 근거:</strong>
+        Direct/Fanout/Topic/Headers 중 왜 그 유형을 골랐는지 요구사항과 연결해서 설명했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>ACK 신뢰성:</strong>
+        Manual ACK를 처리 완료 시점에 보내야 하는 이유(Auto ACK의 유실 위험)를 설명했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>독성 메시지 격리:</strong>
+        반복 실패 메시지가 큐 전체를 막지 않도록 재시도 한도와 DLX 격리를 설계했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>장애 격리 효과 연결:</strong>
+        한 서비스(알림)의 장애가 다른 서비스(재고, 배송) 처리에 영향을 주지 않는다는 결론까지 이어졌는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>운영 관점:</strong>
+        DLQ는 버리는 곳이 아니라 사람이 원인을 분석하고 재처리를 판단하는 곳이라는 관점을 언급했는가?
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. 오늘 배운 것 -->
+  <div class="section">
+    <div class="section-label">오늘 배운 것 요약</div>
+    <h2>Day 3 핵심 정리</h2>
+    <ul class="bullets">
+      <li>RabbitMQ는 Producer → <strong>Exchange</strong>(라우팅 규칙) → <strong>Binding</strong> → <strong>Queue</strong>(저장) → Consumer 순서로 동작하며, Exchange는 메시지를 저장하지 않고 라우팅만 한다.</li>
+      <li>여러 서비스가 같은 이벤트를 각자 받아야 하면 <strong>Fanout Exchange</strong> + 서비스별 전용 Queue 구조가 필요하다 — 하나의 Queue를 공유하면 한 Consumer만 메시지를 가져간다.</li>
+      <li>Exchange 유형(Direct/Fanout/Topic/Headers)은 요구사항의 라우팅 조건(1:1, 방송, 패턴 매칭, 속성 매칭)에서 도출해야 한다.</li>
+      <li><strong>Manual ACK</strong>는 비즈니스 로직 완료 후 보내야 하며, Auto ACK는 처리 완료 전 메시지가 삭제될 위험이 있다.</li>
+      <li>반복 실패하는 <strong>독성 메시지</strong>는 무한 requeue하지 말고 재시도 횟수 한도 후 <strong>Dead Letter Exchange</strong>로 격리해야, 큐 전체 처리가 막히지 않고 장애가 격리된다.</li>
+      <li>DLQ는 재처리를 위한 중간 저장소이며, 실패 원인(일시적 장애 vs 데이터 문제)을 구분해서 재처리 방식을 다르게 판단해야 한다.</li>
+    </ul>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 4: AWS SQS/SNS 패턴과 클라우드 비동기 설계 →</span>
+  </div>
+
+</div>
+</body>
+</html>
