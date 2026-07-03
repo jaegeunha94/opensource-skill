@@ -7,12 +7,12 @@
 | 1 | 2026-06-30 | 장애 대응과 관측성 설계 프레임워크 | [0001-observability-incident-response-framework.html](lessons/0001-observability-incident-response-framework.html) |
 | 2 | 2026-07-01 | 구조화 로깅과 로그 설계 전략 | [0002-structured-logging-log-design-strategy.html](lessons/0002-structured-logging-log-design-strategy.html) |
 | 3 | 2026-07-02 | 메트릭과 알림 설계 | [0003-metrics-and-alerting-design.html](lessons/0003-metrics-and-alerting-design.html) |
+| 4 | 2026-07-03 | 분산 트레이싱 심화 | [0004-distributed-tracing-deep-dive.html](lessons/0004-distributed-tracing-deep-dive.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | 분산 트레이싱 심화 | Trace ID 전파, span 설계, 병목 분석, sampling |
 | 5 | 장애 원인 분석 (RCA) | 5 Whys, 타임라인 재구성, 원인 vs 증상 구분 |
 | 6 | 대시보드 설계 원칙 | 역할별 대시보드, Golden Signal, 지표 선택 |
 | 7 | SLO / SLI / SLA 와 Error Budget | SLO 정의, Error Budget 소진율, Burn Rate 알림 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — Day 4 (분산 트레이싱 심화) 예정.
+**Day 4 완료** — Day 5 (장애 원인 분석, RCA) 예정.
 
 ## 습득한 핵심 개념
 
@@ -36,7 +36,9 @@
 - [x] RED/USE 메트릭 방법론과 Golden Signals (Day 3)
 - [x] Percentile(p50/p95/p99)과 평균의 함정 (Day 3)
 - [x] 알림 임계값 설계와 False Positive/Negative 트레이드오프 (Day 3)
-- [ ] 분산 트레이싱 전파 원리 (예정 Day 4)
+- [x] Trace/Span 구조와 Context Propagation (Day 4)
+- [x] Critical Path 기반 병목 분석과 Exemplar 연결 (Day 4)
+- [x] Head-based/Tail-based Sampling 트레이드오프 (Day 4)
 - [ ] RCA 5 Whys 적용 (예정 Day 5)
 - [ ] Error Budget 소진율 알림 (예정 Day 7)
 - [ ] 비난 없는 postmortem 작성 (예정 Day 8)
