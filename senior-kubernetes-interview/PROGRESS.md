@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-03 | Kubernetes 클러스터 운영과 장애 대응 프레임워크 | [0001-cluster-architecture-incident-response-framework.html](lessons/0001-cluster-architecture-incident-response-framework.html) |
+| 2 | 2026-07-03 | Pod 설계, Probe, Resource Request/Limit | [0002-pod-probe-resource-request-limit.html](lessons/0002-pod-probe-resource-request-limit.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | Pod 설계, Probe, Resource Request/Limit | QoS Class, liveness/readiness/startup probe, request vs limit, In-place Pod Resize(GA), OOMKilled 진단 |
 | 3 | Deployment Rollout/Rollback과 배포 안정성 | RollingUpdate 파라미터, ReplicaSet 세대 관리, 롤백 판단, PodDisruptionBudget |
 | 4 | StatefulSet과 상태 유지 워크로드 설계 | Ordinal index, Headless Service, PVC 템플릿, 순서 보장의 함정, StatefulSet vs Deployment 선택 기준 |
 | 5 | DaemonSet과 노드 레벨 운영 | 노드당 1개 보장, 업그레이드 롤아웃, 로그/모니터링 에이전트 배치 패턴, 리소스 경합 |
@@ -31,7 +31,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — Day 2: Pod 설계, Probe, Resource Request/Limit로 진행 예정.
+**Day 2 완료** — Day 3: Deployment Rollout/Rollback과 배포 안정성으로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -40,7 +40,11 @@
 - [x] 선언적 모델과 reconciliation loop, watch 메커니즘 (Day 1)
 - [x] 클러스터 장애 대응 프레임워크(범위 판단 → 컨트롤 플레인 상태 → 노드 상태 → 워크로드 레벨 → 네트워크 → 완화/롤백 → 재발 방지) (Day 1)
 - [x] etcd가 단일 진실 소스(SSOT)인 이유와 쿼럼/백업의 중요성 (Day 1)
-- [ ] Pod QoS Class, Probe, Request/Limit, In-place Resize (예정 Day 2)
+- [x] Request(스케줄링 예약) vs Limit(커널 강제)의 역할 차이, CPU 쓰로틀링 vs 메모리 OOM kill 비대칭성 (Day 2)
+- [x] QoS Class(Guaranteed/Burstable/BestEffort)와 노드 메모리 압박 시 축출 우선순위 (Day 2)
+- [x] liveness/readiness/startup probe의 실패 결과 차이와 설계 실수 패턴 (Day 2)
+- [x] OOMKilled 진단(Last State 확인)과 일반 크래시와의 구분 (Day 2)
+- [x] In-place Pod Resize GA(v1.35)와 resizePolicy·VPA InPlaceOrRecreate 베타의 한계 (Day 2)
 - [ ] Deployment Rollout/Rollback, PodDisruptionBudget (예정 Day 3)
 - [ ] StatefulSet 설계 (예정 Day 4)
 - [ ] DaemonSet 운영 (예정 Day 5)

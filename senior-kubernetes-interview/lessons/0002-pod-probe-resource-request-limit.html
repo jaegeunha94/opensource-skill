@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — Pod 설계, Probe, Resource Request/Limit</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #222538;
+      --border: #2e3150;
+      --accent: #7c83ff;
+      --accent2: #50e3c2;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #e2e4f0;
+      --text2: #9da3c8;
+      --text3: #6b7099;
+      --good: #50e3c2;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card { border-left: 4px solid var(--accent); }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card { border-left: 4px solid var(--accent2); background: #1a2430; }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card { border-left: 4px solid var(--warn); background: #1f1d10; }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card { border-left: 4px solid #a07bff; background: #1a1828; }
+    .answer-card .card-label { color: #a07bff; }
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.2rem; }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box { background: #0f2420; border: 1px solid var(--good); border-radius: 8px; padding: 1.1rem 1.3rem; }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box { background: #28100f; border: 1px solid var(--weak); border-radius: 8px; padding: 1.1rem 1.3rem; }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1.1rem 1.4rem; margin-bottom: 0.9rem; }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table { width: 100%; border-collapse: collapse; font-size: 0.91rem; margin-top: 0.5rem; }
+    .rubric-table th { background: var(--surface2); color: var(--text2); font-weight: 700; padding: 0.6rem 0.8rem; text-align: left; border: 1px solid var(--border); }
+    .rubric-table td { padding: 0.6rem 0.8rem; border: 1px solid var(--border); vertical-align: top; }
+    .rubric-table tr:nth-child(odd) td { background: #15182a; }
+    .rubric-table tr:nth-child(even) td { background: #1a1d2e; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .pillar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.9rem; margin-bottom: 1.2rem; }
+    .pillar-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; }
+    .pillar-name { font-weight: 700; color: var(--accent); margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .pillar-key { font-size: 0.83rem; color: var(--text2); }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li { counter-increment: step; position: relative; padding-left: 2.2rem; margin-bottom: 0.7rem; }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute; left: 0; top: 0.1rem;
+      background: var(--accent); color: #fff; font-weight: 700; font-size: 0.78rem;
+      width: 1.5rem; height: 1.5rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .misconception { background: #1f1520; border: 1px solid #6e3880; border-radius: 8px; padding: 1rem 1.3rem; margin-bottom: 0.9rem; }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 0.88rem; }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag { display: inline-block; background: var(--surface2); color: var(--text2); font-size: 0.75rem; padding: 0.2em 0.6em; border-radius: 4px; margin: 0.15rem 0.15rem 0.15rem 0; }
+    .source-note { font-size: 0.82rem; color: var(--text3); margin-top: 0.4rem; }
+    table.qos-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 1rem 0 1.3rem; }
+    table.qos-table th { background: var(--surface2); color: var(--accent2); text-align: left; padding: 0.6rem 0.9rem; border: 1px solid var(--border); }
+    table.qos-table td { padding: 0.6rem 0.9rem; border: 1px solid var(--border); vertical-align: top; }
+    table.qos-table tr:nth-child(even) td { background: var(--surface); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 2 · Kubernetes 인터뷰 대비</div>
+    <h1>Pod 설계, Probe, Resource Request/Limit</h1>
+    <p class="subtitle">
+      QoS Class · liveness/readiness/startup probe · request vs limit · OOMKilled 진단 · In-place Pod Resize(GA, 2026-07 기준 v1.36 반영)
+    </p>
+  </header>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "프로덕션에서 특정 서비스의 Pod가 주기적으로 OOMKilled 되고 있다는 리포트를 받았습니다. 어떻게 진단하고, request/limit을 어떻게 재설계하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"liveness probe와 readiness probe의 차이는 무엇이고, 두 probe를 잘못 설정하면 각각 어떤 장애가 발생합니까?"</li>
+        <li>"QoS Class(Guaranteed/Burstable/BestEffort)가 무엇이고, 노드에 메모리 압박이 오면 어떤 순서로 Pod가 축출됩니까?"</li>
+        <li>"CPU limit을 설정하는 것이 항상 좋은 선택인가요? 부작용이 있다면 무엇입니까?"</li>
+        <li>"startup probe는 왜 필요합니까? liveness probe만으로는 왜 부족합니까?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">QoS Class</span>
+      <span class="tag">liveness/readiness/startup probe</span>
+      <span class="tag">request vs limit</span>
+      <span class="tag">OOMKilled</span>
+      <span class="tag">CPU Throttling</span>
+      <span class="tag">In-place Pod Resize</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Request와 Limit은 서로 다른 두 가지 일을 한다</h3>
+    <p>
+      많은 사람이 request와 limit을 "최소/최대"라는 숫자 차이로만 이해하지만, 실제로는 <strong>완전히 다른 컴포넌트가, 다른 목적으로 사용한다.</strong>
+    </p>
+    <div class="pillar-grid">
+      <div class="pillar-box">
+        <div class="pillar-name">Request — 스케줄러의 약속</div>
+        <div class="pillar-key">kube-scheduler가 Pod를 어느 노드에 배치할지 결정할 때 쓰는 숫자다. 노드의 allocatable 자원에서 이미 배치된 Pod들의 request 합을 뺀 나머지가 남아 있어야 새 Pod를 배치할 수 있다. 즉 request는 "이만큼은 반드시 확보해준다"는 예약이다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">Limit — 커널의 강제</div>
+        <div class="pillar-key">kubelet이 컨테이너를 만들 때 cgroup에 설정하는 상한이다. CPU limit은 CFS quota로 구현되어 초과분을 쓰로틀링(지연)시키고, 메모리 limit은 cgroup 하드 리밋이라 초과하면 커널 OOM killer가 즉시 컨테이너 프로세스를 죽인다. 즉 limit은 "이 이상은 절대 못 쓴다"는 물리적 강제다.</div>
+      </div>
+    </div>
+    <p>
+      이 차이가 중요한 이유는, <strong>CPU와 메모리는 limit을 초과했을 때 결과가 완전히 다르기 때문</strong>이다. CPU는 초과해도 "느려질 뿐" 죽지 않는다(throttling). 메모리는 초과하면 즉시 프로세스가 종료된다(OOM kill). 이 비대칭성을 모르면 "CPU와 메모리 둘 다 넉넉하게 limit을 걸어두면 안전하다"는 잘못된 전략을 세우게 된다.
+    </p>
+
+    <h3>QoS Class — 노드가 자원이 부족할 때 "누구부터 죽일지"의 기준</h3>
+    <p>
+      Kubernetes는 Pod의 request/limit 설정 방식에 따라 자동으로 QoS(Quality of Service) 클래스를 부여한다. 이 클래스는 노드가 메모리 압박(MemoryPressure) 상태가 됐을 때 <strong>어떤 Pod를 먼저 축출(evict)할지 결정하는 우선순위</strong>가 된다.
+    </p>
+    <table class="qos-table">
+      <tr><th>QoS Class</th><th>조건</th><th>축출 우선순위</th></tr>
+      <tr><td><strong>Guaranteed</strong></td><td>모든 컨테이너의 CPU/메모리 request == limit</td><td>가장 나중에 축출 (가장 안전)</td></tr>
+      <tr><td><strong>Burstable</strong></td><td>request는 설정했지만 request &lt; limit (또는 limit 미설정)</td><td>request를 초과해서 쓰고 있는 순서대로 축출</td></tr>
+      <tr><td><strong>BestEffort</strong></td><td>request/limit을 아예 설정하지 않음</td><td>가장 먼저 축출</td></tr>
+    </table>
+    <p>
+      여기서 중요한 포인트는, QoS는 "따로 설정하는 필드가 없다"는 것이다. request/limit을 어떻게 쓰느냐에 따라 <strong>Kubernetes가 자동으로 계산</strong>한다. 그래서 "우리 서비스는 Guaranteed로 만들겠다"는 목표가 있다면 request와 limit을 정확히 같은 값으로 맞춰야 한다.
+    </p>
+
+    <h3>세 가지 Probe — 목적이 다르면 실패 시 결과도 다르다</h3>
+    <div class="pillar-grid">
+      <div class="pillar-box">
+        <div class="pillar-name">livenessProbe</div>
+        <div class="pillar-key">"이 프로세스가 살아있는가"를 확인한다. 실패하면 kubelet이 컨테이너를 <strong>재시작</strong>한다. 데드락이나 행(hang) 상태처럼 프로세스는 떠 있지만 응답 못 하는 상황을 복구하기 위한 것이다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">readinessProbe</div>
+        <div class="pillar-key">"지금 트래픽을 받을 준비가 됐는가"를 확인한다. 실패하면 재시작하지 않고, 대신 Service의 Endpoint 목록에서 <strong>제외</strong>시켜 트래픽만 끊는다. 일시적으로 부하가 높거나 의존 서비스가 잠깐 불안정한 상황에 쓴다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">startupProbe</div>
+        <div class="pillar-key">"초기 구동이 끝났는가"를 확인한다. 이 probe가 성공하기 전까지는 liveness/readiness probe가 아예 실행되지 않는다. 구동이 느린 애플리케이션(JVM 워밍업 등)이 아직 준비 중인데 liveness probe에 걸려 강제 재시작당하는 것을 막는다.</div>
+      </div>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">2026-07 기준 확인 사항 — In-place Pod Resize</div>
+      <p>
+        v1.33에서 베타로 도입된 In-place Pod Resize가 <strong>v1.35에서 GA(안정화)</strong>되었다. 과거에는 request/limit을 바꾸려면 반드시 Pod를 재생성해야 했지만, 이제는 <code>resizePolicy</code>가 <code>NotRequired</code>로 설정된 리소스(기본적으로 CPU)는 컨테이너 재시작 없이 값을 바꿀 수 있다. 다만 메모리는 기본적으로 <code>RestartContainer</code> 정책이 적용되는 경우가 많다 — 실행 중인 프로세스의 메모리 상한을 줄이면 즉시 위반 상태가 될 수 있기 때문이다. VPA의 <code>InPlaceOrRecreate</code> 업데이트 모드는 아직 베타 단계로, 완전 자동화된 통합은 계속 발전 중이다.
+      </p>
+      <p class="source-note">https://kubernetes.io/blog/2025/12/19/kubernetes-v1-35-in-place-pod-resize-ga/</p>
+    </div>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>원리 기반 진단력:</strong> "메모리를 늘려주면 됩니다"처럼 증상 대응이 아니라, request/limit/QoS/probe가 서로 어떻게 상호작용해서 이 증상을 만들었는지 인과관계를 설명할 수 있는가.</li>
+        <li><strong>안정성-비용 trade-off 판단:</strong> 모든 Pod를 Guaranteed로 만들면 안전하지만 자원 활용률이 떨어지고 비용이 오른다. 언제 Burstable로 오버커밋을 허용할지 판단 기준이 있는가.</li>
+        <li><strong>probe 설계에 대한 이해:</strong> liveness와 readiness를 같은 엔드포인트로 잘못 설정해서 장애를 증폭시킨 경험이 있거나, 그런 실수를 사전에 피할 수 있는가.</li>
+        <li><strong>최신 기능 인지:</strong> In-place Pod Resize처럼 최근 GA된 기능이 기존 운영 방식(재배포를 통한 리소스 변경)을 어떻게 바꾸는지 알고 있는가.</li>
+      </ul>
+    </div>
+
+    <p>
+      이 주제가 시니어 면접에서 반복적으로 나오는 이유는, <strong>request/limit 설계 하나가 배포 안정성, 노드 활용률, 장애 전파 범위를 동시에 좌우하기 때문</strong>이다. 잘못된 request/limit 설계는 당장 장애를 안 내다가, 트래픽이 몰리는 순간 연쇄적으로 터진다. 이 지연된 실패 패턴을 경험해본 사람만 구체적으로 답변할 수 있다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 1 — 평균 기준으로 잡은 메모리 limit이 스파이크에 터진 사례</div>
+      <p>
+        평상시 메모리 사용량 200MB를 기준으로 limit을 256MB로 설정했는데, 배치 작업이나 캐시 워밍업 시점에 순간적으로 400MB까지 튀면서 주기적으로 OOMKilled(exit code 137)가 발생한 사례.
+      </p>
+      <p>
+        문제는 이 Pod가 <strong>CrashLoopBackOff처럼 보이지만 원인이 완전히 다르다</strong>는 점이다. 애플리케이션 버그로 인한 크래시는 로그에 예외가 남지만, OOM kill은 커널이 SIGKILL로 즉시 죽이기 때문에 애플리케이션 로그에 아무 단서도 남지 않는다. <code>kubectl describe pod</code>의 <code>Last State: Terminated, Reason: OOMKilled</code>를 확인하지 않으면 애플리케이션 코드만 뒤지며 시간을 낭비하게 된다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 2 — limit 없는 BestEffort Pod가 이웃 Pod를 몰아낸 사례</div>
+      <p>
+        내부 배치용 Job에 request/limit을 아예 설정하지 않아 BestEffort로 떠 있었는데, 이 Job이 메모리를 계속 늘려 쓰면서 노드 전체가 MemoryPressure 상태가 된 사례. Kubernetes는 QoS 우선순위대로 BestEffort부터 축출하려 하지만, <strong>축출이 완료되기 전까지의 짧은 시간 동안 같은 노드의 다른 정상 서비스도 응답 지연을 겪었다.</strong>
+      </p>
+      <p>
+        이 사례로 배우는 것은 "limit을 안 걸면 내 Pod만 위험하다"가 아니라 <strong>"limit을 안 걸면 같은 노드의 다른 팀 서비스까지 위험해진다"</strong>는 사실이다. 이후 조직 차원에서 모든 네임스페이스에 LimitRange로 기본 request/limit을 강제하는 정책을 도입하게 됐다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 3 — readiness probe가 DB 상태까지 검사하다 장애를 증폭시킨 사례</div>
+      <p>
+        readinessProbe 엔드포인트가 내부적으로 데이터베이스 연결까지 확인하도록 구현되어 있었는데, DB가 일시적으로 느려지자 <strong>정상 동작 중인 애플리케이션 Pod들이 전부 동시에 Not Ready로 전환</strong>되어 Service에서 빠져버린 사례. 트래픽을 받을 Pod가 하나도 남지 않아 전면 장애로 번졌다.
+      </p>
+      <p>
+        DB 문제는 일부 요청만 실패시키고 넘어갈 수도 있었는데, readiness probe 설계 실수로 "일부 저하"가 "전면 중단"으로 증폭된 사례다. 이후 readiness probe는 프로세스 자체의 준비 상태만 보고, DB 연결 상태는 애플리케이션 레벨의 circuit breaker와 메트릭으로 별도 관리하도록 바꿨다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>"Pod가 OOMKilled 됩니다"라는 질문을 받으면 아래 순서로 답하라. 증상 확인 → 원인 분류 → 재설계 → 재발 방지 순서다.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>증상을 정확히 확인한다</strong>
+        <p><code>kubectl describe pod</code>로 <code>Last State: Terminated, Reason: OOMKilled</code>인지 먼저 확인한다. 애플리케이션 예외로 인한 크래시와 커널 OOM kill은 겉보기엔 둘 다 "재시작 반복"으로 보이지만 원인 영역이 다르다.</p>
+      </li>
+      <li>
+        <strong>메모리 사용 패턴을 본다</strong>
+        <p>평균이 아니라 피크(peak) 사용량을 본다. 모니터링에서 limit에 근접하거나 초과하는 스파이크가 주기적/이벤트성으로 나타나는지 확인한다. 배포 직후, 배치 작업 시점, 트래픽 몰리는 시간대와 겹치는지 본다.</p>
+      </li>
+      <li>
+        <strong>request/limit과 실제 QoS Class를 확인한다</strong>
+        <p>현재 request/limit이 어떻게 설정돼 있고, 그 결과 QoS Class가 무엇인지 본다. Guaranteed인데도 OOMKilled라면 limit 자체가 너무 낮은 것이고, Burstable/BestEffort라면 노드 전체 메모리 압박으로 인한 축출까지 함께 고려한다.</p>
+      </li>
+      <li>
+        <strong>재설계 방향을 정한다</strong>
+        <p>피크치 기준으로 limit을 올리거나, 메모리 누수가 의심되면 애플리케이션 코드를 함께 본다. 지연에 민감한 서비스라면 request==limit인 Guaranteed로, 배치성 워크로드라면 Burstable로 비용 효율을 택한다.</p>
+      </li>
+      <li>
+        <strong>probe 설정도 함께 점검한다</strong>
+        <p>OOM kill 이후 재시작 과정에서 초기 구동이 느리다면 startupProbe가 있는지 확인한다. 없으면 재시작 직후 liveness probe에 또 걸려 반복 재시작되는 이중 장애가 생길 수 있다.</p>
+      </li>
+      <li>
+        <strong>재발 방지책을 제시한다</strong>
+        <p>LimitRange/ResourceQuota로 네임스페이스 차원의 기본값을 강제하고, VPA(추천 모드)로 실제 사용량 기반 request/limit 값을 주기적으로 재산정하는 프로세스를 제안한다.</p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — "Pod가 주기적으로 OOMKilled 됩니다"</div>
+      <p>
+        "먼저 정말 OOM kill인지 확인합니다. <code>kubectl describe pod</code>에서 <code>Last State</code>가 <code>OOMKilled</code>로 나오는지 봅니다. 이게 애플리케이션 예외로 인한 크래시와 다른 점은, 커널이 SIGKILL로 즉시 종료시키기 때문에 애플리케이션 로그에는 단서가 안 남는다는 겁니다. 그래서 애플리케이션 로그만 보고 있으면 원인을 못 찾습니다.
+      </p>
+      <p>
+        그다음 메모리 사용량을 시계열로 봅니다. 평균이 limit보다 한참 낮아도, 특정 시점에 스파이크가 튀는 패턴이 있는지가 핵심입니다. 트래픽 몰리는 시간대나 배치 작업 스케줄과 겹치는지 확인합니다.
+      </p>
+      <p>
+        현재 request/limit 설정과 QoS Class도 함께 봅니다. Guaranteed로 설정했는데도 OOMKilled라면 순수하게 limit 값 자체가 실제 필요량보다 낮은 것이고, 재설계가 필요합니다. Burstable이나 BestEffort라면 이 Pod만의 문제가 아니라 노드 전체 메모리 압박으로 인한 축출까지 함께 고려해야 합니다.
+      </p>
+      <p>
+        재설계는 워크로드 특성에 따라 다르게 갑니다. 지연에 민감한 사용자向 서비스라면 request와 limit을 동일하게 맞춰 Guaranteed QoS로 만들어 안정성을 최우선으로 합니다. 반대로 배치성 워크로드라면 Burstable로 두고 오버커밋을 허용해 노드 활용률과 비용 효율을 높입니다.
+      </p>
+      <p>
+        마지막으로 재발 방지를 위해 네임스페이스에 LimitRange로 기본 request/limit을 강제하고, VPA를 추천(Off) 모드로 붙여서 실제 사용량 기반으로 값을 주기적으로 재산정하는 프로세스를 제안합니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① OOM kill과 일반 크래시를 구분하는 진단 근거를 명시 ② 평균이 아니라 피크 기준으로 접근 ③ QoS Class를 통해 "이 Pod만의 문제"와 "노드 전체 문제"를 구분 ④ 워크로드 특성별로 다른 전략(Guaranteed vs Burstable)을 제시 ⑤ 재발 방지를 조직적 정책(LimitRange, VPA)까지 연결
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "CPU limit을 설정하는 것이 항상 좋은 선택인가요?"</div>
+      <div class="followup-a">
+        <p>아닙니다. CPU limit은 CFS(Completely Fair Scheduler) quota로 구현되는데, 이는 일정 주기(기본 100ms) 안에서 할당된 CPU 시간을 다 쓰면 그 주기가 끝날 때까지 프로세스를 강제로 쓰로틀링합니다. 문제는 <strong>노드에 CPU 여유가 충분히 있어도 쓰로틀링이 걸린다</strong>는 점입니다. 짧은 순간 CPU를 집중적으로 쓰는 요청(예: JIT 컴파일, GC, JSON 직렬화 버스트)이 지연시간 스파이크를 겪게 됩니다.</p>
+        <p>그래서 지연시간에 민감한 서비스는 CPU request만 걸고 limit은 생략하거나 매우 넉넉하게 주는 전략을 쓰기도 합니다. 다만 이 경우 노드의 CPU를 한 Pod가 과점할 위험이 있으므로, 워크로드 성격과 클러스터의 여유 용량을 함께 고려해서 결정해야 합니다. "무조건 limit을 걸어야 안전하다"는 생각 자체가 이 트레이드오프를 놓친 겁니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "livenessProbe와 readinessProbe를 같은 엔드포인트로 설정하면 어떤 문제가 생기나요?"</div>
+      <div class="followup-a">
+        <p>둘의 실패 결과가 다르다는 걸 무시하는 설정이라 위험합니다. 만약 헬스체크 엔드포인트가 다운스트림 DB 상태까지 검사하도록 만들어져 있는데, 이걸 liveness probe로도 쓴다면 DB가 잠깐 느려지기만 해도 <strong>정상적으로 동작 중인 애플리케이션 프로세스가 강제로 재시작</strong>됩니다. 재시작한다고 DB 문제가 풀리는 것도 아니므로, 오히려 재시작 폭주로 부하가 더 늘어나는 악순환이 생길 수 있습니다.</p>
+        <p>원칙은 liveness probe는 프로세스 자체의 생존 여부만(외부 의존성 없이) 확인하고, readiness probe는 트래픽을 받을 준비(의존성 포함 가능)를 확인하는 것으로 분리하는 것입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "startupProbe 없이 liveness probe만 쓰면 왜 문제가 되나요?"</div>
+      <div class="followup-a">
+        <p>구동이 느린 애플리케이션(예: 대형 캐시를 메모리에 로드하는 JVM 서비스)은 liveness probe의 <code>initialDelaySeconds</code>를 넉넉히 잡지 않으면, 아직 초기화 중인데 liveness probe가 실패로 판단해 <strong>재시작을 걸어버립니다.</strong> 재시작해도 다시 같은 시간이 걸려 초기화하다가 또 liveness probe에 걸리는 무한 재시작 루프에 빠질 수 있습니다.</p>
+        <p>startupProbe는 이 문제를 "초기 구동 단계"와 "정상 운영 단계"를 분리해서 해결합니다. startupProbe가 성공할 때까지는 liveness/readiness probe가 아예 평가되지 않으므로, 구동 시간이 길어도 안전하게 기다려줄 수 있습니다. 그 이후에는 liveness probe의 타임아웃을 짧게 잡아 실제 행(hang) 상태를 빠르게 감지할 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "In-place Pod Resize가 GA인데, 이게 HPA/VPA 운영을 어떻게 바꾸나요?"</div>
+      <div class="followup-a">
+        <p>과거에는 VPA가 request/limit을 조정하려면 Pod를 삭제하고 재생성해야 했기 때문에, 트래픽이 많은 서비스에서는 VPA를 "추천만 하고 자동 적용은 안 하는" 모드로 제한적으로 쓰는 경우가 많았습니다. In-place Resize가 GA되면서 CPU 같은 <code>NotRequired</code> 리소스는 재시작 없이 값을 바꿀 수 있게 됐습니다.</p>
+        <p>다만 아직 완전히 자동화되지는 않았습니다. VPA의 <code>InPlaceOrRecreate</code> 모드가 베타 단계이고, 메모리를 줄이는 리사이즈는 여전히 컨테이너 재시작이 필요한 경우가 많습니다. 그래서 "이제 VPA를 무조건 Auto 모드로 켜도 안전하다"고 말하면 최신 상태를 과대평가한 것이고, "각 리소스 타입별로 어떤 resizePolicy가 적용되는지, 어떤 경우 여전히 재시작이 필요한지"까지 구분해서 답해야 시니어급 답변입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "request를 limit보다 낮게 주는 오버커밋 전략은 언제 써야 하나요?"</div>
+      <div class="followup-a">
+        <p>노드의 물리적 자원보다 더 많은 request 합계를 배치해서 활용률을 높이는 전략인데, 실제 사용량이 request보다 낮은 시간대가 많은 워크로드(예: 사용량 편차가 큰 배치, 개발/스테이징 환경)에 적합합니다. 반대로 지연시간 SLA가 타이트한 프로덕션 핵심 서비스에는 위험합니다 — 여러 Pod가 동시에 request를 초과해서 쓰면 노드 전체가 압박을 받고, Burstable Pod들이 순서대로 축출되기 시작합니다.</p>
+        <p>실무에서는 워크로드를 "critical(Guaranteed)"과 "flexible(Burstable, 오버커밋 허용)"로 명확히 분류하고, 같은 노드 풀에 섞이지 않도록 taint/toleration이나 별도 노드 그룹으로 분리하는 경우가 많습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>OOM kill과 일반 크래시를 <code>Last State: OOMKilled</code>로 명확히 구분해서 진단한다</li>
+          <li>평균이 아니라 피크 사용량 기준으로 원인을 분석한다</li>
+          <li>QoS Class를 근거로 "이 Pod만의 문제"와 "노드 전체 압박"을 구분한다</li>
+          <li>워크로드 특성에 따라 Guaranteed와 Burstable을 다르게 선택하는 기준을 제시한다</li>
+          <li>liveness/readiness/startup probe의 역할을 명확히 구분해서 설계한다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"메모리 limit을 늘려주면 됩니다"로 바로 결론 낸다 (근본 원인 분석 없음)</li>
+          <li>request와 limit을 "최소/최대" 숫자로만 이해하고 스케줄링/커널 강제라는 역할 차이를 모른다</li>
+          <li>CPU limit과 메모리 limit을 같은 방식으로 취급한다 (throttling vs kill 구분 못함)</li>
+          <li>liveness와 readiness probe를 같은 엔드포인트로 설정해도 문제를 못 느낀다</li>
+          <li>모든 Pod에 무조건 넉넉한 limit을 주는 것이 "안전한 설계"라고 생각한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        "limit을 늘리면 된다"는 대증 요법이지, 원인 분석이 아니다. 스파이크가 왜 발생하는지(트래픽 패턴, 메모리 누수, 배치 작업 겹침) 모르면 limit을 늘려도 언젠가 다시 그 한계에 부딪힌다. 또한 request/limit을 숫자로만 다루면, QoS Class가 만드는 축출 우선순위나 CPU/메모리의 실패 방식 차이 같은 <strong>구조적 함의</strong>를 답변에 담을 수 없다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"CPU limit과 메모리 limit은 똑같이 '초과하면 안 되는 상한'이다."</p>
+      <div class="mc-right">실제</div>
+      <p>CPU limit을 초과하면 <strong>쓰로틀링(느려짐)</strong>이 걸릴 뿐 프로세스는 죽지 않는다. 메모리 limit을 초과하면 커널 OOM killer가 <strong>즉시 프로세스를 종료</strong>시킨다. 이 비대칭성 때문에 메모리 limit은 실제 피크 사용량보다 여유 있게 잡아야 하지만, CPU limit은 오히려 너무 타이트하면 불필요한 지연을 만든다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"limit을 설정하지 않으면 Pod가 자원을 무제한으로 쓸 수 있어서 오히려 안전하다."</p>
+      <div class="mc-right">실제</div>
+      <p>limit이 없는 BestEffort/일부 Burstable Pod는 QoS 우선순위상 <strong>가장 먼저 축출 대상</strong>이 된다. 안전한 게 아니라, 노드가 압박을 받으면 가장 먼저 희생되는 위치에 스스로를 두는 것이다. 게다가 축출되기 전까지 같은 노드의 다른 Pod들에게도 영향을 줄 수 있다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"readinessProbe가 실패해도 결국 재시작되니 livenessProbe와 큰 차이는 없다."</p>
+      <div class="mc-right">실제</div>
+      <p>readinessProbe 실패는 <strong>재시작을 유발하지 않는다.</strong> Service의 Endpoint 목록에서만 빠질 뿐, 컨테이너 프로세스는 계속 살아있다. 상태가 회복되면 다시 Endpoint에 포함된다. 이 차이를 모르고 둘을 섞어 쓰면, 일시적 저하 상황에서 불필요한 재시작이 발생하거나 반대로 필요한 재시작이 안 걸리는 문제가 생긴다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"In-place Pod Resize가 GA됐으니 이제 리소스를 바꿀 때 Pod 재시작을 걱정할 필요가 없다."</p>
+      <div class="mc-right">실제</div>
+      <p>GA된 것은 "재시작 없이 리사이즈할 수 있는 메커니즘 자체"이지, 모든 상황에서 재시작이 사라진 것은 아니다. 컨테이너별 <code>resizePolicy</code> 설정에 따라 특정 리소스(특히 메모리 축소)는 여전히 <code>RestartContainer</code> 정책이 필요할 수 있고, VPA의 완전 자동 in-place 통합도 아직 베타다. "이제 무조건 무중단"이라고 단정하면 최신 기능을 과신하는 것이다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"모든 프로덕션 Pod는 안전을 위해 Guaranteed QoS로 만드는 게 정답이다."</p>
+      <div class="mc-right">실제</div>
+      <p>Guaranteed는 안정성을 높이지만 request==limit을 강제하기 때문에 <strong>여유 자원을 다른 Pod와 공유하지 못해 클러스터 전체 활용률이 떨어지고 비용이 오른다.</strong> 지연시간에 극도로 민감한 핵심 서비스에는 적합하지만, 사용량 편차가 큰 워크로드까지 전부 Guaranteed로 만들면 과잉 프로비저닝이 된다. QoS 선택도 결국 안정성과 비용 사이의 trade-off다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>OOM 진단</strong></td>
+          <td><code>Last State: OOMKilled</code>로 일반 크래시와 구분하고 피크 사용량으로 원인을 좁힌다</td>
+          <td>메모리 부족은 의심하지만 진단 근거가 막연하다</td>
+          <td>"limit을 늘리면 됩니다"로 바로 결론 낸다</td>
+        </tr>
+        <tr>
+          <td><strong>Request vs Limit 이해</strong></td>
+          <td>스케줄링 예약(request)과 커널 강제(limit)의 역할 차이를 명확히 설명한다</td>
+          <td>숫자 차이는 알지만 역할 차이는 설명 못한다</td>
+          <td>request/limit을 구분하지 못한다</td>
+        </tr>
+        <tr>
+          <td><strong>CPU vs 메모리 실패 방식</strong></td>
+          <td>쓰로틀링 vs OOM kill의 비대칭성과 그에 따른 설계 전략을 제시한다</td>
+          <td>둘 다 "제한"이라는 것만 안다</td>
+          <td>차이를 모른다</td>
+        </tr>
+        <tr>
+          <td><strong>QoS Class</strong></td>
+          <td>Guaranteed/Burstable/BestEffort와 축출 우선순위, 언제 무엇을 선택할지까지 설명한다</td>
+          <td>세 가지 이름은 알지만 축출 순서는 모른다</td>
+          <td>QoS 개념 자체를 모른다</td>
+        </tr>
+        <tr>
+          <td><strong>Probe 설계</strong></td>
+          <td>liveness/readiness/startup의 실패 결과 차이를 구분하고 설계 실수 사례를 든다</td>
+          <td>세 probe의 이름과 정의는 안다</td>
+          <td>probe를 다 같은 것으로 취급한다</td>
+        </tr>
+        <tr>
+          <td><strong>최신 동향 반영</strong></td>
+          <td>In-place Pod Resize GA와 그 한계(resizePolicy, VPA 베타)까지 정확히 안다</td>
+          <td>기능 존재만 안다</td>
+          <td>모른다 / 언급 안 함</td>
+        </tr>
+        <tr>
+          <td><strong>실무 경험 연결</strong></td>
+          <td>실제 겪은 장애 사례로 구체적으로 설명한다</td>
+          <td>유사한 상황을 추론한다</td>
+          <td>이론만 말한다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면, Day 3(Deployment 롤아웃/롤백)에서 probe와 readiness 개념이 다시 배포 안정성 맥락으로 확장되고, Day 11~12(HPA/VPA)에서 request/limit이 오토스케일링과 직접 연결된다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./0001-cluster-architecture-incident-response-framework.html">← Day 1</a>
+    <a href="./index.html">목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>
