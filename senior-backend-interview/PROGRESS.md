@@ -8,6 +8,7 @@
 | 2 | 2026-06-30 | 데이터베이스 설계 & 트랜잭션 | [0002-database-design-and-transactions.html](lessons/0002-database-design-and-transactions.html) |
 | 3 | 2026-07-01 | 확장성 패턴 | [0003-scalability-patterns.html](lessons/0003-scalability-patterns.html) |
 | 4 | 2026-07-02 | 분산 시스템 & 일관성 | [0004-distributed-systems-and-consistency.html](lessons/0004-distributed-systems-and-consistency.html) |
+| 5 | 2026-07-03 | API 설계 | [0005-api-design.html](lessons/0005-api-design.html) |
 
 ## 다음 예정 학습
 
@@ -16,7 +17,7 @@
 | ~~2~~ | ~~데이터베이스 설계 & 트랜잭션~~ | ~~완료~~ |
 | ~~3~~ | ~~확장성 패턴~~ | ~~완료~~ |
 | ~~4~~ | ~~분산 시스템 & 일관성~~ | ~~완료~~ |
-| 5 | API 설계 | REST 성숙도, GraphQL, gRPC, 버전 관리, 하위 호환성 |
+| ~~5~~ | ~~API 설계~~ | ~~완료~~ |
 | 6 | 동시성 & 비동기 처리 | 락 전략, 낙관적/비관적 동시성, 멱등성, 이벤트 큐 |
 | 7 | 신뢰성 & 장애 대응 | 서킷 브레이커, Rate Limiting, Bulkhead, 포스트모텀 |
 | 8 | 보안 | AuthN/AuthZ, JWT, OAuth2, OWASP Top10, 암호화 |
@@ -27,7 +28,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — Day 5 (API 설계)가 다음 차례.
+**Day 5 완료** — Day 6 (동시성 & 비동기 처리)가 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -46,7 +47,10 @@
 - [x] 분산 합의(Raft)의 Quorum 기반 스플릿 브레인 방지 원리 (Day 4)
 - [x] 2PC의 블로킹 문제와 코디네이터 SPOF (Day 4)
 - [x] Saga 패턴(Choreography/Orchestration)과 보상 트랜잭션 설계 (Day 4)
-- [ ] API 설계 원칙 (예정 Day 5)
+- [x] Richardson Maturity Model과 REST 성숙도 자가 진단 (Day 5)
+- [x] REST/GraphQL/gRPC 프로토콜 선택 기준과 GraphQL N+1 대응 (Day 5)
+- [x] API 버전 관리 전략과 Deprecation/sunset 설계 (Day 5)
+- [x] 하위 호환성 판단(Breaking/Non-breaking)과 계약 테스트 (Day 5)
 - [ ] 동시성 제어 패턴 (예정 Day 6)
 - [ ] 신뢰성 패턴 (예정 Day 7)
 - [ ] 보안 설계 (예정 Day 8)
