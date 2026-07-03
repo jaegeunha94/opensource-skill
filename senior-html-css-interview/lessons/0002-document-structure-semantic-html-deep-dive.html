@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — Document 구조와 Semantic HTML 심화 | HTML / CSS 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .prod-box {
+      background: #182518;
+      border-left: 4px solid var(--green);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">HTML / CSS 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 2
+  </nav>
+
+  <h1>Day 2 — Document 구조와 Semantic HTML 심화</h1>
+  <p class="subtitle"><code>header</code>/<code>nav</code>/<code>main</code>/<code>article</code>/<code>section</code>/<code>aside</code>/<code>footer</code> 구분과 <code>div</code> 남용의 실무 비용 · 2026-07-03</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#production">실무 연결</a></li>
+      <li><a href="#framework">판단 프레임워크 — section vs article vs div</a></li>
+      <li><a href="#area-checklist">요소별 판단 체크리스트</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"이 페이지에 <code>section</code>과 <code>div</code>가 섞여 있습니다. 어떤 기준으로 구분해서 써야 하나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"<code>article</code>과 <code>section</code>의 차이를 설명해주세요. 실무에서 어느 쪽을 써야 할지 헷갈릴 때는 어떻게 판단하시나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"페이지 최상단에도 <code>header</code>가 있고 <code>article</code> 내부에도 <code>header</code>가 있을 수 있다고 들었습니다. 이게 맞는 사용법인가요? <code>aside</code>는 시각적으로 옆에 있으면 무조건 써도 되나요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"섹셔닝 태그의 이름을 아는가"가 아니라 "콘텐츠의 구조적 관계를 판단해서 올바른 landmark를 설계할 수 있는가"</strong>를 테스트합니다. Day 1에서 "semantic이 중요하다"는 원칙을 확인했다면, Day 2는 그 원칙을 실제 문서 트리 설계에 적용하는 능력을 봅니다. 많은 시니어 후보조차 <code>section</code>을 "스타일링용 큰 div"로 잘못 쓰고 있어서, 이 질문은 실무 경력과 정확한 이해를 구분하는 데 효과적입니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>Landmark 설계 능력</strong> — 스크린 리더 사용자가 <code>Tab</code>이 아니라 "landmark 단위로 건너뛰며 탐색"한다는 사실을 알고, 그 탐색 경험을 설계할 수 있는가.</li>
+      <li><strong>콘텐츠 관계 판단력</strong> — 시각적 위치(옆에 있다, 위에 있다)가 아니라 콘텐츠 사이의 <strong>의미적 관계</strong>(독립적으로 재사용 가능한가, 주제로 묶이는가, 부차적인가)로 태그를 고르는가.</li>
+      <li><strong>과잉 사용의 위험 인지</strong> — "시맨틱 태그를 많이 쓰면 좋다"는 얕은 이해가 아니라, 의미 없는 <code>section</code> 남용이 오히려 접근성 트리를 노이즈로 채운다는 것을 아는가.</li>
+      <li><strong>대규모 문서 설계 경험</strong> — 뉴스 페이지, 대시보드, 댓글 트리처럼 중첩 구조가 복잡한 실제 프로덕션 화면을 설계해본 경험이 있는가.</li>
+    </ul>
+
+    <p>10년차 이하에서 자주 나오는 답변 패턴: "<code>section</code>은 그냥 큰 구획을 나눌 때 쓰고, <code>div</code>는 스타일링용으로 씁니다." 이 답변은 틀리지는 않았지만 <strong>기준이 없습니다</strong> — "큰 구획"이 무엇을 뜻하는지, 언제 <code>section</code> 대신 <code>div</code>를 써야 하는지에 대한 근거가 빠져 있습니다. 시니어는 "이 그룹이 접근성 트리에 landmark로 노출되어야 하는가"라는 명확한 판단 기준을 가지고 있습니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Landmark(랜드마크)란 무엇인가</h3>
+    <p>Landmark는 Accessibility Tree 안에서 <strong>"페이지의 주요 구역"</strong>으로 표시되는 영역입니다. <code>header</code>, <code>nav</code>, <code>main</code>, <code>aside</code>, <code>footer</code> 같은 태그는 브라우저가 자동으로 각각 banner, navigation, main, complementary, contentinfo라는 역할(role)을 Accessibility Tree에 채워 넣습니다. 스크린 리더 사용자는 페이지를 위에서 아래로 한 줄씩 읽는 대신, "랜드마크 목록"을 열어서 <code>내비게이션으로 이동</code>, <code>본문으로 이동</code>, <code>푸터로 이동</code>처럼 큰 블록 단위로 건너뛰며 탐색합니다. 시각 사용자가 눈으로 페이지 레이아웃을 스캔하는 것과 같은 역할을 랜드마크가 청각적으로 대신하는 것입니다.</p>
+    <p>이 사실이 이번 레슨의 핵심 전제입니다: <strong>섹셔닝 태그를 고르는 것은 스타일을 위한 선택이 아니라, 스크린 리더 사용자가 탐색할 지도를 그리는 일</strong>입니다.</p>
+
+    <h3>section vs article vs div — 관계로 구분하기</h3>
+    <p>세 태그의 차이는 겉모습이 아니라 <strong>콘텐츠 사이의 관계</strong>로 구분합니다.</p>
+    <ul>
+      <li><strong><code>article</code></strong>: 이 콘텐츠만 뚝 떼어서 다른 페이지, RSS 피드, 다른 사이트에 갖다 놓아도 그 자체로 말이 되는가? 블로그 게시글, 뉴스 기사, 댓글 하나, 상품 카드 하나가 여기 해당합니다. "독립적으로 배포 가능한(independently distributable) 콘텐츠"라는 기준이 핵심입니다.</li>
+      <li><strong><code>section</code></strong>: 여러 콘텐츠가 하나의 <strong>제목(heading)</strong> 아래 주제로 묶이는가? 그리고 그 묶음이 문서의 개요(outline)에 하나의 항목으로 등장할 가치가 있는가? <code>section</code>은 반드시 제목을 가져야 의미가 성립합니다. 제목이 없다면 그것은 단지 스타일링을 위한 그룹일 뿐이고, 그 경우엔 <code>div</code>가 맞습니다.</li>
+      <li><strong><code>div</code></strong>: 콘텐츠에 아무 의미적 관계가 없고, 순수하게 스타일링/레이아웃을 위해 요소를 묶어야 할 때 씁니다. Flexbox 컨테이너를 만들기 위한 래퍼, 그리드 셀 등이 대표적입니다.</li>
+    </ul>
+    <p>실무 판단 순서: "이 그룹이 독립적으로 재사용될 콘텐츠 단위인가?" → 그렇다면 <code>article</code>. "제목으로 요약되는 주제 그룹인가?" → 그렇다면 <code>section</code>. "둘 다 아니고 순수 스타일링 목적인가?" → <code>div</code>.</p>
+
+    <h3>header/footer는 반복 가능하다 — "페이지 전역"이 아니라 "가장 가까운 sectioning 대상 기준"</h3>
+    <p><code>header</code>와 <code>footer</code>는 페이지 전체에 하나씩만 쓰는 태그가 아닙니다. 이 태그들의 의미는 <strong>"가장 가까운 조상 sectioning 요소(<code>article</code>, <code>section</code>, <code>aside</code>, 또는 <code>body</code>) 하나에 대한 머리말/꼬리말"</strong>입니다. 즉 <code>body</code> 바로 아래 있는 <code>header</code>는 페이지 전체의 머리말(로고, 전역 내비게이션)이고, <code>article</code> 내부의 <code>header</code>는 그 게시글 하나의 머리말(제목, 작성자, 작성일)입니다. 두 <code>header</code>는 서로 다른 요소에 속하며 동시에 존재할 수 있습니다.</p>
+
+    <h3>aside는 "위치"가 아니라 "콘텐츠와의 관계"로 결정한다</h3>
+    <p><code>aside</code>는 "화면에서 옆에 배치된 것"을 뜻하지 않습니다. <code>aside</code>의 정의는 <strong>"본문과 관련은 있지만, 본문에서 분리해도 본문 이해에 지장이 없는 콘텐츠"</strong>입니다. 광고, 관련 글 목록, 저자 소개 박스, 인용구(pull quote)가 전형적인 예입니다. 반대로 시각적으로는 사이드바 위치에 있어도 그 내용이 본문 이해에 필수적이라면(예: 목차, 단계별 진행 내비게이션) <code>aside</code>가 아닙니다.</p>
+
+    <h3>Document Outline Algorithm — 존재하지만 브라우저가 구현하지 않은 스펙</h3>
+    <p>HTML5 초기 스펙은 <code>section</code>/<code>article</code> 중첩과 <code>h1</code>~<code>h6</code>를 조합해 자동으로 문서 개요를 만드는 "outline algorithm"을 정의했습니다. 하지만 이 알고리즘은 어떤 브라우저도, 어떤 스크린 리더도 실제로 구현하지 않았고, 결국 HTML 스펙에서 사실상 폐기되었습니다. 실무에서 스크린 리더 사용자가 실제로 의존하는 것은 이 이론적 알고리즘이 아니라 <strong>실제 <code>h1</code>~<code>h6</code> 레벨 값 자체와 landmark role</strong>입니다. 그래서 <code>section</code>을 중첩한다고 heading 레벨을 안 낮춰도 된다고 착각하면 안 되고, 반드시 콘텐츠 깊이에 맞게 <code>h1</code> → <code>h2</code> → <code>h3</code> 순서로 명시적으로 낮춰야 합니다.</p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="production">
+    <h2>4. 실무 연결</h2>
+
+    <div class="prod-box">
+      <p>Document 구조 설계는 이론이 아니라, 실제 프로덕션에서 반복적으로 발생하는 세 종류의 문제를 예방하기 위한 것입니다.</p>
+    </div>
+
+    <h3>Landmark 노이즈가 만드는 실무 비용</h3>
+    <p>"시맨틱하게 짜야 한다"는 원칙만 듣고 모든 <code>div</code>를 기계적으로 <code>section</code>으로 바꾸면, 제목 없는 <code>section</code>이 여러 개 생깁니다. 스크린 리더는 이름 없는 <code>section</code>을 "region"이라는 익명 landmark로 읽는데, 랜드마크 목록에 이름 없는 "region"이 10개씩 나열되면 오히려 탐색이 더 어려워집니다. 이것은 실제로 접근성 감사(audit)에서 "과도한 anonymous region"으로 자주 지적되는 항목입니다.</p>
+
+    <h3>heading 계층 붕괴가 만드는 실무 비용</h3>
+    <p>디자이너가 준 시안에서 시각적 크기만 보고 <code>h1</code>을 여러 번 쓰거나, 반대로 스타일이 작아 보인다는 이유로 <code>h4</code>를 최상위 제목에 쓰는 경우가 흔합니다. 이렇게 되면 스크린 리더 사용자가 "제목 목록으로 이동"했을 때 문서 구조가 실제 콘텐츠 위계와 맞지 않아 혼란을 겪습니다. 이 문제는 CSS로 시각적 크기를 조정하고 <code>h1</code>~<code>h6</code>는 순수하게 논리적 위계로만 쓰도록 팀 컨벤션을 분리해야 예방됩니다.</p>
+
+    <h3>article/section 오용이 만드는 유지보수 비용</h3>
+    <p>댓글 목록, 카드 그리드처럼 반복되는 컴포넌트를 <code>div</code>로만 짜면, 나중에 "각 카드를 개별 공유 가능한 콘텐츠로 만들어달라"는 요구사항이 왔을 때 마크업 구조부터 다시 짜야 하는 경우가 생깁니다. 처음부터 "이 카드가 독립적으로 재사용될 콘텐츠 단위"라는 것을 인식하고 <code>article</code>로 짰다면 스타일/기능 확장이 훨씬 쉬웠을 것입니다. 이런 재작업은 프로젝트 후반에 갈수록 비용이 커집니다.</p>
+  </section>
+
+  <!-- 5. 판단 프레임워크 -->
+  <section id="framework">
+    <h2>5. 판단 프레임워크 — section vs article vs div</h2>
+
+    <p>마크업을 짤 때 요소 하나하나마다 아래 순서로 3개의 질문을 던지면 됩니다.</p>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>독립 재사용 질문</strong>
+          <p style="margin-top:0.3rem">"이 콘텐츠만 떼어서 다른 곳(RSS, 다른 페이지)에 놓아도 의미가 통하는가?" → 예: <code>article</code>.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>주제 그룹 + 제목 질문</strong>
+          <p style="margin-top:0.3rem">"1번이 아니라면, 이 그룹이 하나의 제목으로 요약되는 주제 묶음이고 문서 개요에 등장할 가치가 있는가?" → 예: <code>section</code> (반드시 heading 포함).</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>순수 스타일링 질문</strong>
+          <p style="margin-top:0.3rem">"1, 2번 모두 아니고 레이아웃/스타일 묶음일 뿐인가?" → 예: <code>div</code>.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>Landmark 중복 점검</strong>
+          <p style="margin-top:0.3rem"><code>nav</code>나 <code>section</code>이 페이지에 여러 개라면, 스크린 리더가 구분할 수 있도록 <code>aria-label</code>로 각각 이름을 붙였는가? (예: <code>&lt;nav aria-label="주 메뉴"&gt;</code>, <code>&lt;nav aria-label="페이지 하단 링크"&gt;</code>)</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>Heading 레벨 정합성 점검</strong>
+          <p style="margin-top:0.3rem">중첩된 <code>section</code>/<code>article</code> 깊이에 맞춰 <code>h1</code>~<code>h6</code>가 순서대로 낮아지는가? 시각적 크기 때문에 레벨을 건너뛰지 않았는가?</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 6. 요소별 판단 체크리스트 -->
+  <section id="area-checklist">
+    <h2>6. 요소별 판단 체크리스트</h2>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>태그</th>
+          <th>판단 기준</th>
+          <th>Accessibility Tree Role</th>
+          <th>흔한 오용</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>header</code></td>
+          <td>가장 가까운 sectioning 대상의 머리말인가</td>
+          <td>banner (최상위일 때만) / 없음 (중첩일 때)</td>
+          <td>모든 페이지에 header가 하나뿐이라고 오해</td>
+        </tr>
+        <tr>
+          <td><code>nav</code></td>
+          <td>주요 내비게이션 링크 묶음인가</td>
+          <td>navigation</td>
+          <td>본문 안의 일반 링크 목록까지 nav로 감쌈</td>
+        </tr>
+        <tr>
+          <td><code>main</code></td>
+          <td>페이지의 핵심 고유 콘텐츠인가</td>
+          <td>main</td>
+          <td>한 페이지에 여러 개(반드시 1개, 숨김 제외)</td>
+        </tr>
+        <tr>
+          <td><code>article</code></td>
+          <td>독립적으로 재사용/배포 가능한가</td>
+          <td>article</td>
+          <td>재사용 의도 없는 단순 레이아웃 블록에 사용</td>
+        </tr>
+        <tr>
+          <td><code>section</code></td>
+          <td>제목이 있는 주제 그룹인가</td>
+          <td>region (이름 있을 때) / anonymous region</td>
+          <td>제목 없이 스타일링용 큰 div 대체로 사용</td>
+        </tr>
+        <tr>
+          <td><code>aside</code></td>
+          <td>본문과 분리해도 이해에 지장 없는가</td>
+          <td>complementary</td>
+          <td>시각적으로 옆에 있다는 이유만으로 사용</td>
+        </tr>
+        <tr>
+          <td><code>footer</code></td>
+          <td>가장 가까운 sectioning 대상의 꼬리말인가</td>
+          <td>contentinfo (최상위일 때만) / 없음 (중첩일 때)</td>
+          <td>article 내부 footer와 페이지 footer를 혼동</td>
+        </tr>
+        <tr>
+          <td><code>div</code></td>
+          <td>순수 스타일링/레이아웃 목적인가</td>
+          <td>없음 (generic)</td>
+          <td>의미 있는 콘텐츠 그룹에도 습관적으로 사용</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 7. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>7. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>Landmark의 목적부터 설명합니다.</strong> 섹셔닝 태그는 스타일이 아니라 스크린 리더 사용자의 탐색 지도라는 전제를 먼저 말합니다.</li>
+      <li><strong>독립 재사용 여부로 <code>article</code>을 먼저 판별합니다.</strong> "이 콘텐츠만 떼어놔도 말이 되는가"를 기준으로 듭니다.</li>
+      <li><strong>제목 유무로 <code>section</code>과 <code>div</code>를 구분합니다.</strong> 제목이 있는 주제 그룹이면 <code>section</code>, 아니면 <code>div</code>라는 명확한 규칙을 제시합니다.</li>
+      <li><strong>header/footer의 반복 가능성을 설명합니다.</strong> 전역과 지역 header/footer가 공존할 수 있다는 점을 짚습니다.</li>
+      <li><strong>aside를 위치가 아니라 관계로 설명합니다.</strong> "떼어내도 본문 이해에 지장 없는가"를 기준으로 든다.</li>
+      <li><strong>Landmark 중복 시 <code>aria-label</code> 구분과 heading 레벨 정합성으로 마무리합니다.</strong> 실무에서 실제로 발생하는 사고 사례(anonymous region 과다, heading 레벨 건너뛰기)를 근거로 듭니다.</li>
+    </ol>
+  </section>
+
+  <!-- 8. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>8. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "이 페이지에 <code>section</code>과 <code>div</code>가 섞여 있습니다. 어떤 기준으로 구분해서 써야 하나요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>섹셔닝 태그를 고르는 기준은 스타일이 아니라, 스크린 리더 사용자가 랜드마크 단위로 탐색할 때 이 그룹이 의미 있는 목적지가 되어야 하는가입니다.</p>
+      <br>
+      <p>먼저 이 그룹이 <strong>제목을 가진 주제 묶음</strong>이고, 문서 개요에 하나의 항목으로 등장할 가치가 있다면 <code>section</code>을 씁니다. 예를 들어 랜딩 페이지의 "기능 소개", "가격 정책", "고객 후기"처럼 각각 <code>h2</code> 제목을 가진 구획이 이에 해당합니다.</p>
+      <br>
+      <p>반면 콘텐츠에 별도의 제목이 없고, 순수하게 Flexbox나 Grid 레이아웃을 위해 요소를 감싸는 래퍼라면 <code>div</code>를 씁니다. 예를 들어 카드들을 가로로 정렬하기 위한 그리드 컨테이너는 그 자체로 사용자에게 전달할 "주제"가 없으므로 <code>div</code>가 맞습니다.</p>
+      <br>
+      <p>여기에 더해, 만약 그 콘텐츠가 독립적으로 재사용 가능한 단위라면(예: 후기 카드 하나하나) <code>section</code> 대신 <code>article</code>을 씁니다. 이 카드는 다른 페이지에 그대로 옮겨 놓아도 그 자체로 의미가 통하기 때문입니다.</p>
+      <br>
+      <p>실무에서 자주 하는 실수는 "시맨틱하게 짜야 한다"는 압박 때문에 제목 없는 <code>div</code>를 전부 <code>section</code>으로 바꾸는 것인데, 이렇게 하면 스크린 리더가 이름 없는 "region" landmark를 여러 개 읽게 되어 오히려 탐색이 혼란스러워집니다. 그래서 저는 항상 "이 그룹에 제목을 붙일 수 있는가"를 <code>section</code> 사용의 필요조건으로 둡니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>판단 기준을 "스타일"이 아니라 "landmark로서의 의미"로 명확히 제시함</li>
+      <li><code>section</code>/<code>article</code>/<code>div</code> 세 가지를 하나의 일관된 기준(제목 유무, 재사용 가능성)으로 구분함</li>
+      <li>실무에서 실제로 발생하는 실수(제목 없는 section 남용)와 그 결과(anonymous region 노이즈)를 구체적으로 언급함</li>
+      <li>"항상 이렇게 판단한다"는 재사용 가능한 개인 원칙(heuristic)으로 마무리함</li>
+    </ul>
+  </section>
+
+  <!-- 9. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>9. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"<code>section</code>은 의미 있는 태그니까 최대한 많이 쓰고, <code>div</code>는 옛날 방식이라 안 쓰는 게 좋습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"의미 있는 태그를 많이 쓰는 것"과 "올바르게 쓰는 것"을 혼동하고 있습니다.</li>
+        <li><code>div</code>는 폐기된 태그가 아니라, 의미 없는 그룹에는 오히려 정확한 선택입니다.</li>
+        <li>제목 없는 <code>section</code>이 anonymous region으로 접근성 트리에 노이즈를 만든다는 실무적 위험을 전혀 언급하지 않았습니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"시각적으로 큰 구획이면 <code>section</code>, 작은 구획이면 <code>div</code>를 씁니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>크기는 완전히 시각적 기준이고 시맨틱 판단과 무관합니다.</li>
+        <li>작은 <code>section</code>(예: 짧은 공지사항 하나)도 제목이 있는 주제 그룹이면 <code>section</code>이 맞고, 큰 <code>div</code>(예: 전체 레이아웃 그리드 컨테이너)도 의미 없는 래퍼일 수 있습니다.</li>
+        <li>면접관에게 "크기로 태그를 고른다"는 인상을 주면 시맨틱 원칙 자체를 이해하지 못했다는 신호로 읽힙니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>독립 재사용 가능성으로 <code>article</code>을 먼저 판별한다</li>
+        <li>제목(heading) 유무로 <code>section</code>과 <code>div</code>를 구분한다</li>
+        <li>header/footer가 sectioning 대상 기준으로 반복될 수 있음을 안다</li>
+        <li>aside를 시각적 위치가 아니라 콘텐츠 관계로 판단한다</li>
+        <li>제목 없는 section 남용이 anonymous region 노이즈를 만든다는 위험을 안다</li>
+        <li>중복 landmark에 <code>aria-label</code>로 구분 이름을 붙인다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. Follow-up -->
+  <section id="followups">
+    <h2>10. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: 한 페이지에 <code>nav</code>가 두 개 이상 있어도 되나요? 스크린 리더 사용자는 이를 어떻게 구분하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 네, 상단 주 메뉴와 하단 사이트맵 링크처럼 목적이 다른 내비게이션이 여러 개 있는 것은 자연스럽습니다. 문제는 스크린 리더가 랜드마크 목록을 열었을 때 "navigation, navigation, navigation"처럼 이름 없는 <code>nav</code>가 반복되면 어떤 게 어떤 것인지 구분할 수 없다는 점입니다. 이를 해결하려면 각 <code>nav</code>에 <code>aria-label="주 메뉴"</code>, <code>aria-label="푸터 링크"</code>처럼 서로 다른 접근 가능한 이름을 부여해야 합니다. 이 이름은 시각적으로 보이지 않아도 되고, 오직 랜드마크 목록에서만 구분자로 쓰입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: <code>main</code> 태그를 한 페이지에 여러 개 넣어도 되나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 스펙상 여러 개를 넣는 것 자체는 허용되지만, <strong>동시에 화면에 보이는(visible) <code>main</code>은 반드시 하나여야 합니다.</strong> 예를 들어 탭 UI에서 각 탭 패널을 <code>main</code>으로 만들고 나머지에 <code>hidden</code> 속성을 준다면 기술적으로는 여러 <code>main</code>이 DOM에 존재하지만, 실제로 Accessibility Tree에 노출되는 것은 하나뿐입니다. 두 개 이상의 <code>main</code>이 동시에 보이는 상태로 남아 있으면 스크린 리더 사용자가 "본문으로 건너뛰기"를 했을 때 어디로 가야 할지 모호해지는 문제가 생깁니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: <code>section</code>에 제목(heading)이 없으면 실제로 무슨 일이 일어나나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 브라우저는 <code>section</code>에 접근 가능한 이름(accessible name)을 채워줄 방법이 없기 때문에, 스크린 리더는 이를 이름 없는 "region"으로 노출합니다. 랜드마크 목록에 "region, region, region"처럼 이름 없는 항목이 여러 개 쌓이면 사용자가 각 영역이 무엇인지 구분할 방법이 없어 탐색 효용이 떨어집니다. 이 문제 때문에 대부분의 접근성 가이드는 "제목을 붙일 수 없는 <code>section</code>이라면 애초에 <code>section</code>을 쓰지 말고 <code>div</code>를 쓰라"고 권고합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: <code>article</code> 안에 또 다른 <code>article</code>이 들어갈 수 있나요? 실제 예시를 들어주세요.</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 네, 중첩된 <code>article</code>은 표준적인 패턴입니다. 대표적으로 블로그 게시글 하나를 최상위 <code>article</code>로 감싸고, 그 아래 각 댓글을 개별 <code>article</code>로 중첩합니다. 댓글 하나하나가 "다른 곳(예: '인용된 댓글' 위젯)으로 옮겨도 그 자체로 의미가 통하는 독립 콘텐츠"라는 기준을 만족하기 때문입니다. 이때 중첩된 <code>article</code> 내부의 <code>header</code>는 그 댓글 작성자와 시간만을 나타내는 지역적(local) header가 됩니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 시각적으로는 사이드바 위치에 있지만 <code>aside</code>로 쓰면 안 되는 경우를 예로 들어주세요.</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 대표적인 예가 긴 문서의 "목차(table of contents)"나 다단계 신청 폼의 "진행 단계 내비게이션"입니다. 이런 콘텐츠는 시각적으로는 사이드바에 배치되어 있어도, 본문을 이해하거나 완료하는 데 실제로 필요한 정보이기 때문에 "떼어내도 지장 없는" <code>aside</code>의 정의에 맞지 않습니다. 이런 경우는 <code>nav</code>(목차, 단계 내비게이션 모두 링크/단계 이동이므로)로 감싸는 것이 더 정확합니다. <code>aside</code>는 순수하게 "부가 정보"(광고, 관련 글, 저자 소개)에만 씁니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>11. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"section은 그냥 스타일링을 위한 큰 div다"</strong></p>
+      <p><code>section</code>은 반드시 제목을 동반하는 주제 그룹이어야 의미가 성립합니다. 제목 없이 스타일링 목적으로만 요소를 감싸는 것이라면 <code>div</code>가 맞는 선택이고, <code>section</code>을 쓰면 이름 없는 anonymous region이 생겨 접근성 트리에 노이즈만 추가됩니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"시각적으로 옆에 배치되어 있으면 aside다"</strong></p>
+      <p><code>aside</code>의 기준은 위치가 아니라 콘텐츠 관계입니다. 목차나 진행 단계 내비게이션처럼 본문 이해에 필수적인 콘텐츠는 시각적으로 사이드바에 있어도 <code>aside</code>가 아닙니다. "떼어내도 본문 이해에 지장이 없는가"가 유일한 판단 기준입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"HTML5의 outline algorithm 덕분에 section을 중첩하면 heading 레벨을 신경 안 써도 자동으로 문서 개요가 만들어진다"</strong></p>
+      <p>이 알고리즘은 스펙에는 있었지만 어떤 브라우저나 스크린 리더도 실제로 구현하지 않았고, 사실상 폐기되었습니다. 실제로 보조 기술이 의존하는 것은 <code>h1</code>~<code>h6</code>의 실제 레벨 값이므로, <code>section</code>을 중첩할 때는 반드시 heading 레벨도 그에 맞춰 명시적으로 낮춰야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"article은 블로그 게시글 같은 '글'에만 쓴다"</strong></p>
+      <p><code>article</code>의 기준은 콘텐츠 종류가 아니라 "독립적으로 재사용/배포 가능한가"입니다. 상품 카드, 댓글, 위젯, 소셜 미디어 포스트 하나하나가 모두 이 기준을 만족하면 <code>article</code>이 될 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"header/footer는 페이지에 하나씩만 존재해야 한다"</strong></p>
+      <p><code>header</code>/<code>footer</code>는 "가장 가까운 sectioning 대상"에 대한 머리말/꼬리말이므로, 페이지 전역 <code>header</code>와 각 <code>article</code> 내부의 지역 <code>header</code>가 동시에 여러 개 존재하는 것이 정상적인 패턴입니다.</p>
+    </div>
+  </section>
+
+  <!-- 12. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>12. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 2를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Landmark가 무엇이고, 스크린 리더 사용자가 이를 어떻게 탐색에 활용하는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>article</code>/<code>section</code>/<code>div</code>를 "독립 재사용 가능성"과 "제목 유무"라는 두 기준으로 구분해서 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>header</code>/<code>footer</code>가 페이지 전역과 sectioning 대상 지역에 동시에 존재할 수 있는 이유를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>aside</code>를 시각적 위치가 아니라 콘텐츠 관계로 판단하는 기준을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>제목 없는 <code>section</code> 남용이 접근성 트리에 어떤 문제(anonymous region)를 만드는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>HTML5 outline algorithm이 실무에서 왜 신뢰할 수 없는지, 대신 무엇에 의존해야 하는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>중복된 <code>nav</code>/<code>section</code>을 <code>aria-label</code>로 구분해야 하는 이유와 방법을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>한 페이지에 여러 <code>main</code>이 DOM에 존재해도 되는 조건(동시에 보이는 것은 하나여야 함)을 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 3</h3>
+      <p><strong>Forms 심화</strong></p>
+      <p>Day 2에서 문서의 큰 구조(landmark)를 다뤘다면, Day 3에서는 사용자가 실제로 상호작용하는 폼 구조로 들어갑니다. 네이티브 검증, <code>label</code> 연결, 접근성 있는 폼 설계를 다룹니다.</p>
+      <p>면접 질문 예고: "회원가입 폼에서 이메일 형식이 틀렸을 때 어떻게 사용자에게 알려주는 것이 접근성 관점에서 올바른가요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    HTML / CSS 시니어 인터뷰 · Day 2 of 20 · 2026-07-03
+  </p>
+
+</div>
+</body>
+</html>
