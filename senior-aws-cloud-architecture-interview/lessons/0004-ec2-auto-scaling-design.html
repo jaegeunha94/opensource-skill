@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — EC2 운영과 Auto Scaling 설계</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #222538;
+      --border: #2e3150;
+      --accent: #7c83ff;
+      --accent2: #50e3c2;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #e2e4f0;
+      --text2: #9da3c8;
+      --text3: #6b7099;
+      --good: #50e3c2;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card {
+      border-left: 4px solid var(--accent);
+    }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card {
+      border-left: 4px solid var(--accent2);
+      background: #1a2430;
+    }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card {
+      border-left: 4px solid var(--warn);
+      background: #1f1d10;
+    }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card {
+      border-left: 4px solid #a07bff;
+      background: #1a1828;
+    }
+    .answer-card .card-label { color: #a07bff; }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box {
+      background: #0f2420;
+      border: 1px solid var(--good);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box {
+      background: #28100f;
+      border: 1px solid var(--weak);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.91rem;
+      margin-top: 0.5rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:nth-child(odd) td { background: #15182a; }
+    .rubric-table tr:nth-child(even) td { background: #1a1d2e; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .pillar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1.2rem;
+    }
+    .pillar-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+    }
+    .pillar-name { font-weight: 700; color: var(--accent); margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .pillar-key { font-size: 0.83rem; color: var(--text2); }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.2rem;
+      margin-bottom: 0.7rem;
+    }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.1rem;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.78rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .misconception {
+      background: #1f1520;
+      border: 1px solid #6e3880;
+      border-radius: 8px;
+      padding: 1rem 1.3rem;
+      margin-bottom: 0.9rem;
+    }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 0.75rem;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      margin: 0.15rem 0.15rem 0.15rem 0;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 4 · AWS / Cloud Architecture 인터뷰 대비</div>
+    <h1>EC2 운영과 Auto Scaling 설계</h1>
+    <p class="subtitle">
+      Launch Template · Scaling Policy · ALB 연동 · 예약 인스턴스 vs Spot · 비용 최적화
+    </p>
+  </header>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "트래픽이 예측 불가능하게 급증하는 웹 서비스가 있습니다. EC2 Auto Scaling을 어떻게 설계하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"Launch Template과 예전의 Launch Configuration은 무엇이 다르고, 왜 Launch Template을 쓰라고 하나요?"</li>
+        <li>"Target Tracking, Step Scaling, Scheduled Scaling의 차이를 설명하고, 각각 언제 쓰시나요?"</li>
+        <li>"트래픽이 갑자기 빠지는 새벽 시간에 Auto Scaling Group의 인스턴스가 반복적으로 늘었다 줄었다를 반복(flapping)합니다. 원인을 어떻게 진단하시겠습니까?"</li>
+        <li>"On-Demand, Reserved Instance, Savings Plans, Spot을 어떻게 조합해서 비용을 최적화하시겠습니까?"</li>
+        <li>"Scale-in이 일어날 때 처리 중이던 사용자 요청은 어떻게 안전하게 보호하시나요?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">Launch Template</span>
+      <span class="tag">Scaling Policy</span>
+      <span class="tag">ALB 연동</span>
+      <span class="tag">Lifecycle Hook</span>
+      <span class="tag">예약 인스턴스</span>
+      <span class="tag">Spot</span>
+      <span class="tag">비용 최적화</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Auto Scaling Group은 "인스턴스 개수를 자동으로 맞춰주는 관리자"다</h3>
+    <p>
+      Auto Scaling Group(ASG)은 스스로 EC2 인스턴스를 만들지 않는다. 대신 <strong>"최소 몇 대, 최대 몇 대, 지금은 몇 대를 유지해야 하는가"</strong>라는 규칙을 갖고, 실제 인스턴스 수가 그 규칙에 못 미치면 새로 만들고, 넘치면 종료한다.
+      이 세 숫자를 <code>Min</code>, <code>Max</code>, <code>Desired Capacity</code>라고 부른다. 인터뷰에서 자주 놓치는 지점은 <strong>Desired Capacity를 사람이 직접 바꿀 수도 있고, Scaling Policy가 자동으로 바꿀 수도 있다</strong>는 것이다. ASG는 항상 현재 인스턴스 수를 Desired Capacity에 맞추려고 동작한다.
+    </p>
+
+    <h3>Launch Template — "어떤 인스턴스를 만들지"의 설계도</h3>
+    <p>
+      ASG가 새 인스턴스를 만들 때, AMI(이미지), 인스턴스 유형, 보안 그룹, 사용자 데이터(부팅 스크립트), IAM Instance Profile 등을 정의해둔 설계도가 필요하다. 이것이 <strong>Launch Template</strong>이다.
+    </p>
+    <div class="card concept-card">
+      <div class="card-label">Launch Template vs 옛날 Launch Configuration</div>
+      <p>
+        Launch Configuration은 더 이상 신규 기능이 추가되지 않는 구식 방식이다. Launch Template이 우월한 이유는 단순히 "최신이라서"가 아니라 실제 기능 차이 때문이다.
+      </p>
+      <ul>
+        <li><strong>버전 관리</strong>: Launch Template은 버전을 남길 수 있어서, AMI를 새로 배포했을 때 문제가 생기면 이전 버전으로 즉시 되돌릴 수 있다. Launch Configuration은 수정이 불가능해서 매번 새로 만들고 ASG에 다시 연결해야 한다.</li>
+        <li><strong>여러 인스턴스 유형/구매 옵션 조합</strong>: Launch Template은 <code>Mixed Instances Policy</code>와 결합해서 On-Demand와 Spot을 섞고, 여러 인스턴스 패밀리(예: m5, m5a, m6i)를 후보로 등록할 수 있다. Launch Configuration은 인스턴스 유형 하나만 지정 가능하다.</li>
+        <li><strong>최신 기능 지원</strong>: T타입의 Unlimited 모드, Dedicated Host, 최신 EBS 옵션 등은 Launch Template에서만 설정 가능한 경우가 많다.</li>
+      </ul>
+    </div>
+
+    <h3>Scaling Policy — "언제 몇 대로 조정할지"의 규칙</h3>
+    <p>
+      Desired Capacity를 자동으로 조정하는 규칙에는 몇 가지 종류가 있고, 실무에서 섞어서 쓰는 경우가 많다.
+    </p>
+    <ul>
+      <li><strong>Target Tracking Scaling</strong>: "평균 CPU 사용률을 50%로 유지해줘"처럼 목표값을 주면, CloudWatch 알람을 자동으로 만들고 그 목표를 향해 스스로 늘리고 줄인다. 가장 기본으로 권장되는 방식이다 — 사람이 임계값을 세세하게 튜닝할 필요가 적다.</li>
+        <li><strong>Step Scaling</strong>: "CPU가 70% 넘으면 2대 추가, 90% 넘으면 4대 추가"처럼 임계값 구간별로 증분 폭을 다르게 줄 수 있다. 트래픽 급증 속도가 빠른 서비스에서 Target Tracking보다 더 공격적으로 반응하고 싶을 때 쓴다.</li>
+      <li><strong>Simple Scaling</strong>: 가장 오래된 방식으로, 한 번 스케일링하면 Cooldown이 끝날 때까지 추가 스케일링 평가를 하지 않는다. 지금은 Step Scaling이나 Target Tracking으로 대체하는 것이 일반적이다.</li>
+      <li><strong>Scheduled Scaling</strong>: "평일 오전 9시에 최소 10대로, 밤 12시에 최소 2대로"처럼 예측 가능한 트래픽 패턴(업무 시간, 정기 배치, 마케팅 이벤트)에 미리 대비한다.</li>
+      <li><strong>Predictive Scaling</strong>: 과거 트래픽 패턴을 ML로 학습해서, 실제 부하가 오르기 전에 미리 스케일아웃한다. 매주 반복되는 패턴이 있는 서비스에 유효하다.</li>
+    </ul>
+
+    <div class="card why-card">
+      <div class="card-label">Cooldown이 왜 중요한가</div>
+      <p>
+        스케일링이 일어난 뒤, 새 인스턴스가 실제로 트래픽을 받아 CPU 등 메트릭에 반영되기까지는 시간이 걸린다(부팅 + 애플리케이션 초기화). 이 반영 지연 동안 또 스케일링 판단을 내리면, 이미 처리 중인 스케일링 효과를 무시하고 과도하게 증설하거나 감축하는 <strong>진동(flapping)</strong>이 생긴다.
+        Cooldown은 이 판단 사이에 최소한의 대기 시간을 둬서 진동을 막는 장치다. Target Tracking은 내부적으로 이 문제를 어느 정도 자동으로 다루지만, Step/Simple Scaling은 Cooldown 값을 직접 튜닝해야 한다.
+      </p>
+    </div>
+
+    <h3>ALB와의 연동 — Health Check와 Connection Draining</h3>
+    <p>
+      ASG는 보통 ALB의 Target Group에 인스턴스를 자동 등록한다. 여기서 시니어 인터뷰가 자주 확인하는 두 가지 개념이 있다.
+    </p>
+    <ul>
+      <li><strong>Health Check Grace Period</strong>: 새 인스턴스가 시작된 직후에는 애플리케이션이 아직 초기화 중이라 Health Check에 실패할 수 있다. 이 유예 기간 동안은 Health Check 실패를 무시한다. 이 값을 너무 짧게 설정하면, 정상적으로 부팅 중인 인스턴스를 ASG가 "비정상"으로 판단해 죽이고 새로 만드는 것을 무한 반복하는 사고로 이어진다.</li>
+      <li><strong>Connection Draining(Deregistration Delay)</strong>: Scale-in으로 인스턴스를 종료하기 전에, ALB가 그 인스턴스로 새 요청을 더 이상 보내지 않으면서도 이미 진행 중인 요청은 끝까지 처리하도록 일정 시간을 준다. 이 시간을 0으로 두거나 짧게 두면, 처리 중이던 사용자 요청이 강제로 끊긴다.</li>
+    </ul>
+
+    <h3>Lifecycle Hook — 시작과 종료 사이에 "일시정지" 걸기</h3>
+    <p>
+      기본적으로 인스턴스는 시작되자마자 <code>InService</code> 상태가 되고, 종료 결정이 나면 바로 종료 절차에 들어간다. 그런데 실무에서는 "시작 직후 설정 파일을 내려받아 초기화를 마쳐야 트래픽을 받을 수 있다"거나 "종료 전에 로그를 S3로 반드시 업로드해야 한다"는 요구가 있다.
+      <strong>Lifecycle Hook</strong>은 <code>Pending:Wait</code>(시작 중 대기)와 <code>Terminating:Wait</code>(종료 중 대기) 상태를 추가해서, 이 초기화/정리 작업이 끝날 때까지 ASG가 다음 단계로 넘어가지 않고 기다리게 만든다.
+    </p>
+
+    <h3>구매 옵션 — On-Demand, Reserved Instance, Savings Plans, Spot</h3>
+    <div class="pillar-grid">
+      <div class="pillar-box">
+        <div class="pillar-name">On-Demand</div>
+        <div class="pillar-key">사용한 만큼 정가로 지불. 약정 없음. 트래픽 예측이 어려운 버스트 용량에 기본으로 쓴다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">Reserved Instance</div>
+        <div class="pillar-key">1년/3년 약정으로 큰 폭 할인. <strong>용량 예약이 아니라 결제 방식 할인</strong>이다. Standard(변경 어려움)와 Convertible(인스턴스 유형 변경 가능) 구분이 있다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">Savings Plans</div>
+        <div class="pillar-key">특정 인스턴스가 아니라 "시간당 얼마를 쓰겠다"는 약정. 인스턴스 유형/리전을 유연하게 바꿔도 할인이 유지되어 RI보다 운영 유연성이 높다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">Spot Instance</div>
+        <div class="pillar-key">AWS의 유휴 용량을 최대 90%까지 할인된 가격에 사용. AWS가 용량이 필요해지면 <strong>2분 전 경고</strong> 후 강제 회수할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">실무에서 자주 놓치는 지점</div>
+      <p>
+        Reserved Instance를 "이 인스턴스를 예약해뒀으니 항상 켜둬야 본전을 뽑는다"고 오해하는 경우가 많다. 실제로는 <strong>용량 예약이 아니라 할인된 청구 방식</strong>이다(용량 예약이 필요하면 별도의 Capacity Reservation을 써야 한다). 즉, 조건에 맞는 인스턴스가 실행 중이기만 하면 할인이 자동 적용되고, 안 쓰는 시간에는 그냥 할인을 못 받을 뿐이지 손해가 나는 구조는 아니다.
+      </p>
+    </div>
+
+    <h3>Mixed Instances Policy — Spot을 프로덕션에서 안전하게 쓰는 방법</h3>
+    <p>
+      "Spot은 언제 회수될지 몰라서 프로덕션에 못 쓴다"는 생각은 절반만 맞다. ASG의 <code>Mixed Instances Policy</code>를 쓰면, <strong>기본 용량(base)은 On-Demand로 보장</strong>하고, 그 위로 늘어나는 <strong>추가 용량은 Spot 비율로 채우는</strong> 구성을 할 수 있다.
+      또한 Spot은 여러 인스턴스 유형(예: m5.large, m5a.large, m6i.large)에 걸쳐 분산 요청할 수 있어서, 특정 유형의 Spot 용량이 한꺼번에 회수되더라도 다른 유형에서 대체 용량을 즉시 확보할 확률이 높아진다. 이것이 Spot을 실무에서 "완전히 랜덤하게 죽는 위험한 것"이 아니라 "설계로 리스크를 관리할 수 있는 저비용 용량"으로 다루는 방식이다.
+    </p>
+
+    <h3>Warm Pool과 Instance Refresh</h3>
+    <ul>
+      <li><strong>Warm Pool</strong>: 부팅에 시간이 오래 걸리는 애플리케이션(예: 대형 캐시 로딩)에서, 완전히 종료된 상태가 아니라 미리 초기화까지 마친 대기 인스턴스 풀을 만들어두고 트래픽 급증 시 즉시 InService로 전환한다. Scale-out 지연을 줄이는 용도다.</li>
+      <li><strong>Instance Refresh</strong>: 새 AMI나 Launch Template 버전을 배포할 때, ASG의 모든 인스턴스를 한 번에 내리지 않고 정해진 비율(Minimum Healthy Percentage)을 유지하면서 순차적으로 교체하는 롤링 배포 기능이다.</li>
+    </ul>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>가용성과 비용을 함께 설계하는 능력:</strong> "무조건 On-Demand로 넉넉하게"는 비용 감각이 없는 답이고, "무조건 Spot으로 최대한 싸게"는 가용성을 무시한 답이다. 둘을 어떻게 조합하는지가 시니어와 미드레벨을 가른다.</li>
+        <li><strong>장애 시나리오 추론 능력:</strong> Health Check Grace Period가 짧아서 무한 재시작이 벌어지는 상황, Spot 회수로 순간적으로 용량이 빠지는 상황을 스스로 예측하고 대비책을 말할 수 있는가.</li>
+        <li><strong>상태 비저장(stateless) 설계 이해:</strong> Auto Scaling이 제대로 동작하려면 애플리케이션이 세션 상태를 로컬에 두지 않아야 한다. 이 전제를 이해하고 있는지, 그렇지 않다면 어떻게 우회하는지(외부 세션 스토어 등)를 본다.</li>
+        <li><strong>운영 중 안전한 배포/종료 설계:</strong> Lifecycle Hook, Connection Draining, Instance Refresh 같은 기능으로 사용자 요청을 안 끊고 배포·축소하는 실전 감각이 있는가.</li>
+      </ul>
+    </div>
+
+    <p>
+      이 질문은 "Auto Scaling Group 콘솔에서 버튼을 어떻게 누르는지"를 묻는 게 아니다. <strong>"수요 변화에 맞춰 용량을 조정하면서, 그 과정에서 사용자 요청과 비용을 동시에 지킬 수 있는가"</strong>라는 운영 설계 사고를 묻는다. VPC(Day 2)가 "어디까지 들어올 수 있는가", IAM(Day 3)이 "들어온 뒤 무엇을 할 수 있는가"였다면, EC2/Auto Scaling(Day 4)은 "얼마나 많은 용량을 얼마의 비용으로, 얼마나 안전하게 유지하는가"를 다룬다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 1 — Health Check Grace Period가 짧아 생긴 무한 재시작 장애</div>
+      <p>
+        새 애플리케이션의 초기화(캐시 워밍, 설정 로딩)가 90초 정도 걸리는데, Health Check Grace Period를 기본값에 가까운 짧은 값으로 두었다.
+        ASG는 아직 초기화 중인 인스턴스를 비정상으로 판단해 계속 종료하고 새로 만들었고, 결과적으로 <strong>어떤 인스턴스도 InService 상태에 도달하지 못한 채 계속 교체되는 무한 루프</strong>에 빠져 서비스 전체가 다운됐다.
+        원인 파악 후 Grace Period를 실제 초기화 시간보다 여유 있게(120~180초) 늘리고, 초기화 완료 시점을 명확히 알 수 있도록 애플리케이션에 <code>/health</code> 엔드포인트를 별도로 만들어 ALB Health Check가 실제 준비 상태를 정확히 반영하도록 수정했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 2 — Spot 인스턴스 대량 회수로 인한 순간 용량 부족</div>
+      <p>
+        비용 절감을 위해 ASG 전체를 Spot으로만 구성했는데, 특정 리전의 특정 인스턴스 유형 하나에만 의존하고 있었다. AWS가 해당 유형의 용량을 대규모로 회수하면서 ASG 인스턴스의 상당수가 동시에 2분 경고 후 종료됐고, 대체 용량이 즉시 확보되지 않아 순간적으로 트래픽을 처리할 용량이 부족해졌다.
+        이후 Mixed Instances Policy로 전환해 <strong>기본 용량은 On-Demand로 보장</strong>하고, Spot은 3~4개의 유사 사양 인스턴스 유형에 분산 요청하도록 재구성했다. 또한 Spot 중단 알림(2분 경고, EventBridge로 수신 가능)을 받아 로드밸런서에서 해당 인스턴스를 즉시 draining 처리하는 자동화를 추가했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 3 — Cooldown 부재로 인한 스케일링 진동(flapping)</div>
+      <p>
+        Step Scaling 정책에서 Cooldown을 사실상 없는 것처럼 아주 짧게 설정해뒀다. 새 인스턴스가 부팅되어 트래픽을 받기 시작하기 전(메트릭에 아직 반영되기 전)에 또 스케일아웃 판단이 내려져 필요 이상으로 많은 인스턴스가 생성됐고, 잠시 후 CPU 사용률이 급락하자 이번엔 과도하게 스케일인하는 일이 반복됐다.
+        결과적으로 30분 사이 인스턴스 수가 계속 요동치며 불필요한 비용이 발생하고 배포 안정성도 떨어졌다. Target Tracking 정책으로 전환하고 적절한 Cooldown/Warmup 시간을 설정해 진동을 해소했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 4 — Connection Draining 미설정으로 인한 결제 요청 유실</div>
+      <p>
+        야간 배치로 Scheduled Scaling이 인스턴스를 줄이는 시점에, 마침 결제 처리 중이던 요청이 있는 인스턴스가 강제로 종료되며 사용자에게 결제 오류가 발생했다.
+        Deregistration Delay(Connection Draining)가 0으로 설정되어 있어 ALB가 트래픽을 끊는 즉시 인스턴스도 종료됐던 것이 원인이었다. 이후 Deregistration Delay를 결제 요청의 최대 처리 시간을 고려해 충분히(예: 60초) 설정하고, 결제처럼 긴 트랜잭션이 있는 서비스는 Scale-in 우선순위에서 가장 오래된 연결이 적은 인스턴스부터 종료하도록 조정했다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>면접에서 "Auto Scaling을 어떻게 설계하시겠습니까"라는 질문을 받으면, 아래 순서로 생각하고 답변하라.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>트래픽 패턴부터 구분</strong>
+        <p>예측 가능한 패턴(업무 시간, 정기 이벤트)인지, 예측 불가능한 스파이크인지 먼저 구분한다. 전자는 Scheduled/Predictive Scaling을, 후자는 Target Tracking/Step Scaling을 기본으로 고려한다.</p>
+      </li>
+      <li>
+        <strong>Launch Template과 애플리케이션 전제 조건 정리</strong>
+        <p>AMI, 부트스트랩 스크립트, IMDSv2 강제, IAM Role을 Launch Template에 명시한다. 애플리케이션이 상태 비저장(stateless)인지 확인하고, 세션이 필요하면 ElastiCache 같은 외부 세션 스토어로 분리한다.</p>
+      </li>
+      <li>
+        <strong>ASG를 Multi-AZ로 배치하고 ALB Target Group에 연동</strong>
+        <p>최소 2개 이상의 AZ에 걸쳐 인스턴스를 분산하고, ALB Health Check와 Grace Period를 실제 애플리케이션 초기화 시간에 맞춰 설정한다.</p>
+      </li>
+      <li>
+        <strong>Scaling Policy 선택 및 조합</strong>
+        <p>Target Tracking을 기본으로 두고, 트래픽 급증 속도가 빠르면 Step Scaling을 추가한다. 예측 가능한 이벤트가 있으면 Scheduled Scaling을 함께 건다.</p>
+      </li>
+      <li>
+        <strong>Lifecycle Hook과 Connection Draining으로 안전한 시작/종료 보장</strong>
+        <p>초기화나 정리 작업이 필요하면 Lifecycle Hook을 걸고, Scale-in 시 처리 중인 요청이 안전하게 끝나도록 Deregistration Delay를 설정한다.</p>
+      </li>
+      <li>
+        <strong>Mixed Instances Policy로 비용 최적화</strong>
+        <p>기본 용량은 On-Demand(또는 Savings Plans로 할인 받은 기준 용량)로 보장하고, 버스트 용량은 여러 인스턴스 유형에 분산한 Spot으로 채운다.</p>
+      </li>
+      <li>
+        <strong>모니터링과 사후 튜닝 체계 마련</strong>
+        <p>CloudWatch로 스케일링 이벤트, 인스턴스 종료 원인, Spot 중단 빈도를 관찰하고, 실사용 패턴을 근거로 임계값과 구매 옵션 비율을 지속적으로 조정한다.</p>
+      </li>
+    </ol>
+
+    <div class="card why-card">
+      <div class="card-label">핵심 팁</div>
+      <p>"어떤 정책을 걸었는가"보다 <strong>"이 설계에서 스케일링이 늦거나 빠를 때, 혹은 인스턴스가 갑자기 사라질 때 사용자 요청이 어떻게 보호되는가"</strong>를 항상 함께 설명하라.</p>
+    </div>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — 예측 불가능한 트래픽 급증 대응 설계</div>
+      <p>
+        "먼저 애플리케이션이 상태 비저장인지부터 확인하겠습니다. 세션 데이터가 있다면 ElastiCache 같은 외부 스토어로 분리해서, 어떤 인스턴스가 죽거나 늘어나도 요청 처리에 영향이 없게 만들겠습니다.
+      </p>
+      <p>
+        Launch Template에 IMDSv2를 강제한 AMI, 최소 권한 IAM Role, 부트스트랩 스크립트를 정의하고, ASG는 최소 2개 AZ에 걸쳐 배치해서 ALB Target Group에 연동하겠습니다. Health Check Grace Period는 애플리케이션의 실제 초기화 시간을 측정해서 여유 있게 설정하고, 준비 상태를 정확히 반영하는 <code>/health</code> 엔드포인트를 따로 두겠습니다.
+      </p>
+      <p>
+        Scaling Policy는 Target Tracking을 기본으로 CPU 또는 ALB의 RequestCountPerTarget을 목표 지표로 삼고, 트래픽 급증 속도가 빠른 서비스라면 Step Scaling을 추가로 걸어서 초기 반응 속도를 높이겠습니다. Scale-in 시에는 Deregistration Delay를 진행 중인 요청의 최대 처리 시간에 맞춰 설정해서 강제 종료로 인한 요청 유실을 막겠습니다.
+      </p>
+      <p>
+        비용 측면에서는 Mixed Instances Policy로 기본 용량 일부는 On-Demand(또는 Savings Plans 적용 대상)로 보장하고, 급증하는 버스트 용량은 서로 다른 인스턴스 패밀리 3~4개에 분산한 Spot으로 채우겠습니다. Spot 중단 2분 경고를 EventBridge로 받아서 해당 인스턴스를 로드밸런서에서 미리 draining 처리하는 자동화도 함께 두겠습니다.
+      </p>
+      <p>
+        마지막으로 CloudWatch 대시보드로 스케일링 이벤트 빈도, Spot 중단율, 인스턴스당 비용을 관찰하면서, 실제 트래픽 패턴이 쌓이면 Scheduled Scaling으로 예측 가능한 구간을 선반영하는 방향으로 점진적으로 다듬어가겠습니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① 상태 비저장 전제를 먼저 확인함 ② Health Check Grace Period를 실제 초기화 시간에 근거해 설정함 ③ Scale-out과 Scale-in 양쪽의 안전장치(Step Scaling, Deregistration Delay)를 모두 언급함 ④ 가용성과 비용을 Mixed Instances Policy로 동시에 설계함 ⑤ Spot 중단에 대한 능동적 대응(EventBridge 자동화)까지 제시함 ⑥ 사후 모니터링과 지속적 튜닝 프로세스로 마무리함
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "Target Tracking과 Step Scaling 중 하나만 골라야 한다면 어떤 기준으로 결정하시나요?"</div>
+      <div class="followup-a">
+        <p>기본값은 Target Tracking이다. 목표 지표(예: CPU 50%)만 정하면 AWS가 알아서 필요한 증분을 계산해주기 때문에 튜닝 부담이 적고, 대부분의 서비스에 잘 맞는다.</p>
+        <p>Step Scaling을 추가로 고려하는 경우는 <strong>트래픽 급증 속도가 매우 빠른 서비스</strong>다. 예를 들어 이벤트성 트래픽으로 몇 분 안에 부하가 몇 배로 뛰는 경우, Target Tracking의 점진적 반응만으로는 스케일아웃이 부하를 못 따라갈 수 있다. 이럴 때 "특정 임계값을 넘으면 한 번에 큰 폭으로 늘려라"는 Step Scaling 규칙을 Target Tracking과 함께 걸어서 초기 반응 속도를 보강한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "Spot 인스턴스가 2분 경고 후 회수될 때, 애플리케이션 레벨에서는 무엇을 준비해야 하나요?"</div>
+      <div class="followup-a">
+        <p>세 가지를 준비한다. 첫째, EventBridge나 인스턴스 메타데이터(<code>/latest/meta-data/spot/instance-action</code>)로 중단 신호를 수신하는 리스너를 둬서, 신호를 받으면 즉시 ALB Target Group에서 스스로를 draining 상태로 만들거나 애플리케이션이 새 요청을 받지 않도록 처리한다.</p>
+        <p>둘째, 진행 중인 작업이 있다면(배치 작업, 장시간 연산) 2분 안에 안전하게 저장하거나 재시도 가능한 상태로 중단할 수 있는 체크포인트 로직을 둔다. 셋째, ASG의 Mixed Instances Policy로 여러 인스턴스 유형에 Spot 요청을 분산해서, 특정 유형의 대규모 회수가 전체 용량에 주는 충격을 줄인다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "Scale-in 시 ASG는 어떤 인스턴스를 먼저 종료할지 어떻게 결정하나요?"</div>
+      <div class="followup-a">
+        <p>기본 종료 정책(Termination Policy)은 여러 AZ 중 인스턴스가 가장 많은 AZ에서, 그중에서도 가장 오래된 Launch Template 버전을 쓰는 인스턴스, 그다음 가장 오래 실행된 인스턴스 순으로 우선 종료하도록 설계되어 있다. 이는 AZ 간 균형을 유지하고 오래된 설정을 자연스럽게 정리하기 위해서다.</p>
+        <p>실무에서 이 기본 정책이 맞지 않는 경우(예: 특정 인스턴스에 긴 트랜잭션이 몰려 있어 함부로 종료하면 안 되는 경우)에는 커스텀 종료 정책이나 Lifecycle Hook의 <code>Terminating:Wait</code>을 걸어서, 종료 직전에 애플리케이션이 스스로 안전한지 판단하고 응답할 시간을 확보하도록 설계한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "새벽에 인스턴스 수가 계속 늘었다 줄었다 반복(flapping)한다는 신고가 들어왔습니다. 어떻게 디버깅하시겠습니까?"</div>
+      <div class="followup-a">
+        <p>먼저 CloudWatch에서 ASG의 Activity History와 Scaling Policy가 참조하는 메트릭(CPU, RequestCount 등)을 같은 시간축에 겹쳐서 본다. 스케일아웃 직후 메트릭이 안정되기 전에 또 스케일링 판단이 내려지고 있다면 Cooldown/Warmup 설정이 너무 짧다는 신호다.</p>
+        <p>동시에 새벽 시간대 특정 배치 작업이 순간적으로 CPU를 튀게 만드는지, 혹은 여러 Scaling Policy(예: Step Scaling과 Target Tracking을 동시에 걸어둔 경우)가 서로 다른 방향으로 충돌하고 있는지도 확인한다. 근본 원인이 확인되면 Cooldown을 늘리거나, 정책을 하나로 단순화하거나, 짧은 스파이크에 덜 민감하도록 메트릭의 평가 기간(Evaluation Period)을 늘리는 방향으로 조정한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "Reserved Instance와 Savings Plans 중 어떤 걸 선택하시겠습니까?"</div>
+      <div class="followup-a">
+        <p>워크로드의 유연성 요구에 따라 다르다. 인스턴스 유형과 리전이 장기간 거의 바뀌지 않는 안정적인 워크로드(예: 코어 DB 서버)라면 Reserved Instance, 특히 더 큰 할인율을 주는 Standard RI도 고려할 수 있다.</p>
+        <p>반대로 서비스가 계속 진화해서 인스턴스 유형을 바꾸거나 리전을 옮길 가능성이 있다면 Savings Plans가 유리하다. "시간당 얼마를 쓰겠다"는 약정만 지키면 되고, 그 안에서 인스턴스 유형이나 패밀리를 자유롭게 바꿔도 할인이 그대로 적용되기 때문이다. 실무에서는 기본 용량 일부는 Savings Plans로 커버하고, 나머지 변동 용량은 On-Demand/Spot으로 채우는 조합을 가장 흔히 쓴다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>스케일링 정책 선택 전에 애플리케이션이 상태 비저장인지부터 확인한다</li>
+          <li>Health Check Grace Period와 Connection Draining을 스스로 언급하며 사용자 요청 보호를 챙긴다</li>
+          <li>Mixed Instances Policy로 가용성과 비용을 동시에 설계한다</li>
+          <li>Spot 회수, 스케일링 진동 같은 실제 장애 시나리오를 스스로 예측하고 대비책을 제시한다</li>
+          <li>Reserved Instance가 용량 예약이 아니라 청구 할인이라는 것을 정확히 안다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"CPU 사용률 보고 서버를 늘리면 됩니다"로 끝내고 Scale-in의 안전성은 언급하지 않는다</li>
+          <li>Launch Template과 Launch Configuration을 "둘 다 비슷한 거"로 뭉뚱그린다</li>
+          <li>비용 최적화를 "Spot을 쓰면 쌉니다" 한 문장으로 끝내고 가용성 리스크를 고려하지 않는다</li>
+          <li>Health Check Grace Period나 Connection Draining 같은 세부 설정을 전혀 모른다</li>
+          <li>Reserved Instance를 사면 인스턴스를 계속 켜둬야 손해가 안 난다고 착각한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        "CPU 보고 서버를 늘린다"는 답은 Scale-out만 생각한 것이고, 실무 장애의 상당수는 <strong>Scale-in 시점, 혹은 인스턴스가 예상보다 빨리 사라지는 순간</strong>에 발생한다. 시니어 면접에서는 늘리는 로직뿐 아니라, 줄어들 때 요청이 안전한지, 갑자기 용량이 빠질 때(Spot 회수) 서비스가 버틸 수 있는지까지 함께 설계할 수 있어야 한다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"Auto Scaling은 CPU 사용률이 높으면 서버를 늘려주는 기능이다."</p>
+      <div class="mc-right">실제</div>
+      <p>CPU는 여러 메트릭 중 하나일 뿐이다. ALB의 RequestCountPerTarget, 커스텀 CloudWatch 메트릭(큐 길이 등), 심지어 예측 모델(Predictive Scaling)까지 다양한 기준으로 스케일링할 수 있다. 메모리나 큐 적체가 병목인 서비스에서 CPU만 보고 있으면 정작 필요한 순간에 스케일아웃이 안 된다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"Spot 인스턴스는 언제 죽을지 몰라서 프로덕션에 쓰면 안 된다."</p>
+      <div class="mc-right">실제</div>
+      <p>완전히 랜덤하게 죽는 것이 아니라 2분 사전 경고가 오고, 여러 인스턴스 유형에 분산 요청하면 동시 회수 확률을 크게 낮출 수 있다. Mixed Instances Policy로 기본 용량은 On-Demand로 보장하고 버스트 용량만 Spot으로 채우면, 상당한 비용 절감을 가용성 손실 없이 얻을 수 있다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"Scale-out만 잘 설계하면 되고, Scale-in은 그냥 아무 인스턴스나 끄면 된다."</p>
+      <div class="mc-right">실제</div>
+      <p>Scale-in 시 Connection Draining 없이 즉시 종료하면 처리 중이던 요청이 강제로 끊긴다. 결제, 파일 업로드처럼 긴 트랜잭션이 있는 서비스에서는 Deregistration Delay와 Lifecycle Hook을 반드시 함께 설계해야 한다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"Launch Template이나 Launch Configuration이나 결국 인스턴스 설정을 정의하는 것이니 큰 차이 없다."</p>
+      <div class="mc-right">실제</div>
+      <p>버전 관리, Mixed Instances Policy(여러 인스턴스 유형/구매 옵션 조합), 최신 EC2 기능 지원 여부에서 실질적인 차이가 있다. Launch Configuration은 이제 신규 기능이 추가되지 않는 구식 방식이라 실무에서는 Launch Template을 기본으로 써야 한다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"Reserved Instance를 구매하면 그 인스턴스가 항상 켜져 있어야 본전을 뽑는다."</p>
+      <div class="mc-right">실제</div>
+      <p>Reserved Instance는 용량을 예약하는 것이 아니라(그건 별도의 Capacity Reservation), 조건에 맞는 인스턴스가 실행 중일 때 자동으로 적용되는 <strong>청구 할인</strong>이다. 안 쓰는 시간에는 할인을 못 받을 뿐이지, 계약을 어긴 것도 추가 손해가 나는 것도 아니다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Scaling Policy 선택</strong></td>
+          <td>트래픽 패턴(예측 가능/불가능, 급증 속도)에 따라 Target Tracking, Step, Scheduled를 조합해 근거 있게 선택한다</td>
+          <td>Target Tracking을 쓴다는 것은 알지만 다른 정책과의 조합은 고려하지 못한다</td>
+          <td>"CPU 보면 늘린다" 수준에서 멈춘다</td>
+        </tr>
+        <tr>
+          <td><strong>Scale-in 안전성</strong></td>
+          <td>Connection Draining, Lifecycle Hook을 통해 처리 중인 요청을 구체적으로 보호하는 설계를 제시한다</td>
+          <td>Scale-in이 필요하다는 것은 알지만 안전 장치는 언급하지 못한다</td>
+          <td>Scale-in 시 요청 유실 가능성을 생각하지 못한다</td>
+        </tr>
+        <tr>
+          <td><strong>Health Check 설계</strong></td>
+          <td>Grace Period를 실제 초기화 시간과 연결 짓고, 무한 재시작 같은 실패 사례를 설명한다</td>
+          <td>Health Check가 필요하다는 것은 알지만 Grace Period 설정 실수의 위험은 모른다</td>
+          <td>Health Check 관련 설정을 전혀 언급하지 못한다</td>
+        </tr>
+        <tr>
+          <td><strong>구매 옵션 조합</strong></td>
+          <td>Mixed Instances Policy로 기본 용량과 버스트 용량을 분리해 가용성과 비용을 동시에 설계한다</td>
+          <td>Spot이 싸다는 것은 알지만 가용성 리스크 완화 방법은 모른다</td>
+          <td>On-Demand만 고려하거나, 비용을 전혀 고려하지 않는다</td>
+        </tr>
+        <tr>
+          <td><strong>Launch Template 이해</strong></td>
+          <td>버전 관리, Mixed Instances Policy 지원 등 Launch Configuration 대비 실질적 우위를 설명한다</td>
+          <td>Launch Template을 쓴다는 것은 알지만 차이를 명확히 설명 못 한다</td>
+          <td>둘의 차이를 모른다</td>
+        </tr>
+        <tr>
+          <td><strong>Reserved Instance/Spot 개념 정확성</strong></td>
+          <td>RI가 용량 예약이 아닌 청구 할인이라는 것, Spot 회수가 2분 경고 기반이라는 것을 정확히 안다</td>
+          <td>할인 상품이라는 것은 알지만 세부 동작 방식은 헷갈린다</td>
+          <td>RI를 용량 예약으로 오해하거나 Spot 회수 방식을 모른다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면, Day 5 RDS 고가용성과 데이터 보호에서 컴퓨트 계층의 Auto Scaling과 짝을 이루는 데이터 계층의 페일오버 설계를 이어서 다룬다. 컴퓨트가 자유롭게 늘고 줄어도 데이터 계층이 버텨줘야 전체 아키텍처가 완성된다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./0003-iam-least-privilege-design.html">← Day 3</a>
+    <a href="./index.html">목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>
