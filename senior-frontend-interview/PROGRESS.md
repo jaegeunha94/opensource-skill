@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | 프론트엔드 시니어 인터뷰 답변 프레임워크와 브라우저 기반 사고 | [0001-senior-frontend-interview-framework-and-browser-thinking.html](lessons/0001-senior-frontend-interview-framework-and-browser-thinking.html) |
+| 2 | 2026-07-03 | HTML/CSS 아키텍처와 크로스 브라우저 레이아웃 사고 | [0002-html-css-architecture-and-cross-browser-layout-thinking.html](lessons/0002-html-css-architecture-and-cross-browser-layout-thinking.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | HTML/CSS 아키텍처 | 시맨틱 마크업, Cascade/Specificity, 크로스 브라우저 레이아웃 사고 |
 | 3 | 브라우저 렌더링 파이프라인 | Critical Rendering Path, Reflow/Repaint, Layout Thrashing, Composite |
 | 4 | JavaScript 실행 모델 | 이벤트 루프, 클로저, 메모리 누수, 프로덕션 디버깅 |
 | 5 | 웹 접근성(A11y) 심화 | WAI-ARIA, 키보드 내비게이션, 스크린리더 대응, 접근성 감사 프로세스 |
@@ -29,14 +29,14 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — Day 2 (HTML/CSS 아키텍처)가 다음 차례.
+**Day 2 완료** — Day 3 (브라우저 렌더링 파이프라인)이 다음 차례.
 
 ## 습득한 핵심 개념
 
 - [x] 프론트엔드 시니어 인터뷰 공통 답변 프레임워크(증상 구체화 → 브라우저 경로 재구성 → 원인 계층 격리 → 트레이드오프 언급 → 검증) (Day 1)
 - [x] 사용자 상호작용 → 화면 갱신까지의 브라우저 내부 경로 전체 지도 (Day 1)
 - [x] 좋은 답변 vs 약한 답변 구별 기준 (Day 1)
-- [ ] HTML/CSS 아키텍처와 크로스 브라우저 레이아웃 사고 (예정 Day 2)
+- [x] 시맨틱 HTML과 접근성/SEO 연결, Cascade/Specificity 붕괴 원인 사슬, CSS 아키텍처 방법론 트레이드오프, 크로스 브라우저 레이아웃 디버깅 절차 (Day 2)
 - [ ] 브라우저 렌더링 파이프라인 심화 (예정 Day 3)
 - [ ] JavaScript 실행 모델과 메모리 누수 진단 (예정 Day 4)
 - [ ] 웹 접근성 심화와 감사 프로세스 (예정 Day 5)
