@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — B-Tree와 B+Tree | 파일구조 면접 준비</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222535;
+      --border: #2e3147;
+      --accent: #5b8dee;
+      --accent2: #7c5cbf;
+      --green: #3ecf8e;
+      --red: #e25c5c;
+      --yellow: #f5a623;
+      --text: #e2e4f0;
+      --muted: #8b90a8;
+      --code-bg: #12141f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1f3c 0%, #12141f 100%);
+      border-bottom: 2px solid var(--accent2);
+      padding: 2.5rem 2rem;
+      margin: 0 -1rem 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .icon-q  { background: #2b1f4a; color: var(--accent2); }
+    .icon-pre { background: #1a2f3a; color: var(--accent); }
+    .icon-why { background: #2a2010; color: var(--yellow); }
+    .icon-real { background: #112a1f; color: var(--green); }
+    .icon-think { background: #1f2a3a; color: #a8c5f0; }
+    .icon-ans  { background: #1a2a1a; color: var(--green); }
+    .icon-trade { background: #2a1a1a; color: var(--red); }
+    .icon-myth  { background: #2a1f10; color: var(--yellow); }
+    .icon-follow { background: #1a1a2a; color: var(--accent2); }
+    .icon-diff  { background: #202020; color: #c0c0c0; }
+    .icon-rub  { background: #0e1e1a; color: var(--green); }
+
+    h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 1.25rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    li { margin-bottom: 0.35rem; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #2b1f4a 0%, #1a1d27 100%);
+      border: 1.5px solid var(--accent2);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #d4c8f5;
+      margin-bottom: 0.75rem;
+    }
+    .interview-sub {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.88rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+      font-size: 0.87rem;
+      line-height: 1.6;
+    }
+    pre code { background: none; border: none; padding: 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.85rem 0;
+      font-size: 0.92rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+    .answer-block {
+      border-left: 3px solid;
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 0.85rem 0;
+    }
+    .answer-strong { border-color: var(--green); background: rgba(62,207,142,0.06); }
+    .answer-weak   { border-color: var(--red);   background: rgba(226,92,92,0.06); }
+    .answer-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+    .label-strong { color: var(--green); }
+    .label-weak   { color: var(--red); }
+
+    .step-list { counter-reset: step; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-list li:last-child { border-bottom: none; }
+    .step-list li::before {
+      content: counter(step);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0;
+    }
+    .followup-q {
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .score-high { background: rgba(62,207,142,0.2); color: var(--green); }
+    .score-mid  { background: rgba(245,166,35,0.2); color: var(--yellow); }
+    .score-low  { background: rgba(226,92,92,0.2);  color: var(--red); }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.85rem 0;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+    .callout-info { background: rgba(91,141,238,0.08); border-left: 3px solid var(--accent); }
+    .callout-warn { background: rgba(245,166,35,0.08); border-left: 3px solid var(--yellow); }
+    .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin: 0.1rem;
+    }
+    .tag-blue { background: rgba(91,141,238,0.15); color: var(--accent); }
+    .tag-green { background: rgba(62,207,142,0.15); color: var(--green); }
+    .tag-yellow { background: rgba(245,166,35,0.15); color: var(--yellow); }
+
+    .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      color: #c9d0e8;
+      margin: 0.85rem 0;
+      white-space: pre;
+    }
+
+    nav.breadcrumb {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    nav.breadcrumb a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <nav class="breadcrumb">
+      <a href="../">파일구조 면접 준비</a> › <a href="./index.html">레슨 목록</a>
+    </nav>
+    <div class="day-badge">Interview Day 4</div>
+    <h1>B-Tree와 B+Tree — Fanout, Height, Range Scan</h1>
+    <p class="subtitle">Multi-level index를 균형 트리로 일반화할 때, 왜 DB는 B-Tree가 아닌 B+Tree를 선택하는가</p>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-q">Q</div>
+      <h2>면접 질문</h2>
+    </div>
+    <div class="interview-q">
+      "왜 대부분의 DB 인덱스는 B-Tree가 아니라 B+Tree를 사용합니까?
+      두 구조의 차이가 실제 조회 성능에 어떤 영향을 줍니까?"
+    </div>
+    <p class="interview-sub">변형 질문 유형</p>
+    <ul>
+      <li>"B+Tree의 fanout이 클수록 왜 유리합니까? fanout은 무엇으로 결정됩니까?"</li>
+      <li>"1억 건 레코드에 B+Tree 인덱스를 걸면 트리의 높이는 대략 몇입니까?"</li>
+      <li>"B+Tree에서 range scan(범위 검색)이 B-Tree보다 빠른 이유는 무엇입니까?"</li>
+      <li>"B+Tree의 삽입/삭제 시 노드 분할(split)과 병합(merge)이 성능에 어떤 영향을 줍니까?"</li>
+    </ul>
+  </div>
+
+  <!-- 2. 전제 개념 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">📖</div>
+      <h2>전제 개념 — 쉬운 한국어로 먼저 이해하기</h2>
+    </div>
+
+    <h3>4-1. Day 3의 문제의식 다시 보기 — sparse index도 결국 커진다</h3>
+    <p>
+      Day 3에서 sparse index는 블록 수만큼만 항목을 두어 저장 공간을 아꼈습니다. 그런데 레코드가
+      수억 건이면 블록 수도 수백만 개가 될 수 있고, 그러면 sparse index 자체도 하나의 파일로는
+      감당하기 어려운 크기가 됩니다. 이때 "그 sparse index 파일을 다시 정렬된 파일로 보고, 그 위에
+      한 단계 더 작은 인덱스를 얹는다"는 아이디어가 나옵니다. 이렇게 인덱스를 계층적으로 쌓아 올리는 것을
+      <strong>multi-level index</strong>라고 합니다. B-Tree와 B+Tree는 이 multi-level index를
+      "삽입/삭제가 있어도 항상 균형을 유지하는 트리 구조"로 일반화한 것입니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>4-2. 왜 이진 트리(BST)가 아니라 다지 트리(m-way tree)인가 — Fanout이라는 개념</h3>
+    <p>
+      메모리 안에서만 동작하는 이진 탐색 트리(BST)는 노드 하나가 자식을 최대 2개만 가집니다.
+      그런데 디스크 기반 인덱스에서 성능을 좌우하는 것은 "비교 횟수"가 아니라 <strong>"디스크에서 블록을
+      몇 번 읽는가(I/O 횟수)"</strong>입니다. Day 1에서 다룬 것처럼 디스크 I/O 1회 비용은 메모리 접근보다
+      수만 배 비쌉니다. 그래서 트리 노드 1개를 디스크 블록(페이지) 1개에 맞추고, 그 노드 안에
+      <strong>최대한 많은 키를 채워 넣어</strong> 한 번의 I/O로 더 많은 정보를 얻도록 설계합니다.
+      이때 노드 하나가 가질 수 있는 자식 수를 <strong>fanout(분기 수)</strong>이라고 부릅니다.
+    </p>
+    <div class="diagram">[ BST(이진, fanout=2) vs B+Tree(다지, fanout=100) — 100만 건 기준 높이 비교 ]
+
+BST (fanout=2):  높이 ≈ log₂(1,000,000) ≈ 20      → 조회 시 최대 20번 I/O
+B+Tree(fanout=100): 높이 ≈ log₁₀₀(1,000,000) ≈ 3   → 조회 시 최대 3번 I/O
+
+노드 하나 = 디스크 블록(페이지) 하나
+fanout이 크다 = 한 페이지 안에 더 많은 키를 채운다 = 트리가 더 "낮고 넓어진다"
+트리가 낮을수록 루트에서 리프까지 가는 데 필요한 I/O 횟수가 줄어든다</div>
+    <p>
+      즉 fanout을 늘리는 것은 단순한 최적화가 아니라, <strong>"I/O 횟수 = 트리 높이"라는 등식을
+      최소화하는 핵심 레버</strong>입니다. fanout은 "페이지 크기 ÷ (키 크기 + 포인터 크기)"로 대략
+      결정되므로, 키를 작게(예: 정수 PK) 유지하는 것도 실무에서 fanout을 키우는 방법 중 하나입니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>4-3. B-Tree — 모든 노드에 데이터를 둔다</h3>
+    <p>
+      B-Tree는 <strong>internal node(중간 노드)에도 실제 레코드(또는 레코드 포인터)를 저장</strong>합니다.
+      그래서 루트나 중간 노드에서 찾는 키를 만나면, 리프까지 내려가지 않고 바로 그 자리에서 조회를
+      끝낼 수 있습니다. "운이 좋으면 더 빨리 끝난다"는 장점이 있습니다.
+    </p>
+    <div class="diagram">[ B-Tree — internal node에도 데이터가 있음 ]
+
+                [ 30:data | 60:data ]
+               /          |          \
+       [10:data|20:data] [40:data|50:data] [70:data|80:data]
+
+키=30 조회 → 루트에서 바로 발견 (1 I/O로 종료, 운이 좋은 경우)
+키=45 조회 → 루트 → 중간 리프까지 내려가야 함 (여러 I/O)
+range scan(30~70) → 트리를 오르내리며 순회해야 함 (leaf끼리 연결 안 됨)</div>
+
+    <div class="divider"></div>
+    <h3>4-4. B+Tree — 데이터는 오직 리프에만, internal node는 이정표 역할만</h3>
+    <p>
+      B+Tree는 <strong>internal node에는 오직 "키 값과 자식을 찾아가기 위한 포인터"만</strong> 두고,
+      실제 레코드(또는 레코드 포인터)는 <strong>리프 노드에만</strong> 저장합니다. 그리고 결정적으로,
+      <strong>모든 리프 노드를 옆으로 연결된 linked list</strong>로 묶어 둡니다.
+    </p>
+    <div class="diagram">[ B+Tree — 데이터는 leaf에만, leaf는 서로 연결됨 ]
+
+                [ 30 | 60 ]                ← internal node: 이정표(키)만 있음
+               /      |      \
+      [10|20]→[30|40|50]→[60|70]→[80|90]   ← leaf: 실제 데이터 + 다음 leaf로의 포인터
+
+키=45 조회 → 항상 루트에서 리프까지 끝까지 내려감 (I/O 횟수가 항상 "트리 높이"로 일정)
+range scan(30~70) → leaf인 [30|40|50]을 찾은 뒤, → 포인터를 따라 옆으로만 쭉 읽으면 끝
+  (트리를 다시 오르내릴 필요 없음)</div>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span><strong>면접관이 보는 것:</strong> "B+Tree가 무조건 더 빠르다"는 결과 암기가 아니라,
+      <strong>"internal node를 이정표 전용으로 비워서 fanout을 극대화하고, leaf를 연결해 range scan을
+      순차 I/O로 바꿨다"</strong>는 설계 의도를 아는지를 봅니다. B-Tree가 "가끔 더 빠를 수도 있다"는
+      점과, B+Tree가 그 대신 <strong>무엇을 얻었는지</strong>를 함께 설명해야 합니다.
+    </span>
+    </div>
+
+    <div class="divider"></div>
+    <h3>4-5. 왜 B+Tree가 "이정표만 남겨서" 더 유리한가 — fanout과 range scan 두 가지 이유</h3>
+    <p>
+      첫째, B-Tree는 internal node 안에 데이터(또는 데이터 포인터)까지 같이 저장하므로, 같은 크기의
+      페이지 안에 담을 수 있는 <strong>키의 개수가 줄어듭니다</strong>. 반면 B+Tree의 internal node는
+      키와 자식 포인터만 있어 훨씬 가볍고, 그만큼 <strong>같은 페이지에 더 많은 키를 채워 fanout이
+      커집니다</strong>. fanout이 크면 트리 높이가 낮아지고, 트리 높이가 낮으면 조회에 필요한 I/O가
+      줄어듭니다.
+    </p>
+    <p>
+      둘째, B-Tree는 데이터가 트리 전체에 흩어져 있어 range scan을 하려면 트리를 오르내리며 순회해야
+      합니다. B+Tree는 데이터가 오직 리프에만 있고, 그 리프들이 정렬된 순서로 서로 연결돼 있으므로
+      range scan은 <strong>리프 하나만 먼저 찾고 나면 그 다음부터는 포인터를 따라 옆으로 읽기만
+      하면 됩니다</strong>. 이것이 사실상 sequential access이므로, Day 1에서 다룬 "순차 접근이
+      랜덤 접근보다 훨씬 싸다"는 원리를 그대로 활용하는 것입니다.
+    </p>
+  </div>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-why">?</div>
+      <h2>왜 면접에서 이 질문을 묻는가</h2>
+    </div>
+    <p>
+      B-Tree/B+Tree 삽입 알고리즘을 손으로 그릴 수 있는지가 아니라, <strong>"트리 구조 설계가 실제
+      I/O 비용에 어떤 영향을 주는지 인과관계로 설명할 수 있는가"</strong>를 봅니다.
+    </p>
+    <ol>
+      <li>
+        <strong>I/O 횟수와 트리 높이의 관계를 정량적으로 아는가</strong><br>
+        "fanout이 크면 빠르다"를 넘어서, 1억 건 레코드에서 fanout 100이면 높이가 3~4 정도라는
+        감각적인 계산을 할 수 있어야 합니다.
+      </li>
+      <li>
+        <strong>B+Tree의 설계 의도를 구조적으로 설명할 수 있는가</strong><br>
+        "그냥 B+Tree가 더 좋다고 배웠다"가 아니라, internal node를 비워 fanout을 늘리고 leaf를
+        연결해 range scan을 순차 I/O로 바꿨다는 두 가지 이유를 각각 말할 수 있어야 합니다.
+      </li>
+      <li>
+        <strong>Day 1~3의 개념과 연결되는가</strong><br>
+        B+Tree는 결국 Day 1의 block I/O 비용 모델, Day 3의 multi-level sparse index를 이어받은
+        구조입니다. 이 연결을 짚지 못하면 암기처럼 들립니다.
+      </li>
+    </ol>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span>
+        주니어 수준 답변: "B+Tree는 리프에 데이터가 다 있고 리프끼리 연결돼 있어서 B-Tree보다 좋습니다."<br>
+        10년차 기대 답변: "internal node를 키/포인터 전용으로 비워 같은 페이지 크기에서 fanout을
+        극대화하고, 그 결과 트리 높이가 낮아져 point lookup의 I/O 횟수가 줄어듭니다. 또한 데이터를
+        리프에만 두고 리프를 정렬된 순서로 연결해, range scan을 트리 순회가 아니라 순차 I/O로
+        바꾸었습니다. B-Tree는 운이 좋으면 internal node에서 더 빨리 끝날 수 있지만, 그 대가로
+        fanout이 줄고 range scan이 비효율적이라는 trade-off를 안습니다."
+      </span>
+    </div>
+  </div>
+
+  <!-- 4. 실무 연결 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-real">⚙</div>
+      <h2>실무 연결</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>실무 상황</th>
+          <th>B-Tree / B+Tree 판단</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>InnoDB(MySQL) 클러스터드 인덱스</strong></td>
+          <td>
+            PK 기준 B+Tree이며 leaf 자체가 실제 데이터 페이지입니다. leaf 연결 리스트 덕분에
+            <code>WHERE id BETWEEN a AND b</code> 같은 range scan이 순차 I/O로 처리됩니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>페이지 크기(innodb_page_size)와 fanout</strong></td>
+          <td>
+            16KB 페이지에 PK(정수 8바이트) + 포인터(6바이트) 기준이면 fanout이 수백 단위가 되어,
+            수억 건도 트리 높이 3~4로 처리 가능합니다. 페이지 크기를 키우거나 키를 작게 유지하는 것이
+            실무에서 fanout을 관리하는 방법입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>ORDER BY + LIMIT 페이지네이션</strong></td>
+          <td>
+            정렬 기준 컬럼이 B+Tree 인덱스라면, leaf 연결 리스트를 따라가며 필요한 만큼만 읽으면 되어
+            매우 효율적입니다. 반대로 인덱스 없는 컬럼으로 정렬하면 전체를 읽어 정렬해야 하는 비용이 발생합니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>대량 INSERT 시 노드 분할(page split)</strong></td>
+          <td>
+            정렬 순서와 무관한 키(UUID 등)로 대량 삽입하면 리프 중간에 계속 끼워 넣어야 해서 page split이
+            빈번해지고 쓰기 성능이 떨어집니다. auto-increment나 시간 정렬 가능한 키를 선호하는 이유입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>인덱스 재구성(OPTIMIZE TABLE 등)</strong></td>
+          <td>
+            잦은 삭제/삽입으로 리프의 채움률(fill factor)이 낮아지면 fanout 효과가 떨어져 트리 높이가
+            실질적으로 늘어날 수 있습니다. 정기적인 인덱스 재구성으로 채움률을 회복합니다.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-think">→</div>
+      <h2>답변 사고 순서 — 면접에서 이렇게 생각하면서 말한다</h2>
+    </div>
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>왜 이진 트리가 아니라 다지 트리인지부터 설명</strong><br>
+          디스크 I/O 비용 모델에서는 비교 횟수가 아니라 I/O 횟수가 성능을 좌우하므로, 노드당 fanout을
+          키워 트리 높이를 낮추는 것이 목표라는 점을 먼저 짚습니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>B-Tree와 B+Tree의 구조적 차이를 정의</strong><br>
+          B-Tree는 internal node에도 데이터를 두고, B+Tree는 데이터를 리프에만 두고 리프를 연결한다는
+          차이를 명확히 말합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>fanout 관점에서 우위를 설명</strong><br>
+          internal node가 가벼울수록 같은 페이지에 더 많은 키를 담아 fanout이 커지고 트리 높이가
+          낮아진다는 인과관계를 제시합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>range scan 관점에서 우위를 설명</strong><br>
+          leaf 연결 리스트 덕분에 range scan이 트리 순회가 아니라 순차 I/O가 된다는 점을 강조합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>B-Tree가 유리한 경우도 인정</strong><br>
+          point lookup에서 운 좋게 internal node에서 바로 발견되는 경우가 있지만, 이는 평균적 이득이
+          아니라 최악의 경우 대비가 어렵다는 점까지 균형 있게 마무리합니다.
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-ans">✓</div>
+      <h2>핵심 답변 예시</h2>
+    </div>
+
+    <h3>짧은 버전 (1~2분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Short)</div>
+      <p>
+        B-Tree는 internal node에도 데이터를 저장해서 운이 좋으면 조회가 빨리 끝나지만, 그만큼 한 페이지에
+        담을 수 있는 키 수(fanout)가 줄어 트리가 더 높아집니다. B+Tree는 데이터를 리프에만 두고
+        internal node는 이정표 역할만 하도록 가볍게 만들어 fanout을 극대화하고, 그 결과 트리 높이가
+        낮아져 point lookup의 I/O 횟수가 줄어듭니다.
+      </p>
+      <p>
+        게다가 B+Tree는 모든 리프를 정렬된 순서로 연결해 둬서, range scan을 할 때 리프 하나만 먼저
+        찾으면 그 다음부터는 트리를 다시 타지 않고 옆으로 순차적으로 읽으면 됩니다. 이 두 가지 이유로
+        대부분의 DB 인덱스가 B+Tree를 채택합니다.
+      </p>
+    </div>
+
+    <h3>깊이 있는 버전 (3~5분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Deep)</div>
+      <p>
+        디스크 기반 인덱스에서 성능을 좌우하는 것은 비교 연산 횟수가 아니라 디스크 I/O 횟수입니다.
+        트리 노드 하나를 디스크 페이지 하나에 맞춘다면, 노드 하나가 얼마나 많은 자식을 가질 수 있는가(fanout)가
+        트리의 높이, 곧 조회에 필요한 I/O 횟수를 결정합니다. 이진 트리는 fanout이 2뿐이라 백만 건만
+        되어도 높이가 20에 가깝지만, fanout을 100 수준으로 키우면 같은 데이터를 높이 3 정도로 다룰 수
+        있습니다.
+      </p>
+      <p>
+        B-Tree는 internal node에도 실제 레코드나 그 포인터를 함께 저장합니다. 그래서 찾는 키가 운 좋게
+        중간 노드에 있으면 리프까지 내려가지 않고 끝낼 수 있다는 장점이 있습니다. 하지만 이 데이터가
+        내부 노드의 공간을 차지하기 때문에, 같은 페이지 크기 안에 담을 수 있는 키의 개수, 즉 fanout이
+        줄어듭니다. 게다가 데이터가 트리 전체에 흩어져 있어서 범위 검색을 하려면 트리를 오르내리며
+        순회해야 하는 부담이 있습니다.
+      </p>
+      <p>
+        B+Tree는 이 두 가지 문제를 구조적으로 해결합니다. internal node는 키 값과 자식 포인터만
+        저장해 매우 가볍게 유지하고, 그 덕분에 같은 페이지 크기에서 훨씬 많은 키를 담아 fanout을
+        극대화합니다. 실제 레코드는 오직 리프 노드에만 저장하고, 모든 리프를 정렬된 순서로 연결된
+        리스트로 묶습니다. 그 결과 point lookup은 항상 루트에서 리프까지 일정한 횟수의 I/O로
+        끝나고(worst case가 곧 일반적인 경우), range scan은 시작 리프를 찾은 뒤부터는 트리를
+        다시 타지 않고 리프 포인터를 따라 순차적으로 읽기만 하면 됩니다. 이는 디스크에서 순차 접근이
+        랜덤 접근보다 훨씬 저렴하다는 원리를 그대로 활용하는 설계입니다.
+      </p>
+      <p>
+        결론적으로 저는 이 선택을 "B+Tree가 무조건 더 좋다"가 아니라, "internal node를 비워 fanout을
+        키우고, 리프를 연결해 range scan을 순차 I/O로 바꾼 대가로 point lookup에서의 우연한 조기 종료
+        가능성을 포기한 것"이라는 trade-off로 설명합니다. 대부분의 실무 워크로드는 range scan과 정렬된
+        순회의 빈도가 높기 때문에 이 trade-off가 유리하게 작용합니다.
+      </p>
+    </div>
+
+    <div class="answer-block answer-weak">
+      <div class="answer-label label-weak">약한 답변</div>
+      <p>
+        "B+Tree는 리프 노드에만 데이터가 있고 리프끼리 연결돼 있어서 검색이 빠릅니다. 그래서 DB는
+        B+Tree를 씁니다."
+      </p>
+      <p>
+        <strong>왜 약한가:</strong> "빠르다"는 결론만 있고 <em>왜</em> 빠른지에 대한 인과관계(fanout
+        증가로 인한 트리 높이 감소, 순차 I/O로 전환된 range scan)가 빠져 있습니다. B-Tree가 어떤
+        상황에서는 유리할 수 있다는 것도 언급하지 않아, 단순 비교가 아니라 trade-off를 이해하고
+        있는지 확인할 수 없습니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 7. Trade-off -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-trade">⇄</div>
+      <h2>Trade-off 정리</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>B-Tree</th>
+          <th>B+Tree</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>데이터 저장 위치</td>
+          <td>internal node + leaf 모두</td>
+          <td>leaf에만</td>
+        </tr>
+        <tr>
+          <td>같은 페이지 크기의 fanout</td>
+          <td>작음 (데이터가 공간을 차지)</td>
+          <td>큼 (internal node가 가벼움)</td>
+        </tr>
+        <tr>
+          <td>Point lookup 최선의 경우</td>
+          <td>internal node에서 조기 종료 가능</td>
+          <td>항상 리프까지 내려감 (일정한 비용)</td>
+        </tr>
+        <tr>
+          <td>Point lookup 평균/최악의 경우</td>
+          <td>트리가 더 높아 상대적으로 불리</td>
+          <td>fanout이 커서 유리</td>
+        </tr>
+        <tr>
+          <td>Range scan</td>
+          <td>트리 순회 필요 (비효율적)</td>
+          <td>leaf 연결 리스트로 순차 I/O</td>
+        </tr>
+        <tr>
+          <td>구현 복잡도</td>
+          <td>상대적으로 단순 (중복 저장 없음)</td>
+          <td>리프 연결 리스트 유지 로직 추가</td>
+        </tr>
+        <tr>
+          <td>실무 채택</td>
+          <td>파일 시스템 일부(NTFS 등), 특정 인메모리 구조</td>
+          <td>대부분의 RDBMS 인덱스(InnoDB, PostgreSQL 등)</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span>
+        B-Tree와 B+Tree의 우열은 <strong>워크로드의 range scan 비중</strong>에 달려 있습니다.
+        정렬 순회와 범위 검색이 잦은 DBMS 워크로드에서는 B+Tree가 압도적으로 유리하지만,
+        point lookup 위주이고 range scan이 거의 없는 워크로드라면 B-Tree의 조기 종료 이점이
+        상대적으로 부각될 수 있습니다.
+      </span>
+    </div>
+  </div>
+
+  <!-- 8. 흔한 오해 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-myth">✗</div>
+      <h2>흔한 오해와 바로잡기</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 1: "B+Tree는 그냥 B-Tree에 리프 연결 리스트만 추가한 것이다"</div>
+      <p>
+        리프 연결은 결과이지 원인이 아닙니다. 더 근본적인 차이는 internal node에 데이터를 두는지
+        여부이고, 이것이 fanout과 트리 높이를 결정합니다. 리프 연결은 "데이터가 리프에만 있다"는
+        구조 위에서 range scan을 최적화하기 위해 추가된 것입니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 2: "트리 높이가 O(log n)이니 데이터가 아무리 늘어나도 성능은 거의 그대로다"</div>
+      <p>
+        O(log n)이라도 fanout이 작으면 실제 I/O 횟수 차이가 큽니다. fanout 2와 fanout 100은 같은
+        O(log n)이어도 백만 건 기준으로 20 vs 3이라는 실질적 차이를 만듭니다. Big-O 표기만으로는
+        실무 인덱스 설계에서 fanout 관리의 중요성이 드러나지 않습니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 3: "B+Tree는 항상 B-Tree보다 빠르다"</div>
+      <p>
+        point lookup만 반복되고 range scan이 전혀 없는 워크로드라면, B-Tree가 일부 조회에서 internal
+        node 조기 종료로 더 빠를 수 있습니다. B+Tree의 우위는 "range scan과 정렬 순회가 잦은 실무
+        워크로드"라는 전제 위에서 성립하는 것이지, 무조건적인 우열이 아닙니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 4: "인덱스 컬럼 개수를 늘려도 fanout에는 영향이 없다"</div>
+      <p>
+        복합 인덱스(composite index)는 키 크기가 커지므로 같은 페이지에 담을 수 있는 키 개수, 즉
+        fanout이 줄어듭니다. 컬럼을 무분별하게 추가하면 트리 높이가 늘어나 조회 I/O가 증가할 수
+        있다는 점을 실무에서 놓치기 쉽습니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- 9. Follow-up 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-follow">↓</div>
+      <h2>Senior-Level Follow-up 질문과 답변 방향</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "B+Tree 삽입 중 노드가 꽉 차면 어떤 일이 일어납니까? 이것이 성능에 어떤 영향을 줍니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        노드가 가득 차면 노드를 둘로 나누는 page split이 일어나고, 그 여파가 부모 노드까지 전파될 수
+        있습니다(cascading split). split은 추가 쓰기 I/O를 유발하고, 정렬 순서와 무관한 키로 삽입할
+        때 빈번히 발생합니다. 이를 줄이기 위해 노드를 처음부터 일부러 100%가 아니라 60~70% 정도만
+        채우는 fill factor 조정을 사용하기도 합니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "삭제가 반복되면 트리가 어떻게 변형됩니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        노드의 채움률이 최소 기준 이하로 떨어지면 인접 노드와 병합(merge)하거나 키를 재분배
+        (redistribution)합니다. 병합/재분배가 잦으면 트리 구조가 계속 바뀌며 쓰기 오버헤드가
+        커지므로, 삭제가 많은 워크로드에서는 주기적인 인덱스 재구성(rebuild)을 고려합니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "메모리에 트리 전체를 올릴 수 있다면, 그래도 B+Tree가 최선입니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        메모리 안에서는 디스크 I/O 비용이 사라지므로 fanout을 극대화할 필요성이 줄고, 오히려
+        캐시 라인 크기에 맞춘 더 작은 fanout이나 이진 탐색 트리 계열(레드-블랙 트리 등)이 유리할 수
+        있습니다. B+Tree의 설계는 디스크 I/O 비용 모델을 전제로 한 선택이므로, in-memory 구조에서는
+        같은 결론이 그대로 적용되지 않습니다. (다만 in-memory에서도 cache line 접근을 블록처럼
+        취급하는 cache-oblivious B-tree 계열은 여전히 유효합니다.)
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "B+Tree 인덱스에서 매우 선택도(selectivity)가 낮은 컬럼(예: boolean)에 인덱스를 걸면 어떻게 됩니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        선택도가 낮으면(값의 종류가 적으면) 인덱스로 걸러지는 레코드 비율이 작아, 결국 데이터 페이지의
+        대부분을 다시 읽어야 해서 순차 풀스캔보다 느려질 수 있습니다. 옵티마이저가 이런 경우 인덱스를
+        무시하고 full scan을 선택하는 이유이기도 합니다. B+Tree 자체의 문제가 아니라 "인덱스를 쓸
+        가치가 있는 선택도인가"를 먼저 판단해야 합니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 10. 좋은 답변과 약한 답변 차이 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-diff">≠</div>
+      <h2>좋은 답변과 약한 답변의 차이</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>약한 답변 (5년차 이하)</th>
+          <th>강한 답변 (10년차 이상)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>판단 시작점</td>
+          <td>"B+Tree가 더 빠르다고 배웠다"</td>
+          <td>"I/O 횟수 = 트리 높이이고, 높이는 fanout이 결정한다"</td>
+        </tr>
+        <tr>
+          <td>구조 차이 설명</td>
+          <td>"리프에만 데이터가 있다" 수준</td>
+          <td>"internal node를 비워 fanout을 극대화했다"는 인과관계까지 설명</td>
+        </tr>
+        <tr>
+          <td>Range scan 설명</td>
+          <td>"리프끼리 연결돼 있어서 빠르다"</td>
+          <td>"트리 재순회 없이 순차 I/O로 전환된다"는 근거 제시</td>
+        </tr>
+        <tr>
+          <td>B-Tree의 장점 인정</td>
+          <td>언급하지 않음 (B+Tree가 무조건 우월하다고 답함)</td>
+          <td>point lookup 조기 종료 가능성과 trade-off로 균형 있게 설명</td>
+        </tr>
+        <tr>
+          <td>실무 연결</td>
+          <td>이론만 말함</td>
+          <td>InnoDB fanout, composite index 크기, page split, 선택도까지 연결</td>
+        </tr>
+        <tr>
+          <td>follow-up 대비</td>
+          <td>추가 질문에 막힘</td>
+          <td>page split, fill factor, in-memory 구조와의 차이까지 대응</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 11. Self-check Rubric -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-rub">✓</div>
+      <h2>자기 점검 Rubric</h2>
+    </div>
+    <p>답변 연습 후 아래 기준으로 자신을 평가하세요.</p>
+
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>fanout과 트리 높이의 관계를 I/O 횟수로 설명했다</strong><br>
+        fanout이 커질수록 트리 높이가 낮아지고, 조회에 필요한 디스크 I/O 횟수가 줄어든다는 인과관계를 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>B-Tree와 B+Tree의 구조적 차이를 정확히 설명했다</strong><br>
+        internal node에 데이터가 있는지 여부와, 이것이 fanout에 미치는 영향을 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>Range scan이 순차 I/O로 바뀌는 이유를 설명했다</strong><br>
+        리프 연결 리스트 덕분에 트리 재순회 없이 옆으로 읽을 수 있다는 점을 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>B-Tree가 유리할 수 있는 경우를 인정했다</strong><br>
+        무조건 B+Tree가 낫다고 말하지 않고, point lookup 조기 종료 가능성을 trade-off로 언급했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>실무 사례를 1개 이상 언급했다</strong><br>
+        InnoDB fanout, composite index 크기, ORDER BY + LIMIT 중 하나 이상 연결했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>정량적 감각을 제시했다</strong><br>
+        예시 수치(백만 건 기준 fanout 2 vs 100의 높이 차이)로 설명했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>Page split/merge와 fill factor를 설명했다</strong><br>
+        삽입/삭제가 트리 구조에 미치는 여파와 이를 완화하는 방법을 언급했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>In-memory 구조와의 차이를 설명했다</strong><br>
+        B+Tree 설계가 디스크 I/O 비용 모델을 전제로 한다는 점과, 메모리 전용 구조에서는 다른 선택이
+        가능하다는 점을 언급했다.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="callout callout-info">
+      <span class="callout-icon">📊</span>
+      <span>
+        <strong>자가 평가:</strong>
+        '필수' 3개 모두 → 합격 수준 |
+        '권장' 3개 추가 → 좋은 인상 |
+        '심화' 포함 → 탑티어 후보
+      </span>
+    </div>
+  </div>
+
+  <!-- 12. 다음 레슨 예고 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">→</div>
+      <h2>다음 레슨 예고 — Day 5: 해싱 기반 파일</h2>
+    </div>
+    <p>
+      다음 레슨에서는 "왜 equality lookup에서 O(1)에 가까운 해시 인덱스가 있는데도 모든 인덱스를
+      해시로 만들지 않는가"를 다룹니다. Collision, overflow, rehashing, 그리고 결정적으로 range
+      query가 왜 해시 구조에서 근본적으로 불가능한지를 짚습니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>주제</th><th>면접 핵심 질문</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Hash Collision과 Overflow</td>
+          <td>해시 충돌이 발생하면 실제로 어떻게 처리되는가?</td>
+        </tr>
+        <tr>
+          <td>Rehashing</td>
+          <td>버킷이 가득 찼을 때 전체 재해싱 비용을 어떻게 관리하는가?</td>
+        </tr>
+        <tr>
+          <td>Range Query 한계</td>
+          <td>해시 인덱스가 range query를 지원할 수 없는 근본적인 이유는 무엇인가?</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <span class="tag tag-blue">Hash File</span>
+      <span class="tag tag-green">Collision</span>
+      <span class="tag tag-green">Rehashing</span>
+      <span class="tag tag-yellow">Range Query 한계</span>
+      개념이 B+Tree와 대비되는 형태로 다루어집니다.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

@@ -13,12 +13,12 @@
 | 1 | 2026-06-30 | 저장장치와 접근 패턴 프레임워크 | [interview-day01-storage-access-patterns.html](lessons/interview-day01-storage-access-patterns.html) |
 | 2 | 2026-07-01 | 파일 조직 선택 (Sequential / Indexed / Hash) | [interview-day02-file-organization.html](lessons/interview-day02-file-organization.html) |
 | 3 | 2026-07-02 | 인덱스 기본 구조 (Dense Index / Sparse Index) | [interview-day03-index-structures.html](lessons/interview-day03-index-structures.html) |
+| 4 | 2026-07-03 | B-Tree와 B+Tree (Fanout, Height, Range Scan) | [interview-day04-btree-bplustree.html](lessons/interview-day04-btree-bplustree.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 4 | B-Tree와 B+Tree | "왜 DB 인덱스는 B+Tree를 많이 사용합니까?" | fanout, height, range scan, leaf linkage |
 | 5 | 해싱 기반 파일 | "해시 인덱스가 빠른데도 모든 인덱스를 해시로 만들지 않는 이유는 무엇입니까?" | equality lookup, collision, range query 한계 |
 | 6 | 클러스터링과 보조 인덱스 | "클러스터드 인덱스는 읽기 성능을 어떻게 바꾸고 어떤 비용을 만듭니까?" | data locality, write amplification, secondary lookup |
 | 7 | 외부 정렬 | "메모리보다 큰 파일을 정렬해야 한다면 어떻게 설계하겠습니까?" | run generation, k-way merge, I/O pass |
@@ -28,18 +28,18 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — 인덱스 기본 구조 (dense index, sparse index, primary/secondary index).
-**다음: Day 4** — B-Tree와 B+Tree.
+**Day 4 완료** — B-Tree와 B+Tree (fanout, height, range scan, leaf linkage).
+**다음: Day 5** — 해싱 기반 파일.
 
 ## Interview 답변 체크리스트
 
-- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. *(Day 1~3 완료)*
-- [x] 왜 면접에서 이 질문을 묻는지 설명한다. *(Day 1~3 완료)*
-- [x] 실제 운영 상황과 연결한다. *(Day 1~3 완료)*
-- [x] 답변 순서를 단계적으로 제시한다. *(Day 1~3 완료)*
-- [x] trade-off를 최소 2개 이상 비교한다. *(Day 1~3 완료)*
-- [x] 흔한 오해와 약한 답변을 구분한다. *(Day 1~3 완료)*
-- [x] follow-up 질문까지 대비한다. *(Day 1~3 완료)*
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. *(Day 1~4 완료)*
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. *(Day 1~4 완료)*
+- [x] 실제 운영 상황과 연결한다. *(Day 1~4 완료)*
+- [x] 답변 순서를 단계적으로 제시한다. *(Day 1~4 완료)*
+- [x] trade-off를 최소 2개 이상 비교한다. *(Day 1~4 완료)*
+- [x] 흔한 오해와 약한 답변을 구분한다. *(Day 1~4 완료)*
+- [x] follow-up 질문까지 대비한다. *(Day 1~4 완료)*
 
 ## 습득한 핵심 개념
 
@@ -54,7 +54,7 @@
 - [x] Hash file의 range query 한계 (Day 2)
 - [x] Dense Index vs Sparse Index — 정렬 전제, 저장 공간, 갱신 비용 (Day 3)
 - [x] Primary Index vs Secondary Index — 밀도 제약과 클러스터드 인덱스 연결 (Day 3)
-- [ ] B-Tree vs B+Tree 상세 구조 (예정 Day 4)
+- [x] B-Tree vs B+Tree — fanout, height, internal node 구조, leaf linkage (Day 4)
 - [ ] Hash File — collision, overflow, range query 한계 (예정 Day 5)
 - [ ] Clustered vs Secondary Index (예정 Day 6)
 - [ ] External Sort — run generation, k-way merge (예정 Day 7)
