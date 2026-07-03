@@ -7,12 +7,12 @@
 | 1 | 2026-06-30 | 리눅스 서버 장애 대응 프레임워크 | [0001-linux-incident-response-framework.html](lessons/0001-linux-incident-response-framework.html) |
 | 2 | 2026-07-01 | 프로세스 & CPU 진단 심화 | [0002-process-cpu-diagnostics.html](lessons/0002-process-cpu-diagnostics.html) |
 | 3 | 2026-07-02 | 메모리 진단 & OOM | [0003-memory-oom-diagnostics.html](lessons/0003-memory-oom-diagnostics.html) |
+| 4 | 2026-07-03 | 디스크 I/O 진단 | [0004-disk-io-diagnostics.html](lessons/0004-disk-io-diagnostics.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | 디스크 I/O 진단 | iostat util, await, iotop, lsof 열린 파일, inode 고갈, df vs du 차이 |
 | 5 | 로그 분석 & journalctl | journalctl 필터 옵션, rsyslog, /var/log 구조, grep/awk/sed 조합, 로그 로테이션 |
 | 6 | systemd 서비스 관리 | systemctl start/stop/enable/status, unit 파일 구조, ExecStart, Restart 정책, 의존성 After= |
 | 7 | 네트워크 진단 | ss -tuln, netstat, LISTEN/ESTABLISHED/TIME_WAIT, tcpdump 기초, ip route, 방화벽(firewalld/ufw) |
@@ -21,7 +21,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — Day 4: 디스크 I/O 진단 예정.
+**Day 4 완료** — Day 5: 로그 분석 & journalctl 예정.
 
 ## 습득한 핵심 개념
 
@@ -41,7 +41,11 @@
 - [x] OOM Killer 동작 원리 (oom_score/oom_score_adj, 로그 해석) (Day 3)
 - [x] swappiness trade-off (응답 지연 vs OOM 발생 시점) (Day 3)
 - [x] 메모리 누수 vs 정상 캐시 증가 (VmRSS 추세 관찰법) (Day 3)
-- [ ] 디스크 I/O 진단 심화 (예정 Day 4)
+- [x] iostat util vs await 구분 (병렬 장치의 %util 100%가 항상 병목은 아님) (Day 4)
+- [x] iostat → iotop 단계적 진단 흐름 (장치 레벨에서 프로세스 레벨로) (Day 4)
+- [x] inode 고갈 (df -h와 df -i는 별개 자원, 소용량 파일 대량 생성 시 고갈) (Day 4)
+- [x] 삭제된 열린 파일과 참조 카운트 (rm이 즉시 공간을 회수하지 않는 이유, lsof/fd truncate) (Day 4)
+- [x] df vs du 불일치 원인 (삭제된 fd, 하위 마운트, root 예약 공간) (Day 4)
 - [ ] 로그 분석 & journalctl (예정 Day 5)
 - [ ] systemd 서비스 관리 (예정 Day 6)
 - [ ] 네트워크 진단 (예정 Day 7)

@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — 디스크 I/O 진단 | Linux 서버 운영 인터뷰</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<header class="lesson-header">
+  <div class="header-inner">
+    <span class="subject-label">Linux 서버 운영 인터뷰 · Day 4</span>
+    <h1>디스크 I/O 진단</h1>
+    <p class="subtitle">
+      "디스크가 느리다"는 모호한 신고를 받았을 때, 디스크 자체가 병목인지, 특정 프로세스의 문제인지,
+      공간이 아니라 inode가 고갈된 것인지를 데이터로 구분하는 사고방식
+    </p>
+    <p style="margin-top:1rem; font-size:0.82rem; color:#64748b;">
+      <span class="tag">iostat util/await</span>
+      <span class="tag">iotop</span>
+      <span class="tag">lsof deleted fd</span>
+      <span class="tag">inode 고갈</span>
+      <span class="tag">df vs du</span>
+    </p>
+  </div>
+</header>
+
+<nav class="lesson-nav">
+  <ul>
+    <li><a href="#questions">면접 질문</a></li>
+    <li><a href="#concepts">전제 개념</a></li>
+    <li><a href="#why">왜 묻는가</a></li>
+    <li><a href="#realworld">실무 연결</a></li>
+    <li><a href="#framework">답변 사고 순서</a></li>
+    <li><a href="#model-answer">핵심 답변 예시</a></li>
+    <li><a href="#followup">Senior Follow-up</a></li>
+    <li><a href="#comparison">좋은 vs 약한 답변</a></li>
+    <li><a href="#misconceptions">흔한 오해</a></li>
+    <li><a href="#rubric">자기 점검 Rubric</a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <!-- ══════════════════════════════════════
+       SECTION 1: 오늘의 면접 질문
+  ══════════════════════════════════════ -->
+  <section id="questions">
+    <h2><span class="icon">❓</span> 오늘의 면접 질문</h2>
+
+    <div class="question-card">
+      <span class="q-label main">핵심 질문</span>
+      <p class="q-text">
+        "애플리케이션 응답이 느려졌다는 신고가 왔는데, CPU와 메모리는 정상입니다.
+        디스크 I/O가 원인인지 어떻게 확인하고, 어떤 프로세스가 원인인지 어떻게 특정하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="question-card">
+      <span class="q-label related">관련 질문</span>
+      <p class="q-text">
+        "<code>df -h</code>로는 디스크 공간이 20%나 남아있는데 애플리케이션이
+        'No space left on device' 에러를 뱉습니다. 원인이 무엇일 수 있습니까?"
+      </p>
+    </div>
+
+    <div class="question-card">
+      <span class="q-label related">관련 질문</span>
+      <p class="q-text">
+        "큰 로그 파일을 <code>rm</code>으로 삭제했는데 <code>df -h</code>로 확인한 디스크 사용량이
+        전혀 줄지 않습니다. 왜 이런 일이 발생하고, 어떻게 해결하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="callout info">
+      <span class="icon">💡</span>
+      <p>Day 1~3이 CPU와 메모리였다면, Day 4는 "디스크가 바쁘다"는 사실과 "디스크가 병목이라서 응답이 느려진다"는 결론 사이의 간극을 데이터로 메우는 능력, 그리고 디스크 공간(byte)과 inode(파일 개수)라는 서로 다른 두 자원을 구분하는 능력을 다룹니다.</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 2: 전제 개념
+  ══════════════════════════════════════ -->
+  <section id="concepts">
+    <h2><span class="icon">📚</span> 전제 개념 — 이것을 먼저 이해해야 한다</h2>
+
+    <div class="concept-box">
+      <h3>1. iostat -xz — "바쁘다"(util)와 "느리다"(await)는 다른 이야기다</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 계산대 직원이 쉴 틈 없이 계속 일하고 있다고 해서(바쁨, util)
+        반드시 손님이 오래 기다린다(느림, await)는 뜻은 아닙니다. 직원이 여러 명이거나 처리 속도가
+        빠르면 계속 바빠도 대기 시간은 짧을 수 있습니다. 리눅스 디스크도 마찬가지로,
+        "얼마나 바쁜가"와 "요청이 실제로 얼마나 지연되는가"는 별개의 지표로 봐야 합니다.
+      </p>
+      <pre><code><span class="cmd">$ iostat -xz 1 5</span>
+<span class="output">Device   r/s     w/s   rkB/s   wkB/s  r_await w_await  aqu-sz  %util
+nvme0n1  120.0  340.0  4800.0 18200.0    2.10   14.80    1.85   38.20
+nvme0n1  115.0  610.0  4600.0 32100.0    1.90   68.40    9.40   97.50</span></code></pre>
+      <ul>
+        <li><code>%util</code>: 디스크가 I/O 요청을 처리하느라 바빴던 시간의 비율. 100%에 가까워도 <strong>단일 큐 디스크가 아니라면</strong> 병렬로 여러 요청을 동시에 처리하고 있을 뿐, 요청이 밀리고 있다는 뜻은 아닐 수 있습니다.</li>
+        <li><code>r_await</code> / <code>w_await</code>: 요청이 큐에 들어가서 완료되기까지 걸린 평균 시간(ms). <strong>애플리케이션이 실제로 체감하는 디스크 지연</strong>에 가장 가까운 지표입니다.</li>
+        <li><code>aqu-sz</code>(구 avgqu-sz): 평균 대기 큐 길이. 이 값이 지속적으로 크다는 것은 디스크가 요청을 처리하는 속도보다 새 요청이 더 빠르게 쌓이고 있다는 뜻 — 진짜 포화(saturation) 신호입니다.</li>
+      </ul>
+      <div class="callout warn">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>중요:</strong> 위 예시 두 번째 줄처럼 <code>%util</code>이 97%이고 동시에
+          <code>w_await</code>가 68ms까지 치솟았다면, 이때는 <strong>바쁜 것과 느린 것이 함께 나타난
+          진짜 병목</strong>입니다. 반대로 SSD/NVMe/RAID 환경에서 <code>%util</code>만 100%이고
+          <code>await</code>가 낮게 유지된다면, 그냥 병렬로 잘 처리되고 있는 정상 상태일 수 있습니다.
+          두 지표를 반드시 함께 봐야 합니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>2. iotop — "디스크가 바쁘다"에서 "누가 바쁘게 하는가"로</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> <code>iostat</code>은 장치(디스크) 단위로 전체 상황만 보여줍니다.
+        범인 프로세스를 지목하려면 <code>top</code>이 CPU를 프로세스별로 보여주듯,
+        <code>iotop</code>이 I/O를 프로세스별로 보여줘야 합니다.
+      </p>
+      <pre><code><span class="comment"># 실제 디스크 read/write 처리량이 큰 프로세스 순 정렬</span>
+<span class="cmd">$ sudo iotop -oPa</span>
+<span class="output">  PID  USER     DISK READ  DISK WRITE  SWAPIN     IO>    COMMAND
+ 4821  app      120.4 K/s    18.2 M/s  0.00 %     42.10 %  java -jar service.jar
+ 5102  root       0.00 B/s    2.10 M/s  0.00 %      8.30 %  rsyslogd</span></code></pre>
+      <ul>
+        <li><code>-o</code>: I/O를 실제로 발생시키는 프로세스만 표시(전체 목록 대신).</li>
+        <li><code>-P</code>: 스레드가 아니라 프로세스 단위로 합산.</li>
+        <li><code>-a</code>(accumulated): 순간값이 아니라 누적값으로 봐서 짧은 스파이크에 속지 않도록 합니다.</li>
+      </ul>
+      <div class="callout tip">
+        <span class="icon">✅</span>
+        <p>
+          면접 팁: "<code>iostat</code>으로 장치 레벨 병목을 먼저 확인하고, <code>iotop</code>으로
+          범인 프로세스를 좁힌다"는 2단계 흐름을 명확히 말하면, 도구를 개별적으로 아는 것이 아니라
+          진단 순서를 설계할 줄 안다는 신호를 줍니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>3. lsof와 "삭제됐지만 사라지지 않은 파일" — rm은 즉시 공간을 돌려주지 않는다</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 리눅스에서 파일을 지운다는 것은 "이 이름표를 파일에서 떼어낸다"는
+        뜻이지, "실제 내용물을 즉시 파기한다"는 뜻이 아닙니다. 어떤 프로세스가 그 파일을 여전히
+        열어서 쓰고 있다면(파일 디스크립터를 갖고 있다면), 커널은 그 프로세스가 <strong>파일을 닫을
+        때까지</strong> 디스크의 실제 데이터 블록을 회수하지 않습니다. 그래서 <code>rm</code>으로
+        지워도 그 파일을 붙잡고 계속 쓰는 프로세스가 있으면 디스크 공간은 그대로입니다.
+      </p>
+      <pre><code><span class="comment"># 삭제됐지만 여전히 열려 있는(deleted) 파일 확인</span>
+<span class="cmd">$ lsof +L1</span>
+<span class="output">COMMAND   PID  USER   FD   TYPE DEVICE  SIZE/OFF NLINK    NODE NAME
+java     4821  app    12w  REG  259,1  8589934592     0  912340 /var/log/app/access.log (deleted)</span></code></pre>
+      <ul>
+        <li><code>NLINK</code>이 0인데도 파일이 열려 있는 것은 "이름은 사라졌지만 아직 참조 중"이라는 뜻이며, <code>SIZE/OFF</code>가 실제로 디스크에서 차지하고 있는 크기입니다.</li>
+        <li>해결: 프로세스를 재시작해서 파일 핸들을 닫게 하거나, 프로세스를 죽이지 않고도
+        <code>: &gt; /var/log/app/access.log</code>처럼 <strong>같은 inode의 내용만 비워서(truncate)</strong>
+        즉시 공간을 회수할 수 있습니다.</li>
+      </ul>
+      <div class="callout warn">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>실무 연결:</strong> 이 문제를 근본적으로 막는 것이 <code>logrotate</code>의
+          <code>copytruncate</code> 옵션입니다. 파일을 새 이름으로 옮기고 애플리케이션이 새 파일
+          핸들을 열도록 신호를 보내는 대신, 원본 파일의 <strong>내용만 비워서</strong> 애플리케이션이
+          가지고 있던 파일 디스크립터를 그대로 재사용하게 만듭니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>4. inode 고갈 — 디스크 "공간"과 "파일 개수"는 서로 다른 자원이다</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 아파트에 비유하면, 디스크 용량(byte)은 "건물 전체 바닥 면적"이고
+        inode는 "발급 가능한 호실 번호의 개수"입니다. 바닥 면적이 아무리 남아있어도 호실 번호를
+        다 써버리면 방을 하나도 더 만들 수 없습니다. ext4 같은 파일시스템은 만들어질 때
+        inode 개수가 고정적으로 할당되기 때문에, 작은 파일을 대량으로 만드는 애플리케이션은
+        용량이 남아있어도 <strong>inode부터 먼저 고갈</strong>될 수 있습니다.
+      </p>
+      <pre><code><span class="comment"># 공간 여유(df -h)와 inode 여유(df -i)는 반드시 따로 확인</span>
+<span class="cmd">$ df -h /var</span>
+<span class="output">Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p3   50G   38G   12G  76% /var</span></code></pre>
+      <pre><code><span class="cmd">$ df -i /var</span>
+<span class="output">Filesystem      Inodes  IUsed   IFree IUse% Mounted on
+/dev/nvme0n1p3  3276800 3276600     200  100% /var</span></code></pre>
+      <ul>
+        <li>위 예시는 <code>df -h</code>만 보면 공간이 12GB나 남아 정상으로 보이지만,
+        <code>df -i</code>는 inode가 100% 소진되어 <strong>파일을 단 하나도 새로 만들 수 없는</strong>
+        상태임을 보여줍니다.</li>
+        <li>흔한 원인: 세션 파일, 캐시 디렉터리, 메일 큐, 소규모 임시 파일을 정리 없이 계속 생성하는
+        애플리케이션 로직 버그.</li>
+      </ul>
+      <div class="callout tip">
+        <span class="icon">✅</span>
+        <p>
+          면접 팁: "df -h만 확인하고 끝내지 않고 df -i도 항상 함께 본다"는 습관을 명시적으로
+          언급하면, "No space left on device" 에러를 공간 부족으로만 단정하지 않는
+          진단 폭을 보여줄 수 있습니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>5. df vs du — 같은 디스크를 보는데 왜 숫자가 다른가</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> <code>df</code>는 "건물 관리사무소가 집계한 전체 사용 면적"이고,
+        <code>du</code>는 "내가 직접 방을 하나씩 돌아다니며 실측한 면적"입니다. 관리사무소 장부에는
+        있지만 실제로 방을 돌아봐도 보이지 않는 면적이 있을 수 있는데, 그것이 바로 위에서 본
+        "삭제됐지만 여전히 열려 있는 파일"입니다.
+      </p>
+      <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="padding:0.5rem 0.75rem; text-align:left; border-bottom:2px solid #e2e8f0;">차이 원인</th>
+            <th style="padding:0.5rem 0.75rem; text-align:left; border-bottom:2px solid #e2e8f0;">설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:0.5rem 0.75rem; border-bottom:1px solid #e2e8f0;">삭제됐지만 열려 있는 파일</td>
+            <td style="padding:0.5rem 0.75rem; border-bottom:1px solid #e2e8f0;"><code>df</code>는 커널이 관리하는 블록 사용량이라 여전히 사용 중으로 집계하지만, <code>du</code>는 디렉터리를 순회해서 파일을 찾기 때문에 이름이 없는 파일은 아예 집계하지 못함.</td>
+          </tr>
+          <tr style="background:#f8fafc;">
+            <td style="padding:0.5rem 0.75rem;">하위 마운트 지점</td>
+            <td style="padding:0.5rem 0.75rem;"><code>du -sh /var</code>처럼 <code>--one-file-system</code> 없이 실행하면, <code>/var</code> 아래에 별도로 마운트된 다른 파티션까지 합산해 실제보다 크게 나올 수 있음.</td>
+          </tr>
+          <tr>
+            <td style="padding:0.5rem 0.75rem;">root 예약 공간(reserved blocks)</td>
+            <td style="padding:0.5rem 0.75rem;">ext4는 기본적으로 전체 용량의 5%를 root 전용으로 예약(<code>tune2fs -m</code>). 일반 사용자에게는 <code>df</code> 상 100%로 보여 "No space" 에러가 나도, root는 예약분을 이용해 여전히 쓸 수 있음.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout warn">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>진단 순서 팁:</strong> <code>df -h</code>와 <code>du -sh /* 2&gt;/dev/null | sort -rh</code>의
+          합계가 크게 다르면, 가장 먼저 <code>lsof +L1</code>로 삭제됐지만 열려 있는 대용량 파일부터
+          의심합니다. 이것이 실무에서 가장 자주 마주치는 df/du 불일치 원인입니다.
+        </p>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 3: 왜 면접에서 묻는가
+  ══════════════════════════════════════ -->
+  <section id="why">
+    <h2><span class="icon">🎯</span> 왜 면접에서 묻는가</h2>
+
+    <p>
+      디스크 I/O 질문은 여러 계층(장치 → 프로세스 → 파일)을 순서대로 좁혀 들어가는 체계적인
+      진단 능력과, 디스크와 관련된 자원이 "공간" 하나가 아니라는 것을 알고 있는지를 평가합니다.
+    </p>
+
+    <h3>면접관이 실제로 평가하는 것</h3>
+    <ol>
+      <li>
+        <strong>"바쁘다"와 "느리다"를 구분하는가?</strong><br>
+        <code>%util</code>만 보고 병목이라 단정하지 않고, <code>await</code>/<code>aqu-sz</code>로
+        실제 지연과 포화를 함께 확인하는지를 봅니다.
+      </li>
+      <li>
+        <strong>장치 레벨에서 프로세스 레벨로 좁혀갈 수 있는가?</strong><br>
+        <code>iostat</code>으로 병목을 확인한 뒤 <code>iotop</code>으로 범인을 특정하는
+        단계적 진단 흐름을 갖고 있는지가 핵심입니다.
+      </li>
+      <li>
+        <strong>디스크 자원이 "용량" 하나뿐이 아니라는 것을 아는가?</strong><br>
+        inode 고갈처럼 <code>df -h</code>만으로는 보이지 않는 자원 부족이 있다는 것을 알아야
+        "공간은 남는데 왜 안 되지?"라는 상황에 대응할 수 있습니다.
+      </li>
+      <li>
+        <strong>파일시스템의 참조 카운트 모델을 이해하는가?</strong><br>
+        <code>rm</code>이 즉시 공간을 돌려주지 않을 수 있다는 것과, 그 원인을 <code>lsof</code>로
+        찾아 안전하게(프로세스를 함부로 죽이지 않고) 해결할 수 있는지를 봅니다.
+      </li>
+    </ol>
+
+    <div class="callout info">
+      <span class="icon">💡</span>
+      <p>
+        이 질문의 본질은 "디스크 관련 장애는 원인이 여러 층(장치, 파일시스템, 프로세스,
+        애플리케이션 로직)에 걸쳐 있을 수 있다는 것을 알고, 각 층을 순서대로 배제해나갈 수 있는가"입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 4: 실무 연결
+  ══════════════════════════════════════ -->
+  <section id="realworld">
+    <h2><span class="icon">🏭</span> 실무 연결 — 이런 상황에서 실제로 쓴다</h2>
+
+    <h3>시나리오 A: 로그 파일을 지웠는데 디스크 공간이 그대로였던 경우</h3>
+    <p>
+      디스크 사용량이 95%를 넘어 급하게 대용량 로그 파일을 <code>rm</code>으로 삭제했지만
+      <code>df -h</code> 상 사용량이 전혀 줄지 않았습니다. <code>lsof +L1</code>로 확인해보니
+      애플리케이션 프로세스가 여전히 그 파일을 붙잡고 계속 쓰고 있었습니다. 프로세스를 재시작할
+      여유가 없어서 <code>: &gt; /proc/PID/fd/12</code>로 해당 파일 디스크립터의 내용만 즉시
+      비워서 공간을 회수했고, 이후 <code>logrotate</code>에 <code>copytruncate</code> 옵션을
+      추가해 재발을 막았습니다.
+    </p>
+
+    <h3>시나리오 B: 공간은 남았는데 배포가 "No space left on device"로 실패한 경우</h3>
+    <p>
+      배포 스크립트가 새 파일을 생성하는 단계에서 실패했습니다. <code>df -h</code>로는 여유 공간이
+      20% 넘게 있었지만 <code>df -i</code>를 확인하니 inode가 100% 소진되어 있었습니다.
+      원인을 추적해보니 세션 저장 디렉터리가 만료 처리 없이 세션 파일을 계속 쌓고 있었고,
+      각 파일이 몇 바이트에 불과해 용량은 거의 안 늘었지만 inode만 계속 소모되고 있었습니다.
+      정리 배치를 추가하고 만료 정책을 붙여 근본 원인을 해결했습니다.
+    </p>
+
+    <h3>시나리오 C: %util은 낮은데 애플리케이션 응답이 느렸던 경우</h3>
+    <p>
+      "디스크가 느리다"는 신고에 <code>iostat -xz 1</code>을 확인했더니 <code>%util</code>은
+      20% 남짓으로 낮았지만 <code>w_await</code>가 순간적으로 200ms 넘게 튀는 패턴이 반복됐습니다.
+      원인은 동시에 실행 중이던 백업 job이 순차적으로 대용량 파일을 압축하며 짧은 시간 동안
+      큐를 독점한 것이었고, 평균 <code>%util</code>만 봐서는 드러나지 않는 문제였습니다.
+      백업 시간을 트래픽이 적은 새벽대로 옮기고 <code>ionice</code>로 우선순위를 낮춰 해결했습니다.
+    </p>
+
+    <h3>실무에서 배운 핵심 교훈</h3>
+    <ul>
+      <li><code>%util</code> 하나만으로 병목을 단정하지 말고 반드시 <strong><code>await</code>와 함께</strong> 봐야 한다.</li>
+      <li>디스크 용량 부족 알림/장애 대응 체크리스트에는 <strong><code>df -i</code>(inode)도 반드시 포함</strong>해야 한다.</li>
+      <li><code>rm</code>은 공간을 즉시 돌려주지 않을 수 있으므로, 급할 때는 프로세스 재시작 대신 <strong>파일 디스크립터 truncate</strong>로 안전하게 회수할 수 있다.</li>
+      <li>순간적인 I/O 스파이크는 <strong>평균값이 아니라 짧은 간격의 반복 샘플링</strong>으로만 잡아낼 수 있다.</li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 5: 답변 사고 순서
+  ══════════════════════════════════════ -->
+  <section id="framework">
+    <h2><span class="icon">🧠</span> 답변 사고 순서 — 디스크 I/O 진단 흐름</h2>
+
+    <ul class="steps">
+      <li>
+        <div class="step-content">
+          <h3>장치 레벨에서 실제 병목인지 확인</h3>
+          <p>
+            <code>iostat -xz 1 5</code>로 <code>%util</code>과 <code>await</code>를 함께 확인합니다.
+            <code>%util</code>이 높아도 <code>await</code>가 낮으면 병렬 처리 중인 정상 상태일 수
+            있으므로, 두 지표가 함께 나빠질 때만 실제 병목으로 판단합니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>범인 프로세스를 특정</h3>
+          <p>
+            병목이 확인되면 <code>iotop -oPa</code>로 어떤 프로세스가 실제로 읽기/쓰기를
+            유발하고 있는지 좁힙니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>공간과 inode를 함께 확인</h3>
+          <p>
+            <code>df -h</code>로 공간 여유를, <code>df -i</code>로 inode 여유를 동시에 확인합니다.
+            "공간은 있는데 에러가 난다"는 상황은 대부분 inode 고갈입니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>df/du 불일치가 있으면 삭제된 열린 파일부터 의심</h3>
+          <p>
+            <code>df -h</code>와 <code>du -sh</code> 합계가 다르면 <code>lsof +L1</code>로
+            삭제됐지만 여전히 열려 있는(deleted) 파일을 확인합니다.
+          </p>
+          <pre><code><span class="cmd">$ iostat -xz 1 5</span>
+<span class="cmd">$ sudo iotop -oPa</span>
+<span class="cmd">$ df -h && df -i</span>
+<span class="cmd">$ lsof +L1</span></code></pre>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>근본 조치와 재발 방지 설계</h3>
+          <p>
+            범인 프로세스의 I/O 패턴(순차 대용량 쓰기, 랜덤 소용량 읽기 등)에 맞춰 스케줄 조정,
+            <code>ionice</code> 우선순위 조정, 로그 로테이션 정책(<code>copytruncate</code>),
+            inode 소모 로직의 정리 배치 추가 등으로 대응하고, 모니터링에 <code>await</code>와
+            inode 사용률을 함께 포함시킵니다.
+          </p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 6: 핵심 답변 예시
+  ══════════════════════════════════════ -->
+  <section id="model-answer">
+    <h2><span class="icon">💬</span> 핵심 답변 예시</h2>
+
+    <p>면접에서 자연스럽게 말할 수 있는 구조입니다. 외우지 말고 논리의 흐름을 이해하세요.</p>
+
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:1.5rem; box-shadow:0 1px 3px rgba(0,0,0,.06);">
+      <p style="font-size:0.88rem; color:#64748b; margin-bottom:1rem;">💬 면접관: "CPU/메모리는 정상인데 응답이 느립니다. 디스크 I/O가 원인인지 어떻게 확인하시겠습니까?"</p>
+
+      <p>
+        "먼저 <code>iostat -xz 1 5</code>로 <strong>%util과 await를 함께</strong> 확인합니다.
+        %util이 높아도 await가 낮으면 병렬 처리로 인해 바쁘기만 한 정상 상태일 수 있어서,
+        두 지표가 동시에 나빠질 때만 실제 디스크 병목으로 판단합니다.
+      </p>
+      <p>
+        병목이 확인되면 <code>iotop -oPa</code>로 <strong>어떤 프로세스가 실제로 읽기/쓰기를
+        유발하는지</strong> 특정합니다. 장치 레벨 지표만으로는 범인을 알 수 없기 때문에
+        반드시 프로세스 레벨로 좁혀 들어가는 단계를 거칩니다.
+      </p>
+      <p>
+        동시에 공간 부족이 원인일 가능성도 체크합니다. 이때 <code>df -h</code>뿐 아니라
+        <strong><code>df -i</code>로 inode 여유도 함께</strong> 확인하는데, 디스크 공간은
+        남아있어도 inode가 고갈되면 새 파일을 못 만들어 애플리케이션이 실패할 수 있기 때문입니다.
+      </p>
+      <p>
+        <code>df</code>와 <code>du</code> 합계가 다르면 <code>lsof +L1</code>로 삭제됐지만
+        여전히 열려 있는 파일이 있는지 확인합니다. 원인이 특정되면 근본 조치(스케줄 조정,
+        로그 로테이션 정책, 정리 배치)를 적용하고, 모니터링에 await와 inode 사용률을 함께
+        포함시켜 재발을 조기에 감지하도록 합니다."
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 7: Senior Follow-up
+  ══════════════════════════════════════ -->
+  <section id="followup">
+    <h2><span class="icon">🔍</span> Senior-level Follow-up 질문과 모범 답변</h2>
+
+    <div class="followup-block">
+      <p class="fq">Q. "%util이 100%인데 await는 낮게 유지되고 있습니다. 이게 정상일 수 있나요?"</p>
+      <div class="fa">
+        <p>
+          "네, 정상일 수 있습니다. <code>%util</code>은 디스크가 요청을 처리하느라 바빴던 시간의
+          비율일 뿐이고, SSD나 NVMe, RAID처럼 큐 깊이가 깊고 병렬 처리가 가능한 장치는 계속
+          바빠도(%util 100%) 여러 요청을 동시에 처리하기 때문에 개별 요청의 지연(await)은
+          낮게 유지될 수 있습니다. 진짜 포화 여부는 <code>aqu-sz</code>(대기 큐 길이)가
+          지속적으로 쌓이는지, <code>await</code>가 함께 상승하는지로 판단해야 합니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 단일 지표로 성급히 결론 내리지 않고 지표 간 관계를 이해하는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "df -h는 여유가 있는데 파일을 못 만듭니다. 원인 후보를 어떻게 좁혀나가시겠습니까?"</p>
+      <div class="fa">
+        <p>
+          "가장 먼저 <code>df -i</code>로 inode 여유를 확인합니다. inode가 100%에 가깝다면
+          작은 파일을 대량으로 생성하는 프로세스(세션, 캐시, 큐)를 <code>find /path -xdev
+          | wc -l</code> 등으로 디렉터리별 파일 개수를 세어 범인 디렉터리를 좁힙니다. inode
+          여유가 있다면 root 예약 공간이나 특정 디렉터리의 quota 설정, 또는 권한 문제(쓰기
+          권한 부족)로 넘어가서 원인을 좁힙니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 공간=inode라는 단순화를 하지 않고 별도 자원으로 분리해서 원인을 좁히는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "rm으로 파일을 지웠는데 디스크 공간이 그대로입니다. 프로세스를 재시작할 수 없는 상황이라면 어떻게 하시겠습니까?"</p>
+      <div class="fa">
+        <p>
+          "<code>lsof +L1</code>로 해당 파일을 붙잡고 있는 프로세스와 파일 디스크립터 번호를
+          확인한 뒤, 프로세스를 죽이지 않고 <code>/proc/PID/fd/FD번호</code>에 직접 truncate
+          (<code>: &gt; /proc/4821/fd/12</code>)를 실행해서 같은 inode의 내용만 비웁니다.
+          이렇게 하면 프로세스가 들고 있는 파일 디스크립터는 그대로 유효하기 때문에 서비스
+          중단 없이 공간을 즉시 회수할 수 있습니다. 다만 이는 임시 조치이고, 근본적으로는
+          <code>logrotate</code>의 <code>copytruncate</code>로 재발을 막아야 합니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 서비스 중단 없이 문제를 해결하는 실무적 대안을 아는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "await가 갑자기 치솟았습니다. 원인을 어떻게 좁혀나가시겠습니까?"</p>
+      <div class="fa">
+        <p>
+          "먼저 <code>iostat -xz 1</code>을 짧은 간격으로 반복 실행해서 지속적인 현상인지
+          순간적인 스파이크인지 구분합니다. 지속적이라면 <code>iotop</code>으로 범인 프로세스를
+          찾고, 순간 스파이크라면 그 시간대에 동시에 실행된 배치 작업(백업, 로그 압축, 배포)이
+          있는지 <code>ps</code>나 크론 로그로 교차 확인합니다. 필요하면 <code>strace -T -p PID</code>로
+          해당 프로세스의 어떤 syscall(순차 쓰기, fsync 등)이 지연을 유발하는지까지 내려가서 확인합니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 지속 vs 순간 현상을 구분하고 장치→프로세스→syscall로 단계적으로 좁히는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "네트워크 스토리지(NFS, 클라우드 블록 스토리지)에서는 디스크 진단이 로컬 디스크와 어떻게 다른가요?"</p>
+      <div class="fa">
+        <p>
+          "로컬 디스크는 <code>iostat</code>의 지표가 물리적인 디스크 컨트롤러를 거의 그대로
+          반영하지만, 네트워크 스토리지는 네트워크 지연, 원격 스토리지 자체의 처리량 제한
+          (IOPS/throughput 쿼터), 다른 테넌트와의 자원 경합까지 지연에 영향을 줍니다. 그래서
+          로컬 지표(iostat)만으로는 원인을 다 설명하지 못할 수 있고, 클라우드 환경이라면
+          스토리지 쪽 IOPS/throughput 사용량 대시보드, 네트워크 인터페이스의 재전송/에러율까지
+          함께 봐야 합니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 로컬 디스크 진단 지식을 원격/클라우드 스토리지 환경으로 확장할 수 있는가</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 8: 좋은 vs 약한 답변
+  ══════════════════════════════════════ -->
+  <section id="comparison">
+    <h2><span class="icon">⚖️</span> 좋은 답변 vs 약한 답변 분석</h2>
+
+    <div class="answer-box weak">
+      <span class="box-label">약한 답변 (Junior 수준)</span>
+      <blockquote>
+        "iostat으로 확인했을 때 %util이 높으면 디스크가 병목이니 디스크를 증설하거나
+        SSD로 교체하겠습니다."
+      </blockquote>
+      <div class="analysis">
+        <strong>왜 약한 답변인가:</strong>
+        <ul>
+          <li>%util만으로 병목을 단정하고 await, aqu-sz 등 실제 지연 지표를 확인하지 않습니다.</li>
+          <li>범인 프로세스를 특정하는 단계(iotop) 없이 바로 하드웨어 증설이라는 비용이 큰 조치로 넘어갑니다.</li>
+          <li>공간 부족의 다른 원인(inode 고갈, 삭제된 열린 파일)은 전혀 고려하지 않습니다.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="answer-box good">
+      <span class="box-label">좋은 답변 (Senior 수준)</span>
+      <blockquote>
+        "iostat으로 %util과 await를 함께 확인해 실제 병목 여부를 먼저 검증하고, iotop으로
+        범인 프로세스를 특정합니다. 동시에 df -h/-i로 공간과 inode를 함께 확인하고,
+        불일치가 있으면 lsof로 삭제된 열린 파일을 의심합니다."
+      </blockquote>
+      <div class="analysis">
+        <strong>왜 좋은 답변인가:</strong>
+        <ul>
+          <li>단일 지표가 아니라 관련 지표 쌍(util+await, df+du)을 함께 검증해서 오판을 줄입니다.</li>
+          <li>장치 → 프로세스 → 파일 순으로 단계적으로 좁혀가는 진단 흐름을 갖고 있습니다.</li>
+          <li>공간 부족을 용량 문제로만 단정하지 않고 inode라는 별도 자원을 고려합니다.</li>
+          <li>서비스 중단 없이 해결 가능한 실무적 대안(fd truncate)까지 언급합니다.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 9: 흔한 오해
+  ══════════════════════════════════════ -->
+  <section id="misconceptions">
+    <h2><span class="icon">🚫</span> 흔한 오해와 정확한 이해</h2>
+
+    <div class="misconception">
+      <p class="myth">오해 1: "iostat의 %util이 100%면 디스크가 포화되어 병목이다"</p>
+      <p class="truth">
+        %util은 디스크가 바빴던 시간의 비율일 뿐입니다. SSD/NVMe/RAID처럼 병렬 처리가 가능한
+        장치는 %util이 100%여도 await가 낮게 유지되는 정상 상태일 수 있습니다. 진짜 포화는
+        await와 aqu-sz가 함께 나빠질 때 확인됩니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 2: "df -h로 공간이 남아있으면 파일을 만드는 데 문제가 없다"</p>
+      <p class="truth">
+        디스크 용량(byte)과 inode(파일 개수)는 별개의 자원입니다. 작은 파일이 대량으로
+        생성되면 용량은 남아도 inode가 먼저 고갈될 수 있으므로 <code>df -i</code>도 함께
+        확인해야 합니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 3: "rm으로 파일을 지우면 즉시 디스크 공간이 회수된다"</p>
+      <p class="truth">
+        그 파일을 열어서 쓰고 있는 프로세스가 있다면, 그 프로세스가 파일을 닫을 때까지
+        커널은 실제 데이터 블록을 회수하지 않습니다. <code>lsof +L1</code>로 이런 "삭제됐지만
+        열려 있는" 파일을 확인할 수 있습니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 4: "df와 du는 같은 값을 보여줘야 정상이다"</p>
+      <p class="truth">
+        삭제됐지만 열려 있는 파일, 하위 마운트 지점, root 예약 공간 등 여러 이유로 두 값은
+        정상적으로도 다를 수 있습니다. 차이가 크게 벌어지면 그 자체가 문제라기보다 원인을
+        찾아야 할 신호로 다뤄야 합니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 5: "디스크가 느리면 무조건 디스크(하드웨어) 자체를 교체해야 한다"</p>
+      <p class="truth">
+        많은 경우 원인은 하드웨어가 아니라 특정 프로세스의 I/O 패턴(동시 배치 작업, 비효율적인
+        fsync 호출 등)입니다. iotop으로 범인을 특정하고 스케줄 조정이나 ionice 같은
+        소프트웨어적 조치로 해결되는 경우가 많으므로, 하드웨어 증설은 원인 규명 이후의
+        마지막 선택지여야 합니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 10: 자기 점검 Rubric
+  ══════════════════════════════════════ -->
+  <section id="rubric">
+    <h2><span class="icon">📊</span> 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변을 점검해보세요. 각 항목에서 어느 수준인지 솔직하게 평가하세요.</p>
+
+    <div style="overflow-x:auto;">
+      <table class="rubric-table">
+        <thead>
+          <tr>
+            <th>평가 항목</th>
+            <th class="score-senior">Senior (3점)</th>
+            <th class="score-mid">Mid (2점)</th>
+            <th class="score-junior">Junior (1점)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>util vs await 구분</strong></td>
+            <td class="score-senior">병렬 처리 가능성을 근거로 두 지표를 함께 봐야 하는 이유를 설명</td>
+            <td class="score-mid">두 지표 모두 언급하지만 관계 설명이 약함</td>
+            <td class="score-junior">%util만으로 병목 여부를 단정</td>
+          </tr>
+          <tr>
+            <td><strong>장치→프로세스 진단 흐름</strong></td>
+            <td class="score-senior">iostat으로 병목 확인 후 iotop으로 범인 특정하는 단계를 명확히 구분</td>
+            <td class="score-mid">iotop을 알고 있지만 순서나 목적 설명이 약함</td>
+            <td class="score-junior">범인 프로세스를 특정하는 방법을 언급하지 않음</td>
+          </tr>
+          <tr>
+            <td><strong>공간 vs inode 구분</strong></td>
+            <td class="score-senior">df -h와 df -i를 별도 자원으로 설명하고 항상 함께 확인한다고 답함</td>
+            <td class="score-mid">inode 개념은 알지만 확인 습관으로 연결하지 못함</td>
+            <td class="score-junior">공간 부족만 고려하고 inode를 언급하지 않음</td>
+          </tr>
+          <tr>
+            <td><strong>삭제된 열린 파일 이해</strong></td>
+            <td class="score-senior">참조 카운트 개념과 lsof/fd truncate 해결법을 구체적으로 설명</td>
+            <td class="score-mid">현상은 알지만 해결 방법이 프로세스 재시작뿐</td>
+            <td class="score-junior">rm이 항상 즉시 공간을 회수한다고 오해</td>
+          </tr>
+          <tr>
+            <td><strong>df vs du 불일치 설명</strong></td>
+            <td class="score-senior">여러 원인(삭제된 fd, 마운트, 예약 공간)을 구분해서 설명</td>
+            <td class="score-mid">불일치가 있을 수 있다는 것은 알지만 원인 나열이 부족</td>
+            <td class="score-junior">두 값이 항상 같아야 한다고 생각</td>
+          </tr>
+          <tr>
+            <td><strong>조치의 근본성</strong></td>
+            <td class="score-senior">근본 원인(패턴, 정책)과 재발 방지(모니터링 지표 확장)까지 연결</td>
+            <td class="score-mid">원인 분석은 하지만 재발 방지까지는 부족</td>
+            <td class="score-junior">하드웨어 증설 등 임시방편으로 답변 종료</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top:1rem; font-size:0.9rem; color:#64748b;">
+      <strong>점수 해석:</strong> 6개 항목 × 3점 = 최대 18점.
+      15점 이상 → Senior 수준 답변 완성.
+      11~14점 → 구조는 있지만 일부 키워드/관점 보완 필요.
+      10점 이하 → 이 레슨을 다시 읽고, 모범 답변을 소리 내어 말해보세요.
+    </p>
+
+    <div class="key-points" style="margin-top:2rem;">
+      <h3>Day 4 핵심 포인트 요약</h3>
+      <ul>
+        <li><code>iostat</code>의 <strong>%util(바쁨)과 await(지연)</strong>는 다른 개념이며, 병렬 처리 장치에서는 반드시 함께 봐야 한다.</li>
+        <li>장치 병목이 확인되면 <code>iotop</code>으로 <strong>범인 프로세스</strong>를 좁혀야 한다.</li>
+        <li>디스크 용량(byte)과 <strong>inode(파일 개수)</strong>는 별개의 자원이며, <code>df -h</code>만으로는 inode 고갈을 알 수 없다.</li>
+        <li><code>rm</code>은 파일을 여전히 열고 있는 프로세스가 있으면 <strong>즉시 공간을 회수하지 않는다</strong> — <code>lsof +L1</code>로 확인하고 fd truncate로 안전하게 회수할 수 있다.</li>
+        <li><code>df</code>와 <code>du</code>의 차이는 삭제된 열린 파일, 하위 마운트, root 예약 공간 등 <strong>여러 정상적인 원인</strong>으로 발생할 수 있다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 다음 레슨 링크 -->
+  <div style="margin-top:2.5rem; padding:1.2rem 1.5rem; background:#fff; border:1px solid #e2e8f0; border-radius:10px; text-align:center;">
+    <p style="margin:0; color:#64748b; font-size:0.9rem;">
+      다음 레슨: <strong>Day 5 — 로그 분석 &amp; journalctl</strong> (journalctl 필터 옵션, rsyslog, /var/log 구조, grep/awk/sed 조합, 로그 로테이션)
+    </p>
+    <p style="margin:0.4rem 0 0; font-size:0.82rem; color:#94a3b8;">레슨 목록으로 돌아가기: <a href="./index.html">index.html</a></p>
+  </div>
+
+</main>
+
+<footer>
+  <p>Linux 서버 운영 인터뷰 · Day 4 · 2026-07-03 |
+    <a href="../RESOURCES.md">참고 자료</a> ·
+    <a href="../PROGRESS.md">학습 진행 현황</a>
+  </p>
+  <p style="margin-top:0.3rem;">궁금한 점은 Claude에게 바로 물어보세요. 이 레슨의 개념, follow-up 질문, 모범 답변 피드백 모두 도와드립니다.</p>
+</footer>
+
+</body>
+</html>
