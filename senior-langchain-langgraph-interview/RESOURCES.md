@@ -18,6 +18,7 @@
 - [LangGraph 1.0 GA 발표](https://changelog.langchain.com/announcements/langgraph-1-0-is-now-generally-available) — 1.0 정식 출시 및 안정성 약속
 - [langchain-ai/langchain Releases (GitHub)](https://github.com/langchain-ai/langchain/releases) — 버전별 상세 변경 내역
 - [langchain-ai/langgraph Releases (GitHub)](https://github.com/langchain-ai/langgraph/releases) — LangGraph 버전별 변경 내역, deprecation 공지
+- [Tool node error handling disabled by default after 1.0.1 (GitHub Issue #6486)](https://github.com/langchain-ai/langgraph/issues/6486) — `langgraph-prebuilt` 패치 버전에서 `ToolNode` 에러 핸들링 기본값이 바뀐 사례. 패치 업그레이드도 회귀 테스트가 필요한 이유를 보여주는 실제 사례(Day 2 근거)
 - [langchain-ai/langgraphjs Releases (GitHub)](https://github.com/langchain-ai/langgraphjs/releases) — JS/TS 버전 변경 이력(Python과 개념 비교용)
 - [Custom Middleware 가이드](https://docs.langchain.com/oss/python/langchain/middleware/custom) — 커스텀 middleware 작성법
 - [Prebuilt Middleware 목록](https://docs.langchain.com/oss/python/langchain/middleware/built-in) — HITL, summarization, PII redaction 등 내장 middleware

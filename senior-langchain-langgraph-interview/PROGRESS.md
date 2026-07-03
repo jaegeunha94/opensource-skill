@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | LangChain·LangGraph 기반 Agent 설계/운영 프레임워크 | [0001-langchain-langgraph-agent-architecture-framework.html](lessons/0001-langchain-langgraph-agent-architecture-framework.html) |
+| 2 | 2026-07-03 | Model / Tool / Message abstraction | [0002-langchain-model-tool-message-abstraction.html](lessons/0002-langchain-model-tool-message-abstraction.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | Model / Tool / Message abstraction | ChatModel 인터페이스, tool calling, 구조화된 tool 정의, message 타입, tool error handling |
 | 3 | Middleware 아키텍처 | `before_model`/`after_model`/`wrap_model_call`/`wrap_tool_call`/`before_agent`/`after_agent`, built-in middleware, custom middleware 설계 |
 | 4 | Structured Output과 Streaming | `with_structured_output`, streaming mode(values/updates/messages/custom), 지연시간 vs UX trade-off |
 | 5 | Retrieval과 Memory | RAG 통합 지점, short-term vs long-term memory, memory 설계가 agent 품질에 미치는 영향 |
@@ -26,14 +26,16 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — 다음: Day 2 — Model / Tool / Message abstraction
+**Day 2 완료** — 다음: Day 3 — Middleware 아키텍처
 
 ## 습득한 핵심 개념
 
 - [x] Agent = model + harness 개념 (Day 1)
 - [x] `create_agent` vs `StateGraph` 선택 기준 (Day 1)
 - [x] AgentExecutor deprecation과 마이그레이션 판단 (Day 1)
-- [ ] Model/Tool/Message abstraction (예정 Day 2)
+- [x] ChatModel/Message 표준화(content_blocks)와 provider 독립성 (Day 2)
+- [x] Tool 정의(`@tool`, docstring/타입 힌트가 곧 스펙)와 `ToolRuntime` 실행 컨텍스트 주입 (Day 2)
+- [x] Tool error handling 원칙과 `handle_tool_errors` 기본값 변경 운영 리스크 (Day 2)
 - [ ] Middleware 아키텍처 (예정 Day 3)
 - [ ] Structured Output / Streaming (예정 Day 4)
 - [ ] Retrieval / Memory 설계 (예정 Day 5)
