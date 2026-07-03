@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — CPU 실행 모델 | 컴퓨터 구조 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">컴퓨터 구조 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 2
+  </nav>
+
+  <h1>Day 2 — CPU 실행 모델</h1>
+  <p class="subtitle">코드 한 줄이 명령어, 레지스터, ALU로 어떻게 쪼개지는가 · 2026-07-03</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#registers">레지스터, ALU, load/store를 깊이 이해하기</a></li>
+      <li><a href="#example">구체 예시 — 코드 한 줄이 명령어로 쪼개지는 과정</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"CPU가 코드를 실행한다는 말을 개발자 관점에서 설명해보세요. <code>x = a + b;</code> 같은 한 줄이 실제로 CPU 안에서 무슨 일을 일으키나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"레지스터가 무엇이고, 왜 CPU는 메모리에서 바로 연산하지 않고 굳이 레지스터에 값을 옮겨서 계산하나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"고급 언어로 짠 반복문이 어떻게 기계어 명령어로 바뀌는지, 그 과정에서 어떤 하드웨어 자원이 쓰이는지 설명해보세요."</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"고급 언어 뒤에 숨겨진 실행 모델을 실제로 이해하는가"</strong>를 확인합니다. 면접관이 원하는 답은 "CPU가 계산을 한다"는 동어반복이 아니라, <strong>명령어 하나하나가 레지스터와 ALU, 메모리 사이를 오가는 구체적인 흐름</strong>을 설명하는 것입니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>추상화를 뚫고 내려가는 능력</strong> — 변수, 함수, 객체라는 추상 개념이 결국 레지스터에 담긴 비트와 몇 가지 명령어(load, add, store, branch)로 환원된다는 것을 아는가.</li>
+      <li><strong>레지스터 압력(register pressure)에 대한 감각</strong> — 왜 함수 안에 살아있는 변수가 너무 많으면 느려질 수 있는지, 왜 컴파일러 최적화 옵션이 레지스터 할당을 바꾸는지 연결할 수 있는가.</li>
+      <li><strong>load/store 구조와 메모리 접근의 관계</strong> — Day 1에서 배운 "메모리 접근이 비싸다"는 사실이 정확히 어느 지점(load, store 명령어)에서 발생하는지 짚어내는가.</li>
+      <li><strong>동시성/최적화 논의로 확장할 준비</strong> — <code>volatile</code>, atomic 연산, 컴파일러 재정렬 같은 뒤에 나올 주제들이 전부 "레지스터 vs 메모리"라는 이 모델 위에서 설명된다는 것을 아는가.</li>
+    </ul>
+
+    <p>주니어 답변의 전형적인 패턴: "CPU가 명령어를 한 줄씩 실행합니다"라고 뭉뚱그리거나, "0과 1로 계산합니다"처럼 추상 수준을 한 단계도 못 내려갑니다. 10년차 이상은 <strong>fetch-decode-execute, register file, ALU, load/store</strong>를 구체적인 코드 예시와 함께 연결하고, 이게 왜 성능·동시성 문제와 이어지는지까지 말합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>CPU는 "명령어 실행 기계"다</h3>
+    <p>CPU는 <code>x = a + b;</code> 같은 문장을 통째로 이해하지 못합니다. 컴파일러(또는 인터프리터)가 이 문장을 CPU가 이해할 수 있는 아주 단순한 동작 단위인 <strong>명령어(instruction)</strong>로 쪼갭니다. 하나의 명령어는 보통 "레지스터 A와 레지스터 B를 더해서 레지스터 C에 넣어라" 정도로 단순합니다. CPU는 이런 단순한 명령어를 초당 수십억 개씩 처리할 뿐입니다.</p>
+
+    <h3>Fetch-Decode-Execute 사이클</h3>
+    <p>CPU가 명령어 하나를 처리하는 기본 흐름은 다음 세 단계입니다. (실제 하드웨어는 이 단계를 여러 하위 단계로 더 쪼개 pipeline으로 처리하지만, 그 내용은 Day 5에서 다룹니다. 지금은 논리적인 흐름만 이해하면 됩니다.)</p>
+    <ul>
+      <li><strong>Fetch(가져오기)</strong>: Program Counter(PC)라는 레지스터가 가리키는 메모리 주소에서 다음에 실행할 명령어를 가져온다.</li>
+      <li><strong>Decode(해석)</strong>: 가져온 명령어가 무슨 연산인지(더하기? 저장? 분기?), 어떤 레지스터/값을 쓰는지 해석한다.</li>
+      <li><strong>Execute(실행)</strong>: 실제 연산을 수행한다. 산술/논리 연산이면 ALU가 계산하고, 메모리 접근이면 load/store 유닛이 동작하고, 분기면 PC를 갱신한다.</li>
+    </ul>
+    <p>이 세 단계가 끝나면 PC는 다음 명령어를 가리키고, 사이클이 반복됩니다. 우리가 짜는 모든 프로그램은 결국 이 사이클의 반복입니다.</p>
+
+    <h3>레지스터(Register) — CPU 안의 "작업대"</h3>
+    <p>레지스터는 CPU 칩 안에 있는 아주 작고 아주 빠른 저장 공간입니다. Day 1에서 다룬 메모리 계층의 맨 앞(&lt; 1 cycle)에 있는 그 register가 바로 이것입니다. CPU는 연산을 할 때 메모리에 있는 값을 직접 계산하지 않고, 먼저 레지스터로 값을 옮긴 다음 레지스터끼리 계산합니다. 현대 x86-64는 개발자에게 보이는 범용 레지스터가 16개 정도지만, 실제 하드웨어 내부에는 <strong>register renaming</strong>이라는 기법으로 훨씬 많은 물리 레지스터를 두고 있습니다(비순차 실행을 위한 것으로 Day 5와 연결됩니다).</p>
+
+    <h3>ALU(Arithmetic Logic Unit) — 실제 계산을 담당하는 회로</h3>
+    <p>ALU는 덧셈, 뺄셈, 비교, 논리 연산(AND/OR/XOR), 시프트 연산을 수행하는 회로입니다. ALU는 레지스터에서 값을 입력받아 계산하고 결과를 다시 레지스터에 씁니다. ALU 자체는 메모리에 직접 접근하지 않습니다 — 이 역할 분리가 다음 개념인 load/store 구조와 직결됩니다.</p>
+
+    <h3>Load/Store 구조 — 계산과 메모리 접근의 분리</h3>
+    <p>RISC 계열(ARM, RISC-V)은 <strong>메모리에 접근하는 명령어를 load(읽기)와 store(쓰기) 딱 두 종류로 제한</strong>하고, 나머지 모든 산술/논리 명령어는 레지스터끼리만 계산하도록 설계되어 있습니다. 이걸 load/store architecture라고 부릅니다. 즉 "메모리에 있는 값 두 개를 더해서 메모리에 저장해라" 같은 명령어는 없고, 반드시 "메모리에서 레지스터로 load → 레지스터끼리 add → 레지스터에서 메모리로 store" 세 단계로 나뉩니다.</p>
+    <p>x86 같은 CISC 계열은 겉보기에 <code>add [메모리주소], reg</code>처럼 메모리를 직접 피연산자로 쓰는 명령어를 허용합니다. 하지만 실제 마이크로아키텍처 내부에서는 이 명령어도 load, execute, store에 해당하는 micro-op으로 쪼개져 실행됩니다. 즉 겉모습(ISA)은 달라도, <strong>계산은 레지스터에서 일어나고 메모리 접근은 별도의 단계</strong>라는 본질은 동일합니다.</p>
+  </section>
+
+  <!-- 4. 레지스터/ALU/load-store 심화 -->
+  <section id="registers">
+    <h2>4. 레지스터, ALU, load/store를 깊이 이해하기</h2>
+
+    <p>왜 CPU는 "메모리에서 바로 계산"하지 않고 굳이 레지스터를 거칠까요? 답은 다시 Day 1의 지연 시간 표로 돌아갑니다. 레지스터는 &lt; 1 cycle, L1 캐시도 약 4 cycle이지만, ALU가 매 연산마다 메인 메모리(약 200~300 cycle)까지 갔다 와야 한다면 CPU 성능은 수백 배 떨어집니다. 그래서 하드웨어는 "자주 쓰는 값은 최대한 CPU에 가까운 레지스터에 잠깐 붙잡아두고, 그 안에서 여러 번 계산을 반복한 뒤에만 메모리에 결과를 쓴다"는 전략을 씁니다.</p>
+
+    <table class="method-table">
+      <thead>
+        <tr><th>구성 요소</th><th>역할</th><th>개발자 관점에서의 의미</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Register File</td>
+          <td>ALU가 즉시 읽고 쓸 수 있는 소수의 초고속 저장 공간</td>
+          <td>함수의 지역 변수, 반복문 카운터, 임시 계산값이 여기 머무는 것이 이상적</td>
+        </tr>
+        <tr>
+          <td>ALU</td>
+          <td>레지스터 값끼리 산술/논리 연산 수행</td>
+          <td>루프 안의 <code>+</code>, <code>&lt;</code>, <code>&amp;</code> 같은 연산자가 매핑되는 실제 회로</td>
+        </tr>
+        <tr>
+          <td>Load 명령어</td>
+          <td>메모리 → 레지스터로 값을 가져옴</td>
+          <td>배열 원소 읽기, 객체 필드 접근, 포인터 역참조가 여기 해당</td>
+        </tr>
+        <tr>
+          <td>Store 명령어</td>
+          <td>레지스터 → 메모리로 값을 씀</td>
+          <td>변수 대입, 배열 원소 쓰기, 함수 반환값 저장</td>
+        </tr>
+        <tr>
+          <td>Program Counter(PC)</td>
+          <td>다음에 fetch할 명령어의 주소를 가리킴</td>
+          <td>분기(if, loop, 함수 호출)가 바꾸는 대상 — Day 5 branch prediction의 핵심 축</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>레지스터 압력(Register Pressure)과 Spilling</h3>
+    <p>레지스터 개수는 물리적으로 제한되어 있습니다(x86-64 기준 범용 레지스터 16개 수준). 한 시점에 "살아있는" 변수(앞으로 다시 쓰일 값)가 이 개수보다 많아지면, 컴파일러는 일부 값을 임시로 스택(메모리)에 내려놓았다가 나중에 다시 불러옵니다. 이를 <strong>레지스터 spilling</strong>이라고 합니다. Spilling이 많아지면 원래 레지스터에서 끝났어야 할 계산에 메모리 load/store가 끼어들어 느려집니다. 반복문을 과도하게 unroll하거나, 한 함수 안에 살아있는 변수를 너무 많이 만들면 이 현상이 발생하기 쉽습니다.</p>
+
+    <h3>왜 <code>volatile</code>과 atomic이 이 모델과 연결되는가</h3>
+    <p>컴파일러는 성능을 위해 "이 변수는 값이 안 바뀔 테니 레지스터에 계속 캐싱해두고 매번 메모리에서 다시 읽지 않겠다"는 최적화를 흔히 합니다. 그런데 다른 스레드나 하드웨어가 그 메모리 값을 바꿀 수 있는 상황(예: 인터럽트 핸들러, 다른 스레드)이라면 이 최적화가 최신 값을 못 보게 만드는 버그가 됩니다. <code>volatile</code>이나 atomic 연산은 "이 값은 매번 실제로 load/store 명령어를 통해 메모리에서 확인하라"고 컴파일러에게 강제하는 장치입니다. 이 개념은 Day 6(멀티코어, cache coherence)에서 다시 다룹니다.</p>
+  </section>
+
+  <!-- 5. 구체 예시 -->
+  <section id="example">
+    <h2>5. 구체 예시 — 코드 한 줄이 명령어로 쪼개지는 과정</h2>
+
+    <p>다음과 같은 간단한 C 코드를 봅시다.</p>
+
+    <pre><code>int sum(int a, int b) {
+    return a + b;
+}</code></pre>
+
+    <p>이 함수는 대략 다음과 같은 어셈블리(x86-64, 개념 단순화 버전)로 컴파일됩니다.</p>
+
+    <pre><code>; a는 edi 레지스터, b는 esi 레지스터로 전달된다고 가정
+mov  eax, edi     ; load 개념: a 값을 레지스터 eax로 복사
+add  eax, esi     ; ALU 연산: eax = eax + esi (레지스터끼리 계산)
+ret               ; eax에 담긴 결과를 반환값 레지스터 관례에 따라 반환</code></pre>
+
+    <p>여기서 <code>a</code>, <code>b</code>가 이미 레지스터(<code>edi</code>, <code>esi</code>)에 들어있는 이유는, 함수 호출 규약(calling convention)이 작은 인자는 메모리(스택)가 아니라 레지스터로 전달하도록 정해두었기 때문입니다 — 이 자체가 "레지스터가 메모리보다 훨씬 싸다"는 원칙의 실제 적용 사례입니다. 실제 덧셈은 <code>add</code> 명령어 하나로 ALU가 처리하며, 이 예시에는 메모리 접근(load/store)이 전혀 없습니다. 모든 값이 레지스터 안에서만 오갔기 때문에 이 함수는 매우 빠릅니다.</p>
+
+    <p>이제 배열을 순회하며 합을 구하는 코드를 봅시다.</p>
+
+    <pre><code>int sum_array(int *arr, int n) {
+    int total = 0;
+    for (int i = 0; i < n; i++) {
+        total += arr[i];   // 배열 원소를 읽어야 함
+    }
+    return total;
+}</code></pre>
+
+    <p>이 루프의 핵심 반복 부분은 개념적으로 다음과 같이 동작합니다.</p>
+
+    <ul class="step-block">
+      <li><div class="step-num">1</div><div><strong>Load</strong> — <code>arr[i]</code>의 메모리 주소를 계산하고(주소 계산은 ALU), 그 주소의 값을 메모리(또는 캐시)에서 레지스터로 읽어온다.</div></li>
+      <li><div class="step-num">2</div><div><strong>ALU 연산</strong> — 읽어온 값을 <code>total</code>을 담고 있는 레지스터에 더한다.</div></li>
+      <li><div class="step-num">3</div><div><strong>루프 제어</strong> — <code>i</code>를 담은 레지스터를 증가시키고(ALU), <code>i &lt; n</code>을 비교(ALU)한 뒤, 조건에 따라 PC를 루프 시작 주소로 되돌리거나(branch) 다음으로 진행한다.</div></li>
+    </ul>
+
+    <p><code>total</code>과 <code>i</code>는 루프 내내 레지스터에 머물기 때문에 (레지스터 압력이 낮으면) 매 반복마다 메모리 접근이 필요 없습니다. 하지만 <code>arr[i]</code>를 읽는 부분은 반드시 load 명령어를 통해 메모리(또는 캐시)에 접근해야 합니다 — 이것이 바로 Day 1에서 다룬 "배열을 순차 접근하면 캐시 라인을 재사용해 load 비용이 줄어든다"는 이야기와 정확히 맞물리는 지점입니다. Day 1은 "이 load가 왜 싸거나 비싼가"를 다뤘고, Day 2는 "그 load가 실행 모델 어디에서 발생하는가"를 다룬다고 보면 됩니다.</p>
+  </section>
+
+  <!-- 6. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>6. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>고급 언어 문장을 명령어 단위로 환원합니다.</strong> "이 코드는 결국 load, ALU 연산, store, branch라는 몇 가지 단순한 명령어의 조합으로 컴파일됩니다."</li>
+      <li><strong>fetch-decode-execute 사이클을 짧게 설명합니다.</strong> "CPU는 PC가 가리키는 명령어를 가져오고, 해석하고, 실행하는 사이클을 반복합니다."</li>
+      <li><strong>레지스터와 ALU의 역할을 짚습니다.</strong> "실제 계산은 ALU가 레지스터 값을 가지고 수행하며, 메모리 접근은 load/store라는 별도의 단계로 분리되어 있습니다."</li>
+      <li><strong>왜 이 분리가 중요한지 성능과 연결합니다.</strong> "레지스터는 메모리보다 수백 배 빠르기 때문에, 컴파일러는 최대한 값을 레지스터에 머물게 하려 하고, 이게 부족하면 spilling이 발생해 느려집니다."</li>
+      <li><strong>구체 예시로 마무리합니다.</strong> 간단한 함수나 루프가 어떻게 어셈블리로 쪼개지는지 한두 줄로 보여줍니다.</li>
+    </ol>
+  </section>
+
+  <!-- 7. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>7. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "CPU가 코드를 실행한다는 말을 개발자 관점에서 설명해보세요."</p>
+    </div>
+
+    <h3>짧은 버전 (엘리베이터 피치)</h3>
+    <div class="good-answer">
+      <div class="tag">SHORT ANSWER</div>
+      <p>고급 언어 코드는 컴파일러에 의해 load, store, ALU 연산(더하기, 비교 등), branch 같은 단순한 명령어로 쪼개집니다. CPU는 Program Counter가 가리키는 명령어를 fetch하고, decode하고, execute하는 사이클을 반복합니다. 실제 계산은 ALU가 레지스터에 있는 값으로 수행하고, 메모리에 있는 데이터를 쓰려면 반드시 load로 레지스터에 가져오고 store로 다시 메모리에 써야 합니다.</p>
+    </div>
+
+    <h3>깊이 있는 버전</h3>
+    <div class="good-answer">
+      <div class="tag">DEEP ANSWER</div>
+      <p>예를 들어 <code>int total = 0; for (...) total += arr[i];</code> 같은 루프를 보면, <code>total</code>과 <code>i</code>는 반복 내내 레지스터에 남아있을 수 있어서 ALU가 매 반복 레지스터끼리만 더하고 비교합니다. 하지만 <code>arr[i]</code>는 매번 메모리(또는 캐시)에서 값을 가져와야 하므로 load 명령어가 필요합니다.</p>
+      <br>
+      <p>여기서 중요한 건 레지스터가 메모리보다 수백 배 빠르기 때문에, 컴파일러가 최대한 값을 레지스터에 머물게 하려 한다는 점입니다. 그런데 레지스터 개수는 물리적으로 제한되어 있어서(x86-64 기준 범용 16개 수준), 한 함수 안에 동시에 살아있는 변수가 너무 많으면 일부를 스택으로 잠깐 내렸다가 다시 불러오는 register spilling이 발생합니다. 이건 원래 레지스터끼리 끝났어야 할 계산에 메모리 접근이 끼어드는 것이라 성능에 영향을 줍니다.</p>
+      <br>
+      <p>이걸 실무에서 확인하려면 컴파일러 어셈블리 출력(예: Compiler Explorer, <code>objdump -d</code>)을 보고 예상보다 <code>mov [rsp+...]</code> 같은 스택 접근이 많이 보이는지 확인할 수 있습니다. 저는 핫 루프에서 지역 변수를 지나치게 많이 두거나 함수를 과도하게 inline해서 레지스터 압력이 높아진 걸 이런 식으로 확인하고, 변수 스코프를 좁히거나 계산을 재구성해서 개선한 경험이 있습니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>추상적인 "CPU가 실행한다"를 fetch-decode-execute, register, ALU, load/store라는 구체적 개념으로 환원함</li>
+      <li>Day 1의 메모리 계층 지식과 자연스럽게 연결(레지스터가 왜 빠른지의 이유를 재사용)</li>
+      <li>register spilling이라는 구체적 실패 모드와 그것을 확인하는 실무 방법(어셈블리 출력 확인)을 제시</li>
+      <li>실제 개선 경험으로 마무리</li>
+    </ul>
+  </section>
+
+  <!-- 8. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"CPU는 0과 1로 이루어진 기계어를 한 줄씩 순서대로 실행합니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"0과 1"이라는 표현은 맞지만 아무 정보도 주지 못하는 진부한 표현입니다.</li>
+        <li>레지스터, ALU, load/store 같은 실행 모델의 핵심 구성 요소가 전혀 언급되지 않습니다.</li>
+        <li>"한 줄씩 순서대로"는 고전적 폰 노이만 모델의 단순화일 뿐이며, 이 표현만 쓰면 out-of-order 실행 같은 현대 CPU 특성을 모르는 것처럼 보입니다(Day 5에서 다룸).</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"레지스터는 그냥 변수를 저장하는 곳이고, 메모리랑 비슷한데 CPU 안에 있는 거예요."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>레지스터와 메모리를 "비슷한데 위치만 다르다"고 뭉뚱그리면, 왜 이 둘을 구분해서 설계했는지(load/store 구조, 속도 차이)를 이해하지 못한 것으로 보입니다.</li>
+        <li>ALU가 레지스터에서만 계산한다는, 실행 모델의 핵심 제약이 빠져 있습니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>fetch-decode-execute 사이클을 간단히 언급한다</li>
+        <li>ALU는 레지스터 값만 계산하고, 메모리 접근은 load/store로 분리되어 있다는 점을 짚는다</li>
+        <li>왜 이렇게 분리되어 있는지(레지스터가 메모리보다 훨씬 빠르다) 이유를 설명한다</li>
+        <li>레지스터 압력, spilling 같은 실제 성능에 영향을 주는 현상을 언급한다</li>
+        <li>구체적인 코드/어셈블리 예시 또는 실무에서 확인한 경험을 든다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9. Follow-up -->
+  <section id="followups">
+    <h2>9. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: 레지스터가 부족하면 실제로 무슨 일이 일어나나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 컴파일러가 register allocation 단계에서 동시에 살아있는 변수 수가 물리 레지스터 수를 넘는다고 판단하면, 우선순위가 낮은 값을 스택(메모리)에 잠깐 저장(spill)해두고 필요할 때 다시 load합니다. 이걸 register spilling이라고 하며, 원래 레지스터끼리 끝났을 계산에 메모리 접근이 추가되어 느려집니다. 반복문 unrolling을 과하게 하거나 한 함수의 책임이 너무 커서 지역 변수가 많아지면 이 문제가 자주 생깁니다.</p>
+        <p><strong>함정</strong>: "레지스터가 부족하면 에러가 난다"고 답하면 틀린 답입니다 — 컴파일러가 자동으로 spilling으로 처리하며, 이는 정확성 문제가 아니라 성능 문제입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: x86 같은 CISC는 메모리를 직접 피연산자로 쓸 수 있다고 알고 있는데, 그럼 load/store 구조가 아닌 건가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> ISA(명령어 집합) 수준에서는 x86이 <code>add [mem], reg</code> 같은 메모리-피연산자 명령어를 허용해서 겉보기엔 load/store 구조가 아닌 것처럼 보입니다. 하지만 실제 마이크로아키텍처는 이런 명령어를 내부적으로 load micro-op, ALU 연산 micro-op, store micro-op으로 쪼개서 실행합니다. 즉 ISA 설계 철학은 다르지만, 실제 실행 단위에서는 계산과 메모리 접근이 여전히 분리되어 있습니다. 이건 "명령어 집합 설계"와 "마이크로아키텍처 구현"이 다른 층위라는 걸 보여주는 좋은 예시입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: CPU가 명령어를 코드에 적힌 순서 그대로 실행하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 논리적인 모델(순차 실행, sequential semantics)은 유지되지만, 현대 CPU 내부는 out-of-order 실행을 통해 서로 의존성이 없는 명령어를 실제로는 다른 순서로, 심지어 동시에 실행할 수 있습니다. 최종적으로 프로그램이 관찰하는 결과는 순차 실행한 것과 동일하게 보이도록 보장(retire 단계에서 순서 정렬)합니다. 이 내용은 pipeline과 branch prediction을 다루는 Day 5에서 더 깊게 다룹니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: <code>volatile</code>이나 atomic 연산은 이 실행 모델과 어떻게 연결되나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 컴파일러는 기본적으로 반복 접근되는 변수를 레지스터에 캐싱해서 매번 메모리를 다시 읽지 않으려 합니다. 하지만 다른 스레드나 하드웨어 인터럽트가 그 메모리 값을 바꿀 수 있다면, 레지스터에 캐싱된 값은 오래된 값이 될 수 있습니다. <code>volatile</code>은 컴파일러에게 "이 값은 매번 실제 load/store를 통해 메모리에서 확인하라"고 강제하고, atomic 연산은 여기에 더해 CPU에게 메모리 접근의 원자성과 가시성(다른 코어에서도 즉시 보이도록)까지 보장하라고 요구합니다. 이건 Day 6 멀티코어/cache coherence 주제로 직접 이어집니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 프로파일러에서 함수 하나의 IPC(Instructions Per Cycle)가 유독 낮게 나온다면 이 모델을 근거로 무엇을 의심할 수 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> IPC가 낮다는 건 CPU가 명령어를 실행할 준비가 됐는데도 자주 멈춰 있다는 뜻입니다. 이 모델 관점에서 의심할 지점은 (1) load 명령어가 캐시 미스로 수백 사이클 대기하는 경우, (2) 다음 명령어가 방금 계산된 레지스터 값에 의존해서 ALU가 결과를 기다려야 하는 데이터 의존성 체인, (3) branch misprediction으로 pipeline이 비는 경우입니다. 여기서 (1)은 Day 1, (3)은 Day 5와 바로 연결되는데, 이렇게 여러 Day의 개념을 하나의 진단 프레임으로 묶어 설명하는 것이 시니어다운 답변입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>10. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"고급 언어는 하드웨어와 무관하게 동작한다"</strong></p>
+      <p>어떤 언어로 작성하든 결국 CPU가 실행하는 것은 load, store, ALU 연산, branch 같은 소수의 하드웨어 명령어입니다. 인터프리터나 JIT, 가상 머신도 결국 이 위에서 동작합니다. 언어 수준의 추상화가 하드웨어 실행 모델 자체를 없애주지는 않습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"레지스터 개수가 많을수록 무조건 빠르다"</strong></p>
+      <p>레지스터가 많으면 spilling이 줄어드는 것은 맞지만, 레지스터 개수는 명령어 인코딩 비트 수, 마이크로아키텍처 복잡도, 전력 소모와도 얽힌 설계 trade-off입니다. 실제 성능은 레지스터 개수 하나가 아니라 컴파일러의 register allocation 품질, 코드의 실제 레지스터 압력에 더 좌우됩니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"메모리 접근은 항상 느리다"</strong></p>
+      <p>Day 1에서 다뤘듯 load/store가 접근하는 대상이 L1 캐시라면 몇 나노초 수준으로 매우 빠릅니다. "메모리 접근이 느리다"는 정확히는 "요청한 데이터가 캐시에 없어서 RAM까지 가야 할 때(cache miss) 느리다"는 뜻입니다. load 명령어 자체가 항상 비싼 것은 아닙니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"CPU는 명령어를 코드 순서 그대로, 하나씩 처리한다"</strong></p>
+      <p>이건 아주 단순화된 교과서 모델입니다. 실제 현대 CPU는 pipeline으로 여러 명령어를 동시에 여러 단계에 걸쳐 처리하고, out-of-order 실행으로 의존성이 없는 명령어의 순서를 바꿔 실행하기도 합니다. 논리적 결과만 순차 실행과 동일하게 보장될 뿐입니다. (Day 5에서 심화)</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"load/store architecture는 RISC 프로세서에만 있는 개념이라 x86 개발자에겐 상관없다"</strong></p>
+      <p>ISA 표면(명령어 문법)은 다르지만, x86도 내부적으로 micro-op 수준에서는 계산과 메모리 접근을 분리해서 처리합니다. "계산은 레지스터에서, 메모리 접근은 별도 단계"라는 원리는 사실상 모든 현대 범용 CPU에 공통적으로 적용됩니다.</p>
+    </div>
+  </section>
+
+  <!-- 11. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>11. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 2를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>fetch-decode-execute 사이클을 자기 언어로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>레지스터, ALU, load/store가 각각 어떤 역할을 하는지 구분해서 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>왜 ALU가 메모리를 직접 계산하지 않고 레지스터를 거치는지, Day 1의 지연 시간 개념으로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>간단한 코드(예: 두 수를 더하는 함수)가 어셈블리 수준에서 어떻게 실행되는지 개념적으로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>레지스터 압력과 register spilling이 무엇이고 왜 성능에 영향을 주는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>x86 같은 CISC도 내부적으로 load/store 성격의 micro-op으로 실행된다는 것을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>volatile</code>이나 atomic 연산이 왜 "레지스터 캐싱 대신 실제 메모리 접근을 강제"하는 장치인지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"CPU는 코드 순서 그대로 하나씩 실행한다"는 단순화가 왜 현대 CPU에서는 부정확한지 언급할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>낮은 IPC를 볼 때 이 실행 모델을 근거로 어떤 원인들을 의심할 수 있는지 나열할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 3</h3>
+      <p><strong>메모리 계층 심화</strong></p>
+      <p>Day 1에서 메모리 계층의 큰 그림과 지연 시간 자릿수를 다뤘고, Day 2에서 그 계층의 맨 앞(레지스터)이 실행 모델과 어떻게 연결되는지 다뤘습니다. Day 3에서는 캐시와 RAM 사이, 그리고 memory bandwidth(대역폭) 관점까지 포함해 메모리 계층을 더 깊이 파고듭니다.</p>
+      <p>면접 질문 예고: "메모리 접근이 성능 병목이 되는 이유는 무엇입니까?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    컴퓨터 구조 시니어 인터뷰 · Day 2 of 10 · 2026-07-03
+  </p>
+
+</div>
+</body>
+</html>
