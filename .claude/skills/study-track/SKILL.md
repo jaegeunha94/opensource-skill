@@ -70,6 +70,9 @@ Examples:
 - `senior-langchain-langgraph-interview`
 - `senior-ai-harness-interview`
 - `senior-llm-engineering-interview`
+- `senior-claude-code-interview`
+- `senior-hermes-react-native-interview`
+- `senior-openclaw-interview`
 
 If the user gives a Korean subject name, map it to a stable English slug. Prefer common CS course names:
 
@@ -184,6 +187,22 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `LLM 10년차 이상 개발자 Interview` -> `senior-llm-engineering-interview`
 - `LLM 시니어 인터뷰` -> `senior-llm-engineering-interview`
 - `Large Language Model Interview` -> `senior-llm-engineering-interview`
+- `Claude Code` -> `senior-claude-code-interview`
+- `Claude Code Interview` -> `senior-claude-code-interview`
+- `Claude Code 10년차 이상 개발자 Interview` -> `senior-claude-code-interview`
+- `Claude Code 시니어 인터뷰` -> `senior-claude-code-interview`
+- `Hermes` -> `senior-hermes-react-native-interview`
+- `Hermes Interview` -> `senior-hermes-react-native-interview`
+- `Hermes 10년차 이상 개발자 Interview` -> `senior-hermes-react-native-interview`
+- `Hermes JavaScript Engine Interview` -> `senior-hermes-react-native-interview`
+- `Hermes React Native Interview` -> `senior-hermes-react-native-interview`
+- `Openclaw` -> `senior-openclaw-interview`
+- `OpenClaw` -> `senior-openclaw-interview`
+- `Openclaw Interview` -> `senior-openclaw-interview`
+- `OpenClaw Interview` -> `senior-openclaw-interview`
+- `Openclaw 10년차 이상 개발자 Interview` -> `senior-openclaw-interview`
+- `OpenClaw 10년차 이상 개발자 Interview` -> `senior-openclaw-interview`
+- `OpenClaw 시니어 인터뷰` -> `senior-openclaw-interview`
 
 If the slug is ambiguous, ask one short clarifying question before creating the folder.
 
@@ -218,8 +237,13 @@ For specialized senior interview subjects, keep the same 10+ year practitioner i
 - `senior-langchain-langgraph-interview`: LangChain agent construction, model/tool/message abstractions, middleware, retrieval, memory, structured output, streaming, guardrails, context engineering, LangGraph StateGraph design, nodes and edges, persistence, checkpointers, stores, interrupts, human-in-the-loop, subgraphs, fault tolerance, deployment, LangSmith tracing/evaluation, and production troubleshooting.
 - `senior-ai-harness-interview`: AI harness and agent harness architecture, agent loops, model/tool/runtime boundaries, prompt/tool/memory/control-flow scaffolding, provider abstraction, tool calling, handoffs, guardrails, sessions, sandboxed workspace execution, MCP, streaming, telemetry, tracing, evaluation harnesses, cost/performance trade-offs, security, and incident response.
 - `senior-llm-engineering-interview`: LLM application engineering, model selection, model capability boundaries, tokenization and context windows, prompt engineering, reasoning models, structured outputs, function and tool calling, multimodal input/output, embeddings, fine-tuning and reinforcement fine-tuning, evaluation, hallucination mitigation, safety and guardrails, prompt injection defense, latency/cost optimization, caching, observability, rate limits, fallback design, vendor abstraction, and production incidents.
+- `senior-claude-code-interview`: Claude Code architecture and operation, terminal/IDE/web/desktop surfaces, CLI automation, codebase context, CLAUDE.md instructions, permissions, shell/file tools, MCP, skills, hooks, plugins, subagents and agent teams, background agents, remote control, code review and CI/CD workflows, session management, context compaction, prompt caching, model/provider configuration, sandboxing, security, enterprise administration, observability, troubleshooting, and production adoption patterns.
+- `senior-hermes-react-native-interview`: Hermes JavaScript engine for React Native, ahead-of-time compilation, Hermes bytecode, startup and memory trade-offs, garbage collection, JSI, TurboModules, Fabric and the React Native new architecture, Metro/build integration, source maps and symbolication, profiling, crash diagnosis, version compatibility with React Native, custom Hermes builds, JSC migration, OTA update risks, Android/iOS packaging, and production performance tuning.
+- `senior-openclaw-interview`: OpenClaw local-first assistant architecture, Gateway control plane, multi-channel messaging, onboarding and update flow, model provider configuration and failover, tools, sessions, prompt/memory files, skills and ClawHub, multi-agent routing, sandboxing, DM pairing and allowlists, remote exposure, companion apps and nodes, deployment topology, logging, troubleshooting, marketplace security, and production operation trade-offs.
 
 For fast-moving AI application subjects such as `senior-rag-interview`, `senior-langchain-langgraph-interview`, `senior-ai-harness-interview`, and `senior-llm-engineering-interview`, treat the listed topic scope as a baseline, not a frozen syllabus. Before creating or extending lessons, check current official documentation, changelogs or release notes, deprecation and migration guides, and credible production practice references. If the stored curriculum conflicts with current guidance, update `PROGRESS.md`, `RESOURCES.md`, and the new lesson plan to follow the current evidence, while noting the reason for the adjustment.
+
+For fast-moving developer tooling, agent platform, and mobile runtime subjects such as `senior-claude-code-interview`, `senior-hermes-react-native-interview`, and `senior-openclaw-interview`, treat the listed topic scope as a baseline, not a frozen syllabus. Before creating or extending lessons, check current official documentation, changelogs or release notes, deprecation and migration guides, and credible production practice references. If the stored curriculum or technology list conflicts with current interview trends or production standards, follow the latest evidence and note the reason for the adjustment in `PROGRESS.md`, `RESOURCES.md`, and the new lesson plan.
 
 For senior frontend interview subjects, assume the learner already knows beginner syntax and basic framework usage. Focus on 10+ year practitioner expectations: browser/platform constraints, accessibility, performance budgets, rendering behavior, architecture trade-offs, maintainability, testing strategy, frontend security, production debugging, cross-functional communication, and senior-level design review. Do not turn these tracks into beginner tag/property/API drills unless the topic is used to evaluate production reasoning.
 
