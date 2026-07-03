@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | JavaScript 실행 모델과 이벤트 루프 답변 프레임워크 — 코드 실행 순서를 예측하는 사고법 | [0001-js-execution-model-event-loop-framework.html](lessons/0001-js-execution-model-event-loop-framework.html) |
+| 2 | 2026-07-03 | Execution Context와 Call Stack 심화 — Creation/Execution 단계, Hoisting, TDZ, 스택 오버플로우 | [0002-execution-context-call-stack-deep-dive.html](lessons/0002-execution-context-call-stack-deep-dive.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | Execution Context와 Call Stack 심화 | Creation/Execution 단계, Hoisting, TDZ, 스택 오버플로우 |
 | 3 | Scope Chain과 Lexical Scoping | `var`/`let`/`const`, 블록 스코프, 스코프 체인 조회 비용 |
 | 4 | Closure 심화 | 클로저의 실제 메모리 모델, 반복문 클로저 버그, 실무 활용 패턴 |
 | 5 | Prototype과 객체 모델 | Prototype chain, `class`는 syntactic sugar, `Object.create` |
@@ -32,7 +32,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — 다음: Day 2 — Execution Context와 Call Stack 심화
+**Day 2 완료** — 다음: Day 3 — Scope Chain과 Lexical Scoping
 
 ## 습득한 핵심 개념
 
@@ -41,7 +41,9 @@
 - [x] Microtask 큐가 Macrotask보다 항상 먼저 전부 소진된다는 규칙 (Day 1)
 - [x] `setTimeout(fn, 0)`이 "즉시 실행"을 의미하지 않는 이유 (Day 1)
 - [x] 브라우저 렌더링이 Event Loop의 어느 지점에 끼어드는지 (Day 1)
-- [ ] Hoisting과 TDZ가 실제로 만드는 버그 (예정 Day 2)
+- [x] Execution Context의 Creation Phase / Execution Phase 2단계 모델 (Day 2)
+- [x] Hoisting과 TDZ가 실제로 만드는 버그, `ReferenceError` vs `undefined` 구분 (Day 2)
+- [x] Call Stack의 물리적 한계와 스택 오버플로우 진단·대응 (Day 2)
 - [ ] 스코프 체인 조회 비용과 클로저 메모리 모델 (예정 Day 3~4)
 - [ ] Prototype chain과 `class` 문법의 실체 (예정 Day 5)
 - [ ] `this` 4가지 바인딩 규칙과 화살표 함수 예외 (예정 Day 6)
