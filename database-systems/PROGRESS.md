@@ -13,12 +13,12 @@
 | 1 | 2026-06-30 | DB 성능 진단 프레임워크 | [interview-day-001-db-performance-diagnosis.html](lessons/interview-day-001-db-performance-diagnosis.html) |
 | 2 | 2026-07-01 | 스키마 설계와 정규화 | [interview-day-002-schema-design.html](lessons/interview-day-002-schema-design.html) |
 | 3 | 2026-07-02 | 인덱스 설계 | [interview-day-003-index-design.html](lessons/interview-day-003-index-design.html) |
+| 4 | 2026-07-03 | 트랜잭션과 격리 수준 | [interview-day-004-transactions-isolation.html](lessons/interview-day-004-transactions-isolation.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 4 | 트랜잭션과 격리 수준 | "READ COMMITTED와 REPEATABLE READ를 어떻게 선택합니까?" | 이상 현상, MVCC, lock, 정합성 요구사항 |
 | 5 | Lock과 Deadlock | "운영 중 deadlock이 발생하면 어떻게 분석하고 줄입니까?" | lock wait, transaction scope, retry, ordering |
 | 6 | 쿼리 튜닝 | "EXPLAIN에서 rows가 큰데 key가 잡혀 있습니다. 무엇을 의심하겠습니까?" | 실행 계획 해석, 통계, cardinality, rewrite |
 | 7 | 복제와 고가용성 | "Primary-Replica 구조에서 read-after-write 문제를 어떻게 다룹니까?" | replication lag, consistency, failover |
@@ -28,14 +28,22 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — 다음: Day 4 트랜잭션과 격리 수준
+**Day 4 완료** — 다음: Day 5 Lock과 Deadlock
 
 ## Interview 답변 체크리스트
 
-- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓)
-- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓)
-- [x] 실제 운영 상황과 연결한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓)
-- [x] 답변 순서를 단계적으로 제시한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓)
-- [x] trade-off를 최소 2개 이상 비교한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓)
-- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓)
-- [x] follow-up 질문까지 대비한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓)
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓)
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓)
+- [x] 실제 운영 상황과 연결한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓)
+- [x] 답변 순서를 단계적으로 제시한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓)
+- [x] trade-off를 최소 2개 이상 비교한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓)
+- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓)
+- [x] follow-up 질문까지 대비한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓)
+
+## 습득한 핵심 개념
+
+- [x] ACID, Isolation 손잡이 개념 (Day 4)
+- [x] Dirty Read / Non-repeatable Read / Phantom Read / Lost Update 구분 (Day 4)
+- [x] MVCC 스냅샷/버전 관리 원리 (Day 4)
+- [x] InnoDB REPEATABLE READ의 gap lock / next-key lock 특성 (Day 4)
+- [x] 비관적 락 vs 낙관적 락 선택 기준 (Day 4)
