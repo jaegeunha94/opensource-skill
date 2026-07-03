@@ -7,12 +7,12 @@
 | 1 | 2026-06-30 | 백엔드 보안 사고 프레임워크와 인증/인가 | [0001-security-framework-authn-authz.html](lessons/0001-security-framework-authn-authz.html) |
 | 2 | 2026-07-01 | 세션 관리와 JWT — 설계 판단 | [0002-session-management-jwt.html](lessons/0002-session-management-jwt.html) |
 | 3 | 2026-07-02 | SQL Injection — 탐지, 방어, 실무 패턴 | [0003-sql-injection.html](lessons/0003-sql-injection.html) |
+| 4 | 2026-07-03 | XSS와 CSRF — 공격 원리와 방어 설계 | [0004-xss-csrf.html](lessons/0004-xss-csrf.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | XSS와 CSRF | Reflected/Stored/DOM XSS, SameSite 쿠키, CSRF 토큰 |
 | 5 | 파일 업로드 보안과 SSRF | 파일 검증, MIME sniffing, SSRF 방어 |
 | 6 | API 보안 | Rate Limiting, 과도한 데이터 노출, Mass Assignment |
 | 7 | 비밀번호 저장 | bcrypt vs Argon2, rainbow table, 솔팅 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — Day 4 (XSS와 CSRF)가 다음 차례.
+**Day 4 완료** — Day 5 (파일 업로드 보안과 SSRF)가 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -41,6 +41,12 @@
 - [x] Parameterized Query가 이스케이프와 다른 근본 방어인 이유 (Day 3)
 - [x] ORM raw query/동적 정렬 컬럼에서의 Injection 잔존 위험 (Day 3)
 - [x] 식별자(컬럼명/테이블명) 화이트리스트 방어 패턴 (Day 3)
-- [ ] XSS 3가지 유형 (예정 Day 4)
-- [ ] CSRF 방어 설계 (예정 Day 4)
+- [x] XSS 3가지 유형 — Reflected/Stored/DOM-based와 방어 위치 차이 (Day 4)
+- [x] 출력 컨텍스트별 인코딩과 프레임워크 자동 이스케이프 우회 위험 (Day 4)
+- [x] CSP의 역할과 한계 — unsafe-inline, 공급망 침해 (Day 4)
+- [x] CSRF 원리 — 쿠키 자동 첨부라는 브라우저 신뢰 모델 (Day 4)
+- [x] SameSite 쿠키 + CSRF 토큰 계층 방어 (Day 4)
+- [x] Bearer 토큰 인증과 CSRF/XSS trade-off의 저장 위치 의존성 (Day 4)
+- [ ] 파일 업로드 검증과 MIME sniffing (예정 Day 5)
+- [ ] SSRF 공격 원리와 방어 (예정 Day 5)
 - [ ] bcrypt/Argon2 비교 (예정 Day 7)
