@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — asyncio와 이벤트 루프 | 파이썬 경력자 Interview</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="lesson-header">
+    <span class="lesson-tag">Day 5</span>
+    <h1>asyncio와 이벤트 루프<br><span style="font-size:0.7em;color:var(--text-muted)">협력적 멀티태스킹과 <code>await</code>의 실행 모델</span></h1>
+    <p class="lesson-meta">파이썬 경력자 Interview · 2026-07-03 · 약 70–90분 소요</p>
+  </header>
+
+  <!-- ── 왜 이 주제인가 ── -->
+  <section>
+    <h2>왜 면접에서 asyncio를 묻는가</h2>
+    <p>
+      <code>async def</code>와 <code>await</code>를 쓸 줄 아는 개발자는 많다. 하지만 <strong>"이벤트 루프가
+      정확히 무엇을 하는지, 왜 <code>await</code> 지점에서만 제어권이 넘어가는지, 왜 동기 코드 한 줄이
+      전체 서버를 멈추게 하는지"</strong>를 설명할 수 있는 사람은 훨씬 적다. 면접관은 asyncio 문법을
+      아는지가 아니라, <strong>단일 스레드 협력적 멀티태스킹 모델의 제약을 실무 설계에 반영할 수 있는가</strong>를 본다.
+    </p>
+    <p>
+      Day 4에서 다룬 제너레이터의 "멈추고 재개하는" 능력이 코루틴의 본질이라고 했다. asyncio는
+      바로 그 능력 위에 <strong>스케줄러(이벤트 루프)</strong>를 얹어, 수천 개의 코루틴을 하나의 스레드에서
+      번갈아 실행시키는 시스템이다. 이 관계를 이해하지 못하면 "왜 <code>requests.get()</code>을
+      비동기 함수 안에서 쓰면 안 되는지" 같은, 실무에서 가장 흔히 발생하는 장애를 설명할 수 없다.
+    </p>
+    <div class="callout tip">
+      <div class="callout-title">실무 연결</div>
+      "FastAPI로 만든 API 서버가 트래픽이 조금만 늘어도 전체적으로 느려집니다. 핸들러 하나는 DB 쿼리
+      하나만 날리는데도요." — 이런 질문에 "동기 라이브러리를 async 핸들러 안에서 호출해서 이벤트 루프가
+      블로킹됐을 가능성"을 바로 떠올릴 수 있는가가 이 레슨의 핵심이다.
+    </div>
+  </section>
+
+  <!-- ── 전제 개념 1: 동시성 모델과 이벤트 루프 ── -->
+  <section>
+    <h2>전제 개념 ① — 이벤트 루프는 "하나의 스레드가 여러 작업을 번갈아 처리하는 스케줄러"다</h2>
+    <p>
+      Day 3에서 GIL 때문에 파이썬 스레드는 CPU 코어를 동시에 쓸 수 없다고 배웠다. asyncio는
+      아예 <strong>여러 스레드를 쓰지 않고, 단 하나의 스레드 안에서 작업을 번갈아 실행</strong>하는 방식을 택한다.
+      이것을 <strong>협력적 멀티태스킹(cooperative multitasking)</strong>이라 부른다 — OS가 강제로 실행을
+      뺏어가는 스레드의 <strong>선점형(preemptive)</strong> 스케줄링과 반대되는 개념이다.
+    </p>
+    <div class="card accent">
+      <div class="card-label">이벤트 루프가 하는 일</div>
+      <p style="margin-bottom:0">
+        이벤트 루프는 실행 준비가 된 코루틴들의 큐를 갖고 있다가, <strong>하나를 골라 실행을 재개</strong>시킨다.
+        그 코루틴이 <code>await</code>를 만나면 "나 지금 결과를 기다려야 하니, 그동안 다른 애를 실행해"라며
+        제어권을 <strong>스스로 반납</strong>한다. 이벤트 루프는 그 반납받은 시점에 다른 준비된 코루틴을 고른다.
+        <strong>OS가 강제로 실행을 끊는 게 아니라, 코루틴이 협력적으로 양보한다</strong>는 점이 핵심이다.
+      </p>
+    </div>
+    <pre><span class="kw">import</span> asyncio
+
+<span class="kw">async</span> <span class="kw">def</span> <span class="fn">say</span>(name, delay):
+    <span class="fn">print</span>(<span class="st">f"{name} 시작"</span>)
+    <span class="kw">await</span> asyncio.<span class="fn">sleep</span>(delay)  <span class="cm"># 여기서 제어권을 이벤트 루프에 반납</span>
+    <span class="fn">print</span>(<span class="st">f"{name} 종료"</span>)
+
+<span class="kw">async</span> <span class="kw">def</span> <span class="fn">main</span>():
+    <span class="kw">await</span> asyncio.<span class="fn">gather</span>(<span class="fn">say</span>(<span class="st">"A"</span>, <span class="num">2</span>), <span class="fn">say</span>(<span class="st">"B"</span>, <span class="num">1</span>))
+    <span class="cm"># 출력: A 시작 → B 시작 → B 종료(1초 후) → A 종료(2초 후)</span>
+    <span class="cm"># 총 소요 시간은 3초(2+1)가 아니라 2초(max) — 단일 스레드에서 동시에 '기다리는 중'이기 때문</span>
+
+asyncio.<span class="fn">run</span>(<span class="fn">main</span>())</pre>
+    <div class="callout warn">
+      <div class="callout-title">단일 스레드라는 사실이 만드는 절대 규칙</div>
+      코루틴이 <code>await</code>로 제어권을 넘기지 <strong>않으면</strong>, 이벤트 루프는 그동안 아무것도
+      못 한다. <strong>단 하나의 스레드</strong>이기 때문이다. 그래서 코루틴 안에서 CPU를 오래 쓰는 계산이나
+      블로킹 I/O(동기 <code>requests.get()</code>, 동기 파일 읽기, <code>time.sleep()</code>)를 호출하면
+      <strong>그 순간 이벤트 루프 전체가 멈춘다</strong> — 다른 모든 요청이 응답을 못 받게 된다.
+    </div>
+  </section>
+
+  <!-- ── 면접 Q1 ── -->
+  <section>
+    <h2>면접 질문 ① — <code>async def</code>로 정의한 함수를 그냥 호출하면 어떻게 되나요?</h2>
+    <div class="interview-q">
+      <code>async def foo(): ...</code>를 정의하고 <code>foo()</code>라고 그냥 호출했더니 아무 일도
+      안 일어나는 것처럼 보입니다. 왜 그런가요?
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li>coroutine 함수 호출이 <strong>실행이 아니라 coroutine 객체 생성</strong>이라는 걸 아는가</li>
+      <li>이 객체가 실제로 실행되려면 이벤트 루프에 <strong>스케줄</strong>돼야 한다는 걸 아는가</li>
+      <li><code>await</code>, <code>asyncio.run()</code>, <code>create_task()</code>의 역할 차이를 구분하는가</li>
+    </ul>
+
+    <h3>답변 구조 — 생각의 순서</h3>
+    <ol>
+      <li><strong>사실 확인</strong>: <code>foo()</code> 호출은 함수 본문을 실행하지 않고 coroutine 객체를 반환</li>
+      <li><strong>비유</strong>: Day 4의 제너레이터와 동일 — 제너레이터 함수 호출도 즉시 실행 안 됨</li>
+      <li><strong>실행 트리거</strong>: <code>await</code>, <code>asyncio.run()</code>, <code>loop.create_task()</code> 중 하나가 있어야 실제 실행</li>
+      <li><strong>경고</strong>: "coroutine was never awaited"라는 흔한 <code>RuntimeWarning</code>의 원인</li>
+    </ol>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변</div>
+      <p>
+        "<code>async def</code>로 정의한 함수를 호출하면, 그 순간 함수 본문이 실행되는 게 <strong>아니라
+        coroutine 객체가 생성</strong>됩니다. 이건 Day 4에서 본 제너레이터 함수 호출과 정확히 같은 구조인데,
+        <code>async def</code>가 내부적으로 제너레이터 기반 코루틴을 문법적으로 정리한 것이기 때문입니다.
+      </p>
+      <p>
+        이 coroutine 객체는 <strong>'실행 예약서'</strong>일 뿐이고, 실제로 실행되려면 세 가지 방법 중 하나가
+        필요합니다. <code>await coroutine</code>으로 현재 코루틴 안에서 실행하거나, <code>asyncio.run(coroutine)</code>으로
+        새 이벤트 루프를 만들어 최상위에서 실행하거나, <code>asyncio.create_task(coroutine)</code>으로 이벤트 루프에
+        스케줄만 걸어두고 나중에 실행되게 할 수 있습니다.
+      </p>
+      <p style="margin-bottom:0">
+        만약 <code>await</code>도 안 하고 <code>create_task</code>도 안 한 채 coroutine 객체를 그냥 버려두면,
+        가비지 컬렉션 시점에 <code>RuntimeWarning: coroutine 'foo' was never awaited</code>가 뜹니다.
+        이건 실무에서 <strong>'비동기 함수를 호출했다고 착각하고 await를 빼먹은' 버그</strong>를 잡는 신호이기도 합니다."
+      </p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변</div>
+      <p>
+        "async 함수는 await를 붙여야 실행돼요. 안 붙이면 실행이 안 됩니다."
+      </p>
+      <p style="margin-bottom:0">
+        <strong>왜 약한가:</strong> 결과는 맞지만 <strong>왜</strong> 그런지(coroutine 객체 생성과 스케줄링의 분리)를
+        설명하지 못한다. 제너레이터와의 구조적 연결, <code>RuntimeWarning</code>이 뜬다는 실무적 디테일이 빠져 있어
+        원리를 이해했는지 확인할 수 없다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── 전제 개념 2: coroutine / Task / Future ── -->
+  <section>
+    <h2>전제 개념 ② — coroutine, Task, Future는 서로 다른 층위의 객체다</h2>
+    <p>
+      이 세 용어를 섞어 쓰는 경력자가 매우 많다. 계층 구조로 정확히 구분하는 것 자체가 강한 신호다.
+    </p>
+    <div class="card accent">
+      <div class="card-label">Coroutine 객체</div>
+      <p style="margin-bottom:0">
+        <code>async def</code> 함수를 호출해서 생긴 "실행 예약서". 아직 이벤트 루프에 등록되지 않았다.
+        <code>await</code>로 직접 실행하거나 Task로 감싸야 스케줄링된다.
+      </p>
+    </div>
+    <div class="card success">
+      <div class="card-label">Task</div>
+      <p style="margin-bottom:0">
+        coroutine을 <strong>이벤트 루프에 즉시 스케줄링</strong>해서 "지금부터 동시에 진행"시키는 객체.
+        <code>asyncio.create_task(coro)</code>로 만든다. Task는 Future의 서브클래스이며, 취소(<code>cancel()</code>),
+        완료 콜백 등록, 예외 확인 같은 제어 기능을 제공한다.
+      </p>
+    </div>
+    <div class="card warn">
+      <div class="card-label">Future</div>
+      <p style="margin-bottom:0">
+        "미래에 결과가 채워질 자리"를 나타내는 <strong>더 저수준의</strong> 객체. 코루틴이 아니라
+        콜백 기반 비동기 API(저수준 소켓 이벤트 등)를 <code>await</code> 가능하게 감싸는 데 쓰인다.
+        실무에서 Future를 직접 만들 일은 드물지만, <strong>Task가 Future를 상속</strong>한다는 관계는
+        <code>asyncio</code> 내부 구조를 이해하는 데 필요하다.
+      </p>
+    </div>
+    <pre><span class="kw">import</span> asyncio
+
+<span class="kw">async</span> <span class="kw">def</span> <span class="fn">fetch</span>(n):
+    <span class="kw">await</span> asyncio.<span class="fn">sleep</span>(<span class="num">1</span>)
+    <span class="kw">return</span> n * <span class="num">2</span>
+
+<span class="kw">async</span> <span class="kw">def</span> <span class="fn">main</span>():
+    coro = <span class="fn">fetch</span>(<span class="num">1</span>)              <span class="cm"># ① 아직 실행 안 됨 — 예약서일 뿐</span>
+    task = asyncio.<span class="fn">create_task</span>(<span class="fn">fetch</span>(<span class="num">2</span>))  <span class="cm"># ② 즉시 이벤트 루프에 스케줄 → 지금부터 동시 진행</span>
+
+    <span class="fn">print</span>(<span class="st">"다른 일을 하는 척..."</span>)
+    result1 = <span class="kw">await</span> coro          <span class="cm"># ③ 여기서야 coro 실행 시작</span>
+    result2 = <span class="kw">await</span> task          <span class="cm"># ④ task는 이미 ②에서부터 진행 중이었음</span>
+    <span class="fn">print</span>(result1, result2)
+
+asyncio.<span class="fn">run</span>(<span class="fn">main</span>())</pre>
+    <div class="callout warn">
+      <div class="callout-title">가장 흔한 실무 실수 — coroutine 리스트를 그냥 순차 await</div>
+      <code>for coro in coros: await coro</code>는 <strong>동시 실행이 아니라 순차 실행</strong>이다.
+      각 <code>await</code>가 끝날 때까지 다음 줄로 안 넘어가기 때문이다. 진짜 동시성을 얻으려면
+      먼저 <code>create_task()</code>로 전부 스케줄한 뒤 모아서 기다리거나(<code>asyncio.gather</code>),
+      애초에 <code>gather</code>에 coroutine을 바로 넘겨야 한다.
+    </div>
+  </section>
+
+  <!-- ── 면접 Q2 ── -->
+  <section>
+    <h2>면접 질문 ② — API 서버가 트래픽이 조금만 늘어도 전체적으로 느려집니다</h2>
+    <div class="interview-q">
+      FastAPI로 만든 <code>async def</code> 핸들러가 있는데, 트래픽이 조금만 늘어나면 이 핸들러와
+      전혀 무관한 다른 API 요청까지 전부 느려집니다. 왜 이런 일이 생기고, 어떻게 진단하고 고치시겠습니까?
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li>단일 스레드 이벤트 루프 모델에서 <strong>블로킹 호출 하나가 전체를 멈춘다</strong>는 걸 즉시 연결하는가</li>
+      <li>흔한 원인(동기 HTTP 클라이언트, 동기 DB 드라이버, CPU 집약적 연산, 동기 파일 I/O)을 구체적으로 짚는가</li>
+      <li>진단 방법(느린 요청 프로파일링, 이벤트 루프 지연 측정)을 아는가</li>
+      <li>해결책이 "비동기 라이브러리로 교체" 하나만이 아니라 <code>run_in_executor</code> 같은 대안까지 아는가</li>
+    </ul>
+
+    <h3>답변 구조 — 생각의 순서</h3>
+    <ol>
+      <li><strong>모델 재확인</strong>: 이벤트 루프는 단일 스레드, 협력적 스케줄링 → 양보하지 않으면 전체가 멈춤</li>
+      <li><strong>범인 후보</strong>: async 핸들러 안에서 동기(블로킹) 코드를 호출하고 있는지 확인</li>
+      <li><strong>진단</strong>: 어떤 핸들러가 이벤트 루프를 오래 점유하는지 측정</li>
+      <li><strong>수정</strong>: 비동기 라이브러리로 교체하거나, 불가피하면 스레드/프로세스 풀로 위임</li>
+    </ol>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변</div>
+      <p>
+        "이 증상은 <strong>이벤트 루프가 블로킹됐다는 전형적인 신호</strong>입니다. asyncio는 단일 스레드에서
+        협력적으로 코루틴을 번갈아 실행하는데, 어떤 코루틴이 <code>await</code>로 제어권을 넘기지 않고
+        오랫동안 스레드를 붙잡고 있으면, 그 사이 다른 요청은 전부 대기해야 합니다. '전혀 무관한 API까지 느려진다'는
+        게 핵심 단서예요 — 특정 핸들러만 느린 게 아니라 <strong>전체가 같이 느려진다</strong>는 건 리소스(DB 커넥션 풀 등)
+        경합이 아니라 이벤트 루프 자체가 멈췄다는 뜻입니다.
+      </p>
+      <p>
+        가장 흔한 원인은 <code>async def</code> 핸들러 안에서 <strong>동기(블로킹) 라이브러리</strong>를 그대로 호출하는
+        겁니다. 예를 들어 <code>await</code> 없이 <code>requests.get()</code>을 부르거나, 동기 드라이버로 DB 쿼리를
+        날리거나, 이미지 리사이징 같은 CPU 집약적 작업을 코루틴 안에서 직접 계산하는 경우입니다.
+        진단은 각 핸들러의 실행 시간을 프로파일링하거나, 이벤트 루프 지연(loop lag)을 측정하는 도구로
+        '언제 루프가 오래 멈췄는지'를 확인해서 범인 핸들러를 찾습니다.
+      </p>
+      <p style="margin-bottom:0">
+        해결책은 두 갈래입니다. 첫째, <code>httpx</code>의 <code>AsyncClient</code>, <code>asyncpg</code>처럼
+        <strong>진짜 비동기 라이브러리</strong>로 교체하는 게 최우선입니다. 둘째, 어쩔 수 없이 동기 라이브러리를
+        써야 하거나 CPU 집약적 연산이라면 <code>loop.run_in_executor()</code>로 <strong>스레드 풀(I/O bound)
+        또는 프로세스 풀(CPU bound)에 위임</strong>해서 이벤트 루프 자체는 블로킹되지 않게 만듭니다.
+        CPU bound라면 Day 3에서 다룬 GIL 문제도 같이 걸리므로 프로세스 풀을 써야 한다는 점까지 연결해서 답하겠습니다."
+      </p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변</div>
+      <p>
+        "동기 코드를 async 함수 안에서 쓰면 안 됩니다. 비동기 라이브러리로 바꾸면 됩니다."
+      </p>
+      <p style="margin-bottom:0">
+        <strong>왜 약한가:</strong> 결론은 맞지만 <strong>"전혀 무관한 API까지 왜 같이 느려지는지"</strong>를
+        이벤트 루프의 단일 스레드 모델과 연결해서 설명하지 못한다. 진단 방법이나, 라이브러리 교체가
+        불가능할 때의 대안(<code>run_in_executor</code>)도 빠져 있어 실전 트러블슈팅 경험이 있는지 의심스럽다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── 전제 개념 3: 동시 실행, 취소, 예외 전파 ── -->
+  <section>
+    <h2>전제 개념 ③ — 여러 Task를 동시에 돌리고, 취소하고, 예외를 다루는 법</h2>
+    <p>
+      실무 asyncio 코드의 대부분은 "여러 개를 동시에 시작하고 결과를 모으는" 패턴이다. 이때
+      <code>gather</code>, <code>create_task</code>, (3.11+) <code>TaskGroup</code>의 차이,
+      그리고 <strong>하나가 실패했을 때 나머지는 어떻게 되는지</strong>를 정확히 아는지가 시니어 시그널이다.
+    </p>
+    <pre><span class="kw">import</span> asyncio
+
+<span class="kw">async</span> <span class="kw">def</span> <span class="fn">fetch</span>(name, delay, fail=<span class="cls">False</span>):
+    <span class="kw">await</span> asyncio.<span class="fn">sleep</span>(delay)
+    <span class="kw">if</span> fail:
+        <span class="kw">raise</span> <span class="cls">ValueError</span>(<span class="st">f"{name} 실패"</span>)
+    <span class="kw">return</span> <span class="st">f"{name} 완료"</span>
+
+<span class="kw">async</span> <span class="kw">def</span> <span class="fn">main</span>():
+    <span class="cm"># return_exceptions=False(기본값): 하나라도 예외를 던지면 gather 자체가 즉시 그 예외로 실패</span>
+    <span class="cm"># 단, 이미 실행 중인 다른 Task들은 '취소되지 않고 백그라운드에서 계속 실행'된다 — 흔한 오해 포인트</span>
+    <span class="kw">try</span>:
+        <span class="kw">await</span> asyncio.<span class="fn">gather</span>(
+            <span class="fn">fetch</span>(<span class="st">"A"</span>, <span class="num">1</span>),
+            <span class="fn">fetch</span>(<span class="st">"B"</span>, <span class="num">0.5</span>, fail=<span class="cls">True</span>),
+        )
+    <span class="kw">except</span> <span class="cls">ValueError</span> <span class="kw">as</span> e:
+        <span class="fn">print</span>(<span class="st">f"gather 실패: {e}"</span>)
+
+    <span class="cm"># return_exceptions=True: 예외도 정상 결과처럼 리스트에 담겨 반환된다 (예외가 전파되지 않음)</span>
+    results = <span class="kw">await</span> asyncio.<span class="fn">gather</span>(
+        <span class="fn">fetch</span>(<span class="st">"C"</span>, <span class="num">0.1</span>),
+        <span class="fn">fetch</span>(<span class="st">"D"</span>, <span class="num">0.1</span>, fail=<span class="cls">True</span>),
+        return_exceptions=<span class="cls">True</span>,
+    )
+    <span class="fn">print</span>(results)  <span class="cm"># ['C 완료', ValueError('D 실패')]</span>
+
+asyncio.<span class="fn">run</span>(<span class="fn">main</span>())</pre>
+    <div class="callout warn">
+      <div class="callout-title"><code>gather</code>의 함정 — 예외가 나도 다른 Task는 계속 돈다</div>
+      <code>return_exceptions=False</code>일 때 <code>gather</code>는 첫 예외를 만나면 <strong>즉시 그 예외를 던지지만</strong>,
+      이미 스케줄된 <strong>다른 Task들을 자동으로 취소하지 않는다.</strong> 이걸 모르면 "예외 처리를 했는데도
+      백그라운드에서 알 수 없는 부작용(중복 요청, 리소스 누수)이 생긴다"는 버그를 이해할 수 없다.
+      Python 3.11부터는 <code>asyncio.TaskGroup</code>이 이 문제를 구조적으로 해결한다 — 그룹 내 하나가
+      실패하면 <strong>나머지 전부를 자동으로 취소</strong>하고 예외들을 <code>ExceptionGroup</code>으로 묶어 전파한다.
+    </div>
+    <pre><span class="cm"># Python 3.11+ 권장 패턴 — 하나 실패 시 나머지 자동 취소</span>
+<span class="kw">async</span> <span class="kw">def</span> <span class="fn">main</span>():
+    <span class="kw">try</span>:
+        <span class="kw">async</span> <span class="kw">with</span> asyncio.<span class="fn">TaskGroup</span>() <span class="kw">as</span> tg:
+            tg.<span class="fn">create_task</span>(<span class="fn">fetch</span>(<span class="st">"A"</span>, <span class="num">1</span>))
+            tg.<span class="fn">create_task</span>(<span class="fn">fetch</span>(<span class="st">"B"</span>, <span class="num">0.5</span>, fail=<span class="cls">True</span>))
+    <span class="kw">except</span>* <span class="cls">ValueError</span> <span class="kw">as</span> eg:
+        <span class="fn">print</span>(<span class="st">f"실패한 것들: {eg.exceptions}"</span>)</pre>
+  </section>
+
+  <!-- ── 면접 Q3 ── -->
+  <section>
+    <h2>면접 질문 ③ — <code>asyncio.gather</code>와 <code>create_task</code>를 각각 언제 쓰나요?</h2>
+    <div class="interview-q">
+      여러 비동기 작업을 동시에 실행하고 싶을 때 <code>asyncio.gather</code>와
+      <code>asyncio.create_task</code>는 각각 어떤 상황에 쓰나요? 둘을 같이 써야 하는 경우도 있나요?
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li><code>create_task</code>는 "지금 즉시 스케줄", <code>gather</code>는 "여러 awaitable을 모아서 기다림"이라는 역할 차이를 아는가</li>
+      <li><code>gather</code>에 coroutine을 직접 넘겨도 동시 실행되는 이유(내부적으로 Task로 감쌈)를 아는가</li>
+      <li>결과 순서 보장, 예외 처리 방식(위 전제 개념 ③)까지 연결하는가</li>
+    </ul>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변</div>
+      <p>
+        "<code>asyncio.gather(*aws)</code>는 여러 awaitable(코루틴이나 Task)을 <strong>한 번에 넘겨서 모두 동시에
+        진행시키고, 전부 끝날 때까지 기다렸다가 결과를 입력 순서 그대로 리스트로 돌려주는</strong> 헬퍼입니다.
+        코루틴을 직접 넘겨도 내부적으로 각각 Task로 감싸서 스케줄하기 때문에 동시 실행이 보장됩니다.
+      </p>
+      <p>
+        <code>create_task</code>는 그보다 저수준으로, <strong>coroutine 하나를 지금 이 시점에 이벤트 루프에
+        등록</strong>해서 바로 진행시키는 역할만 합니다. 결과를 기다리는 로직은 별개입니다. 그래서
+        '조건부로 몇 개만 기다리고 싶다', '취소 시점을 개별적으로 제어하고 싶다', 'fire-and-forget으로
+        결과를 기다리지 않고 던져두고 싶다' 같은 세밀한 제어가 필요할 때는 <code>create_task</code>로
+        Task 객체를 직접 다룹니다.
+      </p>
+      <p style="margin-bottom:0">
+        둘을 같이 쓰는 전형적인 패턴은, 각 작업을 <code>create_task</code>로 먼저 스케줄해서
+        <strong>지금 즉시 동시 진행을 시작</strong>시켜 놓고, 뒤에 다른 로직을 실행한 다음, 마지막에
+        <code>await asyncio.gather(*tasks)</code>로 결과를 한꺼번에 모으는 겁니다. 이렇게 하면
+        'gather를 호출하기 전까지의 다른 코드 실행 시간'까지 동시성에 포함시킬 수 있어서, 단순히
+        <code>gather(fetch(...), fetch(...))</code>만 쓰는 것보다 유연합니다."
+      </p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변</div>
+      <p>
+        "둘 다 여러 작업을 동시에 실행할 때 씁니다. 비슷해서 아무거나 써도 됩니다."
+      </p>
+      <p style="margin-bottom:0">
+        <strong>왜 약한가:</strong> "비슷해서 아무거나"라는 답은 역할 차이를 전혀 구분하지 못한다는 신호다.
+        <code>create_task</code>의 '즉시 스케줄'이라는 성질과, <code>gather</code>의 '결과 취합' 역할을
+        구분하지 못하면 취소 제어나 fire-and-forget 패턴을 설계할 수 없다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Senior Follow-up ── -->
+  <section>
+    <h2>Senior-level Follow-up 질문</h2>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 1</div>
+      <p>
+        <strong>"asyncio를 쓰면 race condition에서 완전히 자유로운가요? 락(Lock)이 필요한 경우가 있나요?"</strong>
+      </p>
+      <p style="margin-bottom:0">
+        아니다. 단일 스레드라서 "동시에 같은 줄이 실행되는" 일은 없지만, <strong><code>await</code> 지점에서
+        다른 코루틴이 끼어들어 공유 상태를 바꿀 수 있다.</strong> 예를 들어 "잔액을 읽고 → await로 외부 API
+        호출 → 잔액을 갱신"하는 코드가 있으면, 그 <code>await</code> 사이에 다른 코루틴이 같은 잔액을
+        먼저 바꿔버릴 수 있다. 이런 <strong>await 지점 사이의 경쟁 상태</strong>를 막으려면
+        <code>asyncio.Lock</code>이나 <code>asyncio.Semaphore</code>가 필요하다 — GIL이 스레드 간 바이트코드
+        원자성을 보장하는 것과는 완전히 다른 층위의 문제라는 걸 구분해서 답해야 한다.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 2</div>
+      <p>
+        <strong>"<code>task.cancel()</code>을 호출하면 정확히 무슨 일이 일어나나요?"</strong>
+      </p>
+      <p style="margin-bottom:0">
+        Day 4에서 다룬 제너레이터의 <code>throw()</code> 메커니즘과 직결된다. <code>cancel()</code>은
+        Task가 대기 중인 지점(다음 <code>await</code> 재개 시점)에 <code>asyncio.CancelledError</code>를
+        주입한다. 코루틴이 이를 <code>try/except</code>로 잡지 않으면 그대로 전파돼 Task가 취소 상태로
+        끝난다. 만약 코루틴이 <code>except CancelledError</code>로 잡아서 정리 작업만 하고 <strong>다시
+        raise하지 않으면</strong>, 취소가 무시된 것처럼 보이는 버그가 생긴다 — 관례상 정리 후 반드시
+        <code>raise</code>로 다시 던져야 한다.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 3</div>
+      <p>
+        <strong>"동기 라이브러리를 async 코드에서 어쩔 수 없이 써야 할 때는 어떻게 하나요?"</strong>
+      </p>
+      <p style="margin-bottom:0">
+        <code>loop.run_in_executor(None, blocking_func, *args)</code>로 <strong>기본 스레드 풀에 위임</strong>하면
+        이벤트 루프는 블로킹되지 않고 다른 코루틴을 계속 처리할 수 있다. I/O bound 블로킹 코드에는
+        스레드 풀로 충분하지만(GIL이 I/O 대기 중엔 풀리므로), CPU 집약적 연산이라면 Day 3에서 다룬
+        GIL 문제가 그대로 적용되어 스레드 풀로는 해결이 안 되고 <code>ProcessPoolExecutor</code>로
+        넘겨야 한다는 점을 구분해서 답해야 한다.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 4</div>
+      <p>
+        <strong>"이벤트 루프 구현체를 직접 골라본 적 있나요? <code>uvloop</code>은 무엇이 다른가요?"</strong>
+      </p>
+      <p style="margin-bottom:0">
+        표준 <code>asyncio</code>의 기본 이벤트 루프는 순수 파이썬으로 구현되어 있다. <code>uvloop</code>은
+        libuv(Node.js가 쓰는 것과 같은 C 라이브러리) 기반으로 이벤트 루프를 재구현해서, 스케줄링과
+        I/O 폴링 오버헤드를 크게 줄인다. <code>asyncio.set_event_loop_policy()</code>로 교체하며,
+        코드 변경 없이 순수 I/O bound 워크로드에서 상당한 처리량 개선을 얻을 수 있다. 다만 이건
+        "이벤트 루프 자체의 효율"을 높이는 것이지, 애초에 블로킹 코드가 섞여 있는 구조적 문제는
+        해결해주지 않는다는 것도 같이 짚어야 한다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Trade-off와 흔한 오해 ── -->
+  <section>
+    <h2>Trade-off와 흔한 오해</h2>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 1 — "asyncio를 쓰면 코드가 무조건 더 빨라진다"</div>
+      <p>
+        틀렸다. asyncio는 <strong>I/O 대기 시간을 겹쳐서 처리량을 늘리는 것</strong>이지, CPU 연산 자체를
+        빠르게 만들지 않는다. CPU bound 작업을 <code>async def</code> 안에 그대로 넣으면 오히려
+        이벤트 루프를 막아서 전체 시스템이 <strong>더 나빠질 수 있다.</strong> "I/O bound 대기 시간이
+        많고, 동시에 처리해야 할 요청 수가 많을 때"라는 조건을 명시해야 한다.
+      </p>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 2 — "<code>await</code>하면 별도 스레드에서 실행된다"</div>
+      <p>
+        아니다. <code>await</code>는 <strong>같은 스레드 안에서</strong> 제어권을 이벤트 루프에 넘기는
+        것이지 새 스레드를 만들지 않는다. 새 스레드나 프로세스가 관여하는 건 명시적으로
+        <code>run_in_executor</code>를 쓸 때뿐이다. 이 오해가 있으면 "asyncio 코드는 스레드 안전(thread-safe)할
+        필요가 없다"는 잘못된 결론(오해 3)으로 이어지기 쉽다.
+      </p>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 3 — "단일 스레드니까 asyncio 코드에는 락이 필요 없다"</div>
+      <p>
+        부분적으로만 맞다. Follow-up 1에서 다뤘듯, <strong><code>await</code> 지점 사이</strong>에는 다른
+        코루틴이 끼어들어 공유 상태를 바꿀 수 있다. "한 줄 안에서 동시에 실행되는 일은 없다"는 것과
+        "여러 <code>await</code>에 걸친 로직 전체가 원자적이다"는 것은 다른 이야기다.
+      </p>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 4 — "<code>asyncio.gather</code>에 넘긴 coroutine들은 항상 병렬로 CPU를 쓴다"</div>
+      <p>
+        "동시(concurrent)"와 "병렬(parallel)"을 혼동하는 대표적인 경우다. GIL 때문에 여전히 한 순간에
+        실제로 실행되는 파이썬 바이트코드는 하나뿐이다(Day 3 참고). <code>gather</code>가 만드는 건
+        "I/O 대기 시간을 겹치는 동시성"이지, 여러 CPU 코어에서 진짜로 동시에 계산이 일어나는 병렬성이
+        아니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Self-check Rubric ── -->
+  <section>
+    <h2>Self-check Rubric</h2>
+    <table class="rubric">
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>상 (Senior)</th>
+          <th>중 (Mid)</th>
+          <th>하 (Junior)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>이벤트 루프 모델 이해</td>
+          <td><span class="badge high">상</span> 협력적 스케줄링과 단일 스레드 제약을 구조적으로 설명</td>
+          <td><span class="badge mid">중</span> "비동기라 빠르다" 정도만 알고 원리 설명 부족</td>
+          <td><span class="badge low">하</span> 멀티스레드와 혼동</td>
+        </tr>
+        <tr>
+          <td>coroutine/Task/Future 구분</td>
+          <td><span class="badge high">상</span> 계층 관계와 스케줄링 시점 차이를 정확히 설명</td>
+          <td><span class="badge mid">중</span> 용어는 알지만 실행 시점 차이를 혼동</td>
+          <td><span class="badge low">하</span> 세 용어를 같은 것으로 취급</td>
+        </tr>
+        <tr>
+          <td>블로킹 호출 진단</td>
+          <td><span class="badge high">상</span> 증상→원인→진단→해결(run_in_executor 등)까지 체계적 설명</td>
+          <td><span class="badge mid">중</span> "동기 코드가 문제"라는 결론만 알고 해결책 빈약</td>
+          <td><span class="badge low">하</span> 증상과 원인을 연결하지 못함</td>
+        </tr>
+        <tr>
+          <td>동시 실행/예외/취소</td>
+          <td><span class="badge high">상</span> gather 부작용, TaskGroup, cancel()의 CancelledError까지 설명</td>
+          <td><span class="badge mid">중</span> gather는 알지만 예외/취소 시 부작용은 모름</td>
+          <td><span class="badge low">하</span> gather와 순차 await의 차이도 불명확</td>
+        </tr>
+        <tr>
+          <td>동시성 vs 병렬성 판단력</td>
+          <td><span class="badge high">상</span> I/O bound vs CPU bound에 따라 asyncio 적용 여부를 상황별로 판단</td>
+          <td><span class="badge mid">중</span> asyncio가 항상 유리하다고 답함</td>
+          <td><span class="badge low">하</span> GIL/동시성/병렬성 개념이 뒤섞임</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── 핵심 요약 ── -->
+  <section>
+    <h2>핵심 요약 — 1분 복습 카드</h2>
+    <div class="card success">
+      <div class="card-label">오늘 반드시 기억할 것</div>
+      <ol style="margin:0.5rem 0 0 1.2rem">
+        <li>이벤트 루프 = 단일 스레드에서 협력적으로 코루틴을 번갈아 실행하는 스케줄러</li>
+        <li><code>async def</code> 호출 = coroutine 객체 생성일 뿐, 실행은 <code>await</code>/<code>run</code>/<code>create_task</code>가 트리거</li>
+        <li>Task는 "지금 즉시 스케줄", <code>gather</code>는 "여러 awaitable을 모아 결과 취합" — 역할이 다름</li>
+        <li>코루틴이 <code>await</code>로 양보하지 않으면(블로킹 호출) 이벤트 루프 전체가 멈춤 — 트래픽 급증 시 전체 지연의 흔한 원인</li>
+        <li><code>gather</code>는 실패해도 다른 Task를 자동 취소하지 않음 — <code>TaskGroup</code>(3.11+)이 이를 해결</li>
+        <li>asyncio는 동시성(concurrency)이지 병렬성(parallelism)이 아니다 — CPU bound엔 효과 없음</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ── Navigation ── -->
+  <nav class="lesson-nav">
+    <a href="./0004-iterator-generator.html">← Day 4: Iterator/Generator</a>
+    <a href="./index.html">목록으로</a>
+    <span style="color:var(--text-muted)">Day 6: Context Manager →</span>
+  </nav>
+
+</div>
+</body>
+</html>

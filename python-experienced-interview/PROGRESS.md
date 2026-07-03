@@ -8,12 +8,12 @@
 | 2 | 2026-06-30 | 메모리 관리 — 레퍼런스 카운팅, 가비지 컬렉션, 순환 참조, `__del__` | [0002-memory-management.html](lessons/0002-memory-management.html) |
 | 3 | 2026-07-01 | GIL(Global Interpreter Lock) — 동시성 한계와 우회 전략 | [0003-gil-concurrency.html](lessons/0003-gil-concurrency.html) |
 | 4 | 2026-07-02 | Iterator/Generator 프로토콜과 lazy evaluation | [0004-iterator-generator.html](lessons/0004-iterator-generator.html) |
+| 5 | 2026-07-03 | asyncio와 이벤트 루프 — 협력적 멀티태스킹과 `await`의 실행 모델 | [0005-asyncio-event-loop.html](lessons/0005-asyncio-event-loop.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | asyncio와 이벤트 루프 — 비동기 프로그래밍의 핵심 | event loop, coroutine, Task, Future, `await`, `gather` |
 | 6 | Context Manager — 리소스 관리 패턴 | `__enter__`, `__exit__`, `contextlib`, 예외 처리 |
 | 7 | Descriptor 프로토콜 | `__get__`, `__set__`, `__delete__`, data/non-data descriptor |
 | 8 | Decorator — 함수형 패턴과 실무 활용 | closure, `functools.wraps`, 클래스 decorator, stacking |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — Day 5 (asyncio와 이벤트 루프)부터 계속.
+**Day 5 완료** — Day 6 (Context Manager)부터 계속.
 
 ## 습득한 핵심 개념
 
@@ -51,8 +51,11 @@
 - [x] Generator와 lazy evaluation, 메모리 곡선 (Day 4)
 - [x] `send()`/`throw()`/`close()`, priming, `GeneratorExit` (Day 4)
 - [x] `yield from` 위임과 코루틴의 역사적 연결 (Day 4)
+- [x] 이벤트 루프와 협력적 멀티태스킹 모델 (Day 5)
+- [x] coroutine / Task / Future 계층 구분과 스케줄링 시점 (Day 5)
+- [x] 블로킹 호출이 이벤트 루프를 멈추는 원리와 진단·해결 (Day 5)
+- [x] `gather` vs `create_task` vs `TaskGroup`, 취소와 예외 전파 (Day 5)
 
-- [ ] asyncio 이벤트 루프 (예정 Day 5)
 - [ ] Context Manager 프로토콜 (예정 Day 6)
 - [ ] Descriptor 프로토콜 (예정 Day 7)
 - [ ] Decorator 구현 원리 (예정 Day 8)
