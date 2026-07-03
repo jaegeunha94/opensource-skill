@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — Claude Code 기반 agentic coding 운영 프레임워크</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #222538;
+      --border: #2e3150;
+      --accent: #7c83ff;
+      --accent2: #50e3c2;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #e2e4f0;
+      --text2: #9da3c8;
+      --text3: #6b7099;
+      --good: #50e3c2;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card {
+      border-left: 4px solid var(--accent);
+    }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card {
+      border-left: 4px solid var(--accent2);
+      background: #1a2430;
+    }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card {
+      border-left: 4px solid var(--warn);
+      background: #1f1d10;
+    }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card {
+      border-left: 4px solid #a07bff;
+      background: #1a1828;
+    }
+    .answer-card .card-label { color: #a07bff; }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box {
+      background: #0f2420;
+      border: 1px solid var(--good);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box {
+      background: #28100f;
+      border: 1px solid var(--weak);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.91rem;
+      margin-top: 0.5rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:nth-child(odd) td { background: #15182a; }
+    .rubric-table tr:nth-child(even) td { background: #1a1d2e; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .pillar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1.2rem;
+    }
+    .pillar-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+    }
+    .pillar-name { font-weight: 700; color: var(--accent); margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .pillar-key { font-size: 0.83rem; color: var(--text2); }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.2rem;
+      margin-bottom: 0.7rem;
+    }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.1rem;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.78rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .misconception {
+      background: #1f1520;
+      border: 1px solid #6e3880;
+      border-radius: 8px;
+      padding: 1rem 1.3rem;
+      margin-bottom: 0.9rem;
+    }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 0.75rem;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      margin: 0.15rem 0.15rem 0.15rem 0;
+    }
+    .source-note {
+      font-size: 0.82rem;
+      color: var(--text3);
+      margin-top: 0.4rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 1 · Claude Code 인터뷰 대비</div>
+    <h1>Claude Code 기반 agentic coding 운영 프레임워크</h1>
+    <p class="subtitle">
+      에이전틱 루프의 실제 동작 · agentic harness로서의 Claude Code · 안전장치 3계층(checkpoint/permission/sandbox) · (2026-07 기준 공식 문서 반영)
+    </p>
+  </header>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "Claude Code가 GitHub Copilot 같은 인라인 자동완성 도구와 근본적으로 무엇이 다른지, 내부적으로 어떻게 동작하는지 설명해주세요. 우리 팀에 도입한다면 어떤 기준으로 위험과 이득을 평가하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"'에이전틱(agentic)'이라는 표현이 정확히 무엇을 의미합니까? 그냥 '똑똑한 챗봇'과 뭐가 다릅니까?"</li>
+        <li>"Claude Code가 파일을 잘못 수정했다면 어떻게 복구합니까? git과의 관계는 무엇입니까?"</li>
+        <li>"Claude Code를 터미널, VS Code, 웹, CI 파이프라인에서 각각 쓸 때 내부적으로 같은 것입니까, 다른 것입니까?"</li>
+        <li>"작업이 끝없이 도구를 호출하며 폭주하지 않는다는 것을 어떻게 보장합니까?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">Agentic Loop</span>
+      <span class="tag">Agentic Harness</span>
+      <span class="tag">Tool Calling</span>
+      <span class="tag">Context Window</span>
+      <span class="tag">Checkpoint/Permission</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>LLM 한 번 호출과 "에이전트"는 무엇이 다른가</h3>
+    <p>
+      GitHub Copilot 같은 인라인 자동완성은 "지금 커서 주변 코드를 보고, 다음에 올 코드를 한 번 예측해서 보여주는" 단발성 호출에 가깝다. 모델이 텍스트를 생성하고 끝난다.
+      반면 Claude Code는 <strong>모델이 스스로 "무엇을 더 알아야 하는지, 무엇을 해야 하는지"를 판단해서 도구(tool)를 호출하고, 그 결과를 다시 읽고, 다음 행동을 결정하는 과정을 여러 번 반복</strong>한다. 이 반복 구조를 <strong>에이전틱 루프(agentic loop)</strong>라고 부른다.
+    </p>
+    <p>
+      공식 문서는 이 루프를 세 단계로 설명한다: <strong>컨텍스트 수집(gather context)</strong> → <strong>행동(take action)</strong> → <strong>결과 검증(verify results)</strong>. 이 세 단계는 딱 잘라 나뉘지 않고 서로 섞이며 반복된다. "실패하는 테스트를 고쳐줘"라는 요청 하나가 다음처럼 여러 턴에 걸쳐 진행될 수 있다.
+    </p>
+    <ol>
+      <li>테스트를 실행해서 무엇이 실패하는지 본다 (컨텍스트 수집)</li>
+      <li>에러 메시지를 읽는다 (컨텍스트 수집)</li>
+      <li>관련 소스 파일을 검색하고 읽는다 (컨텍스트 수집)</li>
+      <li>파일을 수정한다 (행동)</li>
+      <li>테스트를 다시 실행해서 통과하는지 확인한다 (검증)</li>
+    </ol>
+    <p>
+      각 도구 호출의 결과가 다음 판단의 근거가 된다. 이게 "에이전틱"이라는 말의 실체다 — 사람이 매 단계 다시 프롬프트를 써주지 않아도, 모델이 스스로 다음 행동을 정하고 여러 단계를 이어 붙인다.
+    </p>
+
+    <h3>Claude Code는 "모델"이 아니라 "harness(하네스)"다</h3>
+    <p>
+      여기서 헷갈리기 쉬운 지점이 있다. "Claude가 똑똑해서 코드를 잘 짠다"는 절반만 맞는 말이다. 실제로는 두 가지가 분리되어 있다.
+    </p>
+    <div class="pillar-grid">
+      <div class="pillar-box">
+        <div class="pillar-name">모델 (Model)</div>
+        <div class="pillar-key">추론을 담당한다. 코드를 읽고 이해하고, 무엇을 바꿔야 할지 판단한다. Claude Sonnet 5(기본, 네이티브 1M 토큰 컨텍스트), Opus(복잡한 아키텍처 판단), Haiku(저비용 작업) 등 여러 모델을 <code>/model</code>로 전환할 수 있다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">하네스 (Claude Code 자체)</div>
+        <div class="pillar-key">모델을 감싸는 실행 레이어. 도구(파일 읽기/쓰기, 셸 실행, 웹 검색 등)를 제공하고, 컨텍스트를 관리하고, 실행 환경(로컬/클라우드/원격제어)을 제공하고, 권한을 통제한다. 모델이 "무엇을 하고 싶다"고 판단해도, 실제로 실행되는지는 하네스가 결정한다.</div>
+      </div>
+    </div>
+    <div class="card why-card">
+      <div class="card-label">이 구분이 왜 중요한가</div>
+      <p>
+        "모델이 알아서 잘 하겠지"라는 생각과 "하네스가 어떤 안전장치를 갖췄는가"를 구분해서 사고하는 것이 시니어 답변의 출발점이다. 모델이 아무리 똑똑해도, 권한 규칙이 허술하면 위험한 명령이 실행되고, 컨텍스트 관리가 허술하면 긴 세션에서 초반 지시사항을 잊는다. 이런 문제는 <strong>모델 성능이 아니라 하네스 설계의 문제</strong>다.
+      </p>
+    </div>
+
+    <h3>도구(tool)는 5가지 범주로 나뉜다</h3>
+    <p>도구가 없으면 모델은 텍스트로만 응답할 수 있다. 도구가 있어야 실제로 "행동"할 수 있다.</p>
+    <ul>
+      <li><strong>파일 조작</strong>: 파일 읽기, 편집, 생성, 이름 변경</li>
+      <li><strong>검색</strong>: 패턴으로 파일 찾기, 정규식으로 내용 검색, 코드베이스 탐색</li>
+      <li><strong>실행</strong>: 셸 명령 실행, 서버 기동, 테스트 실행, git 조작</li>
+      <li><strong>웹</strong>: 웹 검색, 문서/에러 메시지 조회</li>
+      <li><strong>코드 인텔리전스</strong>: 타입 에러, 정의로 이동, 참조 찾기(IDE 연동 필요)</li>
+    </ul>
+    <p>
+      여기에 서브에이전트를 스폰하거나 사용자에게 되묻는 등의 오케스트레이션용 메타 도구가 추가된다. 이 기본 도구 세트 위에 <strong>MCP(외부 서비스 연결), Skills(재사용 워크플로우), Hooks(실행 시점 자동화), Subagents(위임)</strong>가 확장 레이어로 얹힌다 — 이 확장 레이어들은 이후 Day에서 각각 깊게 다룬다.
+    </p>
+
+    <h3>세션과 컨텍스트 윈도우 — 무엇이 남고 무엇이 사라지는가</h3>
+    <p>
+      컨텍스트 윈도우는 그 세션에서 모델이 "볼 수 있는" 모든 것의 총합이다 — 시스템 프롬프트, 도구 정의, 대화 기록, 읽은 파일 내용, 명령 실행 결과, <code>CLAUDE.md</code>, auto memory, 로드된 skill 등이 여기 쌓인다.
+    </p>
+    <p>
+      중요한 사실: <strong>세션은 기본적으로 독립적이다.</strong> 새 세션을 시작하면 이전 세션의 대화 기록을 보지 못한다. 그런데도 "어제 알려준 걸 오늘도 기억하네?"라고 느껴지는 이유는 두 가지 영속 메커니즘 때문이다 — 사람이 직접 쓰는 <code>CLAUDE.md</code>와, Claude가 작업하면서 스스로 기록하는 auto memory다. 이 둘의 구체적 설계는 Day 3에서 다룬다.
+    </p>
+    <p>
+      세션 안에서도 대화가 길어지면 컨텍스트가 한도에 가까워진다. 이때 Claude Code는 오래된 도구 실행 결과부터 지우고, 그래도 부족하면 대화를 요약(compaction)한다. 요약 시 사용자의 요청과 핵심 코드 스니펫은 보존되지만, <strong>대화 초반의 세세한 지시사항은 유실될 수 있다</strong>. 그래서 "매번 지켜야 할 규칙"은 대화 중간에 한 번 말하고 끝내는 게 아니라 <code>CLAUDE.md</code>에 적어둬야 한다 — CLAUDE.md는 매 요청마다 다시 주입되기 때문이다.
+    </p>
+
+    <h3>안전장치는 세 계층으로 분리되어 있다</h3>
+    <p>이 구분을 못 하면 "권한을 다 풀면 위험하지 않냐"는 질문에 얕게 답하게 된다.</p>
+    <div class="pillar-grid">
+      <div class="pillar-box">
+        <div class="pillar-name">Checkpoint</div>
+        <div class="pillar-key">Claude가 파일을 편집하기 전에 스냅샷을 찍어두는 기능. 세션 로컬이며 git과 별개다. <code>Esc</code> 두 번으로 되돌릴 수 있다. 단, 파일 변경만 커버한다 — DB 쓰기나 API 호출처럼 원격 시스템에 영향을 준 행동은 되돌릴 수 없다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">Permission (권한)</div>
+        <div class="pillar-key">어떤 도구를 실행해도 되는지를 통제한다. default/acceptEdits/plan/bypassPermissions 등 모드가 있고, allow/deny/ask 규칙을 세밀하게 설정할 수 있다. Day 4에서 깊게 다룬다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">Sandbox (샌드박스)</div>
+        <div class="pillar-key">Bash 도구와 그 자식 프로세스에 대해 OS 레벨로 파일시스템/네트워크 접근을 강제 제한한다. 권한이 "시도할지 말지"를 통제한다면, 샌드박스는 "설령 실행되더라도 어디까지 닿을 수 있는지"를 물리적으로 제한한다. Day 5에서 깊게 다룬다.</div>
+      </div>
+    </div>
+    <div class="card concept-card">
+      <div class="card-label">2026-07 기준 확인 사항</div>
+      <p>
+        공식 문서(<code>code.claude.com/docs</code>, 2026년 초 <code>docs.claude.com</code>에서 도메인 이전됨)는 에이전틱 루프를 "gather context → take action → verify results" 3단계로, Claude Code 자체를 모델을 감싸는 "agentic harness"로 명시적으로 정의한다. 기본 모델은 네이티브 1M 토큰 컨텍스트를 갖춘 Claude Sonnet 5다. 이 레슨을 몇 달 뒤 다시 본다면 모델 이름과 컨텍스트 크기가 바뀌었을 수 있으니 <code>code.claude.com/docs/en/model-config</code>에서 재확인한다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>도구를 블랙박스가 아니라 시스템으로 이해하는가:</strong> "AI가 알아서 코드를 짜준다"는 마케팅 문구 수준의 이해와, "도구 호출 루프 + 권한 계층 + 컨텍스트 관리로 구성된 시스템"이라는 아키텍처적 이해는 완전히 다른 신호다.</li>
+        <li><strong>위험 평가 능력:</strong> 이 구조를 알아야 "어디까지 자동화해도 안전한가", "어디에 사람의 검토가 필요한가"를 판단할 수 있다. 구조를 모르면 막연한 두려움("AI가 실수하면 어떡해") 아니면 막연한 신뢰("AI가 알아서 잘 하겠지") 둘 중 하나로 치우친다.</li>
+        <li><strong>팀 도입 리더십:</strong> 시니어는 개인 사용자가 아니라 팀/조직에 이 도구를 들여올 사람이다. 온보딩 전략, 권한 정책, 실패 모드에 대한 대응책을 이 아키텍처 이해에 근거해 설계할 수 있는지를 본다.</li>
+        <li><strong>최신성:</strong> Claude Code는 몇 주 단위로 기능이 바뀐다. 오래된 정보(예: "Claude Code는 그냥 명령어를 실행하는 챗봇이다")를 그대로 말하는지, 최신 아키텍처 문서를 실제로 확인해봤는지도 드러난다.</li>
+      </ul>
+    </div>
+
+    <p>
+      이 질문은 "Claude Code 슬래시 커맨드를 몇 개 아는가"를 묻지 않는다. <strong>"이 도구가 왜 이렇게 설계됐는지, 그 설계가 어떤 trade-off를 만드는지 설명할 수 있는가"</strong>를 묻는다. 슬래시 커맨드는 문서를 찾아보면 되지만, 아키텍처적 판단력은 그 자리에서 검증하기 어렵기 때문에 면접에서 직접 확인하려 한다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <h3>실제로 이 지식이 필요한 순간들</h3>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 1 — "빠르게 하자"며 CI에 bypassPermissions를 켠 사례</div>
+      <p>
+        한 팀이 CI 파이프라인에서 Claude Code로 자동 리팩터링을 돌리면서, 매번 승인 프롬프트가 뜨는 게 귀찮다는 이유로 <code>bypassPermissions</code> 모드를 켰다. 문제는 이 모드가 "격리된 환경(컨테이너/VM)에서만 쓰라"는 전제를 깔고 있다는 점이다.
+      </p>
+      <p>
+        해당 CI 러너가 실제 프로덕션 자격 증명에 접근 가능한 환경이었고, 팀은 뒤늦게 권한(permission)과 샌드박스(sandbox)가 별개의 방어선이라는 것을 깨달았다. 권한을 다 풀어도 샌드박스로 파일시스템/네트워크 접근을 제한할 수 있었는데, 그 계층을 아예 쓰지 않았던 것이다. "권한 모드 하나만 있는 게 아니라 안전장치가 계층으로 나뉘어 있다"는 걸 알았다면 애초에 다른 선택을 했을 사례다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 2 — 긴 세션에서 초반 코딩 규칙이 사라진 사례</div>
+      <p>
+        한 개발자가 세션 시작 시 대화로 "이 프로젝트는 tab이 아니라 space 2칸을 쓰고, 절대 <code>any</code> 타입을 쓰지 마"라고 지시했다. 몇 시간 동안 대규모 리팩터링을 진행하다 보니 컨텍스트가 여러 번 compaction(요약)됐고, 그 규칙은 어느 순간부터 지켜지지 않았다.
+      </p>
+      <p>
+        원인은 대화 중 지시사항이 요약 과정에서 저비중으로 처리됐기 때문이다. 이 사례는 "왜 CLAUDE.md가 있는가"에 대한 실무적 답이다 — CLAUDE.md는 매 요청마다 다시 주입되므로 compaction의 영향을 받지 않는다. 대화로 한 번 말하고 끝내는 지시와, 파일로 영속시키는 지시를 구분해야 하는 이유가 여기 있다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 3 — 대규모 코드베이스 탐색에 서브에이전트를 쓴 사례</div>
+      <p>
+        수십만 줄짜리 모노레포에서 "이 API를 호출하는 곳을 전부 찾아서 마이그레이션 대상인지 분류해줘"라는 작업을 메인 세션에서 그대로 하면, 검색 결과와 읽은 파일 내용이 메인 컨텍스트를 가득 채워서 정작 마이그레이션 코드를 작성할 공간이 부족해진다.
+      </p>
+      <p>
+        이런 경우 탐색 작업을 서브에이전트에 위임하면, 서브에이전트는 완전히 독립된 컨텍스트에서 작업하고 <strong>최종 요약만</strong> 부모 세션에 돌려준다. 부모 컨텍스트는 탐색 과정 전체가 아니라 요약본만큼만 늘어난다. 이게 서브에이전트가 단순한 "병렬 처리 최적화"가 아니라 "컨텍스트 관리 수단"이기도 한 이유다. (서브에이전트 설계는 Day 11에서 더 깊게 다룬다.)
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>면접에서 "Claude Code가 어떻게 동작하는가"류의 질문을 받으면, 아래 순서로 답을 구성하라. 이 순서 자체가 아키텍처를 층위별로 설명하는 프레임워크다.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>에이전틱 루프부터 정의한다</strong>
+        <p>"한 번의 텍스트 생성이 아니라, 컨텍스트 수집 → 행동 → 검증을 반복하는 루프"라고 먼저 규정한다. 인라인 자동완성과의 차이를 이 지점에서 명확히 한다.</p>
+      </li>
+      <li>
+        <strong>모델과 하네스를 구분한다</strong>
+        <p>추론은 모델이, 도구 제공·컨텍스트 관리·실행 환경·권한 통제는 하네스(Claude Code)가 담당한다는 것을 설명한다. 이 구분이 이후 모든 답변의 기반이 된다.</p>
+      </li>
+      <li>
+        <strong>무엇이 휘발되고 무엇이 영속되는지 구분한다</strong>
+        <p>세션은 기본적으로 독립적이며, 세션 내에서도 컨텍스트가 차면 compaction으로 초반 내용이 흐려질 수 있다는 것, 그리고 CLAUDE.md/auto memory가 그 한계를 보완하는 영속 메커니즘이라는 것을 설명한다.</p>
+      </li>
+      <li>
+        <strong>안전장치를 계층별로 설명한다</strong>
+        <p>checkpoint(되돌리기) / permission(승인 통제) / sandbox(OS 레벨 격리)가 서로 다른 층위의 방어선이라는 것을 명확히 구분해서 말한다.</p>
+      </li>
+      <li>
+        <strong>확장 레이어를 core 위의 레이어로 위치시킨다</strong>
+        <p>MCP/Skills/Hooks/Subagents가 이 core loop 위에 얹히는 확장이라는 것을 언급해, 전체 그림 안에서 각 기능의 위치를 보여준다.</p>
+      </li>
+      <li>
+        <strong>팀 도입 판단 기준으로 연결한다</strong>
+        <p>이 구조 이해를 근거로 "어떤 작업은 어떤 권한 모드로, 어떤 작업은 사람 검토가 필요한가"를 판단하는 기준을 제시하며 답을 맺는다.</p>
+      </li>
+    </ol>
+
+    <div class="card why-card">
+      <div class="card-label">핵심 팁</div>
+      <p>구조를 나열하는 데서 그치지 말고, 마지막에 반드시 "그래서 이걸 어떻게 판단에 활용하는가"로 연결하라. 아키텍처 설명만 하고 끝내면 "지식은 있는데 판단력은 검증 안 됨"으로 읽힐 수 있다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — "Claude Code가 자동완성 도구와 뭐가 다른가요?"</div>
+      <p>
+        "가장 큰 차이는 한 번의 텍스트 생성으로 끝나느냐, 아니면 도구를 호출하고 그 결과를 보고 다음 행동을 스스로 결정하는 루프를 반복하느냐입니다. Claude Code는 공식적으로 이 루프를 컨텍스트 수집, 행동, 결과 검증 세 단계로 설명하는데, 예를 들어 '실패하는 테스트를 고쳐줘'라고 하면 테스트를 실행해서 실패 원인을 확인하고, 관련 파일을 찾아 읽고, 코드를 수정하고, 다시 테스트를 돌려서 통과하는지 검증하는 과정을 사람이 매 단계 개입하지 않아도 이어갑니다.
+      </p>
+      <p>
+        여기서 중요한 구분이 하나 있는데, Claude Code는 모델 그 자체가 아니라 모델을 감싸는 '하네스'라는 점입니다. 추론은 모델이 하지만, 어떤 도구를 쓸 수 있는지, 컨텍스트를 어떻게 관리할지, 어디까지 권한을 줄지는 하네스가 결정합니다. 그래서 결과물의 품질뿐 아니라 하네스가 제공하는 안전장치 — 예를 들어 파일 변경을 되돌릴 수 있는 checkpoint, 어떤 도구를 승인 없이 쓸지를 정하는 permission 모드, Bash 실행을 OS 레벨로 격리하는 sandbox — 를 함께 봐야 이 도구를 제대로 평가할 수 있습니다.
+      </p>
+      <p>
+        또 하나 중요한 게 컨텍스트의 휘발성입니다. 세션은 기본적으로 독립적이고, 세션 안에서도 대화가 길어지면 오래된 내용이 요약되면서 초반 지시사항이 흐려질 수 있습니다. 그래서 팀에서 이 도구를 쓸 때는 '이번 대화에서만 지킬 지시'와 'CLAUDE.md에 영속적으로 박아둬야 할 규칙'을 구분해서 설계해야 합니다.
+      </p>
+      <p>
+        결론적으로 이건 코드 자동완성이 아니라, 프로젝트 전체를 볼 수 있는 실행 환경 위에서 도구를 반복적으로 호출하며 목표를 향해 나아가는 에이전트이고, 그래서 도입할 때도 '얼마나 똑똑한가'보다 '어떤 권한과 검증 체계로 감싸서 쓸 것인가'가 훨씬 중요한 질문이라고 생각합니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① 자동완성과의 차이를 루프 구조로 정확히 설명 ② 모델과 하네스를 구분해서 "안전장치는 하네스의 책임"이라는 통찰을 보여줌 ③ 컨텍스트 휘발성과 CLAUDE.md의 관계를 실무 설계 판단으로 연결 ④ 마지막에 "도입 시 무엇을 봐야 하는가"로 마무리해 시니어다운 판단력을 드러냄
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "Claude Code가 파일을 잘못 수정했다면 어떻게 복구합니까? git과의 관계는 무엇입니까?"</div>
+      <div class="followup-a">
+        <p>Claude Code는 파일을 편집하기 전에 스냅샷을 찍어두는 checkpoint 기능을 갖고 있고, <code>Esc</code>를 두 번 누르거나 되돌려달라고 요청하면 이전 상태로 복원할 수 있습니다. 이건 세션 로컬 기능이며 git과는 완전히 별개입니다 — git에 커밋하지 않은 상태에서도 checkpoint로 되돌릴 수 있습니다.</p>
+        <p>다만 checkpoint는 파일 변경만 커버합니다. 데이터베이스에 쓰기를 하거나 외부 API를 호출하는 등 원격 시스템에 영향을 준 행동은 되돌릴 방법이 없습니다. 그래서 Claude Code는 그런 부작용이 있는 명령을 실행하기 전에는 checkpoint로 안전하다고 가정하지 않고 별도로 승인을 요구하는 방향으로 설계되어 있습니다. 실무에서는 '파일 변경은 checkpoint + git이 이중으로 보호하지만, 외부 부작용이 있는 작업은 사람 승인이 최후의 방어선'이라는 걸 이해하고 권한 정책을 짜야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "터미널, VS Code, 웹, CI에서 쓰는 Claude Code는 내부적으로 같은 것입니까, 다른 것입니까?"</div>
+      <div class="followup-a">
+        <p>공식 문서는 "모든 surface가 동일한 엔진, 즉 같은 agentic loop을 공유한다"고 명시합니다. 차이는 코드가 어디서 실행되는지(로컬 머신 / Anthropic 관리 클라우드 VM / 로컬 실행 + 브라우저로 원격 제어)와, 사용자가 어떤 인터페이스로 상호작용하는지입니다. CLAUDE.md, 설정, MCP 서버 구성은 surface 간에 공유됩니다.</p>
+        <p>그래서 "웹에서는 이렇게 동작하는데 터미널에서는 다르게 동작한다"는 식의 차이는 대부분 실행 환경(어디서 파일에 접근하는가)이나 인터페이스 제약 때문이지, 에이전트의 판단 로직 자체가 다르기 때문이 아닙니다. 이 구분을 정확히 아는 것 — 실행 환경별 특성은 Day 2에서 더 다룬다는 것 — 자체가 시니어 신호입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "서브에이전트에게 위임한 작업의 결과를 어떻게 신뢰합니까? 컨텍스트가 격리되어 있으면 부모가 검증할 방법이 없지 않나요?"</div>
+      <div class="followup-a">
+        <p>서브에이전트는 독립된 컨텍스트에서 작업하고 최종 요약만 부모에게 돌려주는 게 맞습니다. 하지만 이게 '검증 없이 신뢰한다'는 뜻은 아닙니다. 에이전틱 루프 자체에 '결과 검증' 단계가 포함되어 있어서, 서브에이전트도 자기 작업 결과를 스스로 확인(테스트 실행, 재확인)한 뒤 요약을 반환하도록 설계하는 게 일반적입니다.</p>
+        <p>또한 부모 세션 입장에서는 서브에이전트가 실제로 변경한 파일이 diff로 남기 때문에, 최종적으로는 사람이나 부모 에이전트가 그 변경 결과를 직접 검토할 수 있습니다. '컨텍스트 격리'는 '검증 불가능'이 아니라 '탐색 과정의 노이즈를 부모 컨텍스트에서 걸러낸다'는 의미로 이해하는 게 정확합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "작업이 끝없이 도구를 호출하며 폭주하지 않는다는 것을 어떻게 보장합니까?"</div>
+      <div class="followup-a">
+        <p>여러 층위의 제어 장치가 있습니다. 사용자 레벨에서는 언제든 <code>Esc</code>로 즉시 중단하고 방향을 바꿀 수 있습니다. 프로그래밍적으로(Agent SDK 기준)는 최대 턴 수(<code>max_turns</code>)나 최대 비용(<code>max_budget_usd</code>) 같은 상한을 설정해서 한도에 도달하면 루프를 강제 종료할 수 있습니다.</p>
+        <p>그리고 애초에 권한 모드가 이 폭주를 억제하는 역할도 합니다 — 기본 모드에서는 파일 편집이나 셸 명령마다 승인을 요구하기 때문에, 사람이 개입하지 않는 한 위험한 방향으로 무한히 진행되기 어렵습니다. '자동화 편의성'과 '폭주 방지'는 정확히 반대 방향의 힘이고, 이 균형을 어디서 잡을지가 권한 모드 선택의 핵심 trade-off입니다 (Day 4에서 자세히 다룹니다).</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "회사에서 이 도구를 도입할 때, 아키텍처를 이해하는 것과 실제로 안전하게 굴리는 것은 다른 문제 아닌가요? 어떻게 연결하시겠습니까?"</div>
+      <div class="followup-a">
+        <p>맞습니다. 아키텍처 이해는 필요조건이지 충분조건이 아닙니다. 하지만 아키텍처를 모르면 정책을 잘못 설계하게 됩니다. 예를 들어 '승인 프롬프트가 귀찮다'는 이유만으로 <code>bypassPermissions</code>를 격리되지 않은 환경에서 켜는 실수는, permission과 sandbox가 서로 다른 방어선이라는 걸 몰랐기 때문에 나옵니다.</p>
+        <p>실제 도입 전략은 이 아키텍처 이해를 바탕으로 '어떤 작업 유형은 어떤 권한 모드로 돌릴 것인가(탐색·리서치는 자동 승인, 프로덕션 배포 관련 명령은 항상 사람 승인 등)', '팀 공통 CLAUDE.md와 개인 CLAUDE.local.md를 어떻게 나눌 것인가', '어떤 CI 파이프라인은 샌드박스 필수로 강제할 것인가'를 정책으로 만드는 것입니다. 이 구체적인 도입 패턴은 Day 22에서 종합적으로 다룹니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>에이전틱 루프를 "컨텍스트 수집 → 행동 → 검증"의 반복으로 구조화해서 설명한다</li>
+          <li>모델(추론)과 하네스(도구/컨텍스트/권한 관리)를 구분해서 말한다</li>
+          <li>checkpoint/permission/sandbox가 서로 다른 층위의 안전장치라는 것을 안다</li>
+          <li>세션의 휘발성과 CLAUDE.md/memory의 영속성을 구분한다</li>
+          <li>구조 설명에서 끝나지 않고 "그래서 어떻게 판단/운영할 것인가"로 연결한다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"AI가 코드를 대신 짜주는 도구다"처럼 뭉뚱그려 말한다</li>
+          <li>모델과 하네스를 구분하지 못하고 "Claude가 다 알아서 한다"고 표현한다</li>
+          <li>권한/샌드박스/checkpoint를 하나로 뭉쳐서 "안전장치가 있다"고만 말한다</li>
+          <li>슬래시 커맨드나 UI 기능 나열에 그친다 (예: "`/model`로 모델 바꿀 수 있어요")</li>
+          <li>아키텍처만 설명하고 실무 판단으로 연결하지 못한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        "AI가 알아서 코드를 짜준다"는 설명은 사용자 매뉴얼을 읽은 사람이면 누구나 할 수 있다.
+        시니어 면접에서는 <strong>이 도구가 왜 이렇게 설계됐는지, 그 설계가 만드는 위험과 이득을 구분해서, 실제 팀 운영 판단에 어떻게 반영할지</strong>를 본다.
+        기능 나열은 문서 링크로 대체 가능하지만, "이 구조를 근거로 어떤 정책을 세울 것인가"는 그 사람의 판단력을 직접 보여준다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"Claude Code는 그냥 터미널에 들어간 ChatGPT다."</p>
+      <div class="mc-right">실제</div>
+      <p>채팅형 LLM은 텍스트로만 응답하는 단발성 대화다. Claude Code는 <strong>도구를 반복적으로 호출하며 파일시스템·셸·프로젝트 전체에 실제로 접근하고 행동하는 에이전트</strong>다. 여러 파일에 걸친 조율된 수정, 테스트 실행을 통한 자기 검증, git 조작까지 하나의 목표를 향해 여러 턴을 이어간다는 점이 핵심 차이다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"권한 모드를 bypassPermissions로 켜면 더 빠르고 좋은 것이다."</p>
+      <div class="mc-right">실제</div>
+      <p>bypassPermissions는 승인 프롬프트를 생략할 뿐, 위험이 사라지는 게 아니다. 공식 문서는 이 모드를 "Claude Code가 피해를 줄 수 없는 격리된 환경(컨테이너/VM)에서만 쓰라"고 명시한다. 일반 개발 환경이나 실제 자격 증명에 접근 가능한 CI 러너에서 켜면, 승인 없이 위험한 명령이 실행될 수 있는 문을 열어두는 것과 같다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"CLAUDE.md에 규칙을 적어두면 세션이 아무리 길어져도 항상 다 지켜진다."</p>
+      <div class="mc-right">실제</div>
+      <p>CLAUDE.md는 매 요청마다 다시 주입되므로 대화 중간에 한 번 말한 지시보다 훨씬 안정적이다. 하지만 CLAUDE.md 자체도 너무 길어지면 컨텍스트 비용이 커지고, 다른 정보들 사이에서 우선순위가 희석될 수 있다. "CLAUDE.md에 적었으니 100% 안전하다"가 아니라 "대화로만 말한 것보다 훨씬 신뢰할 수 있다" 정도로 이해하는 게 정확하다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"서브에이전트는 단순히 작업을 병렬로 빠르게 처리하기 위한 기능이다."</p>
+      <div class="mc-right">실제</div>
+      <p>속도 이득도 있지만, 핵심 목적 중 하나는 <strong>컨텍스트 격리</strong>다. 서브에이전트는 부모와 완전히 독립된 컨텍스트에서 작업하고 최종 요약만 반환하기 때문에, 방대한 탐색 과정이 메인 세션의 컨텍스트를 잡아먹지 않는다. 병렬성이 없어도(순차적으로 위임해도) 이 컨텍스트 절약 효과는 그대로 유효하다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"터미널용 Claude Code, IDE 확장, 웹 버전은 사실상 다른 제품이고 기능도 따로 발전한다."</p>
+      <div class="mc-right">실제</div>
+      <p>공식 문서는 모든 surface가 동일한 에이전틱 루프 엔진을 공유하며, CLAUDE.md·설정·MCP 서버 구성이 surface 간에 공유된다고 명시한다. 다른 것은 코드가 실행되는 위치(로컬/클라우드/원격 제어)와 사용자가 상호작용하는 인터페이스뿐이다. 이 차이는 Day 2에서 더 구체적으로 다룬다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>에이전틱 루프 이해</strong></td>
+          <td>컨텍스트 수집/행동/검증 3단계를 구체적 예시와 함께 설명한다</td>
+          <td>"도구를 여러 번 쓴다" 정도로 설명한다</td>
+          <td>단발성 텍스트 생성과의 차이를 설명하지 못한다</td>
+        </tr>
+        <tr>
+          <td><strong>모델 vs 하네스 구분</strong></td>
+          <td>추론(모델)과 도구/컨텍스트/권한 관리(하네스)를 명확히 분리해서 설명한다</td>
+          <td>구분은 알지만 용어를 섞어 쓴다</td>
+          <td>"Claude가 다 알아서 한다"고 뭉뚱그린다</td>
+        </tr>
+        <tr>
+          <td><strong>안전장치 계층 이해</strong></td>
+          <td>checkpoint/permission/sandbox를 서로 다른 방어선으로 구분해서 설명한다</td>
+          <td>안전장치가 여러 개 있다는 것은 알지만 구분이 흐릿하다</td>
+          <td>"권한 설정하면 안전하다" 수준으로만 답한다</td>
+        </tr>
+        <tr>
+          <td><strong>컨텍스트/세션 이해</strong></td>
+          <td>세션 독립성, compaction, CLAUDE.md/memory의 역할을 구체적으로 설명한다</td>
+          <td>"기억을 한다"는 것은 알지만 메커니즘은 모른다</td>
+          <td>세션이 영속적이라고 잘못 알고 있다</td>
+        </tr>
+        <tr>
+          <td><strong>실무 판단 연결</strong></td>
+          <td>아키텍처 이해를 팀 도입 정책(권한 모드 선택, CLAUDE.md 설계 등)으로 연결한다</td>
+          <td>물어보면 실무 사례를 든다</td>
+          <td>구조 설명에서 끝나고 실무로 연결하지 못한다</td>
+        </tr>
+        <tr>
+          <td><strong>최신성</strong></td>
+          <td>최근 공식 문서/변경 사항을 근거로 답하며, 버전에 따라 바뀔 수 있음을 인지한다</td>
+          <td>대체로 맞지만 오래된 정보를 섞어 말한다</td>
+          <td>명백히 지난 버전의 동작을 최신인 것처럼 말한다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면, 그 항목이 이후 Day 2~22에서 더 깊게 다뤄진다. 특히 안전장치 계층(권한/샌드박스)은 Day 4~6에서, 확장 레이어(MCP/Skills/Hooks/Subagents)는 Day 7~14에서, 팀 운영·CI/CD·도입 전략은 Day 15~22에서 집중적으로 다룬다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./index.html">← 목록으로</a>
+    <span></span>
+  </nav>
+
+</div>
+</body>
+</html>
