@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — AI Harness와 Agent Runtime 설계/운영 프레임워크</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 1 · AI Harness / Agent Harness Interview</div>
+    <h1>AI Harness와 Agent Runtime 설계/운영 프레임워크</h1>
+    <div class="subtitle">"Agent = Model + Harness" — LLM을 감싸는 런타임을 왜, 어떻게 설계하는지 구조적으로 설명하는 능력</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전/시점 기준:</strong> 이 레슨은 2026-07 기준 <strong>Claude Agent SDK</strong>(공식 agent loop 문서화)와
+    <strong>OpenAI Agents SDK</strong>(Responses API 기반, Assistants API는 <strong>2026-08-26 완전 종료</strong>)를 대표 사례로 다룬다.
+    "Harness Engineering"이라는 용어는 2026년 초 Martin Fowler와 Thoughtworks가 공식적으로 정립했다.
+    이 트랙은 LangChain/LangGraph 문법을 다루지 않는다(별도 트랙 참고) — provider를 넘나드는 <strong>원리</strong>에 집중한다.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "AI agent harness가 무엇인지 설명해주세요. 왜 LLM 하나만 호출하는 코드는 agent라고 부르지 않나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "Agent loop을 설계할 때 반드시 고려해야 할 핵심 요소는 무엇인가요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "Claude Agent SDK나 OpenAI Agents SDK 같은 기존 프레임워크를 쓸지, 직접 harness를 구축할지 어떻게 판단하시나요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Agent = Model + Harness — 왜 "LLM 호출"만으로는 부족한가</h2>
+
+    <h3>LLM 호출과 Agent의 차이</h3>
+    <p>
+      사용자가 "이번 분기 매출 리포트를 만들어서 팀 채널에 공유해줘"라고 요청했다고 하자. 이 작업을 끝내려면 모델은
+      데이터베이스에서 데이터를 조회하고, 결과를 분석하고, 리포트를 작성하고, Slack API를 호출해야 한다. 그리고 각 단계마다
+      <strong>이전 단계의 결과를 보고 다음에 뭘 할지 스스로 판단</strong>해야 한다. 데이터 조회가 실패하면 재시도할지,
+      다른 쿼리를 시도할지, 사용자에게 물어볼지도 모델이 결정해야 한다.
+    </p>
+    <p>
+      이건 API를 한 번 호출해서 텍스트 응답을 받는 것과는 완전히 다른 문제다. <strong>"모델이 여러 단계를 반복하며 스스로
+      판단해서 목표를 달성하는 구조"</strong>가 필요하고, 이 반복 구조 자체를 누군가는 코드로 만들어야 한다. 이 코드를
+      <strong>harness(하네스)</strong>라고 부른다.
+    </p>
+
+    <h3>Harness란 무엇인가</h3>
+    <p>
+      Harness는 모델에게 어떤 tool을 줄지 정의하고, 모델의 응답(tool 호출 요청)을 파싱해서 실제로 실행하고,
+      실행 결과를 다시 모델에게 넣어주고, 언제 루프를 멈출지 결정하는 <strong>"배관 공사(plumbing)"</strong> 역할을 한다.
+      업계에서는 이를 <strong>"Agent = Model + Harness"</strong>라고 표현한다. 모델(두뇌)만으로는 아무것도 실행할 수 없고,
+      harness(몸통 + 신경계)가 있어야 실제로 도구를 쓰고, 상태를 유지하고, 실패를 복구할 수 있다.
+    </p>
+
+    <div class="callout callout-warn">
+      <strong>2026년에 정립된 용어 — "Harness Engineering":</strong> Martin Fowler와 Thoughtworks의 Birgitta Böckeler는
+      2026년 초 이 개념을 "harness engineering"이라는 이름으로 정리했다. 핵심 주장은
+      <strong>"LLM은 agent 시스템에서 가장 작은 부분이다"</strong>라는 것이다. tool, 권한 관리, 상태 저장, 테스트,
+      로그/관측성, guardrail, 실패 복구 메커니즘 — 이 모든 "harness"가 실제로 시스템의 신뢰성과 비용, 보안을 결정한다.
+      면접관이 이 개념을 직접 언급하지 않아도, <strong>이 사고방식 자체가 시니어 후보를 가려내는 기준</strong>이다.
+    </div>
+
+    <h3>Agent Loop의 표준 구조 — gather context → take action → verify → repeat</h3>
+    <p>
+      Anthropic의 Claude Agent SDK 공식 문서는 agent loop를 다음 세 단계의 반복으로 정의한다.
+    </p>
+    <ol>
+      <li>
+        <strong>Gather context (맥락 수집):</strong> 모델은 사용자 프롬프트, 시스템 프롬프트, tool 정의 목록,
+        지금까지의 대화 히스토리를 입력으로 받는다. "지금 상황이 무엇인가"를 파악하는 단계다.
+      </li>
+      <li>
+        <strong>Take action (행동 실행):</strong> 모델은 주어진 tool 중 하나를 호출하기로 결정한다. Harness는
+        이 요청을 실제 함수 호출, API 요청, 셸 명령 등으로 <strong>실행</strong>한다.
+      </li>
+      <li>
+        <strong>Verify &amp; repeat (검증 후 반복):</strong> 실행 결과를 모델에게 다시 보여주고, 모델이 목표를
+        달성했는지 스스로(또는 harness가) 판단한다. 달성하지 못했다면 1단계로 돌아간다.
+      </li>
+    </ol>
+    <p>
+      이 3단계 자체는 단순해 보이지만, 실무에서 harness가 진짜로 책임져야 하는 것은
+      <strong>"이 루프를 얼마나 안전하고, 관측 가능하고, 비용 효율적으로 반복시키는가"</strong>다.
+    </p>
+
+    <pre><code><span class="comment"># Agent loop의 최소 골격 (개념 설명용 의사코드)</span>
+<span class="keyword">def</span> <span class="func">run_agent</span>(user_input, tools, max_steps=<span class="number">10</span>):
+    messages = [{<span class="string">"role"</span>: <span class="string">"user"</span>, <span class="string">"content"</span>: user_input}]
+    <span class="keyword">for</span> step <span class="keyword">in</span> range(max_steps):  <span class="comment"># ① 무한루프 방지: hard step cap</span>
+        response = model.call(messages, tools=tools)  <span class="comment"># gather context</span>
+
+        <span class="keyword">if</span> response.stop_reason == <span class="string">"end_turn"</span>:
+            <span class="keyword">return</span> response.text  <span class="comment"># verify: 목표 달성 판단</span>
+
+        <span class="keyword">for</span> tool_call <span class="keyword">in</span> response.tool_calls:
+            result = execute_tool(tool_call)  <span class="comment"># take action: 실제 실행 + 권한 검사</span>
+            messages.append(tool_result_message(tool_call, result))
+
+    <span class="keyword">raise</span> MaxStepsExceeded()  <span class="comment"># ② 강제 종료: 예산 초과 시 반드시 멈춘다</span></code></pre>
+    <p>
+      실제로는 여기에 <code>token_budget</code>, <code>dollar_budget</code>, 동일한 tool 호출 반복 감지,
+      권한 검사, 로깅/트레이싱까지 붙어야 "production-grade harness"가 된다. 이 세부 사항은 Day 4(제어 흐름),
+      Day 5(guardrail), Day 6(샌드박스)에서 각각 깊게 다룬다.
+    </p>
+
+    <h3>Model / Tool / Runtime — 세 층으로 경계를 나눠서 사고하기</h3>
+    <table>
+      <tr>
+        <th>계층</th>
+        <th>책임</th>
+        <th>예시</th>
+      </tr>
+      <tr>
+        <td><strong>Model</strong></td>
+        <td>주어진 맥락에서 다음 행동을 추론·결정. harness가 무엇을 실행할지는 모른다.</td>
+        <td>Claude, GPT 계열 등 — "두뇌"</td>
+      </tr>
+      <tr>
+        <td><strong>Harness / Runtime</strong></td>
+        <td>루프 실행, tool 호출 파싱·실행, 상태/메모리 관리, 권한 검사, 종료 조건, 관측성</td>
+        <td>Claude Agent SDK, OpenAI Agents SDK, 자체 구축 루프</td>
+      </tr>
+      <tr>
+        <td><strong>Tool / Environment</strong></td>
+        <td>실제 부수효과(side effect)가 일어나는 곳 — DB, 파일시스템, 외부 API, 셸</td>
+        <td>MCP 서버, 함수 호출, 샌드박스 내 코드 실행</td>
+      </tr>
+    </table>
+    <p>
+      이 세 계층을 명확히 구분하지 못하면, "모델이 실수했다"와 "harness가 잘못 설계됐다"를 구분하지 못한다.
+      예를 들어 모델이 존재하지 않는 함수를 호출하려고 시도하는 것은 모델의 추론 문제일 수 있지만,
+      <strong>그 호출이 검증 없이 그대로 실행되어 프로덕션 DB를 삭제했다면, 이는 명백히 harness(권한 검사 부재)의 책임</strong>이다.
+      Senior 개발자는 장애가 났을 때 이 경계를 즉시 구분해서 원인을 좁힐 수 있어야 한다.
+    </p>
+
+    <h3>대표 프레임워크 두 개의 아키텍처 요약</h3>
+    <p>
+      "harness를 직접 만들 것인가, 기존 프레임워크를 쓸 것인가"를 판단하려면 대표적인 두 프레임워크가
+      각각 harness의 책임을 어떻게 나눠서 구현했는지 알아야 한다.
+    </p>
+
+    <div class="callout callout-info">
+      <strong>Claude Agent SDK:</strong> Claude Code CLI를 라이브러리처럼 감싼 형태다. SDK 자체는 별도 텔레메트리를
+      내보내지 않고, <strong>Claude Code CLI를 서브프로세스로 실행</strong>해서 그 안의 agent loop, 권한 모드(permission mode),
+      hooks, 서브에이전트(Task tool을 통한 병렬 위임), OS 레벨 샌드박스(Linux bubblewrap / macOS Seatbelt)를 그대로 재사용한다.
+      "코딩 에이전트/장시간 자율 작업"에 강점이 있는 구조다.
+    </div>
+    <div class="callout callout-info">
+      <strong>OpenAI Agents SDK:</strong> Python/TypeScript로 된 경량 오케스트레이션 프레임워크로, <code>Agent</code>와
+      <code>Runner</code>가 핵심 primitive다. <strong>Handoff</strong>(다른 agent에게 대화 제어권을 완전히 이전하는 기능)를
+      모델에게는 <code>transfer_to_&lt;agent_name&gt;</code>이라는 tool처럼 노출한다. <strong>Guardrail</strong>은
+      tripwire 방식으로 위반 시 예외를 던져 즉시 중단시키고, <strong>Session</strong>이 대화 메모리 계층을 표준화한다.
+      Assistants API를 대체하는 표준 진입점이며, Swarm(2024년 실험적 버전)의 정식 후속작이다.
+    </div>
+
+    <table>
+      <tr>
+        <th>비교 항목</th>
+        <th>Claude Agent SDK</th>
+        <th>OpenAI Agents SDK</th>
+      </tr>
+      <tr>
+        <td>기반 구조</td>
+        <td>Claude Code CLI를 서브프로세스로 감쌈</td>
+        <td>순수 Python/TS 라이브러리, provider 다중 지원</td>
+      </tr>
+      <tr>
+        <td>제어권 이전</td>
+        <td>서브에이전트(Task tool) — 위임 후 결과 회수</td>
+        <td>Handoff(완전 이전) / Agents-as-tools(결과 회수)를 모두 지원</td>
+      </tr>
+      <tr>
+        <td>안전장치</td>
+        <td>권한 모드, hooks, OS 레벨 샌드박스(bubblewrap/Seatbelt)</td>
+        <td>Guardrail(tripwire), max_turns 기본값(5)</td>
+      </tr>
+      <tr>
+        <td>관측성</td>
+        <td>내장 OpenTelemetry 계측(옵트인)</td>
+        <td>기본 활성화된 자체 Tracing 대시보드 + OTel 브릿지</td>
+      </tr>
+      <tr>
+        <td>강점 영역</td>
+        <td>코딩/장시간 자율 작업, 파일시스템 조작</td>
+        <td>멀티 에이전트 라우팅, 고객지원형 워크플로우</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <p>
+      이 질문은 <strong>"SDK 사용법을 아느냐"</strong>가 아니라
+      <strong>"모델을 감싸는 런타임을 하나의 시스템으로 설계할 수 있느냐"</strong>를 본다.
+      2026년 기준 이 분야는 용어와 표준 프레임워크가 막 자리잡는 중이라, "튜토리얼을 따라해봤다" 수준과
+      "왜 이렇게 설계해야 하는지 원리로 설명할 수 있다" 수준의 차이가 특히 크게 드러난다.
+    </p>
+
+    <ul>
+      <li>
+        <strong>Agent와 단순 tool calling을 구분하는가:</strong> 반복 루프, 상태 관리, 종료 조건이라는
+        본질을 이해하고 있는가
+      </li>
+      <li>
+        <strong>계층을 구분해서 사고하는가:</strong> 모델의 책임과 harness의 책임을 명확히 나눠서
+        장애 원인을 추론할 수 있는가
+      </li>
+      <li>
+        <strong>Build vs Framework 판단 기준이 있는가:</strong> "무조건 프레임워크" 또는 "무조건 직접 구현"이
+        아니라, 상황에 따라 근거 있는 선택을 하는가
+      </li>
+      <li>
+        <strong>운영 관점을 갖고 있는가:</strong> 루프가 무한히 돌거나 비용이 폭주하는 실패 모드를
+        설계 단계에서부터 고려하는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      Senior 개발자는 "Claude Agent SDK를 써봤다"가 아니라, <strong>"이 harness가 왜 이렇게 설계되어 있고,
+      우리 시스템에 그대로 맞을지, 어디를 커스터마이징해야 할지"</strong>를 판단할 수 있어야 한다.
+      실제 프로덕션 인시던트(11일간 도는 $47K짜리 무한루프 등)가 반복적으로 보고되는 만큼,
+      면접관은 이 위험을 실감하고 대비할 수 있는 사람을 찾는다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 사내 코딩 어시스턴트 / 리포지토리 자동화</h3>
+    <p>
+      파일을 읽고, 수정하고, 테스트를 돌리고, 결과를 검증하는 장시간 자율 작업이 핵심이라면
+      바퀴를 새로 발명할 이유가 없다. → <strong>Claude Agent SDK</strong>처럼 이미 서브에이전트,
+      권한 모드, 샌드박스가 검증된 harness를 채택하는 것이 빠르고 안전하다.
+    </p>
+
+    <h3>상황 2: 여러 LLM provider를 넘나드는 멀티테넌트 SaaS</h3>
+    <p>
+      고객사별로 Anthropic/OpenAI/오픈소스 모델을 선택할 수 있어야 한다면, 특정 벤더의 SDK에 강하게
+      결합된 harness는 이식성이 떨어진다. → <strong>tool 스키마와 메시지 포맷을 자체적으로 추상화하는
+      provider abstraction layer</strong>를 직접 설계해야 한다(Day 2에서 상세히 다룬다).
+    </p>
+
+    <h3>상황 3: 자체 제작 tool-loop가 장애를 일으키는 경우</h3>
+    <p>
+      실제 사례로, 4개의 LangChain agent가 "서로에게 확인을 요청"하며 <strong>11일간 264시간</strong> 동안
+      루프를 돌아 <strong>약 $47,000</strong>의 비용이 발생한 프로덕션 인시던트가 보고된 바 있다.
+      원인은 명확한 step cap과 progress detection(반복 상태 감지)이 없었기 때문이다. →
+      이런 사고는 "모델이 똑똑하지 못해서"가 아니라 <strong>harness의 안전장치 부재</strong> 때문에 일어난다.
+      Vercel의 사례처럼 harness를 오히려 단순화(tool 개수를 80% 줄이고 파일시스템 기반 접근으로 전환)해서
+      성공률을 80%에서 100%로, 응답 시간을 3.5배 개선한 반례도 있다 — "harness가 복잡할수록 안전한 것이 아니라,
+      모델이 판단하기 쉬운 harness가 더 안전하다."
+    </p>
+
+    <h3>상황 4: 금융/의료 등 규제 산업의 승인 워크플로우</h3>
+    <p>
+      환불 처리, 계좌 이체처럼 되돌리기 어려운 작업은 harness 차원에서 <strong>tool 실행 전 승인 게이트</strong>가
+      필수다. → OpenAI Agents SDK의 guardrail이나 Claude Agent SDK의 권한 모드(permission mode)로
+      "이 작업은 사람 승인 없이는 절대 실행되지 않는다"는 것을 harness 레벨에서 강제한다. 프롬프트로
+      "신중하게 확인하세요"라고 적어두는 것은 강제력이 없다 — <strong>승인 게이트는 인프라 레벨에서 강제해야
+      의미가 있다</strong>는 것이 2026년 기준 업계 공통 원칙이다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Agent의 정의부터 명확히 하기</strong>
+        "Agent는 모델 혼자가 아니라 model과 harness의 조합입니다. 모델은 다음 행동을 추론할 뿐이고,
+        harness가 그 행동을 실제로 실행하고, 결과를 되먹임하고, 루프를 종료하는 책임을 집니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Agent loop의 3단계를 구조적으로 설명하기</strong>
+        "gather context, take action, verify &amp; repeat라는 3단계 반복입니다. 이 자체는 단순하지만,
+        각 단계에서 무엇을 검증하고 언제 멈출지가 harness 설계의 핵심입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Model/Tool/Runtime 계층을 구분해서 책임을 나누기</strong>
+        "장애가 났을 때 저는 먼저 이게 모델의 추론 실패인지, harness의 검증·권한 부재인지, tool/환경 자체의
+        문제인지부터 구분합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Build vs Framework 판단 기준 제시하기</strong>
+        "표준적인 코딩/작업 자동화라면 검증된 프레임워크(Claude Agent SDK 등)를 쓰고, 멀티 provider 지원이나
+        도메인 특화 승인 흐름처럼 표준을 벗어나는 요구가 있으면 필요한 부분만 직접 설계합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>운영 안정성 관점 언급하기 (Senior 포인트)</strong>
+        "어떤 선택을 하든 step cap, budget cap, 반복 상태 감지 같은 안전장치가 없으면 무한루프나 비용 폭주로
+        이어질 수 있다는 걸 프로덕션 사례로 알고 있고, 설계 단계부터 고려합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>현재 상황에 대입해서 마무리하기</strong>
+        "지금 질문하신 시나리오는 [표준 자동화 / 멀티 provider / 규제 워크플로우]에 해당하므로
+        [프레임워크 채택 / 직접 harness 설계 / 승인 게이트 강제]를 우선하겠습니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "Agent는 모델 혼자가 아니라 model과 harness의 조합입니다. 모델은 주어진 맥락에서 다음 행동을 추론할 뿐이고,
+        그 행동을 실제로 실행하고, 결과를 다시 모델에게 보여주고, 언제 멈출지 판단하는 것은 harness의 책임입니다.
+        Claude Agent SDK 공식 문서가 정의하는 것처럼 이 과정은 'gather context → take action → verify → repeat'라는
+        반복 루프이고, 저는 이 3단계 각각에서 무엇을 검증하고 언제 강제로 종료시킬지를 harness 설계의 핵심으로 봅니다.
+      </p>
+      <p>
+        실무에서 프레임워크를 쓸지 직접 만들지는 두 가지 기준으로 판단합니다. 첫째, 우리가 필요한 워크플로우가
+        표준적인 패턴(코딩 자동화, 문서 기반 QA)인지, 아니면 멀티 provider 지원이나 도메인 특화 승인 흐름처럼
+        프레임워크가 가정하지 않은 요구사항인지를 봅니다. 표준적이면 Claude Agent SDK나 OpenAI Agents SDK처럼
+        이미 권한 모드, 샌드박스, guardrail이 검증된 프레임워크를 채택하는 게 더 빠르고 안전합니다. 둘째,
+        운영 안정성 관점에서 무한루프나 비용 폭주를 막을 안전장치 — step cap, 예산 cap, 반복 상태 감지 — 가
+        기본 제공되는지를 봅니다. 실제로 명확한 종료 조건 없이 만들어진 agent가 11일간 돌면서 5만 달러 가까운
+        비용을 발생시킨 프로덕션 사고 사례도 있어서, 이건 선택이 아니라 필수라고 생각합니다.
+      </p>
+      <p>
+        그리고 harness가 복잡하다고 무조건 안전한 게 아니라는 점도 중요합니다. Vercel의 사례처럼 오히려
+        tool 개수를 줄이고 모델이 판단하기 쉬운 구조로 harness를 단순화했더니 성공률과 응답 속도가 모두 개선된
+        경우도 있습니다. 그래서 저는 harness를 설계할 때 '얼마나 많은 기능을 넣을까'가 아니라 '모델이 안전하고
+        예측 가능하게 행동할 수 있는 최소한의 구조가 무엇인가'를 먼저 묻습니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "Claude Agent SDK와 OpenAI Agents SDK의 아키텍처 차이를 더 자세히 설명해주세요."</h3>
+    <p><strong>약한 답변:</strong> "둘 다 agent 만드는 SDK라서 비슷합니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "가장 큰 차이는 '무엇을 감싸고 있는가'입니다. Claude Agent SDK는 Claude Code CLI를 서브프로세스로
+      실행하는 구조라서, CLI 안에 이미 구현된 agent loop, 서브에이전트(Task tool), 권한 모드, OS 레벨 샌드박스를
+      그대로 물려받습니다. 코딩·파일 조작 같은 장시간 자율 작업에 강합니다. 반면 OpenAI Agents SDK는 순수
+      라이브러리로, Handoff라는 개념으로 '다른 agent에게 대화를 완전히 넘기는 것'과 '결과만 받아오는 agents-as-tools'를
+      구분해서 제공합니다. 고객 지원처럼 역할별로 라우팅되는 워크플로우에 강점이 있습니다. 관측성도 다른데, Claude Agent SDK는
+      OTel 계측이 옵트인이고, OpenAI Agents SDK는 자체 Tracing 대시보드가 기본 활성화되어 있습니다."
+    </p>
+
+    <h3>F2. "무한 루프나 비용 폭주를 어떻게 방지하시겠어요?"</h3>
+    <p><strong>약한 답변:</strong> "타임아웃을 걸어두면 됩니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "타임아웃 하나로는 부족합니다. 최소 5겹의 방어선을 둡니다. 첫째, hard step cap — 최대 스텝 수를
+      강제로 제한합니다. 둘째, 토큰/달러 예산 cap — 스텝 수가 아니라 실제 비용 기준으로도 제한합니다.
+      셋째, 반복 상태 감지 — 같은 tool을 같은 인자로 두 번 호출하면 진행이 안 되고 있다고 보고 중단시킵니다.
+      넷째, 에러가 반복되는 tool에 circuit breaker를 겁니다. 다섯째, task당 비용의 p95를 모니터링해서
+      평소보다 튀는 패턴을 알림으로 잡습니다. OpenAI Agents SDK의 <code>max_turns</code> 기본값이 5인 것도
+      이런 사고를 방지하려는 설계인데, 값을 None으로 풀어버리는 게 흔한 실수 포인트라는 것도 알고 있습니다."
+    </p>
+
+    <h3>F3. "이미 자체 제작한 tool-loop가 있는 팀에게 프레임워크로 마이그레이션을 제안한다면, 어떻게 설득하시겠어요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "무작정 새 프레임워크로 갈아타자고 하지 않습니다. 먼저 현재 harness에서 실제로 겪고 있는 문제
+      — 권한 검사 누락, 관측성 부재, 무한루프 방지 로직 없음 — 를 구체적으로 나열하고, 그 문제들이
+      프레임워크가 이미 검증된 방식으로 해결한 문제인지 확인합니다. 겹치는 부분이 많으면 트래픽이 적은
+      기능부터 점진적으로 옮기며 리스크를 통제하고, 프레임워크가 가정하지 않는 도메인 특화 요구(예: 특정 규제
+      승인 흐름)가 있다면 그 부분만 자체 로직으로 남겨둡니다. '전부 새로 만든다'가 아니라 '검증된 부분은
+      재사용하고, 우리만의 요구사항에만 엔지니어링 리소스를 쓴다'는 게 목표입니다."
+    </p>
+
+    <h3>F4. "Multi-agent 구조가 항상 더 좋은 선택인가요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "아닙니다. Anthropic의 멀티 에이전트 리서치 시스템 사례를 보면, lead agent와 여러 subagent로 구성된
+      구조가 단일 에이전트 대비 성능은 90.2% 향상됐지만, 토큰 비용은 약 15배 더 들었습니다. 이건
+      독립적으로 병렬화할 수 있는 'breadth-first' 작업(여러 방향의 리서치를 동시에 탐색하는 것 같은)에는
+      정당화되지만, 순차적으로 강하게 의존적인 작업이나 지연시간·비용에 민감한 작업에는 오히려 손해입니다.
+      그래서 저는 '작업을 독립적인 하위 작업으로 병렬 분해할 수 있는가'와 '그 병렬화로 얻는 가치가 15배에
+      가까운 비용 증가를 정당화하는가'를 먼저 따져보고 multi-agent 여부를 결정합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>Agent를 <strong>Model + Harness의 조합</strong>으로 정의하고 각각의 책임을 나눈다</li>
+          <li>Agent loop를 <strong>gather-act-verify</strong> 구조로 설명하고, 각 단계의 안전장치를 언급한다</li>
+          <li>프레임워크 선택에 <strong>명확한 판단 기준</strong>(표준 워크플로우 여부, 운영 안정성 요구)이 있다</li>
+          <li>실제 프로덕션 장애 사례(비용 폭주, 무한루프)를 근거로 설계 원칙을 설명한다</li>
+          <li>"복잡한 harness = 안전한 harness"라는 통념을 반박할 수 있다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"Agent는 tool을 쓸 수 있는 LLM이다"처럼 <strong>루프/종료조건 개념이 빠진 정의</strong></li>
+          <li>특정 SDK의 함수 이름만 나열하고 <strong>왜 그렇게 설계됐는지 설명하지 못함</strong></li>
+          <li>"프레임워크가 다 알아서 해준다"는 식으로 <strong>운영 리스크를 인지하지 못함</strong></li>
+          <li>Multi-agent나 복잡한 harness를 <strong>무조건 더 나은 선택으로 전제</strong></li>
+          <li>모델 실패와 harness 설계 결함을 구분하지 못하고 뭉뚱그려 설명</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 "이 SDK를 써봤다"가 아니라
+      <strong>"harness가 왜 필요하고, 무엇을 책임져야 하며, 그 책임을 다하지 못하면 실제로 어떤 사고가 나는지"</strong>를
+      구체적인 사례와 함께 설명한다. 면접관은 API 사용 경험보다 시스템을 신뢰성 있게 운영할 수 있는 사고방식을 확인한다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "Agent는 그냥 tool을 호출할 수 있는 LLM이다"</h3>
+    <p>
+      <strong>사실:</strong> tool을 한 번 호출하는 것은 agent라기보다 단순 function calling에 가깝다.
+      Agent는 <strong>모델이 스스로 여러 단계를 반복하며 판단</strong>하는 loop 구조와, 그 loop를 안전하게
+      관리하는 harness가 있어야 성립한다.
+    </p>
+
+    <h3>오해 2: "검증된 프레임워크를 쓰면 harness를 신경 쓰지 않아도 된다"</h3>
+    <p>
+      <strong>사실:</strong> 프레임워크는 harness의 <strong>기본 골격</strong>을 제공할 뿐이다.
+      권한 스코핑, 도메인 특화 승인 흐름, 비용 모니터링 임계치처럼 우리 서비스에 특화된 안전장치는
+      프레임워크 위에 추가로 설계해야 한다. "프레임워크 = harness 전체"라는 생각은 위험하다.
+    </p>
+
+    <h3>오해 3: "Harness는 부수적인 배관 코드일 뿐이라 중요하지 않다"</h3>
+    <p>
+      <strong>사실:</strong> "Harness Engineering"이라는 용어가 정립된 이유가 바로 이 통념을 반박하기 위해서다.
+      실제 프로덕션 사고(무한루프로 인한 수만 달러 비용 폭주, 프로덕션 DB 삭제 등)의 원인은 대부분
+      모델의 추론 실패가 아니라 <strong>harness의 안전장치 부재</strong>였다. Fowler의 표현대로
+      "LLM은 agent 시스템에서 가장 작은 부분"이다.
+    </p>
+
+    <h3>오해 4: "복잡하고 기능이 많은 harness일수록 더 안전하고 강력하다"</h3>
+    <p>
+      <strong>사실:</strong> Vercel의 사례처럼, tool 수를 줄이고 harness를 단순화했더니 오히려
+      성공률과 응답 속도가 크게 개선된 경우가 있다. 모델이 선택해야 하는 옵션이 많을수록 잘못된 선택의
+      여지도 커진다. "얼마나 많은 기능을 제공하는가"가 아니라 "모델이 얼마나 예측 가능하게 행동할 수
+      있는가"가 좋은 harness의 기준이다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Build vs Framework 판단 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>항목</th>
+        <th>기존 프레임워크 채택 적합</th>
+        <th>직접 harness 설계 적합</th>
+      </tr>
+      <tr>
+        <td>워크플로우 유형</td>
+        <td><span class="badge badge-green">표준 코딩/문서 자동화, 널리 검증된 패턴</span></td>
+        <td><span class="badge badge-yellow">도메인 특화 승인 흐름, 규제 요구사항</span></td>
+      </tr>
+      <tr>
+        <td>Provider 요구</td>
+        <td><span class="badge badge-green">단일 provider로 충분</span></td>
+        <td><span class="badge badge-yellow">멀티 provider 추상화 필요</span></td>
+      </tr>
+      <tr>
+        <td>안전장치</td>
+        <td><span class="badge badge-green">기본 제공 guardrail/권한 모드로 충분</span></td>
+        <td><span class="badge badge-yellow">비즈니스 특화 위험도 기반 승인 게이트 필요</span></td>
+      </tr>
+      <tr>
+        <td>관측성 요구</td>
+        <td><span class="badge badge-green">기본 tracing/telemetry로 충분</span></td>
+        <td><span class="badge badge-yellow">기존 사내 관측성 스택과 깊은 통합 필요</span></td>
+      </tr>
+      <tr>
+        <td>개발 속도 우선순위</td>
+        <td><span class="badge badge-green">빠른 구현, 검증된 패턴 재사용</span></td>
+        <td><span class="badge badge-yellow">세밀한 제어가 속도보다 중요</span></td>
+      </tr>
+    </table>
+
+    <div class="callout callout-tip" style="margin-top: 1rem;">
+      <strong>실무 팁:</strong> 두 선택은 배타적이지 않다. 프레임워크로 시작해서 표준 케이스는 그대로 두고,
+      우리 서비스에 특화된 위험 지점(승인 게이트, 비용 상한, 감사 로그)만 얇은 커스텀 레이어로 얹는
+      <strong>점진적 접근</strong>이 실무에서 가장 흔하고 리스크가 낮다.
+    </div>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"Agent는 tool을 쓸 수 있는 AI"라고만 설명하고, 반복 루프나 harness 개념을 언급하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>특정 SDK(Claude Agent SDK 또는 OpenAI Agents SDK)로 tool을 붙인 agent를 만들어본 경험이 있고,
+      기본 사용법을 설명할 수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>"Agent = Model + Harness" 개념과 agent loop(gather-act-verify) 구조를 설명할 수 있음.
+      두 SDK의 기본적인 차이를 말할 수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>Model/Tool/Runtime 계층 구분, harness engineering의 의미, build vs framework 판단 기준,
+      실제 프로덕션 장애 사례(비용 폭주, 도구 과다로 인한 성능 저하)를 근거로 설계 원칙까지 하나의 흐름으로
+      자연스럽게 연결해서 설명함. 특정 SDK 문법이 아니라 원리를 기준으로 답변함</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. "Agent = Model + Harness"가 무슨 뜻인지, harness가 구체적으로 어떤 책임을 지는지 예시를 들어 설명할 수 있는가?<br>
+      2. Agent loop의 3단계(gather-act-verify)를 즉시 말하고, 각 단계에서 무엇이 잘못될 수 있는지 설명할 수 있는가?<br>
+      3. Model/Tool/Runtime 중 어느 계층의 문제인지 장애 상황을 듣고 즉시 구분할 수 있는가?<br>
+      4. "harness가 복잡할수록 안전하다"는 통념이 왜 틀렸는지, 반례를 들어 설명할 수 있는가?<br>
+      5. Build vs Framework를 판단할 때 나만의 명확한 기준을 3초 안에 말할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>Agent = Model + Harness.</strong> 모델 혼자서는 agent가 아니다. 반복 루프를 실행·검증·종료하는
+      harness가 필요하다.</li>
+      <li><strong>Agent loop는 gather context → take action → verify → repeat</strong>의 반복이다.
+      각 단계에 안전장치가 있어야 production-grade harness가 된다.</li>
+      <li><strong>Model / Tool / Runtime</strong> 세 계층을 구분해서 사고하면 장애 원인을 빠르게 좁힐 수 있다.</li>
+      <li><strong>Harness Engineering</strong>은 2026년에 정립된 용어로, "LLM은 agent 시스템에서 가장 작은 부분"이라는
+      원칙을 담고 있다.</li>
+      <li><strong>Build vs Framework</strong>는 표준 워크플로우 여부, provider 요구, 운영 안정성 요구를 기준으로
+      판단하며, 두 선택은 배타적이지 않다.</li>
+      <li><strong>복잡한 harness가 항상 안전한 것은 아니다.</strong> 모델이 예측 가능하게 행동할 수 있는
+      최소한의 구조를 우선한다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 1 완료 · 다음: Day 2 — Model/Tool/Runtime 경계와 Provider 추상화</span>
+  </div>
+
+</div>
+</body>
+</html>
