@@ -45,6 +45,19 @@
 - [네이버 D2](https://d2.naver.com/home) — 검색 및 자연어처리 시스템 아티클
 - [토스 기술 블로그](https://toss.tech/) — LLM 기반 제품 운영 사례
 
+## Chunking 최신 근거 (Day 3, 2026년 조사 반영)
+
+- [Late Chunking: Contextual Chunk Embeddings Using Long-Context Embedding Models (arXiv 2409.04701)](https://arxiv.org/html/2409.04701v3) — late chunking 원 논문
+- [Adaptive Chunking: Optimizing Chunking-Method Selection for RAG (arXiv 2603.25333)](https://arxiv.org/pdf/2603.25333) — 2026년 chunking 방식 선택 비교 연구
+- [Reconstructing Context: Evaluating Advanced Chunking Strategies for RAG (arXiv 2504.19754)](https://arxiv.org/pdf/2504.19754) — chunking 전략별 성능 재평가
+- [RAG Chunking Strategies 2026: 8 Methods Compared](https://denser.ai/blog/rag-chunking-strategies/) — recursive 512토큰 벤치마크 1위, semantic chunking 비용 배수 데이터
+- [Best Chunking Strategies for RAG (and LLMs) in 2026](https://www.firecrawl.dev/blog/best-chunking-strategies-rag) — chunk 크기/overlap 실무 가이드
+- [Anthropic — Contextual Retrieval](https://www.anthropic.com/news/contextual-retrieval) — chunk에 맥락 헤더를 부여하는 기법과 내부 테스트 결과(위 표에 이미 포함, Day 3에서 재인용)
+
+> 참고: overlap 무효과 분석(2026년 1월, SPLADE 리트리버 기준)은 여러 2026년 chunking 리뷰 아티클에서
+> 공통 인용되는 내용으로, 개별 원 출처 접근이 어려운 경우 위 2차 자료(denser.ai, firecrawl)의 요약을
+> 통해 확인했다. 실제 도입 전 자체 데이터로 재검증이 필요하다.
+
 ## 인터뷰 준비
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 검색 시스템 설계 문제와 유사한 사고 프레임

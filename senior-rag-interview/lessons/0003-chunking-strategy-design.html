@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — Chunking 전략 설계</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-top: 1px dashed var(--border);
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 3 · RAG Interview</div>
+    <h1>Chunking 전략 설계</h1>
+    <div class="subtitle">문서를 검색 가능한 단위로 자르는 결정이 검색 정밀도와 답변 완결성을 동시에 좌우하는 이유를 이해하고, 상황에 맞는 청킹 전략을 근거 있게 선택하는 능력</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "문서를 벡터DB에 넣기 전에 어떻게 chunking 하시겠습니까? chunk 크기와 분할 방식을 어떤 기준으로 정하나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "청크 사이즈를 키웠더니 답변 품질이 오히려 나빠졌습니다. 어떤 일이 벌어진 걸까요? 어떻게 진단하시겠어요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형 (운영형)</span>
+      "법률 계약서 같은 긴 정형 문서와 Slack 대화 로그 같은 짧고 비정형인 텍스트를 같은 파이프라인에서 청킹해야 합니다. 어떻게 설계하시겠습니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Chunking은 "자르는 방법"이 아니라 "검색 단위를 설계하는 일"이다</h2>
+
+    <h3>왜 Chunking이 필요한가</h3>
+    <p>
+      LLM과 임베딩 모델은 한 번에 처리할 수 있는 텍스트 길이(context window / max sequence length)에
+      한계가 있고, 문서 전체를 하나로 임베딩하면 그 문서 안의 여러 주제가 하나의 벡터로 뭉개져
+      <strong>검색 정밀도가 떨어진다</strong>. 그래서 문서를 더 작은 단위(chunk)로 나눠 각각 임베딩하고
+      인덱싱한다. 즉 chunking의 목적은 "긴 문서를 짧게 자르는 것"이 아니라,
+      <strong>"질문 하나에 정확히 대응할 수 있는 검색 단위를 만드는 것"</strong>이다.
+    </p>
+
+    <div class="callout callout-info">
+      <strong>Day 2와의 연결:</strong> Day 2에서 배운 것처럼, 파싱 단계에서 문서 구조(제목 계층, 표,
+      코드블록)가 보존되어 있어야 chunking이 그 구조를 활용할 수 있다. 구조가 파싱 단계에서 사라지면
+      아무리 좋은 chunking 전략을 써도 복구할 수 없다.
+    </div>
+
+    <h3>Chunk 크기의 근본적인 트레이드오프</h3>
+    <p>
+      chunk를 <strong>작게</strong> 자르면 임베딩이 하나의 주제에 집중되어 <strong>검색 정밀도(precision)</strong>가
+      올라간다. 반면 chunk를 <strong>크게</strong> 자르면 문맥이 풍부해져 LLM이 답변을 생성할 때
+      <strong>맥락 완결성(context completeness)</strong>이 올라간다. 이 둘은 서로 상충한다 —
+      작은 chunk는 검색은 잘 되지만 LLM이 받는 맥락이 부족해 답변이 단편적이 되고,
+      큰 chunk는 맥락은 풍부하지만 무관한 내용이 섞여 검색 자체가 부정확해지고 임베딩 비용도 늘어난다.
+    </p>
+
+    <table>
+      <tr>
+        <th>Chunk 크기</th>
+        <th>검색 정밀도</th>
+        <th>맥락 완결성</th>
+        <th>전형적 실패 양상</th>
+      </tr>
+      <tr>
+        <td>작음 (예: 128~256 토큰)</td>
+        <td>높음</td>
+        <td>낮음</td>
+        <td>질문에 딱 맞는 chunk는 찾지만, 답변에 필요한 앞뒤 맥락이 없어 LLM이 단편적/불완전하게 답함</td>
+      </tr>
+      <tr>
+        <td>큼 (예: 1500 토큰 이상)</td>
+        <td>낮음</td>
+        <td>높음</td>
+        <td>여러 주제가 섞여 임베딩이 흐려지고, 질문과 무관한 부분이 섞여 검색 순위가 부정확해짐</td>
+      </tr>
+    </table>
+
+    <p>
+      2026년 초 발표된 여러 벤더 벤치마크(아래 <code>실무 참고</code> 참조)에서 <strong>토큰 512개 내외</strong>가
+      대다수 일반 문서에 대한 합리적인 시작점으로 반복 관찰됐다. 다만 이는 "정답 값"이 아니라
+      <strong>시작점(starting point)</strong>이다 — 짧은 Q&A/FAQ성 콘텐츠는 256토큰 근처로,
+      법률/기술 문서처럼 긴 논증 구조를 가진 문서는 1000토큰 이상으로 조정하는 식으로,
+      반드시 문서 유형과 오프라인 평가 지표(Day 11의 Recall@k 등)로 검증해서 조정해야 한다.
+    </p>
+
+    <h3>분할 방식 1 — Fixed-size(고정 길이) chunking</h3>
+    <p>
+      문자 수나 토큰 수를 기준으로 기계적으로 자르는 방식이다. 구현이 가장 단순하고 빠르며 비용이
+      거의 들지 않지만, <strong>문장이나 단락 중간을 그대로 잘라버릴 수 있다</strong>. "이 계약은 다음과
+      같은 예외 사항이 있다:" 라는 문장 뒤에 나열되는 예외 목록이 다음 chunk로 잘려나가면,
+      "예외 사항"이라는 chunk와 그 내용을 담은 chunk가 분리되어 검색 시 둘 다 완전하지 않은
+      정보로 취급된다.
+    </p>
+
+    <h3>분할 방식 2 — Recursive(재귀적) chunking</h3>
+    <p>
+      단락 구분자(<code>\n\n</code>) → 줄바꿈(<code>\n</code>) → 문장 구분자(<code>. </code>) → 단어
+      순서로, <strong>자연스러운 경계를 우선적으로 찾아가며</strong> 목표 크기에 맞춰 나누는 방식이다.
+      목표 크기를 넘지 않는 선에서 가장 상위 레벨의 자연스러운 경계(단락 > 문장 > 단어)를 우선
+      사용하기 때문에, fixed-size보다 문장/단락이 잘리는 빈도가 훨씬 낮다.
+    </p>
+
+    <div class="callout callout-tip">
+      <strong>2026년 실무 기준:</strong> 여러 벤더의 2026년 벤치마크에서 <strong>recursive chunking이
+      대부분의 일반 문서 RAG에서 가장 안정적인 기본값(default)</strong>으로 반복 채택되고 있다.
+      속도가 빠르고 비용이 거의 없으면서도 semantic chunking에 근접하는 품질을 낸다는 것이 이유다.
+      "무조건 semantic chunking이 최선"이라는 통념은 최신 벤치마크와 어긋난다 — 아래에서 이어서 설명한다.
+    </div>
+
+    <h3>분할 방식 3 — 구조 인식(Structure-aware) chunking</h3>
+    <p>
+      Markdown의 헤더 레벨, HTML의 태그 구조, 표의 행/열 경계처럼 <strong>Day 2에서 파싱 단계에 보존한
+      구조 정보</strong>를 그대로 분할 기준으로 쓰는 방식이다. 예를 들어 "## 결제 정책" 같은 헤더를
+      만나면 그 지점을 chunk 경계로 우선 사용하고, 표는 통째로 하나의 chunk(혹은 표 전용 chunk)로
+      유지해서 행/열 관계가 깨지지 않게 한다. 구조가 명확한 문서(기술 문서, API 레퍼런스, 위키)에서는
+      recursive chunking보다 더 의미 있는 경계를 만든다.
+    </p>
+
+    <h3>분할 방식 4 — Semantic(의미 기반) chunking</h3>
+    <p>
+      문장 단위로 임베딩을 만든 뒤, 인접 문장 간 <strong>임베딩 유사도가 일정 임계값 이상 떨어지는
+      지점</strong>을 주제 전환 지점으로 보고 그곳에서 chunk를 나누는 방식이다. 이론적으로는 가장
+      "의미 있는" 경계를 만들지만, 문장 단위 임베딩을 대량으로 계산해야 해서 <strong>recursive
+      chunking 대비 수 배~10배 이상 느리고 비용도 크다</strong>는 것이 최근 벤치마크에서 반복 확인됐다.
+    </p>
+
+    <div class="callout callout-warn">
+      <strong>비용 대비 판단 기준:</strong> semantic chunking은 "항상 더 좋은 방법"이 아니라
+      <strong>"검색 정밀도가 실제 병목이고, 그 병목을 오프라인 평가로 확인했을 때만 도입을 고려하는
+      고급 옵션"</strong>으로 접근해야 한다. 비용 증가를 상쇄할 만큼 검색 지표가 개선되는지
+      A/B로 검증하지 않고 도입하면, 비용만 늘고 체감 품질 개선은 없는 경우가 실무에서 흔하다.
+    </div>
+
+    <h3>분할 방식 5 — Late chunking (임베딩 이후 분할)</h3>
+    <p>
+      일반적인 chunking은 "먼저 텍스트를 자르고, 각 조각을 독립적으로 임베딩"하는 순서다. 이 순서는
+      각 chunk 임베딩이 <strong>문서 전체의 맥락을 모른 채</strong> 만들어진다는 한계가 있다 — 예를 들어
+      "그 정책은 2024년에 개정되었다"라는 문장만 담긴 chunk는, "그 정책"이 무엇을 가리키는지 임베딩에
+      담지 못한다. <strong>Late chunking</strong>은 순서를 뒤집는다. 긴 컨텍스트를 지원하는 임베딩
+      모델로 <strong>문서(또는 긴 구간) 전체를 먼저 토큰 단위로 임베딩</strong>한 뒤, 그 결과로 나온
+      토큰별 임베딩을 chunk 경계에 맞춰 나중에 풀링(pooling)한다. 이렇게 하면 각 chunk 임베딩이
+      문서 전체의 맥락 정보를 반영하게 된다. 최근 연구에서는 문서 길이가 길수록 late chunking의
+      검색 성능 향상 폭이 커지는 경향이 보고됐다.
+    </p>
+
+    <h3>분할 방식 6 — Contextual Retrieval (chunk에 맥락 헤더 부여)</h3>
+    <p>
+      Anthropic이 제안한 <strong>Contextual Retrieval</strong>은 late chunking과 다른 각도에서 같은
+      문제(chunk가 문서 전체 맥락을 잃는 문제)를 푼다. 각 chunk를 임베딩하거나 BM25 인덱스에 넣기
+      <strong>전에</strong>, LLM으로 "이 chunk가 문서의 어느 부분이고 무엇에 대한 내용인지"를
+      요약한 짧은 맥락 문장(약 50~100 토큰)을 생성해서 chunk 앞에 붙인다. 즉 "그 정책은 2024년에
+      개정되었다" 라는 chunk가 "이 chunk는 사내 원격근무 정책 문서의 개정이력 섹션에 대한 내용이다.
+      그 정책은 2024년에 개정되었다"로 보강된다. Anthropic이 공개한 내부 테스트 결과 기준으로,
+      contextual embedding만으로 검색 실패율이 크게 줄었고, hybrid search·reranking과 결합하면
+      감소폭이 더 커지는 것으로 보고됐다.
+    </p>
+
+    <div class="callout callout-danger">
+      <strong>비용 함정:</strong> Contextual Retrieval은 <strong>chunk마다 LLM 호출이 필요</strong>하다는
+      것이 late chunking과의 실질적 차이다. 문서가 수백만 chunk 규모면 이 비용이 무시할 수 없다.
+      실무에서는 prompt caching(문서 전체를 캐시해두고 chunk별 요약만 반복 요청)이나 batch API로
+      비용을 억제하는 것이 사실상 필수다. 이 비용 구조를 언급하지 않고 "무조건 좋으니 도입하겠다"고만
+      답하면 트레이드오프 인식이 부족하다는 인상을 준다.
+    </div>
+
+    <h3>Overlap(겹침) — "무조건 넣는 것이 좋다"는 통념 재검토</h3>
+    <p>
+      전통적으로는 chunk 경계에서 앞뒤 chunk와 10~20% 정도 겹치게(overlap) 잘라서, 경계에 걸친
+      정보가 어느 한쪽 chunk에서는 완전하게 보이도록 하는 것이 정석으로 여겨졌다. 그런데 2026년 초
+      발표된 한 체계적 분석(SPLADE 기반 검색기 대상)에서는 <strong>overlap이 측정 가능한 검색 품질
+      개선을 만들지 못하면서 인덱싱 비용(저장 공간, 임베딩 비용)만 늘렸다</strong>는 결과가 보고됐다.
+    </p>
+
+    <div class="callout callout-warn">
+      <strong>결론:</strong> "overlap은 항상 20% 넣는다"처럼 값을 고정해서 답하는 것은 최신 근거와
+      어긋난다. overlap의 효과는 <strong>리트리버 종류, 문서 특성, chunk 크기</strong>에 따라 달라지므로,
+      기본값으로 소량 적용해보되 <strong>실제 검색 지표(Day 11)로 검증해서 유지·제거를 결정</strong>해야
+      한다는 것이 최신 실무 기준에 더 가깝다.
+    </div>
+
+    <h3>어떤 방식을 언제 쓰는가 — 요약 비교</h3>
+    <table>
+      <tr>
+        <th>방식</th>
+        <th>강점</th>
+        <th>비용/복잡도</th>
+        <th>적합한 상황</th>
+      </tr>
+      <tr>
+        <td>Fixed-size</td>
+        <td>가장 단순, 매우 저렴</td>
+        <td>매우 낮음</td>
+        <td>프로토타입, 구조가 거의 없는 로그성 텍스트</td>
+      </tr>
+      <tr>
+        <td>Recursive</td>
+        <td>자연스러운 경계, 안정적 품질</td>
+        <td>낮음</td>
+        <td>대부분의 일반 문서 — 실무 기본값(default)</td>
+      </tr>
+      <tr>
+        <td>구조 인식</td>
+        <td>표/헤더 등 구조를 그대로 보존</td>
+        <td>낮음~중간</td>
+        <td>Markdown/HTML/위키/기술 문서처럼 구조가 명확한 소스</td>
+      </tr>
+      <tr>
+        <td>Semantic</td>
+        <td>주제 전환 경계를 가장 정교하게 포착</td>
+        <td>높음 (임베딩 호출 다수)</td>
+        <td>검색 정밀도가 실측된 병목일 때만</td>
+      </tr>
+      <tr>
+        <td>Late chunking</td>
+        <td>chunk 임베딩에 문서 전체 맥락 반영</td>
+        <td>중간 (긴 컨텍스트 임베딩 모델 필요)</td>
+        <td>대명사·지시어가 많은 긴 문서, 문맥 의존성이 큰 텍스트</td>
+      </tr>
+      <tr>
+        <td>Contextual Retrieval</td>
+        <td>chunk 자체에 맥락을 명시적으로 주입, hybrid/rerank와 시너지</td>
+        <td>높음 (chunk당 LLM 호출)</td>
+        <td>검색 실패율이 높고 비용 여력이 있는 고가치 도메인</td>
+      </tr>
+    </table>
+
+    <div class="source-note">
+      참고: recursive 512토큰 벤치마크 1위(2026년 2월 벤더 벤치마크), semantic chunking 비용 배수,
+      overlap 무효과 분석(2026년 1월, SPLADE 기준), late chunking 문서 길이 상관 효과,
+      Anthropic Contextual Retrieval 내부 테스트 결과는 모두 레슨 작성 시점 기준 최신 공개 자료를
+      바탕으로 했다. 벤치마크 수치는 벤더/데이터셋마다 달라질 수 있으므로, 실제 도입 전에는
+      반드시 자신의 도메인 데이터로 재검증해야 한다. 세부 출처는 <code>RESOURCES.md</code> 참고.
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <p>
+      이 질문은 <strong>"어떤 chunking 라이브러리 함수를 쓸 줄 아는가"</strong>가 아니라
+      <strong>"검색 단위 설계를 트레이드오프로 사고할 수 있는가"</strong>를 본다.
+    </p>
+
+    <ul>
+      <li>
+        <strong>정밀도-맥락 트레이드오프를 이해하는가:</strong> chunk 크기를 늘리거나 줄이는 결정이
+        검색과 생성 양쪽에 어떤 영향을 주는지 구조적으로 설명할 수 있는가
+      </li>
+      <li>
+        <strong>고급 기법을 비용 대비 효과로 판단하는가:</strong> semantic chunking, late chunking,
+        contextual retrieval을 "무조건 좋은 최신 기법"으로 나열만 하는지, 아니면 비용과 도입 조건을
+        함께 설명하는지
+      </li>
+      <li>
+        <strong>근거 없는 고정값을 경계하는가:</strong> "chunk 512, overlap 20%"를 정답처럼 외워
+        말하는지, 아니면 시작점으로 제시하고 오프라인 평가로 검증해야 한다고 말하는지
+      </li>
+      <li>
+        <strong>Ingestion(Day 2)과의 연결을 아는가:</strong> chunking이 파싱 단계의 구조 보존에
+        의존한다는 것, 그리고 chunking 결과가 다음 단계인 embedding(Day 4)과 검색 품질(Day 11)에
+        어떻게 이어지는지 파이프라인으로 사고하는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      Senior 엔지니어는 "이 chunking 방법이 최신이니까 쓴다"고 답하지 않는다.
+      <strong>자신의 도메인에서 무엇이 병목인지 먼저 진단하고, 그 병목에 맞는 기법을 비용과 함께
+      선택</strong>한다. RAG는 빠르게 변하는 분야이므로, "최신 기법을 알고 있다"보다
+      <strong>"최신 기법을 도입 여부를 판단하는 기준"</strong>을 갖췄는지가 더 중요한 신호다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: FAQ 문서를 너무 잘게 잘라서 답변이 단편적으로 나옴</h3>
+    <p>
+      chunk를 128토큰으로 매우 작게 잘랐더니, "환불 절차"를 묻는 질문에 대해 절차의 3단계 중
+      1단계만 담긴 chunk가 검색되어 답변이 불완전했다.
+      → chunk 크기를 늘리거나, <strong>작은 chunk로 검색은 정밀하게 하되 LLM에는 그 chunk가 속한
+      상위 섹션(부모 chunk) 전체를 함께 넘기는 parent-document / small-to-big 검색</strong> 패턴을
+      적용한다.
+    </p>
+
+    <h3>상황 2: 계약서 표가 chunk 경계에서 잘려 숫자가 의미를 잃음</h3>
+    <p>
+      fixed-size chunking이 표를 행 중간에서 잘라, "계약금 3,000만원"이라는 행이 "계약금"과
+      "3,000만원"으로 분리된 chunk에 각각 들어갔다.
+      → Day 2에서 보존한 표 구조 메타데이터를 활용해 <strong>표는 통째로 하나의 chunk로 유지</strong>하는
+      구조 인식 chunking을 적용한다.
+    </p>
+
+    <h3>상황 3: 대명사가 많은 회의록에서 chunk 단독으로는 무슨 내용인지 알 수 없음</h3>
+    <p>
+      "그 안건은 다음 주에 다시 논의하기로 했다"라는 chunk가 "그 안건"이 무엇인지 정보 없이
+      독립적으로 임베딩되어, 관련 없는 질문에도 자주 검색되는 노이즈가 됐다.
+      → <strong>Contextual Retrieval</strong>로 chunk 앞에 "이 chunk는 8월 15일 제품 로드맵
+      회의록 중 예산안 관련 발언이다"라는 맥락을 붙이거나, <strong>late chunking</strong>으로
+      회의록 전체 맥락이 반영된 임베딩을 만든다.
+    </p>
+
+    <h3>상황 4: overlap을 20%로 설정했는데 검색 품질 개선이 체감되지 않음</h3>
+    <p>
+      관행적으로 overlap 20%를 적용했지만 A/B 테스트에서 Recall@k가 유의미하게 개선되지 않았고,
+      인덱스 저장 용량과 임베딩 비용만 늘었다.
+      → overlap을 기본값으로 무조건 넣지 말고, <strong>오프라인 평가로 overlap 유무에 따른 검색
+      지표 차이를 측정</strong>해서 실제 이득이 없으면 제거한다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>문서 유형과 구조를 먼저 파악하기</strong>
+        "Day 2에서 보존한 구조 정보(헤더, 표)가 있는 문서인지, 구조가 거의 없는 대화형 텍스트인지부터
+        구분합니다. 구조가 있으면 구조 인식 chunking을 우선 고려합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Recursive chunking을 기본값으로 시작하기</strong>
+        "특별한 이유가 없다면 recursive character splitting을 기본값으로 씁니다. 구현이 단순하고
+        비용이 거의 없으면서도 대부분의 벤치마크에서 안정적인 품질을 보이기 때문입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Chunk 크기를 트레이드오프로 정하기</strong>
+        "512토큰 근처를 시작점으로 잡되, 짧은 Q&A성 콘텐츠는 작게, 긴 논증 구조의 문서는 크게
+        조정합니다. 최종 값은 오프라인 검색 평가 지표로 검증합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Overlap을 관행이 아니라 실험으로 결정하기</strong>
+        "overlap을 기본값으로 무조건 넣지 않고, 있을 때와 없을 때의 검색 지표를 비교해서 실제
+        개선이 있을 때만 유지합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>고급 기법 도입 여부를 병목 진단 후 판단하기 (Senior 포인트)</strong>
+        "검색 정밀도가 병목이면 semantic chunking을, chunk가 문서 맥락을 잃는 게 문제면 late
+        chunking이나 contextual retrieval을 검토합니다. 다만 이들은 비용이 커서, 병목이 실측으로
+        확인된 뒤에만 도입합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>Chunking 자체를 평가 루프에 포함시키기</strong>
+        "chunking 전략은 한 번 정하고 끝내지 않고, embedding 모델 교체나 문서 특성 변화가 있을 때
+        재검증합니다. Recall@k, chunk 단위 relevance 같은 지표로 지속 관찰합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "저는 chunking을 '문서를 자르는 방법'이 아니라 '질문에 정확히 대응할 검색 단위를 설계하는
+        문제'로 봅니다. 핵심은 chunk가 작을수록 검색 정밀도는 오르지만 LLM에 넘어가는 맥락이
+        부족해지고, 크면 그 반대가 된다는 트레이드오프입니다.
+      </p>
+      <p>
+        기본값으로는 recursive character splitting을 씁니다. 단락-문장-단어 순으로 자연스러운
+        경계를 우선 찾기 때문에 fixed-size보다 문장이 잘리는 문제가 적고, semantic chunking만큼
+        비용이 들지 않으면서도 실무 벤치마크에서 꾸준히 안정적인 결과를 보입니다. 크기는 512토큰
+        근처를 시작점으로 잡고, 짧은 FAQ성 콘텐츠는 줄이고 법률·기술 문서처럼 긴 문서는 늘리는
+        식으로 문서 유형에 맞게 조정한 뒤, 최종적으로는 오프라인 검색 평가로 검증합니다.
+      </p>
+      <p>
+        overlap은 관행적으로 20% 넣는 것을 기본값으로 삼지 않습니다. 최근 연구에서 overlap이
+        검색 품질 개선 없이 인덱싱 비용만 늘리는 경우가 보고됐기 때문에, 실제로 overlap이
+        있을 때와 없을 때의 지표를 비교해서 결정합니다.
+      </p>
+      <p>
+        문서 구조가 명확하면(Markdown, 표가 있는 위키 문서 등) 구조 인식 chunking으로 표나
+        헤더 섹션이 잘리지 않게 합니다. 그리고 대명사나 지시어가 많아 chunk가 독립적으로는
+        의미를 알기 어려운 도메인이면, chunk에 짧은 맥락을 붙이는 contextual retrieval이나,
+        문서 전체를 먼저 임베딩한 뒤 나중에 chunk 단위로 나누는 late chunking을 검토합니다.
+        다만 이 두 기법은 각각 chunk당 LLM 호출 비용, 긴 컨텍스트 임베딩 모델이 필요하다는
+        비용 부담이 있어서, 검색 실패율이 실측으로 확인된 경우에만 도입합니다. 마지막으로
+        chunking 전략은 한 번 정하고 끝내지 않고, 임베딩 모델을 바꾸거나 문서 특성이 바뀌면
+        다시 평가합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "chunk 크기를 어떻게 정확히 정하시겠어요? 숫자를 말해보세요."</h3>
+    <p><strong>약한 답변:</strong> "512토큰으로 고정합니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "512토큰은 시작점일 뿐 정답이 아닙니다. 실제로는 세 가지를 함께 고려합니다. 첫째, 문서
+      유형 — FAQ처럼 질문-답변이 짧고 독립적인 콘텐츠는 256토큰 근처가, 법률 계약서처럼 긴
+      논증이 이어지는 문서는 1000토큰 이상이 유리한 경향이 있습니다. 둘째, embedding 모델의
+      최대 입력 길이 제약(Day 4에서 자세히 다룹니다) — chunk가 모델의 max sequence length를
+      넘으면 뒷부분이 잘려나가거나 품질이 떨어집니다. 셋째, 실제 서비스의 질문 패턴 — 사용자
+      질문이 짧고 구체적인지, 여러 섹션을 종합해야 답이 나오는지에 따라 최적 크기가 다릅니다.
+      이 세 가지를 반영한 후보 몇 개를 오프라인 평가로 비교해서 결정합니다."
+    </p>
+
+    <h3>F2. "Overlap은 항상 넣어야 하나요?"</h3>
+    <p><strong>약한 답변:</strong> "네, 경계 정보 손실을 막기 위해 항상 20% 정도 넣습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "overlap의 원래 취지는 경계에 걸친 정보가 한쪽 chunk에서는 완전하게 보이도록 하는 것이지만,
+      2026년 초 공개된 한 체계적 분석에서는 특정 리트리버 조합에서 overlap이 측정 가능한 검색
+      품질 개선 없이 인덱싱 비용만 늘렸다는 결과가 나왔습니다. 그래서 저는 overlap을 기본값으로
+      맹목적으로 넣지 않고, 소량(예: 10%)으로 시작해서 있을 때와 없을 때의 Recall@k 차이를
+      측정한 뒤 실제 이득이 있을 때만 유지합니다. 이건 recursive chunking처럼 자연스러운
+      경계를 이미 우선하는 방식에서는 overlap의 필요성이 애초에 fixed-size보다 낮다는 점과도
+      연결됩니다."
+    </p>
+
+    <h3>F3. "Semantic chunking과 late chunking, contextual retrieval의 차이를 설명해주세요."</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "셋 다 '단순 기계적 분할의 한계를 넘는다'는 목표는 같지만 접근이 다릅니다. Semantic
+      chunking은 문장 임베딩 유사도로 주제 전환 지점을 찾아 <strong>분할 경계 자체</strong>를
+      더 정교하게 만드는 기법입니다. Late chunking은 분할 순서를 뒤집어서, 문서 전체를 먼저
+      긴 컨텍스트 임베딩 모델로 임베딩한 뒤 그 결과를 chunk 단위로 나눠서, <strong>각 chunk
+      임베딩에 문서 전체 맥락이 반영</strong>되게 합니다. Contextual retrieval은 임베딩 모델을
+      바꾸는 게 아니라, LLM으로 chunk 앞에 <strong>설명 문장을 명시적으로 붙여서</strong> 맥락을
+      주입하는 방식이라 BM25 같은 sparse 인덱스에도 똑같이 적용할 수 있다는 게 차별점입니다.
+      비용 구조도 달라서, semantic chunking은 문장 임베딩 호출이, late chunking은 긴 컨텍스트
+      임베딩 모델이, contextual retrieval은 chunk당 LLM 호출이 각각의 병목입니다."
+    </p>
+
+    <h3>F4. "Contextual retrieval을 도입하면 chunk당 LLM 호출 비용이 문제 될 텐데, 어떻게 관리하시겠어요?"</h3>
+    <p><strong>약한 답변:</strong> "비용이 좀 들어도 품질이 중요하니 그냥 감수합니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "문서 전체를 매 chunk 요청마다 새로 프롬프트에 넣으면 비용이 chunk 수에 비례해서 커지므로,
+      prompt caching으로 문서 본문을 한 번만 캐시해두고 chunk별 요약 요청만 반복하는 방식으로
+      비용을 크게 낮출 수 있습니다. 초기 대량 적재처럼 실시간성이 필요 없는 경우에는 batch API로
+      처리해서 단가를 더 낮춥니다. 그리고 모든 문서에 일괄 적용하지 않고, 검색 실패율이 높거나
+      대명사·지시어 의존도가 높은 <strong>고가치 도메인부터 선별 적용</strong>해서 비용 대비
+      효과를 검증한 뒤 확대합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>chunk 크기를 <strong>정밀도-맥락 트레이드오프</strong>로 설명한다</li>
+          <li>recursive chunking을 <strong>비용/품질 균형이 맞는 기본값</strong>으로 근거 있게 제시한다</li>
+          <li>semantic/late chunking/contextual retrieval을 <strong>비용과 도입 조건</strong>과 함께 설명한다</li>
+          <li>overlap을 <strong>실험으로 검증할 대상</strong>으로 다루고, 최신 연구 결과를 인용한다</li>
+          <li>Day 2(구조 보존)와 chunking의 연결을 자연스럽게 언급한다</li>
+          <li>chunking을 <strong>지속적으로 재평가되는 설계 결정</strong>으로 취급한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"chunk는 512, overlap은 20%로 합니다" — <strong>근거 없는 암기값 나열</strong></li>
+          <li>"작을수록 좋다" 또는 "클수록 좋다"처럼 한쪽으로만 단정한다</li>
+          <li>semantic chunking을 무조건 "최신이니까 더 좋다"고 답한다 (비용 언급 없음)</li>
+          <li>overlap을 "항상 넣어야 경계 정보가 안 사라진다"고만 답한다</li>
+          <li>chunking을 문서 구조나 다음 단계(embedding, 검색 평가)와 분리해서 설명한다</li>
+          <li>chunking 전략을 "한 번 정하면 끝"이라고 여긴다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 chunking을 "정답이 정해진 설정값 문제"가 아니라
+      <strong>"트레이드오프를 이해하고 데이터로 검증하는 설계 문제"</strong>로 다룬다. 특히 RAG처럼
+      빠르게 변하는 분야에서는, 최신 기법의 이름을 아는 것보다 <strong>그 기법의 비용과 도입 조건을
+      함께 말할 수 있는지</strong>가 시니어를 가르는 신호다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "chunk는 작을수록 검색이 잘 되니 무조건 좋다"</h3>
+    <p>
+      <strong>사실:</strong> chunk가 작으면 검색 정밀도는 오르지만, LLM이 답변을 만들 때 필요한
+      맥락이 부족해져 답변이 단편적이거나 불완전해질 수 있다. 정밀도와 맥락 완결성은 상충하는
+      목표이며, 어느 한쪽만 극대화하면 다른 쪽이 희생된다.
+    </p>
+
+    <h3>오해 2: "overlap은 항상 검색 품질을 높인다"</h3>
+    <p>
+      <strong>사실:</strong> 2026년 초 발표된 체계적 분석에서 특정 리트리버 조합 기준으로 overlap이
+      측정 가능한 이득 없이 비용만 늘린 사례가 보고됐다. overlap의 효과는 리트리버와 chunking
+      방식에 따라 달라지므로, 고정 관행이 아니라 실험으로 검증해야 한다.
+    </p>
+
+    <h3>오해 3: "semantic chunking이 항상 가장 좋은 방법이다"</h3>
+    <p>
+      <strong>사실:</strong> semantic chunking은 recursive chunking보다 계산 비용이 훨씬 크고,
+      2026년 벤치마크에서도 recursive chunking이 다수 시나리오에서 비슷하거나 더 나은 end-to-end
+      정확도를 보인 사례가 보고됐다. "의미 기반"이라는 이름이 항상 더 나은 결과를 보장하지 않으며,
+      비용 대비 이득을 측정해야 한다.
+    </p>
+
+    <h3>오해 4: "Contextual retrieval과 late chunking은 같은 기법이다"</h3>
+    <p>
+      <strong>사실:</strong> 목적(문서 맥락을 chunk에 반영)은 비슷하지만 방법이 다르다.
+      late chunking은 임베딩 계산 순서를 바꾸는 방식이고, contextual retrieval은 LLM으로
+      명시적인 설명 텍스트를 chunk에 추가하는 방식이다. 후자는 sparse 인덱스(BM25)에도 적용
+      가능하다는 차이가 있고, 비용 구조도 다르다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Chunking 전략 설계 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>항목</th>
+        <th>확인할 것</th>
+        <th>누락 시 위험</th>
+      </tr>
+      <tr>
+        <td>기본 분할 방식</td>
+        <td>fixed-size 대신 recursive 혹은 구조 인식 chunking을 기본값으로 쓰는가</td>
+        <td><span class="badge badge-yellow">문장/표가 잘려 검색 품질 저하</span></td>
+      </tr>
+      <tr>
+        <td>chunk 크기 근거</td>
+        <td>문서 유형별로 크기를 다르게 설정하고 오프라인 평가로 검증했는가</td>
+        <td><span class="badge badge-yellow">정밀도-맥락 트레이드오프 미스매치</span></td>
+      </tr>
+      <tr>
+        <td>overlap 검증</td>
+        <td>overlap을 관행이 아니라 지표 비교로 결정했는가</td>
+        <td><span class="badge badge-yellow">불필요한 저장/임베딩 비용</span></td>
+      </tr>
+      <tr>
+        <td>구조 보존 연계</td>
+        <td>표/헤더 등 Day 2에서 보존한 구조를 chunk 경계에 반영하는가</td>
+        <td><span class="badge badge-red">표/목록 의미 손상</span></td>
+      </tr>
+      <tr>
+        <td>고급 기법 도입 기준</td>
+        <td>semantic/late chunking/contextual retrieval을 병목 실측 후 선별 도입하는가</td>
+        <td><span class="badge badge-red">비용 대비 효과 없는 과잉 투자</span></td>
+      </tr>
+      <tr>
+        <td>재평가 주기</td>
+        <td>임베딩 모델 교체·문서 특성 변화 시 chunking 전략을 재검증하는가</td>
+        <td><span class="badge badge-green">문제 아님 (있으면 조기 발견)</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"문서를 일정 크기로 잘라서 넣습니다" 수준에서 멈추고, 크기 근거나 트레이드오프를
+      설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>chunk가 작으면 정밀하고 크면 맥락이 풍부하다는 기본 트레이드오프는 알지만,
+      recursive/구조 인식 같은 구체적 방식 차이는 설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>recursive, semantic, 구조 인식 chunking의 차이와 semantic chunking의 비용 문제를
+      설명할 수 있고, overlap을 무조건 넣지 않아야 할 수도 있다는 것을 인지함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>chunk 크기/overlap을 병목 진단과 오프라인 평가로 결정하는 프로세스를 설명하고,
+      late chunking과 contextual retrieval의 원리·차이·비용 구조까지 정확히 구분하며,
+      이 모든 결정을 Ingestion(Day 2)-embedding(Day 4)-검색 평가(Day 11)로 이어지는
+      파이프라인 관점에서 자연스럽게 답변함</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. chunk 크기를 늘리거나 줄일 때 검색과 생성 각각에 어떤 영향이 생기는지 설명할 수 있는가?<br>
+      2. recursive chunking이 왜 실무 기본값으로 자주 쓰이는지 설명할 수 있는가?<br>
+      3. late chunking과 contextual retrieval의 원리 차이와 각각의 비용 구조를 설명할 수 있는가?<br>
+      4. overlap을 왜 관행이 아니라 실험으로 검증해야 하는지 최신 근거를 들어 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>Chunking은 검색 단위 설계 문제</strong>다. chunk 크기는 검색 정밀도와 맥락 완결성의 트레이드오프다.</li>
+      <li><strong>Recursive chunking이 실무 기본값</strong>이다. fixed-size보다 자연스러운 경계를 지키면서도 semantic chunking보다 저렴하다.</li>
+      <li><strong>구조 인식 chunking</strong>은 Day 2에서 보존한 헤더/표 구조를 그대로 활용해 표·목록이 잘리지 않게 한다.</li>
+      <li><strong>Semantic chunking, late chunking, contextual retrieval</strong>은 비용이 큰 고급 기법이며, 병목이 실측된 경우에만 선별 도입한다.</li>
+      <li><strong>Overlap은 관행이 아니라 실험으로 검증</strong>한다 — 최근 연구는 무조건적인 이득을 부정한다.</li>
+      <li>Chunking 전략은 <strong>한 번 정하고 끝나지 않고</strong>, 임베딩 모델 교체나 문서 특성 변화에 맞춰 재평가한다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 3 완료 · 다음: Day 4 — Embedding 모델 선택과 트레이드오프</span>
+  </div>
+
+</div>
+</body>
+</html>
