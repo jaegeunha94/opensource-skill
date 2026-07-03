@@ -15,16 +15,16 @@
 | 9 | 2026-06-29 | 사용성 테스트 — 계획·진행·결과 분석 | [0009-usability-testing.html](lessons/0009-usability-testing.html) |
 | 10 | 2026-06-30 | 반응형 & 모바일 UX — 용어와 패턴 | [0010-responsive-mobile-ux.html](lessons/0010-responsive-mobile-ux.html) |
 | 11 | 2026-07-01 | UX 글쓰기 — 마이크로카피와 인터페이스 언어 | [0011-ux-writing-microcopy.html](lessons/0011-ux-writing-microcopy.html) |
+| 12 | 2026-07-03 | 다크 패턴(Dark Pattern)과 윤리적 디자인 | [0012-dark-patterns-ethical-design.html](lessons/0012-dark-patterns-ethical-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 12 | 다크 패턴(Dark Pattern)과 윤리적 디자인 | Confirmshaming, Roach Motel, Sneak into Basket, Forced Continuity, Nagging |
 
 ## 현재 학습 위치
 
-**Day 11 완료** — Day 12 (다크 패턴과 윤리적 디자인) 예정.
+**Day 12 완료** — 다음 주제 미정. 다음 세션에서 MISSION.md와 완료 내용을 바탕으로 새 주제를 선정 예정.
 
 ## 습득한 핵심 개념
 
@@ -108,6 +108,10 @@
 - [x] Tooltip (툴팁) — Day 11
 - [x] Empty State Copy (빈 상태 카피) — Day 11
 - [x] Confirmation Message (확인 메시지) — Day 11
-- [ ] Dark Pattern (다크 패턴) — 예정 Day 12
-- [ ] Confirmshaming — 예정 Day 12
-- [ ] Roach Motel — 예정 Day 12
+- [x] Dark Pattern (다크 패턴) — Day 12
+- [x] Confirmshaming (컨펌셰이밍) — Day 12
+- [x] Roach Motel (로치 모텔) — Day 12
+- [x] Sneak into Basket (스니크 인투 바스켓) — Day 12
+- [x] Forced Continuity (포스드 컨티뉴이티) — Day 12
+- [x] Nagging (내깅) — Day 12
+- [x] Ethical Design (윤리적 디자인) — Day 12

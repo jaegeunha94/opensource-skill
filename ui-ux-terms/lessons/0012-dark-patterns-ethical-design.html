@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 12 — 다크 패턴(Dark Pattern)과 윤리적 디자인</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; font-size: 16px; line-height: 1.7; color: #1a1a2e; background: #f8f9fc; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+    /* header */
+    header { background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%); color: #fff; border-radius: 12px; padding: 2rem 2rem 1.75rem; margin-bottom: 2rem; }
+    header .day-badge { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-bottom: 0.5rem; }
+    header h1 { font-size: 1.7rem; font-weight: 700; line-height: 1.3; }
+    header p.subtitle { margin-top: 0.6rem; opacity: 0.9; font-size: 0.95rem; }
+
+    /* nav breadcrumb */
+    .breadcrumb { font-size: 0.82rem; color: #6c757d; margin-bottom: 1.5rem; }
+    .breadcrumb a { color: #3a7bd5; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* section */
+    section { background: #fff; border-radius: 10px; padding: 1.75rem 2rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    section h2 { font-size: 1.15rem; font-weight: 700; color: #3a7bd5; margin-bottom: 1rem; border-left: 4px solid #3a7bd5; padding-left: 0.75rem; }
+    section h3 { font-size: 1rem; font-weight: 700; color: #2d3436; margin: 1.4rem 0 0.5rem; }
+    section p { margin-bottom: 0.85rem; }
+    section ul, section ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    section ul li, section ol li { margin-bottom: 0.4rem; }
+
+    /* term card */
+    .term-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+    .term-card .term-title { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.25rem; }
+    .term-card .term-eng { font-size: 0.82rem; color: #6c757d; margin-bottom: 0.5rem; font-style: italic; }
+    .term-card .term-body { font-size: 0.93rem; }
+
+    /* table */
+    .table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+    th { background: #f0f4ff; color: #3a7bd5; font-weight: 700; text-align: left; padding: 0.6rem 0.9rem; border-bottom: 2px solid #d0d9f5; }
+    td { padding: 0.55rem 0.9rem; border-bottom: 1px solid #eee; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fbff; }
+
+    /* callout */
+    .callout { border-left: 4px solid #00d2ff; background: #f0faff; border-radius: 0 8px 8px 0; padding: 0.9rem 1.1rem; margin: 1rem 0; font-size: 0.9rem; }
+    .callout.warn { border-color: #f39c12; background: #fffbf0; }
+    .callout.tip  { border-color: #27ae60; background: #f0fff4; }
+
+    /* code */
+    code { background: #f4f4f8; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.85em; font-family: 'Fira Code', monospace; }
+    pre { background: #1e1e2e; color: #cdd6f4; border-radius: 8px; padding: 1.1rem 1.3rem; overflow-x: auto; font-size: 0.85rem; margin: 0.75rem 0; }
+    pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+
+    /* copy compare */
+    .compare-row { display: flex; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .compare-col { flex: 1 1 240px; border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.9rem; }
+    .compare-col.bad { background: #fff4f4; border-left: 4px solid #e74c3c; }
+    .compare-col.good { background: #f0fff4; border-left: 4px solid #27ae60; }
+    .compare-col .label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+    .compare-col.bad .label { color: #e74c3c; }
+    .compare-col.good .label { color: #27ae60; }
+
+    /* quiz */
+    .quiz { background: #fafbfe; border: 1px solid #d0d9f5; border-radius: 8px; padding: 1.25rem 1.4rem; margin-top: 1.5rem; }
+    .quiz h3 { font-size: 1rem; color: #3a7bd5; margin-bottom: 0.75rem; }
+    .quiz .q { font-weight: 600; margin-bottom: 0.6rem; }
+    .quiz .options li { margin-bottom: 0.3rem; cursor: pointer; padding: 0.3rem 0.5rem; border-radius: 4px; transition: background 0.15s; }
+    .quiz .options li:hover { background: #e8f0ff; }
+    .quiz details { margin-top: 0.75rem; }
+    .quiz details summary { cursor: pointer; color: #3a7bd5; font-size: 0.9rem; }
+    .quiz details p { margin-top: 0.5rem; font-size: 0.9rem; background: #f0fff4; border-left: 3px solid #27ae60; padding: 0.6rem 0.8rem; border-radius: 0 6px 6px 0; }
+
+    /* footer */
+    footer { text-align: center; font-size: 0.82rem; color: #aaa; margin-top: 2.5rem; }
+    footer a { color: #3a7bd5; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="breadcrumb">
+    <a href="./index.html">← UI/UX 용어 학습 목록</a>
+  </div>
+
+  <header>
+    <div class="day-badge">Day 12 · UI/UX 용어</div>
+    <h1>다크 패턴(Dark Pattern)과 윤리적 디자인</h1>
+    <p class="subtitle">Confirmshaming · Roach Motel · Sneak into Basket · Forced Continuity · Nagging</p>
+  </header>
+
+  <!-- ───────────────── 1. 왜 이 용어가 중요한가 ───────────────── -->
+  <section>
+    <h2>1. 왜 이 용어들이 중요한가</h2>
+    <p>
+      UI/UX의 설득 기법은 사용자를 돕는 방향으로도, 속이는 방향으로도 쓰일 수 있다.
+      <strong>다크 패턴(Dark Pattern)</strong>은 사용자의 의도가 아닌 방향으로 행동하도록
+      의도적으로 설계된 인터페이스를 가리키는 용어로, UX 디자이너 Harry Brignull이
+      2010년 darkpatterns.org(현 deceptive.design)를 통해 체계화했다.
+    </p>
+    <p>
+      디자인 리뷰에서 "이 플로우 해지가 너무 어렵다", "이 문구가 죄책감을 유발한다"는
+      지적이 나올 때, 어떤 다크 패턴 유형에 해당하는지 정확히 이름 붙일 수 있어야
+      개발자·디자이너·PM·법무가 같은 기준으로 리스크를 판단하고 대안을 논의할 수 있다.
+      또한 EU DSA(디지털서비스법), 미국 FTC 규제처럼 다크 패턴을 명시적으로 규제하는
+      법 조항이 늘고 있어, 실무에서 이 용어는 더 이상 이론이 아니라 컴플라이언스 이슈다.
+    </p>
+  </section>
+
+  <!-- ───────────────── 2. 핵심 용어 카드 ───────────────── -->
+  <section>
+    <h2>2. 핵심 용어 카드</h2>
+
+    <div class="term-card">
+      <div class="term-title">다크 패턴</div>
+      <div class="term-eng">Dark Pattern / Deceptive Pattern</div>
+      <div class="term-body">
+        사용자의 이익보다 비즈니스의 이익(가입, 결제, 데이터 제공)을 우선하도록
+        <strong>의도적으로 설계된 UI/UX</strong>. 단순한 나쁜 디자인(bad UX)과 구분되는
+        핵심은 "의도성"이다 — 우연히 불편한 것이 아니라, 사용자가 원치 않는 행동을
+        하도록 <em>계획적으로</em> 설계됐다는 점이 다크 패턴을 정의한다. 최근에는
+        업계 표준 용어로 <strong>Deceptive Pattern</strong>(기만적 패턴)이라는
+        표현도 함께 쓰인다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">컨펌셰이밍</div>
+      <div class="term-eng">Confirmshaming</div>
+      <div class="term-body">
+        거절 버튼에 사용자가 죄책감이나 부끄러움을 느끼게 하는 문구를 넣어 원하는
+        행동(구독, 동의)을 유도하는 패턴. 예: "구독하기" 버튼 옆에 "아니요, 저는
+        할인 받고 싶지 않아요" 같은 자기 비하성 거절 문구를 배치한다. 정상적인
+        거절 옵션은 <strong>중립적인 언어</strong>("나중에", "닫기")를 써야 한다는
+        것이 대비되는 원칙이다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">로치 모텔</div>
+      <div class="term-eng">Roach Motel</div>
+      <div class="term-body">
+        "바퀴벌레는 들어가기는 쉬워도 나오기는 어렵다"는 살충제 광고 문구에서 이름을
+        딴 패턴. <strong>가입·구독은 클릭 한 번으로 쉽게</strong> 만들고, <strong>해지는
+        전화 상담·다단계 확인·숨겨진 메뉴</strong>를 거치도록 설계해 이탈을 막는다.
+        "가입은 온라인, 해지는 전화로만" 같은 비대칭 구조가 대표 사례이며, 미국
+        FTC는 이를 "Click to Cancel" 규칙으로 직접 규제하려 한 바 있다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">스니크 인투 바스켓</div>
+      <div class="term-eng">Sneak into Basket</div>
+      <div class="term-body">
+        사용자가 명시적으로 선택하지 않은 상품이나 옵션(보험, 보증 연장, 기부금 등)을
+        <strong>결제 직전 장바구니에 자동으로 추가</strong>하는 패턴. 흔히 체크박스가
+        기본으로 <em>선택된 상태(pre-checked)</em>로 제공되어 사용자가 직접 해제하지
+        않으면 그대로 결제가 진행된다. 윤리적 대안은 옵트인(opt-in) 기본값 — 사용자가
+        직접 체크해야만 추가되는 구조다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">포스드 컨티뉴이티</div>
+      <div class="term-eng">Forced Continuity</div>
+      <div class="term-body">
+        무료 체험(free trial) 신청 시 결제 카드 정보를 미리 받아두고, <strong>체험
+        종료를 명확히 알리지 않은 채 자동으로 유료 결제로 전환</strong>하는 패턴.
+        해지 안내가 이메일 한 통에만 묻혀 있거나, 체험 종료일이 화면 어디에도
+        표시되지 않는 경우가 흔하다. 윤리적 설계는 체험 종료 며칠 전 알림과 명확한
+        해지 경로 제공을 포함한다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">내깅</div>
+      <div class="term-eng">Nagging</div>
+      <div class="term-body">
+        사용자가 이미 거절한 요청(알림 허용, 앱 평가, 뉴스레터 구독)을 <strong>세션마다
+        반복적으로 재요청</strong>하는 패턴. 한두 번은 정상적인 리마인더로 볼 수
+        있지만, 거절해도 계속 뜨는 팝업은 사용자의 명시적 의사를 무시하는 것으로
+        간주된다. 원칙은 <strong>"아니요"를 존중하고 재요청 빈도를 제한</strong>하는 것이다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">윤리적 디자인</div>
+      <div class="term-eng">Ethical Design</div>
+      <div class="term-body">
+        다크 패턴의 대응 개념. 사용자의 자율적 의사결정을 존중하고, 정보를 투명하게
+        제공하며, 취소·거절 경로를 가입·동의 경로와 <strong>동등하게 쉽게</strong>
+        만드는 설계 원칙. IDF(Interaction Design Foundation)와 NN/g는 이를
+        "사용자 신뢰가 장기적으로 비즈니스 지표(재구매율, 이탈률)에 더 유리하다"는
+        근거로 옹호한다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────── 3. 나쁜 패턴 vs 윤리적 대안 ───────────────── -->
+  <section>
+    <h2>3. 나쁜 패턴 vs 윤리적 대안</h2>
+
+    <h3>① 거절 버튼 문구 (Confirmshaming)</h3>
+    <div class="compare-row">
+      <div class="compare-col bad">
+        <div class="label">Dark Pattern</div>
+        아니요, 저는 돈 아끼고 싶지 않아요
+      </div>
+      <div class="compare-col good">
+        <div class="label">Ethical</div>
+        나중에 할게요
+      </div>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d; margin-top:-0.5rem;">
+      거절 옵션은 수락 옵션과 동일하게 중립적이고 명확한 언어를 써야 한다.
+    </p>
+
+    <h3>② 구독 해지 경로 (Roach Motel)</h3>
+    <div class="compare-row">
+      <div class="compare-col bad">
+        <div class="label">Dark Pattern</div>
+        가입: 버튼 1번 클릭 / 해지: 전화 상담 + 재직 확인 질문
+      </div>
+      <div class="compare-col good">
+        <div class="label">Ethical</div>
+        가입: 버튼 1번 클릭 / 해지: 설정 &gt; 구독 관리 &gt; 버튼 1번 클릭
+      </div>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d; margin-top:-0.5rem;">
+      가입과 해지에 드는 클릭 수·시간이 대칭적이어야 한다는 것이 업계 권고 기준이다.
+    </p>
+
+    <h3>③ 장바구니 추가 항목 (Sneak into Basket)</h3>
+    <div class="compare-row">
+      <div class="compare-col bad">
+        <div class="label">Dark Pattern</div>
+        결제 보험 항목이 기본 체크된 상태로 자동 추가
+      </div>
+      <div class="compare-col good">
+        <div class="label">Ethical</div>
+        결제 보험 항목은 기본 미체크, 필요 시 사용자가 직접 선택
+      </div>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d; margin-top:-0.5rem;">
+      선택적 옵션은 옵트인이 기본이어야 하며, 옵트아웃(사전 체크 후 해제)을
+      기본값으로 쓰면 안 된다.
+    </p>
+  </section>
+
+  <!-- ───────────────── 4. 다크 패턴을 판별하는 체크리스트 ───────────────── -->
+  <section>
+    <h2>4. 다크 패턴을 판별하는 체크리스트</h2>
+    <p>디자인 리뷰에서 아래 질문으로 다크 패턴 여부를 빠르게 점검할 수 있다.</p>
+    <ol>
+      <li><strong>의도성</strong> — 사용자가 원치 않는 행동을 하도록 설계자가 의도했는가?</li>
+      <li><strong>비대칭성</strong> — 원하는 행동(가입)과 원치 않는 행동(해지)의 난이도 차이가 부자연스럽게 큰가?</li>
+      <li><strong>투명성</strong> — 사용자가 지금 무엇에 동의하는지, 무엇이 청구될지 명확히 알 수 있는가?</li>
+      <li><strong>기본값</strong> — 사용자에게 불리한 선택지가 기본값(pre-checked, opt-out)으로 설정되어 있는가?</li>
+      <li><strong>존중</strong> — 사용자가 이미 거절한 요청을 반복해서 요구하는가?</li>
+    </ol>
+    <div class="callout warn">
+      <strong>주의 — "그로스 해킹"과의 경계:</strong>
+      전환율을 높이는 UX 기법(사회적 증거, 긴급성 표시) 자체는 다크 패턴이 아니다.
+      하지만 "지금 3명이 이 상품을 보고 있습니다" 같은 문구를 <strong>사실이 아닌
+      숫자로 조작</strong>하면 다크 패턴(Fake Urgency/Scarcity)이 된다. 기준은 항상
+      "이 정보가 사실이고 사용자에게 투명한가"이다.
+    </div>
+    <div class="callout tip">
+      <strong>Tip — 법적 리스크로 접근하기:</strong>
+      EU의 DSA·GDPR, 미국 FTC의 "Click to Cancel" 규칙처럼 다크 패턴을 직접
+      규제하는 법이 늘고 있다. 디자인 리뷰에서 다크 패턴 이슈를 제기할 때 "사용자
+      경험 문제"뿐 아니라 "컴플라이언스 리스크"로도 프레이밍하면 우선순위 조정에
+      설득력이 커진다.
+    </div>
+  </section>
+
+  <!-- ───────────────── 5. 용어 요약 ───────────────── -->
+  <section>
+    <h2>5. 용어 요약</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>용어</th><th>한국어</th><th>한 줄 설명</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Dark Pattern</td><td>다크 패턴</td><td>사용자보다 비즈니스 이익을 우선하도록 의도적으로 설계된 UI/UX</td></tr>
+          <tr><td>Confirmshaming</td><td>컨펌셰이밍</td><td>거절 버튼에 죄책감을 유발하는 문구를 넣는 패턴</td></tr>
+          <tr><td>Roach Motel</td><td>로치 모텔</td><td>가입은 쉽고 해지는 복잡하게 설계하는 패턴</td></tr>
+          <tr><td>Sneak into Basket</td><td>스니크 인투 바스켓</td><td>선택하지 않은 옵션을 장바구니에 자동 추가하는 패턴</td></tr>
+          <tr><td>Forced Continuity</td><td>포스드 컨티뉴이티</td><td>무료체험 종료를 알리지 않고 자동으로 유료 전환하는 패턴</td></tr>
+          <tr><td>Nagging</td><td>내깅</td><td>거절한 요청을 반복적으로 재요청하는 패턴</td></tr>
+          <tr><td>Ethical Design</td><td>윤리적 디자인</td><td>투명성과 대칭적 선택권을 보장하는 대응 설계 원칙</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───────────────── 6. 셀프 체크 퀴즈 ───────────────── -->
+  <section>
+    <h2>6. 셀프 체크 퀴즈</h2>
+
+    <div class="quiz">
+      <h3>Q1</h3>
+      <p class="q">가입은 버튼 1번으로 끝나지만, 해지는 전화 상담과 여러 확인 단계를 거쳐야 하는 패턴의 이름은?</p>
+      <ol class="options" type="A">
+        <li>A. Confirmshaming</li>
+        <li>B. Roach Motel</li>
+        <li>C. Nagging</li>
+        <li>D. Forced Continuity</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — Roach Motel</strong><br>
+          "들어가기는 쉬워도 나오기는 어렵다"는 의미로 가입/해지 난이도의
+          비대칭 구조를 가리킨다.
+          A(Confirmshaming)는 거절 버튼 문구로 죄책감을 유발하는 패턴이고,
+          C(Nagging)는 거절한 요청을 반복 재요청하는 패턴이며,
+          D(Forced Continuity)는 무료체험을 은근슬쩍 유료로 전환하는 패턴이라
+          이 사례에 해당하지 않는다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q2</h3>
+      <p class="q">결제 화면에서 여행자 보험 옵션이 기본으로 체크된 채 표시되어, 사용자가 직접 해제하지 않으면 함께 결제되는 경우에 해당하는 패턴은?</p>
+      <ol class="options" type="A">
+        <li>A. Sneak into Basket</li>
+        <li>B. Nagging</li>
+        <li>C. Confirmshaming</li>
+        <li>D. Roach Motel</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: A — Sneak into Basket</strong><br>
+          사용자가 명시적으로 선택하지 않은 항목이 결제에 슬쩍 포함되는 패턴이다.
+          B(Nagging)는 반복 재요청, C(Confirmshaming)는 거절 문구 조작,
+          D(Roach Motel)는 해지 난이도 문제로 이 사례와는 다른 패턴이다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q3</h3>
+      <p class="q">다크 패턴과 단순한 "나쁜 UX(bad UX)"를 구분하는 핵심 기준은?</p>
+      <ol class="options" type="A">
+        <li>A. 화면이 시각적으로 예쁜지 여부</li>
+        <li>B. 사용자가 원치 않는 행동을 하도록 의도적으로 설계했는지 여부</li>
+        <li>C. 로딩 속도가 느린지 여부</li>
+        <li>D. 모바일에서 반응형으로 동작하는지 여부</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — 의도성</strong><br>
+          다크 패턴은 우연한 실수가 아니라 사용자의 이익보다 비즈니스 이익을
+          우선하도록 계획적으로 설계됐다는 "의도성"이 핵심이다.
+          A, C, D는 모두 일반적인 UX 품질 요소이지만, 의도적 기만 여부와는
+          무관하므로 다크 패턴을 정의하는 기준이 될 수 없다.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ───────────────── 7. 다음 학습 예고 ───────────────── -->
+  <section>
+    <h2>7. 다음 학습 예고</h2>
+    <p>
+      다음 Day에서는 UI/UX 용어 학습의 다음 단계를 다룬다. 지금까지 학습한 기초 개념,
+      정보 구조, 컴포넌트 시스템, 인터랙션, 접근성, 협업 툴, 사용자 조사, 프로토타이핑,
+      사용성 테스트, 반응형/모바일, UX 라이팅, 다크 패턴을 바탕으로 실무 심화 주제나
+      새로운 인접 영역으로 확장할 예정이다.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      <a href="./index.html">← 전체 목록</a> &nbsp;|&nbsp;
+      UI/UX 용어 학습 워크스페이스 · Day 12 · 2026-07-03
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>
