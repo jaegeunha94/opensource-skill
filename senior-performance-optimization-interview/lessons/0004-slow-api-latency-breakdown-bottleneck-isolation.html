@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — 느린 API 분석: latency 분해와 병목 특정 | 성능 최적화 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; color: #c8dae8; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .waterfall { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1rem; font-size: 0.85rem; }
+    .waterfall .row { display: flex; align-items: center; margin-bottom: 0.5rem; gap: 0.8rem; }
+    .waterfall .row:last-child { margin-bottom: 0; }
+    .waterfall .label { width: 190px; flex-shrink: 0; color: var(--text-muted); }
+    .waterfall .bar-track { flex: 1; background: #0a0c12; border-radius: 4px; height: 1.4rem; position: relative; overflow: hidden; }
+    .waterfall .bar { position: absolute; top: 0; bottom: 0; border-radius: 4px; display: flex; align-items: center; padding-left: 0.4rem; font-size: 0.75rem; color: #0a0c12; font-weight: 600; white-space: nowrap; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">성능 최적화 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 4
+  </nav>
+
+  <h1>Day 4 — 느린 API 분석: latency 분해와 병목 특정</h1>
+  <p class="subtitle">하나의 요청이 처리되는 동안 시간이 "어디서" 쓰이는지 근거를 갖고 쪼개는 능력 · 2026-07-03</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#tracing">분산 트레이싱 — Span, Trace, Context Propagation</a></li>
+      <li><a href="#fanout">Fan-out과 Tail Latency 증폭</a></li>
+      <li><a href="#practice">실무 연결</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"API 응답 시간이 300ms인데, 이 중 실제로 어디서 시간이 쓰이는지 어떻게 분해해서 확인하시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"분산 트레이싱(Distributed Tracing)이 무엇이고, 로그나 APM 평균 응답시간만으로는 왜 부족한가요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"우리 서비스가 여러 외부 API를 병렬로 호출하는데, 그중 하나가 가끔 느려질 때 전체 응답 시간에 어떤 영향을 주고 어떻게 격리하시겠어요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>Day 1~3이 <strong>"병목이 DB라는 것을 어떻게 아는가"</strong>와 <strong>"DB 안에서 무엇을 고치는가"</strong>였다면, Day 4는 그 전 단계 — <strong>"DB인지 네트워크인지 애플리케이션 로직인지조차 아직 모르는 상태"</strong>에서 하나의 요청 경로 전체를 근거를 갖고 쪼개는 능력을 봅니다. 실무에서 "API가 느려요"라는 리포트를 받았을 때 가장 먼저 필요한 것이 바로 이 능력입니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>요청 경로를 통째로 그릴 수 있는가</strong> — 클라이언트 → 로드밸런서 → 애플리케이션 서버 → DB/캐시/외부 API → 응답 직렬화 → 클라이언트까지, 시간이 쓰일 수 있는 모든 구간을 빠짐없이 떠올리는가.</li>
+      <li><strong>"측정 도구"를 실제로 다뤄봤는가</strong> — 분산 트레이싱(OpenTelemetry, Jaeger, Zipkin), APM(Datadog, New Relic), 그리고 이런 도구가 없을 때의 대안(구조화된 로그에 타임스탬프 심기)까지 실전 경험이 있는가.</li>
+      <li><strong>병렬/순차 구조를 구분하는가</strong> — 여러 하위 호출이 순차적으로 쌓인 것인지, 병렬로 실행되고 그중 가장 느린 것이 전체 시간을 결정하는지(Critical Path)를 구분해서 설명하는가.</li>
+      <li><strong>평균이 아니라 분포로 사고하는가</strong> — 평균 300ms 뒤에 숨은 p99 지연, 그리고 그 지연이 특정 하위 의존성 하나에서 오는지 여러 요청에 걸쳐 우연히 겹치는지 구분하는가.</li>
+    </ul>
+
+    <p>10년차 이하의 전형적인 약한 패턴: "느리면 일단 DB부터 봅니다." Day 2~3에서 DB 튜닝을 잘 설명했더라도, 이 질문에서 "DB부터"라고 즉시 단정하면 면접관은 "이 사람은 시야가 DB에 고정되어 있고, 실제로 병목 위치를 특정하는 절차 없이 경험적 추측으로 접근한다"는 신호로 받아들입니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Latency Breakdown — 택배 배송 시간 분해에 비유</h3>
+    <p>"택배가 왜 3일이나 걸렸지?"라는 질문에 "배송이 느렸어요"라고만 답하면 아무것도 개선할 수 없습니다. 실제로는 <strong>주문 접수(30분) → 창고에서 상품 찾기(2시간) → 포장(10분) → 물류센터 이동(1일) → 최종 배송(2일)</strong>처럼 여러 구간으로 쪼갤 수 있고, 그중 어디가 유독 오래 걸렸는지 알아야 개선 지점을 찾을 수 있습니다. API 요청도 마찬가지입니다. "300ms 걸렸다"는 하나의 숫자 뒤에는 <strong>네트워크 전송, 애플리케이션 큐 대기, DB 쿼리, 외부 API 호출, 응답 직렬화</strong> 같은 여러 구간이 순서대로 혹은 겹쳐서 존재합니다.</p>
+
+    <h3>Trace와 Span — 요청 하나의 "여정 기록"</h3>
+    <p>분산 트레이싱에서 <strong>Trace</strong>는 하나의 요청이 시스템을 통과하는 전체 여정을 나타내는 단위이고, <strong>Span</strong>은 그 여정 안에서 하나의 구간(예: "DB 쿼리 실행", "결제 API 호출", "JSON 직렬화")을 나타냅니다. 택배 비유로 치면 Trace는 "이 택배 하나의 전체 배송 기록"이고, Span은 "창고에서 찾는 데 걸린 시간", "물류센터 이동 시간" 같은 개별 구간 기록입니다. 각 Span은 시작 시각, 종료 시각, 그리고 어떤 Span에서 파생됐는지(parent-child 관계)를 가집니다.</p>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> 로그만으로 이 여정을 재구성하려면 요청마다 고유 ID(Correlation ID / Trace ID)를 로그에 남기고, 여러 서버·여러 서비스에 흩어진 로그를 그 ID로 다시 모아 시간순으로 재배열해야 합니다. 분산 트레이싱 도구는 이 작업을 자동화해서, 하나의 요청을 "폭포처럼 떨어지는" 시각화(Waterfall/Flame 형태)로 바로 보여줍니다.
+    </div>
+
+    <h3>Waterfall(폭포) 시각화로 보는 시간 분해 예시</h3>
+    <p>실제 트레이싱 도구는 아래처럼 각 구간이 언제 시작해서 언제 끝났는지를 막대로 보여줍니다. 이 예시에서 전체 300ms 중 결제 API 호출이 180ms로 가장 크다는 것이 한눈에 보입니다.</p>
+
+    <div class="waterfall">
+      <div class="row"><span class="label">Load Balancer 진입</span><div class="bar-track"><div class="bar" style="left:0%; width:3%; background:#94a3b8;">3ms</div></div></div>
+      <div class="row"><span class="label">App: 인증/미들웨어</span><div class="bar-track"><div class="bar" style="left:3%; width:5%; background:#6c8eff;">15ms</div></div></div>
+      <div class="row"><span class="label">DB: 사용자 조회</span><div class="bar-track"><div class="bar" style="left:8%; width:12%; background:#34d399;">35ms</div></div></div>
+      <div class="row"><span class="label">외부: 결제 API 호출</span><div class="bar-track"><div class="bar" style="left:20%; width:60%; background:#f87171;">180ms</div></div></div>
+      <div class="row"><span class="label">App: 응답 직렬화</span><div class="bar-track"><div class="bar" style="left:80%; width:5%; background:#fbbf24;">15ms</div></div></div>
+      <div class="row"><span class="label">네트워크 응답 전송</span><div class="bar-track"><div class="bar" style="left:85%; width:15%; background:#a78bfa;">45ms</div></div></div>
+    </div>
+
+    <p>이 그림 하나가 "DB부터 보자"는 추측이 왜 위험한지 보여줍니다. 이 사례에서는 DB가 아니라 <strong>외부 결제 API 호출</strong>이 전체 시간의 60%를 차지합니다. 측정 없이 DB 인덱스를 아무리 잘 튜닝해도 체감 개선은 크지 않았을 것입니다.</p>
+
+    <h3>Queueing Time vs Processing Time</h3>
+    <p>"애플리케이션 로직에서 50ms가 걸렸다"고 할 때, 그 50ms가 실제로 코드를 실행하는 시간(Processing)인지 스레드/커넥션 풀이 꽉 차서 자기 차례를 기다리는 시간(Queueing)인지 구분해야 합니다. 이 둘은 원인과 해법이 완전히 다릅니다 — Processing이 느리면 알고리즘이나 I/O를 고쳐야 하고, Queueing이 길면 동시 처리 용량(스레드 풀, 커넥션 풀, worker 수)을 늘리거나 트래픽을 줄여야 합니다. Day 1의 USE Method 중 Saturation(포화도)이 바로 이 Queueing 신호입니다.</p>
+  </section>
+
+  <!-- 4. 분산 트레이싱 -->
+  <section id="tracing">
+    <h2>4. 분산 트레이싱 — Span, Trace, Context Propagation</h2>
+
+    <h3>Context Propagation — 여러 서비스에 걸쳐 ID를 이어 붙이기</h3>
+    <p>마이크로서비스 환경에서는 요청 하나가 API Gateway → 주문 서비스 → 결제 서비스 → 재고 서비스처럼 여러 서비스를 거칩니다. 이 모든 구간을 하나의 Trace로 묶으려면, 최초 요청에서 발급한 <strong>Trace ID</strong>를 서비스 간 호출(HTTP 헤더, 메시지 큐 메타데이터 등)에 계속 실어 날라야 합니다. 이 표준화된 방식이 <strong>OpenTelemetry</strong>이고, 그 결과를 Jaeger나 Zipkin 같은 백엔드에 모아 시각화합니다.</p>
+
+    <pre><code><span class="comment">// 개념적 예시 — HTTP 헤더로 trace context 전파</span>
+GET /api/orders/123 HTTP/1.1
+traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
+<span class="comment">// 00: 버전, 다음: trace-id, 그다음: 이 요청의 span-id, 마지막: 샘플링 여부</span></code></pre>
+
+    <h3>Sampling 전략 — 모든 요청을 다 기록하지 않는 이유</h3>
+    <p>초당 수천 건씩 들어오는 트래픽을 100% 트레이싱하면 저장 비용과 오버헤드가 커집니다. 그래서 실무에서는 <strong>샘플링</strong>을 씁니다.</p>
+
+    <table class="method-table">
+      <tr><th>전략</th><th>방식</th><th>장단점</th></tr>
+      <tr><td>Head-based Sampling</td><td>요청이 들어온 순간 확률적으로 기록 여부를 결정(예: 1%)</td><td>구현이 단순하지만, 드물게 발생하는 느린 요청을 놓칠 수 있음</td></tr>
+      <tr><td>Tail-based Sampling</td><td>요청이 끝난 뒤 "느렸다/에러났다" 등 흥미로운 경우만 골라 보관</td><td>정확히 원하는 사례를 잡지만, 끝날 때까지 임시 저장이 필요해 인프라 비용이 큼</td></tr>
+    </table>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> "느린 요청을 분석하고 싶다"는 목적에는 Tail-based Sampling이 유리하지만, 모든 조직이 이를 도입할 여유가 있는 것은 아닙니다. 최소한 <strong>에러가 나거나 임계값(예: 500ms)을 초과한 요청은 100% 기록</strong>하는 절충안이 실무에서 흔히 쓰입니다.
+    </div>
+
+    <h3>트레이싱 도구가 없을 때의 대안</h3>
+    <p>레거시 시스템이거나 트레이싱 인프라가 아직 없다면, 요청 진입 시 <strong>Correlation ID</strong>를 발급해 모든 로그 라인에 남기고, 주요 구간(DB 호출 전/후, 외부 API 호출 전/후)마다 타임스탬프를 명시적으로 로깅하는 방식으로 수동 breakdown이 가능합니다. 완전하지는 않지만 "다음 병목이 어디인지" 첫 단서를 얻는 데는 충분한 경우가 많습니다.</p>
+  </section>
+
+  <!-- 5. Fan-out과 Tail Latency 증폭 -->
+  <section id="fanout">
+    <h2>5. Fan-out과 Tail Latency 증폭</h2>
+
+    <h3>Fan-out 호출 — 병렬로 여러 곳에 물어보고 가장 늦은 응답을 기다림</h3>
+    <p>상품 상세 페이지 하나를 렌더링하기 위해 재고 서비스, 가격 서비스, 리뷰 서비스, 추천 서비스를 동시에(병렬로) 호출하는 구조를 Fan-out이라고 합니다. 이 구조의 전체 응답 시간은 <strong>가장 느리게 응답한 서비스</strong>가 결정합니다 — 4개 중 3개가 20ms에 응답해도 1개가 500ms 걸리면 전체는 500ms입니다.</p>
+
+    <h3>Tail Latency Amplification — 왜 큰 시스템일수록 p99가 나빠지는가</h3>
+    <p>각 하위 서비스가 개별적으로는 p99 latency가 1%의 확률로만 느리다고 해도, 하나의 요청이 20개의 하위 서비스를 Fan-out으로 호출한다면 "적어도 하나가 느릴 확률"은 매우 높아집니다(대략 <code>1 - (0.99)^20 ≈ 18%</code>). 이것이 <strong>Tail Latency Amplification</strong>입니다 — 개별 구성 요소는 대부분 빠르지만, 조합된 전체 시스템의 p99는 개별 요소보다 훨씬 나빠집니다.</p>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> 이 현상 때문에 마이크로서비스가 잘게 쪼개질수록, 그리고 하나의 요청이 더 많은 하위 호출을 Fan-out으로 만들수록 p99 latency 관리가 구조적으로 어려워집니다. "서비스를 잘게 나누면 무조건 좋다"는 생각은 이 지점에서 깨집니다.
+    </div>
+
+    <h3>완화 전략</h3>
+    <ul>
+      <li><strong>Hedged Request</strong> — 응답이 지연되면 같은 요청을 다른 인스턴스에 한 번 더 보내고 먼저 온 응답을 사용(중복 호출 비용과 트레이드오프).</li>
+      <li><strong>Timeout Budget 분배</strong> — 전체 요청에 허용된 시간(예: 500ms)을 각 하위 호출에 미리 배분해, 한 호출이 budget을 넘기면 즉시 포기하고 fallback 처리.</li>
+      <li><strong>필수/선택 의존성 분리</strong> — 리뷰나 추천처럼 없어도 페이지가 성립하는 데이터는 timeout 시 빈 값으로 렌더링(Graceful Degradation)하고, 재고·가격처럼 필수적인 데이터만 응답을 기다림.</li>
+    </ul>
+  </section>
+
+  <!-- 6. 실무 연결 -->
+  <section id="practice">
+    <h2>6. 실무 연결</h2>
+
+    <h3>상황 1: "결제 완료" API가 가끔 5초까지 걸린다는 리포트</h3>
+    <p>트레이싱을 보면 대부분의 시간이 결제 대행사(PG사) 외부 API 호출 구간에 몰려 있었습니다. 우리 코드나 DB를 아무리 최적화해도 개선되지 않는 구간이므로, 접근 방향을 "우리 쪽 최적화"에서 "외부 의존성 timeout 설정과 비동기 처리(결제 요청을 받고 즉시 202 응답 후 콜백/폴링으로 결과 통보)"로 바꿨습니다.</p>
+
+    <h3>상황 2: 상품 목록 API가 상품 하나당 리뷰 서비스를 순차 호출(외부 N+1)</h3>
+    <p>Day 2에서 다룬 N+1 문제가 DB뿐 아니라 외부 API 호출에서도 똑같이 발생합니다. 상품 20개를 조회하며 리뷰 수를 각각 별도 호출로 가져오면 20번의 네트워크 왕복이 쌓입니다. 리뷰 서비스에 배치 조회 API(<code>GET /reviews?productIds=1,2,3...</code>)가 있는지 확인하고, 없다면 만들어서 호출 횟수를 1번으로 줄였습니다.</p>
+
+    <h3>상황 3: 평균 응답시간은 안정적인데 특정 시간대에 p99만 튐</h3>
+    <p>평균만 보는 대시보드에서는 문제가 안 보였지만, 트레이싱에서 해당 시간대 요청들을 골라보니 특정 DB 커넥션 풀이 포화되어 Queueing Time이 늘어난 것이 원인이었습니다. Processing Time이 아니라 Queueing Time이 늘었다는 것을 구분한 것이 원인 특정의 핵심이었습니다.</p>
+
+    <h3>상황 4: Fan-out으로 호출하는 추천 서비스 하나가 느려질 때마다 메인 페이지 전체가 느려짐</h3>
+    <p>추천 데이터는 없어도 페이지가 동작할 수 있는 "선택적" 의존성이었는데, 필수 의존성과 동일하게 응답을 무조건 기다리도록 짜여 있었습니다. 추천 호출에 짧은 timeout과 fallback(빈 배열 반환)을 적용해, 추천 서비스 장애가 전체 페이지 장애로 번지지 않도록 격리했습니다.</p>
+  </section>
+
+  <!-- 7. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>7. 답변 사고 순서</h2>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>요청의 전체 경로를 먼저 그린다</strong>
+          <p style="margin-top:0.3rem">클라이언트부터 응답까지 거치는 모든 구성 요소(로드밸런서, 미들웨어, DB, 캐시, 외부 API, 직렬화, 네트워크)를 나열합니다. 이 단계 없이 바로 "DB부터 본다"고 답하지 않습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>트레이싱/APM으로 실제 시간 분포를 측정한다</strong>
+          <p style="margin-top:0.3rem">분산 트레이싱이 있다면 Waterfall로 각 Span의 소요 시간을 확인하고, 없다면 구간별 타임스탬프 로깅으로 근사치를 얻습니다. 추측이 아니라 실측 데이터를 기준으로 삼습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>병렬/순차 구조를 구분해 Critical Path를 찾는다</strong>
+          <p style="margin-top:0.3rem">순차적으로 쌓인 시간의 합이 전체 지연을 만드는지, Fan-out 구조에서 가장 느린 하나가 전체를 결정하는지를 구분합니다. 개선 우선순위는 Critical Path 위에 있는 구간부터입니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>가장 큰 구간의 원인 유형을 분류한다</strong>
+          <p style="margin-top:0.3rem">DB(Day 2~3의 프레임워크 적용), 외부 API(네트워크/상대방 서버 지연), Processing(알고리즘/직렬화 비용), Queueing(풀 포화)인지 구분합니다. 유형에 따라 해법이 완전히 다릅니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>격리/개선 전략을 적용하고 before/after로 검증한다</strong>
+          <p style="margin-top:0.3rem">외부 의존성이면 timeout budget과 fallback으로 격리, 내부 병목이면 해당 구간을 직접 개선합니다. 적용 후 같은 트레이싱 도구로 Waterfall이 실제로 줄었는지, p99까지 개선됐는지 확인합니다.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 8. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>8. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "API 응답 시간이 300ms인데, 이 중 실제로 어디서 시간이 쓰이는지 어떻게 분해해서 확인하시겠어요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>먼저 이 요청이 거치는 전체 경로를 그립니다 — 로드밸런서 진입, 인증 미들웨어, DB 조회, 외부 API 호출 여부, 응답 직렬화, 네트워크 전송까지입니다. "DB가 느릴 것"이라고 바로 단정하지 않고, 분산 트레이싱(OpenTelemetry 기반, Jaeger나 APM 도구)으로 이 요청의 Trace를 열어 각 Span의 시작·종료 시간을 Waterfall로 확인합니다.</p>
+      <br>
+      <p>이때 두 가지를 함께 봅니다. 첫째, 여러 하위 호출이 순차적으로 쌓인 구조인지 병렬(Fan-out)로 실행되는 구조인지 구분합니다. Fan-out이라면 가장 느린 하나가 전체 시간을 결정하므로, 개선 대상은 그 하나입니다. 둘째, 가장 큰 비중을 차지하는 구간이 실제 처리 시간(Processing)인지 자원 포화로 인한 대기 시간(Queueing)인지 구분합니다 — 둘은 원인과 해법이 다릅니다.</p>
+      <br>
+      <p>분해 결과 병목의 성격에 따라 대응이 갈립니다. DB라면 Day 2~3에서 다룬 EXPLAIN 분석과 인덱스 점검으로 들어가고, 외부 API라면 우리 쪽에서 최적화할 수 없는 영역이므로 timeout budget 설정, 필요하면 비동기 처리나 fallback으로 격리합니다. Processing이 크다면 알고리즘이나 직렬화 비용을 프로파일링하고, Queueing이 크다면 스레드/커넥션 풀 포화를 의심해 동시성 설정을 점검합니다. 마지막으로 개선 후에는 동일한 트레이싱으로 Waterfall과 p99 latency가 실제로 개선됐는지 검증합니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>"DB부터 본다"는 추측이 아니라 측정(트레이싱)으로 시작함</li>
+      <li>병렬/순차 구조 구분(Critical Path)이라는 개념을 정확히 사용</li>
+      <li>Processing Time과 Queueing Time을 구분해 원인 유형별 해법을 분기함</li>
+      <li>병목 성격에 따라 이전 Day(DB 튜닝)와 새로운 전략(외부 의존성 격리)을 모두 연결함</li>
+      <li>검증 단계로 끝맺어 "고치고 끝"이 아니라 사이클을 완성함</li>
+    </ul>
+  </section>
+
+  <!-- 9. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>9. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"일단 슬로우 쿼리 로그를 확인해서 느린 쿼리부터 최적화하겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>병목이 DB라는 근거 없이 DB를 첫 번째 용의자로 단정함</li>
+        <li>외부 API, 직렬화, Queueing 등 다른 구간의 가능성을 아예 고려하지 않음</li>
+        <li>이 API에 슬로우 쿼리가 없다면(예: 상황 1처럼 외부 결제 API가 원인) 이 접근은 시간만 소모하고 문제를 못 찾음</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"APM 대시보드에서 평균 응답 시간을 확인해서 그래프가 튀는 시점을 찾겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>평균만으로는 개별 요청의 시간 분해를 알 수 없음 — "어디서 시간이 쓰이는가"라는 질문에 답이 되지 않음</li>
+        <li>p99처럼 꼬리 지연을 만드는 소수의 느린 요청은 평균에 묻혀 드러나지 않음</li>
+        <li>Span 단위 분해(트레이싱) 없이는 "300ms 중 무엇이 문제인지" 특정할 수 없음</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>요청 전체 경로를 먼저 나열한다</li>
+        <li>분산 트레이싱/Waterfall로 Span 단위 시간을 실측한다</li>
+        <li>병렬(Fan-out)/순차 구조를 구분해 Critical Path를 특정한다</li>
+        <li>Processing Time과 Queueing Time을 구분한다</li>
+        <li>병목 유형별로 다른 해법(내부 최적화 vs 외부 의존성 격리)을 제시한다</li>
+        <li>개선 후 동일 지표로 검증하는 단계를 포함한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. Follow-up -->
+  <section id="followups">
+    <h2>10. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: p50(중앙값)은 안정적인데 p99만 유독 느립니다. 어떻게 접근하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> p50과 p99가 다르게 움직인다는 것은 "대부분의 요청은 정상이지만 특정 조건에서만 느려지는 소수의 요청"이 있다는 뜻입니다. 평균이나 p50만 보는 대시보드로는 이 요청들이 묻혀 보이지 않으므로, 트레이싱에서 응답 시간이 긴 요청만 필터링해 공통점을 찾습니다 — 특정 사용자, 특정 데이터 크기, 특정 시간대(배치 작업과 겹침), 특정 하위 의존성 호출 여부 등입니다. Tail-based Sampling이 있다면 이런 요청을 자동으로 모아주므로 훨씬 수월합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 분산 트레이싱을 도입하면 오버헤드가 있을 텐데, 프로덕션에 부담이 되지 않나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 트레이싱 자체의 오버헤드는 존재하지만(Span 생성, 컨텍스트 전파, 데이터 전송), 100% 샘플링이 아니라 일부만 샘플링하면 부담을 크게 줄일 수 있습니다. 또한 대부분의 최신 트레이싱 SDK는 비동기로 데이터를 전송해 요청 경로 자체를 블로킹하지 않도록 설계되어 있습니다. 오버헤드와 가시성 사이의 트레이드오프이므로, 처음에는 낮은 샘플링률로 시작하고 장애 대응 시 임계값 초과 요청은 100% 기록하는 방식으로 절충하는 것이 실무적입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 우리가 통제할 수 없는 외부 API가 느릴 때, 근본적으로 무엇을 할 수 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 외부 API의 속도 자체는 바꿀 수 없지만, 그 지연이 우리 시스템 전체에 전파되는 것은 막을 수 있습니다. Timeout을 명확히 설정해 무한정 기다리지 않게 하고, 필수적이지 않은 데이터라면 timeout 시 fallback(캐시된 값, 빈 값)으로 응답합니다. 필수적인 흐름(예: 결제)이라면 동기 응답을 기다리는 대신 요청을 즉시 접수하고 콜백/폴링/이벤트로 결과를 비동기 처리하는 구조로 바꿔, 사용자 체감 응답 시간과 실제 처리 시간을 분리할 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 트레이싱 도구가 아직 없는 레거시 시스템에서는 어떻게 latency를 분해하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 요청 진입 시 Correlation ID를 발급해 모든 로그에 남기고, 주요 구간(DB 호출 전/후, 외부 API 호출 전/후, 캐시 조회 전/후) 진입·종료 시점에 타임스탬프를 명시적으로 로깅합니다. 이 로그를 Correlation ID로 모아 시간순으로 재배열하면 수동으로나마 Waterfall에 가까운 그림을 얻을 수 있습니다. 동시에, 이 경험 자체가 트레이싱 도구 도입의 필요성을 조직에 설득하는 근거가 됩니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: Fan-out으로 호출하는 서비스가 10개인데, 그중 하나가 가끔 느려질 때 이를 어떻게 완화하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 먼저 그 10개 중 어떤 것이 정말 응답에 필수적인지(가격, 재고)와 없어도 되는 것(추천, 리뷰 요약)을 구분합니다. 필수가 아니라면 짧은 timeout과 fallback으로 격리해 전체 응답이 그 하나에 발목 잡히지 않게 합니다. 필수적인 호출이라면 Hedged Request(지연 시 동일 요청을 재시도)나, 애초에 그 서비스의 latency 안정성 자체를 개선하는 방향(캐싱, 자체 성능 튜닝)으로 접근합니다. 근본적으로는 전체 요청에 허용된 시간 예산(Timeout Budget)을 각 호출에 미리 배분해 두는 설계가 장기적으로 더 안정적입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>11. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"느린 API는 대부분 DB 문제다"</strong></p>
+      <p>DB는 흔한 병목이지만 유일한 병목이 아닙니다. 외부 API, 직렬화, 네트워크 전송, Queueing 등 다른 구간이 원인일 수 있으며, 측정 없이 DB부터 의심하는 것은 Day 1의 Measure First 원칙에 어긋납니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"평균 응답 시간이 좋으면 문제없다"</strong></p>
+      <p>평균은 소수의 매우 느린 요청(꼬리 지연)을 감춥니다. 실제 사용자 체감과 SLO 위반은 대부분 p95/p99 구간에서 발생하므로, 평균만으로 "문제없음"을 판단하면 안 됩니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"트레이싱 도구를 도입하면 병목이 자동으로 해결된다"</strong></p>
+      <p>트레이싱은 병목의 위치를 보여주는 측정 도구일 뿐, 해결책 자체는 아닙니다. Span을 보고 원인 유형(DB/외부 API/Processing/Queueing)을 해석하고 적절한 해법을 고르는 것은 여전히 엔지니어의 몫입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"외부 API가 느린 건 우리 책임이 아니니 어쩔 수 없다"</strong></p>
+      <p>외부 API의 속도는 통제할 수 없어도, 그 지연이 우리 서비스 전체로 전파되는 것은 timeout, fallback, 비동기 처리 설계로 통제할 수 있습니다. "어쩔 수 없다"는 격리 설계를 포기하는 것과 같습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"서비스를 잘게 쪼갤수록(마이크로서비스화) 무조건 성능에 좋다"</strong></p>
+      <p>Tail Latency Amplification 때문에 하나의 요청이 거치는 하위 서비스가 많아질수록 오히려 p99 latency 관리가 구조적으로 어려워질 수 있습니다. 서비스 분리는 latency 관점에서도 트레이드오프이지 일방적인 이득이 아닙니다.</p>
+    </div>
+  </section>
+
+  <!-- 12. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>12. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 4를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"느리다"는 리포트를 받았을 때 DB를 바로 의심하지 않고 요청 전체 경로부터 그리는 이유를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Trace와 Span의 관계, Context Propagation이 왜 필요한지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Head-based Sampling과 Tail-based Sampling의 차이와 각각의 트레이드오프를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Fan-out 구조에서 Critical Path가 어떻게 결정되는지, Tail Latency Amplification이 무엇인지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Processing Time과 Queueing Time을 구분하고, 각각 어떤 개선 방향으로 이어지는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>외부 API 의존성이 느릴 때 timeout budget, fallback, 비동기 처리로 격리하는 전략을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>트레이싱 도구가 없는 환경에서 Correlation ID 기반으로 수동 breakdown하는 방법을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>평균 응답시간과 p99 latency가 다르게 움직일 수 있는 이유와 그때의 분석 접근법을 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 5</h3>
+      <p><strong>캐시 전략 설계 — 히트율, 무효화, 일관성 trade-off</strong></p>
+      <p>Day 4에서 병목이 DB나 외부 API 호출로 특정됐다면, Day 5는 그 반복적인 조회 부하를 캐시로 흡수하는 설계를 다룹니다. 캐시를 어디에 둘지, TTL을 어떻게 정할지, 무효화 시점을 어떻게 관리할지, 그리고 Cache Stampede 같은 실패 모드까지 다룹니다.</p>
+      <p>면접 질문 예고: "캐시를 적용했는데도 DB 부하가 줄지 않는다면 무엇을 의심하시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    성능 최적화 시니어 인터뷰 · Day 4 of 20 · 2026-07-03
+  </p>
+
+</div>
+</body>
+</html>
