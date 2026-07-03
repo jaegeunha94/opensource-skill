@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — 컨테이너 볼륨과 스토리지: PVC/PV, StatefulSet 설계</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3347;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #3ecf8e;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --code-bg: #141824;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 16px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 2rem 2rem;
+      text-align: center;
+    }
+    .hero .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .hero h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .hero p { color: var(--muted); max-width: 640px; margin: 0 auto; }
+    .container { max-width: 860px; margin: 0 auto; padding: 2rem; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--accent);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--text); }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      color: #93c5fd;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.88em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.2rem;
+    }
+    pre code { background: none; padding: 0; color: #a5f3fc; font-size: 0.85rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-accent { border-left: 4px solid var(--accent); }
+    .card-green { border-left: 4px solid var(--green); }
+    .card-red { border-left: 4px solid var(--red); }
+    .card-yellow { border-left: 4px solid var(--yellow); }
+    .card-purple { border-left: 4px solid var(--accent2); }
+
+    .question-box {
+      background: var(--surface2);
+      border: 1px solid var(--accent2);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1.5rem 0;
+    }
+    .question-box .q-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+    .question-box .q-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.4rem;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--accent);
+      text-align: left;
+      padding: 0.65rem 1rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+    }
+    td {
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0 1.4rem;
+    }
+    @media (max-width: 640px) { .answer-grid { grid-template-columns: 1fr; } }
+    .answer-good {
+      background: #0d2b1e;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-bad {
+      background: #2b0d0d;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-good .label { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .answer-bad .label { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+
+    .rubric {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-item .check { color: var(--green); font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .rubric-item .text { font-size: 0.9rem; }
+
+    .section-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+    .tag-why { background: #1a2840; color: var(--accent); }
+    .tag-concept { background: #1a1a2e; color: var(--accent2); }
+    .tag-answer { background: #0d2b1e; color: var(--green); }
+    .tag-followup { background: #2b1a00; color: var(--orange); }
+    .tag-rubric { background: #2b2000; color: var(--yellow); }
+
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+      font-size: 0.85rem;
+    }
+    .nav-bar a { color: var(--accent); text-decoration: none; }
+    .nav-bar a:hover { text-decoration: underline; }
+
+    .hl-green { color: var(--green); font-weight: 600; }
+    .hl-red { color: var(--red); font-weight: 600; }
+    .hl-yellow { color: var(--yellow); font-weight: 600; }
+    .hl-accent { color: var(--accent); font-weight: 600; }
+    .hl-orange { color: var(--orange); font-weight: 600; }
+
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem 1.6rem; margin-bottom: 2rem; }
+    .toc h3 { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.7rem; }
+    .toc ol { margin-bottom: 0; }
+    .toc li { font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="day-badge">Day 4</div>
+  <h1>컨테이너 볼륨과 스토리지 — PVC/PV, StatefulSet 설계</h1>
+  <p>"상태를 가진 애플리케이션을 Kubernetes에 올려달라"는 요청에 컨테이너 파일시스템의 근본 한계부터 설명하기 — emptyDir, hostPath, PVC/PV, StorageClass, StatefulSet</p>
+</div>
+
+<div class="container">
+
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#recap">Day 3 복기 — 오늘 다루는 것</a></li>
+      <li><a href="#question1">면접 질문 1 — 컨테이너의 쓰기 가능 레이어는 왜 상태 저장에 부적합한가</a></li>
+      <li><a href="#question2">면접 질문 2 — PV/PVC/StorageClass는 실제로 무엇을 해결하는가</a></li>
+      <li><a href="#question3">면접 질문 3 — StatefulSet은 Deployment와 근본적으로 무엇이 다른가</a></li>
+      <li><a href="#mental-model">시니어의 정신 모델 — 상태 저장 워크로드 설계 체크리스트</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- ========== SECTION 1 ========== -->
+  <h2 id="recap">1. Day 3 복기 — 오늘 다루는 것</h2>
+
+  <p>Day 3에서는 "런타임 이미지는 최소화한다"는 원칙을 다뤘다. 오늘은 그 반대 방향의 질문을 다룬다 — 컨테이너가 <strong>상태(state)를 유지해야 할 때</strong> 무슨 일이 벌어지는가. Day 2에서 다룬 이미지 레이어 구조를 그대로 확장하면, 컨테이너의 쓰기 가능 레이어가 왜 데이터베이스나 메시지 큐 같은 상태 저장 워크로드에 근본적으로 부적합한지 설명할 수 있어야 한다. 이 부적합함을 Kubernetes가 어떻게 볼륨 추상화(emptyDir → hostPath → PVC/PV)로 해결하는지, 그리고 상태 저장 애플리케이션 자체를 어떻게 배포하는지(StatefulSet)까지 오늘 다룬다.</p>
+
+  <div class="card card-accent">
+    <p>시니어 면접관이 "Redis나 PostgreSQL을 Kubernetes에 올려본 적 있나요?"라고 묻는 이유는 단순하다. <strong>Deployment로 stateless 앱을 굴리는 건 누구나 한다. 상태를 잃지 않고, Pod가 재스케줄되어도 올바른 디스크에 다시 붙고, 여러 replica가 서로의 데이터를 덮어쓰지 않게 설계하는 건 완전히 다른 문제다.</strong> 오늘 세 질문은 이 문제를 "컨테이너 파일시스템의 한계 → 볼륨 추상화 → 상태 저장 워크로드 오케스트레이션"의 순서로 쌓아 올린다.</p>
+  </div>
+
+  <!-- ========== SECTION 2 ========== -->
+  <h2 id="question1">2. 면접 질문 1 — 컨테이너의 쓰기 가능 레이어는 왜 상태 저장에 부적합한가</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"컨테이너 안에서 파일을 쓰면 그냥 디스크에 저장되는 거 아닌가요? 굳이 볼륨을 왜 마운트해야 하나요? emptyDir과 hostPath는 뭐가 다른가요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 "볼륨 종류 나열하기"가 아니라 <strong>컨테이너 파일시스템이 기본적으로 휘발성(ephemeral)이라는 사실을 실제 장애 시나리오로 설명할 수 있는가</strong>를 확인한다. 주니어는 "컨테이너가 재시작되면 데이터가 날아간다"는 문장을 암기하지만, 시니어는 그게 <strong>왜</strong> 그런지 — Day 2의 이미지 레이어 구조와 연결해서 — 설명할 수 있어야 한다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>컨테이너의 쓰기 가능 레이어(container layer)란</h3>
+    <p>Day 2에서 이미지는 여러 개의 읽기 전용(read-only) 레이어가 쌓인 것이라고 배웠다. 컨테이너를 <strong>실행</strong>하면, 컨테이너 런타임은 그 이미지 레이어들 맨 위에 <strong>딱 하나의 쓰기 가능한 레이어</strong>를 얹는다(overlay2 같은 storage driver가 이걸 관리한다). 컨테이너 안에서 파일을 새로 만들거나 수정하면 전부 이 쓰기 가능 레이어에 기록된다 — 아래의 이미지 레이어는 절대 바뀌지 않는다(copy-on-write 방식).</p>
+  </div>
+
+  <div class="card card-red">
+    <h3>왜 이게 상태 저장에 부적합한가</h3>
+    <ul>
+      <li><strong>컨테이너가 삭제되면 쓰기 가능 레이어도 함께 삭제된다.</strong> 컨테이너를 <code>docker rm</code>하거나, Kubernetes가 Pod를 재스케줄하면서 새 컨테이너를 새로 생성하면, 그 안에 쌓였던 데이터는 그냥 사라진다. "재시작"과 "재생성"이 컨테이너 세계에서는 거의 같은 의미라는 게 핵심이다.</li>
+      <li><strong>copy-on-write 오버헤드.</strong> 많은 storage driver는 이미 존재하는 대용량 파일을 처음 수정할 때 레이어 전체를 복사한 뒤 수정하는 방식으로 동작해서, 쓰기 가능 레이어에 대량의 쓰기가 몰리는 워크로드(DB의 WAL, 로그 파일 rotation)는 성능이 눈에 띄게 떨어진다.</li>
+      <li><strong>Pod가 다른 노드로 옮겨가면 데이터도 같이 이동하지 않는다.</strong> 쓰기 가능 레이어는 컨테이너가 떠 있는 그 노드의 로컬 디스크에만 존재한다. Kubernetes 스케줄러가 장애 대응으로 Pod를 다른 노드에 새로 띄우면, 이전 노드에 남아있던 데이터에는 접근할 방법이 없다.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>볼륨이 이 문제를 어떻게 해결하는가 — "컨테이너 생명주기에서 데이터를 분리"</h3>
+    <p>볼륨(volume)은 컨테이너의 쓰기 가능 레이어 <strong>바깥</strong>에 존재하는 저장 공간을 컨테이너 안의 특정 경로에 마운트하는 것이다. 볼륨에 쓴 데이터는 컨테이너가 삭제돼도 살아남는다 — 데이터의 생명주기가 컨테이너의 생명주기와 분리되기 때문이다. Kubernetes에는 이 "바깥 저장 공간"이 어디에 있고 얼마나 오래 사는지에 따라 세 단계의 선택지가 있다.</p>
+  </div>
+
+  <table>
+    <tr><th>볼륨 종류</th><th>데이터가 사는 곳</th><th>생명주기</th><th>주 용도</th></tr>
+    <tr><td><code>emptyDir</code></td><td>Pod가 스케줄된 노드의 로컬 디스크(또는 <code>medium: Memory</code>면 tmpfs)</td><td>Pod가 살아있는 동안만. Pod 삭제 시 함께 삭제</td><td>같은 Pod 안 컨테이너 간 파일 공유, 캐시, 임시 정렬 공간</td></tr>
+    <tr><td><code>hostPath</code></td><td>Pod가 스케줄된 <strong>그 노드</strong>의 특정 디렉토리</td><td>노드에 종속. Pod가 다른 노드로 옮겨가면 접근 불가</td><td>노드 로그 수집(DaemonSet), Docker 소켓 마운트 등 노드 자체를 다뤄야 하는 특수 목적. 일반 앱 데이터 저장에는 부적합</td></tr>
+    <tr><td>PVC/PV (예: EBS, PD, NFS)</td><td>클러스터 어느 노드에서나(또는 정책상 특정 존에서) 붙일 수 있는 <strong>네트워크/원격 스토리지</strong></td><td>PVC의 생명주기 정책에 따름 — Pod나 노드와 독립적</td><td>DB, 메시지 큐 등 진짜 영속 데이터가 필요한 워크로드</td></tr>
+  </table>
+
+  <div class="card card-yellow">
+    <h3>흔한 오해 — "emptyDir이면 영속성이 있다"</h3>
+    <p><code>emptyDir</code>은 이름 그대로 Pod가 생성될 때 빈 디렉토리로 시작하고, <strong>같은 Pod 안의 여러 컨테이너가 파일을 공유</strong>하는 용도로 설계됐다. Pod 자체가 삭제되면(재스케줄, 스케일 다운, 노드 장애로 인한 Pod 축출 등) emptyDir도 함께 사라진다. "컨테이너가 재시작돼도 emptyDir이니까 데이터가 남겠지"라고 착각하는 경우가 실무에서 흔한데, 컨테이너 재시작(같은 Pod 안에서 crash 후 재기동)까지는 emptyDir이 살아남지만, <strong>Pod 자체가 삭제되고 재생성되는 경우</strong>(Deployment의 rolling update, 노드 실패로 인한 재스케줄)에는 emptyDir도 함께 사라진다.</p>
+  </div>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>기본 메커니즘 확인:</strong> 컨테이너는 이미지 레이어 위에 쓰기 가능 레이어 하나를 얹은 것이고, 이 레이어는 컨테이너와 생명주기를 같이한다는 것.</li>
+    <li><strong>구체적 장애 시나리오로 연결:</strong> "재시작하면 데이터가 날아간다"를 Pod 재스케줄, rolling update, 노드 장애 같은 실제 운영 이벤트로 구체화.</li>
+    <li><strong>볼륨의 본질 설명:</strong> 볼륨은 데이터의 생명주기를 컨테이너의 생명주기에서 분리하는 메커니즘이라는 것.</li>
+    <li><strong>세 종류를 생명주기 기준으로 구분:</strong> emptyDir(Pod 생명주기), hostPath(노드 종속), PVC/PV(독립적 영속성) 순서로 "얼마나 오래, 어디서 살아남는가"를 기준으로 설명.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"컨테이너는 이미지 레이어들 위에 딱 하나의 쓰기 가능 레이어를 얹어서 실행됩니다. 컨테이너 안에서 파일을 쓰면 전부 이 레이어에 기록되는데, 이 레이어는 컨테이너와 생명주기를 같이합니다. 문제는 Kubernetes에서 '재시작'이 사실상 '재생성'인 경우가 대부분이라는 겁니다 — rolling update로 새 Pod가 뜨거나, 노드 장애로 스케줄러가 다른 노드에 Pod를 새로 띄우면, 이전 컨테이너의 쓰기 가능 레이어는 그냥 사라집니다.</p>
+    <p style="margin-top:0.6rem;">그래서 볼륨이 필요한데, 세 종류를 데이터가 '얼마나 오래, 어디서 살아남는가' 기준으로 구분해서 씁니다. <code>emptyDir</code>은 Pod가 살아있는 동안만, 같은 Pod 안 컨테이너끼리 파일을 공유하거나 임시 캐시로 쓰기 좋고, Pod 자체가 사라지면 같이 사라집니다. <code>hostPath</code>는 그 노드의 로컬 디스크를 직접 마운트하는 거라 Pod가 다른 노드로 재스케줄되면 접근이 안 되기 때문에, 일반 앱 데이터가 아니라 노드 로그 수집처럼 노드 자체를 다뤄야 하는 DaemonSet 워크로드에만 씁니다. 진짜 영속 데이터가 필요한 DB 같은 워크로드는 PVC/PV로 EBS나 GCE Persistent Disk 같은 네트워크 스토리지를 붙여서, Pod가 어느 노드로 옮겨가도 같은 데이터에 다시 연결할 수 있게 설계합니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>쓰기 가능 레이어와 컨테이너 생명주기의 관계를 정확히 설명</li>
+        <li>"재시작 = 재생성"이라는 Kubernetes 운영 현실을 구체적 이벤트로 연결</li>
+        <li>emptyDir/hostPath/PVC를 생명주기 기준의 스펙트럼으로 구분</li>
+        <li>각 볼륨 종류의 올바른 사용처와 잘못된 사용처를 함께 제시</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"컨테이너는 재시작하면 데이터가 날아가서 볼륨이 필요하다"에서 멈춤</li>
+        <li>emptyDir이 Pod 삭제 시에도 사라진다는 걸 모르고 "영속적"이라 착각</li>
+        <li>hostPath와 PVC의 차이를 "둘 다 디스크"로만 이해</li>
+        <li>실제 재스케줄/rolling update 시나리오와 연결하지 못함</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "<code>emptyDir</code>을 <code>medium: Memory</code>로 설정하면 어떻게 되나요? 언제 이렇게 쓰나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "<code>emptyDir.medium: Memory</code>는 디스크가 아니라 tmpfs, 즉 RAM 위에 파일시스템을 올리는 겁니다. 디스크 I/O 없이 메모리 속도로 읽고 쓸 수 있어서, 여러 컨테이너가 자주 주고받는 임시 데이터(예: 사이드카 패턴에서 메인 컨테이너와 프록시 컨테이너가 공유하는 소켓 파일이나 캐시)에 유리합니다. 다만 두 가지를 꼭 같이 설명합니다. 첫째, 이건 진짜 메모리를 소비하기 때문에 Pod의 메모리 <code>limit</code>에 포함되고, 여기에 너무 많이 쓰면 컨테이너가 OOMKilled될 수 있습니다. 둘째, 노드가 재시작되거나 Pod가 삭제되면 당연히 데이터가 사라지는 건 기본 emptyDir과 동일합니다. 저희는 세션 캐시처럼 '없어져도 다시 만들 수 있는 데이터'에만 이걸 쓰고, 사이즈를 <code>sizeLimit</code>으로 반드시 제한해서 메모리 압박으로 인한 노드 전체 영향을 방지합니다."</p>
+  </div>
+
+  <!-- ========== SECTION 3 ========== -->
+  <h2 id="question2">3. 면접 질문 2 — PV/PVC/StorageClass는 실제로 무엇을 해결하는가</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"PersistentVolume과 PersistentVolumeClaim이 왜 분리되어 있나요? StorageClass는 어떤 문제를 해결하나요? PVC가 계속 Pending 상태로 안 붙는다면 어떻게 진단하나요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>PV/PVC/StorageClass의 존재 이유를 "그냥 K8s가 그렇게 만들어놨으니까"로 이해하는 지원자와, <strong>애플리케이션 개발자와 인프라 운영자의 관심사를 분리하기 위한 설계</strong>임을 이해하는 지원자는 확연히 구분된다. 또한 이 영역은 실제로 "PVC가 Pending에서 안 넘어간다"는 프로덕션 장애로 자주 이어지기 때문에, 진단 능력을 직접 확인하는 질문이기도 하다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>PV와 PVC를 나눈 이유 — "무엇이 필요한가"와 "무엇을 제공하는가"의 분리</h3>
+    <p><strong>PVC(PersistentVolumeClaim)</strong>는 애플리케이션 개발자가 "나는 이런 스펙(용량, 접근 방식)의 저장 공간이 필요하다"고 <strong>요청</strong>하는 오브젝트다. <strong>PV(PersistentVolume)</strong>는 실제로 클러스터에 존재하는 저장 공간(EBS 볼륨, NFS 공유 디렉토리 등)을 나타내는 오브젝트다. 개발자는 PV가 AWS EBS인지 GCP Persistent Disk인지, 어떤 파일시스템인지 몰라도 되고, 그냥 "10Gi, ReadWriteOnce"라고 PVC로 요청하면 Kubernetes가 조건에 맞는 PV를 찾아 <strong>바인딩(binding)</strong>해준다. 이게 애플리케이션 매니페스트를 클라우드 인프라 세부사항으로부터 분리하는 핵심 메커니즘이다.</p>
+  </div>
+
+  <div class="card">
+    <h3>StorageClass — PV를 미리 만들어두지 않고 "필요할 때 자동 생성"</h3>
+    <p>PV를 관리자가 미리 다 만들어두는 방식(static provisioning)은 클러스터가 커지면 감당이 안 된다. <strong>StorageClass</strong>는 "이런 종류의 스토리지가 필요하면 이런 방식으로 자동 생성해라"는 <strong>템플릿</strong>이다. PVC가 특정 StorageClass를 참조하면, 그 StorageClass에 연결된 <strong>프로비저너(provisioner)</strong>가 실시간으로 실제 스토리지(예: EBS 볼륨)를 만들고 PV를 자동 생성해서 바인딩한다(dynamic provisioning). 오늘날 대부분의 클러스터는 이 방식을 기본으로 쓴다.</p>
+  </div>
+
+  <pre><code>apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: gp3-encrypted   # 이 StorageClass의 프로비저너가 실제 EBS 볼륨을 만든다</code></pre>
+
+  <table>
+    <tr><th>Access Mode</th><th>의미</th><th>대표 스토리지</th></tr>
+    <tr><td>ReadWriteOnce (RWO)</td><td>한 번에 하나의 노드에서만 읽기/쓰기 마운트 가능</td><td>EBS, GCE PD 대부분의 블록 스토리지</td></tr>
+    <tr><td>ReadOnlyMany (ROX)</td><td>여러 노드에서 동시에 읽기 전용 마운트</td><td>설정 파일 배포용 NFS 등</td></tr>
+    <tr><td>ReadWriteMany (RWX)</td><td>여러 노드에서 동시에 읽기/쓰기 마운트</td><td>NFS, EFS, CephFS 같은 파일 스토리지</td></tr>
+    <tr><td>ReadWriteOncePod (RWOP, K8s 1.22+)</td><td>클러스터 전체에서 단 하나의 Pod만 마운트 — RWO보다 더 엄격</td><td>단일 인스턴스 DB처럼 절대 동시 마운트가 나면 안 되는 경우</td></tr>
+  </table>
+
+  <div class="card card-red">
+    <h3>왜 위험한가 — RWO를 RWX로 착각하는 흔한 실수</h3>
+    <p>가장 흔한 실무 사고는 <strong>EBS 같은 블록 스토리지가 RWO라는 것을 잊고, 같은 PVC를 여러 replica가 동시에 마운트하려는 Deployment를 설계하는 것</strong>이다. RWO PVC는 한 번에 하나의 노드에만 붙을 수 있기 때문에, replica 2개가 서로 다른 노드에 스케줄되면 두 번째 Pod는 볼륨을 마운트하지 못하고 <code>Pending</code> 상태로 멈춘다. "왜 두 번째 replica가 안 뜨지"라는 질문의 답이 종종 여기서 나온다.</p>
+  </div>
+
+  <h3>PVC가 Pending에서 안 넘어갈 때 — 진단 체크리스트</h3>
+  <table>
+    <tr><th>원인</th><th>증상</th><th>확인 방법</th></tr>
+    <tr><td>맞는 PV가 없음 (static provisioning)</td><td>PVC가 계속 Pending</td><td><code>kubectl get pv</code>로 조건(용량, accessMode, StorageClass)이 맞는 Available PV가 있는지 확인</td></tr>
+    <tr><td>StorageClass 오탈자/미존재</td><td>PVC Pending, 이벤트에 provisioner 에러</td><td><code>kubectl describe pvc</code>의 Events에서 <code>ProvisioningFailed</code> 확인</td></tr>
+    <tr><td>volumeBindingMode: WaitForFirstConsumer</td><td>PVC가 Pod가 스케줄되기 전까지는 정상적으로 Pending처럼 보임</td><td>Pod가 실제로 생성됐는지, 그 다음에도 안 붙는지 구분해서 확인 (정상 동작일 수 있음)</td></tr>
+    <tr><td>클라우드 쿼터 초과 (예: EBS 볼륨 개수 제한)</td><td>PVC Pending, provisioner 로그에 쿼터 에러</td><td>클라우드 콘솔 또는 <code>kubectl describe pvc</code> 이벤트, CSI 드라이버 로그 확인</td></tr>
+    <tr><td>존(zone) 불일치</td><td>PV는 있는데 Pod가 스케줄된 노드의 존과 PV의 존이 다름</td><td>PV의 <code>nodeAffinity</code>와 노드의 존 라벨 비교</td></tr>
+  </table>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>관심사 분리 원칙부터:</strong> PVC는 "요청", PV는 "실제 자원"이라는 역할 구분을 명확히.</li>
+    <li><strong>StorageClass로 자동화 설명:</strong> static provisioning의 한계와, StorageClass + 프로비저너가 이를 어떻게 자동화하는지.</li>
+    <li><strong>accessMode의 실무적 함의:</strong> RWO가 노드 단위 제약이라는 것과, 이걸 착각했을 때 생기는 실제 장애(replica가 안 뜨는 것)로 연결.</li>
+    <li><strong>진단 프레임워크 제시:</strong> Pending 상태를 "PV 없음 / StorageClass 문제 / WaitForFirstConsumer로 인한 정상 동작 / 쿼터 / 존 불일치"로 나눠서 체계적으로 확인.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"PVC와 PV를 나눈 건 애플리케이션 개발자와 인프라 운영자의 관심사를 분리하기 위해서입니다. 개발자는 '20Gi, ReadWriteOnce가 필요하다'는 PVC만 작성하면 되고, 그게 실제로 EBS인지 NFS인지는 몰라도 됩니다. 요즘은 거의 항상 StorageClass를 통한 dynamic provisioning을 쓰는데, PVC가 특정 StorageClass를 참조하면 그 프로비저너가 실시간으로 실제 볼륨을 만들어서 PV를 생성하고 바인딩해줍니다.</p>
+    <p style="margin-top:0.6rem;">실무에서 자주 겪는 실수는 accessMode를 착각하는 겁니다. EBS 같은 블록 스토리지는 ReadWriteOnce라서 한 번에 한 노드에만 붙는데, 이걸 여러 replica Deployment에서 같은 PVC로 공유하려고 하면 두 번째 Pod가 다른 노드에 스케줄될 경우 볼륨을 못 붙여서 Pending에 걸립니다. PVC가 Pending일 때는 저는 순서대로 확인합니다 — <code>kubectl describe pvc</code>로 이벤트를 먼저 보고, ProvisioningFailed면 StorageClass 이름이나 프로비저너 설정을 의심하고, 정상 프로비저닝된 것 같은데도 안 붙으면 volumeBindingMode가 WaitForFirstConsumer라서 Pod 스케줄을 기다리는 정상 상태인지, 아니면 존 불일치나 클라우드 쿼터 초과인지를 순서대로 배제해나갑니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>PVC/PV를 관심사 분리(요청 vs 실제 자원)로 설명</li>
+        <li>dynamic provisioning의 동작 원리를 정확히 설명</li>
+        <li>RWO 제약을 실제 replica 장애 시나리오로 연결</li>
+        <li>Pending 상태를 여러 원인으로 나눠 체계적으로 진단하는 절차 제시</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>PV와 PVC를 "같은 것을 부르는 두 이름"처럼 설명</li>
+        <li>StorageClass가 뭘 자동화하는지 설명 못함</li>
+        <li>accessMode 종류를 나열만 하고 실무 함의를 모름</li>
+        <li>PVC Pending을 "재시작하면 된다"는 식으로만 대응</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "PVC를 삭제했는데 실제 데이터(EBS 볼륨)는 남아있는 경우와 같이 지워지는 경우가 있던데, 이건 뭘로 결정되나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "PV의 <code>persistentVolumeReclaimPolicy</code>가 결정합니다. <code>Delete</code>면 PVC가 삭제될 때 바인딩된 PV와 그 뒤의 실제 클라우드 볼륨까지 함께 삭제되고, <code>Retain</code>이면 PVC가 삭제돼도 PV와 실제 데이터는 남아서 나중에 관리자가 수동으로 회수하거나 다른 PVC에 다시 연결할 수 있습니다. 대부분의 StorageClass는 기본값이 <code>Delete</code>라서, 개발자가 실수로 PVC를 지웠는데 프로덕션 DB 데이터가 통째로 날아가는 사고가 실제로 일어납니다. 그래서 저희는 프로덕션 DB용 StorageClass는 <code>reclaimPolicy: Retain</code>으로 별도로 만들어두고, 정말 삭제가 확실할 때만 수동으로 PV와 볼륨을 지우는 프로세스를 씁니다. 여기에 더해 정기 스냅샷(<code>VolumeSnapshot</code>)을 별도로 걸어서, reclaimPolicy 실수와 무관하게 최소한의 복구 지점을 항상 확보해둡니다."</p>
+  </div>
+
+  <!-- ========== SECTION 4 ========== -->
+  <h2 id="question3">4. 면접 질문 3 — StatefulSet은 Deployment와 근본적으로 무엇이 다른가</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"PostgreSQL이나 Kafka를 Kubernetes에 올릴 때 왜 Deployment가 아니라 StatefulSet을 쓰나요? PVC를 하나 만들어서 Deployment에 마운트하면 안 되나요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 오늘 앞선 두 질문(볼륨의 휘발성 문제, PVC의 accessMode 제약)을 <strong>워크로드 오케스트레이션 설계</strong>로 통합하는 질문이다. 면접관은 지원자가 "StatefulSet은 상태 저장 앱용이다"라는 표면적 사실을 넘어, <strong>Deployment의 무작위성(replica들이 서로 구별 없이 대체 가능하다는 전제)이 왜 DB 클러스터 같은 워크로드와 근본적으로 충돌하는지</strong>를 이해하는지 확인한다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>Deployment의 전제 — "모든 replica는 동일하고 대체 가능하다"</h3>
+    <p>Deployment가 관리하는 Pod들은 <strong>완전히 상호 교체 가능(interchangeable)</strong>하다는 게 기본 전제다. Pod 이름은 <code>my-app-7d9f8c6-x2k9p</code>처럼 무작위 접미사가 붙고, 어떤 Pod가 죽으면 그냥 똑같은 스펙의 새 Pod를 아무 순서로나 다시 만들면 된다. 앞서 다룬 PVC를 Deployment에 직접 마운트하면, <strong>모든 replica가 같은 PVC 하나를 공유</strong>하려고 하는데, RWO 스토리지라면 애초에 두 번째 replica부터 마운트가 안 되고, RWX 스토리지를 쓰더라도 여러 DB 프로세스가 같은 데이터 디렉토리에 동시에 쓰면 데이터가 깨진다. Deployment는 애초에 "각 replica가 자기만의 독립적인 디스크를 가져야 한다"는 요구사항을 표현할 방법이 없다.</p>
+  </div>
+
+  <div class="card">
+    <h3>StatefulSet이 제공하는 세 가지 — 안정적 정체성</h3>
+    <ul>
+      <li><strong>안정적인 네트워크 정체성:</strong> Pod 이름이 <code>postgres-0</code>, <code>postgres-1</code>, <code>postgres-2</code>처럼 <strong>순서가 있고 예측 가능</strong>하며, Pod가 재시작돼도 같은 이름을 유지한다. Headless Service와 결합하면 <code>postgres-0.postgres.default.svc.cluster.local</code>처럼 각 Pod에 고정된 DNS 이름이 생긴다 — DB 클러스터의 프라이머리를 <code>postgres-0</code>으로 고정하는 식의 설계가 가능해진다.</li>
+      <li><strong>Pod마다 독립된 PVC:</strong> <code>volumeClaimTemplates</code>를 쓰면 StatefulSet이 replica마다 <strong>각자의 PVC를 자동 생성</strong>한다. <code>postgres-0</code>은 <code>data-postgres-0</code>이라는 자기만의 PVC에, <code>postgres-1</code>은 <code>data-postgres-1</code>에 붙는다 — 서로 다른 데이터를 가진 독립적인 디스크가 된다.</li>
+      <li><strong>순서 있는 배포/스케일링/종료:</strong> 기본적으로 Pod가 0번부터 순서대로 생성되고, 이전 Pod가 Ready 상태가 되어야 다음 Pod가 생성된다. 스케일 다운도 역순으로, 가장 높은 번호부터 하나씩 종료된다. 이건 많은 분산 DB/큐 시스템이 클러스터 멤버십 변경을 한 번에 하나씩만 처리하도록 설계됐기 때문에 필요하다.</li>
+    </ul>
+  </div>
+
+  <pre><code>apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres        # Headless Service와 연결
+  replicas: 3
+  selector:
+    matchLabels: { app: postgres }
+  template:
+    metadata:
+      labels: { app: postgres }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:        # replica마다 독립된 PVC를 자동 생성
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 50Gi</code></pre>
+
+  <div class="card card-yellow">
+    <h3>흔한 오해 — "StatefulSet을 쓰면 자동으로 클러스터 복제가 된다"</h3>
+    <p>StatefulSet은 <strong>안정적인 정체성과 저장소 바인딩만</strong> 제공한다. PostgreSQL 프라이머리-레플리카 복제, Kafka의 파티션 리더 선출, 데이터 리밸런싱 같은 <strong>애플리케이션 레벨의 클러스터링 로직은 StatefulSet이 대신 해주지 않는다</strong>. StatefulSet은 "각 인스턴스가 고정된 이름과 자기 디스크를 갖도록" 보장해줄 뿐, 그 인스턴스들이 실제로 서로 복제하고 합의(consensus)를 이루는 건 애플리케이션(PostgreSQL, Kafka, etcd 등) 자체나 오퍼레이터(Operator)의 역할이다. 이 구분을 못 하면 "StatefulSet만 쓰면 고가용성 DB가 완성된다"는 잘못된 기대를 하게 된다.</p>
+  </div>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>Deployment의 전제부터 반박:</strong> "모든 replica가 대체 가능하다"는 Deployment의 전제가 상태 저장 워크로드와 왜 충돌하는지.</li>
+    <li><strong>PVC 공유의 구체적 실패 모드:</strong> Deployment에 PVC를 직접 붙이면 RWO 제약이나 데이터 손상 위험이 생긴다는 것을 오늘 Q2와 연결.</li>
+    <li><strong>StatefulSet의 세 가지 보장을 순서대로:</strong> 안정적 네트워크 정체성 → 독립 PVC(volumeClaimTemplates) → 순서 있는 배포/종료.</li>
+    <li><strong>StatefulSet의 한계를 명확히:</strong> 클러스터링/복제 로직은 애플리케이션이나 Operator의 몫이라는 것 — 과도한 기대를 갖지 않는다는 시니어다운 균형 감각.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"Deployment는 모든 replica가 완전히 대체 가능하다는 전제로 설계됐습니다. Pod 이름도 무작위고, 어떤 Pod가 죽든 그냥 똑같은 스펙으로 새로 만들면 됩니다. 그런데 PostgreSQL 같은 DB를 이 방식으로 올리면, PVC를 Deployment에 직접 마운트할 경우 모든 replica가 같은 볼륨 하나를 쓰게 되는데, EBS 같은 RWO 스토리지는 애초에 두 번째 replica부터 마운트가 안 되고, 설령 RWX를 쓰더라도 여러 DB 프로세스가 같은 데이터 디렉토리에 동시에 쓰면 데이터가 깨집니다.</p>
+    <p style="margin-top:0.6rem;">StatefulSet은 이 문제를 세 가지로 해결합니다. 먼저 Pod 이름이 <code>postgres-0</code>, <code>postgres-1</code>처럼 순서가 있고 재시작돼도 유지되고, Headless Service와 묶으면 각 Pod에 고정 DNS가 생겨서 '프라이머리는 postgres-0'처럼 특정 인스턴스를 지목할 수 있습니다. 둘째는 <code>volumeClaimTemplates</code>로 replica마다 독립적인 PVC를 자동 생성해서, 각자 자기만의 디스크를 갖습니다. 셋째는 순서 있는 배포와 종료입니다 — 이전 Pod가 Ready여야 다음이 뜨고, 스케일 다운은 역순으로 진행됩니다.</p>
+    <p style="margin-top:0.6rem;">다만 StatefulSet이 실제 복제나 리더 선출까지 대신해주진 않는다는 걸 항상 같이 설명합니다. 그건 PostgreSQL 자체의 streaming replication 설정이나, 저희가 실제로 쓰는 CloudNativePG 같은 Operator의 역할이고, StatefulSet은 그 위에서 '안정적인 정체성과 저장소'라는 기반만 제공합니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>Deployment의 "대체 가능성" 전제와 상태 저장 워크로드의 충돌을 명확히 설명</li>
+        <li>안정적 정체성/독립 PVC/순서 있는 배포 세 가지를 구체적 메커니즘으로 설명</li>
+        <li>StatefulSet만으로 복제/합의가 되지 않는다는 한계를 정확히 인지</li>
+        <li>Operator 같은 실제 실무 도구와 StatefulSet의 역할 경계를 구분</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"StatefulSet은 상태 있는 앱용, Deployment는 상태 없는 앱용"이라는 이분법에서 멈춤</li>
+        <li>volumeClaimTemplates가 무엇을 자동화하는지 설명 못함</li>
+        <li>StatefulSet이 자동으로 DB 복제를 해준다고 착각</li>
+        <li>순서 있는 배포/종료가 왜 필요한지 이유를 설명 못함</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "StatefulSet의 Pod를 <code>kubectl delete pod postgres-1</code>로 지우면 PVC는 어떻게 되나요? StatefulSet 자체를 삭제하면요? 이게 왜 그렇게 설계됐다고 생각하나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "둘 다 PVC는 기본적으로 살아남습니다. Pod만 지우면 StatefulSet 컨트롤러가 같은 이름(<code>postgres-1</code>)으로 Pod를 다시 만들고, <code>volumeClaimTemplates</code>로 생성됐던 기존 PVC(<code>data-postgres-1</code>)에 그대로 다시 연결합니다 — 재시작해도 데이터가 그대로인 이유입니다. StatefulSet 자체를 삭제해도 PVC는 기본적으로 지워지지 않습니다. 이건 의도적인 설계인데, 상태 저장 워크로드에서는 '오케스트레이션 오브젝트를 지웠다고 데이터까지 날아가면 안 된다'는 게 훨씬 안전한 기본값이기 때문입니다. 실수로 StatefulSet 매니페스트를 잘못 apply해서 롤백해야 하는 상황에서, PVC까지 같이 날아갔다면 복구가 불가능했을 겁니다. 그래서 진짜 데이터까지 지우고 싶다면 PVC를 명시적으로 별도 삭제해야 하고, 최근 Kubernetes 버전(1.27+)에서는 <code>persistentVolumeClaimRetentionPolicy</code>로 이 기본 동작(scale down 시 유지할지, StatefulSet 삭제 시 유지할지)을 세밀하게 제어할 수 있습니다."</p>
+  </div>
+
+  <!-- ========== SECTION 5 ========== -->
+  <h2 id="mental-model">5. 시니어의 정신 모델 — 상태 저장 워크로드 설계 체크리스트</h2>
+
+  <p>오늘 다룬 세 질문을 실제로 "이 상태 저장 워크로드를 Kubernetes에 어떻게 올릴지 설계해달라"는 실무형 질문에 대응할 수 있는 하나의 체크리스트로 통합하면 다음과 같다.</p>
+
+  <div class="card card-purple">
+    <h3>상태 저장 워크로드 설계 체크리스트</h3>
+    <table>
+      <tr><th>축</th><th>확인 항목</th><th>근거 (오늘 배운 원리)</th></tr>
+      <tr><td>데이터 생명주기</td><td>이 데이터가 Pod 재생성 이후에도 살아남아야 하는가</td><td>Q1 — 쓰기 가능 레이어는 컨테이너와 생명주기를 같이함</td></tr>
+      <tr><td>볼륨 종류 선택</td><td>emptyDir(임시)/hostPath(노드 특수 목적)/PVC(진짜 영속) 중 올바른 것을 골랐는가</td><td>Q1 — 생명주기 스펙트럼</td></tr>
+      <tr><td>스토리지 프로비저닝</td><td>적절한 StorageClass로 dynamic provisioning이 설정돼 있는가</td><td>Q2 — PVC/PV/StorageClass 관계</td></tr>
+      <tr><td>accessMode</td><td>여러 replica가 동시에 쓰기 접근해야 하는데 RWO를 쓰고 있진 않은가</td><td>Q2 — accessMode의 실무적 함의</td></tr>
+      <tr><td>데이터 보존 정책</td><td>프로덕션 DB의 reclaimPolicy가 Retain으로 설정돼 있는가</td><td>Q2 follow-up — Delete/Retain</td></tr>
+      <tr><td>워크로드 타입</td><td>여러 replica가 각자 독립된 정체성/디스크를 가져야 한다면 Deployment가 아니라 StatefulSet인가</td><td>Q3 — Deployment의 대체 가능성 전제와의 충돌</td></tr>
+      <tr><td>클러스터링 책임 구분</td><td>StatefulSet이 복제/합의까지 해준다고 착각하지 않았는가 — 애플리케이션/Operator 역할 구분</td><td>Q3 — StatefulSet의 한계</td></tr>
+      <tr><td>PVC 삭제 정책</td><td>StatefulSet 스케일 다운/삭제 시 PVC 보존 정책을 의도적으로 설정했는가</td><td>Q3 follow-up — persistentVolumeClaimRetentionPolicy</td></tr>
+    </table>
+    <p style="margin-top:0.8rem;"><strong>흔한 오해:</strong> "PVC를 붙였으니 이제 데이터는 안전하다"는 것도 절반의 진실이다. PVC는 컨테이너 재생성으로부터 데이터를 보호할 뿐, 애플리케이션 버그로 인한 데이터 손상, 실수로 인한 삭제, 리전 전체 장애로부터는 보호하지 못한다. 시니어의 답변은 볼륨 설계와 별개로 <strong>백업/스냅샷 전략</strong>을 항상 같이 언급해야 완성된다.</p>
+  </div>
+
+  <!-- ========== SECTION 6 ========== -->
+  <h2 id="rubric">6. 자기 점검 Rubric</h2>
+
+  <div class="rubric">
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">컨테이너의 쓰기 가능 레이어가 컨테이너 생명주기와 함께 사라진다는 것을 이미지 레이어 구조(Day 2)와 연결해서 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">"재시작"과 "재생성"이 Kubernetes 운영에서 사실상 같은 의미로 취급되는 이유를 실제 이벤트(rolling update, 재스케줄)로 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">emptyDir이 Pod 삭제 시에는 함께 사라진다는 것과, medium: Memory의 메모리 사용 위험을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">hostPath가 노드에 종속적이라 일반 앱 데이터 저장에 부적합한 이유를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">PVC와 PV를 "요청"과 "실제 자원"의 관심사 분리로 설명하고, StorageClass의 dynamic provisioning 역할을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">accessMode(RWO/ROX/RWX/RWOP)의 차이와, RWO 제약을 착각했을 때 생기는 실제 장애(replica Pending)를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">PVC가 Pending 상태일 때 원인을 여러 갈래(PV 부재, StorageClass 오류, WaitForFirstConsumer, 쿼터, 존 불일치)로 나눠 진단할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">reclaimPolicy(Delete/Retain)가 PVC 삭제 시 실제 데이터 삭제 여부를 결정한다는 것과 프로덕션 설계 시 주의점을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Deployment의 "replica는 모두 대체 가능하다"는 전제가 상태 저장 워크로드와 왜 충돌하는지 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">StatefulSet의 세 가지 보장(안정적 네트워크 정체성, volumeClaimTemplates로 독립 PVC, 순서 있는 배포/종료)을 각각 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">StatefulSet이 복제/합의(clustering) 로직 자체는 제공하지 않는다는 한계와, 그 역할이 애플리케이션이나 Operator에 있다는 것을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">"상태 저장 워크로드를 설계해달라"는 질문에 데이터 생명주기/볼륨 종류/프로비저닝/accessMode/워크로드 타입/백업 전략까지 체계적으로 답할 수 있다</span>
+    </div>
+  </div>
+
+  <div class="card card-accent" style="margin-top: 2rem;">
+    <h3>다음 Day 예고</h3>
+    <p><strong>Day 5 — 컨테이너 네트워크: bridge, CNI, Service DNS, 네트워크 정책.</strong> 오늘 다룬 "데이터는 어디에 사는가"라는 질문을 "트래픽은 어떻게 흐르는가"로 확장한다. 컨테이너 하나가 어떻게 IP를 갖고 다른 컨테이너와 통신하는지(bridge network), Kubernetes가 CNI 플러그인으로 Pod 네트워크를 어떻게 구성하는지, Service가 어떻게 여러 Pod 앞에서 안정적인 진입점을 제공하는지, kube-dns/CoreDNS가 어떻게 Service 이름을 IP로 변환하는지를 다룹니다.</p>
+  </div>
+
+</div>
+
+<div class="nav-bar">
+  <a href="./0003-dockerfile-design-multistage-security.html">← Day 3</a>
+  <a href="../PROGRESS.md">PROGRESS.md</a>
+  <a href="./index.html">레슨 목록</a>
+  <a href="./0005-container-network-cni-service-dns.html">Day 5 →</a>
+</div>
+
+</body>
+</html>
