@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — 트랜잭션과 동시성: ACID, 격리 수준, 잠금 전략</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="lesson-wrap">
+
+  <!-- ── Header ────────────────────────────────────── -->
+  <header class="lesson-header">
+    <div class="lesson-meta">
+      <span class="tag tag-day">Day 5</span>
+      <span class="tag tag-level">실무자 기준</span>
+      <span class="tag tag-time">약 60분</span>
+    </div>
+    <h1 class="lesson-title">트랜잭션과 동시성<br>ACID · 격리 수준 · 낙관적/비관적 잠금 · 데드락 방지</h1>
+    <p class="lesson-subtitle">
+      Day 4에서 응용 서비스가 <code>commit()</code>을 호출해 트랜잭션 경계를 결정한다고 배웠다.
+      이 레슨은 그 "commit 한 번"이 동시 요청 환경에서 실제로 무엇을 보장하고,
+      무엇을 보장하지 않는지 — 그리고 재고 초과 판매, 잔액 불일치 같은 사고를
+      코드로 어떻게 막는지를 다룬다.
+    </p>
+  </header>
+
+  <!-- ── 1. 왜 이 주제가 사고로 이어지는가 ──────────── -->
+  <h2>1. 동시성 버그는 로컬 테스트에서 재현되지 않는다</h2>
+
+  <p>
+    아래 코드는 재고 차감 로직이다. 단위 테스트에서는 항상 통과한다.
+    문제는 같은 상품에 대한 두 요청이 <strong>거의 동시에</strong> 들어올 때다.
+  </p>
+
+  <div class="code-block">
+<pre>
+async def decrease_stock(session: AsyncSession, product_id: int, qty: int):
+    product = await session.get(Product, product_id)
+    if product.stock < qty:
+        raise OutOfStockError()
+    product.stock -= qty          # ← 요청 A, B가 동시에 여기서 같은 값을 읽으면?
+    await session.commit()
+</pre>
+  </div>
+
+  <div class="diagram">
+재고 10개, 두 요청이 각각 8개씩 구매 시도
+
+시각    요청 A                    요청 B
+t1      stock 조회 → 10
+t2                                stock 조회 → 10   (A의 커밋 전이라 아직 10)
+t3      10 >= 8 → 통과
+t4                                10 >= 8 → 통과
+t5      stock = 10-8 = 2, commit
+t6                                stock = 10-8 = 2, commit   (덮어씀)
+
+결과: 16개가 팔렸는데 재고는 2 → 실제로는 -6이어야 정상
+  </div>
+
+  <blockquote class="callout danger">
+    <div class="callout-title">이것이 "Lost Update" 문제다</div>
+    두 트랜잭션이 같은 행을 읽고, 각자 계산한 값으로 <strong>서로를 덮어쓴다</strong>.
+    애플리케이션 레벨의 <code>if</code> 검증은 동시 접근 앞에서 아무 의미가 없다 —
+    두 요청 모두 "검증 시점"에는 조건을 통과했기 때문이다. 이 문제를 막는 것이
+    이 레슨 전체의 목표다.
+  </blockquote>
+
+  <!-- ── 2. ACID를 실무 관점으로 ────────────────────── -->
+  <h2>2. ACID — 암기가 아니라 "무엇이 깨지면 무슨 사고가 나는가"로 이해한다</h2>
+
+  <table>
+    <thead>
+      <tr><th>속성</th><th>보장 내용</th><th>깨지면 생기는 실무 사고</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Atomicity</strong><br>원자성</td>
+        <td>트랜잭션 안의 여러 쓰기는 전부 성공하거나 전부 실패한다</td>
+        <td>결제는 성공했는데 주문 레코드는 생성 안 됨 (부분 실패)</td>
+      </tr>
+      <tr>
+        <td><strong>Consistency</strong><br>일관성</td>
+        <td>트랜잭션 전후로 DB 제약조건(FK, CHECK, UNIQUE)이 항상 유지된다</td>
+        <td>존재하지 않는 user_id를 참조하는 주문이 저장됨</td>
+      </tr>
+      <tr>
+        <td><strong>Isolation</strong><br>격리성</td>
+        <td>동시 실행되는 트랜잭션이 서로의 중간 상태를 보지 못한다 (정도는 격리 수준에 따라 다름)</td>
+        <td>위 재고 예시처럼 Lost Update, Dirty Read 발생</td>
+      </tr>
+      <tr>
+        <td><strong>Durability</strong><br>지속성</td>
+        <td>commit된 데이터는 서버가 죽어도 사라지지 않는다</td>
+        <td>결제 완료 응답을 보냈는데 서버 재시작 후 기록이 사라짐</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    이 중 실무에서 매일 판단을 요구하는 것은 <strong>Isolation</strong>이다.
+    Atomicity와 Durability는 DB 엔진이 알아서 보장하지만, Isolation은
+    "어느 수준으로 격리할지"를 개발자가 선택해야 하고, 선택에 따라 성능과
+    정합성이 트레이드오프 관계에 놓인다.
+  </p>
+
+  <!-- ── 3. 격리 수준 ───────────────────────────────── -->
+  <h2>3. 트랜잭션 격리 수준 — 무엇을 허용하고 무엇을 막는가</h2>
+
+  <p>
+    격리 수준이 낮을수록 동시성(처리량)은 높아지지만 아래 세 가지 "이상 현상"이
+    허용된다. 격리 수준을 올릴수록 이상 현상은 막히지만 잠금 경합이 늘어난다.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>이상 현상</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Dirty Read</td>
+        <td>다른 트랜잭션이 <strong>아직 commit하지 않은</strong> 변경을 읽어버림</td>
+      </tr>
+      <tr>
+        <td>Non-repeatable Read</td>
+        <td>같은 트랜잭션 안에서 같은 행을 두 번 읽었는데 값이 다름 (그 사이 다른 트랜잭션이 commit)</td>
+      </tr>
+      <tr>
+        <td>Phantom Read</td>
+        <td>같은 조건으로 두 번 조회했는데 <strong>행의 개수</strong>가 다름 (그 사이 다른 트랜잭션이 INSERT)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table>
+    <thead>
+      <tr><th>격리 수준</th><th>Dirty Read</th><th>Non-repeatable Read</th><th>Phantom Read</th><th>비고</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Read Uncommitted</td>
+        <td>발생</td><td>발생</td><td>발생</td>
+        <td>PostgreSQL은 이 수준을 Read Committed로 취급 — 사실상 사용 안 함</td>
+      </tr>
+      <tr>
+        <td><strong>Read Committed</strong></td>
+        <td>차단</td><td>발생</td><td>발생</td>
+        <td><strong>PostgreSQL/MySQL InnoDB의 기본값</strong>. 대부분의 API 서버에 충분</td>
+      </tr>
+      <tr>
+        <td>Repeatable Read</td>
+        <td>차단</td><td>차단</td><td>PostgreSQL은 차단 (표준상은 발생 가능)</td>
+        <td>같은 트랜잭션 내 일관된 스냅샷이 필요할 때</td>
+      </tr>
+      <tr>
+        <td>Serializable</td>
+        <td>차단</td><td>차단</td><td>차단</td>
+        <td>가장 엄격 — 마치 트랜잭션이 순차 실행된 것과 같은 결과 보장. 성능 비용 큼</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="code-block">
+<pre>
+# SQLAlchemy 2.x — 특정 트랜잭션에만 격리 수준 지정
+from sqlalchemy import text
+
+async with session.begin():
+    await session.execute(
+        text("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+    )
+    # ... 이 트랜잭션 안의 쿼리는 SERIALIZABLE로 실행됨
+</pre>
+  </div>
+
+  <blockquote class="callout warn">
+    <div class="callout-title">Read Committed가 재고 문제를 막아주지 않는 이유</div>
+    Section 1의 Lost Update는 Read Committed에서도 발생한다. Dirty Read를
+    막는 것과 "두 트랜잭션이 같은 값을 읽고 서로 덮어쓰는 것"을 막는 것은
+    별개의 문제다. 후자는 격리 수준을 올리거나(Serializable), 아래에서 다루는
+    <strong>명시적 잠금</strong>으로 해결해야 한다.
+  </blockquote>
+
+  <!-- ── 4. 비관적 잠금 ──────────────────────────────── -->
+  <h2>4. 비관적 잠금 (Pessimistic Locking) — "충돌이 자주 난다"고 가정</h2>
+
+  <p>
+    행을 읽는 시점에 DB 잠금을 걸어, 다른 트랜잭션이 같은 행을 수정하지
+    못하게 막는다. PostgreSQL/MySQL 모두 <code>SELECT ... FOR UPDATE</code>로
+    구현한다.
+  </p>
+
+  <div class="code-block">
+<pre>
+async def decrease_stock(session: AsyncSession, product_id: int, qty: int):
+    stmt = (
+        select(Product)
+        .where(Product.id == product_id)
+        .with_for_update()          # ← SELECT ... FOR UPDATE
+    )
+    product = await session.scalar(stmt)
+
+    # 이 행의 잠금을 우리 트랜잭션이 쥐고 있는 동안
+    # 다른 트랜잭션의 같은 SELECT FOR UPDATE는 우리가 commit할 때까지 대기한다.
+    if product.stock < qty:
+        raise OutOfStockError()
+    product.stock -= qty
+    await session.commit()          # commit 시점에 잠금 해제
+</pre>
+  </div>
+
+  <div class="diagram">
+요청 A: SELECT ... FOR UPDATE  → 잠금 획득, stock=10 읽음
+요청 B: SELECT ... FOR UPDATE  → 잠금 대기 (A가 끝날 때까지 블록)
+요청 A: stock=2로 갱신, COMMIT → 잠금 해제
+요청 B: 잠금 획득, stock=2 읽음 (A가 갱신한 최신값)  → 정확하게 순차 처리됨
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>장점</th><th>단점</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>충돌을 애초에 차단 — 재시도 로직이 불필요</td>
+        <td>잠금을 쥔 트랜잭션이 길어지면 뒤 요청들이 줄줄이 대기 (처리량 저하)</td>
+      </tr>
+      <tr>
+        <td>구현이 직관적</td>
+        <td>여러 행에 잠금을 잘못된 순서로 걸면 데드락 위험 (Section 6 참고)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    <code>with_for_update(nowait=True)</code>로 즉시 실패시키거나,
+    <code>with_for_update(skip_locked=True)</code>로 이미 잠긴 행을 건너뛸 수도
+    있다. 후자는 Celery 워커 여러 개가 대기열 테이블에서 "아직 아무도 안 가져간
+    작업"을 경합 없이 나눠 가질 때 자주 쓰인다 (Day 7에서 다시 등장한다).
+  </p>
+
+  <!-- ── 5. 낙관적 잠금 ──────────────────────────────── -->
+  <h2>5. 낙관적 잠금 (Optimistic Locking) — "충돌은 드물다"고 가정</h2>
+
+  <p>
+    잠금을 걸지 않고 읽는다. 대신 행에 <strong>버전 번호</strong>(또는
+    <code>updated_at</code>)를 두고, 수정할 때 "내가 읽었던 버전이 아직
+    유효한가"를 <code>UPDATE ... WHERE version = ?</code>로 확인한다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# domain/models/product.py
+class Product(Base):
+    __tablename__ = "products"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    stock: Mapped[int]
+    version: Mapped[int] = mapped_column(default=0)
+
+    __mapper_args__ = {"version_id_col": version}   # SQLAlchemy 내장 낙관적 잠금
+</pre>
+  </div>
+
+  <div class="code-block">
+<pre>
+async def decrease_stock(session: AsyncSession, product_id: int, qty: int):
+    product = await session.get(Product, product_id)   # 잠금 없이 읽음, version=5라 하자
+    if product.stock < qty:
+        raise OutOfStockError()
+    product.stock -= qty
+
+    try:
+        await session.commit()
+        # SQLAlchemy가 내부적으로 실행:
+        # UPDATE products SET stock=2, version=6 WHERE id=1 AND version=5
+        # 영향받은 행이 0개면 → StaleDataError 발생
+    except StaleDataError:
+        # 다른 트랜잭션이 먼저 커밋해서 version이 바뀜 → 재시도
+        raise ConcurrentUpdateError("다시 시도하세요")
+</pre>
+  </div>
+
+  <blockquote class="callout tip">
+    <div class="callout-title">실무 재시도 패턴</div>
+    낙관적 잠금은 충돌 시 예외를 던지는 것으로 끝나면 안 된다. 호출부에서
+    지수 백오프로 2~3회 재시도하거나, 사용자에게 "다시 시도해 주세요"를
+    노출해야 한다. 재시도 없는 낙관적 잠금은 충돌이 잦은 자원(인기 상품 재고)에서는
+    사용자 경험을 해친다.
+  </blockquote>
+
+  <!-- ── 6. 선택 기준 ───────────────────────────────── -->
+  <h2>6. 언제 무엇을 쓰는가</h2>
+
+  <table>
+    <thead>
+      <tr><th>기준</th><th>비관적 잠금</th><th>낙관적 잠금</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>충돌 빈도</td>
+        <td>높음 (인기 상품 재고, 좌석 예약)</td>
+        <td>낮음 (사용자 프로필 수정, 게시글 편집)</td>
+      </tr>
+      <tr>
+        <td>트랜잭션 길이</td>
+        <td>짧을수록 유리 (잠금 보유 시간 최소화)</td>
+        <td>무관 — 잠금 자체가 없음</td>
+      </tr>
+      <tr>
+        <td>실패 시 UX</td>
+        <td>대기 (사용자는 응답이 느려지는 것으로 체감)</td>
+        <td>재시도 또는 명시적 실패 노출 필요</td>
+      </tr>
+      <tr>
+        <td>구현 복잡도</td>
+        <td>낮음</td>
+        <td>재시도 로직까지 포함하면 비슷하거나 더 높음</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <blockquote class="callout info">
+    <div class="callout-title">실무 기본값</div>
+    확신이 없으면 <strong>비관적 잠금 + 짧은 트랜잭션</strong>에서 시작하라.
+    구현이 예측 가능하고 디버깅하기 쉽다. 부하 테스트에서 잠금 경합이
+    병목으로 확인되면 그때 낙관적 잠금으로 전환을 검토한다 — 미리 최적화하지 않는다.
+  </blockquote>
+
+  <!-- ── 7. 데드락 ──────────────────────────────────── -->
+  <h2>7. 데드락 — 원인과 예방</h2>
+
+  <p>
+    비관적 잠금을 여러 행에 걸 때, 두 트랜잭션이 <strong>서로 다른 순서</strong>로
+    잠금을 요청하면 서로를 영원히 기다리는 상태에 빠질 수 있다.
+  </p>
+
+  <div class="diagram">
+계좌 이체: A → B 그리고 동시에 B → A
+
+트랜잭션 1 (A→B 이체)          트랜잭션 2 (B→A 이체)
+LOCK account A                 LOCK account B
+  ...                            ...
+LOCK account B (대기: T2가 쥐고 있음)
+                                LOCK account A (대기: T1이 쥐고 있음)
+
+→ 서로가 서로의 잠금 해제를 기다림 = 데드락
+  DB가 감지해서 한쪽 트랜잭션을 강제 롤백시킴 (deadlock victim)
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>예방 전략</th><th>구현 방법</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>일관된 잠금 순서</strong></td>
+        <td>항상 <code>id</code> 오름차순으로 잠금을 건다 — 위 예시라면 A와 B 중 id가 작은 쪽을 항상 먼저 잠금</td>
+      </tr>
+      <tr>
+        <td>짧은 트랜잭션</td>
+        <td>잠금을 쥔 상태에서 외부 API 호출, 이메일 발송 등 느린 I/O를 하지 않는다</td>
+      </tr>
+      <tr>
+        <td>잠금 타임아웃</td>
+        <td><code>SET lock_timeout = '3s'</code>로 무한 대기를 방지하고 애플리케이션에서 재시도</td>
+      </tr>
+      <tr>
+        <td>데드락 재시도</td>
+        <td>DB가 롤백시킨 트랜잭션(<code>DeadlockDetected</code>)을 애플리케이션에서 자동 재시도</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="code-block">
+<pre>
+# 일관된 잠금 순서 적용 — 이체 서비스
+async def transfer(session: AsyncSession, from_id: int, to_id: int, amount: int):
+    first_id, second_id = sorted([from_id, to_id])   # id 오름차순 고정
+
+    first = await session.scalar(
+        select(Account).where(Account.id == first_id).with_for_update()
+    )
+    second = await session.scalar(
+        select(Account).where(Account.id == second_id).with_for_update()
+    )
+
+    accounts = {first.id: first, second.id: second}
+    accounts[from_id].balance -= amount
+    accounts[to_id].balance += amount
+    await session.commit()
+</pre>
+  </div>
+
+  <blockquote class="callout danger">
+    <div class="callout-title">흔한 실수 — "요청받은 순서대로" 잠금</div>
+    <code>from_id</code>, <code>to_id</code>를 받은 순서 그대로 잠그면, A→B 이체와
+    B→A 이체가 동시에 들어올 때 정확히 위 다이어그램 상황이 재현된다.
+    반드시 잠금 대상을 <strong>정렬된 고정 기준</strong>으로 접근해야 한다.
+  </blockquote>
+
+  <!-- ── 8. 응용 서비스 레이어와의 연결 ──────────────── -->
+  <h2>8. Day 4 레이어 구조에서 잠금은 어디에 있어야 하는가</h2>
+
+  <p>
+    <code>with_for_update()</code>나 버전 컬럼 재시도 로직은 DB 접근 세부사항이다.
+    Day 4의 원칙을 그대로 적용하면, 이 로직은 <strong>Repository 또는 응용 서비스</strong>에
+    있어야 하고 도메인 서비스는 여전히 잠금의 존재를 몰라야 한다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# application/services/order_service.py
+class DecreaseStockService:
+    def __init__(self, product_repo: ProductRepository, session: AsyncSession):
+        self._product_repo = product_repo
+        self._session = session
+
+    async def execute(self, product_id: int, qty: int) -> None:
+        # 잠금 정책은 Repository 구현체 안에 있다 (아래 참고)
+        product = await self._product_repo.get_for_update(product_id)
+        if product.stock < qty:
+            raise InsufficientStockError(product_id)
+        product.decrease(qty)              # 도메인 모델의 순수 메서드
+        await self._session.commit()       # 트랜잭션 경계는 여전히 응용 서비스가 결정
+</pre>
+  </div>
+
+  <p>
+    <code>get_for_update()</code>라는 이름 자체가 Repository 인터페이스에 노출되는
+    것은 허용된다 — "잠금이 필요한 조회"라는 <em>의도</em>는 도메인 개념이고,
+    <code>FOR UPDATE</code>라는 <em>SQL 구현</em>만 Infrastructure 레이어에 숨으면 된다.
+  </p>
+
+  <!-- ── 9. 실무 체크리스트 ─────────────────────────── -->
+  <h2>9. 트랜잭션/동시성 셀프 리뷰 체크리스트</h2>
+
+  <blockquote class="callout info">
+    <div class="callout-title">코드 리뷰 시 확인할 것</div>
+    <ul style="margin:0;padding-left:1.4rem;">
+      <li>"읽고 → 검증 → 쓰기" 패턴이 있는 곳마다 동시 요청 시나리오를 그려봤다</li>
+      <li>재고/잔액처럼 충돌이 잦은 자원은 비관적 잠금 또는 버전 컬럼을 명시적으로 사용한다</li>
+      <li>여러 행을 잠글 때 항상 동일한(정렬된) 순서로 잠근다</li>
+      <li>잠금을 쥔 상태에서 외부 API 호출, 이메일 발송 같은 느린 작업을 하지 않는다</li>
+      <li>낙관적 잠금 충돌(<code>StaleDataError</code>) 시 재시도 또는 사용자 안내가 있다</li>
+      <li>기본 격리 수준(Read Committed)이 이 트랜잭션에 충분한지 명시적으로 판단했다</li>
+    </ul>
+  </blockquote>
+
+  <!-- ── 10. 퀴즈 ───────────────────────────────────── -->
+  <section class="quiz-section">
+    <h2>🧠 이해도 점검</h2>
+
+    <div class="quiz-question"
+         data-answer="c"
+         data-explanation="Lost Update는 두 트랜잭션이 같은 행을 읽고 각자 계산한 값으로 서로를 덮어쓰는 현상이다. Read Committed는 Dirty Read만 막을 뿐, 두 트랜잭션이 서로 다른 시점에 같은 값을 읽고 독립적으로 계산해 커밋하는 것은 막지 못한다.">
+      <p>Q1. Read Committed 격리 수준에서도 재고 초과 판매(Lost Update)가 발생하는 이유는?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>Read Committed는 Dirty Read도 막지 못하기 때문이다</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>PostgreSQL이 Read Committed를 지원하지 않기 때문이다</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>Dirty Read만 막을 뿐, 서로 다른 트랜잭션이 같은 값을 읽고 독립적으로 계산해 덮어쓰는 것은 막지 못하기 때문이다</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>애플리케이션 코드에 버그가 있을 때만 발생하기 때문이다</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="b"
+         data-explanation="비관적 잠금(SELECT FOR UPDATE)은 읽는 시점에 잠금을 걸어 다른 트랜잭션의 접근을 차단(대기)시킨다. 충돌이 잦은 자원에서 재시도 로직 없이 순차 처리를 보장하고 싶을 때 적합하다.">
+      <p>Q2. 인기 상품의 재고처럼 동시 요청 충돌이 매우 잦은 자원에 가장 적합한 기본 선택은?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>버전 컬럼 없이 그냥 UPDATE만 실행한다</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>SELECT ... FOR UPDATE로 비관적 잠금을 걸고 짧은 트랜잭션으로 처리한다</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>격리 수준을 Read Uncommitted로 낮춰 성능을 높인다</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>트랜잭션을 아예 사용하지 않고 여러 개의 개별 쿼리로 나눈다</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="d"
+         data-explanation="데드락은 두 트랜잭션이 서로 다른 순서로 여러 행을 잠글 때 발생한다. 항상 정렬된 고정 기준(예: id 오름차순)으로 잠금을 걸면 순환 대기가 원천적으로 생기지 않는다.">
+      <p>Q3. 계좌 이체 로직에서 데드락을 예방하는 가장 근본적인 방법은?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>트랜잭션 격리 수준을 Serializable로 올린다</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>잠금을 아예 걸지 않는다</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>lock_timeout을 아주 길게 설정한다</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>여러 행을 잠글 때 항상 동일한(정렬된) 순서로 잠근다</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="a"
+         data-explanation="낙관적 잠금은 버전 컬럼으로 충돌을 감지만 할 뿐, 자동으로 재시도하지 않는다. StaleDataError를 잡아서 애플리케이션이 재시도하거나 사용자에게 안내하지 않으면 사용자는 이유 없는 실패를 겪는다.">
+      <p>Q4. 낙관적 잠금(version_id_col)만 적용하고 재시도 로직을 넣지 않았을 때 실무에서 생기는 문제는?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>충돌이 발생하면 StaleDataError로 요청이 그냥 실패하고, 사용자는 이유 없는 실패로 느낀다</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>데이터베이스가 자동으로 무한 재시도하다가 서버가 멈춘다</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>낙관적 잠금은 재시도가 필요 없으므로 문제가 되지 않는다</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>버전 컬럼이 자동으로 비관적 잠금으로 전환된다</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </section>
+
+  <!-- ── 1차 자료 ────────────────────────────────────── -->
+  <h2>권장 1차 자료</h2>
+  <ul>
+    <li>
+      <a href="https://www.postgresql.org/docs/current/transaction-iso.html" target="_blank" rel="noopener">PostgreSQL 공식 문서 — Transaction Isolation</a> —
+      격리 수준별 이상 현상과 PostgreSQL의 실제 구현 차이(표준 대비 더 엄격한 부분 포함).
+    </li>
+    <li>
+      <a href="https://docs.sqlalchemy.org/en/20/orm/versioning.html" target="_blank" rel="noopener">SQLAlchemy 2.x — Configuring a Version Counter</a> —
+      <code>version_id_col</code>을 이용한 낙관적 잠금 공식 가이드.
+    </li>
+    <li>
+      <a href="https://www.postgresql.org/docs/current/explicit-locking.html" target="_blank" rel="noopener">PostgreSQL 공식 문서 — Explicit Locking</a> —
+      <code>SELECT FOR UPDATE</code>, <code>NOWAIT</code>, <code>SKIP LOCKED</code>와 데드락 감지 동작.
+    </li>
+    <li>
+      <em>Designing Data-Intensive Applications</em>, Martin Kleppmann — 7장 "Transactions" —
+      격리 수준과 이상 현상을 실무 사고 사례와 함께 가장 정확하게 설명하는 자료.
+    </li>
+  </ul>
+
+  <!-- ── Ask teacher ────────────────────────────────── -->
+  <div class="ask-teacher">
+    <strong>질문이 있으신가요?</strong><br>
+    비관적 잠금과 낙관적 잠금 중 무엇을 골라야 할지 애매하거나, 현재 진행 중인
+    프로젝트의 특정 트랜잭션이 어느 격리 수준으로 동작하는지 확인하는 방법이
+    궁금하면 질문하세요. 예시: "결제 로직에는 어떤 잠금 전략이 맞을까요?"
+  </div>
+
+  <!-- ── Footer ─────────────────────────────────────── -->
+  <footer class="lesson-footer">
+    <a href="./0004-service-boundaries.html">← Day 4: 서비스 경계 설계</a>
+    <span style="color:var(--text-dim);font-size:0.85rem;">Day 5 — 트랜잭션과 동시성</span>
+    <span style="color:var(--text-dim);font-size:0.85rem;">Day 6: 인증과 인가 →</span>
+  </footer>
+
+</main>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
