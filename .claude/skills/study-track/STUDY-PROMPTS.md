@@ -617,25 +617,25 @@
 - 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-claude-code-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
 ```
 
-## Hermes Interview
+## Hermes Agent Interview
 
 ```text
-`.claude/skills/study-track` 스킬을 사용해서 Hermes 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+`.claude/skills/study-track` 스킬을 사용해서 Hermes Agent 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
 
-과목: Hermes JavaScript Engine / React Native Runtime
-폴더 slug: `senior-hermes-react-native-interview`
+과목: Hermes Agent
+폴더 slug: `senior-hermes-agent-interview`
 
 요구사항:
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
-- 단순 React Native 설정값 암기나 엔진 이름 비교가 아니라, 10년차 이상 모바일/프론트엔드 개발자 인터뷰에서 평가하는 JavaScript runtime 선택, startup/memory 성능, native bridge 경계, crash/debugging, 배포 안정성 판단 중심으로 진행해줘.
-- Hermes JavaScript engine, React Native integration, ahead-of-time compilation, Hermes bytecode, startup time, memory footprint, garbage collection, JSI, TurboModules, Fabric/new architecture, Metro/build pipeline, source map, symbolication, profiling, crash diagnosis, Android/iOS packaging, version compatibility with React Native, custom Hermes build, JSC migration, OTA update bytecode compatibility, ES feature support, production performance tuning을 다뤄줘.
-- Hermes와 React Native runtime은 빠르게 변하는 분야이므로 레슨 생성 시점의 최신 공식 문서, changelog/release note, deprecation/migration guide, 주요 production 사례를 먼저 확인하고 커리큘럼과 예시를 조정해줘. 위 기술 목록은 최소 기준이며, 최신 인터뷰 트렌드나 실무 표준과 충돌하면 최신 근거를 우선해줘.
+- 단순 설치 절차나 프롬프트 팁이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 always-on agent runtime 설계, local-first 실행, task refinement, self-learning/skill capture, tool/permission 보안, OpenClaw와의 운영 trade-off 중심으로 진행해줘.
+- Hermes Agent architecture, always-on runtime, local-first execution, task refinement, self-learning, skill capture, model/tool/runtime boundary, memory/session design, planner/executor handoff, provider abstraction, tool calling, MCP/API integration, Gateway/channel integration, scheduling, replay/evaluation loop, sandboxing, permission model, provenance, prompt injection defense, OpenClaw interoperability, observability, troubleshooting, cost/latency/reliability trade-off, production operation pattern을 다뤄줘.
+- Hermes Agent는 빠르게 변하는 분야이므로 레슨 생성 시점의 최신 공식 문서, changelog/release note, deprecation/migration guide, 주요 production 사례를 먼저 확인하고 커리큘럼과 예시를 조정해줘. 위 기술 목록은 최소 기준이며, 최신 인터뷰 트렌드나 실무 표준과 충돌하면 최신 근거를 우선해줘.
 - 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
 - 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
 - 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
 - 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
-- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — Hermes runtime 선택과 React Native 성능 진단 프레임워크부터 진행해줘.
-- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-hermes-react-native-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — Hermes Agent runtime과 task refinement 운영 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-hermes-agent-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
 ```
 
 ## OpenClaw Interview
