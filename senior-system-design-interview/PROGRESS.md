@@ -7,12 +7,12 @@
 | 1 | 2026-06-30 | 시스템 설계 답변 프레임워크와 요구사항 정리 | [0001-system-design-answer-framework.html](lessons/0001-system-design-answer-framework.html) |
 | 2 | 2026-07-01 | Capacity Estimation 심화 — QPS, 저장 용량, 대역폭 계산 | [0002-capacity-estimation-deep-dive.html](lessons/0002-capacity-estimation-deep-dive.html) |
 | 3 | 2026-07-02 | 수평 확장과 로드밸런싱 — Stateless 서버, L4/L7 LB, Sticky Session | [0003-horizontal-scaling-load-balancing.html](lessons/0003-horizontal-scaling-load-balancing.html) |
+| 4 | 2026-07-03 | 캐시 전략과 CDN — Cache-aside vs Write-through, 캐시 무효화, Cache Stampede | [0004-caching-strategy-cdn.html](lessons/0004-caching-strategy-cdn.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | 캐시 전략과 CDN | Cache-aside vs Write-through, 캐시 무효화, CDN 전략 |
 | 5 | 데이터베이스 확장 — 복제와 샤딩 | Primary-Replica, Sharding 전략, Hot Shard 문제 |
 | 6 | 메시지 큐와 비동기 처리 | Kafka vs RabbitMQ, 이벤트 드리븐 아키텍처, Backpressure |
 | 7 | 장애 격리와 고가용성 | Circuit Breaker, Bulkhead, Retry with backoff, 다중 AZ |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — Day 4: 캐시 전략과 CDN으로 이어짐.
+**Day 4 완료** — Day 5: 데이터베이스 확장 — 복제와 샤딩으로 이어짐.
 
 ## 습득한 핵심 개념
 
@@ -38,7 +38,7 @@
 - [x] Capacity Estimation 7단계 프레임워크 — DAU→QPS, 저장, 대역폭, 서버 대수 계산 (Day 2)
 - [x] Peak Factor와 저장소별 복제 전략 차이 (Day 2)
 - [x] Stateless 서버 전환, L4/L7 로드밸런서 차이, Sticky Session의 한계 (Day 3)
-- [ ] 캐시 전략 / CDN (예정 Day 4)
+- [x] Cache-aside/Write-through/Write-behind, 캐시 무효화, Cache Stampede 방지, CDN 전략 (Day 4)
 - [ ] DB 복제 / 샤딩 (예정 Day 5)
 - [ ] 메시지 큐 (예정 Day 6)
 - [ ] 장애 격리 / 고가용성 (예정 Day 7)
