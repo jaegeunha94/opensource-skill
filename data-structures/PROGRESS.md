@@ -13,6 +13,7 @@
 | 1 | 2026-06-30 | 자료구조 선택 프레임워크 | [interview-day01-data-structure-selection-framework.html](lessons/interview-day01-data-structure-selection-framework.html) |
 | 2 | 2026-07-01 | 배열과 연결 리스트 | [interview-day02-arrays-and-linked-lists.html](lessons/interview-day02-arrays-and-linked-lists.html) |
 | 3 | 2026-07-02 | 스택과 큐 | [interview-day03-stack-and-queue.html](lessons/interview-day03-stack-and-queue.html) |
+| 4 | 2026-07-03 | 해시 테이블 | [interview-day04-hash-tables.html](lessons/interview-day04-hash-tables.html) |
 
 ## 다음 예정 학습
 
@@ -31,7 +32,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — 다음은 Day 4: 해시 테이블 (해시 테이블이 평균 O(1)이라는 말의 전제와 위험).
+**Day 4 완료** — 다음은 Day 5: 트리와 균형 트리 (정렬된 데이터를 다룰 때 배열, BST, balanced tree를 어떻게 비교하는가).
 
 ## Interview 답변 체크리스트
 
@@ -51,5 +52,5 @@
 - [x] amortized O(1) vs worst-case O(1) 구분 — Day 1
 - [x] 배열 vs 연결 리스트 실무 성능 차이 (locality, pointer chasing, resize spike, 포인터 오버헤드) — Day 2
 - [x] 스택/큐 bounded/unbounded, backpressure, 원형 큐 경계 조건, call stack과 재귀 깊이 — Day 3
-- [ ] 해시 테이블 충돌, load factor, resize (예정 Day 4)
+- [x] 해시 테이블 충돌, load factor, resize, 해시 편향과 해시 DoS — Day 4
 - [ ] 균형 트리 rebalancing 비용 (예정 Day 5)
