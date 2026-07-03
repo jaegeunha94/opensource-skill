@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — Redis 자료구조 실무 선택 기준</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 4 · Redis / 캐시 전략 Interview</div>
+    <h1>Redis 자료구조 실무 선택 기준</h1>
+    <div class="subtitle">String, Hash, List, Set, Sorted Set — "무엇을 저장하는가"가 아니라 "어떻게 접근하는가"로 고르는 법</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "Redis에는 String, Hash, List, Set, Sorted Set 같은 여러 자료구조가 있는데, 실무에서 어떤 기준으로 자료구조를 선택하시나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "사용자 프로필을 캐싱할 때 JSON 문자열 하나를 String에 넣는 것과, 필드별로 나눠서 Hash에 저장하는 것 중 어떤 걸 선택하시겠습니까? 이유는?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "팔로워 목록이나 태그 목록처럼 '중복 없는 목록'을 다룰 때 List 대신 Set을 쓰는 이유는 무엇인가요? 실무에서 Set 연산을 잘못 쓰면 어떤 문제가 생기나요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>"어떤 값을 담을까"가 아니라 "어떻게 읽고 쓸까"를 먼저 묻는다</h2>
+
+    <p>
+      Redis 자료구조를 고를 때 가장 흔한 실수는 <strong>"이 데이터가 논리적으로 무엇인가"</strong>만 보고 정하는 것이다.
+      예를 들어 "사용자 정보니까 객체 하나 = String에 JSON으로" 라고 생각하는 식이다. 하지만 시니어 수준의 선택 기준은
+      다르다. <strong>이 데이터에 접근하는 패턴(access pattern)</strong> — 전체를 통으로 읽고 쓰는지, 일부 필드만
+      바꾸는지, 순서가 중요한지, 중복을 허용하지 않아야 하는지, 정렬된 상태로 범위 조회가 필요한지 — 를 먼저 정의하고,
+      그 패턴에 맞는 자료구조를 고르는 것이 핵심이다.
+    </p>
+
+    <h3>String — 가장 단순하지만 "전체 교체"가 기본 단위</h3>
+    <p>
+      Redis의 String은 최대 512MB까지 담을 수 있는 바이너리 안전(binary-safe) 값이다. 숫자, 문자열, 직렬화된 JSON,
+      이미지 바이트까지 뭐든 담을 수 있다. <code>INCR</code>/<code>DECR</code>로 원자적 증감이 가능하고,
+      <code>SETBIT</code>/<code>BITCOUNT</code>로 비트맵을, <code>GETRANGE</code>로 부분 읽기도 가능하다.
+    </p>
+    <div class="callout callout-warn">
+      <strong>핵심 제약:</strong> String에 JSON을 통째로 넣으면, <strong>필드 하나만 바꾸고 싶어도 전체 값을 다시
+      직렬화해서 통째로 덮어써야</strong> 한다. 동시에 여러 요청이 서로 다른 필드를 수정하려 하면, 나중에 쓴 요청이
+      먼저 쓴 요청의 변경을 덮어써버리는 <strong>lost update</strong> 문제가 생기기 쉽다.
+    </div>
+
+    <h3>Hash — "객체의 필드별 부분 갱신"이 필요할 때</h3>
+    <p>
+      Hash는 하나의 키 아래에 필드-값 쌍을 여러 개 담는 구조다. <code>HSET</code>, <code>HGET</code>, <code>HINCRBY</code>로
+      필드 단위 원자적 연산이 가능해서, "사용자 프로필의 닉네임만 바꾸고 싶다"는 요구에 정확히 맞는다.
+    </p>
+    <pre><code><span class="comment">// String(JSON)으로 처리하면 필드 하나 바꿔도 전체를 다시 써야 함</span>
+<span class="func">SET</span> user:1001 <span class="string">'{"name":"kim","age":30,"level":"gold"}'</span>
+<span class="comment">// level만 바꾸려면 GET → JSON parse → 수정 → SET 전체 재기록 (원자적이지 않음, race condition 위험)</span>
+
+<span class="comment">// Hash로 처리하면 필드 단위로 원자적 갱신</span>
+<span class="func">HSET</span> user:1001 name kim age <span class="number">30</span> level gold
+<span class="func">HSET</span> user:1001 level platinum  <span class="comment">// level 필드만 원자적으로 교체, 다른 필드는 그대로</span></code></pre>
+    <div class="callout callout-info">
+      <strong>내부 인코딩(내부 구현) 관점:</strong> Redis는 Hash의 필드 수와 값 길이가 작을 때(기본 설정 기준 128개 필드,
+      값 64바이트 이하) 메모리 효율이 훨씬 좋은 <code>listpack</code>(구 <code>ziplist</code>) 인코딩을 자동으로 쓴다.
+      임계값을 넘으면 일반 해시 테이블(hashtable) 인코딩으로 전환된다. 즉, <strong>작은 Hash는 String(JSON)보다 오히려
+      메모리를 덜 쓰면서 필드 단위 접근까지 가능</strong>하다는 것이 실무에서 자주 나오는 반전 포인트다.
+    </div>
+
+    <h3>List — 순서가 있고, 양 끝에서만 빠르게 넣고 빼는 구조</h3>
+    <p>
+      List는 연결 리스트 기반(내부적으로는 <code>quicklist</code>, 여러 개의 압축된 listpack을 이어붙인 구조)이라
+      <code>LPUSH</code>/<code>RPUSH</code>/<code>LPOP</code>/<code>RPOP</code> 같은 <strong>양 끝 연산은 O(1)</strong>이다.
+      반면 중간 인덱스 접근(<code>LINDEX</code>)이나 임의 위치 삽입은 O(N)에 가깝다. 최근 게시물 타임라인, 최근 알림 목록처럼
+      <strong>순서가 있고 최근 것만 유지하면 되는 데이터</strong>에 적합하다.
+    </p>
+    <pre><code><span class="func">LPUSH</span> feed:user:1001 post:5001   <span class="comment">// 맨 앞에 최신 글 추가</span>
+<span class="func">LTRIM</span> feed:user:1001 <span class="number">0</span> <span class="number">99</span>       <span class="comment">// 최근 100개만 유지, 나머지는 잘라냄(메모리 무한 증가 방지)</span></code></pre>
+
+    <h3>Set — 순서 없음, 중복 없음, "포함 여부"를 O(1)로</h3>
+    <p>
+      Set은 정렬되지 않은 유일값(unique) 집합이다. <code>SISMEMBER</code>로 "이 값이 집합에 있는가"를 평균 O(1)에
+      확인할 수 있고, <code>SINTER</code>(교집합), <code>SUNION</code>(합집합), <code>SDIFF</code>(차집합) 같은
+      집합 연산을 지원한다. 팔로우/팔로워 목록, 태그, "이미 처리한 ID 집합" 같은 <strong>중복 제거와 소속 여부 확인</strong>이
+      핵심인 데이터에 적합하다.
+    </p>
+    <div class="callout callout-danger">
+      <strong>위험 포인트:</strong> <code>SINTER</code>/<code>SUNION</code>/<code>SMEMBERS</code>는 집합 크기에 비례해
+      시간이 걸리는 O(N) (교집합은 최악의 경우 O(N*M)) 연산이다. Redis는 기본적으로 <strong>싱글 스레드로 명령을 처리</strong>하기
+      때문에, 원소 수백만 개짜리 Set에 이 명령을 날리면 그 순간 <strong>다른 모든 클라이언트의 요청까지 지연</strong>시키는
+      "느린 명령 하나가 전체를 막는" 사고로 이어질 수 있다.
+    </div>
+
+    <h3>Sorted Set — "정렬된 상태를 유지하며 범위로 조회"할 때</h3>
+    <p>
+      Sorted Set(ZSet)은 각 원소가 score라는 숫자를 갖고, 그 score 순으로 항상 정렬된 상태를 유지하는 구조다. 내부적으로
+      <strong>skip list와 hash table을 함께 사용</strong>해서, <code>ZADD</code>/<code>ZSCORE</code>(특정 원소 점수 조회)는
+      평균 O(1)~O(log N), <code>ZRANGE</code>/<code>ZRANGEBYSCORE</code>(범위 조회)는 O(log N + M)(M은 반환 개수)로
+      처리한다. 실시간 랭킹, 지연 큐(score = 실행 예정 시각), 정렬된 타임라인에 쓰인다. List와 헷갈리기 쉽지만,
+      <strong>List는 삽입 순서를 유지하는 큐/스택</strong>이고 <strong>Sorted Set은 값(score) 기준으로 항상 재정렬되는
+      랭킹 구조</strong>라는 점이 근본적으로 다르다.
+    </p>
+
+    <table>
+      <tr>
+        <th>자료구조</th>
+        <th>핵심 특성</th>
+        <th>대표 명령</th>
+        <th>적합한 상황</th>
+      </tr>
+      <tr>
+        <td><strong>String</strong></td>
+        <td>바이너리 안전, 원자적 증감</td>
+        <td><code>GET/SET/INCR</code></td>
+        <td>단순 값, 카운터, 세션 토큰, 캐시 통짜 값</td>
+      </tr>
+      <tr>
+        <td><strong>Hash</strong></td>
+        <td>필드 단위 부분 갱신, 소규모 시 메모리 효율</td>
+        <td><code>HSET/HGET/HINCRBY</code></td>
+        <td>사용자 프로필처럼 필드가 자주 부분 변경되는 객체</td>
+      </tr>
+      <tr>
+        <td><strong>List</strong></td>
+        <td>순서 유지, 양 끝 O(1)</td>
+        <td><code>LPUSH/RPOP/LTRIM</code></td>
+        <td>최근 N개 타임라인, 알림 목록, 단순 큐</td>
+      </tr>
+      <tr>
+        <td><strong>Set</strong></td>
+        <td>중복 없음, 소속 여부 O(1), 집합 연산</td>
+        <td><code>SADD/SISMEMBER/SINTER</code></td>
+        <td>팔로우 관계, 태그, 중복 방지 ID 집합</td>
+      </tr>
+      <tr>
+        <td><strong>Sorted Set</strong></td>
+        <td>score 기준 정렬 유지, 범위 조회</td>
+        <td><code>ZADD/ZRANGE/ZINCRBY</code></td>
+        <td>실시간 랭킹, 지연 큐, 정렬된 피드</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <p>
+      자료구조 선택 질문은 "Redis 명령어를 몇 개 아는가"를 묻는 것이 아니다. <strong>데이터의 접근 패턴을 분석해서
+      알맞은 도구를 고르고, 그 도구의 내부 동작 방식이 만드는 성능/메모리 특성까지 예측할 수 있는가</strong>를 평가한다.
+    </p>
+
+    <ul>
+      <li>
+        <strong>접근 패턴 중심 사고:</strong> "무엇을 저장하나"가 아니라 "어떻게 읽고 쓰는가"로 자료구조를 고르는가
+      </li>
+      <li>
+        <strong>내부 구현에 대한 이해:</strong> 작은 Hash의 listpack 인코딩, Sorted Set의 skip list, List의 quicklist처럼
+        내부 동작이 실무 성능/메모리에 미치는 영향을 아는가
+      </li>
+      <li>
+        <strong>싱글 스레드 모델의 위험을 아는가:</strong> O(N) 명령을 큰 컬렉션에 잘못 쓰면 Redis 전체가 지연되는
+        구조적 위험을 이해하는가
+      </li>
+      <li>
+        <strong>잘못된 선택의 대가를 구체적으로 설명할 수 있는가:</strong> "String에 JSON 넣으면 안 되는 이유"를
+        단순 암기가 아니라 lost update, 네트워크 페이로드, 동시성 문제로 풀어서 설명할 수 있는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      실무에서 Redis 장애의 상당수는 "잘못된 자료구조 + 큰 컬렉션 + 블로킹 명령"의 조합에서 나온다. 이 질문은
+      지원자가 그런 사고를 겪어봤는지, 혹은 사전에 막을 수 있는 설계 감각이 있는지를 동시에 확인하는 질문이다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 사용자 프로필 캐시 — String(JSON) vs Hash</h3>
+    <p>
+      프로필 화면은 전체 필드를 한 번에 보여주지만, "닉네임 변경", "포인트 증가" 같은 액션은 필드 하나만 바꾼다.
+      String(JSON)으로 저장하면 필드 하나 바꾸는 데도 전체를 읽고 파싱하고 다시 써야 해서 <strong>네트워크 전송량과
+      동시성 위험이 커진다</strong>. Hash로 저장하면 <code>HSET user:1001 nickname 새닉네임</code> 한 번으로 끝나고,
+      다른 필드를 동시에 바꾸는 요청과 충돌하지 않는다.
+    </p>
+
+    <h3>상황 2: 최근 조회 상품 목록 — List + LTRIM</h3>
+    <p>
+      "최근 본 상품 20개"처럼 개수 제한이 있고 순서(최신순)가 중요한 데이터는 List가 자연스럽다.
+      <code>LPUSH</code>로 앞에 추가하고 <code>LTRIM</code>으로 20개를 넘는 오래된 항목을 즉시 잘라내면,
+      메모리가 무한정 늘어나는 것을 막으면서 항상 최근 20개만 유지할 수 있다.
+    </p>
+
+    <h3>상황 3: 팔로우 관계와 "맞팔 여부" — Set과 SINTER</h3>
+    <p>
+      "A가 B를 팔로우하는가"는 <code>SISMEMBER following:A B</code>로 O(1)에 확인한다. "A와 B의 공통 팔로잉 목록"은
+      <code>SINTER following:A following:B</code>로 구할 수 있다. 다만 팔로잉 수가 수십만인 인플루언서 계정에
+      이 연산을 그대로 걸면 순간적으로 Redis를 지연시킬 수 있어, 실무에서는 팔로잉 수 상한을 두거나 샘플링/캐시된
+      결과를 함께 활용한다.
+    </p>
+
+    <h3>상황 4: 실시간 랭킹 — Sorted Set</h3>
+    <p>
+      게임 점수 랭킹, 인기 게시물 순위는 <code>ZADD leaderboard 15000 user:1001</code>로 점수를 갱신하고
+      <code>ZREVRANGE leaderboard 0 9 WITHSCORES</code>로 상위 10명을 즉시 가져온다. DB에서 매번
+      <code>ORDER BY score DESC LIMIT 10</code> 쿼리를 실행하는 것보다 훨씬 저렴하고, 점수가 바뀔 때마다 정렬 상태를
+      새로 계산할 필요가 없다(자세한 설계는 Day 6에서 더 다룬다).
+    </p>
+
+    <h3>상황 5: 일별 활성 사용자(DAU) 체크 — String 기반 Bitmap</h3>
+    <p>
+      "오늘 접속한 유저인지"를 사용자마다 1비트로 표현해 <code>SETBIT dau:2026-07-03 1001 1</code>처럼 기록하면,
+      수백만 사용자의 접속 여부를 String 하나(수 MB 수준)로 표현할 수 있고 <code>BITCOUNT</code>로 순간 DAU를,
+      <code>BITOP AND</code>로 "이틀 연속 접속자"까지 구할 수 있다. 이런 비트 연산 활용은 String의 숨은 실무 가치를
+      보여주는 대표 사례다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>접근 패턴부터 정의한다</strong>
+        "먼저 이 데이터를 통째로 읽고 쓰는지, 필드 단위로 부분 갱신하는지, 순서가 중요한지, 중복을 허용하지 않아야
+        하는지, 정렬된 범위 조회가 필요한지를 확인합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>패턴에 맞는 자료구조를 매칭한다</strong>
+        "부분 갱신이 잦으면 Hash, 순서 있는 최근 N개는 List, 중복 제거와 소속 확인은 Set, 정렬된 랭킹/범위 조회는
+        Sorted Set을 선택합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>내부 구현과 컬렉션 크기를 함께 고려한다</strong>
+        "작은 Hash는 listpack 인코딩으로 메모리 효율이 좋지만, 필드 수가 많아지면 hashtable로 전환되며 메모리
+        사용량 패턴이 바뀝니다. Set/Sorted Set도 컬렉션이 커질수록 특정 명령의 비용이 커진다는 걸 감안합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>싱글 스레드 리스크를 점검한다</strong>
+        "SMEMBERS, SINTER, ZRANGE를 대규모 컬렉션에 그대로 쓰면 O(N) 이상 비용이 그 순간 Redis 전체를 지연시킬 수
+        있어, SCAN 계열 명령이나 컬렉션 크기 제한으로 방어합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>Trade-off로 마무리한다 (Senior 포인트)</strong>
+        "자료구조 선택은 '더 좋은 것'을 고르는 게 아니라, 접근 패턴·메모리 특성·명령 복잡도 사이의 트레이드오프를
+        보고 그 상황에 맞는 것을 고르는 문제입니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "Redis 자료구조는 '무엇을 저장하는가'가 아니라 '어떻게 접근하는가'를 기준으로 선택합니다. 예를 들어 사용자
+        프로필처럼 필드 하나만 자주 부분 갱신되는 데이터는 String에 JSON을 통째로 넣기보다 Hash로 필드 단위로
+        저장합니다. String(JSON)은 필드 하나만 바꿔도 전체를 읽고 파싱하고 다시 써야 해서 네트워크 비용이 크고,
+        동시에 여러 요청이 서로 다른 필드를 고치면 나중 쓰기가 먼저 쓰기를 덮어써버리는 lost update가 생기기
+        쉽습니다. Hash는 <code>HSET</code>으로 필드 단위 원자적 갱신이 가능하고, 필드 수가 적을 때는 listpack이라는
+        압축 인코딩을 써서 오히려 메모리 효율도 좋습니다.
+      </p>
+      <p>
+        순서가 중요하고 최근 N개만 유지하면 되는 데이터, 예를 들어 최근 조회 상품 목록은 List에 <code>LPUSH</code>와
+        <code>LTRIM</code>을 함께 씁니다. 중복을 허용하지 않고 소속 여부만 빠르게 확인하면 되는 팔로우 관계나
+        태그는 Set을 씁니다. 반대로 점수 기준으로 항상 정렬된 상태를 유지하며 범위로 조회해야 하는 랭킹이나
+        지연 큐는 Sorted Set을 씁니다. Sorted Set은 skip list와 hash table을 함께 써서, 특정 원소의 점수 조회와
+        범위 조회를 모두 효율적으로 처리합니다.
+      </p>
+      <p>
+        다만 자료구조를 고를 때 컬렉션의 크기도 함께 고려합니다. Redis는 기본적으로 싱글 스레드로 명령을 처리하기
+        때문에, <code>SMEMBERS</code>나 <code>SINTER</code>, <code>ZRANGE</code> 같은 명령을 원소가 수십만~수백만 개인
+        컬렉션에 그대로 실행하면 그 한 번의 명령이 다른 모든 클라이언트의 요청까지 지연시킬 수 있습니다. 그래서
+        큰 컬렉션은 SCAN 계열 명령으로 나눠서 순회하거나, 애초에 컬렉션 크기에 상한을 두는 설계를 함께 고려합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "Hash 안에 필드가 수만 개까지 늘어나면 무슨 일이 생기나요?"</h3>
+    <p><strong>약한 답변:</strong> "Hash는 필드가 많아도 상관없이 잘 동작합니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "필드 수나 값 크기가 설정된 임계값(<code>hash-max-listpack-entries</code>, <code>hash-max-listpack-value</code>)을
+      넘으면 메모리 효율적인 listpack 인코딩에서 일반 해시 테이블 인코딩으로 자동 전환됩니다. 이후에도 개별
+      <code>HGET</code>/<code>HSET</code>은 평균 O(1)로 동작하지만, 메모리 사용량 패턴이 달라지고
+      <code>HGETALL</code>처럼 전체를 가져오는 연산은 필드 수에 비례해 비용이 커집니다. 그래서 필드가 계속
+      늘어날 가능성이 있는 데이터는 애초에 여러 개의 Hash 키로 나누는 버킷팅을 고려합니다."
+    </p>
+
+    <h3>F2. "SMEMBERS를 프로덕션에서 그대로 쓰면 안 되는 이유는?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "SMEMBERS는 Set의 원소 전체를 한 번에 반환하는 O(N) 명령입니다. Redis는 싱글 스레드이기 때문에, 원소가
+      수십만 개인 Set에서 이 명령이 실행되는 동안 다른 모든 요청이 대기하게 됩니다. 전체 목록이 정말 필요하다면
+      <code>SSCAN</code>으로 커서 기반으로 나눠서 가져오거나, 애초에 큰 Set을 만들지 않도록 데이터를 분할하는
+      설계를 고려해야 합니다."
+    </p>
+
+    <h3>F3. "List를 메시지 큐로 쓸 때 뭘 조심해야 하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "<code>LPUSH</code>로 넣고 <code>BRPOP</code>으로 블로킹 방식으로 꺼내면 간단한 큐처럼 쓸 수 있지만, List는
+      메시지 큐 전용 구조가 아닙니다. 소비자가 메시지를 꺼내자마자 목록에서 사라지기 때문에, 처리 중 소비자가
+      죽으면 그 메시지는 유실됩니다. 컨슈머 그룹, 처리 확인(ack), 재처리 같은 기능이 필요하다면 List가 아니라
+      Redis Streams(<code>XADD</code>, <code>XREADGROUP</code>, <code>XACK</code>)를 쓰는 게 맞습니다. List는
+      단순하고 순서만 보장하면 되는 가벼운 용도에 한정해서 씁니다."
+    </p>
+
+    <h3>F4. "Sorted Set으로 랭킹을 만들 때 점수가 같은 동점자는 어떻게 정렬되나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "Sorted Set은 score가 같으면 멤버 이름을 사전순으로 정렬합니다. 실무에서는 이걸 그대로 쓰기보다, 동점자를
+      먼저 도달한 순서로 보여주고 싶다면 <code>실제 점수 * 큰 상수 - 타임스탬프</code> 같은 방식으로 하나의
+      숫자에 '점수 우선, 시간 차선'을 함께 인코딩해서 score로 씁니다. 그러면 별도 정렬 로직 없이 ZRANGE 하나로
+      원하는 동점자 처리 순서까지 얻을 수 있습니다."
+    </p>
+
+    <h3>F5. "Set 대신 Sorted Set을 쓸 수도 있는데, 왜 굳이 Set을 따로 쓰나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "정렬이나 점수가 필요 없다면 Set이 메모리와 명령 비용 모두에서 더 유리합니다. Sorted Set은 정렬 상태를
+      유지하기 위해 skip list를 추가로 관리하므로 같은 원소 수라도 메모리 오버헤드가 더 크고, 삽입 비용도
+      Set의 평균 O(1)에 비해 O(log N)입니다. '정렬이 필요한가'라는 질문 하나로 두 구조 중 무엇을 쓸지 결정할 수
+      있습니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li><strong>접근 패턴</strong>을 기준으로 자료구조를 선택하는 논리를 먼저 세운다</li>
+          <li>각 자료구조의 <strong>내부 인코딩/구현</strong>(listpack, quicklist, skip list)이 성능·메모리에
+          미치는 영향을 안다</li>
+          <li>Redis가 <strong>싱글 스레드</strong>라는 제약이 큰 컬렉션에 대한 명령 선택에 미치는 영향을 설명한다</li>
+          <li>List를 메시지 큐로 쓸 때의 한계와 Streams와의 차이를 구분한다</li>
+          <li>"더 좋은 자료구조"가 아니라 <strong>trade-off</strong> 관점으로 답한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"객체는 Hash, 목록은 List, 집합은 Set"처럼 <strong>명칭 매칭</strong>만 하고 근거가 없다</li>
+          <li>String(JSON)과 Hash의 차이를 메모리·동시성 관점에서 설명하지 못한다</li>
+          <li>SMEMBERS, SINTER 같은 명령을 대규모 데이터에 그대로 써도 된다고 생각한다</li>
+          <li>List = Queue로 단순화하고, 메시지 유실 가능성을 인지하지 못한다</li>
+          <li>Sorted Set과 List, Sorted Set과 Set의 차이를 명확히 구분하지 못한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 자료구조를 "데이터의 모양"이 아니라 <strong>"데이터에 무슨 연산을,
+      얼마나 자주, 얼마나 큰 규모로 할 것인가"</strong>의 관점에서 고른다. 이 관점 전환이 주니어와 시니어를
+      가르는 지점이다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "Hash가 항상 String(JSON)보다 메모리를 더 쓴다"</h3>
+    <p>
+      <strong>사실:</strong> 필드 수가 적고 값이 짧을 때 Hash는 listpack이라는 압축 인코딩을 쓰기 때문에, 오히려
+      JSON 문자열을 String으로 저장하는 것보다 메모리 효율이 좋을 수 있다. 다만 필드 수가 많아지면 hashtable
+      인코딩으로 전환되며 메모리 사용량이 늘어나므로, "항상 좋다/나쁘다"가 아니라 필드 수 규모에 따라 달라진다.
+    </p>
+
+    <h3>오해 2: "List는 곧 안전한 메시지 큐다"</h3>
+    <p>
+      <strong>사실:</strong> List 기반 큐는 소비자가 메시지를 꺼내는 순간 목록에서 사라지고, 처리 실패 시 재처리
+      메커니즘이 없다. 컨슈머 그룹, ack, 재처리, 순서 보장이 필요한 메시징에는 Redis Streams가 더 적합한 도구다.
+    </p>
+
+    <h3>오해 3: "Set 연산(SINTER, SUNION)은 항상 빠르다"</h3>
+    <p>
+      <strong>사실:</strong> Set 연산은 원소 수에 비례해 시간이 걸리는 O(N) 이상의 명령이다. Redis가 싱글 스레드로
+      명령을 처리하기 때문에, 대규모 Set에 이 연산을 그대로 실행하면 그 순간 다른 요청까지 지연되는 "느린 명령이
+      전체를 막는" 구조적 위험이 있다.
+    </p>
+
+    <h3>오해 4: "Sorted Set은 그냥 정렬된 List다"</h3>
+    <p>
+      <strong>사실:</strong> List는 삽입 순서를 그대로 유지하는 큐/스택 구조이고, Sorted Set은 score 값을 기준으로
+      항상 재정렬된 상태를 유지하는 랭킹 구조다. 내부적으로도 List는 quicklist, Sorted Set은 skip list + hash table로
+      전혀 다른 구현을 쓰며, 지원하는 연산(범위 조회, 점수 조회, 순위 조회)도 다르다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>자료구조 선택 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>요구사항</th>
+        <th>권장 자료구조</th>
+        <th>주의</th>
+      </tr>
+      <tr>
+        <td>단순 값, 카운터, 세션 토큰</td>
+        <td><span class="badge badge-green">String</span></td>
+        <td><span class="badge badge-yellow">부분 갱신 필요하면 부적합</span></td>
+      </tr>
+      <tr>
+        <td>필드 단위로 자주 부분 갱신되는 객체</td>
+        <td><span class="badge badge-green">Hash</span></td>
+        <td><span class="badge badge-yellow">필드 수 급증 시 버킷팅 고려</span></td>
+      </tr>
+      <tr>
+        <td>순서 있는 최근 N개 유지</td>
+        <td><span class="badge badge-green">List + LTRIM</span></td>
+        <td><span class="badge badge-red">큐로 쓸 때 메시지 유실 가능</span></td>
+      </tr>
+      <tr>
+        <td>중복 제거, 소속 여부 확인</td>
+        <td><span class="badge badge-green">Set</span></td>
+        <td><span class="badge badge-red">대규모 Set에 SMEMBERS/SINTER 금지</span></td>
+      </tr>
+      <tr>
+        <td>정렬 유지 + 범위 조회(랭킹)</td>
+        <td><span class="badge badge-green">Sorted Set</span></td>
+        <td><span class="badge badge-yellow">Set보다 메모리·삽입 비용 큼</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>Redis 자료구조 이름만 나열할 뿐, 언제 무엇을 쓰는지 기준이 없음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>"객체는 Hash, 목록은 List" 식으로 표면적 매칭은 하지만 근거(접근 패턴, 내부 구현)를 설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>String(JSON) vs Hash의 부분 갱신 차이, Set과 Sorted Set의 차이를 설명할 수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>내부 인코딩(listpack, skip list)까지 근거로 들고, 싱글 스레드 모델에서 대규모 컬렉션에 O(N) 명령을
+      쓰는 위험을 설명하며, List/Streams 같은 인접 대안까지 비교해 trade-off로 답함</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. String(JSON)과 Hash 중 어떤 걸 쓸지, 부분 갱신 여부만으로 즉시 판단할 수 있는가?<br>
+      2. 작은 Hash가 String(JSON)보다 메모리 효율이 좋을 수 있는 이유(listpack)를 설명할 수 있는가?<br>
+      3. SMEMBERS/SINTER를 대규모 Set에 쓰면 안 되는 이유를 Redis의 싱글 스레드 모델로 설명할 수 있는가?<br>
+      4. List를 메시지 큐로 쓸 때의 한계와, Streams가 그 한계를 어떻게 보완하는지 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li>자료구조 선택은 <strong>"무엇을 저장하나"가 아니라 "어떻게 접근하나"</strong>로 결정한다.</li>
+      <li><strong>Hash</strong>는 필드 단위 부분 갱신이 필요할 때 String(JSON)보다 원자성과 메모리 효율 모두 유리할 수 있다.</li>
+      <li><strong>List</strong>는 순서 있는 최근 N개 유지에 적합하지만, 안전한 메시지 큐 대체재는 아니다(Streams가 더 적합).</li>
+      <li><strong>Set</strong>은 중복 제거·소속 확인에 O(1)로 강하지만, 대규모 Set에 SMEMBERS/SINTER를 쓰면 싱글 스레드
+      전체를 지연시킬 수 있다.</li>
+      <li><strong>Sorted Set</strong>은 skip list + hash table로 정렬 상태를 유지하며 범위 조회를 지원하는, List/Set과
+      근본적으로 다른 구조다.</li>
+      <li>모든 선택에는 <strong>내부 인코딩과 컬렉션 크기에 따른 trade-off</strong>가 따른다는 것을 항상 함께 설명한다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 4 완료 · 다음: Day 5 — 세션 저장소와 분산 락</span>
+  </div>
+
+</div>
+</body>
+</html>

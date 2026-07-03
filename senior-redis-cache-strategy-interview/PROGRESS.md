@@ -7,12 +7,12 @@
 | 1 | 2026-06-30 | 캐시 전략과 Redis 사용 판단 프레임워크 | [0001-cache-strategy-redis-decision-framework.html](lessons/0001-cache-strategy-redis-decision-framework.html) |
 | 2 | 2026-07-01 | TTL 설계와 캐시 무효화 전략 | [0002-ttl-design-cache-invalidation.html](lessons/0002-ttl-design-cache-invalidation.html) |
 | 3 | 2026-07-02 | 캐시 스탬피드와 Hot Key 문제 | [0003-cache-stampede-hot-key.html](lessons/0003-cache-stampede-hot-key.html) |
+| 4 | 2026-07-03 | Redis 자료구조 실무 선택 기준 | [0004-redis-data-structure-selection.html](lessons/0004-redis-data-structure-selection.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | Redis 자료구조 실무 선택 기준 | String, Hash, List, Set, Sorted Set 선택 판단 |
 | 5 | 세션 저장소와 분산 락 | Session store 설계, Redlock 알고리즘, 분산 락 패턴 |
 | 6 | 랭킹 시스템과 Sorted Set | ZADD, ZRANGE, 실시간 랭킹 갱신 전략 |
 | 7 | Pub/Sub과 이벤트 처리 | SUBSCRIBE, PUBLISH, Pub/Sub vs Kafka 판단 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — 다음: Day 4 — Redis 자료구조 실무 선택 기준
+**Day 4 완료** — 다음: Day 5 — 세션 저장소와 분산 락
 
 ## 습득한 핵심 개념
 
@@ -36,7 +36,7 @@
 - [x] 캐시 무효화 전략 (Day 2)
 - [x] 캐시 스탬피드 방지 (Day 3)
 - [x] Hot Key 문제 해결 (Day 3)
-- [ ] Redis 자료구조 선택 기준 (예정 Day 4)
+- [x] Redis 자료구조 선택 기준 (Day 4)
 - [ ] 세션 저장소 설계 (예정 Day 5)
 - [ ] 분산 락 (Redlock) (예정 Day 5)
 - [ ] 실시간 랭킹 설계 (예정 Day 6)
