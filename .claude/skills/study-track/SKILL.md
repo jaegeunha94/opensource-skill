@@ -56,6 +56,7 @@ Examples:
 - `senior-observability-incident-response-interview`
 - `senior-aws-cloud-architecture-interview`
 - `senior-docker-kubernetes-virtualization-interview`
+- `senior-kubernetes-interview`
 - `senior-cicd-deployment-strategy-interview`
 - `senior-performance-optimization-interview`
 - `senior-http-web-protocol-interview`
@@ -108,6 +109,13 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `Docker / Kubernetes / 가상화` -> `senior-docker-kubernetes-virtualization-interview`
 - `Docker Kubernetes 가상화` -> `senior-docker-kubernetes-virtualization-interview`
 - `Docker Kubernetes Virtualization Interview` -> `senior-docker-kubernetes-virtualization-interview`
+- `Kubernetes 10년차 이상 개발자 Interview` -> `senior-kubernetes-interview`
+- `Kubernetes 10년차 개발자 Interview` -> `senior-kubernetes-interview`
+- `Kubernetes 10년차개발자 Interview` -> `senior-kubernetes-interview`
+- `kubernetes 10년차개발자 interview` -> `senior-kubernetes-interview`
+- `쿠버네티스 10년차 이상 개발자 Interview` -> `senior-kubernetes-interview`
+- `쿠버네티스 10년차 개발자 Interview` -> `senior-kubernetes-interview`
+- `쿠버네티스 시니어 인터뷰` -> `senior-kubernetes-interview`
 - `CI/CD와 배포 전략` -> `senior-cicd-deployment-strategy-interview`
 - `CI/CD 배포 전략` -> `senior-cicd-deployment-strategy-interview`
 - `CI/CD Deployment Strategy Interview` -> `senior-cicd-deployment-strategy-interview`
@@ -196,6 +204,7 @@ For specialized senior interview subjects, keep the same 10+ year practitioner i
 - `senior-observability-incident-response-interview`: logs, metrics, tracing, alerts, dashboards, incident triage, root cause analysis, postmortems, recurrence prevention, SLOs, and stakeholder communication during failures.
 - `senior-aws-cloud-architecture-interview`: EC2, S3, RDS, VPC, IAM, ELB, Auto Scaling, CloudWatch, network boundaries, availability zones, cost/reliability trade-offs, and cloud architecture design.
 - `senior-docker-kubernetes-virtualization-interview`: containers, images, volumes, networks, Dockerfile, Compose, Kubernetes Pod, Deployment, Service, Ingress, rollout behavior, resource limits, and production troubleshooting.
+- `senior-kubernetes-interview`: Kubernetes cluster architecture, control plane behavior, nodes, Pods, Deployments, StatefulSets, DaemonSets, Services, Ingress, Gateway API, CoreDNS, CNI networking, storage and volumes, ConfigMaps and Secrets, probes, requests and limits, HPA/VPA, rollout and rollback, scheduling, RBAC, admission control, security hardening, observability, troubleshooting, upgrade strategy, multi-cluster trade-offs, and production incident response.
 - `senior-cicd-deployment-strategy-interview`: GitHub Actions, Jenkins, build automation, test automation, artifact management, Blue-Green, Rolling, Canary, rollback strategy, deployment risk control, and release ownership.
 - `senior-performance-optimization-interview`: slow API analysis, DB query tuning, index optimization, caching, asynchronous processing, load testing, bottleneck analysis, profiling, and measurable performance trade-offs.
 - `senior-http-web-protocol-interview`: HTTP/1.1, HTTP/2, HTTP/3, request/response semantics, methods, status codes, headers, content negotiation, cookies and sessions, CORS, Cache-Control, ETag, compression, keep-alive, connection pooling, timeout/retry/idempotency, reverse proxies, API gateways, CDN behavior, TLS termination, observability, and production traffic debugging.
