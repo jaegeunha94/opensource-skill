@@ -9,12 +9,12 @@
 | 3 | 2026-07-01 | GIL(Global Interpreter Lock) — 동시성 한계와 우회 전략 | [0003-gil-concurrency.html](lessons/0003-gil-concurrency.html) |
 | 4 | 2026-07-02 | Iterator/Generator 프로토콜과 lazy evaluation | [0004-iterator-generator.html](lessons/0004-iterator-generator.html) |
 | 5 | 2026-07-03 | asyncio와 이벤트 루프 — 협력적 멀티태스킹과 `await`의 실행 모델 | [0005-asyncio-event-loop.html](lessons/0005-asyncio-event-loop.html) |
+| 6 | 2026-07-04 | Context Manager — 리소스 관리 패턴과 `with`의 실행 모델 | [0006-context-manager.html](lessons/0006-context-manager.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | Context Manager — 리소스 관리 패턴 | `__enter__`, `__exit__`, `contextlib`, 예외 처리 |
 | 7 | Descriptor 프로토콜 | `__get__`, `__set__`, `__delete__`, data/non-data descriptor |
 | 8 | Decorator — 함수형 패턴과 실무 활용 | closure, `functools.wraps`, 클래스 decorator, stacking |
 | 9 | Python 실행 모델 | 바이트코드, CPython 인터프리터, 네임스페이스, LEGB |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — Day 6 (Context Manager)부터 계속.
+**Day 6 완료** — Day 7 (Descriptor 프로토콜)부터 계속.
 
 ## 습득한 핵심 개념
 
@@ -55,7 +55,10 @@
 - [x] coroutine / Task / Future 계층 구분과 스케줄링 시점 (Day 5)
 - [x] 블로킹 호출이 이벤트 루프를 멈추는 원리와 진단·해결 (Day 5)
 - [x] `gather` vs `create_task` vs `TaskGroup`, 취소와 예외 전파 (Day 5)
+- [x] `with` 문의 동작 원리 — `__enter__`/`__exit__`와 `try/finally`의 동등성 (Day 6)
+- [x] `__exit__` 반환값에 의한 예외 억제와 그 위험성 (Day 6)
+- [x] `contextlib.contextmanager`와 제너레이터 기반 구현, 재진입 제약 (Day 6)
+- [x] 다중 리소스 정리 순서와 `contextlib.ExitStack` (Day 6)
 
-- [ ] Context Manager 프로토콜 (예정 Day 6)
 - [ ] Descriptor 프로토콜 (예정 Day 7)
 - [ ] Decorator 구현 원리 (예정 Day 8)
