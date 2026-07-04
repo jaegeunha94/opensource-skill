@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — 세션 저장소와 분산 락</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 5 · Redis / 캐시 전략 Interview</div>
+    <h1>세션 저장소와 분산 락</h1>
+    <div class="subtitle">여러 서버가 "같은 상태"를 봐야 할 때 — 세션 공유와 분산 락이 실패하는 방식들</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "여러 대의 서버로 스케일 아웃된 환경에서 로그인 세션을 어떻게 관리하시겠습니까? Redis를 세션 저장소로 쓰는 이유는 무엇이고, 어떤 위험이 따르나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "여러 서버 인스턴스가 동시에 같은 자원(예: 재고, 스케줄 작업)에 접근하지 못하게 막아야 한다면, Redis로 분산 락을 어떻게 구현하시겠습니까? SETNX만으로 충분한가요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "Redlock 알고리즘을 아시나요? 단일 Redis 인스턴스로 락을 구현하는 것과 무엇이 다르고, 왜 그런 방식을 쓰나요? 그리고 Redlock이 완벽하다고 생각하시나요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>왜 "여러 서버"가 되는 순간 세션과 락이 문제가 되는가</h2>
+
+    <p>
+      HTTP는 원래 <strong>상태가 없는(stateless)</strong> 프로토콜이다. 그런데 로그인, 장바구니, 권한 확인처럼
+      "이 사용자가 누구인지"를 여러 요청에 걸쳐 기억해야 하는 기능이 필요하고, 이걸 위해 서버는 <strong>세션(session)</strong>이라는
+      상태를 어딘가에 저장한다. 문제는 서버가 한 대일 때는 그냥 그 서버의 메모리에 두면 되지만, 트래픽이 늘어나
+      서버를 여러 대로 늘리는(scale-out) 순간부터 <strong>"이 요청이 어느 서버로 갈지 알 수 없다"</strong>는 근본적인
+      제약이 생긴다는 점이다.
+    </p>
+
+    <h3>Sticky Session — 임시방편이지 근본 해법이 아니다</h3>
+    <p>
+      로드밸런서가 같은 사용자의 요청을 항상 같은 서버로 보내주는 방식을 <strong>sticky session</strong>이라 한다.
+      구현은 쉽지만, 그 서버가 재시작되거나 장애가 나면 <strong>세션이 통째로 사라진다</strong>. 또한 트래픽이
+      특정 서버에 몰리는 상황에서도 "이 사용자는 이 서버로"라는 제약 때문에 <strong>부하 분산이 불균등</strong>해진다.
+      스케일 아웃의 이점을 세션 관리 방식이 스스로 깎아먹는 셈이다.
+    </p>
+
+    <div class="callout callout-info">
+      <strong>그래서 Redis를 쓴다:</strong> 모든 서버가 세션 데이터를 <strong>중앙의 공유 저장소</strong>(Redis)에서
+      읽고 쓰면, 어느 서버가 요청을 처리하든 같은 세션을 볼 수 있다. Redis를 쓰는 이유는 단순히 "빠른 key-value
+      저장소"이기 때문만이 아니라, <strong>TTL(만료 시간)을 기본 기능으로 지원</strong>해서 "세션 30분 후 자동
+      만료" 같은 요구를 별도 배치 작업 없이 처리할 수 있고, 여러 서버에서 초당 수만 건의 세션 조회/갱신을
+      감당할 만큼 빠르기 때문이다.
+    </div>
+
+    <h3>서버는 무상태가 되지만, 시스템 전체가 무상태가 되는 것은 아니다</h3>
+    <p>
+      여기서 흔히 오해하는 지점이 있다. "세션을 Redis로 빼면 서버가 stateless가 된다"는 말은 맞지만, 이는
+      <strong>애플리케이션 서버 인스턴스</strong>가 상태를 갖지 않게 된다는 뜻이지, <strong>시스템 전체에서 상태가
+      사라진다는 뜻이 아니다</strong>. 상태는 여전히 존재하고, 단지 그 책임이 Redis라는 하나의(혹은 이중화된) 지점으로
+      옮겨간 것뿐이다. 즉 <strong>Redis 자체가 새로운 단일 장애점(SPOF)이 될 수 있다</strong>는 것을 시니어는
+      항상 함께 고려해야 한다.
+    </p>
+
+    <h3>분산 락 — "동시에 하나만 실행되어야 한다"는 요구</h3>
+    <p>
+      세션과 별개로, 스케일 아웃된 환경에서 자주 나오는 또 다른 문제는 <strong>여러 서버 인스턴스 중 정확히 하나만
+      어떤 작업을 수행해야 하는 경우</strong>다. 예를 들어 재고 100개짜리 상품에 동시에 여러 주문 요청이 들어올 때
+      재고를 정확히 100번만 차감해야 하거나, 크론잡이 서버 5대에 모두 배포되어 있어도 특정 시각에 딱 한 번만
+      실행되어야 하는 경우다. 이럴 때 쓰는 것이 <strong>분산 락(distributed lock)</strong>이다.
+    </p>
+
+    <h3>SETNX만으로는 안전한 락이 아니다</h3>
+    <p>
+      과거에는 <code>SETNX</code>(SET if Not eXists)로 락을 걸고 <code>EXPIRE</code>로 만료 시간을 따로 거는
+      방식을 썼다. 하지만 이 둘은 <strong>서로 다른 두 개의 명령</strong>이라, <code>SETNX</code>는 성공했는데
+      바로 다음 <code>EXPIRE</code> 실행 전에 프로세스가 죽으면 <strong>만료 시간 없는 락이 영원히 남는</strong>
+      사고가 생긴다. 지금은 이 문제를 원천 차단하는 원자적 명령을 쓴다.
+    </p>
+    <pre><code><span class="comment">// 올바른 락 획득: SET key value NX(없을 때만) PX(밀리초 단위 만료)를 한 번에 원자적으로 실행</span>
+<span class="func">SET</span> lock:order:1001 <span class="string">"client-uuid-abcd"</span> NX PX <span class="number">5000</span>
+<span class="comment">// value는 락을 요청한 클라이언트를 식별하는 고유 토큰(UUID) — "누가 이 락을 가졌는지" 구분하기 위함</span></code></pre>
+
+    <h3>락 해제도 "내가 건 락인지" 확인해야 한다</h3>
+    <p>
+      락을 풀 때도 함정이 있다. 단순히 <code>DEL lock:order:1001</code>을 호출하면, 만약 내 작업이 예상보다 오래
+      걸려 TTL이 먼저 만료되고 <strong>다른 클라이언트가 이미 새 락을 잡은 상태</strong>라면, 나는 그 다른 클라이언트의
+      락을 실수로 지워버리게 된다. 그래서 "이 락의 value가 내가 설정한 토큰과 같을 때만 지운다"는 <strong>확인 후
+      삭제(check-and-delete)</strong>를 원자적으로 해야 하고, 이건 GET과 DEL 두 명령을 따로 호출하면 그 사이에
+      경쟁 조건이 생기므로 <strong>Lua 스크립트</strong>로 원자적으로 묶어야 한다.
+    </p>
+    <pre><code><span class="comment">-- 안전한 락 해제 (Lua 스크립트, EVAL로 원자적 실행)</span>
+<span class="keyword">if</span> redis.call(<span class="string">"get"</span>, KEYS[<span class="number">1</span>]) == ARGV[<span class="number">1</span>] <span class="keyword">then</span>
+    <span class="keyword">return</span> redis.call(<span class="string">"del"</span>, KEYS[<span class="number">1</span>])
+<span class="keyword">else</span>
+    <span class="keyword">return</span> <span class="number">0</span>
+<span class="keyword">end</span></code></pre>
+
+    <h3>Redlock — 단일 인스턴스의 한계를 넘으려는 시도</h3>
+    <p>
+      단일 Redis 인스턴스에만 락을 걸면, <strong>그 인스턴스가 다운되는 순간 락 시스템 전체가 멈춘다</strong>.
+      Redis 저자(Antirez)가 제안한 <strong>Redlock</strong> 알고리즘은 이 문제를 완화하기 위해, 서로 독립적인
+      <strong>N개(보통 5개)의 Redis 마스터</strong>에 같은 락을 동시에 요청하고, <strong>과반수(quorum, 예: 5개 중 3개)</strong>
+      이상에서 락 획득에 성공하면 전체적으로 락을 획득한 것으로 간주하는 방식이다. 일부 인스턴스가 죽어 있어도
+      과반수만 살아있으면 락 시스템이 계속 동작한다는 것이 핵심 아이디어다.
+    </p>
+
+    <div class="callout callout-danger">
+      <strong>하지만 Redlock은 논쟁적이다:</strong> 분산 시스템 연구자 Martin Kleppmann은 Redlock이 <strong>진짜
+      mutual exclusion(상호 배제)을 보장하지 않는다</strong>고 지적했다. 클라이언트의 GC pause(가비지 컬렉션으로 인한
+      실행 정지)나 네트워크 지연으로 인해, 락을 획득했다고 "생각하는" 클라이언트의 TTL이 실제로는 이미 만료되어
+      다른 클라이언트가 같은 락을 획득한 상태에서 두 클라이언트가 동시에 임계 구역에 진입할 수 있다는 것이다.
+      Redis 저자는 이를 반박했지만, 이 논쟁 자체가 <strong>"락이 걸렸다"는 것과 "안전하게 배타적으로 실행된다"는
+      것이 다른 이야기</strong>라는 걸 보여주는 유명한 사례다.
+    </div>
+
+    <h3>Fencing Token — Redlock 논쟁이 알려준 진짜 해법</h3>
+    <p>
+      Kleppmann이 제안한 대안은 <strong>펜싱 토큰(fencing token)</strong>이다. 락을 획득할 때마다 단조 증가하는
+      숫자(1, 2, 3, ...)를 함께 받고, 실제 자원(DB, 파일 등)에 쓰기 작업을 할 때 <strong>"내가 가진 토큰이 가장
+      최신 토큰보다 작으면 쓰기를 거부한다"</strong>는 검증을 자원 쪽에서 함께 하는 방식이다. 이렇게 하면 GC
+      pause로 뒤늦게 깨어난 클라이언트가 낡은 락을 들고 와도, 최종 자원이 그 오래된 토큰의 쓰기를 거부해서
+      실제 사고로 이어지지 않는다. 즉 <strong>락만으로는 완전한 안전성을 보장할 수 없고, 자원 쪽의 검증이 함께
+      있어야 진짜 안전하다</strong>는 것이 핵심 교훈이다.
+    </p>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <p>
+      세션/락 질문은 "Redis 명령어 몇 개를 아는가"가 아니라, <strong>분산 환경에서 상태를 공유하는 것이 왜 근본적으로
+      어려운지, 그리고 그 어려움을 완전히 없앨 수 없다는 것을 이해하는가</strong>를 평가한다.
+    </p>
+
+    <ul>
+      <li>
+        <strong>단일 장애점(SPOF) 인식:</strong> 세션 저장소를 하나로 모으는 순간, 그 저장소가 새로운 장애 지점이
+        된다는 것을 인지하고 대비하는가
+      </li>
+      <li>
+        <strong>원자성에 대한 감각:</strong> "락 획득 + TTL 설정", "락 확인 + 락 해제"처럼 여러 단계로 나뉜 연산이
+        원자적이지 않으면 경쟁 조건이 생긴다는 것을 아는가
+      </li>
+      <li>
+        <strong>분산 시스템의 근본적 불확실성 이해:</strong> 네트워크 지연, GC pause, 클록 스큐(clock skew) 같은
+        요인이 "락을 획득했다고 믿는 것"과 "실제로 배타적으로 실행되는 것" 사이에 간극을 만들 수 있음을 아는가
+      </li>
+      <li>
+        <strong>도구의 한계를 안다:</strong> Redis 락이 편리하지만 강한 합의(consensus) 보장은 아니며, 정말
+        엄격한 정합성이 필요하면 ZooKeeper/etcd 같은 합의 알고리즘 기반 도구가 더 적합할 수 있다는 것을 아는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      이 주제는 실무에서 "락을 걸었는데도 재고가 마이너스가 됐다", "크론잡이 두 서버에서 동시에 실행됐다"처럼
+      실제 장애로 이어지는 대표적인 함정이다. 면접관은 지원자가 이런 사고를 미리 예방할 감각이 있는지를 이
+      질문으로 가늠한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 다중 서버 로그인 세션 — Redis Session vs JWT</h3>
+    <p>
+      서버 세션을 Redis에 두면 로그아웃, 강제 세션 만료(비밀번호 변경 시 다른 기기 로그아웃)를 서버 쪽에서
+      즉시 제어할 수 있다. 반면 JWT는 서버가 상태를 전혀 갖지 않아 검증이 빠르지만, <strong>토큰을 발급한 순간
+      서버가 그 유효성을 임의로 취소하기 어렵다</strong>(블랙리스트를 또 Redis에 둬야 하는 역설이 생기기도 한다).
+      실무에서는 "즉시 취소 가능성이 중요한가"를 기준으로 둘을 선택하거나 혼합한다(짧은 TTL의 access token +
+      Redis에 저장하는 refresh token).
+    </p>
+
+    <h3>상황 2: 재고 차감 — 분산 락 vs DB 원자적 연산</h3>
+    <p>
+      "재고 100개 중 1개 차감"은 사실 분산 락 없이도 <strong>DB의 원자적 UPDATE</strong>(<code>UPDATE stock SET qty = qty - 1
+      WHERE id = ? AND qty > 0</code>)나 Redis의 <code>DECR</code> 하나로 해결되는 경우가 많다. 분산 락은 "재고
+      확인 → 다른 시스템 호출 → 재고 차감"처럼 <strong>단일 원자적 명령으로 표현할 수 없는, 여러 단계에 걸친
+      임계 구역</strong>이 있을 때 진짜로 필요해진다. 락을 쓰기 전에 "이거 원자적 연산 하나로 안 되나?"를 먼저
+      검토하는 것이 시니어의 사고 순서다.
+    </p>
+
+    <h3>상황 3: 크론잡 중복 실행 방지</h3>
+    <p>
+      배포 편의를 위해 배치 서버를 여러 대 두더라도, 특정 스케줄 작업(예: 매일 자정 정산)은 정확히 한 번만
+      실행되어야 한다. 각 서버가 작업 시작 전 <code>SET job:daily-settlement:2026-07-04 &lt;server-id&gt; NX PX 600000</code>로
+      락을 시도하고, 성공한 서버만 실제 작업을 수행하는 방식으로 <strong>같은 작업이 여러 서버에서 동시에
+      실행되는 사고를 막는다</strong>.
+    </p>
+
+    <h3>상황 4: 중복 결제 요청 방지</h3>
+    <p>
+      사용자가 결제 버튼을 빠르게 두 번 누르거나, 클라이언트 재시도 로직이 같은 결제 요청을 중복 전송하는 경우,
+      주문 ID를 키로 하는 락(<code>lock:payment:order:1001</code>)을 짧은 TTL로 걸어 <strong>같은 주문에 대한
+      동시 처리 요청을 하나만 통과</strong>시킨다. 다만 이는 어디까지나 완화책이고, 최종적으로는 결제 시스템 자체가
+      <strong>멱등키(idempotency key)</strong>를 지원해 같은 요청이 두 번 들어와도 안전하게 처리되도록 설계하는 것이
+      더 근본적인 해법이다.
+    </p>
+
+    <h3>상황 5: Redis 장애 시 세션 유실 문제</h3>
+    <p>
+      세션을 Redis 단일 인스턴스에만 두면, 그 인스턴스가 죽는 순간 <strong>모든 사용자가 강제 로그아웃</strong>되는
+      사고로 이어진다. 실무에서는 Redis Sentinel(자동 failover)이나 Redis Cluster로 가용성을 높이고, 애플리케이션
+      쪽에서도 세션 조회 실패 시 "로그인 페이지로 보내는 것"과 "일시적 오류로 재시도하는 것"을 구분해 사용자
+      경험 저하를 최소화한다(자세한 장애 대응 설계는 Day 10에서 다룬다).
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>문제를 먼저 정의한다</strong>
+        "스케일 아웃된 서버들이 같은 세션 상태를 봐야 하는 문제인지, 여러 인스턴스 중 하나만 실행되어야 하는
+        동시성 제어 문제인지 구분합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>세션이라면 Redis + TTL로 중앙화한다</strong>
+        "세션을 Redis에 두고 TTL로 자동 만료시킵니다. 다만 이 순간 Redis가 새로운 단일 장애점이 된다는 것을
+        인지하고 Sentinel/Cluster로 가용성을 확보합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>락이 정말 필요한지부터 검토한다</strong>
+        "먼저 DB의 원자적 연산이나 Redis의 단일 명령(INCR/DECR)으로 해결되지 않는지 확인합니다. 여러 단계에
+        걸친 임계 구역일 때만 락을 씁니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>안전한 락 획득/해제를 구현한다</strong>
+        "<code>SET key token NX PX</code>로 원자적으로 획득하고, 해제 시에는 Lua 스크립트로 토큰을 확인한 후에만
+        삭제합니다. TTL 안에 작업이 끝나지 않을 가능성이 있으면 워치독으로 연장합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>안전성의 한계를 trade-off로 인정한다 (Senior 포인트)</strong>
+        "Redis 락은 대부분의 실무 상황에서 충분하지만, GC pause나 네트워크 지연 상황까지 완벽히 배제하는
+        진짜 mutual exclusion은 아닙니다. 절대적 정합성이 필요하면 fencing token을 자원 쪽에서 함께 검증하거나,
+        ZooKeeper/etcd 같은 합의 기반 도구를 고려합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "여러 서버로 스케일 아웃되면 sticky session처럼 특정 서버에 세션을 묶는 방식은 서버 장애 시 세션이
+        통째로 사라지고 부하 분산도 불균등해지는 문제가 있습니다. 그래서 세션을 Redis 같은 중앙 저장소에 두고,
+        모든 서버가 이를 공유해서 읽고 씁니다. Redis를 쓰는 이유는 빠르기도 하지만, TTL을 기본으로 지원해서
+        세션 만료를 별도 배치 없이 처리할 수 있기 때문입니다. 다만 이렇게 하면 Redis 자체가 새로운 단일 장애점이
+        되므로, Sentinel이나 Cluster로 가용성을 확보하는 것을 항상 함께 고려합니다.
+      </p>
+      <p>
+        분산 락이 필요한 경우는 여러 서버 인스턴스 중 정확히 하나만 어떤 작업을 수행해야 할 때입니다. 다만 락을
+        걸기 전에 먼저 DB의 원자적 UPDATE나 Redis의 INCR/DECR 같은 단일 명령으로 해결되지 않는지 검토합니다.
+        정말 여러 단계에 걸친 임계 구역이 필요하다면, <code>SET key token NX PX</code>로 원자적으로 락을 획득하고,
+        고유 토큰을 값으로 저장해서 나중에 해제할 때 '이 락이 정말 내가 건 락인지'를 Lua 스크립트로 원자적으로
+        확인한 후에만 삭제합니다. 단순히 DEL을 호출하면 TTL이 먼저 만료되고 다른 클라이언트가 이미 새 락을 잡은
+        상황에서 그 락을 실수로 지워버릴 수 있기 때문입니다.
+      </p>
+      <p>
+        다만 저는 Redis 락이 완벽한 상호 배제를 보장한다고 생각하지는 않습니다. Redlock 알고리즘처럼 여러 인스턴스에
+        과반수로 락을 거는 방식도, 클라이언트의 GC pause나 네트워크 지연이 발생하면 락을 획득했다고 믿는 클라이언트가
+        실제로는 이미 만료된 락을 들고 작업을 계속할 수 있습니다. 그래서 정말 절대적인 정합성이 필요한 자원이라면,
+        락에만 의존하지 않고 자원 쪽에서 단조 증가하는 fencing token을 함께 검증하거나, 필요에 따라 ZooKeeper나
+        etcd 같은 합의 알고리즘 기반 도구를 씁니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "Redis가 다운되면 로그인한 모든 사용자가 로그아웃되나요? 어떻게 완화하나요?"</h3>
+    <p><strong>약한 답변:</strong> "Redis는 안정적이라 잘 안 죽습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "단일 인스턴스라면 다운되는 순간 모든 세션 조회가 실패해 사실상 전체 로그아웃과 같은 상황이 됩니다.
+      이를 완화하려면 Redis Sentinel로 마스터 장애 시 자동으로 레플리카를 승격시키거나, Redis Cluster로 데이터를
+      분산해 일부 노드 장애가 전체 영향을 주지 않도록 합니다. 애플리케이션 쪽에서도 세션 조회 실패를 무조건
+      '로그인 필요'로 처리하지 않고, 일시적 오류인지 구분해서 재시도하거나 완만하게 실패(graceful degradation)하도록
+      설계합니다."
+    </p>
+
+    <h3>F2. "락을 획득한 프로세스가 작업 도중에 죽으면 어떻게 되나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "TTL이 없는 락이라면 그 락은 영원히 풀리지 않아 다른 모든 요청이 영구히 대기하는 '락 기아(lock starvation)'
+      상태가 됩니다. 그래서 락은 반드시 TTL과 함께 설정해야 하고, 대신 실제 작업이 TTL보다 오래 걸릴 가능성이
+      있다면 별도 스레드(워치독)가 주기적으로 '아직 작업 중이면 TTL을 연장'하는 방식을 씁니다."
+    </p>
+
+    <h3>F3. "SETNX + EXPIRE를 따로 호출하면 안 되는 이유는?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "SETNX가 성공한 직후, EXPIRE를 호출하기 전에 프로세스가 죽거나 네트워크 문제가 생기면 만료 시간이 없는
+      락이 영구히 남습니다. <code>SET key value NX PX ms</code>처럼 하나의 원자적 명령으로 락 획득과 만료 설정을
+      동시에 처리해야 이 문제를 원천 차단할 수 있습니다."
+    </p>
+
+    <h3>F4. "Redlock이 완벽한 mutual exclusion을 보장하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "완벽하지 않습니다. Martin Kleppmann은 클라이언트의 GC pause나 네트워크 지연으로 인해, 락을 획득했다고
+      믿는 클라이언트의 실제 TTL이 이미 만료되고 다른 클라이언트가 같은 락을 획득해 두 클라이언트가 동시에
+      임계 구역에 들어갈 수 있다고 지적했습니다. Redis 저자는 이 시나리오의 발생 확률이 실무적으로 낮다고
+      반박했지만, 절대적 안전성이 필요한 자원이라면 락만 믿지 않고 자원 쪽에서 fencing token을 검증하는 것이
+      더 안전합니다."
+    </p>
+
+    <h3>F5. "Redis 락 대신 쓸 수 있는 대안은 무엇이고, 언제 그걸 선택하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "DB 비관적 락(<code>SELECT ... FOR UPDATE</code>)이나 낙관적 락(버전 컬럼 비교)은 이미 트랜잭션을 쓰는
+      시스템이라면 별도 인프라 없이 쓸 수 있어 적합합니다. ZooKeeper나 etcd는 Raft/ZAB 같은 합의 알고리즘으로
+      더 강한 정합성을 보장하지만 운영 복잡도가 높습니다. Redis 락은 '어느 정도의 위험을 감수하더라도 빠르고
+      간단하게 대부분의 경합을 막고 싶은' 상황에 적합하고, '절대 두 프로세스가 동시에 실행되면 안 되는' 상황이라면
+      ZooKeeper/etcd나 fencing token을 함께 검토합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>세션 중앙화가 <strong>새로운 SPOF</strong>를 만든다는 것을 스스로 지적하고 대비책을 제시한다</li>
+          <li>락을 걸기 <strong>전에</strong> 원자적 연산 하나로 대체 가능한지부터 검토한다</li>
+          <li>락 해제 시 <strong>소유자 확인(토큰 비교)</strong>이 왜 필요한지 경쟁 조건 시나리오로 설명한다</li>
+          <li>Redlock의 <strong>한계와 논쟁</strong>을 알고, fencing token 같은 보완책을 제시한다</li>
+          <li>"완벽하게 안전하다"가 아니라 <strong>trade-off와 잔여 위험</strong>을 솔직하게 설명한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"Redis에 세션 넣으면 끝"이라며 <strong>가용성 문제를 고려하지 않는다</strong></li>
+          <li>모든 동시성 문제에 <strong>무조건 락부터</strong> 걸려고 한다</li>
+          <li>단순 <code>DEL</code>로 락을 해제해도 된다고 생각한다</li>
+          <li>Redlock을 "여러 서버에 걸면 무조건 더 안전하다"는 식으로 <strong>근거 없이</strong> 설명한다</li>
+          <li>락이 걸리면 <strong>무조건 완벽하게 배타적으로 실행된다</strong>고 단정한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 "락을 어떻게 구현하는가"를 넘어 <strong>"이 락이 실패할 수 있는
+      방식은 무엇이고, 그 실패가 실제로 얼마나 위험한가"</strong>까지 설명한다. 분산 시스템 질문에서는 항상
+      "완벽한 해법은 없다"는 전제를 깔고 trade-off로 답하는 것이 시니어다운 태도다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "세션을 Redis에 두면 서버뿐 아니라 시스템 전체가 무상태가 된다"</h3>
+    <p>
+      <strong>사실:</strong> 애플리케이션 서버 인스턴스는 상태를 갖지 않게 되지만, 상태 자체는 사라지지 않고
+      Redis로 옮겨갈 뿐이다. Redis가 새로운 단일 장애점이 될 수 있다는 것을 항상 함께 고려해야 한다.
+    </p>
+
+    <h3>오해 2: "SETNX만 쓰면 락이 완성된다"</h3>
+    <p>
+      <strong>사실:</strong> <code>SETNX</code>와 <code>EXPIRE</code>를 따로 호출하면 그 사이의 장애로 만료
+      시간 없는 락이 영구히 남을 수 있다. <code>SET key value NX PX</code>처럼 하나의 원자적 명령으로 처리해야
+      하고, 해제할 때도 소유자 토큰을 확인하는 원자적 스크립트가 필요하다.
+    </p>
+
+    <h3>오해 3: "Redlock은 여러 인스턴스를 쓰니 단일 인스턴스 락보다 절대적으로 안전하다"</h3>
+    <p>
+      <strong>사실:</strong> 가용성(일부 인스턴스가 죽어도 동작)은 확실히 좋아지지만, GC pause나 네트워크 지연으로
+      인한 mutual exclusion 실패 가능성 자체를 근본적으로 없애주지는 않는다는 것이 Kleppmann의 지적이다. "더
+      가용성이 높다"와 "더 안전하다"는 서로 다른 축의 이야기다.
+    </p>
+
+    <h3>오해 4: "락만 잘 걸면 어떤 동시성 문제든 해결된다"</h3>
+    <p>
+      <strong>사실:</strong> 락은 애플리케이션 레벨의 경쟁을 줄여주지만, 실제 자원(DB, 파일 등)에 대한 쓰기가
+      락의 안전성 가정에 의존한다면 그 가정이 깨지는 순간(GC pause, 네트워크 파티션) 데이터 정합성이 깨질 수
+      있다. 절대적으로 중요한 자원이라면 자원 쪽에서 fencing token 검증 같은 이중 방어를 함께 두는 것이 안전하다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>세션/락 설계 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>상황</th>
+        <th>권장 방식</th>
+        <th>주의</th>
+      </tr>
+      <tr>
+        <td>다중 서버 세션 공유</td>
+        <td><span class="badge badge-green">Redis + TTL</span></td>
+        <td><span class="badge badge-yellow">Sentinel/Cluster로 가용성 확보 필요</span></td>
+      </tr>
+      <tr>
+        <td>즉시 토큰 취소가 중요한 인증</td>
+        <td><span class="badge badge-green">서버 세션 or 짧은 TTL + refresh</span></td>
+        <td><span class="badge badge-yellow">순수 JWT만으로는 즉시 취소 어려움</span></td>
+      </tr>
+      <tr>
+        <td>단일 값 증감/차감</td>
+        <td><span class="badge badge-green">DECR/INCR, DB 원자적 UPDATE</span></td>
+        <td><span class="badge badge-yellow">락보다 먼저 검토할 것</span></td>
+      </tr>
+      <tr>
+        <td>여러 단계 임계 구역</td>
+        <td><span class="badge badge-green">SET NX PX + 토큰 + Lua 해제</span></td>
+        <td><span class="badge badge-red">SETNX+EXPIRE 분리 호출 금지</span></td>
+      </tr>
+      <tr>
+        <td>절대적 정합성이 필요한 자원</td>
+        <td><span class="badge badge-green">Fencing token, ZooKeeper/etcd</span></td>
+        <td><span class="badge badge-red">Redis 락만 믿지 말 것</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"Redis에 세션 넣으면 된다", "SETNX로 락 걸면 된다"는 결론만 말하고 이유를 설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>Redis 세션/락의 기본 명령은 알지만, 원자성 문제(SETNX+EXPIRE 분리)나 SPOF 위험을 인지하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>원자적 락 획득(SET NX PX)과 토큰 기반 안전한 해제를 설명할 수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>락을 걸기 전 원자적 연산 대체 가능성부터 검토하고, Redlock의 한계(GC pause, 네트워크 지연)와
+      fencing token 같은 보완책까지 trade-off로 설명하며, 세션 중앙화가 만드는 새로운 SPOF와 그 완화책(Sentinel/Cluster)을
+      함께 제시함</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. 세션을 Redis로 중앙화하면 왜 Redis가 새로운 단일 장애점이 되는지 설명할 수 있는가?<br>
+      2. SETNX와 EXPIRE를 따로 호출하면 안 되는 이유를 경쟁 조건 시나리오로 설명할 수 있는가?<br>
+      3. 락 해제 시 소유자 토큰을 확인해야 하는 이유를 구체적인 사고 시나리오로 설명할 수 있는가?<br>
+      4. Redlock이 왜 완벽한 mutual exclusion을 보장하지 않는지, fencing token이 왜 필요한지 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li>세션 중앙화(Redis)는 스케일 아웃을 가능하게 하지만, <strong>새로운 단일 장애점</strong>을 만든다는 것을
+      항상 함께 고려한다.</li>
+      <li>분산 락은 <strong>여러 단계에 걸친 임계 구역</strong>일 때만 쓰고, 그 전에 원자적 연산으로 대체
+      가능한지부터 검토한다.</li>
+      <li>안전한 락은 <strong>SET key token NX PX</strong>로 원자적으로 획득하고, 해제는 <strong>토큰 확인 +
+      삭제를 Lua로 원자적으로</strong> 처리해야 한다.</li>
+      <li><strong>Redlock</strong>은 가용성을 높이지만 GC pause·네트워크 지연 상황에서 완벽한 mutual exclusion을
+      보장하지 않는다는 논쟁이 있다.</li>
+      <li>절대적 정합성이 필요한 자원은 락만 믿지 말고 <strong>fencing token</strong>이나 합의 알고리즘 기반
+      도구(ZooKeeper/etcd)로 이중 방어한다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 5 완료 · 다음: Day 6 — 랭킹 시스템과 Sorted Set</span>
+  </div>
+
+</div>
+</body>
+</html>
