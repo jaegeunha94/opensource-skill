@@ -8,12 +8,12 @@
 | 2 | 2026-07-01 | 세션 관리와 JWT — 설계 판단 | [0002-session-management-jwt.html](lessons/0002-session-management-jwt.html) |
 | 3 | 2026-07-02 | SQL Injection — 탐지, 방어, 실무 패턴 | [0003-sql-injection.html](lessons/0003-sql-injection.html) |
 | 4 | 2026-07-03 | XSS와 CSRF — 공격 원리와 방어 설계 | [0004-xss-csrf.html](lessons/0004-xss-csrf.html) |
+| 5 | 2026-07-04 | 파일 업로드 보안과 SSRF | [0005-file-upload-ssrf.html](lessons/0005-file-upload-ssrf.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | 파일 업로드 보안과 SSRF | 파일 검증, MIME sniffing, SSRF 방어 |
 | 6 | API 보안 | Rate Limiting, 과도한 데이터 노출, Mass Assignment |
 | 7 | 비밀번호 저장 | bcrypt vs Argon2, rainbow table, 솔팅 |
 | 8 | Secret 관리 | 환경 변수, Vault, KMS, 비밀 로테이션 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — Day 5 (파일 업로드 보안과 SSRF)가 다음 차례.
+**Day 5 완료** — Day 6 (API 보안)이 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -47,6 +47,11 @@
 - [x] CSRF 원리 — 쿠키 자동 첨부라는 브라우저 신뢰 모델 (Day 4)
 - [x] SameSite 쿠키 + CSRF 토큰 계층 방어 (Day 4)
 - [x] Bearer 토큰 인증과 CSRF/XSS trade-off의 저장 위치 의존성 (Day 4)
-- [ ] 파일 업로드 검증과 MIME sniffing (예정 Day 5)
-- [ ] SSRF 공격 원리와 방어 (예정 Day 5)
+- [x] 파일 업로드 위협 모델 — 확장자와 실제 파일 내용의 괴리, 실행 가능 경로의 위험 (Day 5)
+- [x] 매직 바이트 검증과 이미지 리사이징 라이브러리의 잔여 위험 (Day 5)
+- [x] 업로드 저장소 분리, 서버 생성 파일명, 별도 도메인 서빙 (Day 5)
+- [x] SSRF 원리 — 서버 자신의 네트워크 위치·권한이 대리 악용되는 구조 (Day 5)
+- [x] 클라우드 메타데이터 엔드포인트 공격과 IMDSv2 (Day 5)
+- [x] SSRF 블랙리스트 우회(DNS Rebinding, IP 인코딩, 리다이렉트)와 네트워크 세그멘테이션 방어 (Day 5)
+- [ ] Rate Limiting, 과도한 데이터 노출, Mass Assignment, BOLA (예정 Day 6)
 - [ ] bcrypt/Argon2 비교 (예정 Day 7)
