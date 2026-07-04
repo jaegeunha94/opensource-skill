@@ -5,9 +5,17 @@
 ## 공식 소스 — Hermes Agent (Nous Research)
 
 - [Hermes Agent 공식 문서](https://hermes-agent.nousresearch.com/docs/) — quickstart, CLI, configuration, messaging gateway, security, tools, skills, memory, MCP, cron, ACP, API server, architecture
-- [GitHub — NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) — MIT 라이선스, 최신 태그 v0.18.0 "The Judgment Release"(2026-07-01)
+- [Hermes Agent — Configuration](https://hermes-agent.nousresearch.com/docs/user-guide/configuration), [Hermes Agent — Docker](https://hermes-agent.nousresearch.com/docs/user-guide/docker) — terminal backend 설정(local/docker/ssh/daytona/singularity/modal), 작업 디렉토리/타임아웃/컨테이너 이미지 설정(WebFetch가 403을 반환해 직접 인용은 어려웠고, 검색 스니펫과 2차 출처로 교차검증함 — 실제 면접 전 브라우저로 재확인 권장)
+- [GitHub — NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) — MIT 라이선스, 최신 태그 v0.18.0 "The Judgment Release"(2026-07-01, 2026-07-04 기준 재확인해도 최신 릴리스 동일)
+- [GitHub Releases — v0.18.0 "The Judgment Release"](https://github.com/NousResearch/hermes-agent/releases/tag/v2026.7.1) — ~1,720 commits, 998 merged PR, P0/P1 이슈 100% 종료, Mixture-of-Agents 정식 지원
 - Nous Research 공식 발표(2026-02-25) — "the self-improving AI agent... the only agent with a built-in learning loop"
 - GitHub Issues — 의존성 deprecation 경고 사례(예: Issue #29322, `hermes update` 실행 시 `glob`/`inflight` deprecation, v0.14.0 기준 보고)
+
+## Day 2 리서치 — 실행 backend / 배포 토폴로지 (2차 출처, 교차검증 완료)
+
+- Hermes Agent 6개 terminal backend(local/docker/ssh/daytona/singularity/modal) 구성 — 공식 문서, GitHub README, 다수의 독립 튜토리얼(Hermes Agent Tutorial 7: Terminal Backends 등)에서 공통 확인. 일부 3rd-party 블로그(`hermesagents.net`)는 "7개 sandbox backend"라고 서술하나 이는 소수 의견이라 6개를 기준으로 채택
+- "$5 VPS" always-on 배포 패턴 — DigitalOcean/Hetzner/Vultr 등 월 5~7달러 VPS, Docker 공식 이미지(`nousresearch/hermes-agent`) 권장, PM2/systemd로 프로세스 상주, 메모리 사용량 500MB 미만(로컬 LLM 미사용 시) — 다수의 실무 배포 가이드(Contabo, Servury, Hostinger 튜토리얼)에서 반복 확인된 패턴
+- Daytona hibernate-on-idle: 장시간 유휴 후 첫 요청 약 300ms 깨어남 지연, 이후 요청은 컨테이너 상주로 빠름 / Modal cold start: 워크로드에 따라 약 200ms~2-4초 — 서드파티 인프라 비교 아티클(Modal 공식 블로그, mcp.directory 비교 글) 기준, 수치는 워크로드·리전에 따라 달라질 수 있어 참고치로만 사용
 
 ## 보안 감사 / CVE
 

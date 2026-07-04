@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — Local-first 실행과 배포 토폴로지</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 2 · Hermes Agent Interview</div>
+    <h1>Local-first 실행과 배포 토폴로지</h1>
+    <div class="subtitle">6개 실행 backend 사이에서 "항상 켜져 있어야 한다"는 요구와 "쓸 때만 돈 낸다"는 요구를 어떻게 저울질하는가</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전/출처 기준:</strong> 이 레슨은 2026-07 기준 <strong>Nous Research의 Hermes Agent</strong>
+    (<code>github.com/NousResearch/hermes-agent</code>, 최신 태그 <strong>v0.18.0 "The Judgment Release"</strong>,
+    공식 문서 <code>hermes-agent.nousresearch.com/docs/</code>)를 기준으로 작성됐다. 레슨 작성 시점에 GitHub Releases와
+    공식 문서를 재확인한 결과 v0.18.0 이후 새 릴리스는 없었고, 6개 실행 backend(local/Docker/SSH/Daytona/Singularity/Modal)
+    구성도 그대로 유지되고 있다. 일부 3rd-party 블로그는 "7개 sandbox backend"라고 서술하지만, 공식 GitHub README와
+    공식 문서, 다수의 독립 튜토리얼이 공통적으로 <strong>6개</strong>를 명시하므로 이 레슨은 6개를 기준으로 한다 —
+    면접 전에는 반드시 공식 문서로 최신 목록을 재확인해야 한다.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "Hermes Agent는 local, Docker, SSH, Daytona, Singularity, Modal이라는 6개 실행 backend를 제공합니다.
+      always-on 개인 비서를 운영한다고 할 때, 이 중 무엇을 고르고 왜 그렇게 판단하시겠습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "Daytona나 Modal 같은 서버리스 backend는 유휴 시 hibernate(절전)된다고 들었습니다. 이게 always-on
+      요구사항과 충돌하지 않나요? 실제로 충돌한다면, 그런데도 왜 쓰는 팀이 있을까요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "'$5짜리 VPS 하나로 24시간 돌린다'는 배포 패턴을 들어보셨을 텐데, 이게 왜 always-on 에이전트의
+      기본 배포 토폴로지로 자리 잡았는지, 그리고 이게 무한정 확장 가능한 해법인지 설명해주세요."
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>실행 backend란 무엇을 결정하는 선택인가</h2>
+
+    <h3>"어디서 실행되는가"는 "무엇이 실행되는가"와 다른 질문이다</h3>
+    <p>
+      Day 1에서 "local-first는 개인 노트북을 뜻하지 않는다"는 걸 다뤘다. 이번에는 그 판단을 더 구체적으로
+      쪼갠다. Hermes Agent에서 <strong>"terminal backend" 설정</strong>은 에이전트의 <strong>추론(LLM 호출)이
+      어디서 일어나는지</strong>가 아니라, <strong>에이전트가 실행하는 셸 명령·코드가 물리적으로 어느 환경에서
+      돌아가는지</strong>를 결정한다. LLM 추론은 항상 provider API(Day 4)로 나가지만, "파일을 읽고, 스크립트를
+      돌리고, 패키지를 설치하는" 실제 작업은 로컬 머신일 수도, Docker 컨테이너일 수도, 원격 SSH 서버일 수도,
+      서버리스 샌드박스일 수도 있다.
+    </p>
+    <p>
+      쉬운 비유로, "에이전트의 두뇌(LLM)"는 항상 클라우드에 있는 상담사와 통화하는 것과 같고,
+      "에이전트의 손발(terminal backend)"은 그 상담사의 지시를 실제로 수행하는 현장 작업자가 어디 서
+      있느냐의 문제다. 상담사가 어디 있든, 작업자가 내 사무실에 있는지, 격리된 창고(컨테이너)에 있는지,
+      먼 지사(SSH 원격 서버)에 있는지, 필요할 때만 부르는 파견 인력(서버리스)인지에 따라 비용·속도·안전성이
+      완전히 달라진다.
+    </p>
+
+    <h3>6개 backend를 목적별로 분류하기</h3>
+    <p>
+      공식 문서와 GitHub README를 종합하면, 6개 backend는 각각 뚜렷한 목적을 가진다. 이걸 그냥 "6가지
+      옵션이 있다"로 암기하면 얕은 답이 되고, <strong>"격리 수준", "상시성", "비용 모델"이라는 3개 축</strong>으로
+      분류해야 시니어답게 설명할 수 있다.
+    </p>
+
+    <table>
+      <tr>
+        <th>Backend</th>
+        <th>주 용도</th>
+        <th>격리 수준</th>
+        <th>상시성(always-on 적합도)</th>
+        <th>비용 모델</th>
+      </tr>
+      <tr>
+        <td><code>local</code></td>
+        <td>개인 기기에서 직접 실행</td>
+        <td>없음(호스트와 동일 권한)</td>
+        <td><span class="badge badge-red">낮음</span></td>
+        <td>기기 소유 비용만</td>
+      </tr>
+      <tr>
+        <td><code>docker</code></td>
+        <td>컨테이너 격리 실행</td>
+        <td><span class="badge badge-green">중간</span></td>
+        <td><span class="badge badge-yellow">호스트에 달림</span></td>
+        <td>호스트 인프라 비용</td>
+      </tr>
+      <tr>
+        <td><code>ssh</code></td>
+        <td>원격 서버에 실행 위임</td>
+        <td>원격 서버 정책에 종속</td>
+        <td><span class="badge badge-green">높음</span>(원격이 상시 가동이면)</td>
+        <td>원격 서버 유지비</td>
+      </tr>
+      <tr>
+        <td><code>daytona</code></td>
+        <td>일회성/임시 개발 환경</td>
+        <td><span class="badge badge-green">높음</span></td>
+        <td><span class="badge badge-yellow">hibernate-on-idle</span></td>
+        <td>활성 시간만 과금(유휴시 거의 0)</td>
+      </tr>
+      <tr>
+        <td><code>singularity</code></td>
+        <td>HPC(고성능 컴퓨팅) 워크로드</td>
+        <td>연구용 클러스터 정책 종속</td>
+        <td>클러스터 스케줄러에 종속</td>
+        <td>클러스터 과금 정책</td>
+      </tr>
+      <tr>
+        <td><code>modal</code></td>
+        <td>서버리스 GPU/CPU 샌드박스</td>
+        <td><span class="badge badge-green">높음</span></td>
+        <td><span class="badge badge-yellow">cold start 후 실행</span></td>
+        <td>실행 시간 단위 과금</td>
+      </tr>
+    </table>
+
+    <div class="callout callout-tip">
+      3개 축으로 나눠서 기억하면 편하다 — <strong>"내 손 안(local)" vs "울타리 안(docker)" vs "남의 집(ssh)" vs
+      "필요할 때만 빌리는 창고(daytona/modal)" vs "연구소 슈퍼컴(singularity)"</strong>. 면접에서 6개를
+      나열만 하지 말고 이 3축(격리/상시성/비용)으로 분류해서 설명하면 구조적으로 이해했다는 신호를 준다.
+    </div>
+
+    <h3>Hibernate-on-idle과 always-on의 근본적 충돌</h3>
+    <p>
+      Daytona와 Modal의 핵심 매력은 <strong>"유휴 시 절전, 필요할 때 깨어남"</strong>이다. 이건 비용 관점에서는
+      훌륭하다 — 아무 일도 안 하는 시간에는 거의 과금되지 않는다. 그런데 always-on 에이전트가 요구하는 것은
+      정반대다: <strong>사용자가 아무 말도 안 해도 예약된 작업(cron)을 스스로 깨워 실행하고, 메신저에서
+      들어오는 요청에 지연 없이 반응해야 한다.</strong>
+    </p>
+    <p>
+      이 둘은 구조적으로 긴장 관계에 있다. "아무도 안 쓰면 재워서 돈을 아낀다"는 서버리스의 존재 이유와
+      "아무도 안 써도 깨어서 스스로 뭔가 해야 한다"는 always-on의 요구사항은 <strong>거의 정반대 목표</strong>다.
+      실측 자료를 보면 Daytona는 장시간 유휴 후 첫 요청에서 약 300ms 안팎의 깨어남 지연이 있고(이후 요청은
+      컨테이너가 이미 떠 있으므로 빠르다), Modal은 워크로드에 따라 약 200ms에서 길게는 2~4초의 콜드 스타트가
+      발생할 수 있다. 사람이 채팅하듯 기다릴 수 있는 수준이라면 문제가 안 되지만, <strong>"새벽 3시에 스스로
+      깨어나 예약된 배치 작업을 실행"</strong>하는 시나리오에서는 애초에 "깨울 트리거가 없다"는 게 문제다 —
+      서버리스는 외부 요청이 와야 깨어나는데, cron처럼 에이전트 스스로 시간이 되어 깨어나야 하는 경우
+      깨울 주체가 모호해진다.
+    </p>
+
+    <div class="callout callout-warn">
+      <strong>공식 문서에 세부 스펙이 없는 부분 — 아키텍처 추론:</strong> Hermes Agent 공식 문서는 "cron이
+      서버리스 backend를 어떻게 깨우는지"에 대한 세부 메커니즘을 명시하지 않는다. 구조상 합리적으로 추론하면,
+      cron 스케줄러 자체는 게이트웨이/코어 프로세스(Day 8) 쪽에 상시로 떠 있어야 하고, 그 상시 프로세스가
+      예정된 시각에 <strong>서버리스 backend를 능동적으로 호출해서 깨우는</strong> 구조일 것이다. 즉
+      "서버리스 backend가 스스로 시간을 보고 깨어나는" 게 아니라 "상시 실행되는 다른 컴포넌트가 필요한
+      순간에 서버리스를 불러 쓰는" 구조로 보는 것이 타당하다 — 면접에서는 이걸 사실처럼 단정하지 말고
+      추론이라고 밝히며 설명한다.
+    </div>
+
+    <h3>"$5 VPS" 패턴이 기본값이 된 이유</h3>
+    <p>
+      바로 위의 충돌 때문에, always-on 목적에는 결국 <strong>"유휴 시에도 계속 떠 있는 저비용 VPS"</strong>가
+      가장 무난한 기본값이 된다. 실측/실무 가이드를 종합하면 다음과 같은 특징이 있다.
+    </p>
+    <ul>
+      <li>DigitalOcean Droplet, Hetzner CX22, Vultr 등 <strong>월 5~7달러 수준의 저가 VPS</strong>로도
+        충분히 돌아간다 — 로컬 LLM을 직접 얹지 않는 한 에이전트 자체의 메모리 사용량은 500MB 미만으로 가볍다.</li>
+      <li>공식적으로 <strong>Docker 배포가 권장 방식</strong>이며, 공식 이미지(<code>nousresearch/hermes-agent</code>)를
+        VPS 위에서 컨테이너로 띄우는 패턴이 일반적이다.</li>
+      <li>프로세스가 죽거나 서버가 재부팅돼도 자동으로 재기동되도록 <strong>PM2 같은 프로세스 매니저</strong>(또는
+        <code>systemd</code> 유닛)로 감싸는 것이 always-on 운영의 사실상 표준이다.</li>
+      <li>총 운영비는 VPS 5~7달러 + LLM API 호출 비용(모델 선택에 따라 월 2~15달러 수준)으로, "24시간 상주
+        비서"치고는 매우 저렴한 편이다(Day 14에서 provider 라우팅 비용까지 더 깊게 다룬다).</li>
+    </ul>
+    <p>
+      여기서 시니어급 통찰은 "$5 VPS면 다 해결된다"가 아니라, <strong>이 패턴이 유효한 스케일과 무효한 스케일을
+      구분하는 것</strong>이다. 개인 1인 비서, 소규모 팀 자동화라면 단일 VPS로 충분하다. 하지만 여러 사용자,
+      여러 세션, GPU가 필요한 로컬 모델 추론, 엄격한 네트워크 격리가 필요한 조직이라면 단일 VPS는 단일 장애점
+      (SPOF)이 되고, 이때는 Docker/Kubernetes 기반의 다중 인스턴스, 혹은 SSH backend로 여러 원격 실행 환경을
+      묶는 편이 맞는 판단이 된다.
+    </p>
+
+    <table>
+      <tr>
+        <th>상황</th>
+        <th>적합한 backend/토폴로지</th>
+        <th>이유</th>
+      </tr>
+      <tr>
+        <td>개인 1인 always-on 비서</td>
+        <td>저비용 VPS + Docker + PM2</td>
+        <td>가볍고 저렴하며, 상시 가동을 자연스럽게 보장</td>
+      </tr>
+      <tr>
+        <td>일회성 코드 실행/실험, 짧은 세션</td>
+        <td>Daytona</td>
+        <td>hibernate로 유휴 비용을 없애고, 실험 격리도 보장</td>
+      </tr>
+      <tr>
+        <td>GPU 필요한 배치성 작업(로컬 파인튜닝 검증 등)</td>
+        <td>Modal</td>
+        <td>필요한 순간만 GPU를 빌려 쓰는 비용 구조</td>
+      </tr>
+      <tr>
+        <td>이미 있는 사내 서버 인프라 활용</td>
+        <td>SSH</td>
+        <td>기존 신뢰 경계·네트워크 정책을 그대로 재사용</td>
+      </tr>
+      <tr>
+        <td>연구용 클러스터에서 대규모 계산</td>
+        <td>Singularity</td>
+        <td>HPC 환경의 표준 컨테이너 런타임과 호환</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <p>
+      이 질문은 "6개 backend 이름을 외웠는가"를 보는 게 아니다. 면접관이 실제로 확인하려는 건
+      <strong>비용·상시성·격리라는 서로 충돌하는 요구사항 사이에서 상황에 맞는 판단을 내릴 수 있는가</strong>다.
+    </p>
+
+    <ul>
+      <li>
+        <strong>"서버리스 = 항상 좋다"는 유행어에 휘둘리지 않는가:</strong> hibernate-on-idle이
+        always-on과 구조적으로 충돌한다는 것을 스스로 짚어낼 수 있는가
+      </li>
+      <li>
+        <strong>비용 최적화와 요구사항 충족을 동시에 저울질하는가:</strong> "$5 VPS"가 만능 해법이 아니라
+        특정 스케일(1인/소규모)에서 유효한 패턴이라는 걸 아는가
+      </li>
+      <li>
+        <strong>격리 수준이라는 축을 가지고 있는가:</strong> local과 Docker와 SSH가 왜 다른 보안 함의를
+        갖는지 설명할 수 있는가(이건 Day 10 샌드박싱과 직결된다)
+      </li>
+      <li>
+        <strong>단일 장애점(SPOF) 개념을 아키텍처 판단에 연결하는가:</strong> 단일 VPS의 한계를 알고
+        스케일이 커질 때 무엇으로 바꿔야 하는지 아는가
+      </li>
+      <li>
+        <strong>추론과 사실을 구분해서 말하는가:</strong> cron이 서버리스 backend를 깨우는 정확한 내부
+        메커니즘처럼 공식 문서에 없는 부분을 정직하게 "추론"이라고 표시하는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      실무에서 이 판단을 잘못하면 실제로 발생하는 사고가 있다 — 서버리스가 저렴하다는 이유만으로 always-on
+      비서를 Daytona/Modal 위에 올렸다가, 예약된 새벽 리포트가 몇 주간 조용히 실행되지 않다가 뒤늦게
+      발견되는 식이다. 면접관은 이런 실제 장애 시나리오를 후보가 사전에 예측할 수 있는지를 본다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: "비용 아끼려고 서버리스로 옮겼는데 예약 작업이 멈췄어요"</h3>
+    <p>
+      매달 인프라 비용 절감이 목표라서 always-on 비서를 Modal 서버리스로 옮겼더니, 매일 아침 보내던
+      리포트가 조용히 실행되지 않는 사고가 발생한다. 원인은 "깨울 트리거가 없다"는 구조적 문제다.
+      → <strong>비용 최적화 이전에 "이 워크로드가 스스로 깨어나야 하는가, 아니면 외부 요청에만 반응하면
+      되는가"를 먼저 구분</strong>해야 한다.
+    </p>
+
+    <h3>상황 2: 단일 VPS가 다운되어 팀 전체 자동화가 멈췄을 때</h3>
+    <p>
+      개인용으로 시작한 "$5 VPS" 패턴을 그대로 팀 규모로 확장했더니, VPS 하나가 다운되는 순간 여러 팀원의
+      자동화가 동시에 멈춘다. → <strong>스케일이 커지면 단일 인스턴스의 SPOF 위험을 인지하고 다중화(Docker
+      오케스트레이션, 여러 SSH 대상 등)로 전환하는 시점을 판단</strong>해야 한다.
+    </p>
+
+    <h3>상황 3: 보안 감사에서 "왜 로컬 backend를 쓰냐"는 지적을 받았을 때</h3>
+    <p>
+      개발 초기에 빠르게 데모하려고 <code>local</code> backend를 그대로 프로덕션에 남겨뒀는데, 감사에서
+      "에이전트가 호스트 권한으로 임의 명령을 실행할 수 있다"는 지적을 받는다. → <strong>격리 수준이 다른
+      backend(Docker/SSH 등)로 전환하는 것이 데모 단계와 프로덕션 단계를 구분하는 실무 판단</strong>이다
+      (Day 10에서 심화).
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>"실행 backend"가 무엇을 결정하는지부터 정의한다</strong>
+        LLM 추론 위치가 아니라 셸 명령이 실제로 실행되는 물리적 환경을 결정한다는 점을 짚는다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>6개를 3개 축(격리/상시성/비용)으로 분류해서 설명한다</strong>
+        단순 나열이 아니라 구조적 기준으로 묶어서 말한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>hibernate-on-idle과 always-on의 구조적 충돌을 짚는다</strong>
+        서버리스가 저렴한 이유(유휴 시 절전)가 always-on이 요구하는 것(스스로 깨어남)과 정반대라는 점을
+        명확히 설명한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>"$5 VPS" 패턴을 근거와 함께 제시하고, 유효 범위를 한정한다</strong>
+        저비용 VPS + Docker + 프로세스 매니저가 개인/소규모에는 적합하지만 무한정 확장되는 해법은
+        아니라는 것까지 말한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>스케일이 바뀌면 판단도 바뀐다는 것으로 마무리한다</strong>
+        규모·보안 요구·워크로드 특성에 따라 backend 선택이 달라지는 trade-off 감각을 보여준다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+    <p>
+      "Hermes Agent의 실행 backend 설정은 LLM 추론이 어디서 일어나는지가 아니라, 에이전트가 실행하는
+      셸 명령이나 코드가 실제로 어느 환경에서 도는지를 결정하는 설정이라고 이해하고 있습니다. local,
+      Docker, SSH, Daytona, Singularity, Modal 6개가 있는데, 이걸 그냥 나열하기보다는 격리 수준, 상시성,
+      비용 모델이라는 세 축으로 나눠서 봅니다.
+    </p>
+    <p>
+      always-on 개인 비서를 운영한다면 저는 우선 저비용 VPS 위에 Docker로 배포하고 PM2 같은 프로세스
+      매니저로 감싸는 조합을 고를 것 같습니다. 이유는, Daytona나 Modal 같은 서버리스 backend는 유휴 시
+      hibernate돼서 비용은 거의 안 들지만, always-on이 요구하는 건 정반대이기 때문입니다 — 사용자가
+      아무 말도 안 해도 cron으로 예약된 작업을 스스로 깨워서 실행해야 하는데, 서버리스는 외부 요청이
+      와야 깨어나는 구조라 '깨울 트리거가 없다'는 문제가 생깁니다. 실제로 비용을 아끼려고 서버리스로
+      옮겼다가 새벽에 도는 예약 리포트가 조용히 멈추는 사고가 날 수 있다고 봅니다.
+    </p>
+    <p>
+      그래서 개인이나 소규모 팀 수준에서는 월 5~7달러짜리 VPS 하나로도 충분하다는 게 실무 가이드에서
+      반복적으로 나오는 패턴입니다. 에이전트 자체 메모리 사용량이 로컬 LLM 없이는 500MB 미만으로 가볍기
+      때문입니다. 다만 이게 만능은 아니고, 여러 사용자·여러 세션을 다루는 규모가 되면 단일 VPS는 단일
+      장애점이 되기 때문에, 그때는 Docker 오케스트레이션이나 SSH로 여러 실행 환경을 묶는 쪽으로 판단을
+      바꿔야 한다고 생각합니다. 반대로 일회성 실험이나 GPU가 필요한 배치 작업이라면 Daytona나 Modal의
+      hibernate 특성이 오히려 비용 이점이 되는 상황도 있고요."
+    </p>
+  </div>
+
+  <!-- Senior-level Follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>Follow-up 1: "그럼 cron 예약 작업과 서버리스 backend를 같이 쓰고 싶다면 어떻게 설계하겠습니까?"</h3>
+    <p>
+      모범적인 사고 방향: cron 스케줄러 자체는 상시 가동되는 별도 컴포넌트(게이트웨이/코어 프로세스, Day 8)에
+      두고, 그 상시 컴포넌트가 예정된 시각에 서버리스 backend를 능동적으로 호출해서 실제 작업을 위임하는
+      구조로 분리한다. "항상 떠 있어야 하는 것(트리거)"과 "필요할 때만 뜨면 되는 것(실행 환경)"을 분리해서
+      생각하는 게 핵심이다. 다만 이건 공식 문서가 세부 명시한 내용이 아니라 구조적 추론임을 밝힌다.
+    </p>
+
+    <h3>Follow-up 2: "단일 VPS가 다운되면 세션/메모리는 어떻게 되나요? 복구 가능한가요?"</h3>
+    <p>
+      모범적인 사고 방향: VPS가 재부팅되어도 프로세스만 재시작되는 것으로는 부족하고, 세션과 메모리가
+      VPS의 영속 스토리지(디스크)에 저장되어 있어야 재개할 수 있다. 이건 Day 7(메모리/세션 설계)과
+      직접 연결되며, 단일 VPS 패턴을 쓸 때는 최소한 디스크 백업이나 스냅샷 전략이 필요하다고 답하는
+      것이 좋다.
+    </p>
+
+    <h3>Follow-up 3: "Docker backend와 SSH backend는 둘 다 '격리'라는 단어로 설명되는데, 실제로 어떻게
+      다른가요?"</h3>
+    <p>
+      모범적인 사고 방향: Docker는 하나의 호스트 안에서 프로세스/파일시스템 수준의 격리를 제공하고,
+      SSH는 아예 물리적으로 다른 머신에 실행을 위임하는 것이므로 격리 단위 자체가 다르다. Docker는
+      "같은 서버 안에서 사고를 제한", SSH는 "신뢰할 수 있는 다른 서버의 정책을 그대로 물려받는" 방식이라는
+      점을 구분해서 설명하면 좋다. 즉 SSH backend의 보안 수준은 원격 서버 자체의 보안 수준에 전적으로
+      종속된다.
+    </p>
+
+    <h3>Follow-up 4: "비용만 보면 서버리스가 항상 더 싸 보이는데, 왜 always-on에는 VPS를 권장할까요?"</h3>
+    <p>
+      모범적인 사고 방향: 서버리스의 비용 이점은 "유휴 시간이 실제로 존재할 때"만 성립한다. always-on
+      에이전트는 정의상 "유휴 시간에도 뭔가 해야 하는" 워크로드이므로, 서버리스의 전제 조건 자체가
+      깨진다. 오히려 always-on 워크로드를 서버리스에 억지로 올리면 콜드 스타트 지연과 트리거 부재 문제로
+      숨은 비용(장애 대응, 신뢰성 저하)이 더 커질 수 있다고 답하는 것이 trade-off를 제대로 짚는 답이다.
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>좋은 답변</h4>
+        <ul>
+          <li>6개 backend를 격리/상시성/비용 축으로 분류해서 구조적으로 설명한다</li>
+          <li>hibernate-on-idle과 always-on이 정반대 목표라는 구조적 충돌을 명확히 짚는다</li>
+          <li>"$5 VPS" 패턴의 근거(가벼운 메모리, Docker+프로세스 매니저)와 유효 범위를 함께 말한다</li>
+          <li>규모가 커지면 단일 VPS의 SPOF 위험까지 넘어가서 판단이 달라진다고 설명한다</li>
+          <li>공식 문서에 없는 세부 메커니즘은 추론이라고 밝히고 넘어간다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변</h4>
+        <ul>
+          <li>"6개 backend가 있다"고 이름만 나열하고 선택 기준을 제시하지 못한다</li>
+          <li>"서버리스가 저렴하니까 무조건 서버리스가 좋다"고 단정한다</li>
+          <li>"$5 VPS면 항상 충분하다"며 스케일에 따른 한계를 언급하지 않는다</li>
+          <li>Docker와 SSH의 격리 차이를 "둘 다 안전하다" 수준으로 뭉뚱그린다</li>
+          <li>모르는 내부 메커니즘을 공식 스펙인 것처럼 단정적으로 말한다</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 흔한 오해 정정 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <div class="callout callout-danger">
+      <strong>오해 1: "서버리스는 무조건 최신이고 좋은 기술이니 always-on에도 서버리스를 써야 한다."</strong><br>
+      서버리스의 비용 이점은 워크로드에 진짜 유휴 시간이 있을 때만 성립한다. always-on 에이전트처럼
+      유휴 시간에도 예약 작업을 수행해야 하는 워크로드에는 hibernate-on-idle이 오히려 구조적 리스크가
+      된다.
+    </div>
+
+    <div class="callout callout-danger">
+      <strong>오해 2: "$5 VPS 패턴은 장난감 수준이라 실무에서는 안 쓴다."</strong><br>
+      실제로는 개인·소규모 팀 수준의 always-on 배포에서 가장 널리 쓰이는 검증된 기본 패턴이다. 가볍고
+      저렴하고 always-on 요구사항과 자연스럽게 맞아떨어진다. "장난감"이 아니라 "특정 스케일에 맞는
+      합리적 기본값"으로 이해해야 한다.
+    </div>
+
+    <div class="callout callout-danger">
+      <strong>오해 3: "local backend와 로컬 노트북 배포는 같은 이야기다."</strong><br>
+      local backend는 "에이전트가 셸 명령을 실행하는 호스트가 (그 명령을 실행하는) 현재 머신"이라는
+      실행 격리 설정이고, 그 머신이 VPS일 수도 있다. 반대로 Day 1에서 다룬 "개인 노트북 배포는
+      always-on에 부적합하다"는 논의는 상시 가동 여부에 관한 것이라 별개의 축이다. 두 개념을 섞어서
+      "local backend = 노트북에서만 쓰는 것"이라고 오해하지 않아야 한다.
+    </div>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">Weak</span>
+      <span>"local, Docker, SSH, Daytona, Singularity, Modal이 있다"고 이름만 나열한다.</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">Junior</span>
+      <span>backend별 용도는 대략 구분하지만, hibernate-on-idle과 always-on의 충돌을 스스로
+        짚어내지 못한다.</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">Mid</span>
+      <span>서버리스와 always-on의 충돌은 설명하지만, "$5 VPS" 패턴의 유효 범위(스케일 한계)까지는
+        연결하지 못한다.</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">Senior</span>
+      <span>backend를 격리/상시성/비용 축으로 분류 → hibernate-on-idle과 always-on의 구조적 충돌 →
+        "$5 VPS" 패턴의 근거와 한계 → 스케일이 바뀌면 판단도 바뀐다는 결론까지 하나의 논리로 연결하고,
+        추론과 사실을 구분해서 말한다.</span>
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li>실행 backend는 LLM 추론 위치가 아니라 셸 명령이 실행되는 물리적 환경을 결정한다</li>
+      <li>6개 backend(local/Docker/SSH/Daytona/Singularity/Modal)는 격리·상시성·비용이라는 3축으로
+        분류해서 설명해야 구조적인 답이 된다</li>
+      <li>hibernate-on-idle(서버리스의 핵심 이점)과 always-on(항상 켜져 있어야 함)은 구조적으로
+        충돌하는 목표다</li>
+      <li>"$5 VPS + Docker + 프로세스 매니저"는 개인/소규모 always-on 배포의 검증된 기본 패턴이지만,
+        스케일이 커지면 단일 장애점 문제로 다중화 판단이 필요해진다</li>
+      <li>일회성 실험·GPU 배치 작업처럼 진짜 유휴 시간이 있는 워크로드에는 오히려 서버리스(Daytona/Modal)가
+        합리적 선택이 된다 — "항상 이게 낫다"는 이분법이 아니라 워크로드 특성에 따른 trade-off다</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span>Day 2 / 14</span>
+    <a href="./index.html">← 레슨 목록으로</a>
+  </div>
+
+</div>
+</body>
+</html>
