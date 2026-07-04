@@ -55,6 +55,7 @@ Examples:
 - `senior-backend-security-interview`
 - `senior-observability-incident-response-interview`
 - `senior-aws-cloud-architecture-interview`
+- `senior-cloudflare-configuration-interview`
 - `senior-docker-kubernetes-virtualization-interview`
 - `senior-kubernetes-interview`
 - `senior-cicd-deployment-strategy-interview`
@@ -70,6 +71,7 @@ Examples:
 - `senior-langchain-langgraph-interview`
 - `senior-ai-harness-interview`
 - `senior-llm-engineering-interview`
+- `senior-chatbot-service-interview`
 - `senior-claude-code-interview`
 - `senior-hermes-agent-interview`
 - `senior-openclaw-interview`
@@ -109,6 +111,11 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `AWS / Cloud Architecture` -> `senior-aws-cloud-architecture-interview`
 - `AWS 클라우드 아키텍처` -> `senior-aws-cloud-architecture-interview`
 - `AWS Cloud Architecture Interview` -> `senior-aws-cloud-architecture-interview`
+- `Cloudflare 구성` -> `senior-cloudflare-configuration-interview`
+- `CloudFlare 구성` -> `senior-cloudflare-configuration-interview`
+- `Cloudflare Configuration Interview` -> `senior-cloudflare-configuration-interview`
+- `Cloudflare 10년차 이상 개발자 Interview` -> `senior-cloudflare-configuration-interview`
+- `Cloudflare 시니어 인터뷰` -> `senior-cloudflare-configuration-interview`
 - `Docker / Kubernetes / 가상화` -> `senior-docker-kubernetes-virtualization-interview`
 - `Docker Kubernetes 가상화` -> `senior-docker-kubernetes-virtualization-interview`
 - `Docker Kubernetes Virtualization Interview` -> `senior-docker-kubernetes-virtualization-interview`
@@ -187,6 +194,12 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `LLM 10년차 이상 개발자 Interview` -> `senior-llm-engineering-interview`
 - `LLM 시니어 인터뷰` -> `senior-llm-engineering-interview`
 - `Large Language Model Interview` -> `senior-llm-engineering-interview`
+- `챗봇` -> `senior-chatbot-service-interview`
+- `챗봇 서비스` -> `senior-chatbot-service-interview`
+- `챗봇 10년차 이상 개발자 Interview` -> `senior-chatbot-service-interview`
+- `챗봇 시니어 인터뷰` -> `senior-chatbot-service-interview`
+- `Chatbot Service Interview` -> `senior-chatbot-service-interview`
+- `Chatbot 10년차 이상 개발자 Interview` -> `senior-chatbot-service-interview`
 - `Claude Code` -> `senior-claude-code-interview`
 - `Claude Code Interview` -> `senior-claude-code-interview`
 - `Claude Code 10년차 이상 개발자 Interview` -> `senior-claude-code-interview`
@@ -226,6 +239,7 @@ For specialized senior interview subjects, keep the same 10+ year practitioner i
 - `senior-backend-security-interview`: authentication, authorization, sessions, JWT, SQL injection, XSS, CSRF, secure file uploads, API security, password storage, secrets handling, threat modeling, and secure coding trade-offs.
 - `senior-observability-incident-response-interview`: logs, metrics, tracing, alerts, dashboards, incident triage, root cause analysis, postmortems, recurrence prevention, SLOs, and stakeholder communication during failures.
 - `senior-aws-cloud-architecture-interview`: EC2, S3, RDS, VPC, IAM, ELB, Auto Scaling, CloudWatch, network boundaries, availability zones, cost/reliability trade-offs, and cloud architecture design.
+- `senior-cloudflare-configuration-interview`: Cloudflare DNS, proxied vs DNS-only records, CDN caching, Cache Rules and Page Rules boundaries, SSL/TLS modes, Origin Certificates, WAF, DDoS protection, rate limiting, Bot Management, Turnstile, Load Balancing, Workers, Redirect Rules, Transform Rules, Zero Trust Access, Tunnel, DNSSEC, logs and analytics, origin protection, migration runbooks, and production incident response.
 - `senior-docker-kubernetes-virtualization-interview`: containers, images, volumes, networks, Dockerfile, Compose, Kubernetes Pod, Deployment, Service, Ingress, rollout behavior, resource limits, and production troubleshooting.
 - `senior-kubernetes-interview`: Kubernetes cluster architecture, control plane behavior, nodes, Pods, Deployments, StatefulSets, DaemonSets, Services, Ingress, Gateway API, CoreDNS, CNI networking, storage and volumes, ConfigMaps and Secrets, probes, requests and limits, HPA/VPA, rollout and rollback, scheduling, RBAC, admission control, security hardening, observability, troubleshooting, upgrade strategy, multi-cluster trade-offs, and production incident response.
 - `senior-cicd-deployment-strategy-interview`: GitHub Actions, Jenkins, build automation, test automation, artifact management, Blue-Green, Rolling, Canary, rollback strategy, deployment risk control, and release ownership.
@@ -241,11 +255,14 @@ For specialized senior interview subjects, keep the same 10+ year practitioner i
 - `senior-langchain-langgraph-interview`: LangChain agent construction, model/tool/message abstractions, middleware, retrieval, memory, structured output, streaming, guardrails, context engineering, LangGraph StateGraph design, nodes and edges, persistence, checkpointers, stores, interrupts, human-in-the-loop, subgraphs, fault tolerance, deployment, LangSmith tracing/evaluation, and production troubleshooting.
 - `senior-ai-harness-interview`: AI harness and agent harness architecture, agent loops, model/tool/runtime boundaries, prompt/tool/memory/control-flow scaffolding, provider abstraction, tool calling, handoffs, guardrails, sessions, sandboxed workspace execution, MCP, streaming, telemetry, tracing, evaluation harnesses, cost/performance trade-offs, security, and incident response.
 - `senior-llm-engineering-interview`: LLM application engineering, model selection, model capability boundaries, tokenization and context windows, prompt engineering, reasoning models, structured outputs, function and tool calling, multimodal input/output, embeddings, fine-tuning and reinforcement fine-tuning, evaluation, hallucination mitigation, safety and guardrails, prompt injection defense, latency/cost optimization, caching, observability, rate limits, fallback design, vendor abstraction, and production incidents.
+- `senior-chatbot-service-interview`: chatbot service architecture, conversational UX, intent modeling, entity and slot extraction, synonym dictionaries, utterance design, NLU vs LLM routing, dialogue state, session and context retention, multi-turn flows, fallback and escalation, human handoff, RAG and tool integration, channel integration, privacy and consent, safety guardrails, evaluation, analytics, observability, latency/cost trade-offs, and production incident response.
 - `senior-claude-code-interview`: Claude Code architecture and operation, terminal/IDE/web/desktop surfaces, CLI automation, codebase context, CLAUDE.md instructions, permissions, shell/file tools, MCP, skills, hooks, plugins, subagents and agent teams, background agents, remote control, code review and CI/CD workflows, session management, context compaction, prompt caching, model/provider configuration, sandboxing, security, enterprise administration, observability, troubleshooting, and production adoption patterns.
 - `senior-hermes-agent-interview`: Hermes Agent architecture and operation, always-on agent runtime, local-first execution, task refinement, self-learning and skill capture, model/tool/runtime boundaries, memory and sessions, planning and execution handoffs, provider abstraction, tool calling, MCP and API integrations, Gateway and channel integrations, scheduling, replay and evaluation loops, sandboxing and permissions, provenance and prompt injection defense, OpenClaw interoperability, observability, troubleshooting, cost/reliability trade-offs, and production operation patterns.
 - `senior-openclaw-interview`: OpenClaw local-first assistant architecture, Gateway control plane, multi-channel messaging, onboarding and update flow, model provider configuration and failover, tools, sessions, prompt/memory files, skills and ClawHub, multi-agent routing, sandboxing, DM pairing and allowlists, remote exposure, companion apps and nodes, deployment topology, logging, troubleshooting, marketplace security, and production operation trade-offs.
 
-For fast-moving AI application subjects such as `senior-rag-interview`, `senior-langchain-langgraph-interview`, `senior-ai-harness-interview`, and `senior-llm-engineering-interview`, treat the listed topic scope as a baseline, not a frozen syllabus. Before creating or extending lessons, check current official documentation, changelogs or release notes, deprecation and migration guides, and credible production practice references. If the stored curriculum conflicts with current guidance, update `PROGRESS.md`, `RESOURCES.md`, and the new lesson plan to follow the current evidence, while noting the reason for the adjustment.
+For fast-moving AI application subjects such as `senior-rag-interview`, `senior-langchain-langgraph-interview`, `senior-ai-harness-interview`, `senior-llm-engineering-interview`, and `senior-chatbot-service-interview`, treat the listed topic scope as a baseline, not a frozen syllabus. Before creating or extending lessons, check current official documentation, changelogs or release notes, deprecation and migration guides, and credible production practice references. If the stored curriculum conflicts with current guidance, update `PROGRESS.md`, `RESOURCES.md`, and the new lesson plan to follow the current evidence, while noting the reason for the adjustment.
+
+For fast-moving cloud edge and CDN platform subjects such as `senior-cloudflare-configuration-interview`, treat the listed topic scope as a baseline, not a frozen syllabus. Before creating or extending lessons, check current Cloudflare official documentation, changelogs or release notes, deprecation and migration guides, and credible production practice references. If the stored curriculum conflicts with current guidance, update `PROGRESS.md`, `RESOURCES.md`, and the new lesson plan to follow the current evidence, while noting the reason for the adjustment.
 
 For fast-moving developer tooling and agent platform subjects such as `senior-claude-code-interview`, `senior-hermes-agent-interview`, and `senior-openclaw-interview`, treat the listed topic scope as a baseline, not a frozen syllabus. Before creating or extending lessons, check current official documentation, changelogs or release notes, deprecation and migration guides, and credible production practice references. If the stored curriculum or technology list conflicts with current interview trends or production standards, follow the latest evidence and note the reason for the adjustment in `PROGRESS.md`, `RESOURCES.md`, and the new lesson plan.
 

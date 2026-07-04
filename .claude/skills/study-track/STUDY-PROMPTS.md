@@ -391,6 +391,27 @@
 - 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-aws-cloud-architecture-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
 ```
 
+## Cloudflare 구성 Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 Cloudflare 구성 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: Cloudflare 구성
+폴더 slug: `senior-cloudflare-configuration-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 대시보드 설정 나열이나 제품 기능 암기가 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 DNS/CDN/보안 경계 설계, origin 보호, 캐시 전략, 장애 대응, 비용/성능 trade-off 중심으로 진행해줘.
+- Cloudflare DNS, proxied/DNS-only 차이, CDN 캐시, Cache Rules와 기존 Page Rules 경계, SSL/TLS mode, Origin Certificate, WAF, DDoS protection, Rate Limiting, Bot Management/Turnstile, Load Balancing, Workers, Redirect/Transform Rules, Zero Trust Access/Tunnel, DNSSEC, 로그/Analytics, 배포/마이그레이션 runbook을 다뤄줘.
+- Cloudflare는 기능과 권장 설정이 계속 바뀌므로 레슨 생성 시점의 최신 공식 문서, changelog/release note, deprecation/migration guide, 주요 production 사례를 먼저 확인하고 커리큘럼과 예시를 조정해줘. 위 기술 목록은 최소 기준이며, 최신 운영 표준과 충돌하면 최신 근거를 우선해줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — Cloudflare DNS/CDN/보안 경계 구성 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-cloudflare-configuration-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
 ## Docker / Kubernetes / 가상화 Interview
 
 ```text
@@ -594,6 +615,27 @@
 - 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
 - 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — LLM 제품 품질과 모델 선택/운영 프레임워크부터 진행해줘.
 - 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-llm-engineering-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
+## 챗봇 서비스 Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 챗봇 서비스 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: 챗봇 서비스
+폴더 slug: `senior-chatbot-service-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 FAQ bot 데모나 LLM API 호출 예제가 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 대화형 서비스 요구사항 분석, 의도/개체 모델링, context 유지, 운영 품질, 안전성, 비용/성능 trade-off 중심으로 진행해줘.
+- 사용자 의도(intent), 개체(entity)와 slot 추출, 동의어(synonym) 사전, utterance 설계, NLU/LLM hybrid routing, dialogue state, session/context 유지, multi-turn flow, fallback/escalation, human handoff, RAG와 tool calling 연동, 채널 연동, 개인정보/동의/보안, prompt injection 방어, safety guardrail, 평가 지표, analytics, observability, latency/cost 최적화, 운영 장애 대응을 다뤄줘.
+- 챗봇과 LLM 애플리케이션 분야는 빠르게 변하므로 레슨 생성 시점의 최신 공식 문서, changelog/release note, deprecation/migration guide, 주요 production 사례를 먼저 확인하고 커리큘럼과 예시를 조정해줘. 위 기술 목록은 최소 기준이며, 최신 인터뷰 트렌드나 실무 표준과 충돌하면 최신 근거를 우선해줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — 챗봇 서비스 요구사항과 intent/entity/context 설계 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-chatbot-service-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
 ```
 
 ## Claude Code Interview
