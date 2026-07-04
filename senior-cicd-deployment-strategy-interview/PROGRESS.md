@@ -8,12 +8,12 @@
 | 2 | 2026-07-01 | GitHub Actions 파이프라인 설계와 자동화 품질 | [0002-github-actions-pipeline-design-automation-quality.html](lessons/0002-github-actions-pipeline-design-automation-quality.html) |
 | 3 | 2026-07-02 | Jenkins와 빌드 자동화 실무 | [0003-jenkins-build-automation-operations.html](lessons/0003-jenkins-build-automation-operations.html) |
 | 4 | 2026-07-03 | 테스트 자동화 전략과 CI 품질 게이트 | [0004-test-automation-strategy-ci-quality-gate.html](lessons/0004-test-automation-strategy-ci-quality-gate.html) |
+| 5 | 2026-07-04 | Artifact 관리와 버전 관리 전략 | [0005-artifact-management-versioning-strategy.html](lessons/0005-artifact-management-versioning-strategy.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | Artifact 관리와 버전 관리 전략 | 이미지 레지스트리, 태깅 전략, semantic versioning, artifact 불변성, 프로모션 |
 | 6 | Blue-Green 배포 심층 분석 | 이중 환경 구성, 트래픽 전환, DB 마이그레이션 문제, 비용, 롤백 |
 | 7 | Rolling 배포와 점진적 릴리스 | 인스턴스 순차 교체, health check, 실패 감지, 부분 장애 처리 |
 | 8 | Canary 배포와 트래픽 분산 제어 | 트래픽 가중치, 지표 기반 자동 진행, feature flag 연동, 중단 기준 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — 다음: Day 5 — Artifact 관리와 버전 관리 전략
+**Day 5 완료** — 다음: Day 6 — Blue-Green 배포 심층 분석
 
 ## 습득한 핵심 개념
 
@@ -33,7 +33,7 @@
 - [x] GitHub Actions 파이프라인 설계 (Day 2)
 - [x] Jenkins 자체 호스팅 운영과 빌드 자동화 (Day 3)
 - [x] 테스트 자동화 전략과 품질 게이트 (Day 4)
-- [ ] Artifact 관리와 버전 전략 (예정 Day 5)
+- [x] Artifact 관리와 버전 전략 (Day 5)
 - [ ] Blue-Green 배포 심층 (예정 Day 6)
 - [ ] Rolling 배포 (예정 Day 7)
 - [ ] Canary 배포 (예정 Day 8)

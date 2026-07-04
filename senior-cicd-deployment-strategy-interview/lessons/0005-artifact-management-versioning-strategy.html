@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — Artifact 관리와 버전 관리 전략 | CI/CD 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* header */
+    .lesson-header {
+      border-left: 4px solid var(--accent);
+      padding: 1.5rem 1.5rem 1.5rem 2rem;
+      background: var(--surface);
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .lesson-title { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
+    .lesson-subtitle { color: var(--muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    /* section */
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 1.2rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.8rem; color: var(--text); }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.35rem; }
+
+    /* cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    /* interview question highlight */
+    .interview-q {
+      background: linear-gradient(135deg, #1e2a4a 0%, #1a2035 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .interview-q .label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .interview-q .question {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.5;
+    }
+
+    /* comparison grid */
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .strategy-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .strategy-card .name {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .strategy-card.unit .name { color: #34d399; }
+    .strategy-card.integration .name { color: #f59e0b; }
+    .strategy-card.e2e .name { color: #60a5fa; }
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-right: 0.3rem;
+      margin-bottom: 0.3rem;
+    }
+    .tag-green { background: #14532d; color: #4ade80; }
+    .tag-red { background: #450a0a; color: #f87171; }
+    .tag-yellow { background: #422006; color: #fbbf24; }
+    .tag-blue { background: #1e3a5f; color: #93c5fd; }
+
+    /* answer example */
+    .answer-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+    .answer-block .speaker {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    /* good vs weak */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .compare-card.good {
+      background: #052e16;
+      border: 1px solid #166534;
+    }
+    .compare-card.weak {
+      background: #2d0a0a;
+      border: 1px solid #7f1d1d;
+    }
+    .compare-label {
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .compare-card.good .compare-label { color: #4ade80; }
+    .compare-card.weak .compare-label { color: #f87171; }
+
+    /* reasoning steps */
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent2);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.1rem;
+    }
+
+    /* follow-up */
+    .followup-item {
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .followup-item .q {
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 0.5rem;
+    }
+    .followup-item .a {
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    /* rubric */
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:last-child td { border-bottom: none; }
+    .rubric-table tr:nth-child(even) td { background: #12141e; }
+    .level-badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .level-1 { background: #450a0a; color: #fca5a5; }
+    .level-2 { background: #422006; color: #fcd34d; }
+    .level-3 { background: #14532d; color: #86efac; }
+    .level-4 { background: #1e3a5f; color: #93c5fd; }
+
+    /* callout */
+    .callout {
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .callout-warn {
+      background: #2d1b00;
+      border: 1px solid var(--yellow);
+      color: #fef3c7;
+    }
+    .callout-info {
+      background: #0c1a3a;
+      border: 1px solid var(--accent);
+      color: #dbeafe;
+    }
+    .callout-icon { font-weight: 700; margin-right: 0.4rem; }
+
+    /* flow diagram (ascii-style) */
+    .flow-diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #a5b4fc;
+      overflow-x: auto;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      white-space: pre;
+    }
+
+    /* code block */
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      color: #d1d5db;
+      overflow-x: auto;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      white-space: pre;
+    }
+
+    /* nav */
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .nav-bar a {
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-bar a:hover { text-decoration: underline; }
+    .nav-center { color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-header">
+    <div class="lesson-meta">CI/CD와 배포 전략 인터뷰 · Day 5</div>
+    <div class="lesson-title">Artifact 관리와 버전 관리 전략</div>
+    <div class="lesson-subtitle">이미지 레지스트리, 태깅 전략, semantic versioning, artifact 불변성, 프로모션까지 — "빌드를 잘한다"가 아니라 "한 번 빌드한 것을 신뢰할 수 있게 추적하고 승격시킨다"는 것을 증명하는 수준을 목표로 한다.</div>
+  </div>
+
+  <!-- ─── SECTION 1: 면접 질문 ─── -->
+  <section>
+    <h2>🎯 오늘의 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">주질문 (Main Question)</div>
+      <div class="question">
+        "저희 팀은 각 환경(dev → staging → production)마다 소스 코드를 다시 체크아웃해서 이미지를 새로 빌드해 배포합니다.<br>
+        지난주 staging에서는 문제없이 통과했던 버전이 production에서 장애를 일으켰는데, 원인을 찾아보니 두 환경의 이미지가 미묘하게 달랐습니다.<br>
+        원인을 어떻게 진단하고, 재발을 막기 위해 artifact 관리 체계를 어떻게 다시 설계하시겠습니까?"
+      </div>
+    </div>
+
+    <div class="interview-q" style="border-color: var(--accent2);">
+      <div class="label" style="color: var(--accent2);">변형 질문 (Variation)</div>
+      <div class="question" style="font-size: 1rem;">
+        "배포 시 이미지 태그로 <code>latest</code>를 쓰고 있는데, 인시던트가 발생해 롤백하려는 순간 '정확히 몇 분 전의 어떤 버전으로 돌아가야 하는지' 아무도 확신하지 못했습니다.<br>
+        태깅 전략과 롤백 가능성을 어떻게 다시 설계하시겠습니까?"
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 2: 왜 면접에서 묻는가 ─── -->
+  <section>
+    <h2>🔍 왜 면접에서 이 질문을 하는가</h2>
+
+    <p>Artifact 관리는 "Docker 이미지를 빌드할 줄 아는가"를 묻는 질문이 아니다. 면접관은 이 질문으로 <strong>지원자가 "빌드"와 "배포"를 같은 것으로 착각하는지, 아니면 별개의 문제로 분리해서 다루는지</strong>를 구분한다. 환경마다 다시 빌드하는 팀은 재현성(reproducibility)을 스스로 포기한 것이고, 그 결과 "staging에서 됐는데 production에서 안 된다"는 가장 흔하면서도 가장 신뢰를 무너뜨리는 장애를 반복한다.</p>
+
+    <div class="card">
+      <div class="card-title">면접관이 실제로 평가하는 것</div>
+      <ul>
+        <li><strong>Build Once 원칙 이해:</strong> 하나의 artifact를 한 번만 빌드하고, 환경 간에는 그 artifact를 "승격(promotion)"만 시킨다는 원칙을 알고 있는가</li>
+        <li><strong>불변성(Immutability) 감각:</strong> 배포된 이미지가 나중에 몰래 바뀌지 않는다는 것을 어떻게 보장하는지 설명할 수 있는가</li>
+        <li><strong>추적성(Traceability):</strong> 프로덕션에서 문제가 생겼을 때, "이 artifact가 어떤 커밋에서, 어떤 파이프라인으로, 언제 만들어졌는가"를 즉시 되짚을 수 있는가</li>
+        <li><strong>태깅 규율:</strong> <code>latest</code> 같은 가변 태그의 위험성을 알고, 롤백이 실제로 가능한 태깅 체계를 설계할 수 있는가</li>
+        <li><strong>레지스트리 운영 감각:</strong> 저장 비용, retention 정책, 취약점 스캔, 서명(signing) 같은 운영 이슈까지 고려하는가</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>주니어 vs 시니어 차이:</strong> 주니어는 "Dockerfile을 작성하고 이미지를 빌드해서 레지스트리에 push했습니다"에서 멈춘다. 시니어는 "그 이미지가 어떤 태그로 불변하게 저장되고, 어떤 근거로 프로덕션까지 승격되며, 문제가 생기면 정확히 몇 초 만에 이전 버전으로 되돌릴 수 있는지"까지 설계한다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 3: 전제 개념 ─── -->
+  <section>
+    <h2>📚 전제 개념: Artifact란 무엇이고 왜 "다시 만들면" 안 되는가</h2>
+
+    <h3>Artifact — 쉬운 설명</h3>
+    <p>Artifact는 소스 코드를 빌드해서 나온 <strong>배포 가능한 산출물</strong>이다. Docker 이미지, JAR/WAR 파일, 압축된 정적 파일 번들, npm 패키지 등이 모두 artifact다. 핵심은 "소스 코드"가 아니라 "빌드가 끝난 결과물"이라는 점이다 — 이 결과물 안에는 의존성 버전, 컴파일 결과, 런타임 설정까지 이미 고정되어 있다.</p>
+
+    <h3>왜 환경마다 다시 빌드하면 안 되는가</h3>
+    <div class="card">
+      <ul>
+        <li><strong>의존성 드리프트:</strong> 같은 <code>package.json</code>이라도 시점에 따라 patch 버전이 자동으로 올라간 의존성이 설치될 수 있다. Lockfile이 있어도 베이스 이미지 태그(예: <code>node:20</code>)가 그 사이 업데이트됐다면 결과물이 달라진다</li>
+        <li><strong>빌드 환경 차이:</strong> CI 러너의 OS 패치, 캐시 상태, 환경 변수가 빌드 시점마다 미묘하게 다를 수 있다</li>
+        <li><strong>"staging에서 통과, production에서 실패"의 근본 원인:</strong> 두 환경이 사실은 "같은 소스로 각각 다시 빌드한, 이름만 같은 서로 다른 산출물"을 실행하고 있었기 때문이다</li>
+      </ul>
+    </div>
+    <p>이 문제를 해결하는 원칙이 <strong>Build Once, Deploy Many(한 번 빌드해서 여러 환경에 배포)</strong>다. dev에 배포한 것과 정확히 동일한 바이너리/이미지가 staging을 거쳐 production까지 그대로 이동해야, "테스트한 것 = 배포되는 것"이라는 신뢰가 성립한다.</p>
+
+    <div class="flow-diagram">잘못된 방식 (환경마다 재빌드):
+  [소스 코드] --빌드--> [dev용 이미지]      (커밋 abc123, 오전 9시 빌드)
+  [소스 코드] --빌드--> [staging용 이미지]  (같은 abc123, 오후 2시 재빌드 → 의존성 달라짐)
+  [소스 코드] --빌드--> [prod용 이미지]     (같은 abc123, 오후 6시 재빌드 → 또 달라짐)
+  → 세 이미지가 "이름은 같지만 실제로는 다른 산출물"
+
+올바른 방식 (Build Once, Promote Many):
+  [소스 코드] --빌드(1회)--> [이미지 abc123:sha-f4e21a]
+                                   │
+              ┌────────────────────┼────────────────────┐
+              ▼                    ▼                     ▼
+          [dev 배포]          [staging 배포]         [prod 배포]
+        (동일 이미지 승격)    (동일 이미지 승격)     (동일 이미지 승격)</div>
+
+    <h3>Artifact 불변성(Immutability) — "한 번 만들면 절대 바뀌지 않는다"</h3>
+    <div class="card">
+      <ul>
+        <li><strong>정의:</strong> 특정 태그/버전으로 레지스트리에 push된 artifact는 이후 절대 덮어쓰지 않는다는 원칙</li>
+        <li><strong>왜 필요한가:</strong> 불변하지 않으면 "지금 프로덕션에 떠 있는 <code>v2.3.1</code>"이 어제 검증했던 <code>v2.3.1</code>과 실제로 같은 물건인지 아무도 보장할 수 없다</li>
+        <li><strong>구현 방법:</strong> 대부분의 레지스트리(ECR, GCR, Harbor, Docker Hub)는 "태그 불변성(tag immutability)" 옵션을 제공해, 같은 태그로 재push를 시도하면 거부하도록 설정할 수 있다</li>
+      </ul>
+    </div>
+
+    <h3>태깅 전략 — <code>latest</code>가 위험한 이유</h3>
+    <div class="card">
+      <ul>
+        <li><strong><code>latest</code> 태그의 문제:</strong> 이름 그대로 "가장 최근"을 가리키는 가변 포인터라서, 시간이 지나면 같은 태그가 다른 이미지를 가리키게 된다. 롤백하려 해도 "이전의 latest가 정확히 무엇이었는지" 기록이 남지 않는다</li>
+        <li><strong>Git SHA 태그:</strong> <code>myapp:sha-f4e21a</code>처럼 커밋 해시를 태그에 포함시키면, 이미지와 소스 코드 시점이 1:1로 대응되어 추적이 명확해진다</li>
+        <li><strong>Semantic Versioning(semver):</strong> <code>MAJOR.MINOR.PATCH</code> 형식(예: <code>2.3.1</code>)으로, MAJOR는 하위 호환이 깨지는 변경, MINOR는 하위 호환되는 기능 추가, PATCH는 버그 수정을 의미한다. 사람이 읽고 "이번 배포가 얼마나 위험한 변경인지" 가늠하는 데 유리하다</li>
+        <li><strong>실무 권장:</strong> 두 가지를 함께 쓴다 — <code>myapp:2.3.1</code>(사람이 읽는 릴리스 버전)과 <code>myapp:sha-f4e21a</code>(정확한 빌드 추적용)를 같은 이미지에 이중으로 태깅해 두 목적을 동시에 만족시킨다</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>흔한 착각:</strong> "<code>latest</code>를 쓰면 항상 최신 버전이 배포되니 편하다"고 생각하기 쉽지만, 실제로는 "지금 무엇이 배포되어 있는지, 롤백 시 무엇으로 돌아가야 하는지"를 아무도 확신할 수 없게 만드는 가장 흔한 사고 원인이다.
+    </div>
+
+    <h3>Promotion(프로모션) — 승격이지 재빌드가 아니다</h3>
+    <p>Promotion은 이미 빌드된 동일한 artifact를 dev → staging → production 순으로 <strong>이동시키는 것</strong>이다. 이때 "이동"은 이미지를 다시 빌드하는 게 아니라, 같은 이미지에 새로운 태그를 추가하거나(예: <code>staging-verified</code>, <code>prod-approved</code>) 배포 매니페스트가 가리키는 이미지 참조를 바꾸는 것을 의미한다. 각 단계의 검증(테스트, 승인)을 통과해야만 다음 태그가 부여되므로, "이 artifact가 어느 단계까지 검증되었는지"가 태그 자체로 드러난다.</p>
+  </section>
+
+  <!-- ─── SECTION 4: Artifact 관리 설계의 네 가지 축 ─── -->
+  <section>
+    <h2>🏗️ Artifact 관리 설계의 네 가지 축</h2>
+
+    <h3>1. 레지스트리 선택과 접근 통제</h3>
+    <div class="card">
+      <ul>
+        <li><strong>선택 기준:</strong> 클라우드 네이티브 환경이면 관리형 레지스트리(ECR, GCR, ACR)가 IAM 연동과 운영 부담 측면에서 유리하고, 멀티 클라우드/온프렘 혼합 환경이면 Harbor 같은 자체 호스팅 레지스트리가 유리하다</li>
+        <li><strong>접근 통제:</strong> 누가 push할 수 있는지(CI 파이프라인만 허용, 사람은 read-only)와 누가 pull할 수 있는지(프로덕션 클러스터만 특정 레지스트리 접근)를 최소 권한 원칙으로 분리한다</li>
+        <li><strong>취약점 스캔:</strong> push 시점에 이미지 내 알려진 CVE를 자동 스캔하고, critical 취약점이 있으면 프로모션을 차단한다</li>
+      </ul>
+    </div>
+
+    <h3>2. 태깅 전략 실전 설계</h3>
+    <div class="card">
+      <ul>
+        <li><strong>불변 태그 강제:</strong> 레지스트리의 tag immutability 옵션을 켜서, 같은 태그로 실수로 덮어쓰는 사고를 원천 차단한다</li>
+        <li><strong>이중 태깅:</strong> git SHA(정확한 추적용)와 semver(사람이 읽는 릴리스 버전용)를 함께 부여한다</li>
+        <li><strong>환경 승격 태그:</strong> 검증 단계를 통과할 때마다 <code>candidate</code> → <code>staging-verified</code> → <code>prod-approved</code> 같은 태그를 같은 이미지에 추가로 붙여, 태그만 보고도 검증 이력을 알 수 있게 한다</li>
+        <li><strong><code>latest</code> 사용 제한:</strong> 로컬 개발 편의를 위한 <code>latest</code>는 유지하되, 실제 배포 매니페스트에서는 절대 <code>latest</code>를 참조하지 않고 구체적인 태그를 명시한다</li>
+      </ul>
+    </div>
+
+    <h3>3. Promotion 파이프라인 설계</h3>
+    <div class="flow-diagram">[1] 소스 커밋 → CI 빌드 (1회) → 이미지 생성 + git SHA 태깅
+[2] dev 환경에 배포 → 자동 테스트 통과 → "candidate" 태그 추가
+[3] staging 환경에 동일 이미지 배포 → 통합/회귀 테스트 통과 → "staging-verified" 태그 추가
+[4] 수동 승인 또는 카나리 지표 확인 → "prod-approved" 태그 추가
+[5] production에 동일 이미지 배포 (재빌드 없음, 참조만 변경)</div>
+    <p>이 구조의 핵심은 <strong>1번 단계 이후로는 다시 컴파일/빌드하지 않는다</strong>는 것이다. 각 환경 전환은 "새 산출물을 만드는 것"이 아니라 "이미 검증된 산출물의 참조를 바꾸는 것"이어야 한다.</p>
+
+    <h3>4. Retention 정책과 Provenance(출처 증명)</h3>
+    <div class="card">
+      <ul>
+        <li><strong>Retention 정책:</strong> 모든 artifact를 무한정 보관하면 스토리지 비용이 계속 늘어난다. "프로덕션에 배포된 적 있는 태그는 최소 N개월 보관, 배포된 적 없는 candidate는 N주 후 자동 정리" 같은 정책을 둔다</li>
+        <li><strong>Provenance/SBOM:</strong> 이미지가 어떤 소스 커밋, 어떤 빌드 파이프라인 실행, 어떤 의존성 목록(Software Bill of Materials)으로 만들어졌는지 메타데이터로 함께 저장한다</li>
+        <li><strong>서명(Signing):</strong> Cosign 같은 도구로 이미지에 서명하고, 배포 클러스터에서 서명 검증을 강제해 "승인되지 않은 경로로 만들어진 이미지"가 배포되는 것을 막는다</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>실무 판단:</strong> "왜 staging은 됐는데 production은 안 됐는가"라는 질문에 "정확히 같은 이미지였는가"로 즉시 답할 수 있어야 한다. 답이 "아마 같았을 것"이라면 이미 artifact 관리 체계가 실패한 것이다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 5: 답변 사고 순서 ─── -->
+  <section>
+    <h2>🧠 답변 사고 순서</h2>
+    <p>면접 질문을 받았을 때 아래 순서로 생각을 전개하면 시니어 수준의 답변 구조가 된다.</p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>재빌드가 원인인지부터 확인</strong><br>
+          staging과 production 배포가 "같은 이미지"였는지, 아니면 각각 다시 빌드한 것이었는지부터 진단한다. 대부분의 "환경 간 불일치" 장애는 여기서 시작한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Build Once, Deploy Many 구조로 전환</strong><br>
+          CI 파이프라인을 "환경마다 빌드"에서 "한 번 빌드하고 이후 단계는 동일 artifact를 승격"하는 구조로 재설계한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>태깅 체계를 불변하고 추적 가능하게 재설계</strong><br>
+          <code>latest</code> 의존을 제거하고, git SHA + semver 이중 태깅과 태그 불변성 옵션을 적용한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Promotion 태그로 검증 이력을 드러낸다</strong><br>
+          candidate → staging-verified → prod-approved 같은 승격 태그로, 태그만 보고도 어느 단계까지 검증되었는지 알 수 있게 만든다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Retention·서명·스캔으로 운영 신뢰도를 마무리</strong><br>
+          취약점 스캔, provenance 기록, 서명 검증, retention 정책까지 언급하며 "추적 가능하고 재현 가능한 artifact 파이프라인"으로 답을 정리한다.
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ─── SECTION 6: 핵심 답변 예시 ─── -->
+  <section>
+    <h2>💬 핵심 답변 예시</h2>
+
+    <div class="answer-block">
+      <div class="speaker">답변 예시 (시니어 수준)</div>
+      <p>"먼저 확인할 것은 staging에서 통과한 이미지와 production에 배포된 이미지가 정말로 동일한 바이너리였는가입니다. 현재 파이프라인이 환경마다 소스를 다시 체크아웃해서 빌드하고 있다면, 그 자체가 원인일 가능성이 매우 큽니다. 베이스 이미지 태그가 그 사이 업데이트됐거나, lockfile에 잡히지 않는 시스템 패키지 버전이 달라졌을 수 있습니다.</p>
+      <p>이를 근본적으로 막기 위해 Build Once, Deploy Many 원칙으로 파이프라인을 재설계하겠습니다. 소스 커밋이 들어오면 딱 한 번만 이미지를 빌드하고, 이후 dev·staging·production으로의 전환은 재빌드가 아니라 동일 이미지에 대한 '승격'으로 처리합니다. 예를 들어 dev 테스트를 통과하면 <code>candidate</code> 태그를, staging 통합 테스트를 통과하면 <code>staging-verified</code> 태그를, 최종 승인이 나면 <code>prod-approved</code> 태그를 같은 이미지에 추가로 붙입니다.</p>
+      <p>태깅 체계도 함께 정리합니다. 배포 매니페스트에서 <code>latest</code> 참조를 전부 제거하고, git SHA 기반 태그(예: <code>sha-f4e21a</code>)와 semantic versioning 태그(예: <code>2.3.1</code>)를 이중으로 부여합니다. SHA 태그는 '정확히 어떤 커밋에서 만들어졌는가'를 추적하는 용도이고, semver 태그는 사람이 읽고 이번 배포의 위험도를 가늠하는 용도입니다. 레지스트리의 태그 불변성 옵션을 켜서, 같은 태그로 실수로 덮어쓰는 사고 자체를 차단합니다.</p>
+      <p>마지막으로 운영 신뢰도를 위해 push 시점에 취약점 스캔을 자동화하고, 이미지에 어떤 커밋·파이프라인 실행·의존성 목록으로 만들어졌는지 provenance 메타데이터를 남기며, Cosign 같은 도구로 서명을 적용해 승인되지 않은 경로의 이미지가 배포되지 않도록 클러스터에서 서명 검증을 강제하겠습니다. 이렇게 하면 '왜 staging은 됐는데 production은 안 됐는가'라는 질문 자체가 애초에 발생하지 않는 구조가 됩니다."</p>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 7: Senior Follow-up ─── -->
+  <section>
+    <h2>🔺 Senior-Level Follow-up 질문</h2>
+
+    <div class="followup-item">
+      <div class="q">Q. "Build Once 원칙을 적용하려는데, 환경마다 설정값(DB 접속 정보, feature flag 등)이 다릅니다. 이미지를 재빌드하지 않고 어떻게 다른 설정을 적용하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> "설정이 다르다"와 "코드가 다르다"를 분리해서 생각해야 한다. 설정 차이 때문에 이미지를 다시 빌드하는 것은 Build Once 원칙을 무너뜨리는 흔한 함정이다.
+        <br><br>
+        <strong>핵심 답변:</strong> 이미지 안에는 실행 가능한 코드와 런타임만 담고, 환경별 설정값은 환경 변수, ConfigMap, Secret 같은 외부 주입 메커니즘으로 분리한다(12-factor app의 config 원칙). 동일 이미지가 dev에서는 dev용 환경 변수를, production에서는 production용 환경 변수를 주입받아 실행되므로, 이미지 자체는 전혀 바뀌지 않는다. Feature flag도 이미지 안에 하드코딩하지 않고 런타임에 조회하는 외부 서비스(LaunchDarkly 등)나 ConfigMap으로 관리한다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "Semantic versioning을 도입했는데, 팀원들이 MAJOR/MINOR/PATCH 구분 기준을 자꾸 다르게 판단합니다. 어떻게 일관성을 확보하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> semver는 사람의 주관적 판단에 의존하므로, 판단을 자동화하거나 명확한 계약으로 강제해야 일관성이 생긴다.
+        <br><br>
+        <strong>핵심 답변:</strong> API 계약이나 공개 인터페이스가 있다면, 스키마 비교 도구로 breaking change를 자동 탐지해 MAJOR 여부를 사람이 아니라 도구가 판단하게 만든다. 커밋 메시지 컨벤션(Conventional Commits 등)을 강제해서 <code>feat:</code>는 MINOR, <code>fix:</code>는 PATCH, <code>BREAKING CHANGE:</code>는 MAJOR로 자동 계산되는 semantic-release 같은 도구를 CI에 연결한다. 사람의 주관적 판단에 맡기는 부분을 최소화하는 것이 핵심이다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "레지스트리 저장 비용이 계속 늘어나고 있습니다. 그렇다고 무작정 오래된 이미지를 지웠다가 롤백이 필요한 순간에 없으면 어떻게 하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> "모든 이미지를 지운다/보관한다"의 이분법이 아니라, artifact의 '역할'에 따라 보관 정책을 다르게 가져가야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 태그를 역할별로 구분해 정책을 다르게 적용한다 — 프로덕션에 배포된 적 있는 <code>prod-approved</code> 태그는 롤백 대비를 위해 최소 몇 개월(또는 몇 개 최신 버전)을 보관하고, 한 번도 승격되지 못한 <code>candidate</code> 태그는 1~2주 후 자동 삭제한다. 또한 이미지 레이어는 다수 버전이 공통 베이스 레이어를 공유하므로, 실제 저장 비용 증가분은 단순히 '이미지 개수 × 전체 크기'보다 작은 경우가 많다는 점도 비용 산정 시 함께 고려한다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "이미지 서명과 provenance를 도입하려는데, 팀에서 '배포 속도만 느려진다'는 반발이 있습니다. 어떻게 설득하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 서명·provenance를 "보안팀만 원하는 절차"가 아니라 "개발팀 스스로에게 필요한 사고 대응 도구"로 프레이밍해야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 서명 검증은 CI 파이프라인에 자동화되어 몇 초 수준의 오버헤드만 추가되며, 수동 검토 절차를 대체하는 것이지 새로 추가하는 것이 아니다. 더 중요한 것은 인시던트 발생 시의 가치다 — provenance 메타데이터가 있으면 "이 프로덕션 이미지가 정확히 어떤 커밋, 어떤 의존성 버전으로 만들어졌는가"를 즉시 알 수 있어 원인 분석 시간이 크게 줄어든다. 이 절차가 없으면 오히려 장애 발생 시 원인 추적에 훨씬 더 많은 시간이 든다는 점을 실제 사례나 예상 시나리오로 설명한다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 8: 좋은 답변 vs 약한 답변 ─── -->
+  <section>
+    <h2>⚖️ 좋은 답변과 약한 답변의 차이</h2>
+
+    <div class="compare-grid">
+      <div class="compare-card good">
+        <div class="compare-label">✅ 좋은 답변</div>
+        <ul>
+          <li>환경 간 불일치의 원인을 "재빌드" 여부부터 진단</li>
+          <li>Build Once, Deploy Many 원칙을 구체적인 파이프라인 구조로 설명</li>
+          <li><code>latest</code>의 위험성과 불변 태그(git SHA + semver)의 필요성을 명확히 구분</li>
+          <li>Promotion을 재빌드가 아니라 태그/참조 승격으로 설계</li>
+          <li>Retention, provenance, 서명 같은 운영 이슈까지 균형 있게 고려</li>
+          <li>설정값과 이미지 콘텐츠를 분리해서 사고 (12-factor config)</li>
+        </ul>
+      </div>
+      <div class="compare-card weak">
+        <div class="compare-label">❌ 약한 답변</div>
+        <ul>
+          <li>"이미지를 다시 빌드해서 재배포하겠습니다" — 근본 원인 진단 없음</li>
+          <li><code>latest</code> 태그를 계속 사용하며 문제의식 없음</li>
+          <li>태그를 단순한 라벨로만 취급하고 추적/불변성 개념 없음</li>
+          <li>Promotion과 재빌드를 구분하지 못함</li>
+          <li>저장 비용 절감을 위해 모든 오래된 이미지를 무차별 삭제</li>
+          <li>환경별 설정 차이를 이유로 이미지를 환경마다 다시 빌드</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>핵심 차이:</strong> 좋은 답변은 artifact를 "한 번 만들어 신뢰를 유지하며 이동시키는 자산"으로 다룬다. 약한 답변은 artifact를 "매번 다시 만들어도 되는 부산물"로 다룬다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 9: 실무 연결 ─── -->
+  <section>
+    <h2>🏭 실무 연결 — 이런 상황에서 이렇게 설계</h2>
+
+    <div class="card">
+      <div class="card-title">상황별 Artifact 관리 가이드</div>
+      <table class="rubric-table">
+        <thead>
+          <tr><th>상황</th><th>설계 포인트</th><th>이유</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>staging은 통과했는데 production에서 장애 발생</td>
+            <td>Build Once, Deploy Many로 전환 — 동일 이미지를 승격만 시킴</td>
+            <td>환경 간 산출물 불일치를 구조적으로 제거</td>
+          </tr>
+          <tr>
+            <td>롤백 시 어떤 버전으로 돌아가야 할지 불확실</td>
+            <td><code>latest</code> 제거, git SHA + semver 이중 태깅, 태그 불변성 적용</td>
+            <td>배포된 버전을 정확히 특정하고 되돌릴 수 있게 함</td>
+          </tr>
+          <tr>
+            <td>환경마다 DB/설정이 다름</td>
+            <td>이미지에는 코드만, 설정은 환경 변수/ConfigMap으로 외부 주입</td>
+            <td>설정 차이가 재빌드의 이유가 되지 않게 분리</td>
+          </tr>
+          <tr>
+            <td>레지스트리 저장 비용이 계속 증가</td>
+            <td>태그 역할별 retention 정책(prod-approved는 장기, candidate는 단기)</td>
+            <td>롤백 대비와 비용 절감을 동시에 만족</td>
+          </tr>
+          <tr>
+            <td>인시던트 시 원인 파이프라인/커밋 추적이 느림</td>
+            <td>Provenance 메타데이터와 서명 검증 도입</td>
+            <td>원인 분석 시간을 단축하고 비인가 이미지 배포 차단</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 10: 자기 점검 Rubric ─── -->
+  <section>
+    <h2>📋 자기 점검 Rubric</h2>
+    <p>아래 기준으로 자신의 답변 수준을 체크하라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>레벨</th>
+          <th>할 수 있는 것</th>
+          <th>부족한 것</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="level-badge level-1">Lv 1</span></td>
+          <td>Docker 이미지를 빌드하고 레지스트리에 push할 수 있다</td>
+          <td>Build Once 원칙, 태깅 불변성, promotion 개념 없음</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-2">Lv 2</span></td>
+          <td><code>latest</code>의 위험성을 알고 semver/git SHA 태그를 사용한다</td>
+          <td>환경마다 재빌드하는 구조적 문제를 스스로 인식하지 못함</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-3">Lv 3</span></td>
+          <td>Build Once, Deploy Many 구조와 promotion 태그 체계를 설계할 수 있다</td>
+          <td>Retention 정책, provenance, 서명 같은 운영 성숙도 요소 부족</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-4">Lv 4 (목표)</span></td>
+          <td>Build Once 구조 + 불변 태깅 + promotion 파이프라인 + retention/provenance/서명까지 통합 설계, 설정과 이미지 콘텐츠 분리 원칙 적용</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>셀프 체크리스트</h3>
+    <div class="card">
+      <ul>
+        <li>☐ "staging은 됐는데 production은 안 됐다"는 문제를 재빌드 여부로 진단할 수 있는가</li>
+        <li>☐ Build Once, Deploy Many 원칙을 구체적인 파이프라인 단계로 설명할 수 있는가</li>
+        <li>☐ <code>latest</code> 태그가 왜 롤백을 불가능하게 만드는지 설명할 수 있는가</li>
+        <li>☐ git SHA 태그와 semver 태그를 각각 언제/왜 쓰는지 구분할 수 있는가</li>
+        <li>☐ Promotion을 재빌드가 아니라 태그/참조 승격으로 설계할 수 있는가</li>
+        <li>☐ Retention 정책을 artifact 역할(candidate vs prod-approved)에 따라 다르게 설계할 수 있는가</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 11: 흔한 오해 ─── -->
+  <section>
+    <h2>🚫 흔한 오해와 교정</h2>
+
+    <div class="card">
+      <div class="card-title">오해 1</div>
+      <p><strong>"각 환경에 배포할 때마다 최신 소스로 다시 빌드하는 것이 최신 상태를 유지하는 안전한 방법이다."</strong></p>
+      <p>→ 오히려 반대다. 환경마다 다시 빌드하면 시점에 따라 의존성·베이스 이미지가 달라질 수 있어 "같은 이름이지만 실제로는 다른 산출물"이 배포된다. 안전한 방법은 한 번 빌드한 동일 artifact를 환경 간에 그대로 승격시키는 것이다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 2</div>
+      <p><strong>"<code>latest</code> 태그를 쓰면 항상 최신 버전이 배포되니 편리하고 안전하다."</strong></p>
+      <p>→ <code>latest</code>는 시간이 지나면 다른 이미지를 가리키는 가변 포인터일 뿐이다. 지금 프로덕션에 떠 있는 것이 정확히 무엇인지, 롤백 시 무엇으로 돌아가야 하는지 아무도 확신할 수 없게 만드는 가장 흔한 사고 원인이다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 3</div>
+      <p><strong>"Semantic Versioning은 그냥 버전 번호를 매기는 관례일 뿐 큰 의미가 없다."</strong></p>
+      <p>→ semver는 MAJOR/MINOR/PATCH 구분을 통해 "이번 배포가 하위 호환을 깨는지, 기능 추가인지, 버그 수정인지"를 숫자만으로 전달하는 커뮤니케이션 도구다. 의존하는 다른 팀이나 클라이언트가 이 번호만 보고 업그레이드 위험도를 판단하므로, 관례가 아니라 계약에 가깝다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 4</div>
+      <p><strong>"환경별 설정이 다르면 이미지도 환경별로 다르게 빌드해야 한다."</strong></p>
+      <p>→ 설정 차이는 이미지를 다시 빌드할 이유가 되지 않는다. 이미지에는 코드와 런타임만 담고, DB 접속 정보나 feature flag 같은 환경별 값은 환경 변수나 ConfigMap으로 실행 시점에 주입하는 것이 올바른 분리다.</p>
+    </div>
+  </section>
+
+  <div class="nav-bar">
+    <a href="./0004-test-automation-strategy-ci-quality-gate.html">← Day 4</a>
+    <span class="nav-center">Day 5 / 10 — CI/CD와 배포 전략 인터뷰</span>
+    <a href="./index.html">목록으로 →</a>
+  </div>
+
+</div>
+</body>
+</html>
