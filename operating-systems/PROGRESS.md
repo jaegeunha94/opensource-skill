@@ -14,12 +14,12 @@
 | 2 | 2026-07-01 | 프로세스와 스레드 (실무 설계 기준) | [0012-day2-process-vs-thread-design.html](lessons/0012-day2-process-vs-thread-design.html) |
 | 3 | 2026-07-02 | Context Switch와 스케줄링 | [0013-day3-context-switch-and-scheduling.html](lessons/0013-day3-context-switch-and-scheduling.html) |
 | 4 | 2026-07-03 | 동시성 제어와 Race Condition | [0014-day4-race-condition-and-concurrency-control.html](lessons/0014-day4-race-condition-and-concurrency-control.html) |
+| 5 | 2026-07-04 | Deadlock과 Lock Contention | [0015-day5-deadlock-and-lock-contention.html](lessons/0015-day5-deadlock-and-lock-contention.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 5 | Deadlock과 Lock Contention | "운영 중 deadlock 또는 lock contention이 의심되면 어떻게 대응합니까?" | dump 분석, lock ordering, timeout, retry |
 | 6 | 가상 메모리와 Page Fault | "메모리가 충분해 보여도 성능이 느릴 수 있는 이유를 설명해보세요." | paging, TLB, swap, major/minor fault |
 | 7 | 파일 시스템과 I/O | "로그 쓰기가 전체 서비스 latency를 올릴 수 있는 이유는 무엇입니까?" | buffer, fsync, page cache, blocking I/O |
 | 8 | 비동기 I/O와 이벤트 루프 | "thread-per-request와 event-driven 방식을 어떻게 선택합니까?" | latency, throughput, backpressure, 디버깅 trade-off |
@@ -28,8 +28,8 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** (2026-07-03) — 동시성 제어와 Race Condition
-**다음**: Day 5 — Deadlock과 Lock Contention
+**Day 5 완료** (2026-07-04) — Deadlock과 Lock Contention
+**다음**: Day 6 — 가상 메모리와 Page Fault
 
 ## Interview 답변 체크리스트
 
@@ -52,7 +52,7 @@
 - [x] 프로세스 vs 스레드 주소 공간 차이, crash 격리 범위 — Day 2
 - [x] context switch 비용 측정과 스케줄러/캐시/Little's Law 기반 용량 산정 — Day 3
 - [x] race condition 탐지와 예방 (critical section, mutex/atomic/CAS, 비관적/낙관적 락, 분산 락) — Day 4
-- [ ] deadlock RCA와 대응 (예정 Day 5)
+- [x] deadlock RCA와 대응 (Coffman conditions, thread dump 분석, lock ordering, timeout) — Day 5
 - [ ] virtual memory, TLB, major/minor page fault (예정 Day 6)
 - [ ] fsync, buffer cache, blocking I/O (예정 Day 7)
 - [ ] async I/O, 이벤트 루프, epoll (예정 Day 8)
