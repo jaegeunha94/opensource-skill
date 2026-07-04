@@ -19,10 +19,11 @@ Use this order:
 4. Integrate branches one at a time without merge commits.
 5. Verify the result.
 6. Push `main`.
-7. Delete only branches that were integrated and pushed successfully.
-8. Report what happened.
+7. Verify GitHub Pages deployment and the newly added lesson URLs.
+8. Delete only branches that were integrated, pushed, and published successfully.
+9. Report what happened.
 
-Do not skip verification. Do not delete a branch before its changes are confirmed on `origin/main`.
+Do not skip verification. Do not report GitHub Pages URLs until they return HTTP 200. Do not delete a branch before its changes are confirmed on `origin/main`.
 
 ## Preflight checks
 
@@ -162,7 +163,15 @@ For each matching path, output the GitHub Pages URL:
 https://jaegeunha94.github.io/opensource-skill/{subject-slug}/lessons/{filename}
 ```
 
-Group URLs by subject folder. Keep these URLs in the final report so the user can open all newly added lessons at once.
+Also save the flat URL list for deployment verification:
+
+```bash
+git diff --name-status origin/main..main \
+  | awk '$1 == "A" && $2 ~ /^[^\/]+\/lessons\/.+\.html$/ && $2 !~ /\/lessons\/index\.html$/ { printf "https://jaegeunha94.github.io/opensource-skill/%s\n", $2 }' \
+  > /tmp/new-lesson-urls.txt
+```
+
+Group URLs by subject folder. Keep these URLs for the final report, but do not present them as usable until the GitHub Pages verification below succeeds.
 
 ## Push main
 
@@ -181,6 +190,66 @@ If push is rejected because `origin/main` moved:
 
 Do not force push `main`.
 
+## Verify GitHub Pages deployment
+
+After `git push origin main`, verify that GitHub Pages has published the pushed commit before reporting lesson URLs or deleting branches.
+
+1. Record the pushed commit:
+
+   ```bash
+   final_sha=$(git rev-parse HEAD)
+   ```
+
+2. Check the Pages build/deploy run for that commit. Prefer `gh` if available; otherwise use the public GitHub API:
+
+   ```bash
+   gh run list --branch main --workflow "pages build and deployment" --limit 5
+   curl -s "https://api.github.com/repos/jaegeunha94/opensource-skill/actions/runs?branch=main&per_page=5"
+   ```
+
+   Confirm the newest Pages run whose `head_sha` matches `final_sha` has:
+
+   ```text
+   status: completed
+   conclusion: success
+   ```
+
+3. Confirm the deployed site is serving the pushed revision. The root page should include the pushed SHA in the generated asset URL:
+
+   ```bash
+   curl -s https://jaegeunha94.github.io/opensource-skill/ | rg "$final_sha"
+   ```
+
+4. Check every newly added lesson URL collected earlier:
+
+   ```bash
+   while IFS= read -r url; do
+     code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+     printf '%s %s\n' "$code" "$url"
+   done < /tmp/new-lesson-urls.txt
+   ```
+
+   Every URL must return `200`.
+
+If the Pages run fails with a transient deployment error such as `Deployment failed, try again later.`:
+
+1. Create and push an empty rebuild trigger commit:
+
+   ```bash
+   git commit --allow-empty -m "chore: trigger GitHub Pages rebuild"
+   git push origin main
+   ```
+
+2. Set `final_sha` to the new `HEAD`.
+3. Repeat the Pages run and URL verification.
+
+If Pages deployment still fails, or any lesson URL is not `200`, stop. Report:
+
+- the failed Pages run URL if available
+- the deployment status/conclusion
+- any non-200 lesson URLs
+- that branches were not deleted because publication was not verified
+
 ## Delete merged branches
 
 Delete only branches that satisfy all of these:
@@ -189,6 +258,8 @@ Delete only branches that satisfy all of these:
 - they were integrated successfully
 - `origin/main` now contains their changes
 - push to `origin main` succeeded
+- GitHub Pages deployment for the pushed commit succeeded
+- all newly added lesson URLs returned HTTP 200
 
 For each merged branch:
 
@@ -214,6 +285,7 @@ Use this concise report:
 - 건너뛴 브랜치: ...
 - 삭제한 브랜치: ...
 - origin/main: {final commit}
+- GitHub Pages: {run URL or "success"} / URL 확인 {count}개
 
 새로 추가된 학습 URL:
 - {subject}: {url}
