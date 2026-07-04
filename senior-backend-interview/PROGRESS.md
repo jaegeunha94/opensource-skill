@@ -9,6 +9,7 @@
 | 3 | 2026-07-01 | 확장성 패턴 | [0003-scalability-patterns.html](lessons/0003-scalability-patterns.html) |
 | 4 | 2026-07-02 | 분산 시스템 & 일관성 | [0004-distributed-systems-and-consistency.html](lessons/0004-distributed-systems-and-consistency.html) |
 | 5 | 2026-07-03 | API 설계 | [0005-api-design.html](lessons/0005-api-design.html) |
+| 6 | 2026-07-04 | 동시성 & 비동기 처리 | [0006-concurrency-and-async-processing.html](lessons/0006-concurrency-and-async-processing.html) |
 
 ## 다음 예정 학습
 
@@ -18,7 +19,7 @@
 | ~~3~~ | ~~확장성 패턴~~ | ~~완료~~ |
 | ~~4~~ | ~~분산 시스템 & 일관성~~ | ~~완료~~ |
 | ~~5~~ | ~~API 설계~~ | ~~완료~~ |
-| 6 | 동시성 & 비동기 처리 | 락 전략, 낙관적/비관적 동시성, 멱등성, 이벤트 큐 |
+| ~~6~~ | ~~동시성 & 비동기 처리~~ | ~~완료~~ |
 | 7 | 신뢰성 & 장애 대응 | 서킷 브레이커, Rate Limiting, Bulkhead, 포스트모텀 |
 | 8 | 보안 | AuthN/AuthZ, JWT, OAuth2, OWASP Top10, 암호화 |
 | 9 | 관측성 | 로깅 전략, 메트릭, 분산 트레이싱, SLO/SLA/에러 예산 |
@@ -28,7 +29,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — Day 6 (동시성 & 비동기 처리)가 다음 차례.
+**Day 6 완료** — Day 7 (신뢰성 & 장애 대응)가 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -51,7 +52,10 @@
 - [x] REST/GraphQL/gRPC 프로토콜 선택 기준과 GraphQL N+1 대응 (Day 5)
 - [x] API 버전 관리 전략과 Deprecation/sunset 설계 (Day 5)
 - [x] 하위 호환성 판단(Breaking/Non-breaking)과 계약 테스트 (Day 5)
-- [ ] 동시성 제어 패턴 (예정 Day 6)
+- [x] 낙관적/비관적 동시성 제어 선택 기준과 핫스팟 대응 (Day 6)
+- [x] 분산 락의 TTL, 소유자 토큰, 펜싱 토큰, 데드락 예방 (Day 6)
+- [x] 멱등키 설계와 재시도 안전성 확보 (Day 6)
+- [x] 메시지 큐 at-least-once 전달과 컨슈머 측 중복 제거 (Day 6)
 - [ ] 신뢰성 패턴 (예정 Day 7)
 - [ ] 보안 설계 (예정 Day 8)
 - [ ] 관측성 전략 (예정 Day 9)
