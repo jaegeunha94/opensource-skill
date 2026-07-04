@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | JavaScript 실행 모델과 이벤트 루프 답변 프레임워크 — 코드 실행 순서를 예측하는 사고법 | [0001-js-execution-model-event-loop-framework.html](lessons/0001-js-execution-model-event-loop-framework.html) |
 | 2 | 2026-07-03 | Execution Context와 Call Stack 심화 — Creation/Execution 단계, Hoisting, TDZ, 스택 오버플로우 | [0002-execution-context-call-stack-deep-dive.html](lessons/0002-execution-context-call-stack-deep-dive.html) |
+| 3 | 2026-07-04 | Scope Chain과 Lexical Scoping — 스코프 체인 조회 규칙, 함수/블록 스코프, 섀도잉 | [0003-scope-chain-lexical-scoping.html](lessons/0003-scope-chain-lexical-scoping.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | Scope Chain과 Lexical Scoping | `var`/`let`/`const`, 블록 스코프, 스코프 체인 조회 비용 |
 | 4 | Closure 심화 | 클로저의 실제 메모리 모델, 반복문 클로저 버그, 실무 활용 패턴 |
 | 5 | Prototype과 객체 모델 | Prototype chain, `class`는 syntactic sugar, `Object.create` |
 | 6 | `this` 바인딩 규칙 | 4가지 바인딩 규칙, `call`/`apply`/`bind`, 화살표 함수의 `this` |
@@ -32,7 +32,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — 다음: Day 3 — Scope Chain과 Lexical Scoping
+**Day 3 완료** — 다음: Day 4 — Closure 심화
 
 ## 습득한 핵심 개념
 
@@ -44,7 +44,10 @@
 - [x] Execution Context의 Creation Phase / Execution Phase 2단계 모델 (Day 2)
 - [x] Hoisting과 TDZ가 실제로 만드는 버그, `ReferenceError` vs `undefined` 구분 (Day 2)
 - [x] Call Stack의 물리적 한계와 스택 오버플로우 진단·대응 (Day 2)
-- [ ] 스코프 체인 조회 비용과 클로저 메모리 모델 (예정 Day 3~4)
+- [x] 스코프 체인이 정의 시점에 정적으로 고정되는 원리와 섀도잉 (Day 3)
+- [x] 함수 스코프(`var`)와 블록 스코프(`let`/`const`)의 실무 차이 (Day 3)
+- [x] 스코프 체인 조회 비용이 성능에 영향을 주는 조건 (Day 3)
+- [ ] 클로저의 실제 메모리 모델과 반복문 클로저 버그 (예정 Day 4)
 - [ ] Prototype chain과 `class` 문법의 실체 (예정 Day 5)
 - [ ] `this` 4가지 바인딩 규칙과 화살표 함수 예외 (예정 Day 6)
 - [ ] Promise 상태 머신과 에러 전파 규칙 (예정 Day 9)
