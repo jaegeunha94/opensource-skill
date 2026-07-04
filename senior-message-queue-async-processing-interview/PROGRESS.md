@@ -8,12 +8,12 @@
 | 2 | 2026-07-01 | Kafka 아키텍처와 파티셔닝 / 순서 보장 설계 | [0002-kafka-partitioning-and-ordering.html](lessons/0002-kafka-partitioning-and-ordering.html) |
 | 3 | 2026-07-02 | RabbitMQ Exchange 유형과 라우팅 설계 | [0003-rabbitmq-exchange-routing-and-dlx.html](lessons/0003-rabbitmq-exchange-routing-and-dlx.html) |
 | 4 | 2026-07-03 | AWS SQS/SNS 패턴과 클라우드 비동기 설계 | [0004-sqs-sns-cloud-async-patterns.html](lessons/0004-sqs-sns-cloud-async-patterns.html) |
+| 5 | 2026-07-04 | Idempotency (멱등성) 설계와 재시도 안전성 | [0005-idempotency-and-retry-safety.html](lessons/0005-idempotency-and-retry-safety.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | Idempotency (멱등성) 설계와 재시도 안전성 | 멱등 키, DB 유니크 제약, 상태 기반 중복 방지, at-least-once 처리 |
 | 6 | Dead-Letter Queue 설계와 장애 격리 | DLQ 구성, 독성 메시지 탐지, 재처리 파이프라인, 알림 연동 |
 | 7 | 재시도 전략 — Exponential Backoff와 재시도 횟수 결정 | Backoff 공식, Jitter, 최대 재시도 횟수 결정 기준, 재시도 비용 |
 | 8 | Backpressure와 Consumer Rate Control | 처리량 병목, Prefetch, Consumer 수 조정, 큐 길이 모니터링 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — Day 5: Idempotency (멱등성) 설계와 재시도 안전성 예정.
+**Day 5 완료** — Day 6: Dead-Letter Queue 설계와 장애 격리 예정.
 
 ## 습득한 핵심 개념
 
@@ -41,7 +41,9 @@
 - [x] Visibility Timeout 기반 재전달과 멱등 처리 필요성 (Day 4)
 - [x] FIFO MessageGroupId와 head-of-line blocking 리스크 (Day 4)
 - [x] Lambda Event Source Mapping의 배치 부분 실패 처리 (Day 4)
-- [ ] Idempotency 설계 패턴 (예정 Day 5)
+- [x] 멱등키 설계 기준과 DB 유니크 제약을 통한 원자적 중복 방지 (Day 5)
+- [x] check-then-act 패턴의 동시성 결함과 원자적 연산의 필요성 (Day 5)
+- [x] 외부 API 호출 경계에서의 멱등성(Idempotency-Key, reconciliation) (Day 5)
 - [ ] Dead-Letter Queue 설계 (예정 Day 6)
 - [ ] Exponential Backoff 재시도 전략 (예정 Day 7)
 - [ ] Backpressure 처리 패턴 (예정 Day 8)
