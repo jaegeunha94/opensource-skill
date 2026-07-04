@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interview Day 5 — HTTP/HTTPS와 TLS 핸드셰이크</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.72; color: #1a1d23; background: #fff; }
+    h1 { margin: 0 0 8px; font-size: 2rem; line-height: 1.25; }
+    .subtitle { color: #57606a; margin: 0 0 32px; font-size: 1.05rem; }
+    h2 { margin-top: 48px; padding-top: 12px; border-top: 2px solid #e5e7eb; font-size: 1.4rem; }
+    h3 { margin-top: 32px; color: #1a1d23; }
+    h4 { margin-top: 20px; color: #444; font-size: 1rem; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.93rem; }
+    th, td { border: 1px solid #d8dee4; padding: 9px 12px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 18px; background: #0d1117; color: #e6edf3; border-radius: 8px; font-size: 0.88rem; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.35em; border-radius: 4px; border: 1px solid #d8dee4; }
+    blockquote { margin: 20px 0; padding: 4px 20px; border-left: 4px solid #0b57d0; background: #f0f4ff; color: #2d3748; }
+    blockquote.warn { border-left-color: #e3a008; background: #fffbeb; }
+    blockquote.good { border-left-color: #16a34a; background: #f0fdf4; }
+    blockquote.bad  { border-left-color: #dc2626; background: #fef2f2; }
+    details { margin: 20px 0; padding: 14px 18px; border: 1px solid #d8dee4; border-radius: 8px; background: #fafafa; }
+    summary { cursor: pointer; font-weight: 600; font-size: 1rem; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 36px 0; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-right: 6px; }
+    .badge-senior { background: #dbeafe; color: #1d4ed8; }
+    .badge-tool   { background: #fce7f3; color: #9d174d; }
+    .badge-trap   { background: #fee2e2; color: #991b1b; }
+    .badge-tip    { background: #dcfce7; color: #15803d; }
+    .back { margin-bottom: 32px; font-size: 0.95rem; }
+    .rubric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+    .rubric-col { padding: 16px; border-radius: 8px; }
+    .rubric-col.weak  { background: #fef2f2; border: 1px solid #fca5a5; }
+    .rubric-col.strong { background: #f0fdf4; border: 1px solid #86efac; }
+    .rubric-col h4 { margin-top: 0; }
+    @media (max-width: 640px) { .rubric-grid { grid-template-columns: 1fr; } }
+    .step-list { counter-reset: step; padding: 0; list-style: none; }
+    .step-list li { counter-increment: step; padding: 10px 0 10px 52px; position: relative; border-bottom: 1px solid #f0f0f0; }
+    .step-list li::before { content: counter(step); position: absolute; left: 0; top: 10px; width: 32px; height: 32px; background: #0b57d0; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+    .interview-q { background: #1a1d23; color: #e6edf3; padding: 20px 24px; border-radius: 8px; margin: 20px 0; font-size: 1.05rem; font-style: italic; }
+    .interview-q::before { content: "💬 면접 질문"; display: block; font-size: 0.78rem; font-style: normal; font-weight: 700; color: #8b949e; margin-bottom: 8px; letter-spacing: 0.05em; }
+    .toc { background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 8px; padding: 20px 24px; margin: 24px 0 40px; }
+    .toc h3 { margin-top: 0; font-size: 1rem; }
+    .toc ol { margin: 0; padding-left: 20px; }
+    .toc li { margin: 4px 0; font-size: 0.93rem; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+
+  <h1>Interview Day 5</h1>
+  <p class="subtitle">HTTP/HTTPS와 TLS 핸드셰이크 — "암호화는 공짜가 아니다, 그 비용을 어디서 어떻게 줄이는가"</p>
+
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#interview-q">면접 질문</a></li>
+      <li><a href="#prerequisite">전제 개념 — 알아야 할 기초</a></li>
+      <li><a href="#why-asked">왜 면접에서 이걸 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#thinking-order">답변 사고 순서</a></li>
+      <li><a href="#answer-example">핵심 답변 예시</a></li>
+      <li><a href="#tradeoff">Trade-off</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#followup">Senior-level Follow-up 질문</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <h2 id="interview-q">1. 면접 질문</h2>
+
+  <div class="interview-q">
+    "새 리전에 배포한 API를 HTTPS로 전환한 뒤, 특히 리전 간 거리가 먼 사용자들에게서 첫 요청 지연이 눈에 띄게 늘었다는 리포트가 들어왔습니다. TLS 핸드셰이크가 성능에 어떤 영향을 주는지 구조적으로 설명하고, 어디서 얼마나 지연이 발생하는지 어떻게 측정하시겠습니까? 그리고 보안 수준을 낮추지 않으면서 이 지연을 줄일 수 있는 방법을 제시해보세요."
+  </div>
+
+  <p>이 질문이 어려운 이유는 "HTTPS는 HTTP에 암호화를 씌운 것"이라는 설명만으로는 <strong>왜 하필 리전이 먼 사용자에게서 더 크게 체감되는지</strong>를 설명하지 못하기 때문이다. TLS 비용의 상당 부분은 CPU 암복호화 연산이 아니라 <strong>왕복 시간(RTT)</strong>에서 나온다. 면접관은 지원자가 "암호화하니까 느려진다"는 막연한 답을 넘어, 핸드셰이크가 몇 번의 왕복을 요구하는지, 그 왕복이 물리적 거리(RTT)와 어떻게 곱해지는지, 그리고 그 왕복 횟수를 줄이는 구체적인 메커니즘(세션 재사용, TLS 1.3, TLS 종단 위치)을 아는지 확인하려 한다.</p>
+
+  <hr>
+
+  <!-- 2. 전제 개념 -->
+  <h2 id="prerequisite">2. 전제 개념 — 알아야 할 기초</h2>
+
+  <h3>2-1. TLS 핸드셰이크는 TCP 핸드셰이크 "위에" 얹힌 별도의 왕복이다</h3>
+  <p>HTTPS 연결은 한 번의 왕복으로 끝나지 않는다. 먼저 TCP 3-way handshake(SYN → SYN/ACK → ACK)로 전송 계층 연결을 맺어야 하고, <strong>그 위에서 다시</strong> TLS 핸드셰이크를 거쳐야 암호화된 데이터를 주고받을 수 있다. 즉 연결을 새로 맺을 때마다 "연결을 위한 왕복"과 "암호화 협상을 위한 왕복"이 순차적으로 쌓인다. RTT(왕복 지연)가 200ms인 사용자라면, TCP 핸드셰이크 1회 왕복만으로 이미 200ms를 쓰고, 그 뒤에 TLS 핸드셰이크가 추가로 1~2회 왕복을 더 요구하면 실제 첫 바이트를 받기까지 400~600ms가 순수 핸드셰이크로만 소요될 수 있다.</p>
+
+  <blockquote>
+    <strong>비유:</strong> 친구 집에 처음 방문할 때, 먼저 초인종을 눌러 문을 열게 하는 것(TCP)과, 문이 열린 뒤에도 "암호를 대세요 → 암호를 확인했습니다 → 이제 들어오세요"라는 별도의 확인 절차(TLS)를 한 번 더 거치는 것과 같다. 집이 멀수록(RTT가 클수록) 이 확인 절차를 오갈 때마다 걸리는 시간이 그대로 누적된다.
+  </blockquote>
+
+  <h3>2-2. 왜 비대칭키로 시작해서 대칭키로 바꾸는가</h3>
+  <p>TLS는 처음 보는 상대와 안전하게 "같은 비밀 열쇠(대칭키)"를 나눠 갖기 위해 비대칭키(공개키/개인키) 암호화를 먼저 사용한다. 비대칭키 연산은 안전하지만 느리고, 대칭키(AES 등) 연산은 빠르지만 사전에 열쇠를 안전하게 공유해야 한다는 문제가 있다. 그래서 TLS는 <strong>핸드셰이크 동안만 비대칭키/키 교환 알고리즘을 사용해 대칭키를 안전하게 합의</strong>하고, 이후 실제 데이터 전송은 그 대칭키로 암호화한다 — "느리지만 안전한 방법으로 빠르지만 위험한 방법에 쓸 열쇠를 몰래 나눠 가진다"는 구조다.</p>
+
+  <h3>2-3. 인증서 체인 — 신뢰는 한 장의 인증서가 아니라 사슬로 검증된다</h3>
+  <p>서버가 제시하는 인증서(leaf certificate)는 그 자체로 신뢰되지 않는다. 클라이언트는 leaf 인증서가 <strong>중간 인증기관(intermediate CA)</strong>에 의해 서명되었고, 그 intermediate CA는 다시 클라이언트의 신뢰 저장소(trust store)에 이미 들어있는 <strong>루트 인증기관(root CA)</strong>에 의해 서명되었는지를 사슬 전체로 검증한다.</p>
+
+  <table>
+    <thead>
+      <tr><th>구성 요소</th><th>역할</th><th>실무 함의</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Root CA</strong></td><td>가장 신뢰의 뿌리, OS/브라우저에 미리 내장</td><td>직접 배포하지 않음 — 유출/침해 시 파급력이 극단적으로 크다</td></tr>
+      <tr><td><strong>Intermediate CA</strong></td><td>Root의 서명을 받아 leaf 인증서에 서명</td><td>서버가 반드시 함께 전송해야 하는 인증서. 빠지면 "체인이 끊긴다"</td></tr>
+      <tr><td><strong>Leaf(서버) 인증서</strong></td><td>실제 도메인을 증명</td><td>만료/도메인 불일치 시 클라이언트가 연결을 거부</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>핵심 함정:</strong> 서버에 intermediate 인증서를 함께 배포하지 않아도 <strong>일부</strong> 클라이언트(이미 intermediate를 다른 경로로 캐시해둔 최신 브라우저)는 정상 접속되고, intermediate 캐시가 없는 클라이언트(구형 모바일 OS, 특정 라이브러리)만 연결에 실패한다. 그래서 "내 브라우저에서는 되는데요?"라는 보고와 실제 장애가 공존할 수 있다.</p>
+
+  <h3>2-4. TLS 1.2 vs TLS 1.3 — 왕복 횟수의 차이</h3>
+  <p>TLS 1.2는 암호 스위트(cipher suite) 협상과 키 교환을 분리된 여러 메시지로 나눠 처리해 보통 <strong>2회 왕복(2-RTT)</strong>이 필요했다. TLS 1.3은 클라이언트가 "이 정도 키 교환 방식을 쓸 것"이라고 미리 예측해서 첫 메시지에 실어 보내는 방식으로 협상을 압축해 <strong>1회 왕복(1-RTT)</strong>으로 줄였고, 이후 재연결 시에는 <strong>0-RTT</strong>까지도 가능하게 했다. RTT가 큰 환경일수록 이 차이는 체감 지연에 그대로 곱해진다.</p>
+
+  <h3>2-5. 세션 재사용 — 매번 처음부터 협상하지 않는다</h3>
+  <p>같은 서버에 다시 연결할 때 전체 핸드셰이크를 반복하는 것은 낭비다. 그래서 TLS는 이전 협상 결과를 재사용하는 메커니즘을 제공한다.</p>
+
+  <table>
+    <thead>
+      <tr><th>메커니즘</th><th>동작 방식</th><th>주의할 점</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Session ID (TLS 1.2)</strong></td><td>서버가 세션 상태를 메모리에 저장하고 ID로 재참조</td><td>서버 메모리 사용, 로드밸런서 뒤 여러 서버 중 다른 서버로 가면 재사용 실패(sticky session 필요)</td></tr>
+      <tr><td><strong>Session Ticket (TLS 1.2)</strong></td><td>서버 상태를 암호화된 티켓으로 클라이언트에 위임 저장</td><td>서버가 상태를 안 들고 있어도 되어 스케일 아웃에 유리, 티켓 암호화 키 로테이션 필요</td></tr>
+      <tr><td><strong>PSK 기반 재개 (TLS 1.3)</strong></td><td>이전 세션에서 유도한 키로 다음 연결을 0-RTT/1-RTT로 단축</td><td>0-RTT로 보낸 초기 데이터는 재전송 공격(replay)에 취약할 수 있어 멱등한 요청에만 허용해야 함</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2-6. SNI와 ALPN — 핸드셰이크 중에 오가는 부가 정보</h3>
+  <p><strong>SNI(Server Name Indication)</strong>는 클라이언트가 TLS 핸드셰이크 초기에 "어떤 도메인에 접속하려는지"를 평문으로 알려주는 확장으로, 하나의 IP에서 여러 도메인의 인증서를 서빙하는 가상 호스팅(예: CDN)을 가능하게 한다. <strong>ALPN(Application-Layer Protocol Negotiation)</strong>은 같은 핸드셰이크 안에서 "이후 HTTP/1.1을 쓸지 HTTP/2를 쓸지"를 함께 협상해, 별도의 왕복 없이 상위 프로토콜까지 정해지게 한다.</p>
+
+  <h3>2-7. HTTP/2, HTTP/3와 TLS의 관계</h3>
+  <p>HTTP/2 스펙 자체는 평문 전송을 금지하지 않지만, 실무에서 주요 브라우저들은 <strong>암호화된 연결(HTTPS)에서만 HTTP/2를 지원</strong>하도록 구현했다. 그래서 사실상 HTTP/2를 쓰려면 TLS가 전제 조건이다. HTTP/3는 여기서 한 단계 더 나아가 전송 계층 자체를 TCP 대신 <strong>QUIC(UDP 기반)</strong>으로 바꾸고, QUIC 안에 TLS 1.3을 통합해 <strong>전송 핸드셰이크와 암호화 협상을 사실상 한 번의 왕복으로 합친다</strong>. 이는 TCP+TLS를 순차적으로 쌓아야 했던 구조적 지연을 근본적으로 줄이는 접근이다.</p>
+
+  <h3>2-8. 인증서 폐기 확인(OCSP)과 HSTS</h3>
+  <p>인증서가 유출 등으로 조기 폐기되었는지 확인하는 절차(OCSP)를 클라이언트가 매번 CA 서버에 온라인으로 물어보면 그 자체로 추가 왕복과 지연, 그리고 CA 장애 시 접속 불가 위험이 생긴다. <strong>OCSP Stapling</strong>은 서버가 미리 CA로부터 유효성 응답을 받아 핸드셰이크에 "동봉(staple)"해서 클라이언트가 별도로 조회하지 않게 한다. <strong>HSTS(HTTP Strict Transport Security)</strong>는 브라우저가 이후 항상 HTTPS로만 접속하도록 강제해, 첫 HTTP 요청이 HTTPS로 리다이렉트되며 낭비되는 왕복 자체를 없앤다.</p>
+
+  <h3>2-9. TLS 종단(termination)은 어디서 일어나는가</h3>
+  <p>실무에서는 서버 하나가 아니라 로드밸런서/리버스 프록시가 앞단에 있는 경우가 많고, TLS를 어디서 끝낼지는 성능·보안·운영 복잡도를 모두 좌우하는 선택이다.</p>
+
+  <table>
+    <thead>
+      <tr><th>구성</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>TLS Termination (LB에서 종단)</strong></td><td>로드밸런서가 TLS를 복호화하고 내부망에는 평문(또는 별도 암호화)으로 전달. 인증서 관리가 한 곳에 집중되어 운영이 쉽지만, 내부망도 침해되면 평문이 노출될 수 있다.</td></tr>
+      <tr><td><strong>TLS Passthrough</strong></td><td>LB는 TCP만 중계하고 실제 TLS 종단은 origin 서버에서 처리. 종단 간 암호화가 유지되지만 LB가 요청 내용을 보고 라우팅/캐싱하기 어렵다.</td></tr>
+      <tr><td><strong>TLS Bridging(재암호화)</strong></td><td>LB가 클라이언트와의 TLS를 종단한 뒤, 내부적으로 origin과 다시 새 TLS 연결을 맺는다. 구간별 암호화는 유지되지만 LB에서 두 번의 암복호화 비용이 든다.</td></tr>
+      <tr><td><strong>mTLS(상호 인증)</strong></td><td>서버뿐 아니라 클라이언트도 인증서로 자신을 증명. 서비스 메시/내부망에서 "이 트래픽이 정말 신뢰된 서비스에서 왔는가"를 검증할 때 쓰인다.</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <h2 id="why-asked">3. 왜 면접에서 이걸 묻는가</h2>
+
+  <ol>
+    <li><strong>1단계 필터 (정의 vs 구조 이해)</strong> — "HTTPS는 암호화된 HTTP"에서 멈추는지, 핸드셰이크의 왕복 구조와 그것이 RTT에 곱해진다는 사실까지 설명할 수 있는지 확인한다.</li>
+    <li><strong>2단계 필터 (지식 vs 진단 능력)</strong> — "리전이 먼 사용자만 느리다"는 증상을 보고, 그것이 CPU 연산 비용이 아니라 왕복 횟수 문제라는 것을 논리적으로 좁혀낼 수 있는지 본다.</li>
+    <li><strong>3단계 필터 (진단 vs 실제 개선 경험)</strong> — 세션 재사용, TLS 1.3 적용, TLS 종단 위치 조정, OCSP stapling, HTTP/2·3 도입 같은 실제 개선책을 시도해본 적이 있는지, 그리고 그 과정에서 보안과 성능의 trade-off를 스스로 판단해본 경험이 있는지 follow-up으로 확인한다.</li>
+  </ol>
+
+  <blockquote class="warn">
+    <strong>면접관이 피하고 싶은 답변:</strong> "HTTPS는 SSL/TLS로 암호화한 HTTP입니다. 암호화 때문에 HTTP보다 느립니다." 맞는 말이지만, <strong>왜 느린지(왕복 횟수), 어디서 그 비용이 발생하는지(리전 간 RTT), 무엇으로 줄일 수 있는지</strong>가 전혀 없는 답변이다. 실제로 이 사용자에게 무엇을 해줄지 알 수 없다.
+  </blockquote>
+
+  <hr>
+
+  <!-- 4. 실무 연결 -->
+  <h2 id="real-world">4. 실무 연결</h2>
+
+  <h3>실제 장애/개선 시나리오 A — 신규 리전 진출 후 체감 지연 급증</h3>
+  <p>새 리전에서 유입되는 사용자는 origin 서버까지 물리 RTT가 180ms에 달했다. TCP 핸드셰이크(1 RTT) + TLS 1.2 핸드셰이크(2 RTT) + 첫 HTTP 요청(1 RTT)이 순차적으로 쌓여 첫 응답까지만 700ms 이상이 소요됐다. 서버를 TLS 1.3으로 전환하고, keep-alive/커넥션 풀링으로 연결을 재사용하도록 클라이언트 설정을 조정한 뒤 CDN 엣지에서 TLS를 종단하도록 구성을 바꾸자, 사용자 체감 지연이 리전 RTT의 영향을 훨씬 덜 받게 됐다. 이 경험에서 배운 것은 "암호화 알고리즘 자체의 연산 비용"보다 "왕복 횟수와 그 왕복이 물리적으로 얼마나 먼 거리를 오가는가"가 지연의 대부분을 설명한다는 점이었다.</p>
+
+  <h3>실제 장애 시나리오 B — 인증서 갱신 후 일부 클라이언트만 연결 실패</h3>
+  <p>인증서를 자동 갱신 파이프라인 없이 수동으로 교체하면서 새 leaf 인증서만 배포하고 intermediate 인증서 파일을 갱신하지 않았다. 최신 브라우저 사용자는 문제를 못 느꼈지만(브라우저가 다른 경로로 intermediate를 캐시하고 있었음), 특정 모바일 앱과 오래된 결제 연동 시스템에서 "인증서 체인을 신뢰할 수 없음" 오류가 발생했다. 모니터링 대시보드에서는 전체 성공률이 크게 떨어지지 않아 늦게 발견됐고, 이후로는 인증서 배포 시 <code>openssl s_client</code>로 체인 전체가 정상 전달되는지 자동 검증하는 단계를 배포 파이프라인에 추가했다.</p>
+
+  <h3>실제 장애 시나리오 C — 로드밸런서에서 TLS 종단 후 내부망 평문 트래픽이 보안 감사에서 지적됨</h3>
+  <p>외부 트래픽은 모두 HTTPS였지만, 로드밸런서에서 TLS를 종단한 뒤 내부 서비스 간 통신은 평문 HTTP로 처리되고 있었다. 보안 감사에서 "내부망이 침해되면 트래픽이 그대로 노출된다"는 지적을 받았고, 이를 계기로 내부 서비스 간 통신에 mTLS를 도입하는 서비스 메시 검토가 시작됐다. 이 사례는 "외부 구간만 암호화하면 충분하다"는 가정이 항상 맞지는 않는다는 것을 보여준다 — 신뢰 경계를 어디까지로 볼 것인가에 대한 아키텍처 판단이 필요했다.</p>
+
+  <hr>
+
+  <!-- 5. 답변 사고 순서 -->
+  <h2 id="thinking-order">5. 답변 사고 순서</h2>
+
+  <ol class="step-list">
+    <li>
+      <strong>증상을 왕복 횟수 관점으로 재정의한다</strong>
+      <br>"느리다"를 "몇 번의 왕복이 필요한가"로 바꿔서 생각한다. TCP 핸드셰이크(1 RTT) + TLS 핸드셰이크(TLS 1.2면 2 RTT, TLS 1.3이면 1 RTT) + 첫 애플리케이션 요청(1 RTT)이 순차적으로 쌓인다는 구조를 먼저 짚는다.
+    </li>
+    <li>
+      <strong>리전 간 RTT를 실측한다</strong>
+      <br><code>curl -w</code>의 타이밍 필드(<code>time_connect</code>, <code>time_appconnect</code>, <code>time_starttransfer</code>)나 브라우저 개발자도구 네트워크 탭으로 TCP 연결, TLS 협상, 첫 바이트까지 각 구간이 실제로 몇 ms인지 나눠서 측정한다.
+    </li>
+    <li>
+      <strong>어느 버전/설정이 쓰이고 있는지 확인한다</strong>
+      <br>TLS 1.2인지 1.3인지, 세션 재사용(session ticket/PSK)이 실제로 히트하고 있는지, OCSP 온라인 조회로 추가 왕복이 발생하는지, keep-alive/커넥션 풀링이 적용되어 있는지 확인한다.
+    </li>
+    <li>
+      <strong>TLS 종단 위치와 물리적 거리 구조를 본다</strong>
+      <br>origin이 사용자와 얼마나 먼지, CDN/엣지에서 TLS를 종단하면 사용자와 가까운 곳에서 핸드셰이크를 끝내고 origin과의 구간은 이미 유지되던 연결을 재사용할 수 있는지 검토한다.
+    </li>
+    <li>
+      <strong>개선책을 우선순위대로 제시한다</strong>
+      <br>TLS 1.3 전환과 세션 재사용 활성화(빠르고 리스크 낮음) → OCSP stapling·HSTS 적용 → keep-alive/커넥션 풀링 튜닝 → CDN/엣지에서 TLS 종단 → HTTP/2 또는 HTTP/3 도입 순으로 비용 대비 효과가 큰 것부터 짚는다.
+    </li>
+    <li>
+      <strong>보안 저하 여부를 반드시 함께 점검한다</strong>
+      <br>0-RTT를 켤 경우 재전송 공격에 안전한 멱등 요청에만 허용하는지, 세션 티켓 암호화 키를 주기적으로 로테이션하는지, 오래된 취약한 cipher suite를 성능 때문에 남겨두지는 않았는지 확인해 "빠르지만 안전하지 않은" 선택을 피한다.
+    </li>
+  </ol>
+
+  <hr>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <h2 id="answer-example">6. 핵심 답변 예시</h2>
+
+  <h3>짧은 답변 (60초 버전)</h3>
+  <blockquote class="good">
+    "HTTPS의 지연 비용은 대부분 암복호화 연산이 아니라 핸드셰이크의 왕복 횟수에서 옵니다. TCP 핸드셰이크 1 RTT에 TLS 핸드셰이크가 1.2라면 2 RTT, 1.3이면 1 RTT가 더해지고, 첫 요청까지 합치면 최소 3~4번의 왕복이 필요합니다. 리전이 멀어 RTT가 크면 이 왕복 횟수가 그대로 곱해져 체감 지연이 커집니다. 그래서 먼저 curl의 타이밍 필드로 TCP 연결, TLS 협상, 첫 바이트 구간을 나눠 측정하고, TLS 1.3 전환과 세션 재사용(세션 티켓/PSK)이 실제로 히트하는지, keep-alive로 연결이 재사용되는지 확인합니다. 그다음 CDN이나 엣지에서 TLS를 종단해 사용자와 가까운 곳에서 핸드셰이크를 끝내는 방법을 검토하겠습니다."
+  </blockquote>
+
+  <h3>깊이 있는 답변 (면접관이 "더 자세히"라고 물을 때)</h3>
+  <blockquote class="good">
+    "조금 더 구체적으로 보면, 저는 이 문제를 '연결당 비용'과 '요청당 비용'으로 나눠서 봅니다. 연결당 비용은 TCP+TLS 핸드셰이크처럼 새 연결을 맺을 때만 발생하는 고정 비용이고, 요청당 비용은 그 연결 위에서 실제 요청/응답을 주고받는 비용입니다. 리전이 먼 사용자가 유독 느끼는 지연은 대부분 연결당 비용이 RTT에 곱해져 커지기 때문이므로, 저라면 먼저 연결 재사용률을 높이는 데 집중합니다 — keep-alive와 커넥션 풀링으로 매 요청마다 새로 핸드셰이크를 하지 않게 하고, TLS 세션 재사용(가능하면 TLS 1.3의 PSK 기반 재개)이 실제로 히트하고 있는지 로그로 확인합니다.
+
+    그다음으로 CDN/엣지 로케이션에서 TLS를 종단하는 구조를 검토합니다. 사용자와 가장 가까운 엣지에서 핸드셰이크를 끝내면, 사용자 입장에서는 RTT가 짧은 구간에서만 핸드셰이크가 일어나고, 엣지와 origin 사이는 이미 유지 중인 연결을 재사용할 수 있어 전체 체감 지연이 줄어듭니다. 마지막으로 HTTP/2의 ALPN 협상이나 나아가 HTTP/3(QUIC)처럼 전송 계층과 TLS 협상을 통합해 왕복 자체를 줄이는 프로토콜 전환도 장기적으로 고려합니다. 다만 이 모든 개선을 할 때 0-RTT 같은 최적화는 재전송 공격에 취약할 수 있어 멱등한 요청에만 적용하는 등, 성능을 위해 보안을 몰래 낮추지 않았는지를 항상 같이 점검합니다."
+  </blockquote>
+
+  <hr>
+
+  <!-- 7. Trade-off -->
+  <h2 id="tradeoff">7. Trade-off</h2>
+
+  <table>
+    <thead>
+      <tr><th>선택</th><th>장점</th><th>단점 / 주의사항</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>TLS Termination (LB/엣지에서 종단)</strong></td>
+        <td>인증서 관리 집중화, 사용자와 가까운 곳에서 핸드셰이크 종료로 체감 지연 감소</td>
+        <td>내부망이 침해되면 평문 트래픽 노출 위험, 신뢰 경계를 어디까지로 볼지 별도 설계 필요</td>
+      </tr>
+      <tr>
+        <td><strong>TLS Passthrough / Bridging</strong></td>
+        <td>종단 간 암호화 유지, 내부망 침해 시에도 데이터 노출 최소화</td>
+        <td>LB가 요청 내용을 보고 라우팅·캐싱하기 어려움(passthrough), 재암호화 시 추가 연산 비용(bridging)</td>
+      </tr>
+      <tr>
+        <td><strong>세션 재사용 / 0-RTT 활성화</strong></td>
+        <td>재연결 시 핸드셰이크 왕복을 대폭 줄여 지연 감소</td>
+        <td>0-RTT 초기 데이터는 재전송 공격에 취약할 수 있어 멱등 요청으로 제한 필요, 세션 티켓 키 로테이션 운영 부담</td>
+      </tr>
+      <tr>
+        <td><strong>OCSP Stapling 도입</strong></td>
+        <td>클라이언트의 온라인 폐기 조회 왕복 제거, CA 장애에도 영향 최소화</td>
+        <td>서버가 주기적으로 최신 OCSP 응답을 받아 갱신해야 하는 운영 작업 추가</td>
+      </tr>
+      <tr>
+        <td><strong>짧은 인증서 유효기간 + 자동 갱신</strong></td>
+        <td>키 유출 시 노출 기간 최소화, 최신 정책/알고리즘 반영 용이</td>
+        <td>자동화 파이프라인이 없으면 오히려 만료로 인한 장애 위험 증가 — 자동화 구축이 선행되어야 함</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 8. 흔한 오해 -->
+  <h2 id="misconceptions">8. 흔한 오해</h2>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 1</span> "HTTPS가 느린 이유는 암복호화 연산 자체가 무겁기 때문이다"</summary>
+    <p>현대 CPU와 AES-NI 같은 하드웨어 가속을 고려하면 대칭키 암복호화 자체의 연산 비용은 매우 작다. 체감 지연의 대부분은 <strong>핸드셰이크에 필요한 왕복 횟수</strong>이며, 이는 RTT가 큰(물리적으로 먼) 사용자일수록 크게 곱해진다. 연산 최적화보다 왕복 횟수를 줄이는 것(세션 재사용, TLS 1.3, TLS 종단 위치)이 훨씬 효과적인 경우가 많다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 2</span> "인증서만 갱신하면 체인 문제는 신경 쓸 필요 없다"</summary>
+    <p>leaf 인증서만 교체하고 intermediate 인증서를 함께 갱신/배포하지 않으면, 이미 intermediate를 캐시하고 있는 클라이언트는 문제없이 접속되지만 캐시가 없는 클라이언트(구형 OS, 특정 라이브러리)만 연결에 실패한다. "내 브라우저에서는 된다"는 확인만으로는 체인 문제를 발견하지 못한다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 3</span> "세션 재사용이나 0-RTT는 켜두기만 하면 항상 이득이다"</summary>
+    <p>0-RTT로 전송되는 초기 데이터는 재전송(replay) 공격에 노출될 수 있다. 결제 요청처럼 같은 요청이 두 번 처리되면 안 되는 경우 0-RTT를 그대로 허용하면 안 되며, 멱등한 요청에만 적용하거나 애플리케이션 레벨에서 재전송 방지 로직을 별도로 둬야 한다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 4</span> "HTTP/2는 스펙상 반드시 TLS가 필요하다"</summary>
+    <p>HTTP/2 스펙 자체는 평문(h2c) 전송을 금지하지 않는다. 다만 주요 브라우저 구현체들이 암호화된 연결에서만 HTTP/2를 지원하도록 만들었기 때문에, 실무에서는 사실상 TLS가 전제 조건처럼 동작한다. "스펙이 강제한다"와 "생태계가 강제한다"를 구분해서 설명해야 한다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 5</span> "외부 구간만 HTTPS로 암호화하면 내부망은 안전하다"</summary>
+    <p>내부망이 항상 신뢰할 수 있는 경계라는 가정은 위협 모델이 바뀌면(내부 침해, 멀티테넌시, 규제 요구사항) 성립하지 않을 수 있다. 로드밸런서에서 TLS를 종단한 뒤 내부 통신을 평문으로 두면, 내부망 침해 시 트래픽이 그대로 노출된다. 신뢰 경계를 어디까지로 볼지는 보안 정책과 규제 요건에 따라 다시 판단해야 하는 아키텍처 결정이다.</p>
+  </details>
+
+  <hr>
+
+  <!-- 9. Follow-up 질문 -->
+  <h2 id="followup">9. Senior-level Follow-up 질문</h2>
+
+  <table>
+    <thead>
+      <tr><th>Follow-up 질문</th><th>면접관의 의도</th><th>답변 포인트</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>"TLS 1.3이 1.2보다 빠른 이유를 왕복(RTT) 관점에서 설명해보세요."</td>
+        <td>핸드셰이크 구조를 실제로 이해하고 있는지</td>
+        <td>TLS 1.2는 cipher suite 협상과 키 교환을 여러 메시지로 나눠 2-RTT가 필요했지만, TLS 1.3은 클라이언트가 키 교환 방식을 미리 예측해 첫 메시지에 실어 보내 1-RTT로 줄였고, 재연결 시 PSK 기반으로 0-RTT까지 가능하다는 점을 설명한다.</td>
+      </tr>
+      <tr>
+        <td>"0-RTT의 재전송(replay) 공격 위험은 무엇이고 어떻게 완화합니까?"</td>
+        <td>성능 최적화가 만드는 보안 트레이드오프를 인지하는지</td>
+        <td>0-RTT 초기 데이터는 공격자가 그대로 재전송해도 서버가 다시 처리할 수 있으므로, 멱등한 요청(GET 등)에만 허용하거나 애플리케이션 레벨의 재전송 탐지/중복 방지 로직을 함께 둬야 한다는 점을 짚는다.</td>
+      </tr>
+      <tr>
+        <td>"mTLS는 언제 필요합니까, 일반 TLS와 무엇이 다릅니까?"</td>
+        <td>서버 인증을 넘어 클라이언트 신원까지 검증해야 하는 상황을 아는지</td>
+        <td>일반 TLS는 서버만 인증서로 증명하지만, mTLS는 클라이언트도 인증서를 제시해 서버가 클라이언트의 신원을 검증한다. 내부 서비스 간 통신, 제로 트러스트 네트워크, 서비스 메시에서 "이 트래픽이 신뢰된 서비스에서 왔는가"를 검증할 때 쓰이며, 인증서 발급/로테이션 운영 부담이 추가된다는 trade-off를 설명한다.</td>
+      </tr>
+      <tr>
+        <td>"인증서 자동 갱신 파이프라인을 어떻게 설계하겠습니까?"</td>
+        <td>수동 운영의 위험성과 자동화 설계 능력을 확인</td>
+        <td>ACME 프로토콜 기반 자동 발급/갱신(예: Let's Encrypt), 만료 임박 알림, 배포 후 체인 전체 검증(예: <code>openssl s_client</code> 자동화), 갱신 실패 시 롤백/알림 경로까지 포함해 설명한다.</td>
+      </tr>
+      <tr>
+        <td>"TLS 종단을 어디서 할지 결정할 때 무엇을 고려합니까(LB vs origin vs 서비스 메시 사이드카)?"</td>
+        <td>성능·보안·운영 복잡도를 종합적으로 저울질할 수 있는지</td>
+        <td>사용자와의 거리(엣지에서 종단하면 체감 지연 감소), 내부망 신뢰 수준(내부 침해 시 노출 범위), 인증서 관리 위치(중앙 집중 vs 분산), 라우팅/캐싱을 위해 요청 내용을 봐야 하는지 여부를 종합적으로 고려해야 한다고 답한다.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 10. Rubric -->
+  <h2 id="rubric">10. 자기 점검 Rubric</h2>
+
+  <div class="rubric-grid">
+    <div class="rubric-col weak">
+      <h4>약한 답변 (Junior 수준)</h4>
+      <ul>
+        <li>"HTTPS는 암호화된 HTTP라 느리다"는 정의에서 멈춤</li>
+        <li>지연의 원인을 암복호화 연산 비용으로만 설명하고 왕복 횟수(RTT)를 언급하지 못함</li>
+        <li>인증서 체인(root/intermediate/leaf)의 역할과 배포 실수의 함정을 모름</li>
+        <li>세션 재사용, TLS 1.3, 0-RTT를 구분하지 못하거나 무조건 "빠르니 좋다"고만 답함</li>
+        <li>TLS 종단 위치(LB vs origin vs 엣지)에 따른 성능/보안 trade-off를 설명하지 못함</li>
+        <li>HTTP/2·HTTP/3와 TLS의 관계를 스펙과 실제 구현 관행을 구분하지 못하고 설명</li>
+      </ul>
+    </div>
+    <div class="rubric-col strong">
+      <h4>강한 답변 (Senior 수준)</h4>
+      <ul>
+        <li>TCP+TLS 핸드셰이크의 왕복 구조를 단계별로 설명하고 RTT와의 곱셈 관계를 짚음</li>
+        <li>curl 타이밍 필드 등 실제 도구로 연결/핸드셰이크/첫 바이트 구간을 나눠 측정하는 절차를 제시</li>
+        <li>인증서 체인 배포 실수가 "일부 클라이언트만" 실패시키는 이유를 구조적으로 설명</li>
+        <li>세션 재사용과 0-RTT의 성능 이득과 재전송 공격 리스크를 함께 설명</li>
+        <li>TLS 종단 위치(LB/passthrough/bridging/엣지)의 trade-off를 실무 사례로 비교</li>
+        <li>OCSP stapling, HSTS, mTLS, HTTP/3(QUIC)까지 확장해서 설명 가능</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>자기 점검 체크리스트</h3>
+  <ul>
+    <li>☐ TCP와 TLS 핸드셰이크가 순차적으로 쌓여 왕복 횟수가 늘어난다는 구조를 설명했는가?</li>
+    <li>☐ "리전이 먼 사용자만 느리다"는 증상을 RTT와 왕복 횟수의 곱셈 관계로 연결했는가?</li>
+    <li>☐ 실제 측정 도구(curl 타이밍, 브라우저 개발자도구)로 구간별 지연을 나눠 확인하는 절차를 제시했는가?</li>
+    <li>☐ 인증서 체인 구조와 intermediate 배포 실수의 함정을 설명했는가?</li>
+    <li>☐ 세션 재사용/TLS 1.3/0-RTT의 이득과 리스크(재전송 공격)를 함께 설명했는가?</li>
+    <li>☐ TLS 종단 위치에 따른 성능/보안/운영 trade-off를 비교했는가?</li>
+  </ul>
+
+  <hr>
+
+  <h2>다음 레슨 예고</h2>
+  <blockquote>
+    <strong>Interview Day 6</strong> — 로드밸런싱과 프록시
+    <br>핵심 질문: "L4와 L7 로드밸런서를 어떤 기준으로 선택합니까?"
+    <br>성능, 기능, 관측성, 장애 범위의 trade-off를 실무 판단 기준으로 다룬다.
+  </blockquote>
+
+  <nav class="back" style="margin-top:48px;"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+</body>
+</html>

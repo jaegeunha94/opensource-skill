@@ -24,6 +24,9 @@
 | RFC 793 — TCP | 전송 제어 프로토콜(TCP) 공식 명세 |
 | RFC 2616 / 7230 — HTTP | HTTP/1.1 공식 명세 |
 | RFC 1034/1035 — DNS | 도메인 네임 시스템 명세 |
+| RFC 8446 — TLS 1.3 | TLS 1.3 프로토콜 명세, 1-RTT/0-RTT 핸드셰이크 구조 |
+| RFC 9000 — QUIC | HTTP/3의 전송 계층, TLS 1.3 통합 핸드셰이크 구조 |
+| RFC 6960 — OCSP | 온라인 인증서 상태 프로토콜(폐기 확인) 명세 |
 
 ## 도구 / 실습
 
@@ -34,6 +37,8 @@
 | netstat / ss | 소켓 상태 확인 |
 | nmap | 포트 스캐닝 및 호스트 탐색 (학습/실습 환경에서만) |
 | GNS3 / Packet Tracer | 네트워크 토폴로지 시뮬레이터 |
+| openssl s_client | TLS 핸드셰이크, 인증서 체인, cipher suite 직접 확인 |
+| testssl.sh / SSL Labs | TLS 설정, 프로토콜 버전, 인증서 체인 종합 진단 |
 
 ## 커뮤니티
 
