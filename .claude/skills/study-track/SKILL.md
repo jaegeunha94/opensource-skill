@@ -166,8 +166,15 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `프론트엔드 시니어 인터뷰` -> `senior-frontend-interview`
 - `Frontend Developer Interview` -> `senior-frontend-interview`
 - `Senior Frontend Developer Interview` -> `senior-frontend-interview`
+- `Redis` -> `senior-redis-cache-strategy-interview`
 - `Redis / 캐시 전략` -> `senior-redis-cache-strategy-interview`
 - `Redis 캐시 전략` -> `senior-redis-cache-strategy-interview`
+- `Redis Interview` -> `senior-redis-cache-strategy-interview`
+- `Redis 10년차 이상 개발자 Interview` -> `senior-redis-cache-strategy-interview`
+- `Redis 10년 이상 개발자 Interview` -> `senior-redis-cache-strategy-interview`
+- `Redis 시니어 인터뷰` -> `senior-redis-cache-strategy-interview`
+- `레디스 10년차 이상 개발자 Interview` -> `senior-redis-cache-strategy-interview`
+- `레디스 시니어 인터뷰` -> `senior-redis-cache-strategy-interview`
 - `Redis Cache Strategy Interview` -> `senior-redis-cache-strategy-interview`
 - `메시지 큐 / 비동기 처리` -> `senior-message-queue-async-processing-interview`
 - `메시지 큐 비동기 처리` -> `senior-message-queue-async-processing-interview`
@@ -249,7 +256,7 @@ For specialized senior interview subjects, keep the same 10+ year practitioner i
 - `senior-javascript-interview`: execution context, event loop, microtasks/macrotasks, closures, prototypes, `this`, modules, promises, `async`/`await`, DOM/browser APIs, memory leaks, browser performance, error handling, and production debugging.
 - `senior-react-nextjs-interview`: React rendering model, hooks, component boundaries, state and data fetching, hydration, SSR/SSG/ISR, Server and Client Components, routing, caching, streaming, bundle optimization, authentication, security, testing, and production troubleshooting.
 - `senior-frontend-interview`: integrated frontend architecture across HTML, CSS, JavaScript, React, Next.js, browser rendering, accessibility, performance, API integration, state/data design, design systems, testing, frontend security, observability, UX trade-offs, and technical leadership.
-- `senior-redis-cache-strategy-interview`: Redis data structures, TTL, cache invalidation, session stores, distributed locks, ranking, Pub/Sub, cache stampede prevention, persistence modes, and failure behavior.
+- `senior-redis-cache-strategy-interview`: Redis data structures, TTL, cache invalidation, session stores, distributed locks, ranking, Pub/Sub, Streams, cache stampede prevention, hot keys, pipelining, Lua scripting, transactions, persistence modes, eviction policies, replication, Sentinel, Cluster, memory sizing, latency diagnosis, failover behavior, and production incident response.
 - `senior-message-queue-async-processing-interview`: Kafka, RabbitMQ, SQS, Celery, asynchronous job design, retries, idempotency, dead-letter queues, ordering, backpressure, failure isolation, and large-scale processing.
 - `senior-rag-interview`: RAG architecture, document ingestion and cleaning, chunking strategy, embedding model selection, vector databases, hybrid search, metadata filtering, reranking, context construction, prompt design, hallucination mitigation, answer grounding, offline and online evaluation, access control, privacy, caching, cost/performance trade-offs, observability, and production incident response.
 - `senior-langchain-langgraph-interview`: LangChain agent construction, model/tool/message abstractions, middleware, retrieval, memory, structured output, streaming, guardrails, context engineering, LangGraph StateGraph design, nodes and edges, persistence, checkpointers, stores, interrupts, human-in-the-loop, subgraphs, fault tolerance, deployment, LangSmith tracing/evaluation, and production troubleshooting.

@@ -503,8 +503,8 @@
 
 요구사항:
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
-- 단순 Redis 명령어 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 캐시 설계, 무효화 전략, 장애 시 동작, 성능 trade-off 중심으로 진행해줘.
-- Redis 자료구조, TTL, 캐시 무효화, 세션 저장소, 분산 락, 랭킹, Pub/Sub, 캐시 스탬피드, persistence, eviction policy를 다뤄줘.
+- 단순 Redis 명령어 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 캐시 설계, 데이터 구조 선택, 무효화 전략, 고가용성, 장애 시 동작, 메모리/성능 trade-off 중심으로 진행해줘.
+- Redis 자료구조, TTL, 캐시 무효화, 세션 저장소, 분산 락, 랭킹, Pub/Sub, Streams, 캐시 스탬피드, hot key, pipelining, Lua scripting, transaction, persistence, eviction policy, replication, Sentinel, Cluster, memory sizing, latency diagnosis, failover behavior를 다뤄줘.
 - 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
 - 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
 - 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
