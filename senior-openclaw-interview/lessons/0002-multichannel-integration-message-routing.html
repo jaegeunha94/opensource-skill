@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — 멀티채널 통합과 메시지 라우팅</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 2 · OpenClaw Interview</div>
+    <h1>멀티채널 통합과 메시지 라우팅</h1>
+    <div class="subtitle">"WhatsApp, Telegram, Slack, Discord가 전부 다른데 어떻게 하나의 에이전트로 관리되는가" — 8-tier 바인딩 우선순위와 세션 스코핑을 구조적으로 설명하는 능력</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전/시점 기준:</strong> 이 레슨은 2026-07 기준 공식 문서(<code>docs.openclaw.ai/channels/channel-routing</code>,
+    <code>docs.openclaw.ai/concepts/multi-agent</code>, <code>docs.openclaw.ai/gateway/config-channels</code>)와
+    다수의 독립적인 2차 해설 자료를 교차 검증해 작성했다. 바인딩 우선순위 8단계(tier)와 세션 키 포맷은 문서 기준
+    개념이며, 정확한 필드명이나 예시는 버전에 따라 바뀔 수 있으므로 실제 면접 전 최신 문서로 재확인한다.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "OpenClaw는 WhatsApp, Telegram, Slack, Discord처럼 완전히 다른 메시징 플랫폼에서 온 메시지를 어떻게
+      '같은 에이전트' 또는 '올바른 에이전트'로 라우팅합니까? 우선순위 규칙을 설명해주세요."
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "같은 사람이 Slack DM과 Slack 채널 스레드에서 각각 메시지를 보냈을 때, 이 두 메시지는 같은 대화 맥락으로
+      처리되어야 할까요, 아니면 분리되어야 할까요? 그 기준은 어떻게 설계하시겠어요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "바인딩 설정에서 두 개의 규칙이 동시에 매칭된다면 어떤 규칙이 이겨야 할까요? 그 설계를 어떻게 검증하시겠어요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>바인딩(binding)이란 무엇이고, 왜 "우선순위 티어"가 필요한가</h2>
+
+    <h3>문제 상황부터 — 채널마다 "누가 말하고 있는가"의 모양이 다르다</h3>
+    <p>
+      Day 1에서 Gateway는 여러 채널의 메시지를 받아 <strong>세션에 연결하고 알맞은 에이전트에게 위임</strong>한다고
+      배웠다. 그런데 "알맞은 에이전트"를 정하는 일이 왜 어려운가? 채널마다 발신자를 식별하는 정보의 <strong>모양
+      자체가 다르기 때문</strong>이다.
+    </p>
+    <ul>
+      <li><strong>Discord</strong>는 서버(guild)와 그 안의 역할(role)이 있다 — "이 서버의 관리자 역할을 가진 사람"</li>
+      <li><strong>Slack</strong>은 팀(team/workspace) 단위로 묶인다 — "이 워크스페이스에서 온 메시지"</li>
+      <li><strong>WhatsApp/Telegram</strong>은 계정(account)이 여러 개일 수 있다 — "업무용 번호로 받은 메시지 vs 개인용 번호로 받은 메시지"</li>
+      <li><strong>1:1 DM</strong>은 특정 개인(peer) 하나만 있다 — 가장 구체적인 식별자</li>
+    </ul>
+    <p>
+      즉 "이 메시지를 누가 처리해야 하는가"를 결정하려면, <strong>서로 다른 구체성(specificity) 수준의 조건들을
+      하나의 결정 규칙으로 정렬</strong>해야 한다. 이걸 해결하는 메커니즘이 <strong>바인딩(binding)</strong>이고,
+      OpenClaw는 이걸 "가장 구체적인 조건부터 가장 일반적인 조건까지" 순서대로 검사하는
+      <strong>우선순위 티어(tier)</strong> 구조로 풀어낸다.
+    </p>
+
+    <h3>8단계 바인딩 우선순위 — 구체적인 것이 항상 이긴다</h3>
+    <p>
+      공식 문서 기준으로 인바운드 메시지를 에이전트에 매칭하는 순서는 다음과 같다(위에서부터 먼저 검사).
+    </p>
+    <table>
+      <tr><th>Tier</th><th>매칭 기준</th><th>의미</th></tr>
+      <tr><td>1</td><td>Exact peer match</td><td><code>peer.kind + peer.id</code> — 특정 개인/채팅 하나를 정확히 지정한 바인딩</td></tr>
+      <tr><td>2</td><td>Parent peer match</td><td>스레드가 시작된 부모 peer가 매칭되면, 그 스레드도 같은 에이전트로 상속</td></tr>
+      <tr><td>3</td><td>Guild + roles match</td><td>Discord 서버(guildId) + 역할(roles)까지 함께 매칭</td></tr>
+      <tr><td>4</td><td>Guild match</td><td>Discord 서버(guildId)만 매칭 — 역할 무관</td></tr>
+      <tr><td>5</td><td>Team match</td><td>Slack 팀/워크스페이스(teamId) 매칭</td></tr>
+      <tr><td>6</td><td>Account match</td><td>채널의 특정 계정(accountId) 매칭</td></tr>
+      <tr><td>7</td><td>Channel match</td><td>계정 무관, 해당 채널 타입 전체(<code>accountId: "*"</code>)</td></tr>
+      <tr><td>8</td><td>Default agent</td><td><code>agents.list[].default</code> → 없으면 목록의 첫 항목 → 최종적으로 <code>main</code></td></tr>
+    </table>
+    <p>
+      <strong>같은 티어 안에서는 config에 먼저 쓰인 규칙이 이긴다.</strong> 그리고 하나의 바인딩이
+      <code>peer</code>, <code>guildId</code>, <code>teamId</code>, <code>roles</code>처럼 여러 필드를 동시에
+      지정했다면, 그 <strong>모든 필드가 AND 조건</strong>으로 전부 일치해야 그 바인딩이 적용된다.
+    </p>
+    <div class="callout callout-warn">
+      <strong>왜 이렇게 설계했는가:</strong> "구체적인 조건이 항상 일반적인 조건을 이긴다"는 규칙은
+      <strong>운영자의 직관과 일치하는 예측 가능성</strong>을 준다. "이 사람 한 명만 다른 에이전트로 보내고 싶다"는
+      요구가 "이 채널 전체는 기본 에이전트로 보낸다"는 광범위한 규칙보다 항상 이겨야 하는데, 우선순위가 없다면
+      config 순서나 우연에 따라 결과가 달라지는 예측 불가능한 시스템이 된다.
+    </div>
+
+    <pre><code><span class="comment">// 개념적 예시 — 우선순위가 실제로 어떻게 작동하는지 (의사코드/JSON5 개념)</span>
+{
+  <span class="string">"agents"</span>: {
+    <span class="string">"list"</span>: [
+      { <span class="string">"id"</span>: <span class="string">"main"</span>, <span class="string">"default"</span>: <span class="keyword">true</span> },
+      { <span class="string">"id"</span>: <span class="string">"support"</span> }
+    ],
+    <span class="string">"bindings"</span>: [
+      <span class="comment">// Tier 1: 특정 개인(peer) — 가장 먼저 검사됨</span>
+      { <span class="string">"peer"</span>: { <span class="string">"kind"</span>: <span class="string">"telegram"</span>, <span class="string">"id"</span>: <span class="string">"12345"</span> }, <span class="string">"agentId"</span>: <span class="string">"support"</span> },
+      <span class="comment">// Tier 6: Slack의 특정 워크스페이스 계정 전체</span>
+      { <span class="string">"channel"</span>: <span class="string">"slack"</span>, <span class="string">"accountId"</span>: <span class="string">"acct_biz"</span>, <span class="string">"agentId"</span>: <span class="string">"support"</span> },
+      <span class="comment">// Tier 7: Discord 채널 전체(계정 무관) — main으로</span>
+      { <span class="string">"channel"</span>: <span class="string">"discord"</span>, <span class="string">"accountId"</span>: <span class="string">"*"</span>, <span class="string">"agentId"</span>: <span class="string">"main"</span> }
+    ]
+  }
+}
+<span class="comment">// Telegram id=12345의 메시지는 Tier 1에서 즉시 매칭 → support 에이전트로.
+// 매칭되는 바인딩이 하나도 없으면 Tier 8(default agent)로 떨어진다.</span></code></pre>
+
+    <h3>세션 스코핑 — 같은 채널이라도 "대화 단위"는 다르게 쪼개진다</h3>
+    <p>
+      바인딩이 "어느 에이전트가 처리하는가"를 정한다면, <strong>세션 키(session key)</strong>는 "이 메시지가
+      어느 대화 맥락에 속하는가"를 정한다. 세션 키는 <code>agent:&lt;agentId&gt;:&lt;mainKey&gt;</code> 형태를
+      기본 골격으로 하되, 채널/맥락에 따라 구체화된다.
+    </p>
+    <table>
+      <tr><th>상황</th><th>세션 키 형태(개념)</th><th>의미</th></tr>
+      <tr><td>1:1 DM</td><td><code>agent:main:main</code></td><td>DM은 기본적으로 에이전트의 메인 세션으로 합쳐짐(collapse)</td></tr>
+      <tr><td>그룹 채팅</td><td><code>agent:main:telegram:group:-1001234567890</code></td><td>그룹 단위로 격리된 별도 세션</td></tr>
+      <tr><td>스레드</td><td><code>agent:main:discord:channel:123456:thread:987654</code></td><td>부모 키를 확장해서 스레드별로 세분화</td></tr>
+      <tr><td>포럼 토픽</td><td><code>agent:main:telegram:group:-1001234567890:topic:42</code></td><td>Telegram 포럼 토픽처럼 더 깊은 계층까지 반영</td></tr>
+    </table>
+    <p>
+      즉 <strong>DM은 "합치는 방향"</strong>(한 사람과의 모든 DM이 하나의 연속된 대화가 되어야 하므로), <strong>그룹/스레드는
+      "쪼개는 방향"</strong>(서로 다른 그룹의 대화가 섞이면 안 되므로)으로 설계되어 있다. 이 비대칭이 세션 스코핑의
+      핵심 설계 원리다.
+    </p>
+
+    <h3>채널 config 네임스페이스 — 계정 단위로 격리된 설정</h3>
+    <p>
+      각 채널의 설정은 <code>channels.&lt;channel&gt;.accounts.&lt;accountId&gt;</code> 네임스페이스 아래 격리된다.
+      예를 들어 <code>channels.whatsapp.accounts.personal</code>과
+      <code>channels.whatsapp.accounts.biz</code>는 서로 다른 <code>dmPolicy</code>, <code>allowFrom</code>,
+      알림 옵션을 가질 수 있다. 계정이 2개 이상인데 <code>defaultAccount</code>를 명시적으로 지정하지 않으면,
+      아웃바운드 명령이 어느 계정을 쓸지 모호해져 <strong>첫 번째로 정렬된 계정 ID로 조용히 fallback</strong>되는
+      실수가 흔하다.
+    </p>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+    <p>
+      이 질문은 <strong>"채널 연동 명령어를 아는가"</strong>가 아니라
+      <strong>"이질적인 입력을 하나의 결정론적(deterministic) 규칙으로 정규화하는 설계 능력"</strong>을 본다.
+      멀티채널 라우팅은 규칙 우선순위 설계, 상태 격리(세션), 설정 스키마 설계라는 세 가지 시니어급 판단이 겹치는
+      지점이다.
+    </p>
+    <ul>
+      <li><strong>구체성 기반 우선순위</strong>를 스스로 설계할 수 있는가 — "특정 조건이 일반 조건을 이겨야 한다"는 원칙을 규칙으로 구현할 수 있는가</li>
+      <li><strong>결정론성(determinism)</strong>을 이해하는가 — 같은 입력이면 항상 같은 에이전트/세션으로 가야 운영이 예측 가능해진다</li>
+      <li><strong>세션 스코프 설계 실수의 결과</strong>를 아는가 — 너무 넓게 합치면 맥락 오염, 너무 좁게 쪼개면 맥락 단절</li>
+      <li><strong>멀티 계정/멀티 워크스페이스 확장 시 생기는 모호성</strong>을 예상하고 명시적 기본값을 두는 습관이 있는가</li>
+    </ul>
+    <div class="callout callout-warn">
+      Senior 개발자는 "8단계가 있다"를 나열하는 게 아니라, <strong>"왜 이 순서여야 하는지, 순서가 없으면 무엇이
+      깨지는지, 그리고 이 설계를 직접 처음부터 만든다면 어떤 원칙을 따를지"</strong>까지 설명할 수 있어야 한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: "VIP 고객 한 명만 전담 에이전트로" 요구</h3>
+    <p>
+      영업팀이 "이 고객의 Telegram DM만 전담 상담 에이전트가 받게 해달라"고 요청한다. 이건 <strong>Tier 1(exact
+      peer match)</strong>로 그 고객의 peer id만 바인딩하면 해결된다. 채널 전체 설정을 바꿀 필요 없이 가장
+      구체적인 규칙 하나만 추가하면, 우선순위 구조가 나머지 트래픽에 영향을 주지 않는다는 것을 보장해준다.
+    </p>
+
+    <h3>상황 2: Discord 서버에서 "운영진만 다른 에이전트"</h3>
+    <p>
+      같은 Discord 서버(guild) 안에서 특정 role(운영진)만 관리용 에이전트로 보내고 싶다면 <strong>Tier 3(guild
+      + roles)</strong>을 쓴다. Tier 4(guild만)로 서버 전체 기본 바인딩도 함께 둔다면, 운영진이 아닌 사용자는
+      자동으로 Tier 4로 떨어져 일반 에이전트를 받는다 — <strong>티어 구조 자체가 "특수 케이스 + 일반 케이스"를
+      한 세트로 설계하게 만든다.</strong>
+    </p>
+
+    <h3>상황 3: 그룹 채팅에서 봇이 "이전 대화를 기억하지 못한다"는 버그 리포트</h3>
+    <p>
+      실제로는 버그가 아니라 <strong>세션 스코핑이 의도대로 동작한 것</strong>인 경우가 많다. 예를 들어 그룹
+      스레드가 매번 새 <code>thread:&lt;id&gt;</code>로 세분화되도록 설정되어 있다면, 스레드가 바뀔 때마다
+      "새 대화"로 취급되는 것이 정상 동작이다. → 원인 분석 시 "세션 키가 어떻게 구성되어 있는가"를 먼저 확인하는
+      습관이 장애 대응 시간을 줄인다.
+    </p>
+
+    <h3>상황 4: 회사가 업무용/개인용 두 개의 WhatsApp 번호를 함께 운영</h3>
+    <p>
+      <code>channels.whatsapp.accounts.biz</code>와 <code>channels.whatsapp.accounts.personal</code>로 계정을
+      분리하고, 각 계정에 별도의 <code>dmPolicy</code>와 바인딩을 건다. <code>defaultAccount</code>를 명시하지
+      않으면 아웃바운드 메시지가 의도치 않은 번호로 나가는 사고가 발생할 수 있으므로, 계정이 2개 이상이 되는
+      순간 명시적 기본값 설정을 표준 체크리스트에 넣어야 한다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>문제를 먼저 정의하기</strong>
+        "채널마다 발신자를 식별하는 정보의 구체성이 다릅니다 — 개인, 서버+역할, 워크스페이스, 계정, 채널 전체
+        처럼요. 이 서로 다른 구체성을 하나의 결정 규칙으로 정렬해야 라우팅이 예측 가능해집니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>우선순위 원칙을 말하기</strong>
+        "OpenClaw는 가장 구체적인 조건(특정 개인)부터 가장 일반적인 조건(채널 전체, 그리고 최종적으로 default
+        agent)까지 8단계 티어로 검사합니다. 같은 티어 안에서는 config 순서가 타이브레이커입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>세션 스코핑을 별도 축으로 분리하기</strong>
+        "바인딩은 '어느 에이전트'를 정하고, 세션 키는 '어느 대화 맥락'을 정합니다. DM은 합쳐지는 방향으로,
+        그룹/스레드는 쪼개지는 방향으로 설계되어 있어서 맥락 오염과 단절을 동시에 방지합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>운영 리스크를 짚기 (Senior 포인트)</strong>
+        "멀티 계정 환경에서는 명시적 기본값이 없으면 fallback이 조용히 잘못된 계정을 고를 수 있습니다. 그래서
+        계정이 늘어나는 순간 defaultAccount를 명시하는 걸 체크리스트로 둡니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>검증 방법으로 마무리하기</strong>
+        "새 바인딩을 추가할 때는 어느 티어에 들어가는지, 기존 규칙과 필드가 겹치는지 먼저 확인하고, 실제 메시지로
+        라우팅 결과를 재현 테스트합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+    <div class="callout callout-tip">
+      <p>
+        "OpenClaw는 인바운드 메시지를 에이전트에 매칭할 때, 가장 구체적인 조건부터 가장 일반적인 조건까지 순서대로
+        검사하는 8단계 우선순위를 씁니다. 특정 개인(peer) 하나를 지정한 바인딩이 가장 먼저 이기고, 그 다음
+        스레드 상속, Discord의 서버+역할, 서버 전체, Slack 워크스페이스, 채널 계정, 채널 전체 순으로 내려가다가,
+        아무것도 매칭되지 않으면 default agent로 떨어집니다. 같은 티어 안에서 여러 규칙이 매칭되면 config에
+        먼저 적힌 규칙이 이기고, 한 바인딩이 여러 필드를 지정했다면 그 필드들은 전부 AND로 일치해야 적용됩니다.
+      </p>
+      <p>
+        이 설계의 핵심은 '더 구체적인 요구가 항상 더 넓은 규칙을 이긴다'는 걸 코드 순서나 우연이 아니라
+        명시적인 규칙으로 보장하는 겁니다. 그래서 'VIP 고객 한 명만 다른 에이전트로'처럼 좁은 예외를 추가할 때,
+        기존의 넓은 규칙을 건드리지 않고도 안전하게 끼워넣을 수 있습니다.
+      </p>
+      <p>
+        바인딩과 별개로 세션 키는 '이 메시지가 어느 대화 맥락에 속하는가'를 결정합니다. 1:1 DM은 기본적으로
+        에이전트의 메인 세션으로 합쳐지고, 그룹 채팅이나 스레드, 포럼 토픽은 갈수록 더 세분화된 키로 격리됩니다.
+        DM은 합치는 방향, 그룹/스레드는 쪼개는 방향이라는 비대칭이 있는 이유는, 한 사람과의 DM 맥락은 끊기면
+        안 되지만 서로 다른 그룹의 맥락은 섞이면 안 되기 때문입니다.
+      </p>
+      <p>
+        운영 관점에서 제가 신경 쓰는 부분은, 채널 계정이 여러 개가 되는 순간(예: 업무용/개인용 WhatsApp 번호
+        두 개) defaultAccount를 명시적으로 지정하는 겁니다. 명시하지 않으면 fallback이 정렬 순서상 첫 번째
+        계정을 조용히 선택하는데, 이게 실제 운영 사고로 이어지는 경우를 봤습니다. 그래서 새 바인딩이나 계정을
+        추가할 때는 어느 티어에 들어가는지와 기존 규칙과의 필드 중복 여부를 먼저 검토하고, 실제 메시지로 라우팅
+        결과를 재현 테스트하는 걸 표준 절차로 둡니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "8단계나 되는 우선순위가 너무 복잡한 것 같은데, 그냥 '가장 최근에 추가된 규칙이 이긴다'로 단순화하면 안 되나요?"</h3>
+    <p><strong>약한 답변:</strong> "복잡하긴 한데 문서에 그렇게 나와 있어서 그런 것 같습니다."</p>
+    <p>
+      <strong>강한 답변:</strong> "'최근에 추가된 것이 이긴다'는 규칙은 시간 순서에 의존하기 때문에, 운영자가
+      바인딩을 추가한 순서를 계속 기억하고 있어야 결과를 예측할 수 있습니다. 반면 '구체성이 이긴다'는 규칙은
+      바인딩 자체의 의미(이게 개인 하나를 지정한 건지, 채널 전체를 지정한 건지)만 보고도 결과를 예측할 수
+      있습니다. 복잡성이 늘어난 게 아니라, 예측 가능성의 근거를 '시간'에서 '의미'로 옮긴 것이라고 봅니다.
+      다만 티어가 8개나 되는 건 채널마다 식별자 모양이 그만큼 다양하기 때문이고, 실제로 한 조직이 8개 티어를
+      전부 쓰는 경우는 드뭅니다 — 대부분 1(개인 예외), 6~7(계정/채널 기본), 8(default)만 씁니다."
+    </p>
+
+    <h3>F2. "그룹 채팅에서 스레드가 계속 생성되는 서비스라면 세션이 무한히 늘어나지 않나요? 이건 어떻게 관리하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong> "네, 세션 저장소는 스레드 수만큼 늘어날 수 있는 구조입니다. 이건 설계 결함이
+      아니라 '맥락 격리'라는 목적을 위한 의도적인 트레이드오프인데, 대신 운영에서는 오래된/비활성 세션에 대한
+      TTL이나 정리(pruning) 정책, 그리고 세션 저장소 크기에 대한 모니터링이 필요합니다. 이건 Day 6(세션/메모리
+      파일)에서 이어지는 컨텍스트 예산 문제와도 연결됩니다."
+    </p>
+
+    <h3>F3. "바인딩 규칙이 잘못 설정돼서 특정 고객의 메시지가 엉뚱한 에이전트로 가는 사고가 발생했다면, 어떻게 디버깅하시겠어요?"</h3>
+    <p>
+      <strong>강한 답변:</strong> "먼저 그 메시지의 발신자 정보(peer id, guild/team/account id)를 정확히 확인하고,
+      config에 있는 바인딩들을 티어 순서대로 다시 채점해봅니다 — 어느 티어에서 처음 매칭됐는지, 그리고 같은
+      티어에 그보다 먼저 적힌 다른 규칙이 있는지를 봅니다. 실무에서 흔한 원인은 '내가 추가한 구체적인 규칙보다
+      더 먼저 매칭되는 규칙이 같은 티어에 이미 있었다'거나, '여러 필드를 지정했다고 생각했는데 실제로는 한
+      필드만 지정돼서 의도보다 훨씬 넓은 범위에 매칭됐다'는 경우입니다. 재현 가능한 테스트 메시지로 라우팅
+      결과를 검증하는 절차를 만들어두는 게 재발을 막는 핵심입니다."
+    </p>
+
+    <h3>F4. "왜 DM은 세션을 합치고 그룹은 쪼개는 걸까요? 반대로 하면 안 되나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong> "반대로 하면 사용성이 깨집니다. DM을 매번 새 세션으로 쪼개면, 사용자가 어제
+      물어본 내용을 오늘 다시 설명해야 하는 개인 비서로서는 치명적인 경험이 됩니다. 반대로 그룹 채팅을 하나의
+      세션으로 합치면, 서로 다른 스레드나 다른 주제의 대화가 같은 컨텍스트에 뒤섞여 에이전트가 엉뚱한 맥락을
+      참조하게 됩니다. 즉 이 비대칭은 '1:1 관계는 연속성이 가치, N:N 관계는 격리가 가치'라는 커뮤니케이션의
+      본질적 차이를 반영한 설계라고 봅니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li><strong>"구체성이 이긴다"는 원칙</strong>으로 8단계를 설명하고, 단순 나열에 그치지 않는다</li>
+          <li>바인딩(에이전트 결정)과 <strong>세션 키(맥락 결정)를 서로 다른 축</strong>으로 구분한다</li>
+          <li>DM 합침/그룹 쪼갬의 <strong>비대칭 이유를 커뮤니케이션 본질과 연결</strong>해 설명한다</li>
+          <li>멀티 계정 확장 시 <strong>암묵적 fallback의 위험</strong>을 구체적 운영 사고로 연결한다</li>
+          <li>디버깅 절차(티어별 재채점, 재현 테스트)를 구체적으로 제시한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>8단계 티어를 <strong>암기한 목록으로만 나열</strong>하고 원리를 설명하지 못함</li>
+          <li>바인딩과 세션 스코핑을 <strong>같은 개념으로 혼동</strong>함</li>
+          <li>"그룹 채팅에서 기억을 못 한다"를 무조건 버그로 판단함</li>
+          <li>멀티 계정 설정에서 <strong>명시적 기본값의 필요성을 인지하지 못함</strong></li>
+          <li>라우팅 사고 발생 시 "설정을 다시 확인해본다"처럼 구체성 없는 답변</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 "OpenClaw가 이렇게 동작한다"를 설명하는 게 아니라
+      <strong>"왜 이런 규칙이 예측 가능성과 맥락 격리를 동시에 보장하는지, 그리고 이게 깨지면 실제로 어떤
+      사고가 나는지"</strong>를 설명한다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "바인딩 우선순위는 config에 적힌 순서대로 적용된다"</h3>
+    <p>
+      <strong>사실:</strong> config 순서는 <strong>같은 티어 안에서만</strong> 타이브레이커로 작동한다. 티어
+      자체는 구체성에 따라 고정된 순서(peer → parent peer → guild+roles → guild → team → account → channel →
+      default)이며, config 순서로 티어 순서를 뒤집을 수 없다.
+    </p>
+
+    <h3>오해 2: "세션이 잘 안 이어지면 바인딩 설정이 잘못된 것이다"</h3>
+    <p>
+      <strong>사실:</strong> 바인딩은 "어느 에이전트가 처리하는가"만 결정한다. 대화 맥락이 이어지고 끊기는 건
+      <strong>세션 키 스코핑</strong>의 문제이며, 완전히 다른 설정 축이다. 두 개념을 분리해서 진단해야 원인을
+      빠르게 찾을 수 있다.
+    </p>
+
+    <h3>오해 3: "채널 계정을 하나만 쓰면 defaultAccount는 신경 쓸 필요 없다"</h3>
+    <p>
+      <strong>사실:</strong> 맞다, 계정이 하나뿐일 때는 문제가 없다. 하지만 <strong>"나중에 계정이 늘어날 것"을
+      가정하지 않고 설계하면</strong>, 두 번째 계정을 추가하는 순간 기존에 암묵적으로 잘 동작하던 아웃바운드
+      로직이 예고 없이 다른 계정을 고르는 회귀(regression)가 생길 수 있다. 계정이 하나여도 습관적으로 명시하는
+      것이 안전하다.
+    </p>
+
+    <h3>오해 4: "티어가 많을수록 시스템이 복잡하고 나쁜 설계다"</h3>
+    <p>
+      <strong>사실:</strong> 티어 수는 <strong>채널 생태계의 다양성을 반영한 결과</strong>다. Discord의 역할
+      시스템, Slack의 워크스페이스 개념 자체가 채널마다 다르기 때문에 생기는 것이며, 실제 운영에서는 조직마다
+      필요한 티어 몇 개만 사용한다. 티어가 많다는 것은 "선택지가 많다"는 뜻이지 "매번 다 써야 한다"는 뜻이
+      아니다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>새 바인딩/채널 계정을 추가할 때 확인할 것</h2>
+    <table>
+      <tr>
+        <th>항목</th>
+        <th>확인 사항</th>
+        <th>실패 시 증상</th>
+      </tr>
+      <tr>
+        <td>티어 판단</td>
+        <td><span class="badge badge-green">새 규칙이 어느 티어에 들어가는지 먼저 계산</span></td>
+        <td><span class="badge badge-red">더 넓은 규칙이 의도한 좁은 규칙보다 먼저 매칭됨</span></td>
+      </tr>
+      <tr>
+        <td>필드 AND 조건</td>
+        <td><span class="badge badge-green">peer/guildId/teamId/roles 중 실제로 지정한 필드만 확인</span></td>
+        <td><span class="badge badge-red">의도보다 넓은 범위에 매칭(필드 하나만 걸림)</span></td>
+      </tr>
+      <tr>
+        <td>세션 스코프</td>
+        <td><span class="badge badge-green">DM은 합침, 그룹/스레드는 쪼갬이 요구사항과 맞는지 검토</span></td>
+        <td><span class="badge badge-yellow">맥락 오염 또는 불필요한 맥락 단절</span></td>
+      </tr>
+      <tr>
+        <td>기본 계정</td>
+        <td><span class="badge badge-green">계정 2개 이상이면 <code>defaultAccount</code> 명시</span></td>
+        <td><span class="badge badge-red">아웃바운드가 조용히 잘못된 계정으로 전송</span></td>
+      </tr>
+      <tr>
+        <td>재현 테스트</td>
+        <td><span class="badge badge-green">실제 메시지로 라우팅 결과를 확인</span></td>
+        <td><span class="badge badge-yellow">배포 후에야 라우팅 오류 발견</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"채널마다 설정이 다르다"고만 말하고, 우선순위나 세션 개념을 전혀 언급하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>8단계 티어를 순서대로 나열할 수 있지만, 왜 이 순서인지 원리를 설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>"구체성이 이긴다"는 원칙과, 바인딩/세션 키가 서로 다른 축이라는 것을 설명할 수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>우선순위 원칙, 세션 스코핑의 합침/쪼갬 비대칭, 멀티 계정 fallback 리스크를 근거와 함께 설명하고,
+      실제 라우팅 사고 발생 시 티어별 재채점과 재현 테스트로 디버깅하는 구체적 절차를 즉시 제시함. "티어가
+      많다=나쁜 설계"라는 통념을 스스로 반박할 수 있음</span>
+    </div>
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. 8단계 티어를 구체성 기준으로 순서대로 말할 수 있는가, 그리고 그 순서의 원리를 설명할 수 있는가?<br>
+      2. 바인딩(에이전트 결정)과 세션 키(맥락 결정)가 서로 다른 개념이라는 것을 예시로 설명할 수 있는가?<br>
+      3. DM은 세션을 합치고 그룹/스레드는 쪼개는 이유를 커뮤니케이션 본질과 연결해 설명할 수 있는가?<br>
+      4. 멀티 계정 환경에서 <code>defaultAccount</code>를 명시하지 않으면 어떤 사고가 나는지 구체적으로 말할 수 있는가?<br>
+      5. 라우팅 사고가 발생했을 때 어떤 순서로 디버깅할지 절차를 즉시 말할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>바인딩 우선순위 = 구체성 순서.</strong> 특정 개인(peer) → 스레드 상속 → guild+roles → guild
+      → team → account → channel 전체 → default agent 순으로 가장 구체적인 조건이 항상 이긴다.</li>
+      <li><strong>같은 티어에서는 config 순서가, 한 바인딩 안에서는 모든 지정 필드의 AND 조건이</strong> 결과를
+      좁힌다.</li>
+      <li><strong>세션 키는 바인딩과 별개의 축</strong>이다 — "어느 에이전트"가 아니라 "어느 대화 맥락"을 정한다.</li>
+      <li><strong>DM은 합침, 그룹/스레드는 쪼갬</strong>이라는 비대칭은 1:1 관계는 연속성이, N:N 관계는 격리가
+      가치라는 커뮤니케이션의 본질을 반영한다.</li>
+      <li><strong>채널 계정이 2개 이상이면 <code>defaultAccount</code>를 명시</strong>해야 암묵적 fallback으로
+      인한 오발송 사고를 막을 수 있다.</li>
+      <li><strong>라우팅 사고는 "티어별 재채점 + 재현 테스트"</strong>로 원인을 좁히는 것이 표준 디버깅 절차다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 2 완료 · 다음: Day 3 — 온보딩과 업데이트/마이그레이션 흐름</span>
+  </div>
+
+</div>
+</body>
+</html>

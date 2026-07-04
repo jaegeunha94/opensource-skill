@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-03 | OpenClaw Gateway와 local-first agent 운영 프레임워크 | [0001-openclaw-gateway-local-first-operating-framework.html](lessons/0001-openclaw-gateway-local-first-operating-framework.html) |
+| 2 | 2026-07-04 | 멀티채널 통합과 메시지 라우팅 | [0002-multichannel-integration-message-routing.html](lessons/0002-multichannel-integration-message-routing.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | 멀티채널 통합과 메시지 라우팅 | 50+ 채널 통합, 8-tier 바인딩 우선순위, 세션 스코핑(`agent:main:<mainKey>`), 채널별 config 네임스페이스 |
 | 3 | 온보딩과 업데이트/마이그레이션 흐름 | `openclaw onboard`, import 플로우, `openclaw migrate`(plan/dry-run/backup), breaking change 대응, `doctor --fix` |
 | 4 | Model Provider 설정과 Auth Profile Rotation/Failover | auth-profiles.json, profile pinning(auto vs user), 라운드로빈 순서, cooldown/backoff, 에러 분류 |
 | 5 | Tools와 Tool Dispatch 보안 | tool router, 실행 정책(approve/deny), exec/browser/read tool 권한 스코핑, least-privilege 설계 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — 다음: Day 2 — 멀티채널 통합과 메시지 라우팅
+**Day 2 완료** — 다음: Day 3 — 온보딩과 업데이트/마이그레이션 흐름
 
 ## 습득한 핵심 개념
 
@@ -34,7 +34,8 @@
 - [x] Local-first 아키텍처의 의미와 트레이드오프 (Day 1)
 - [x] Loopback 기본 바인딩과 "one trusted operator per gateway" 보안 모델 (Day 1)
 - [x] Gateway 운영 명령(`status`/`restart`/`doctor`)과 SPOF 완화 전략 (Day 1)
-- [ ] 멀티채널 라우팅, 8-tier 바인딩 우선순위 (예정 Day 2)
+- [x] 8-tier 바인딩 우선순위(구체성 기준: peer → parent peer → guild+roles → guild → team → account → channel → default) (Day 2)
+- [x] 세션 키 스코핑(DM 합침 vs 그룹/스레드 쪼갬), 채널 config 네임스페이스(`channels.<channel>.accounts.<id>`)와 `defaultAccount` 리스크 (Day 2)
 - [ ] 온보딩/업데이트/마이그레이션 흐름 (예정 Day 3)
 - [ ] Model provider 설정, auth profile rotation/failover (예정 Day 4)
 - [ ] Tool dispatch 보안 (예정 Day 5)

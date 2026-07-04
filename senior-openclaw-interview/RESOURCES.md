@@ -9,6 +9,8 @@
 - [Security](https://docs.openclaw.ai/gateway/security) — "one trusted operator boundary per gateway" 전제, DM 정책, 자격 증명 처리
 - [Configuration](https://docs.openclaw.ai/gateway/configuration) / [Configuration reference](https://docs.openclaw.ai/gateway/configuration-reference)
 - [Configuration — agents](https://docs.openclaw.ai/gateway/config-agents) — 에이전트별 workspace, agentDir, 세션 키
+- [Channel routing](https://docs.openclaw.ai/channels/channel-routing) — 8-tier 바인딩 우선순위(peer/parent peer/guild+roles/guild/team/account/channel/default), 세션 키 스코핑 규칙 (Day 2 핵심 출처)
+- [Configuration — channels](https://docs.openclaw.ai/gateway/config-channels) — `channels.<channel>.accounts.<id>` 네임스페이스, `defaultAccount` fallback 규칙 (Day 2)
 - [Remote access](https://docs.openclaw.ai/gateway/remote)
 - [Gateway exposure runbook](https://docs.openclaw.ai/gateway/security/exposure-runbook) — 원격 접근/DM 정책/리버스 프록시 변경 전 체크리스트
 - [Troubleshooting](https://docs.openclaw.ai/gateway/troubleshooting)
@@ -42,6 +44,13 @@
 - [OpenClaw Behind Cloudflare Tunnel or Tailscale (No Public Ports)](https://blog.canadianwebhosting.com/openclaw-cloudflare-tunnel-tailscale-no-public-ports/)
 - [Securely access OpenClaw over the Internet: Cloudflare Workers VPC — Harshil](https://harshil.dev/writings/expose-openclaw-with-cloudflare-tunnels-and-workers-vpc/)
 - [OpenClaw Gateway Commands: Port 18789 Setup, Start/Stop & Token Auth — Meta Intelligence](https://www.meta-intelligence.tech/en/insight-openclaw-gateway-commands)
+
+## 멀티채널 라우팅 (2차 해설 자료 — Day 2 교차 검증용)
+
+- [How OpenClaw Routes Messages Across Channels — Team 400 Blog](https://team400.ai/blog/2026-03-openclaw-channel-routing-explained)
+- [OpenClaw Channel Routing: Keep One Agent Smart Across Every App — OpenClaw Playbook Blog](https://www.openclawplaybook.ai/blog/openclaw-channel-routing-multi-app-agent/)
+- [The Ultimate Guide to OpenClaw Gateway Bind Configuration in 2026 — Skywork](https://skywork.ai/skypage/en/openclaw-gateway-bind-configuration/2038554785426968576)
+- [OpenClaw Config Reference: Every openclaw.json Option — Stack Junkie](https://www.stack-junkie.com/blog/openclaw-environment-variables-reference)
 
 ## 아키텍처 딥다이브 (2차 해설 자료 — 교차 검증 필요)
 
