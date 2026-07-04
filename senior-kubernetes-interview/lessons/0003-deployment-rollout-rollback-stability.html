@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — Deployment Rollout/Rollback과 배포 안정성</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #222538;
+      --border: #2e3150;
+      --accent: #7c83ff;
+      --accent2: #50e3c2;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #e2e4f0;
+      --text2: #9da3c8;
+      --text3: #6b7099;
+      --good: #50e3c2;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card { border-left: 4px solid var(--accent); }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card { border-left: 4px solid var(--accent2); background: #1a2430; }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card { border-left: 4px solid var(--warn); background: #1f1d10; }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card { border-left: 4px solid #a07bff; background: #1a1828; }
+    .answer-card .card-label { color: #a07bff; }
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.2rem; }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box { background: #0f2420; border: 1px solid var(--good); border-radius: 8px; padding: 1.1rem 1.3rem; }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box { background: #28100f; border: 1px solid var(--weak); border-radius: 8px; padding: 1.1rem 1.3rem; }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1.1rem 1.4rem; margin-bottom: 0.9rem; }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table { width: 100%; border-collapse: collapse; font-size: 0.91rem; margin-top: 0.5rem; }
+    .rubric-table th { background: var(--surface2); color: var(--text2); font-weight: 700; padding: 0.6rem 0.8rem; text-align: left; border: 1px solid var(--border); }
+    .rubric-table td { padding: 0.6rem 0.8rem; border: 1px solid var(--border); vertical-align: top; }
+    .rubric-table tr:nth-child(odd) td { background: #15182a; }
+    .rubric-table tr:nth-child(even) td { background: #1a1d2e; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .pillar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.9rem; margin-bottom: 1.2rem; }
+    .pillar-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; }
+    .pillar-name { font-weight: 700; color: var(--accent); margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .pillar-key { font-size: 0.83rem; color: var(--text2); }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li { counter-increment: step; position: relative; padding-left: 2.2rem; margin-bottom: 0.7rem; }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute; left: 0; top: 0.1rem;
+      background: var(--accent); color: #fff; font-weight: 700; font-size: 0.78rem;
+      width: 1.5rem; height: 1.5rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .misconception { background: #1f1520; border: 1px solid #6e3880; border-radius: 8px; padding: 1rem 1.3rem; margin-bottom: 0.9rem; }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 0.88rem; }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag { display: inline-block; background: var(--surface2); color: var(--text2); font-size: 0.75rem; padding: 0.2em 0.6em; border-radius: 4px; margin: 0.15rem 0.15rem 0.15rem 0; }
+    .source-note { font-size: 0.82rem; color: var(--text3); margin-top: 0.4rem; }
+    table.qos-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 1rem 0 1.3rem; }
+    table.qos-table th { background: var(--surface2); color: var(--accent2); text-align: left; padding: 0.6rem 0.9rem; border: 1px solid var(--border); }
+    table.qos-table td { padding: 0.6rem 0.9rem; border: 1px solid var(--border); vertical-align: top; }
+    table.qos-table tr:nth-child(even) td { background: var(--surface); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 3 · Kubernetes 인터뷰 대비</div>
+    <h1>Deployment Rollout/Rollback과 배포 안정성</h1>
+    <p class="subtitle">
+      RollingUpdate maxSurge/maxUnavailable · ReplicaSet 세대 관리 · progressDeadlineSeconds · 롤백 판단 · PodDisruptionBudget과 rollout의 관계(2026-07 기준)
+    </p>
+  </header>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "새 버전을 프로덕션에 배포했는데 롤아웃이 중간에서 멈춰 있고, 새 Pod 일부가 계속 재시작되고 있습니다. 어떻게 진단하고, 롤백할지 그대로 밀어붙일지 어떤 기준으로 결정하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"<code>maxSurge</code>와 <code>maxUnavailable</code>은 각각 무엇을 의미하고, 이 값을 어떻게 설정하느냐에 따라 배포 중 장애 위험이 어떻게 달라집니까?"</li>
+        <li>"PodDisruptionBudget이 설정돼 있으면 Deployment 롤아웃도 그 제한을 지킵니까?"</li>
+        <li>"롤백은 어떻게 동작합니까? Kubernetes가 이전 버전의 이미지를 어디서 가져옵니까?"</li>
+        <li>"배포 중 오토스케일러가 개입해서 replica 수를 바꾸면 무슨 일이 일어납니까?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">RollingUpdate</span>
+      <span class="tag">maxSurge/maxUnavailable</span>
+      <span class="tag">ReplicaSet 세대</span>
+      <span class="tag">progressDeadlineSeconds</span>
+      <span class="tag">PodDisruptionBudget</span>
+      <span class="tag">Proportional Scaling</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Deployment는 직접 Pod를 관리하지 않는다 — ReplicaSet을 통해서 관리한다</h3>
+    <p>
+      Deployment를 수정하면(이미지 태그 변경 등) Kubernetes는 기존 Pod를 바로 바꾸지 않는다. 대신 <strong>새로운 ReplicaSet을 하나 더 만들고</strong>, 새 ReplicaSet의 replica 수를 서서히 늘리면서 기존 ReplicaSet의 replica 수를 서서히 줄인다. 즉 하나의 Deployment 아래에는 배포 이력마다 ReplicaSet이 하나씩 쌓이고, 이 ReplicaSet 목록 자체가 <strong>롤백을 가능하게 하는 "세대(revision) 역사"</strong>다.
+    </p>
+    <p>
+      <code>revisionHistoryLimit</code>은 이 옛 ReplicaSet을 몇 개까지 보관할지 정하는 값이다(기본 10). 이 값을 0으로 설정하면 롤백 자체가 불가능해진다 — 이전 세대의 ReplicaSet과 Pod 템플릿 정보가 아예 사라지기 때문이다.
+    </p>
+
+    <h3>maxSurge와 maxUnavailable — "얼마나 넘치게" vs "얼마나 부족하게"를 허용할지</h3>
+    <div class="pillar-grid">
+      <div class="pillar-box">
+        <div class="pillar-name">maxSurge — 목표치보다 얼마나 더 띄울 수 있는가</div>
+        <div class="pillar-key">새 버전 Pod를 먼저 추가로 띄운 뒤 구버전을 줄이는 방식이다. 예를 들어 replica 10에 maxSurge 25%면, 롤아웃 중 최대 12~13개까지 동시에 떠 있을 수 있다. 클러스터에 여유 자원이 있어야 하고, 순간적으로 자원 사용량이 늘어난다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">maxUnavailable — 목표치보다 얼마나 덜 떠 있어도 되는가</div>
+        <div class="pillar-key">구버전 Pod를 먼저 줄인 뒤 새 버전을 채우는 정도를 허용하는 값이다. replica 10에 maxUnavailable 25%면, 롤아웃 중 최소 7~8개까지만 있어도 허용한다. 자원은 절약되지만, 그만큼 처리 가능한 트래픽 용량이 순간적으로 줄어든다.</div>
+      </div>
+    </div>
+    <p>
+      두 값 모두 percentage 또는 절대값으로 지정할 수 있고, 기본값은 각각 25%다. <strong>지연시간/가용성이 중요한 서비스는 maxUnavailable을 0에 가깝게, maxSurge로 여유를 두는 방향</strong>이 일반적이다. 반대로 자원이 빠듯한 클러스터에서는 maxSurge를 낮추고 maxUnavailable을 어느 정도 허용하는 트레이드오프를 택한다.
+    </p>
+
+    <h3>롤아웃이 "멈췄다"는 것을 Kubernetes가 어떻게 판단하는가 — progressDeadlineSeconds</h3>
+    <p>
+      새 ReplicaSet의 Pod가 계속 Ready 상태가 되지 못하면(CrashLoopBackOff, readiness probe 실패 등), Deployment는 무한정 기다리지 않는다. <code>progressDeadlineSeconds</code>(기본 600초) 동안 진전이 없으면 Deployment의 <code>Progressing</code> Condition이 <code>False</code>로 바뀌고 사유가 <code>ProgressDeadlineExceeded</code>로 표시된다. 이것이 <strong>"이 롤아웃은 사실상 실패했다"는 Kubernetes 자체의 신호</strong>다. 다만 이 신호가 뜬다고 Kubernetes가 자동으로 롤백하지는 않는다 — 여전히 사람이나 자동화 파이프라인이 <code>kubectl rollout undo</code>를 실행해야 한다.
+    </p>
+
+    <h3>Proportional Scaling — 롤아웃 도중 replica 수가 바뀌면 무슨 일이 일어나는가</h3>
+    <p>
+      롤아웃이 진행 중인데 HPA나 수동 조작으로 replica 수를 늘리면, Deployment 컨트롤러는 이 추가 replica를 신버전/구버전 ReplicaSet에 <strong>비율대로 분배</strong>한다(더 많은 replica를 가진 쪽에 더 많이 배분). 이 메커니즘 덕분에 배포 도중 트래픽이 몰려도 전체 capacity가 급격히 무너지지 않는다.
+    </p>
+
+    <div class="card concept-card">
+      <div class="card-label">2026-07 기준 확인 사항 — PodDisruptionBudget은 Deployment 롤아웃을 제한하지 않는다</div>
+      <p>
+        많은 사람이 "PDB의 <code>minAvailable</code>/<code>maxUnavailable</code>이 배포 중에도 적용되어 안전망 역할을 한다"고 오해한다. 하지만 Kubernetes 공식 문서는 명확히 구분한다 — <strong>Deployment/StatefulSet 같은 워크로드 컨트롤러가 스스로 실행하는 rolling update는 PDB의 제한을 받지 않는다.</strong> 롤아웃 중 동시에 내려가는 Pod 수를 조절하는 것은 오직 Deployment 자체의 <code>maxUnavailable</code>/<code>maxSurge</code>다. PDB는 <strong>노드 drain, cluster-autoscaler 축소, Karpenter consolidation 같은 "자발적 축출(voluntary eviction)"</strong>이 발생할 때만 개입한다.
+      </p>
+      <p>
+        추가로 v1.27부터 <code>unhealthyPodEvictionPolicy</code>가 안정화되어 실무에서 쓸 수 있다. 기본값(<code>IfHealthyBudget</code>)은 PDB의 healthy pod 수가 기준을 충족해야만 unhealthy Pod의 축출도 허용하는데, 이 때문에 이미 망가진 Pod가 오히려 노드 drain을 막아버리는 사례가 있었다. <code>AlwaysAllow</code>로 설정하면 unhealthy Pod는 PDB 조건과 무관하게 항상 축출을 허용해 이런 교착을 막을 수 있다.
+      </p>
+      <p class="source-note">https://kubernetes.io/docs/concepts/workloads/pods/disruptions/ , https://kubernetes.io/docs/tasks/run-application/configure-pdb/ , https://kubernetes.io/blog/2023/01/06/unhealthy-pod-eviction-policy-for-pdbs/</p>
+    </div>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>배포 안정성 설계 능력:</strong> maxSurge/maxUnavailable을 서비스 특성(지연시간 민감도, 자원 여유)에 맞게 조정할 수 있는가, 아니면 기본값을 그냥 쓰는가.</li>
+        <li><strong>롤백 판단 기준:</strong> "일단 롤백"이 항상 정답이 아니다 — 데이터 마이그레이션을 동반한 배포처럼 롤백이 오히려 더 위험한 상황을 구분할 수 있는가.</li>
+        <li><strong>보호 메커니즘 간의 경계 이해:</strong> PDB와 Deployment rollout이 서로 다른 메커니즘이라는 것을 알고 있는가. 이 경계를 모르면 "PDB를 걸어뒀으니 배포는 안전하다"는 잘못된 안도감을 갖게 된다.</li>
+        <li><strong>운영 신호를 읽는 능력:</strong> <code>ProgressDeadlineExceeded</code> 같은 Kubernetes 자체 신호를 알아보고, 이것이 자동 롤백을 의미하지 않는다는 것까지 이해하는가.</li>
+      </ul>
+    </div>
+
+    <p>
+      이 주제가 반복해서 나오는 이유는, <strong>배포는 시니어 엔지니어가 가장 자주, 그리고 가장 위험한 순간에 개입하는 작업</strong>이기 때문이다. 배포 중 장애는 "코드가 잘못됐다"만큼이나 "배포 전략과 안전장치 설계가 잘못됐다"에서 비롯되는 경우가 많고, 이 둘을 구분하는 능력이 시니어와 미드레벨을 가른다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 1 — "PDB를 걸어뒀으니 배포는 안전하다"고 믿었던 사례</div>
+      <p>
+        팀에서 <code>minAvailable: 80%</code>인 PDB를 설정해두고 "이 정도면 배포 중에도 최소 80%는 살아있겠지"라고 안심했다. 그런데 새 버전에 심각한 버그가 있어 신버전 Pod가 뜨는 족족 CrashLoopBackOff에 빠졌고, <code>maxUnavailable: 50%</code>로 설정된 Deployment는 구버전 Pod를 절반이나 내려버린 뒤 새 버전이 못 올라오는 상태로 멈췄다. <strong>가용 Pod 비율이 PDB 기준선 아래로 내려갔는데도 PDB는 이를 막지 못했다</strong> — PDB는애초에 롤아웃을 감시하는 장치가 아니었기 때문이다.
+      </p>
+      <p>
+        이 사례로 배우는 것은, 배포 안전은 PDB가 아니라 <strong>Deployment 자체의 maxUnavailable/maxSurge 설계와 readiness probe의 정확성</strong>에 달려 있다는 것이다. PDB는 별개 계층(노드 유지보수, 오토스케일러 축소)의 안전장치다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 2 — 롤백이 오히려 더 위험했던 배포</div>
+      <p>
+        새 버전이 DB 스키마 마이그레이션(컬럼 추가 + 데이터 백필)을 동반한 배포였는데, 애플리케이션 레벨에서 사소한 버그가 발견돼 팀이 반사적으로 <code>kubectl rollout undo</code>를 실행했다. 문제는 구버전 코드가 이미 마이그레이션된 스키마를 모르는 상태였고, 구버전이 다시 트래픽을 받으면서 <strong>새 컬럼을 채우지 않은 채 쓰기 작업을 계속해 데이터 정합성이 깨졌다.</strong>
+      </p>
+      <p>
+        이후 이 팀은 "배포와 스키마 마이그레이션을 같이 묶지 않는다(expand/contract 패턴)"는 원칙을 세웠고, 애플리케이션 버그만 있는 롤아웃과 데이터 마이그레이션이 얽힌 롤아웃을 구분해서 롤백 여부를 판단하는 체크리스트를 만들었다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 3 — maxSurge 기본값이 클러스터 자원을 고갈시킨 사례</div>
+      <p>
+        대형 서비스(replica 200)를 기본값(<code>maxSurge: 25%</code>)으로 배포했더니, 롤아웃 도중 순간적으로 250개까지 Pod가 뜨려 하면서 노드 오토스케일러가 따라가지 못해 신규 Pod 다수가 <code>Pending</code> 상태로 남았다. 클러스터 CPU/메모리가 빠듯한 시간대와 겹쳐 롤아웃이 지연되고, 다른 서비스의 스케줄링에도 영향을 줬다.
+      </p>
+      <p>
+        이후 대형 서비스는 <code>maxSurge</code>를 절대값(예: 10)으로 낮추고, 배포 시간대를 트래픽이 낮은 시간으로 조정하는 정책을 도입했다. "퍼센트 기본값이 모든 규모의 서비스에 안전하지는 않다"는 것이 교훈이었다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>"롤아웃이 멈췄습니다"라는 질문을 받으면 아래 순서로 답하라. 상태 확인 → 원인 분류 → 영향 범위 판단 → 롤백/전진 결정 → 실행 → 재발 방지 순서다.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>롤아웃 상태를 정확히 확인한다</strong>
+        <p><code>kubectl rollout status deployment/&lt;name&gt;</code>와 <code>kubectl describe deployment</code>의 <code>Conditions</code>를 본다. <code>Progressing=False, Reason=ProgressDeadlineExceeded</code>인지, 아니면 아직 진행 중(느릴 뿐)인지 구분한다.</p>
+      </li>
+      <li>
+        <strong>새 ReplicaSet의 Pod 상태와 이벤트를 본다</strong>
+        <p><code>kubectl describe pod</code>와 <code>kubectl logs --previous</code>로 CrashLoopBackOff/ImagePullBackOff/readiness 실패 중 무엇인지 원인을 좁힌다. 애플리케이션 버그, 설정값 오류, 이미지 문제, 의존 서비스 문제를 구분한다.</p>
+      </li>
+      <li>
+        <strong>현재 가용 capacity와 영향 범위를 판단한다</strong>
+        <p>구버전 Pod가 아직 얼마나 남아있는지, 실제 사용자 트래픽에 영향이 있는지, 아니면 신버전만 못 뜨고 서비스는 정상인지 구분한다. maxUnavailable 설정이 컸다면 이미 실사용자 영향이 있을 수 있다.</p>
+      </li>
+      <li>
+        <strong>롤백이 안전한지, 오히려 위험한지 판단한다</strong>
+        <p>이번 배포에 스키마 마이그레이션이나 비가역적 데이터 변경이 포함됐는지 확인한다. 순수 애플리케이션 버그라면 즉시 롤백이 정답에 가깝지만, 데이터 마이그레이션이 얽혀 있다면 롤백보다 hotfix 전진이 더 안전할 수 있다.</p>
+      </li>
+      <li>
+        <strong>결정한 방향을 실행한다</strong>
+        <p>롤백이면 <code>kubectl rollout undo deployment/&lt;name&gt; [--to-revision=N]</code>을 실행하고 다시 rollout status로 안정화를 확인한다. 전진이면 롤아웃을 <code>kubectl rollout pause</code>로 멈춰 추가 피해를 막고 hotfix를 준비한다.</p>
+      </li>
+      <li>
+        <strong>재발 방지책을 제시한다</strong>
+        <p>readiness probe가 실제 버그를 제때 잡아냈는지 점검하고, canary/blue-green 같은 점진적 배포 전략, 스키마 변경은 expand/contract 패턴으로 배포와 분리하는 정책, maxSurge/maxUnavailable을 서비스 규모에 맞게 재조정하는 것을 제안한다.</p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — "롤아웃이 중간에 멈춰 있고 새 Pod가 재시작을 반복합니다"</div>
+      <p>
+        "먼저 <code>kubectl rollout status</code>와 <code>kubectl describe deployment</code>의 Conditions를 확인합니다. <code>Progressing</code>이 <code>False</code>이고 사유가 <code>ProgressDeadlineExceeded</code>라면, Kubernetes 스스로가 '이 롤아웃은 정상적으로 진행되지 않고 있다'고 판단한 겁니다. 다만 이건 자동 롤백을 의미하지 않으므로, 이 시점부터는 제가 직접 판단해야 합니다.
+      </p>
+      <p>
+        다음으로 새 ReplicaSet의 Pod를 <code>describe</code>하고 이전 로그(<code>--previous</code>)를 확인해서, CrashLoopBackOff인지 readiness 실패인지, 애플리케이션 버그인지 설정 오류인지를 좁힙니다.
+      </p>
+      <p>
+        그다음 현재 얼마나 많은 구버전 Pod가 남아 있고 실사용자 영향이 있는지를 봅니다. 그리고 이번 배포에 스키마 마이그레이션 같은 비가역적 변경이 포함됐는지를 반드시 확인합니다. 포함이 안 된 순수 애플리케이션 버그라면 지체 없이 <code>kubectl rollout undo</code>로 롤백합니다. 만약 마이그레이션이 얽혀 있다면 무작정 롤백하는 대신 <code>kubectl rollout pause</code>로 멈추고 hotfix로 전진하는 방향을 우선 검토합니다 — 구버전 코드가 이미 변경된 스키마를 모른 채 쓰기를 계속하면 데이터 정합성이 깨질 수 있기 때문입니다.
+      </p>
+      <p>
+        마지막으로 재발 방지를 위해 readiness probe가 이 버그를 배포 초기에 더 빨리 잡아낼 수 있었는지 점검하고, 중요 서비스에는 canary 배포를 도입해 전체 트래픽에 영향을 주기 전에 소수 Pod로 문제를 조기에 발견하는 절차를 제안합니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① Kubernetes 자체 신호(Progressing Condition)를 정확히 해석 ② 자동 롤백과 사람의 판단을 명확히 구분 ③ 롤백이 항상 정답이 아니라는 것을 스키마 마이그레이션 사례로 근거 있게 설명 ④ pause를 활용한 중간 대응 옵션까지 제시 ⑤ 재발 방지를 canary 같은 구조적 개선으로 연결
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "PodDisruptionBudget이 설정돼 있으면 이번 같은 롤아웃 장애를 막아줬을까요?"</div>
+      <div class="followup-a">
+        <p>아닙니다. PDB는 Deployment/StatefulSet이 스스로 실행하는 rolling update에는 적용되지 않습니다. Kubernetes 공식 문서에도 워크로드 컨트롤러의 rolling update는 PDB 제한을 받지 않는다고 명시돼 있습니다. 롤아웃 중 동시에 내려가는 Pod 수를 통제하는 것은 오직 Deployment 자체의 <code>maxUnavailable</code>입니다. PDB는 노드 drain, cluster-autoscaler 축소, Karpenter consolidation처럼 <strong>외부에서 발생하는 자발적 축출</strong>을 막는 장치입니다.</p>
+        <p>이 둘을 혼동하면 "PDB를 걸어뒀으니 배포는 안전하다"는 잘못된 안도감을 갖게 되고, 실제로는 Deployment의 maxUnavailable/maxSurge와 readiness probe 품질에 배포 안전을 전혀 의존하지 못하는 상태가 됩니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "maxUnavailable을 0으로 설정하면 항상 안전한가요?"</div>
+      <div class="followup-a">
+        <p>가용성 측면에서는 안전하지만 대가가 있습니다. <code>maxUnavailable: 0</code>이면 구버전 Pod를 하나도 안 줄이고 새 버전을 다 띄운 뒤에야 전환하므로, 그만큼 <code>maxSurge</code>를 통한 추가 자원이 필요합니다. 클러스터에 여유 자원이 없으면 신규 Pod가 <code>Pending</code>으로 남아 롤아웃 자체가 진행되지 않을 수 있습니다.</p>
+        <p>또한 replica 수가 적은 서비스(예: replica 1~2)는 <code>maxUnavailable: 0</code>과 정수 <code>maxSurge</code>를 함께 세심하게 계산해야 합니다. 퍼센트 기본값을 그대로 쓰면 반올림 때문에 의도한 것과 다른 동작이 나올 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "롤백하면 정확히 이전과 100% 동일한 상태로 돌아가나요?"</div>
+      <div class="followup-a">
+        <p>Pod 템플릿(이미지, 환경변수, 리소스 설정 등) 기준으로는 이전 ReplicaSet의 스펙으로 복원됩니다. 하지만 <strong>애플리케이션 외부 상태(DB 스키마, 캐시에 쌓인 데이터, 외부 API의 상태, 발행된 메시지 큐 이벤트)는 롤백 대상이 아닙니다.</strong> 그래서 "롤백 = 완전한 시간 되돌리기"라고 생각하면 위험합니다. 특히 데이터 마이그레이션이나 비동기 이벤트 발행이 얽힌 배포는 롤백 후에도 후속 정리 작업이 필요할 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "revisionHistoryLimit을 낮게(예: 2) 설정하면 어떤 위험이 있나요?"</div>
+      <div class="followup-a">
+        <p>오래된 ReplicaSet이 빨리 삭제되어, 문제가 뒤늦게 발견됐을 때 <code>kubectl rollout undo --to-revision=N</code>으로 여러 단계 이전 버전으로 돌아가고 싶어도 그 ReplicaSet 자체가 이미 사라져 불가능할 수 있습니다. 반대로 너무 높게 두면 클러스터에 불필요한 ReplicaSet 오브젝트가 쌓여 etcd 부담이 됩니다. 배포 빈도와 "문제 발견까지 걸리는 평균 시간"을 고려해서 값을 정해야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "canary 배포는 Deployment의 RollingUpdate와 뭐가 다른가요? 왜 별도로 필요한가요?"</div>
+      <div class="followup-a">
+        <p>RollingUpdate는 결국 "전체 replica를 순차적으로 교체"하는 것이고, 문제가 있으면 이미 상당수 Pod가 신버전으로 바뀐 뒤에야 감지됩니다. Canary는 신버전을 소수(예: 5%) 트래픽에만 먼저 노출시켜, <strong>실사용자 영향을 최소화한 채로 신버전의 실제 동작을 검증</strong>합니다. Kubernetes 기본 오브젝트만으로는 트래픽 비율 기반 canary를 정교하게 구현하기 어렵기 때문에, 실무에서는 Argo Rollouts/Flagger 같은 progressive delivery 컨트롤러나 서비스 메시(Istio 등)의 트래픽 분할 기능을 함께 쓰는 경우가 많습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li><code>Progressing</code> Condition과 <code>ProgressDeadlineExceeded</code>를 근거로 롤아웃 실패를 판단한다</li>
+          <li>PDB와 Deployment rollout이 서로 다른 메커니즘이라는 것을 명확히 구분한다</li>
+          <li>데이터 마이그레이션이 얽힌 배포에서는 롤백이 오히려 위험할 수 있다는 것을 안다</li>
+          <li>maxSurge/maxUnavailable을 서비스 특성(지연시간 민감도, 자원 여유, replica 규모)에 맞게 조정하는 기준을 제시한다</li>
+          <li>롤백 외에 pause, canary 같은 중간 대응 옵션을 제시한다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"일단 롤백하겠습니다"로 바로 결론 낸다 (배포 성격을 구분하지 않음)</li>
+          <li>PDB가 배포 중에도 안전망 역할을 한다고 잘못 설명한다</li>
+          <li>maxSurge/maxUnavailable을 기본값 그대로 쓰는 것을 당연하게 여긴다</li>
+          <li>롤백을 "완전한 시간 되돌리기"로 생각하고 외부 상태(DB, 캐시)를 고려하지 않는다</li>
+          <li><code>revisionHistoryLimit</code>이나 rollout history 개념 자체를 모른다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        "일단 롤백"은 순수 애플리케이션 버그에는 맞는 대응이지만, 데이터 마이그레이션이 얽힌 배포에는 오히려 정합성을 깨는 결정이 될 수 있다. 이 구분을 못 하면 배포 판단이 아니라 반사 행동에 불과하다. 또한 PDB와 rollout 메커니즘을 혼동하면, 실제로는 아무 보호도 받지 못하는 배포를 안전하다고 착각한 채 운영하게 된다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"PodDisruptionBudget을 설정해두면 Deployment 롤아웃 중에도 최소 가용 Pod 수가 보장된다."</p>
+      <div class="mc-right">실제</div>
+      <p>PDB는 Deployment/StatefulSet 같은 워크로드 컨트롤러가 <strong>스스로 실행하는 rolling update에는 적용되지 않는다.</strong> 롤아웃 중 동시 축소 규모는 오직 Deployment의 <code>maxUnavailable</code>이 결정한다. PDB는 노드 drain, 오토스케일러 축소 같은 외부 자발적 축출만 제한한다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"롤백은 항상 가장 안전한 선택이다."</p>
+      <div class="mc-right">실제</div>
+      <p>Pod 템플릿은 이전 상태로 돌아가지만, <strong>DB 스키마나 외부 상태는 롤백되지 않는다.</strong> 새 버전이 스키마 마이그레이션을 동반했다면, 구버전 코드가 변경된 스키마를 모른 채 다시 쓰기 작업을 하면서 데이터 정합성이 깨질 수 있다. 이런 경우는 롤백보다 hotfix 전진이 더 안전할 수 있다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"maxSurge와 maxUnavailable 기본값(25%)은 어떤 서비스에나 적당하다."</p>
+      <div class="mc-right">실제</div>
+      <p>기본값은 중간 규모 서비스를 가정한 값이다. replica가 매우 많은 대형 서비스는 25% surge가 노드 오토스케일러가 따라가지 못할 만큼 큰 자원 요구를 순간적으로 만들 수 있고, replica가 매우 적은 서비스는 퍼센트 반올림 때문에 의도와 다르게 동작할 수 있다. 서비스 규모와 자원 여유에 맞게 값을 조정해야 한다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"<code>ProgressDeadlineExceeded</code>가 뜨면 Kubernetes가 알아서 롤백한다."</p>
+      <div class="mc-right">실제</div>
+      <p><code>ProgressDeadlineExceeded</code>는 Deployment의 <code>Progressing</code> Condition을 <code>False</code>로 바꾸는 <strong>신호일 뿐, 자동 롤백을 트리거하지 않는다.</strong> 이 상태에서도 새 ReplicaSet은 여전히 존재하고 시도를 계속할 수 있다. 실제 롤백은 사람이나 CI/CD 파이프라인이 <code>kubectl rollout undo</code>를 명시적으로 실행해야 일어난다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"RollingUpdate만 잘 설정하면 canary 배포는 필요 없다."</p>
+      <div class="mc-right">실제</div>
+      <p>RollingUpdate는 결국 전체 replica를 순차 교체하는 전부 아니면 전무(all-eventually) 방식이라, 문제가 발견될 즈음이면 이미 상당수 Pod가 신버전으로 바뀐 뒤다. Canary는 <strong>실사용자 트래픽의 일부만으로 신버전을 검증</strong>해 영향 범위를 의도적으로 줄인다. 배포 빈도가 높고 실패 비용이 큰 서비스일수록 RollingUpdate만으로는 부족하다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>롤아웃 상태 진단</strong></td>
+          <td><code>Progressing</code> Condition과 <code>ProgressDeadlineExceeded</code>를 근거로 진단하고, 이것이 자동 롤백을 의미하지 않는다는 것도 안다</td>
+          <td>롤아웃이 멈췄다는 것은 알지만 근거를 명확히 못 댄다</td>
+          <td>진단 없이 바로 롤백/재배포부터 시도한다</td>
+        </tr>
+        <tr>
+          <td><strong>PDB와 rollout의 관계</strong></td>
+          <td>PDB가 워크로드 컨트롤러의 rolling update를 제한하지 않는다는 것을 명확히 구분한다</td>
+          <td>PDB가 뭔지는 알지만 rollout과의 경계는 헷갈린다</td>
+          <td>PDB가 배포 안전까지 보장한다고 착각한다</td>
+        </tr>
+        <tr>
+          <td><strong>롤백 판단</strong></td>
+          <td>데이터 마이그레이션 동반 여부로 롤백 vs 전진을 구분해서 판단한다</td>
+          <td>일단 롤백은 하지만 이유를 깊이 설명 못한다</td>
+          <td>모든 상황에서 롤백이 항상 정답이라고 생각한다</td>
+        </tr>
+        <tr>
+          <td><strong>maxSurge/maxUnavailable 설계</strong></td>
+          <td>서비스 규모·지연 민감도·자원 여유에 따라 값을 조정하는 기준을 제시한다</td>
+          <td>두 값의 정의는 알지만 조정 기준은 없다</td>
+          <td>기본값의 의미조차 모른다</td>
+        </tr>
+        <tr>
+          <td><strong>ReplicaSet/revisionHistoryLimit</strong></td>
+          <td>롤백이 ReplicaSet 세대 보관에 의존한다는 것과 값 설정 트레이드오프를 설명한다</td>
+          <td>ReplicaSet이 쌓인다는 것은 알지만 롤백과의 연결은 약하다</td>
+          <td>Deployment와 ReplicaSet의 관계를 모른다</td>
+        </tr>
+        <tr>
+          <td><strong>점진적 배포 전략 인지</strong></td>
+          <td>canary/blue-green이 RollingUpdate와 다른 문제를 해결한다는 것을 설명한다</td>
+          <td>용어는 알지만 RollingUpdate와의 차이를 설명 못한다</td>
+          <td>모른다 / 언급 안 함</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면, Day 4(StatefulSet)에서 순서 보장이 있는 워크로드의 rollout이 어떻게 다른지, Day 14(Admission Control)에서 배포 파이프라인에 정책 검증이 어떻게 개입하는지 이어서 확인한다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./0002-pod-probe-resource-request-limit.html">← Day 2</a>
+    <a href="./index.html">목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>

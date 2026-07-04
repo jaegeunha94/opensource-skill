@@ -48,6 +48,8 @@
 - **Pod Security 정책**: PodSecurityPolicy는 이미 제거됐고, 내장 후속 기능은 Pod Security Admission(PSA) + Pod Security Standards. 세밀한 정책은 Kyverno(CNCF Incubating) 또는 OPA/Gatekeeper(CNCF Graduated)를 PSA 위에 얹는 구성이 표준.
 - **노드 오토스케일링**: Karpenter가 AWS 환경에서 주류(EKS Auto Mode 기본값), Cluster Autoscaler는 GKE 등 멀티 클라우드에서 여전히 표준.
 - **멀티 클러스터/플릿 관리**: Cluster API(클러스터 생명주기), Karmada/Rancher(멀티 클러스터 오케스트레이션), Argo CD/Flux(GitOps 일관성)로 무게중심 이동.
+- **PodDisruptionBudget과 Deployment rollout의 경계 (Day 3 조사, 2026-07)**: 공식 문서 기준으로 Deployment/StatefulSet 같은 워크로드 컨트롤러가 실행하는 rolling update는 PDB의 제한을 받지 않는다 — rollout 중 동시 축소 규모는 오직 Deployment 자체의 `maxUnavailable`/`maxSurge`가 결정한다. PDB는 노드 drain, cluster-autoscaler/Karpenter 축소 같은 자발적 축출(voluntary eviction)에만 적용된다. `unhealthyPodEvictionPolicy`(v1.27부터 stable, 기본 `IfHealthyBudget`)를 `AlwaysAllow`로 설정하면 unhealthy Pod가 PDB 조건과 무관하게 항상 축출되어, 이미 망가진 Pod가 노드 drain을 막는 교착을 방지할 수 있다.
+  https://kubernetes.io/docs/concepts/workloads/pods/disruptions/ , https://kubernetes.io/docs/tasks/run-application/configure-pdb/ , https://kubernetes.io/blog/2023/01/06/unhealthy-pod-eviction-policy-for-pdbs/
 
 ## 심화 학습
 
