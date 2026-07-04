@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | LLM 제품 품질과 모델 선택/운영 프레임워크 | [0001-llm-product-quality-and-model-selection-framework.html](lessons/0001-llm-product-quality-and-model-selection-framework.html) |
+| 2 | 2026-07-04 | LLM 동작 특성과 Capability Boundary | [0002-llm-behavior-and-capability-boundary.html](lessons/0002-llm-behavior-and-capability-boundary.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | LLM 동작 특성과 Capability Boundary | 다음 토큰 예측의 확률적 본질, capability boundary, 실패 모드 분류 |
 | 3 | Tokenization과 Context Window | 토큰화 메커니즘, 토큰 비용, context window 활용/함정 |
 | 4 | Prompt Engineering 실무 | 시스템 프롬프트 설계, few-shot, 프롬프트 버전 관리 |
 | 5 | Reasoning Model 사용 판단 | extended thinking/reasoning effort 판단 기준, latency/cost 대가 |
@@ -29,7 +29,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — Day 2 (LLM 동작 특성과 Capability Boundary)가 다음 차례.
+**Day 2 완료** — Day 3 (Tokenization과 Context Window)가 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -37,7 +37,9 @@
 - [x] 2026년 중반 기준 주요 벤더(Anthropic/OpenAI/Google 등)의 모델 지형과 reasoning effort 통합 흐름 (Day 1)
 - [x] 최근 주요 deprecation/migration 사례와 그것이 프로덕션 설계에 주는 시사점 (Day 1)
 - [x] 좋은 답변 vs 약한 답변 구별 기준 (Day 1)
-- [ ] LLM의 확률적 동작 특성과 capability boundary (예정 Day 2)
+- [x] LLM의 확률적 동작 특성(다음 토큰 예측)과 capability boundary (Day 2)
+- [x] 실패 모드 5분류(지식/추론/지시따르기/보정/분포이탈) 프레임워크와 원인별 완화 전략 (Day 2)
+- [x] 환각이 평가 인센티브 구조에서 비롯된다는 최신 연구 논지(OpenAI, 2025~2026) (Day 2)
 - [ ] 토큰화와 context window 활용/함정 (예정 Day 3)
 - [ ] 프롬프트 엔지니어링 실무와 버전 관리 (예정 Day 4)
 - [ ] reasoning model 사용 판단 기준 (예정 Day 5)
@@ -57,4 +59,5 @@
 ## 커리큘럼 최신성 메모
 
 - 2026-07-02 Day 1 작성 시점 기준, Anthropic 최신 플래그십은 Claude Fable 5(적응형 thinking 기본 탑재), OpenAI는 GPT-5.5(reasoning effort 파라미터로 o-계열 통합), Google은 Gemini 3.5 Flash/3.1 Pro 조합을 확인함.
-- 특정 모델명·버전은 인터뷰 시점에 따라 바뀔 수 있으므로, 새 레슨을 만들 때마다 공식 문서와 changelog를 다시 확인하고 이 메모를 갱신한다.
+- 2026-07-04 Day 2 작성 시점, OpenAI "Why Language Models Hallucinate"(2025, arXiv:2509.04664) 및 관련 2026년 후속 논의(평가 인센티브가 환각을 유도한다는 논지, Nature 게재 등)를 확인해 실패 모드/환각 섹션에 반영함. 2026년 프론티어 모델의 표준 벤치마크 환각률은 한 자릿수 %대까지 낮아졌으나, 실제 프로덕션 표본 조사에서는 여전히 도메인에 따라 두 자릿수 %대 환각이 보고된다는 간극도 함께 확인함.
+- 특정 모델명·버전·수치는 인터뷰 시점에 따라 바뀔 수 있으므로, 새 레슨을 만들 때마다 공식 문서와 changelog를 다시 확인하고 이 메모를 갱신한다.

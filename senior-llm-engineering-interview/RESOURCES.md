@@ -22,6 +22,8 @@
 | OpenAI Evals (오픈소스) | eval 하네스 구조, LLM-as-judge 패턴 |
 | Chatbot Arena / LMSYS | 공개 리더보드 — 참고용이나 프로덕션 의사결정 근거로는 한계가 있음을 함께 학습 |
 | Damien Charlotin — AI Hallucination Cases Database | 실제 hallucination 관련 소송·사고 사례 아카이브 |
+| OpenAI — "Why Language Models Hallucinate" (arXiv:2509.04664, 2025) | 환각이 정답률만 보상하는 평가 인센티브 구조에서 비롯된다는 핵심 논지. capability boundary/실패 모드 논의의 이론적 근거 |
+| Knowledge Boundary Discovery 관련 연구 (arXiv, 2026) | 모델이 자신의 지식 경계를 스스로 판별(calibration)하도록 만드는 기법 동향 |
 
 ## Prompt Engineering & Structured Output
 
