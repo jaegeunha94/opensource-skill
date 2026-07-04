@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | Semantic HTML과 CSS 렌더링/접근성 답변 프레임워크 — 시니어가 마크업을 리뷰하는 사고법 | [0001-semantic-html-css-rendering-a11y-framework.html](lessons/0001-semantic-html-css-rendering-a11y-framework.html) |
 | 2 | 2026-07-03 | Document 구조와 Semantic HTML 심화 — `header`/`nav`/`main`/`article`/`section`/`aside`/`footer` 구분, `div` 남용의 실무 비용 | [0002-document-structure-semantic-html-deep-dive.html](lessons/0002-document-structure-semantic-html-deep-dive.html) |
+| 3 | 2026-07-04 | Forms 심화 — 네이티브 검증, label 연결, 접근성 있는 폼 설계 | [0003-forms-native-validation-accessible-design.html](lessons/0003-forms-native-validation-accessible-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | Forms 심화 | 네이티브 검증, label 연결, 접근성 있는 폼 설계 |
 | 4 | ARIA와 Accessibility Tree | role/name/state, ARIA 사용 원칙, 스크린 리더 실제 동작 |
 | 5 | SEO 기본 판단 | 시맨틱 마크업과 크롤러 파싱, CSR/SSR이 SEO에 미치는 영향 |
 | 6 | CSS Cascade 심화 | Cascade Layers, `!important`의 실무 함정 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — 다음: Day 3 — Forms 심화
+**Day 3 완료** — 다음: Day 4 — ARIA와 Accessibility Tree
 
 ## 습득한 핵심 개념
 
@@ -38,7 +38,11 @@
 - [x] `header`/`footer`가 sectioning 대상 기준으로 반복될 수 있는 이유 (Day 2)
 - [x] `aside`를 위치가 아니라 콘텐츠 관계로 판단하는 기준 (Day 2)
 - [x] HTML5 outline algorithm이 실무에서 신뢰할 수 없는 이유 (Day 2)
-- [ ] 네이티브 폼 검증과 접근성 있는 폼 설계 (예정 Day 3)
+- [x] `label`과 입력창의 프로그램적 연결 방법과 `placeholder`의 한계 (Day 3)
+- [x] 네이티브 HTML5 Constraint Validation을 우선 사용해야 하는 이유 (Day 3)
+- [x] `aria-invalid`/`aria-describedby`로 에러 상태와 메시지를 연결하는 방법 (Day 3)
+- [x] `role="alert"`/`aria-live`로 동적 에러를 스크린 리더에 즉시 통지하는 방법 (Day 3)
+- [x] `fieldset`/`legend`로 라디오·체크박스 그룹을 의미적으로 묶는 이유 (Day 3)
 - [ ] ARIA 패턴별 공식 구현 가이드 적용 (예정 Day 4)
 - [ ] SEO 관점의 CSR/SSR 판단 기준 (예정 Day 5)
 - [ ] Cascade Layers(`@layer`)를 이용한 우선순위 통제 (예정 Day 6)
