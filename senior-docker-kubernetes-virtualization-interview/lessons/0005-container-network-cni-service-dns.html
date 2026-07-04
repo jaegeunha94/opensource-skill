@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — 컨테이너 네트워크: bridge, CNI, Service DNS</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3347;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #3ecf8e;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --code-bg: #141824;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 16px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 2rem 2rem;
+      text-align: center;
+    }
+    .hero .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .hero h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .hero p { color: var(--muted); max-width: 640px; margin: 0 auto; }
+    .container { max-width: 860px; margin: 0 auto; padding: 2rem; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--accent);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--text); }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      color: #93c5fd;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.88em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.2rem;
+    }
+    pre code { background: none; padding: 0; color: #a5f3fc; font-size: 0.85rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-accent { border-left: 4px solid var(--accent); }
+    .card-green { border-left: 4px solid var(--green); }
+    .card-red { border-left: 4px solid var(--red); }
+    .card-yellow { border-left: 4px solid var(--yellow); }
+    .card-purple { border-left: 4px solid var(--accent2); }
+
+    .question-box {
+      background: var(--surface2);
+      border: 1px solid var(--accent2);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1.5rem 0;
+    }
+    .question-box .q-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+    .question-box .q-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.4rem;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--accent);
+      text-align: left;
+      padding: 0.65rem 1rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+    }
+    td {
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0 1.4rem;
+    }
+    @media (max-width: 640px) { .answer-grid { grid-template-columns: 1fr; } }
+    .answer-good {
+      background: #0d2b1e;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-bad {
+      background: #2b0d0d;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-good .label { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .answer-bad .label { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+
+    .rubric {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-item .check { color: var(--green); font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .rubric-item .text { font-size: 0.9rem; }
+
+    .section-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+    .tag-why { background: #1a2840; color: var(--accent); }
+    .tag-concept { background: #1a1a2e; color: var(--accent2); }
+    .tag-answer { background: #0d2b1e; color: var(--green); }
+    .tag-followup { background: #2b1a00; color: var(--orange); }
+    .tag-rubric { background: #2b2000; color: var(--yellow); }
+
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+      font-size: 0.85rem;
+    }
+    .nav-bar a { color: var(--accent); text-decoration: none; }
+    .nav-bar a:hover { text-decoration: underline; }
+
+    .hl-green { color: var(--green); font-weight: 600; }
+    .hl-red { color: var(--red); font-weight: 600; }
+    .hl-yellow { color: var(--yellow); font-weight: 600; }
+    .hl-accent { color: var(--accent); font-weight: 600; }
+    .hl-orange { color: var(--orange); font-weight: 600; }
+
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem 1.6rem; margin-bottom: 2rem; }
+    .toc h3 { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.7rem; }
+    .toc ol { margin-bottom: 0; }
+    .toc li { font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="day-badge">Day 5</div>
+  <h1>컨테이너 네트워크 — bridge, CNI, Service DNS</h1>
+  <p>"트래픽이 Ingress에서 Pod까지 어떻게 흘러가나요?"라는 질문에 docker0 bridge부터 CNI, kube-proxy, CoreDNS까지 한 줄로 꿰어 설명하기</p>
+</div>
+
+<div class="container">
+
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#recap">Day 4 복기 — 오늘 다루는 것</a></li>
+      <li><a href="#question1">면접 질문 1 — Docker 컨테이너는 어떻게 네트워크를 갖고 서로 통신하는가</a></li>
+      <li><a href="#question2">면접 질문 2 — Kubernetes는 왜 CNI가 필요하고, Pod 네트워크는 어떻게 구성되는가</a></li>
+      <li><a href="#question3">면접 질문 3 — Service는 실제로 어떻게 여러 Pod 앞에서 안정적인 진입점이 되는가</a></li>
+      <li><a href="#mental-model">시니어의 정신 모델 — 트래픽 흐름 추적 체크리스트</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- ========== SECTION 1 ========== -->
+  <h2 id="recap">1. Day 4 복기 — 오늘 다루는 것</h2>
+
+  <p>Day 4에서는 "데이터는 어디에 사는가"를 다뤘다. 오늘은 그 데이터를 담은 Pod에 "트래픽이 어떻게 도달하는가"를 다룬다. 컨테이너 하나가 IP를 갖고 다른 컨테이너와 통신하는 가장 기본적인 메커니즘(Docker의 bridge network)부터 시작해서, Kubernetes가 수백 개 노드에 흩어진 수천 개 Pod를 하나의 평평한 네트워크처럼 보이게 만드는 방법(CNI), 그리고 Pod가 죽고 다시 뜨며 IP가 계속 바뀌는 상황에서도 클라이언트가 안정적으로 접속할 수 있게 하는 방법(Service, kube-proxy, CoreDNS)까지 하나의 흐름으로 연결한다.</p>
+
+  <div class="card card-accent">
+    <p>시니어 면접관이 네트워크를 깊게 파고드는 이유는 명확하다. <strong>"Pod가 CrashLoopBackOff다"는 로그 한 줄로 알 수 있지만, "이 서비스에 접속이 간헐적으로 안 된다"는 증상은 원인이 DNS, kube-proxy, CNI, NetworkPolicy, 심지어 노드의 conntrack 테이블까지 어디에나 있을 수 있다.</strong> 오늘 세 질문은 이 넓은 원인 공간을 "컨테이너 단일 노드 통신 → Pod 간 클러스터 통신 → Service를 통한 안정적 접근"의 순서로 계층화해서, 장애가 났을 때 어느 계층부터 배제해나갈지 판단하는 능력을 확인한다.</p>
+  </div>
+
+  <!-- ========== SECTION 2 ========== -->
+  <h2 id="question1">2. 면접 질문 1 — Docker 컨테이너는 어떻게 네트워크를 갖고 서로 통신하는가</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"docker run으로 컨테이너를 띄우면 자동으로 IP가 생기던데, 이게 어떻게 동작하나요? bridge, host, none 네트워크 드라이버는 뭐가 다른가요? 같은 호스트의 컨테이너 두 개가 서로 통신하려면 무슨 일이 일어나나요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 "docker network ls로 나오는 드라이버 이름 외우기"가 아니라, <strong>컨테이너 네트워킹이 마법이 아니라 리눅스 커널의 평범한 기능(가상 이더넷, bridge, NAT)을 조합한 것</strong>임을 이해하는지 확인한다. 이걸 이해해야 나중에 Kubernetes의 CNI가 "왜 굳이 필요한지", overlay network가 "왜 성능 오버헤드를 만드는지"를 근본부터 설명할 수 있다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>network namespace — 컨테이너마다 독립된 "네트워크 세계"</h3>
+    <p>Day 2에서 배운 namespace 격리를 네트워크에 적용한 것이 <strong>network namespace</strong>다. 컨테이너 하나는 자기만의 네트워크 인터페이스 목록, 라우팅 테이블, iptables 규칙, 포트 번호 공간을 가진다 — 호스트나 다른 컨테이너와 완전히 분리된 "네트워크 세계"에 사는 셈이다. 문제는 서로 완전히 분리된 세계에 있는 컨테이너들이 어떻게 통신하느냐인데, 여기서 <strong>veth pair(virtual ethernet pair)</strong>와 <strong>bridge</strong>가 등장한다.</p>
+  </div>
+
+  <div class="card">
+    <h3>veth pair와 docker0 bridge — 케이블로 연결된 두 개의 방</h3>
+    <p><strong>veth pair</strong>는 마치 케이블 양 끝처럼 동작하는 가상 네트워크 인터페이스 두 개의 짝이다. 한쪽 끝은 컨테이너의 network namespace 안에 넣고(보통 <code>eth0</code>으로 보인다), 다른 쪽 끝은 호스트의 network namespace에 남겨둔다. 도커는 기본적으로 <code>docker0</code>이라는 <strong>가상 bridge(가상 스위치)</strong>를 호스트에 만들고, 모든 컨테이너의 veth pair 호스트 쪽 끝을 이 bridge에 연결한다. 결과적으로 같은 호스트의 컨테이너들은 마치 같은 스위치에 물린 것처럼 서로 통신할 수 있고, 도커가 각 컨테이너에 <code>172.17.0.x</code> 같은 사설 IP를 자동으로 할당해준다.</p>
+  </div>
+
+  <table>
+    <tr><th>네트워크 드라이버</th><th>동작 방식</th><th>주 용도</th><th>trade-off</th></tr>
+    <tr><td><code>bridge</code> (기본값)</td><td>docker0 bridge + veth pair + NAT으로 외부와 통신</td><td>대부분의 일반 컨테이너</td><td>격리는 되지만 포트 매핑(<code>-p</code>)이 필요하고 약간의 NAT 오버헤드가 있음</td></tr>
+    <tr><td><code>host</code></td><td>컨테이너가 별도 network namespace 없이 호스트의 네트워크를 그대로 사용</td><td>극한의 네트워크 성능이 필요하거나 포트 범위를 통째로 다뤄야 할 때</td><td>격리가 없어서 호스트 포트와 충돌 위험, 보안 경계 약화</td></tr>
+    <tr><td><code>none</code></td><td>네트워크 인터페이스를 아예 만들지 않음(loopback만 존재)</td><td>네트워크가 필요 없는 배치 작업, 커스텀 네트워크 설정을 직접 붙일 때</td><td>기본적인 통신 자체가 불가능 — 별도 구성 필요</td></tr>
+    <tr><td><code>overlay</code></td><td>여러 호스트에 걸친 컨테이너를 하나의 가상 네트워크로 묶음(VXLAN 캡슐화)</td><td>Docker Swarm처럼 멀티 호스트 클러스터링</td><td>캡슐화 오버헤드, Kubernetes에서는 CNI 플러그인이 이 역할을 대체</td></tr>
+  </table>
+
+  <div class="card card-red">
+    <h3>왜 위험한가 — host 네트워크의 격리 상실</h3>
+    <p><code>--network host</code>로 띄운 컨테이너는 network namespace 격리 자체가 없어서, 컨테이너 안에서 <code>localhost:5432</code>로 접속하면 <strong>호스트</strong>의 5432 포트에 붙는다. 성능을 위해 습관적으로 host 네트워크를 쓰다가, 같은 호스트에 여러 개의 같은 서비스를 띄워야 하는 상황에서 포트 충돌이 나거나, 컨테이너가 뚫렸을 때 네트워크 격리라는 보안 경계 하나가 통째로 사라진다는 걸 놓치는 경우가 많다.</p>
+  </div>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>격리의 시작점:</strong> 컨테이너는 network namespace로 독립된 네트워크 스택을 갖는다는 것.</li>
+    <li><strong>연결 메커니즘:</strong> veth pair가 컨테이너와 호스트를 케이블처럼 잇고, docker0 bridge가 여러 컨테이너를 스위치처럼 묶는다는 것.</li>
+    <li><strong>드라이버별 trade-off:</strong> bridge(기본, 격리+NAT), host(격리 없음, 고성능), none(수동 구성), overlay(멀티호스트)를 격리 수준과 용도로 구분.</li>
+    <li><strong>보안 함의 연결:</strong> host 네트워크가 격리 경계를 없앤다는 점을 실무 사고 사례로 마무리.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"컨테이너는 각자 독립된 network namespace를 가져서, 자기만의 네트워크 인터페이스와 라우팅 테이블을 갖습니다. 이 격리된 세계를 호스트와 연결하는 게 veth pair인데, 케이블 양 끝처럼 한쪽은 컨테이너 안에 <code>eth0</code>으로, 다른 쪽은 호스트에 남깁니다. 도커는 <code>docker0</code>이라는 가상 bridge를 만들어서 모든 컨테이너의 veth pair를 여기 연결하는데, 이게 마치 같은 스위치에 여러 컨테이너를 물린 것처럼 동작해서 서로 통신할 수 있게 됩니다.</p>
+    <p style="margin-top:0.6rem;">네트워크 드라이버는 이 격리 수준을 선택하는 겁니다. 기본값인 <code>bridge</code>는 격리와 NAT을 다 쓰고, <code>host</code>는 격리 자체를 포기하고 호스트 네트워크를 그대로 쓰는 대신 성능 오버헤드가 없습니다. 저는 host 네트워크를 쓸 때는 반드시 그 컨테이너가 신뢰할 수 있는 워크로드인지, 포트 충돌 가능성은 없는지를 먼저 확인합니다 — 격리가 사라진다는 게 단순한 설정 옵션이 아니라 보안 경계 하나를 없애는 결정이기 때문입니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>network namespace, veth pair, bridge를 실제 메커니즘으로 연결해서 설명</li>
+        <li>드라이버별 차이를 격리 수준과 trade-off 관점으로 구분</li>
+        <li>host 네트워크의 보안 함의까지 스스로 짚음</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"도커가 알아서 IP를 준다"는 표면적 설명에서 멈춤</li>
+        <li>bridge와 host의 차이를 "성능 차이"로만 이해하고 격리 개념을 언급 못함</li>
+        <li>veth pair, network namespace 같은 실제 커널 메커니즘을 모름</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "컨테이너 안에서 외부 인터넷으로 나가는 요청은 되는데, 외부에서 컨테이너로 들어오는 요청은 왜 <code>-p</code> 옵션 없이는 안 되나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "컨테이너의 사설 IP(<code>172.17.0.x</code>)는 호스트 바깥에서 라우팅이 안 되는 대역입니다. 나가는 트래픽은 iptables의 <code>MASQUERADE</code> 규칙으로 출발지 IP를 호스트의 IP로 바꿔치기(SNAT)해서 내보내기 때문에 인터넷 쪽에서 정상 응답이 호스트로 돌아오고, 도커가 그 응답을 다시 원래 컨테이너로 돌려줍니다. 하지만 반대 방향, 즉 외부에서 먼저 컨테이너로 들어오는 연결은 목적지가 사설 IP라 애초에 라우팅이 안 되기 때문에, <code>-p 8080:80</code>처럼 명시적으로 DNAT 규칙(호스트의 8080 포트로 들어온 걸 컨테이너의 80 포트로 전달)을 iptables에 추가해줘야 합니다. 이건 나중에 Kubernetes에서 NodePort Service가 왜 필요한지와 정확히 같은 원리로 연결됩니다."</p>
+  </div>
+
+  <!-- ========== SECTION 3 ========== -->
+  <h2 id="question2">3. 면접 질문 2 — Kubernetes는 왜 CNI가 필요하고, Pod 네트워크는 어떻게 구성되는가</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"Kubernetes는 왜 Docker의 기본 bridge 네트워크를 그대로 안 쓰고 CNI라는 별도 표준을 씁니까? Pod가 다른 노드에 있어도 서로 IP로 직접 통신할 수 있는 건 어떻게 가능한 건가요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 Kubernetes 네트워킹의 <strong>근본 요구사항(fundamental requirement)</strong>을 알고 있는지 확인한다. 많은 지원자가 "Calico를 쓴다", "Cilium을 쓴다"는 도구 이름은 알지만, <strong>그 도구들이 왜 존재해야 하는지, Kubernetes 네트워크 모델이 강제하는 제약이 무엇인지</strong>는 설명하지 못한다. 시니어는 도구를 넘어 그 도구가 만족시켜야 하는 계약(contract)을 이해해야 한다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>Kubernetes 네트워크 모델의 핵심 요구사항 — "NAT 없이 평평한 네트워크"</h3>
+    <p>Kubernetes는 네트워크 구현 방식을 강제하지 않지만, 반드시 지켜야 할 <strong>세 가지 근본 요구사항</strong>을 정의한다. 첫째, <strong>모든 Pod는 NAT 없이 다른 모든 Pod와 직접 통신</strong>할 수 있어야 한다(같은 노드든 다른 노드든 상관없이). 둘째, <strong>노드는 자기 위의 모든 Pod와 NAT 없이 통신</strong>할 수 있어야 한다. 셋째, <strong>Pod가 보는 자기 자신의 IP는 다른 Pod가 그 Pod를 보는 IP와 동일</strong>해야 한다(즉 Pod 내부에서든 외부에서든 같은 주소 체계를 쓴다). 이 세 가지를 합치면 "수백 개 노드에 흩어진 수천 개 Pod가 마치 하나의 거대한 평평한 네트워크(flat network)에 있는 것처럼" 동작해야 한다는 뜻이다.</p>
+  </div>
+
+  <div class="card card-red">
+    <h3>왜 Docker 기본 bridge로는 부족한가</h3>
+    <p>Docker의 기본 <code>docker0</code> bridge는 <strong>같은 호스트 안에서만</strong> 컨테이너를 연결한다. 노드 A의 <code>docker0</code>과 노드 B의 <code>docker0</code>은 서로 아무 관계가 없는 독립된 사설 네트워크라서, 노드 A의 Pod가 노드 B의 Pod에게 IP로 직접 패킷을 보내도 그 패킷이 노드 B에 도착하는 순간 "이 IP가 누구 것인지" 알 방법이 없다. Kubernetes는 이 문제를 풀기 위해 <strong>CNI(Container Network Interface)</strong>라는 표준 플러그인 인터페이스를 정의했고, Calico, Cilium, Flannel 같은 CNI 플러그인이 노드 간 Pod 통신 문제를 실제로 해결한다.</p>
+  </div>
+
+  <div class="card">
+    <h3>CNI 플러그인이 실제로 하는 두 가지 일</h3>
+    <ul>
+      <li><strong>Pod가 생성될 때 네트워크 인터페이스를 붙여준다.</strong> kubelet이 Pod를 만들면 CNI 플러그인을 호출해서, 그 Pod의 network namespace에 인터페이스를 만들고 클러스터 전체에서 유일한 IP를 할당한다.</li>
+      <li><strong>노드 간 Pod 통신 경로를 만든다.</strong> 이 부분은 플러그인마다 방식이 다른데, 크게 두 갈래로 나뉜다.</li>
+    </ul>
+  </div>
+
+  <table>
+    <tr><th>방식</th><th>동작 원리</th><th>대표 구현</th><th>trade-off</th></tr>
+    <tr><td>Overlay 네트워크</td><td>Pod 간 패킷을 VXLAN 등으로 <strong>캡슐화</strong>해서 노드의 실제 네트워크 위에 가상 터널을 만듦</td><td>Flannel(VXLAN 모드)</td><td>기존 네트워크 인프라(라우터 설정)를 건드릴 필요가 없어 설치가 쉽지만, 캡슐화/역캡슐화 오버헤드로 처리량이 줄고 MTU 이슈가 생길 수 있음</td></tr>
+    <tr><td>Native 라우팅 / BGP</td><td>각 노드가 자기 노드에 할당된 Pod CIDR 대역을 BGP 등으로 광고해서, 캡슐화 없이 <strong>실제 라우팅 테이블</strong>로 노드 간 Pod 트래픽을 처리</td><td>Calico(BGP 모드), Cilium(eBPF 기반 라우팅)</td><td>오버헤드가 없어 성능이 좋지만, 언더레이 네트워크가 BGP를 지원하거나 L3 라우팅이 가능해야 함</td></tr>
+  </table>
+
+  <div class="card card-yellow">
+    <h3>흔한 오해 — "CNI가 곧 특정 네트워크 플러그인 이름이다"</h3>
+    <p>CNI는 Calico나 Flannel 같은 특정 제품이 아니라, "컨테이너 런타임이 네트워크 플러그인을 호출하는 방법"을 정의한 <strong>표준 인터페이스(스펙)</strong>다. Calico, Cilium, Flannel, AWS VPC CNI는 전부 이 CNI 스펙을 구현한 서로 다른 플러그인일 뿐이다. 이 구분을 못 하면 "우리 클러스터는 CNI를 안 쓴다"처럼 성립할 수 없는 문장을 말하게 된다 — Kubernetes 클러스터는 어떤 형태로든 CNI 플러그인이 반드시 설치되어 있어야 Pod 네트워크가 동작한다.</p>
+  </div>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>Kubernetes 네트워크 모델의 계약부터:</strong> 모든 Pod가 NAT 없이 서로 직접 통신 가능해야 한다는 요구사항.</li>
+    <li><strong>docker0의 한계:</strong> 이 요구사항이 단일 호스트용 bridge로는 충족될 수 없다는 것.</li>
+    <li><strong>CNI의 역할 정의:</strong> 표준 인터페이스라는 것과, Pod에 IP를 붙이는 일 + 노드 간 통신 경로를 만드는 일 두 가지를 CNI 플러그인이 담당한다는 것.</li>
+    <li><strong>구현 방식의 trade-off:</strong> overlay(캡슐화, 호환성) vs native routing(성능, 언더레이 요구사항)을 비교해서 실무 선택 기준 제시.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"Kubernetes는 '모든 Pod가 NAT 없이 다른 모든 Pod와 직접 통신할 수 있어야 한다'는 걸 네트워크 모델의 근본 요구사항으로 정의합니다. 문제는 Docker의 기본 <code>docker0</code> bridge가 같은 호스트 안에서만 통하는 사설 네트워크라서, 노드가 여러 개로 늘어나는 순간 이 요구사항을 충족할 방법이 없다는 겁니다. Kubernetes는 이걸 직접 구현하는 대신 CNI라는 표준 인터페이스만 정의하고, 실제 구현은 Calico, Cilium, Flannel 같은 플러그인에 맡깁니다.</p>
+    <p style="margin-top:0.6rem;">CNI 플러그인은 크게 두 가지 방식으로 노드 간 통신을 해결합니다. Flannel의 VXLAN 모드처럼 패킷을 캡슐화해서 가상 터널을 만드는 overlay 방식은 기존 네트워크 인프라를 건드릴 필요가 없어서 설치가 간단하지만 캡슐화 오버헤드가 있고, Calico의 BGP 모드나 Cilium처럼 실제 라우팅 테이블로 처리하는 native 방식은 오버헤드는 없지만 언더레이 네트워크가 이를 지원해야 합니다. 저는 클러스터가 클라우드 VPC 안에 있고 라우팅 테이블을 유연하게 다룰 수 있으면 native 방식을, 온프레미스 네트워크 정책이 까다로워 라우팅을 건드리기 어려우면 overlay 방식을 우선 검토합니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>Kubernetes 네트워크 모델의 근본 요구사항(NAT 없는 통신)부터 설명</li>
+        <li>docker0의 한계와 CNI가 해결하는 문제를 인과관계로 연결</li>
+        <li>overlay vs native routing을 성능/호환성 trade-off로 비교</li>
+        <li>CNI를 표준 인터페이스로, 특정 플러그인과 구분해서 이해</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"Calico나 Flannel을 설치하면 네트워크가 된다"는 도구 이름 나열에서 멈춤</li>
+        <li>CNI를 특정 제품 이름으로 착각</li>
+        <li>overlay와 native routing의 차이를 설명하지 못함</li>
+        <li>Kubernetes 네트워크 모델의 요구사항 자체를 모름</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "특정 팀의 Pod가 다른 팀의 Pod에 접근하지 못하게 막고 싶습니다. 어떻게 하나요? 이게 CNI와 무슨 관계가 있나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "<code>NetworkPolicy</code> 오브젝트로 Pod 단위의 ingress/egress 규칙을 선언합니다. 예를 들어 <code>team-a</code> 네임스페이스의 Pod는 <code>team-b</code> 네임스페이스에서 오는 트래픽만 허용하도록 podSelector와 namespaceSelector로 제한할 수 있습니다. 다만 중요한 함정이 있는데, <code>NetworkPolicy</code>는 Kubernetes API 오브젝트일 뿐이고 <strong>이를 실제로 강제(enforce)하는 건 CNI 플러그인의 역할</strong>입니다. Flannel처럼 NetworkPolicy를 지원하지 않는 플러그인을 쓰고 있다면, NetworkPolicy 매니페스트를 아무리 정교하게 작성해도 아무 효과가 없습니다 — apply는 성공하지만 조용히 무시됩니다. 그래서 저는 새 클러스터를 설계할 때 CNI를 고를 때 항상 NetworkPolicy 지원 여부를 확인하고, Calico나 Cilium처럼 이를 지원하는 플러그인을 우선순위에 둡니다."</p>
+  </div>
+
+  <!-- ========== SECTION 4 ========== -->
+  <h2 id="question3">4. 면접 질문 3 — Service는 실제로 어떻게 여러 Pod 앞에서 안정적인 진입점이 되는가</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"Pod는 재스케줄되면 IP가 바뀌는데, Service의 ClusterIP로 접속하면 왜 항상 정상 동작하나요? kube-proxy는 정확히 뭘 하는 건가요? 다른 Pod에서 서비스 이름만으로 접속할 수 있는 건 어떻게 가능한가요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>Service는 Kubernetes에서 가장 자주 쓰이면서도 <strong>내부 동작이 가장 자주 오해되는 오브젝트</strong>다. "Service는 로드밸런서다"라는 한 문장으로 넘어가는 지원자와, ClusterIP가 실제로 존재하는 프로세스나 서버가 아니라 <strong>iptables/IPVS 규칙의 집합으로 구현된 가상 주소</strong>라는 걸 아는 지원자는 트래픽 장애 진단 능력에서 확연히 갈린다. 이 질문은 "접속이 간헐적으로 실패한다"는 실제 장애를 진단할 수 있는지를 검증한다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>ClusterIP는 "서버"가 아니라 "규칙"이다</h3>
+    <p>Service를 만들면 <code>ClusterIP</code>라는 가상 IP가 할당되는데, 이 IP를 갖고 있는 실제 네트워크 인터페이스나 프로세스는 <strong>어디에도 존재하지 않는다</strong>. 대신 각 노드에서 실행 중인 <strong>kube-proxy</strong>가 API 서버로부터 Service와 그 뒤에 연결된 Endpoints(실제 Pod IP 목록)를 계속 감시(watch)하다가, ClusterIP로 가는 트래픽을 실제 Pod 중 하나로 전달하는 <strong>iptables(또는 IPVS) 규칙</strong>을 노드마다 만들어둔다. 즉 "ClusterIP:port로 접속한다"는 건 실제로는 "그 노드의 커널 네트워크 스택이 iptables 규칙에 따라 목적지 주소를 실제 Pod IP 중 하나로 바꿔치기(DNAT)한다"는 뜻이다.</p>
+  </div>
+
+  <table>
+    <tr><th>Service 타입</th><th>동작</th><th>주 용도</th></tr>
+    <tr><td>ClusterIP (기본값)</td><td>클러스터 내부에서만 접근 가능한 가상 IP</td><td>Pod 간 내부 통신 (예: 백엔드가 DB 서비스에 접속)</td></tr>
+    <tr><td>NodePort</td><td>모든 노드의 특정 포트(30000-32767)로 들어온 트래픽을 ClusterIP로 전달</td><td>외부에서 임시로 접근하거나 온프레미스에서 자체 로드밸런서와 조합</td></tr>
+    <tr><td>LoadBalancer</td><td>클라우드 프로바이더의 실제 로드밸런서(ALB, ELB 등)를 프로비저닝하고 NodePort로 연결</td><td>클라우드 환경에서 외부 트래픽을 받는 표준 방식</td></tr>
+    <tr><td>Headless (<code>clusterIP: None</code>)</td><td>가상 IP 없이 DNS 조회 시 Pod IP 목록을 그대로 반환</td><td>Day 4의 StatefulSet처럼 각 Pod를 개별적으로 지목해야 하는 경우</td></tr>
+  </table>
+
+  <div class="card">
+    <h3>CoreDNS — 이름으로 접속할 수 있게 하는 마지막 조각</h3>
+    <p>Pod IP도 Service ClusterIP도 결국 숫자 주소라서 애플리케이션 코드에 하드코딩하기 어렵다. <strong>CoreDNS</strong>는 Kubernetes 클러스터 내부 DNS 서버로, Service가 생성될 때마다 <code>{service}.{namespace}.svc.cluster.local</code> 형태의 DNS 레코드를 자동으로 만든다. 같은 네임스페이스 안에서는 그냥 <code>my-service</code>라는 짧은 이름만으로도 이 레코드를 찾을 수 있는데, 이건 Pod의 <code>/etc/resolv.conf</code>에 자동으로 설정된 <code>search</code> 도메인 목록 덕분이다.</p>
+  </div>
+
+  <pre><code># Pod 안에서 실행하면 이 세 가지가 실제로 같은 곳을 가리킨다
+curl http://my-service
+curl http://my-service.default
+curl http://my-service.default.svc.cluster.local
+
+# DNS가 my-service를 ClusterIP로 해석
+# kube-proxy가 그 ClusterIP로 온 트래픽을 iptables/IPVS 규칙으로
+# 실제 Pod IP 중 하나로 DNAT</code></pre>
+
+  <div class="card card-red">
+    <h3>왜 위험한가 — iptables 모드의 확장성 한계</h3>
+    <p>kube-proxy의 전통적인 iptables 모드는 Service와 Pod 수가 늘어날수록 규칙 개수가 선형으로 증가하고, 규칙을 순차적으로 검사하는 구조라서 <strong>Service 수천 개 규모의 클러스터에서는 트래픽 지연이 눈에 띄게 늘어난다</strong>. 이 문제 때문에 대규모 클러스터는 해시 테이블 기반으로 O(1)에 가까운 조회가 가능한 <strong>IPVS 모드</strong>나, 커널 우회 경로로 처리하는 <strong>eBPF 기반(Cilium 등)</strong> 구현으로 전환하는 경우가 많다. "Service가 많아질수록 클러스터 네트워크가 느려진다"는 증상의 흔한 원인 중 하나가 바로 이것이다.</p>
+  </div>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>ClusterIP의 정체부터 바로잡기:</strong> 실제 서버가 아니라 iptables/IPVS 규칙으로 구현된 가상 주소라는 것.</li>
+    <li><strong>kube-proxy의 역할 설명:</strong> Endpoints를 감시하고 규칙을 각 노드에 동기화하는 컨트롤 루프라는 것.</li>
+    <li><strong>Service 타입별 트래픽 진입 경로:</strong> ClusterIP(내부) → NodePort(노드 포트) → LoadBalancer(클라우드 LB)로 계층을 쌓아 설명.</li>
+    <li><strong>이름 해석 계층 추가:</strong> CoreDNS가 Service 이름을 ClusterIP로 바꿔주는 마지막 조각이라는 것.</li>
+    <li><strong>확장성 한계까지:</strong> iptables 모드의 성능 한계와 IPVS/eBPF 전환 배경을 언급해 시니어다운 깊이를 보여줌.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"ClusterIP는 실제로 존재하는 서버가 아니라 가상 주소입니다. 각 노드에서 도는 kube-proxy가 API 서버로부터 Service와 그 뒤에 붙은 Endpoints, 즉 실제 살아있는 Pod IP 목록을 계속 감시하다가, 'ClusterIP로 오는 트래픽을 이 Pod들 중 하나로 보내라'는 iptables나 IPVS 규칙을 노드마다 만들어둡니다. 그래서 Pod가 재스케줄돼서 IP가 바뀌어도, kube-proxy가 Endpoints 변화를 감지해서 규칙을 갱신하기 때문에 클라이언트는 ClusterIP 하나만 알면 됩니다.</p>
+    <p style="margin-top:0.6rem;">외부 트래픽은 이 위에 계층이 하나씩 더 쌓이는 구조입니다. NodePort는 모든 노드의 특정 포트로 들어온 걸 ClusterIP로 넘겨주고, LoadBalancer는 클라우드의 실제 로드밸런서를 프로비저닝해서 그 NodePort로 연결합니다. 그리고 IP를 직접 안 쓰고 서비스 이름으로 접속할 수 있는 건 CoreDNS 덕분인데, Service가 생성되면 <code>my-service.default.svc.cluster.local</code> 같은 DNS 레코드가 자동으로 생기고, Pod의 resolv.conf에 설정된 search 도메인 덕분에 짧은 이름만으로도 이 레코드를 찾을 수 있습니다. 다만 iptables 모드는 Service가 수천 개로 늘어나면 규칙을 순차 검사하는 구조 때문에 느려질 수 있어서, 저희는 클러스터 규모가 커지면 IPVS나 Cilium 같은 eBPF 기반 구현으로 전환하는 걸 검토합니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>ClusterIP가 "가상 주소 + iptables/IPVS 규칙"임을 정확히 설명</li>
+        <li>kube-proxy를 Endpoints를 감시하는 컨트롤 루프로 설명</li>
+        <li>ClusterIP → NodePort → LoadBalancer를 계층적으로 연결</li>
+        <li>CoreDNS의 역할과 iptables 모드의 확장성 한계까지 언급</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"Service는 로드밸런서다"라는 한 문장에서 멈춤</li>
+        <li>ClusterIP가 실제 서버라고 착각</li>
+        <li>kube-proxy가 뭘 하는지 설명하지 못함</li>
+        <li>Service 이름으로 접속되는 이유(CoreDNS)를 모름</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "Service에 연결된 Pod 중 하나가 아직 애플리케이션이 완전히 뜨지 않았는데도 트래픽을 받아서 5xx 에러가 납니다. 왜 이런 일이 생기고, 어떻게 막나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "Service의 Endpoints는 Pod가 <code>Ready</code> 상태인지를 기준으로 포함 여부가 결정됩니다. Pod가 뜨긴 떴지만 애플리케이션 초기화(캐시 워밍업, DB 커넥션 풀 생성 등)가 안 끝난 상태에서 <code>readinessProbe</code>가 없거나 너무 관대하게 설정돼 있으면, kubelet이 그 Pod를 곧바로 Ready로 판단해서 Endpoints에 포함시키고 kube-proxy가 트래픽을 흘려보냅니다. 해결책은 <code>readinessProbe</code>를 애플리케이션이 실제로 요청을 처리할 준비가 된 시점(예: <code>/healthz/ready</code>가 DB 커넥션과 캐시 상태까지 확인)에 맞춰 정확히 설계하는 겁니다. Pod가 Not Ready면 애초에 Endpoints에서 빠지기 때문에, kube-proxy는 그 Pod로 트래픽을 보내지 않습니다. 이건 Day 8에서 다룰 Pod 생명주기와 health check 설계로 더 깊게 연결됩니다."</p>
+  </div>
+
+  <!-- ========== SECTION 5 ========== -->
+  <h2 id="mental-model">5. 시니어의 정신 모델 — 트래픽 흐름 추적 체크리스트</h2>
+
+  <p>"이 서비스에 접속이 안 된다"는 장애 신고를 받았을 때, 오늘 배운 세 계층을 순서대로 배제해나가는 것이 시니어의 진단 방식이다.</p>
+
+  <div class="card card-purple">
+    <h3>접속 장애 진단 체크리스트 — Ingress에서 Pod까지</h3>
+    <table>
+      <tr><th>계층</th><th>확인 항목</th><th>근거 (오늘 배운 원리)</th></tr>
+      <tr><td>DNS 해석</td><td>Service 이름이 올바른 ClusterIP로 해석되는가 (<code>nslookup</code>/<code>dig</code>)</td><td>Q3 — CoreDNS가 이름을 ClusterIP로 변환</td></tr>
+      <tr><td>Endpoints 존재 여부</td><td>Service 뒤에 실제로 연결된 Pod IP가 있는가 (<code>kubectl get endpoints</code>)</td><td>Q3 — Endpoints가 비어있으면 selector 라벨 불일치나 readinessProbe 실패를 의심</td></tr>
+      <tr><td>kube-proxy 규칙 동기화</td><td>노드의 iptables/IPVS 규칙이 최신 Endpoints를 반영하는가</td><td>Q3 — kube-proxy가 규칙을 갱신하는 컨트롤 루프</td></tr>
+      <tr><td>Pod 간 직접 통신</td><td>같은 문제가 Service 없이 Pod IP로 직접 접속해도 재현되는가</td><td>Q2 — CNI가 보장하는 Pod-to-Pod 통신</td></tr>
+      <tr><td>NetworkPolicy 차단</td><td>의도치 않은 NetworkPolicy가 트래픽을 막고 있지 않은가</td><td>Q2 follow-up — CNI가 강제하는 ingress/egress 규칙</td></tr>
+      <tr><td>노드 간 CNI 상태</td><td>overlay 터널이나 BGP 라우팅이 정상인가 (다른 노드 간 통신만 실패하는 패턴인지 확인)</td><td>Q2 — overlay vs native routing 구현 차이</td></tr>
+      <tr><td>단일 컨테이너 네트워크 기초</td><td>문제가 애초에 컨테이너 레벨(veth, bridge)에서부터 시작되는 건 아닌가</td><td>Q1 — docker0/veth pair가 가장 기초 계층</td></tr>
+    </table>
+    <p style="margin-top:0.8rem;"><strong>흔한 오해:</strong> "핑(ping)이 되니까 네트워크는 정상이다"라는 판단도 절반의 진실이다. ICMP는 되지만 특정 포트로의 TCP 연결만 막혀 있는 NetworkPolicy나 애플리케이션 자체의 리스닝 실패는 ping으로 잡히지 않는다. 시니어의 진단은 항상 <strong>실제로 문제가 되는 프로토콜/포트로 직접 테스트</strong>하는 것에서 출발한다.</p>
+  </div>
+
+  <!-- ========== SECTION 6 ========== -->
+  <h2 id="rubric">6. 자기 점검 Rubric</h2>
+
+  <div class="rubric">
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">network namespace, veth pair, docker0 bridge가 컨테이너 간 통신을 가능하게 하는 메커니즘을 순서대로 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">bridge/host/none/overlay 네트워크 드라이버의 격리 수준과 trade-off를 구분해서 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">나가는 트래픽의 SNAT과 들어오는 트래픽의 DNAT(포트 매핑) 차이를 iptables 규칙 관점에서 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Kubernetes 네트워크 모델의 근본 요구사항(모든 Pod가 NAT 없이 직접 통신)을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">CNI가 특정 제품이 아니라 표준 인터페이스라는 것과, CNI 플러그인이 하는 두 가지 일(IP 할당, 노드 간 통신 경로 구성)을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">overlay(캡슐화) 방식과 native routing/BGP 방식의 성능·호환성 trade-off를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">NetworkPolicy가 CNI 플러그인에 의해 실제로 강제되며, 지원하지 않는 CNI에서는 조용히 무시된다는 함정을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">ClusterIP가 실제 서버가 아니라 iptables/IPVS 규칙으로 구현된 가상 주소라는 것을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">kube-proxy가 Endpoints를 감시하며 규칙을 노드마다 동기화하는 컨트롤 루프라는 것을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">ClusterIP/NodePort/LoadBalancer/Headless Service의 차이와 트래픽 진입 계층을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">CoreDNS가 Service 이름을 ClusterIP로 변환하는 과정과 짧은 이름 해석 원리(search 도메인)를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">"접속이 안 된다"는 장애를 DNS → Endpoints → kube-proxy 규칙 → Pod 간 통신 → NetworkPolicy → CNI 계층까지 체계적으로 진단할 수 있다</span>
+    </div>
+  </div>
+
+  <div class="card card-accent" style="margin-top: 2rem;">
+    <h3>다음 Day 예고</h3>
+    <p><strong>Day 6 — Docker Compose: 로컬 개발부터 운영 경계까지.</strong> 오늘 다룬 네트워크와 Day 4의 볼륨을 하나의 매니페스트로 선언하는 Docker Compose를 다룬다. <code>depends_on</code>이 왜 "애플리케이션이 준비됐다"를 보장하지 않는지, Compose의 기본 네트워크가 오늘 배운 bridge와 어떻게 연결되는지, 그리고 Compose로 만든 로컬 환경과 실제 프로덕션 Kubernetes 배포 사이의 경계를 어디에 그어야 하는지를 다룹니다.</p>
+  </div>
+
+</div>
+
+<div class="nav-bar">
+  <a href="./0004-container-volume-storage-statefulset.html">← Day 4</a>
+  <a href="../PROGRESS.md">PROGRESS.md</a>
+  <a href="./index.html">레슨 목록</a>
+  <a href="./0006-docker-compose-local-to-production-boundary.html">Day 6 →</a>
+</div>
+
+</body>
+</html>
