@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — 해싱 기반 파일 | 파일구조 면접 준비</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222535;
+      --border: #2e3147;
+      --accent: #5b8dee;
+      --accent2: #7c5cbf;
+      --green: #3ecf8e;
+      --red: #e25c5c;
+      --yellow: #f5a623;
+      --text: #e2e4f0;
+      --muted: #8b90a8;
+      --code-bg: #12141f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1f3c 0%, #12141f 100%);
+      border-bottom: 2px solid var(--accent2);
+      padding: 2.5rem 2rem;
+      margin: 0 -1rem 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .icon-q  { background: #2b1f4a; color: var(--accent2); }
+    .icon-pre { background: #1a2f3a; color: var(--accent); }
+    .icon-why { background: #2a2010; color: var(--yellow); }
+    .icon-real { background: #112a1f; color: var(--green); }
+    .icon-think { background: #1f2a3a; color: #a8c5f0; }
+    .icon-ans  { background: #1a2a1a; color: var(--green); }
+    .icon-trade { background: #2a1a1a; color: var(--red); }
+    .icon-myth  { background: #2a1f10; color: var(--yellow); }
+    .icon-follow { background: #1a1a2a; color: var(--accent2); }
+    .icon-diff  { background: #202020; color: #c0c0c0; }
+    .icon-rub  { background: #0e1e1a; color: var(--green); }
+
+    h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 1.25rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    li { margin-bottom: 0.35rem; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #2b1f4a 0%, #1a1d27 100%);
+      border: 1.5px solid var(--accent2);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #d4c8f5;
+      margin-bottom: 0.75rem;
+    }
+    .interview-sub {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.88rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+      font-size: 0.87rem;
+      line-height: 1.6;
+    }
+    pre code { background: none; border: none; padding: 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.85rem 0;
+      font-size: 0.92rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+    .answer-block {
+      border-left: 3px solid;
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 0.85rem 0;
+    }
+    .answer-strong { border-color: var(--green); background: rgba(62,207,142,0.06); }
+    .answer-weak   { border-color: var(--red);   background: rgba(226,92,92,0.06); }
+    .answer-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+    .label-strong { color: var(--green); }
+    .label-weak   { color: var(--red); }
+
+    .step-list { counter-reset: step; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-list li:last-child { border-bottom: none; }
+    .step-list li::before {
+      content: counter(step);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0;
+    }
+    .followup-q {
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .score-high { background: rgba(62,207,142,0.2); color: var(--green); }
+    .score-mid  { background: rgba(245,166,35,0.2); color: var(--yellow); }
+    .score-low  { background: rgba(226,92,92,0.2);  color: var(--red); }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.85rem 0;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+    .callout-info { background: rgba(91,141,238,0.08); border-left: 3px solid var(--accent); }
+    .callout-warn { background: rgba(245,166,35,0.08); border-left: 3px solid var(--yellow); }
+    .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin: 0.1rem;
+    }
+    .tag-blue { background: rgba(91,141,238,0.15); color: var(--accent); }
+    .tag-green { background: rgba(62,207,142,0.15); color: var(--green); }
+    .tag-yellow { background: rgba(245,166,35,0.15); color: var(--yellow); }
+
+    .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      color: #c9d0e8;
+      margin: 0.85rem 0;
+      white-space: pre;
+    }
+
+    nav.breadcrumb {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    nav.breadcrumb a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <nav class="breadcrumb">
+      <a href="../">파일구조 면접 준비</a> › <a href="./index.html">레슨 목록</a>
+    </nav>
+    <div class="day-badge">Interview Day 5</div>
+    <h1>해싱 기반 파일 — Collision, Overflow, Rehashing, Range Query 한계</h1>
+    <p class="subtitle">Equality lookup에서 거의 O(1)인 해시 인덱스가 있는데도, 왜 모든 인덱스를 해시로 만들지 않는가</p>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-q">Q</div>
+      <h2>면접 질문</h2>
+    </div>
+    <div class="interview-q">
+      "해시 인덱스가 equality lookup에서 이론상 O(1)에 가까운데도,
+      왜 대부분의 DB는 기본 인덱스를 B+Tree로 만들고 해시는 보조적으로만 씁니까?"
+    </div>
+    <p class="interview-sub">변형 질문 유형</p>
+    <ul>
+      <li>"해시 충돌(collision)이 발생하면 실제로 어떤 일이 일어납니까?"</li>
+      <li>"해시 테이블에 데이터가 계속 쌓이면 무엇이 문제가 되고, 어떻게 해결합니까?"</li>
+      <li>"왜 해시 인덱스는 <code>WHERE age BETWEEN 20 AND 30</code> 같은 범위 검색을 지원할 수 없습니까?"</li>
+      <li>"Static hashing과 dynamic(extendible/linear) hashing의 차이는 무엇입니까?"</li>
+    </ul>
+  </div>
+
+  <!-- 2. 전제 개념 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">📖</div>
+      <h2>전제 개념 — 쉬운 한국어로 먼저 이해하기</h2>
+    </div>
+
+    <h3>5-1. 해시 파일이란 — "계산해서 바로 위치를 찾는다"</h3>
+    <p>
+      Day 2~4에서 다룬 sequential file과 B+Tree는 모두 <strong>정렬된 순서</strong>를 전제로 탐색 경로를
+      좁혀갑니다. 반면 해시 파일은 정렬을 아예 포기하는 대신, <strong>키 값을 해시 함수에 넣어 "이 레코드가
+      저장된 블록(bucket) 번호"를 즉시 계산</strong>합니다. 예를 들어 <code>h(key) = key % 버킷_개수</code>
+      같은 함수로 계산하면, 탐색이 아니라 <strong>계산 한 번 + 디스크 I/O 한 번</strong>으로 레코드를 찾을 수
+      있습니다. B+Tree가 "트리 높이만큼 I/O"였다면, 해시는 이상적으로 "I/O 1회"입니다.
+    </p>
+    <div class="diagram">[ Hash File — key를 계산해서 바로 bucket 위치로 이동 ]
+
+key = 12345
+h(key) = 12345 % 100 = 45   ← 계산만으로 bucket 번호 결정
+
+Bucket 45 위치로 디스크 I/O 1회 접근 → 레코드 확인
+(B+Tree라면 root → internal → leaf, 여러 번 I/O가 필요했던 것과 대비)</div>
+
+    <div class="divider"></div>
+    <h3>5-2. Collision(충돌)과 Overflow — 계산이 겹치는 순간부터 생기는 비용</h3>
+    <p>
+      해시 함수는 서로 다른 키를 같은 bucket 번호로 계산하는 경우가 반드시 생깁니다. 이를
+      <strong>collision(충돌)</strong>이라 합니다. bucket 하나(디스크 블록 하나)에 담을 수 있는 레코드
+      수는 블록 크기로 제한되므로, 충돌한 레코드가 계속 들어오면 bucket이 꽉 찹니다. 이때
+      <strong>overflow bucket(별도의 추가 블록)</strong>을 연결해 넘치는 레코드를 저장합니다.
+    </p>
+    <div class="diagram">[ Bucket이 꽉 차면 overflow chain으로 연결 ]
+
+Bucket 45 (가득 참) → overflow #1 (가득 참) → overflow #2 (일부 사용)
+
+key=12345 조회 시:
+  best case: bucket 45에서 바로 발견 → I/O 1회
+  worst case: overflow chain을 끝까지 따라가야 함 → I/O 3회 이상
+
+overflow chain이 길어질수록 "이상적인 O(1)"이 무너지고,
+결국 B+Tree의 log(n)과 비슷하거나 더 나빠질 수 있음</div>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span><strong>면접관이 보는 것:</strong> "해시는 O(1)이다"라는 이론적 명제가 아니라,
+      <strong>"충돌과 overflow chain이 쌓이면 실제 I/O 성능이 어떻게 저하되는지"</strong>를 압니다.
+      해시의 O(1)은 "충돌이 거의 없는 이상적인 상황"이라는 전제 위에 있다는 것을 짚어야 합니다.
+      </span>
+    </div>
+
+    <div class="divider"></div>
+    <h3>5-3. Static Hashing의 근본 문제 — bucket 개수를 미리 정해야 한다</h3>
+    <p>
+      가장 단순한 해싱(static hashing)은 파일을 만들 때 bucket 개수를 고정합니다. 그런데 데이터가
+      예상보다 많이 늘어나면, 고정된 bucket 개수로는 감당이 안 되어 overflow chain이 걷잡을 수 없이
+      길어집니다. 반대로 bucket을 넉넉하게 미리 잡아두면, 데이터가 적을 때는 <strong>디스크 공간을
+      낭비</strong>합니다. 이것이 static hashing의 근본적인 딜레마입니다: <strong>"미래의 데이터
+      크기를 미리 알아야 한다"</strong>는 비현실적인 전제가 깔려 있습니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>5-4. Dynamic Hashing — bucket 수를 데이터 양에 맞춰 늘린다</h3>
+    <p>
+      이 문제를 해결하기 위해 <strong>extendible hashing</strong>과 <strong>linear hashing</strong> 같은
+      dynamic hashing 기법이 나왔습니다. 핵심 아이디어는 "bucket이 꽉 찼을 때 그 순간에만 필요한
+      부분을 나누어(split) bucket 수를 점진적으로 늘린다"는 것입니다. Extendible hashing은 directory(주소
+      테이블)를 두어 필요한 bucket만 두 배로 분리하고, linear hashing은 directory 없이 순서대로 하나씩
+      bucket을 분리해 나갑니다. 둘 다 <strong>"전체 재해싱(rehash) 없이 점진적으로 확장"</strong>한다는
+      점에서 static hashing의 딜레마를 완화합니다.
+    </p>
+    <div class="diagram">[ Static Hashing vs Dynamic Hashing ]
+
+Static Hashing:
+  bucket 수 고정 (예: 100개) → 데이터 급증 시 overflow chain 폭증
+  → 해결하려면 전체 재해싱(모든 레코드를 다시 계산해 재배치) 필요
+  → 재해싱 동안 서비스 영향(락, 대량 I/O) 발생
+
+Dynamic Hashing (Extendible / Linear):
+  bucket이 꽉 찰 때마다 "그 bucket만" 분리(split)
+  → 전체 재해싱 없이 점진적으로 bucket 수 증가
+  → 순간적인 대량 I/O 부담을 시간에 걸쳐 분산</div>
+    <p>
+      다만 "전체 재해싱을 피한다"고 해서 비용이 사라지는 것은 아닙니다. extendible hashing은 directory
+      크기가 커지면 그 자체가 메모리/디스크 부담이 되고, linear hashing은 split 순서가 고정돼 있어
+      아직 충돌이 없는 bucket까지 먼저 분리하는 비효율이 생길 수 있습니다. "재해싱 비용을 없앤다"가
+      아니라 <strong>"한 번에 몰아서 낼 비용을 잘게 쪼개 분산한다"</strong>는 표현이 더 정확합니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>5-5. 왜 해시는 Range Query를 근본적으로 지원할 수 없는가</h3>
+    <p>
+      B+Tree는 정렬 순서를 유지하기 때문에 "30 이상 70 이하"처럼 인접한 키가 물리적으로도 가까이
+      있습니다. 하지만 좋은 해시 함수는 정반대의 목표를 가집니다: <strong>비슷한 키라도 완전히 다른
+      bucket에 흩어지도록 만들어야 충돌을 줄일 수 있습니다.</strong> 즉 해시 함수는 의도적으로
+      <strong>순서 정보를 파괴</strong>합니다. 그 결과 <code>key=30</code>과 <code>key=31</code>이
+      전혀 다른 bucket에 저장될 수 있고, "30부터 70까지"를 조회하려면 이론적으로 그 범위 안의
+      모든 키 값에 대해 개별적으로 해시를 계산해 bucket을 하나씩 확인해야 합니다. 이는 사실상
+      풀스캔과 다를 바 없습니다.
+    </p>
+    <div class="diagram">[ 해시는 "순서 보존"을 포기하고 "충돌 최소화"를 택한 구조 ]
+
+B+Tree:  key 30 → leaf[30~50] 근처   key 31 → leaf[30~50] 근처   (인접 저장)
+Hash:    key 30 → bucket 7           key 31 → bucket 62          (완전히 흩어짐)
+
+range scan(30~70) 시:
+  B+Tree: leaf 하나 찾고 → 연결 리스트 따라 순차 읽기 (Day 4)
+  Hash:   30~70 사이 "존재 가능한 모든 키"를 개별 계산해야 함 → 사실상 불가능/비효율</div>
+  </div>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-why">?</div>
+      <h2>왜 면접에서 이 질문을 묻는가</h2>
+    </div>
+    <p>
+      해시 테이블 구현 코드를 암기했는지가 아니라, <strong>"O(1)이라는 이론적 성능이 실무에서 언제
+      깨지고, 그 대가로 무엇을 포기하는지 구조적으로 설명할 수 있는가"</strong>를 봅니다.
+    </p>
+    <ol>
+      <li>
+        <strong>이상적인 O(1)과 실제 성능의 차이를 아는가</strong><br>
+        "해시는 무조건 빠르다"가 아니라, load factor가 높아지고 overflow chain이 길어지면 성능이
+        저하된다는 것을 정량적으로 설명해야 합니다.
+      </li>
+      <li>
+        <strong>Static/Dynamic hashing의 trade-off를 구조적으로 설명할 수 있는가</strong><br>
+        "그냥 동적으로 늘어난다"가 아니라, 전체 재해싱을 피하기 위해 점진적 split을 택했고 그 대신
+        directory 관리나 split 순서 비효율 같은 대가가 있다는 것을 말할 수 있어야 합니다.
+      </li>
+      <li>
+        <strong>Range query가 왜 "느리다"가 아니라 "근본적으로 안 되는지"를 설명할 수 있는가</strong><br>
+        해시 함수가 순서를 의도적으로 파괴하는 설계라는 인과관계까지 짚어야 합니다.
+      </li>
+    </ol>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span>
+        주니어 수준 답변: "해시는 O(1)이라 빠르지만 범위 검색이 안 돼서 B+Tree를 씁니다."<br>
+        10년차 기대 답변: "해시의 O(1)은 충돌이 거의 없는 이상적 상황에서만 성립하며, load factor가
+        높아지면 overflow chain 때문에 실제 I/O 횟수가 늘어납니다. 게다가 해시 함수는 충돌을 줄이기
+        위해 의도적으로 키의 순서 정보를 흩어버리므로, 인접한 키가 물리적으로 인접해 있다는 보장이
+        없어 range scan을 구조적으로 지원할 수 없습니다. 그래서 equality lookup 위주 워크로드에는
+        해시가 유리하지만, 정렬·범위 조회가 잦은 일반적인 DB 인덱스는 B+Tree가 기본이 됩니다."
+      </span>
+    </div>
+  </div>
+
+  <!-- 4. 실무 연결 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-real">⚙</div>
+      <h2>실무 연결</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>실무 상황</th>
+          <th>해시 파일/구조 판단</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>PostgreSQL Hash Index</strong></td>
+          <td>
+            <code>=</code> 조건에서만 유효하며 범위 조건에는 쓰이지 않습니다. 과거 버전에서는 WAL
+            미지원으로 crash-safe하지 않아 실무에서 기피되었고, 이후 버전에서 개선되었지만 여전히
+            B-tree가 기본 선택입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Redis / in-memory HashMap</strong></td>
+          <td>
+            메모리 안에서는 디스크 I/O 비용이 사라지므로 해시의 O(1) 장점이 순수하게 드러납니다.
+            equality lookup(key-value get) 위주 워크로드에서 해시가 압도적으로 유리한 대표 사례입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Consistent Hashing 기반 샤딩</strong></td>
+          <td>
+            분산 시스템에서 데이터를 노드에 분배할 때도 해시를 씁니다. 이때는 "range query"가 아니라
+            "노드 추가/제거 시 재배치 비용을 최소화"가 목적이라, dynamic hashing의 점진적 split
+            아이디어가 consistent hashing의 설계 동기와 맞닿아 있습니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>DB Connection Pool / 캐시 키 조회</strong></td>
+          <td>
+            요청 ID, 세션 ID처럼 항상 정확히 일치하는 값으로만 조회하는 경우, 해시 기반 자료구조가
+            정렬 유지 비용 없이 빠른 조회를 제공합니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Hot partition / 해시 편향(skew)</strong></td>
+          <td>
+            해시 함수 선택이 나쁘거나 키 분포가 편향되면 특정 bucket(또는 샤드)에 트래픽이 몰리는
+            hot partition 문제가 생깁니다. 좋은 해시 함수 설계가 실무 장애 예방과 직결됩니다.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-think">→</div>
+      <h2>답변 사고 순서 — 면접에서 이렇게 생각하면서 말한다</h2>
+    </div>
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>워크로드의 접근 패턴부터 확인</strong><br>
+          equality lookup 위주인지, range query가 필요한지부터 구분합니다. 이 판단이 해시와 B+Tree
+          중 무엇을 선택할지의 출발점입니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>해시의 이상적 성능과 그 전제를 설명</strong><br>
+          충돌이 적을 때 O(1)에 가깝다는 이론적 장점과, 그 전제가 무너지는 조건(load factor 상승)을
+          함께 짚습니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Collision/overflow가 실제 I/O에 미치는 영향을 설명</strong><br>
+          overflow chain이 길어지면 이상적 O(1)이 사실상 여러 번의 I/O로 저하된다는 인과관계를
+          제시합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Static vs Dynamic hashing의 trade-off를 설명</strong><br>
+          전체 재해싱을 피하기 위한 점진적 split 방식과, 그 대신 감수하는 관리 비용을 균형 있게
+          설명합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Range query가 구조적으로 불가능한 이유로 마무리</strong><br>
+          해시 함수가 순서를 의도적으로 파괴하는 설계라는 점을 근거로, 대부분의 범용 인덱스가
+          B+Tree를 기본으로 삼는 이유를 정리합니다.
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-ans">✓</div>
+      <h2>핵심 답변 예시</h2>
+    </div>
+
+    <h3>짧은 버전 (1~2분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Short)</div>
+      <p>
+        해시 인덱스는 키를 해시 함수로 계산해 바로 bucket 위치를 찾기 때문에, 충돌이 적으면 이론적으로
+        I/O 1회에 가까운 조회가 가능합니다. 하지만 데이터가 늘어나 충돌과 overflow chain이 쌓이면
+        실제 성능은 저하되고, 이를 막기 위해 static hashing은 전체 재해싱을, dynamic hashing은
+        점진적 bucket split을 택합니다.
+      </p>
+      <p>
+        더 근본적인 문제는, 해시 함수가 충돌을 줄이기 위해 의도적으로 키의 순서 정보를 흩어버린다는
+        점입니다. 그래서 인접한 키가 물리적으로도 인접해 있다는 보장이 없고, 범위 검색을 구조적으로
+        지원할 수 없습니다. 그래서 equality lookup 위주 워크로드에는 해시가 유리하지만, 범용 DB
+        인덱스는 대부분 B+Tree를 기본으로 씁니다.
+      </p>
+    </div>
+
+    <h3>깊이 있는 버전 (3~5분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Deep)</div>
+      <p>
+        해시 기반 파일은 정렬을 포기하는 대신, 키를 해시 함수에 넣어 저장 위치(bucket)를 직접 계산합니다.
+        탐색 경로를 좁혀가는 B+Tree와 달리, 이상적인 상황에서는 계산 한 번과 디스크 I/O 한 번으로
+        레코드를 찾을 수 있어 이론적으로 O(1)에 가깝습니다.
+      </p>
+      <p>
+        문제는 이 O(1)이 "충돌이 거의 없는 상황"이라는 전제 위에서만 성립한다는 점입니다. 서로 다른
+        키가 같은 bucket으로 계산되는 충돌은 필연적으로 발생하고, bucket이 블록 크기 제한으로 꽉 차면
+        overflow bucket을 체인으로 연결합니다. 데이터가 늘어나 load factor가 높아질수록 이 overflow
+        chain이 길어지고, 조회는 chain을 끝까지 따라가야 할 수도 있어 실제 I/O 횟수가 늘어납니다.
+      </p>
+      <p>
+        Static hashing은 bucket 개수를 파일 생성 시 고정하므로, 데이터 증가를 미리 정확히 예측해야
+        한다는 비현실적인 전제를 가집니다. 예측이 틀리면 overflow chain이 폭증하거나, 반대로 공간을
+        낭비합니다. 이를 완화하기 위해 extendible hashing이나 linear hashing 같은 dynamic hashing은
+        bucket이 꽉 찰 때마다 그 부분만 분리(split)해, 전체 재해싱 없이 점진적으로 bucket 수를
+        늘립니다. 다만 이것이 비용을 없애는 것은 아니고, directory 관리 비용이나 split 순서에 따른
+        비효율처럼 "한 번에 몰릴 비용을 시간에 걸쳐 분산"하는 것에 가깝습니다.
+      </p>
+      <p>
+        가장 근본적인 한계는 range query입니다. 좋은 해시 함수는 충돌을 줄이기 위해 비슷한 키라도
+        완전히 다른 bucket에 흩어지도록 설계됩니다. 즉 순서 정보를 의도적으로 파괴하는 것이 해시
+        함수의 목표입니다. 그 결과 "30 이상 70 이하" 같은 범위 조회를 하려면 그 범위 안의 모든 키
+        값에 대해 개별적으로 해시를 계산해 bucket을 확인해야 하며, 이는 사실상 풀스캔과 다르지
+        않습니다. 그래서 저는 해시와 B+Tree의 선택 기준을 "워크로드가 equality lookup 위주인지,
+        정렬·범위 조회가 필요한지"로 판단합니다. 세션 조회나 캐시 키처럼 항상 정확히 일치하는
+        값만 찾는다면 해시가 유리하고, 정렬·범위 조회가 잦은 범용 DB 인덱스는 B+Tree가 기본이 됩니다.
+      </p>
+    </div>
+
+    <div class="answer-block answer-weak">
+      <div class="answer-label label-weak">약한 답변</div>
+      <p>
+        "해시는 O(1)이라 빠르지만 범위 검색은 못 해서 B+Tree를 씁니다."
+      </p>
+      <p>
+        <strong>왜 약한가:</strong> 해시가 왜 범위 검색을 못 하는지(순서 정보를 의도적으로 파괴하는
+        설계)에 대한 근거가 없고, O(1)이 무너지는 조건(충돌, overflow chain, load factor)도
+        설명하지 않았습니다. static/dynamic hashing의 trade-off도 언급하지 않아, 결론만 있고
+        구조적 이해가 드러나지 않습니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 7. Trade-off -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-trade">⇄</div>
+      <h2>Trade-off 정리</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>Hash File</th>
+          <th>B+Tree</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Equality lookup</td>
+          <td>이상적으로 O(1) (충돌 적을 때)</td>
+          <td>O(log n), 트리 높이만큼 I/O</td>
+        </tr>
+        <tr>
+          <td>Range query</td>
+          <td>구조적으로 불가능 (순서 파괴)</td>
+          <td>leaf 연결로 순차 I/O 지원</td>
+        </tr>
+        <tr>
+          <td>정렬 순회(ORDER BY)</td>
+          <td>불가능, 별도 정렬 필요</td>
+          <td>인덱스 자체가 정렬 순서 제공</td>
+        </tr>
+        <tr>
+          <td>데이터 증가 대응</td>
+          <td>static: 재해싱 필요 / dynamic: 점진적 split</td>
+          <td>노드 분할(split)로 자연스럽게 성장</td>
+        </tr>
+        <tr>
+          <td>저장 공간 예측</td>
+          <td>bucket 수 설계에 민감</td>
+          <td>상대적으로 유연</td>
+        </tr>
+        <tr>
+          <td>구현/운영 복잡도</td>
+          <td>충돌 처리, overflow, rehashing 관리 필요</td>
+          <td>split/merge, fill factor 관리 필요</td>
+        </tr>
+        <tr>
+          <td>실무 채택</td>
+          <td>key-value 캐시, 세션 조회, 샤딩 키</td>
+          <td>대부분의 RDBMS 기본 인덱스</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span>
+        해시와 B+Tree의 선택은 <strong>"이 컬럼에 range query나 정렬이 필요한가"</strong> 한 가지
+        질문으로 대부분 결정됩니다. equality 전용 워크로드가 확실하다면 해시가 이론적으로 유리하지만,
+        미래에 범위 조회가 추가될 가능성이 있다면 B+Tree가 더 안전한 기본 선택입니다.
+      </span>
+    </div>
+  </div>
+
+  <!-- 8. 흔한 오해 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-myth">✗</div>
+      <h2>흔한 오해와 바로잡기</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 1: "해시가 O(1)이니 항상 B+Tree보다 빠르다"</div>
+      <p>
+        O(1)은 충돌이 거의 없는 이상적 상황을 전제로 합니다. load factor가 높아지고 overflow chain이
+        길어지면 실제 I/O 횟수는 B+Tree보다 나빠질 수 있습니다. Big-O는 평균/이상적 케이스를
+        나타낼 뿐, worst case를 보장하지 않습니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 2: "해시 함수를 잘 만들면 충돌이 아예 없앨 수 있다"</div>
+      <p>
+        비둘기집 원리(pigeonhole principle)에 따라, 가능한 키의 수가 bucket 수보다 많으면 충돌은
+        수학적으로 피할 수 없습니다. 좋은 해시 함수는 충돌을 "줄이고 고르게 분산"시킬 뿐, 완전히
+        없애지 못합니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 3: "dynamic hashing을 쓰면 재해싱 비용이 완전히 사라진다"</div>
+      <p>
+        dynamic hashing은 "전체를 한 번에" 재해싱하는 대신 "필요한 부분만 점진적으로" 분리하는
+        것입니다. 비용을 없앤 것이 아니라 시간에 걸쳐 분산시킨 것이며, directory 관리나 split
+        순서에 따른 비효율 같은 새로운 비용도 함께 생깁니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 4: "해시 인덱스는 정렬이 조금 느릴 뿐이지 정렬 자체는 가능하다"</div>
+      <p>
+        해시는 정렬 순서를 저장하지 않으므로 "조금 느린 정렬"이 아니라 "정렬 정보 자체가 없는" 상태
+        입니다. ORDER BY가 필요하다면 해시 인덱스만으로는 불가능하고, 별도의 전체 정렬(external
+        sort, Day 7)이 필요합니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- 9. Follow-up 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-follow">↓</div>
+      <h2>Senior-Level Follow-up 질문과 답변 방향</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "Chaining과 Open Addressing의 차이는 무엇이고, 디스크 기반 파일에서는 왜 chaining(overflow
+        bucket)이 더 흔합니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        Open addressing은 충돌 시 다른 슬롯을 탐사(probing)하는 방식으로, 메모리 내 해시 테이블에서는
+        캐시 지역성 덕분에 유리합니다. 하지만 디스크 기반 파일에서는 탐사 자체가 추가 블록 I/O를
+        유발할 수 있고, 삭제 시 tombstone 처리가 복잡해집니다. Overflow chaining은 원래 bucket
+        하나만 우선 접근하고, 넘칠 때만 추가 I/O를 감수하는 구조라 디스크 I/O 비용 모델에 더 잘
+        맞습니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "Extendible hashing에서 directory 크기가 계속 커지면 어떤 문제가 생깁니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        directory는 보통 메모리에 상주시켜 빠른 bucket 위치 계산을 노리는데, 데이터가 매우 많아지면
+        directory 자체가 커져 메모리 부담이 되거나 디스크에 걸쳐야 할 수 있습니다. 이 경우 directory
+        접근 자체가 추가 I/O가 되어 "계산 한 번으로 끝난다"는 해시의 이점이 줄어듭니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "분산 시스템에서 consistent hashing을 쓰는 이유는 무엇이고, Day 5의 해시 충돌 문제와 어떻게
+        다릅니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        단일 파일의 해싱은 "충돌을 줄이고 빠른 조회"가 목표지만, 분산 시스템의 consistent hashing은
+        "노드가 추가/제거될 때 재배치되는 키의 비율을 최소화"하는 것이 목표입니다. 문제의 축이
+        다르지만, "전체를 다시 계산하지 않고 일부만 옮긴다"는 점에서 dynamic hashing의 점진적 split
+        아이디어와 철학적으로 닮아 있습니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "해시 인덱스에 <code>LIKE 'abc%'</code> 같은 접두사 검색을 지원할 수 있습니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        불가능합니다. 접두사 검색도 결국 정렬 순서를 이용한 범위 검색의 한 형태이기 때문입니다. 해시
+        함수는 접두사가 같아도 전혀 다른 값으로 계산하므로, 이런 패턴 매칭이 필요한 컬럼은 애초에
+        B+Tree(또는 별도의 텍스트 인덱스)를 선택해야 합니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 10. 좋은 답변과 약한 답변 차이 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-diff">≠</div>
+      <h2>좋은 답변과 약한 답변의 차이</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>약한 답변 (5년차 이하)</th>
+          <th>강한 답변 (10년차 이상)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>O(1) 설명</td>
+          <td>"해시는 O(1)이라 빠르다"</td>
+          <td>"충돌이 적을 때만 성립하는 이상적 케이스이며, load factor가 높아지면 저하된다"</td>
+        </tr>
+        <tr>
+          <td>Range query 불가 이유</td>
+          <td>"해시는 원래 범위 검색을 못 한다"</td>
+          <td>"해시 함수가 충돌 최소화를 위해 순서 정보를 의도적으로 파괴하기 때문"</td>
+        </tr>
+        <tr>
+          <td>Static/Dynamic hashing</td>
+          <td>언급하지 않거나 이름만 나열</td>
+          <td>재해싱 비용을 없애는 게 아니라 시간에 분산시킨다는 trade-off까지 설명</td>
+        </tr>
+        <tr>
+          <td>선택 기준</td>
+          <td>"B+Tree가 더 일반적이니 그냥 쓴다"</td>
+          <td>"워크로드가 equality 전용인지, range/정렬이 필요한지"로 근거 있게 판단</td>
+        </tr>
+        <tr>
+          <td>실무 연결</td>
+          <td>이론만 말함</td>
+          <td>Redis, PostgreSQL hash index, consistent hashing, hot partition까지 연결</td>
+        </tr>
+        <tr>
+          <td>follow-up 대비</td>
+          <td>추가 질문에 막힘</td>
+          <td>chaining vs open addressing, directory 부담, LIKE 검색 한계까지 대응</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 11. Self-check Rubric -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-rub">✓</div>
+      <h2>자기 점검 Rubric</h2>
+    </div>
+    <p>답변 연습 후 아래 기준으로 자신을 평가하세요.</p>
+
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>해시의 O(1)이 성립하는 전제 조건을 설명했다</strong><br>
+        충돌이 적을 때만 성립하며, load factor 상승과 overflow chain이 이를 무너뜨린다는 점을 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>Range query가 불가능한 근본 이유를 구조적으로 설명했다</strong><br>
+        해시 함수가 순서 정보를 의도적으로 파괴한다는 설계 목적을 근거로 들었다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>Static과 Dynamic hashing의 차이를 trade-off로 설명했다</strong><br>
+        전체 재해싱 vs 점진적 split, 그리고 후자의 관리 비용까지 언급했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>equality vs range 워크로드로 선택 기준을 제시했다</strong><br>
+        해시와 B+Tree 중 무엇을 쓸지 워크로드 특성 기반으로 판단했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>실무 사례를 1개 이상 언급했다</strong><br>
+        Redis, PostgreSQL hash index, consistent hashing 중 하나 이상 연결했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>충돌 처리 방식(chaining/overflow)을 구체적으로 설명했다</strong><br>
+        overflow bucket 체인 구조와 worst case 조회 비용을 언급했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>Chaining과 open addressing의 차이를 디스크 I/O 관점에서 설명했다</strong><br>
+        디스크 기반 파일에서 왜 chaining이 더 흔한지 근거를 들었다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>Consistent hashing과의 연결을 설명했다</strong><br>
+        분산 시스템의 재배치 최소화 문제와 dynamic hashing의 점진적 split 철학을 연결했다.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="callout callout-info">
+      <span class="callout-icon">📊</span>
+      <span>
+        <strong>자가 평가:</strong>
+        '필수' 3개 모두 → 합격 수준 |
+        '권장' 3개 추가 → 좋은 인상 |
+        '심화' 포함 → 탑티어 후보
+      </span>
+    </div>
+  </div>
+
+  <!-- 12. 다음 레슨 예고 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">→</div>
+      <h2>다음 레슨 예고 — Day 6: 클러스터링과 보조 인덱스</h2>
+    </div>
+    <p>
+      다음 레슨에서는 "클러스터드 인덱스는 읽기 성능을 어떻게 바꾸고 어떤 비용을 만드는가"를 다룹니다.
+      Data locality의 이점과, 그 대가로 생기는 write amplification, 그리고 secondary index가
+      clustered index를 어떻게 한 단계 더 거쳐 조회하는지를 짚습니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>주제</th><th>면접 핵심 질문</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Clustered Index</td>
+          <td>클러스터드 인덱스는 실제 데이터 저장 순서에 어떤 영향을 주는가?</td>
+        </tr>
+        <tr>
+          <td>Secondary Index</td>
+          <td>보조 인덱스로 조회하면 왜 추가적인 lookup이 한 번 더 필요한가?</td>
+        </tr>
+        <tr>
+          <td>Write Amplification</td>
+          <td>클러스터드 인덱스 키 선택이 삽입 성능에 어떤 영향을 주는가?</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <span class="tag tag-blue">Clustered Index</span>
+      <span class="tag tag-green">Secondary Index</span>
+      <span class="tag tag-green">Data Locality</span>
+      <span class="tag tag-yellow">Write Amplification</span>
+      개념이 Day 3~5의 인덱스 구조와 이어지는 형태로 다루어집니다.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>
