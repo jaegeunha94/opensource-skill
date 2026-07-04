@@ -8,12 +8,12 @@
 | 2 | 2026-07-01 | 프로세스 & CPU 진단 심화 | [0002-process-cpu-diagnostics.html](lessons/0002-process-cpu-diagnostics.html) |
 | 3 | 2026-07-02 | 메모리 진단 & OOM | [0003-memory-oom-diagnostics.html](lessons/0003-memory-oom-diagnostics.html) |
 | 4 | 2026-07-03 | 디스크 I/O 진단 | [0004-disk-io-diagnostics.html](lessons/0004-disk-io-diagnostics.html) |
+| 5 | 2026-07-04 | 로그 분석 & journalctl | [0005-log-analysis-journalctl.html](lessons/0005-log-analysis-journalctl.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | 로그 분석 & journalctl | journalctl 필터 옵션, rsyslog, /var/log 구조, grep/awk/sed 조합, 로그 로테이션 |
 | 6 | systemd 서비스 관리 | systemctl start/stop/enable/status, unit 파일 구조, ExecStart, Restart 정책, 의존성 After= |
 | 7 | 네트워크 진단 | ss -tuln, netstat, LISTEN/ESTABLISHED/TIME_WAIT, tcpdump 기초, ip route, 방화벽(firewalld/ufw) |
 | 8 | 권한 & 보안 관리 | chmod/chown 숫자/문자 표기, umask, sudo/sudoers, setuid/setgid, SELinux context, capability |
@@ -21,7 +21,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — Day 5: 로그 분석 & journalctl 예정.
+**Day 5 완료** — Day 6: systemd 서비스 관리 예정.
 
 ## 습득한 핵심 개념
 
@@ -46,7 +46,11 @@
 - [x] inode 고갈 (df -h와 df -i는 별개 자원, 소용량 파일 대량 생성 시 고갈) (Day 4)
 - [x] 삭제된 열린 파일과 참조 카운트 (rm이 즉시 공간을 회수하지 않는 이유, lsof/fd truncate) (Day 4)
 - [x] df vs du 불일치 원인 (삭제된 fd, 하위 마운트, root 예약 공간) (Day 4)
-- [ ] 로그 분석 & journalctl (예정 Day 5)
+- [x] journalctl 필터 조합 (-u/-p/--since/--until/-b로 좁혀나가는 진단 흐름) (Day 5)
+- [x] journald vs rsyslog/var/log 역할 차이 및 보존 정책(volatile vs persistent) (Day 5)
+- [x] 증상별 로그 소스 선택 (인증→auth.log, 커널/하드웨어→dmesg, 애플리케이션→자체 로그) (Day 5)
+- [x] grep/awk/sed 조합으로 정량적 원인 집계 (awk | sort | uniq -c) (Day 5)
+- [x] logrotate copytruncate의 유실 가능성 trade-off (Day 5)
 - [ ] systemd 서비스 관리 (예정 Day 6)
 - [ ] 네트워크 진단 (예정 Day 7)
 - [ ] 권한 & 보안 관리 (예정 Day 8)
