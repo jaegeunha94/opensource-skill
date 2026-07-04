@@ -8,12 +8,12 @@
 | 2 | 2026-07-01 | 구조화 로깅과 로그 설계 전략 | [0002-structured-logging-log-design-strategy.html](lessons/0002-structured-logging-log-design-strategy.html) |
 | 3 | 2026-07-02 | 메트릭과 알림 설계 | [0003-metrics-and-alerting-design.html](lessons/0003-metrics-and-alerting-design.html) |
 | 4 | 2026-07-03 | 분산 트레이싱 심화 | [0004-distributed-tracing-deep-dive.html](lessons/0004-distributed-tracing-deep-dive.html) |
+| 5 | 2026-07-04 | 장애 원인 분석 (RCA) | [0005-root-cause-analysis.html](lessons/0005-root-cause-analysis.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | 장애 원인 분석 (RCA) | 5 Whys, 타임라인 재구성, 원인 vs 증상 구분 |
 | 6 | 대시보드 설계 원칙 | 역할별 대시보드, Golden Signal, 지표 선택 |
 | 7 | SLO / SLI / SLA 와 Error Budget | SLO 정의, Error Budget 소진율, Burn Rate 알림 |
 | 8 | Postmortem 작성과 재발 방지 | 비난 없는 postmortem, 액션 아이템 추적 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — Day 5 (장애 원인 분석, RCA) 예정.
+**Day 5 완료** — Day 6 (대시보드 설계 원칙) 예정.
 
 ## 습득한 핵심 개념
 
@@ -39,6 +39,10 @@
 - [x] Trace/Span 구조와 Context Propagation (Day 4)
 - [x] Critical Path 기반 병목 분석과 Exemplar 연결 (Day 4)
 - [x] Head-based/Tail-based Sampling 트레이드오프 (Day 4)
-- [ ] RCA 5 Whys 적용 (예정 Day 5)
+- [x] 원인(Cause) vs 증상(Symptom) 구분 (Day 5)
+- [x] 5 Whys 적용과 한계(선형 사슬 vs 나무 구조) (Day 5)
+- [x] 타임라인 재구성과 가설 검증(Correlation vs Causation) (Day 5)
+- [x] Contributing Factors / Swiss Cheese Model (Day 5)
+- [ ] 역할별 대시보드 설계 (예정 Day 6)
 - [ ] Error Budget 소진율 알림 (예정 Day 7)
 - [ ] 비난 없는 postmortem 작성 (예정 Day 8)
