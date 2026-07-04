@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>챗봇 서비스 Interview 학습 목록</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2e3350;
+      --accent: #2dd4bf;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --green: #4caf82;
+      --blue: #4a9eff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      padding: 2.5rem 1.5rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1rem;
+      margin-bottom: 2rem;
+    }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.35rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.9rem; }
+    ul { list-style: none; }
+    li {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      margin-bottom: 0.65rem;
+    }
+    li a {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.85rem 1.1rem;
+      text-decoration: none;
+      color: var(--text);
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+    li a:hover { background: #22263a; }
+    .day-num {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent);
+      min-width: 44px;
+    }
+    .done { color: var(--green); font-size: 0.8rem; margin-left: auto; }
+    .planned { color: var(--text-muted); font-size: 0.8rem; margin-left: auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>챗봇 서비스 Interview 학습 목록</h1>
+    <div class="subtitle">10년차 이상 개발자 인터뷰 대비 · intent/entity/context 설계 / 운영 품질 / 안전성 / 비용·성능 trade-off</div>
+  </header>
+  <ul>
+    <li>
+      <a href="./0001-chatbot-service-requirements-and-intent-entity-context-framework.html">
+        <span class="day-num">Day 1</span>
+        <span>챗봇 서비스 요구사항과 intent/entity/context 설계 프레임워크</span>
+        <span class="done">완료</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 2</span>
+        <span>Intent 분류 체계와 Utterance/동의어 사전 설계</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 3</span>
+        <span>Entity·Slot 추출 설계와 검증</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 4</span>
+        <span>NLU-LLM Hybrid Routing 아키텍처</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 5</span>
+        <span>Dialogue State 설계</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 6</span>
+        <span>Session/Context 유지와 Multi-turn Flow 설계</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 7</span>
+        <span>Fallback 전략과 Escalation/Human Handoff 설계</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 8</span>
+        <span>RAG와 Tool Calling 연동 아키텍처</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 9</span>
+        <span>채널 통합(Multi-channel) 아키텍처 설계</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 10</span>
+        <span>개인정보·동의·보안 설계</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 11</span>
+        <span>Prompt Injection 방어와 Safety Guardrail</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 12</span>
+        <span>평가 지표 설계와 Offline/Online Evaluation</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 13</span>
+        <span>Analytics와 Observability</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 14</span>
+        <span>Latency/Cost 최적화</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        <span class="day-num">Day 15</span>
+        <span>운영 장애 대응(Incident Response)</span>
+        <span class="planned">예정</span>
+      </a>
+    </li>
+  </ul>
+</body>
+</html>

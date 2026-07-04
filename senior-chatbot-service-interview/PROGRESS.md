@@ -1,0 +1,60 @@
+# 챗봇 서비스 Interview 학습 진행 상황
+
+## 완료한 내용
+
+| Day | 날짜 | 주제 | 레슨 파일 |
+|-----|------|------|-----------|
+| 1 | 2026-07-04 | 챗봇 서비스 요구사항과 intent/entity/context 설계 프레임워크 | [0001-chatbot-service-requirements-and-intent-entity-context-framework.html](lessons/0001-chatbot-service-requirements-and-intent-entity-context-framework.html) |
+
+## 다음 예정 학습
+
+| Day | 예정 주제 | 핵심 개념 |
+|-----|-----------|-----------|
+| 2 | Intent 분류 체계와 Utterance/동의어 사전 설계 | Intent taxonomy, utterance 데이터 설계, synonym dictionary |
+| 3 | Entity·Slot 추출 설계와 검증 | Slot filling, multi-value entity, NER vs LLM 추출 |
+| 4 | NLU-LLM Hybrid Routing 아키텍처 | 비용/지연/컴플라이언스 기준 라우팅, semantic router |
+| 5 | Dialogue State 설계 | FSM vs graph 기반 state, 상태 전이 설계 |
+| 6 | Session/Context 유지와 Multi-turn Flow 설계 | Context window 관리, 요약, 메모리, 세션 만료 |
+| 7 | Fallback 전략과 Escalation/Human Handoff 설계 | Multi-signal escalation, context 전달, 큐 설계 |
+| 8 | RAG와 Tool Calling 연동 아키텍처 | Function/tool calling, MCP, grounding |
+| 9 | 채널 통합(Multi-channel) 아키텍처 설계 | 채널 어댑터, 메시지 포맷 정규화, 채널별 제약 |
+| 10 | 개인정보·동의·보안 설계 | PII 마스킹, 동의 관리, 데이터 거버넌스 |
+| 11 | Prompt Injection 방어와 Safety Guardrail | OWASP LLM/Agentic Top 10, defense-in-depth |
+| 12 | 평가 지표 설계와 Offline/Online Evaluation | Containment rate, task success, LLM-as-judge |
+| 13 | Analytics와 Observability | 멀티턴 트레이싱, 대시보드, 알림 |
+| 14 | Latency/Cost 최적화 | 모델 티어링, 캐싱, 스트리밍 |
+| 15 | 운영 장애 대응(Incident Response) | 장애 탐지, kill switch, 롤백, postmortem |
+
+## 현재 학습 위치
+
+**Day 1 완료** — 다음: Day 2 — Intent 분류 체계와 Utterance/동의어 사전 설계
+
+## 습득한 핵심 개념
+
+- [x] 챗봇 서비스 요구사항 분석 프레임워크(트래픽 유형, 실패 비용, latency/compliance 제약) (Day 1)
+- [x] Intent/Entity/Context 3요소 모델과 각 요소가 실패했을 때의 증상 구분 (Day 1)
+- [x] 규칙 기반 NLU vs LLM 기반 이해 vs 하이브리드 선택 기준 (Day 1)
+- [x] 2023년식 "intent tree만" 설계가 2026년 기준으로 재배치된 이유 (Day 1)
+- [ ] Intent taxonomy, utterance 설계, synonym dictionary (예정 Day 2)
+- [ ] Entity/Slot 추출과 검증 (예정 Day 3)
+- [ ] NLU-LLM Hybrid Routing (예정 Day 4)
+- [ ] Dialogue State 설계 (예정 Day 5)
+- [ ] Session/Context 유지와 Multi-turn Flow (예정 Day 6)
+- [ ] Fallback/Escalation/Human Handoff (예정 Day 7)
+- [ ] RAG와 Tool Calling 연동 (예정 Day 8)
+- [ ] 채널 통합 아키텍처 (예정 Day 9)
+- [ ] 개인정보/동의/보안 설계 (예정 Day 10)
+- [ ] Prompt Injection 방어와 Safety Guardrail (예정 Day 11)
+- [ ] 평가 지표 설계 (예정 Day 12)
+- [ ] Analytics와 Observability (예정 Day 13)
+- [ ] Latency/Cost 최적화 (예정 Day 14)
+- [ ] 운영 장애 대응 (예정 Day 15)
+
+## 커리큘럼 조정 기록
+
+- 2026-07-04: 최신 조사(OWASP Agentic Top 10 2025-12, Rasa CALM, Dialogflow CX
+  Playbooks, vLLM Semantic Router, OpenAI Assistants API 2026-08-26 종료 예정
+  등)를 반영해 "intent tree/slot filling만으로 구성된 레거시 챗봇" 프레임이
+  아니라 "NLU/규칙 기반 로직을 빠른 전처리 필터로 두고 LLM 기반 이해·tool
+  calling을 중심에 두는 하이브리드 아키텍처" 관점으로 커리큘럼을 설계함.
+  근거는 `RESOURCES.md` 참고.
