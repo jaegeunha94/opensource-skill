@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — Cloudflare DNS/CDN/보안 경계 구성 프레임워크</title>
+  <style>
+    :root {
+      --bg: #14100c;
+      --surface: #211a13;
+      --surface2: #2b221a;
+      --border: #4a3a26;
+      --accent: #f6821f;
+      --accent2: #4fd1c5;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #f2e9de;
+      --text2: #c9b8a3;
+      --text3: #8f8071;
+      --good: #4fd1c5;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    a.source { color: var(--accent2); }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card { border-left: 4px solid var(--accent); }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card {
+      border-left: 4px solid var(--accent2);
+      background: #142523;
+    }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card {
+      border-left: 4px solid var(--warn);
+      background: #201c10;
+    }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card {
+      border-left: 4px solid #c99bff;
+      background: #1e1828;
+    }
+    .answer-card .card-label { color: #c99bff; }
+    .incident-card {
+      border-left: 4px solid var(--weak);
+      background: #2a1512;
+    }
+    .incident-card .card-label { color: var(--weak); }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box {
+      background: #12241f;
+      border: 1px solid var(--good);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box {
+      background: #2a1512;
+      border: 1px solid var(--weak);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.91rem;
+      margin-top: 0.5rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:nth-child(odd) td { background: #1a140e; }
+    .rubric-table tr:nth-child(even) td { background: #211a13; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .layer-stack { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.2rem; }
+    .layer-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent2);
+      border-radius: 8px;
+      padding: 0.85rem 1.1rem;
+    }
+    .layer-name { font-weight: 700; color: var(--accent2); font-size: 0.95rem; }
+    .layer-desc { font-size: 0.85rem; color: var(--text2); margin-top: 0.2rem; }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.2rem;
+      margin-bottom: 0.7rem;
+    }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.1rem;
+      background: var(--accent);
+      color: #1a1408;
+      font-weight: 700;
+      font-size: 0.78rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .misconception {
+      background: #201530;
+      border: 1px solid #6e3880;
+      border-radius: 8px;
+      padding: 1rem 1.3rem;
+      margin-bottom: 0.9rem;
+    }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 0.75rem;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      margin: 0.15rem 0.15rem 0.15rem 0;
+    }
+    .freshness-note {
+      background: #142523;
+      border: 1px dashed var(--accent2);
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      font-size: 0.87rem;
+      color: var(--text2);
+      margin-bottom: 2rem;
+    }
+    .freshness-note strong { color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 1 · Cloudflare 구성 인터뷰 대비</div>
+    <h1>Cloudflare DNS/CDN/보안 경계 구성 프레임워크</h1>
+    <p class="subtitle">
+      Proxied vs DNS-only · CDN 캐시와 Page Rules → Cache Rules 전환 · SSL/TLS 모드 · 계층형 보안 경계 · 면접 답변 구조
+    </p>
+  </header>
+
+  <div class="freshness-note">
+    <strong>커리큘럼 최신성 안내 (2026-07-04 기준 확인)</strong> — 이 레슨은 Cloudflare 공식 문서(developers.cloudflare.com)와 changelog를 확인해 작성했다.
+    Firewall Rules와 구 Rate Limiting 상품은 2025-06-15부로 API 지원이 종료되고 WAF의 Custom Rules / Rate Limiting Rules로 통합됐다.
+    Page Rules는 공식 문서에 "(deprecated)"로 명시돼 있고, 2025-01-06부터는 <strong>어떤 플랜의 어떤 계정도 신규 Page Rule을 만들 수 없다</strong>(기존 규칙은 계속 동작). 신규 구성에는 Cache Rules · Configuration Rules · Origin Rules · Redirect Rules · Transform Rules 사용이 공식 권장 사항이다.
+    이 레슨은 이 최신 상태를 기준으로 설명한다. 오래된 블로그 글이 "Firewall Rules"나 "Page Rules"를 현재도 만들 수 있는 표준 도구처럼 설명한다면 그건 레거시 정보다.
+  </div>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "새 서비스의 도메인을 Cloudflare에 연결한다고 할 때, DNS부터 보안 경계까지 어떻게 구성하시겠습니까? 어떤 레코드를 proxied로 두고, 어떤 건 DNS-only로 두시겠습니까?"
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"Proxied와 DNS-only의 차이를 설명해 주세요. 실무에서 이걸 잘못 설정하면 어떤 사고가 나나요?"</li>
+        <li>"Origin 서버 IP가 노출되면 Cloudflare의 보안 설정이 무슨 의미가 있나요?"</li>
+        <li>"Cloudflare 캐시와 origin 서버 부하의 관계를 설명해 주세요."</li>
+        <li>"SSL/TLS 모드를 Flexible로 두면 어떤 문제가 생길 수 있나요?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">Proxied vs DNS-only</span>
+      <span class="tag">CDN 캐시</span>
+      <span class="tag">SSL/TLS 모드</span>
+      <span class="tag">Origin 보호</span>
+      <span class="tag">계층형 보안 경계</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Cloudflare는 근본적으로 무엇을 하는가</h3>
+    <p>
+      Cloudflare는 방문자와 여러분의 서버(origin) 사이에 끼어드는 <strong>중간자</strong>다. 원래는 방문자가 DNS로 여러분의 서버 IP를 직접 알아내서 바로 연결했다.
+      Cloudflare를 쓰면 방문자는 Cloudflare의 엣지 서버에 먼저 연결하고, Cloudflare가 그 요청을 검사·캐싱·가공한 뒤 필요할 때만 origin에 전달한다.
+    </p>
+    <p>
+      이 "중간에 끼어드는" 능력이 CDN(캐시로 속도 향상), WAF(악성 요청 차단), DDoS 방어(트래픽 폭주 흡수), Bot 관리(자동화 트래픽 구분)의 공통 기반이다.
+      모든 게 이 하나의 구조에서 나온다: <strong>방문자가 origin의 진짜 주소를 몰라야, Cloudflare가 그 사이에서 무언가를 할 수 있다.</strong>
+    </p>
+
+    <h3>Proxied(orange cloud) vs DNS-only(grey cloud)</h3>
+    <p>
+      Cloudflare DNS 대시보드에서 레코드마다 구름 아이콘이 있다. 주황색(Proxied)과 회색(DNS-only)의 차이는 다음과 같다.
+    </p>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">Proxied (주황 구름)</div>
+        <p>DNS 조회 결과로 <strong>Cloudflare의 IP</strong>가 나간다. 방문자는 origin의 진짜 IP를 알 수 없다.</p>
+        <p>트래픽이 Cloudflare 엣지를 거치므로 캐싱, WAF, DDoS 방어, Bot 관리, Workers, 리다이렉트/변환 규칙이 모두 적용된다.</p>
+        <p style="color:var(--good); font-size:0.88rem;">웹 트래픽(A/AAAA/CNAME)에 기본으로 권장</p>
+      </div>
+      <div class="weak-box" style="border-color: var(--accent2); background:#142523;">
+        <div class="box-label" style="color:var(--accent2);">DNS-only (회색 구름)</div>
+        <p>Cloudflare는 <strong>DNS 응답만</strong> 해준다. 방문자는 origin의 진짜 IP로 직접 연결한다.</p>
+        <p>Cloudflare의 캐싱/WAF/DDoS 방어/Workers가 전혀 적용되지 않는다. 순수 DNS 서비스로만 동작한다.</p>
+        <p style="color:var(--accent2); font-size:0.88rem;">HTTP/HTTPS가 아닌 프로토콜, 또는 프록시가 프로토콜을 깨뜨리는 레코드에 필수</p>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">언제 반드시 DNS-only여야 하는가</div>
+      <p>
+        메일 관련 레코드(MX가 가리키는 A/CNAME 레코드), SSH처럼 HTTP가 아닌 프로토콜, Cloudflare가 지원하지 않는 포트를 쓰는 서비스가 대표적이다.
+        메일 서버 A 레코드를 실수로 proxied로 바꾸면 Cloudflare가 SMTP 트래픽을 이해하지 못해 <strong>수신·발신 메일이 모두 끊긴다</strong>. 실무에서 흔히 발생하는 사고 유형이다.
+      </p>
+    </div>
+
+    <h3>CDN 캐시 — 왜 origin 보호와 연결되는가</h3>
+    <p>
+      정적 리소스(이미지, CSS, JS, 캐시 가능한 API 응답)를 Cloudflare 엣지에 저장해두면, 같은 요청이 다시 오면 origin까지 가지 않고 엣지에서 바로 응답한다.
+      이건 속도 문제만이 아니다. <strong>origin에 도달하는 요청 수 자체를 줄여준다</strong> — 트래픽 폭주나 소규모 DDoS성 트래픽도 캐시가 상당 부분 흡수한다.
+    </p>
+
+    <h3>Page Rules는 레거시, 지금은 Rules 제품군</h3>
+    <p>
+      과거엔 URL 패턴 하나에 캐시/리다이렉트/보안 설정을 묶어서 적용하는 <strong>Page Rules</strong>가 유일한 방법이었다. Page Rules는 "첫 번째로 매칭된 규칙만 적용"되는 구조였고, 계정당 규칙 개수 제한이 빡빡했다.
+    </p>
+    <p>
+      지금은 목적별로 분리된 Rules 제품군을 쓴다. <strong>Cache Rules</strong>(캐시 동작), <strong>Configuration Rules</strong>(보안/성능 기능 on/off), <strong>Origin Rules</strong>(트래픽이 어디로 나갈지), <strong>Redirect Rules</strong>(리다이렉트)로 나뉘고, 이들은 Page Rules와 달리 <strong>여러 규칙이 함께 누적 적용(stackable)</strong>된다.
+      Cloudflare는 2025년부터 기존 Page Rules를 Cache Rules로 자동 전환했지만, "Disable Security"/"Disable Performance" 같은 일부 옵션은 자동 전환되지 않았다. 신규 구성이라면 처음부터 Rules 제품군으로 설계해야 한다.
+    </p>
+
+    <h3>SSL/TLS 모드 — 암호화 구간이 두 개라는 것을 이해하라</h3>
+    <p>
+      Cloudflare를 쓰면 통신 구간이 두 개로 나뉜다: <strong>① 방문자 ↔ Cloudflare</strong>, <strong>② Cloudflare ↔ origin</strong>. SSL/TLS 모드는 이 두 구간을 각각 암호화할지, 어떻게 검증할지를 결정한다.
+    </p>
+
+    <div class="layer-stack">
+      <div class="layer-box" style="border-left-color: var(--weak);">
+        <div class="layer-name" style="color:var(--weak);">Off</div>
+        <div class="layer-desc">두 구간 모두 평문 HTTP. 2026년 기준 정당한 이유 없이 선택하면 안 되는 설정.</div>
+      </div>
+      <div class="layer-box" style="border-left-color: var(--warn);">
+        <div class="layer-name" style="color:var(--warn);">Flexible</div>
+        <div class="layer-desc">① 구간만 HTTPS, ② 구간은 평문 HTTP. origin에 인증서가 없어도 방문자 브라우저엔 자물쇠가 뜬다 — 하지만 Cloudflare-origin 구간은 도청 가능하고, origin이 자체적으로 HTTPS 강제 리다이렉트를 하면 무한 리다이렉트 루프가 발생한다.</div>
+      </div>
+      <div class="layer-box">
+        <div class="layer-name">Full</div>
+        <div class="layer-desc">두 구간 모두 HTTPS. 하지만 origin 인증서를 <strong>검증하지 않는다</strong> — 자체 서명 인증서도 통과된다. 중간자가 origin인 척 자체 서명 인증서를 내밀면 이론상 여전히 취약하다.</div>
+      </div>
+      <div class="layer-box" style="border-left-color: var(--good);">
+        <div class="layer-name" style="color:var(--good);">Full (strict)</div>
+        <div class="layer-desc">두 구간 모두 HTTPS + origin 인증서를 <strong>공인 CA 또는 Cloudflare Origin CA로 검증</strong>. 현재 공식 권장 모드.</div>
+      </div>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">Origin CA (Origin Certificate)란</div>
+      <p>
+        Cloudflare가 무료로 발급하는 인증서로, <strong>Cloudflare만 신뢰</strong>한다 (일반 브라우저는 신뢰하지 않는다). origin 서버에 설치하면 Full (strict) 모드를 쓸 수 있다.
+        공인 CA(Let's Encrypt 등) 인증서를 origin에 설치해도 Full (strict)를 쓸 수 있지만, Origin CA는 15년짜리 장기 인증서를 발급할 수 있어 갱신 부담이 적다는 실무적 장점이 있다.
+      </p>
+    </div>
+
+    <h3>계층형 보안 경계 — 하나의 스위치가 아니다</h3>
+    <p>Cloudflare의 보안은 순서대로 쌓이는 계층이다. 시니어 면접에서는 이 계층 전체를 설명할 수 있어야 한다.</p>
+
+    <div class="layer-stack">
+      <div class="layer-box">
+        <div class="layer-name">1. DNS 경계 — Proxied</div>
+        <div class="layer-desc">origin IP를 감춘다. 모든 하위 계층의 전제 조건이다.</div>
+      </div>
+      <div class="layer-box">
+        <div class="layer-name">2. DDoS 방어 (L3/L4/L7)</div>
+        <div class="layer-desc">모든 플랜에서 상시 작동. 트래픽 프로파일을 자동 학습해 이상 트래픽을 완화한다.</div>
+      </div>
+      <div class="layer-box">
+        <div class="layer-name">3. WAF (Security &gt; Security rules)</div>
+        <div class="layer-desc">Managed Rules(OWASP 등 상용 룰셋) + Custom Rules(우리 서비스 특화 규칙). 과거의 "Firewall Rules"는 현재 Custom Rules로 통합됐다.</div>
+      </div>
+      <div class="layer-box">
+        <div class="layer-name">4. Rate Limiting Rules</div>
+        <div class="layer-desc">로그인 brute-force, API 남용처럼 "정상 요청이지만 너무 자주"인 패턴을 막는다. 과거 별도 상품이었던 Rate Limiting도 지금은 WAF 안에 통합됐다.</div>
+      </div>
+      <div class="layer-box">
+        <div class="layer-name">5. Bot Management / Turnstile</div>
+        <div class="layer-desc">자동화 트래픽을 구분해 차단하거나 챌린지한다. Turnstile은 사용자 마찰이 적은 CAPTCHA 대체재다.</div>
+      </div>
+      <div class="layer-box" style="border-left-color: var(--accent4);">
+        <div class="layer-name" style="color:var(--accent4);">6. Origin 보호 — 여기가 진짜 마지막 방어선</div>
+        <div class="layer-desc">Authenticated Origin Pulls(Cloudflare가 보낸 요청인지 mTLS로 검증), origin 방화벽에서 Cloudflare IP 대역만 허용, 또는 Cloudflare Tunnel로 origin에 inbound 포트 자체를 열지 않는 구조.</div>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">핵심 포인트 — 1번 계층이 무너지면 나머지가 의미 없다</div>
+      <p>
+        WAF, DDoS 방어, Bot 관리를 아무리 정교하게 설정해도, 공격자가 <strong>origin의 진짜 IP</strong>를 알아내서 직접 공격하면 이 모든 계층을 그냥 우회한다.
+        그래서 시니어 레벨 설계에서는 "WAF 규칙을 얼마나 잘 짰는가"보다 "origin IP가 새어나갈 경로가 있는가"를 먼저 점검한다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>보안 경계에 대한 입체적 사고:</strong> Cloudflare를 "체크박스 몇 개 켜는 도구"가 아니라 여러 계층이 쌓인 방어 구조로 이해하는가</li>
+        <li><strong>프로토콜별 판단력:</strong> "무조건 proxied가 좋다"가 아니라, 레코드 타입/트래픽 종류에 따라 proxied와 DNS-only를 구분할 수 있는가</li>
+        <li><strong>Origin 노출 리스크 인식:</strong> Cloudflare 설정이 아무리 완벽해도 origin IP가 새어나가면 무의미하다는 것을 스스로 짚어내는가</li>
+        <li><strong>최신성 관리 능력:</strong> Cloudflare는 제품이 빠르게 바뀐다(Page Rules → Rules 제품군, Firewall Rules → WAF Custom Rules). 오래된 지식을 그대로 말하는지, 아니면 변화를 인지하고 있는지를 본다</li>
+        <li><strong>trade-off 감각:</strong> 캐시를 공격적으로 걸면 성능은 좋아지지만 개인화 콘텐츠가 잘못 캐싱될 위험이 있다. 이런 균형을 스스로 언급하는가</li>
+      </ul>
+    </div>
+
+    <p>
+      이 질문은 "Cloudflare 대시보드를 써봤는가"를 묻지 않는다. <strong>"경계를 어떻게 설계하고, 그 경계가 무너지는 지점을 스스로 찾을 수 있는가"</strong>를 묻는다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <div class="card incident-card">
+      <div class="card-label">실제 사례 1 — DNS-only로 방치된 apex 레코드로 인한 우회</div>
+      <p>
+        보안 연구자 Smit Gharat는 대규모 도메인 스캔 중, 어떤 서비스의 서브도메인은 proxied로 잘 보호돼 있지만 <strong>apex 도메인(루트 도메인) A 레코드가 DNS-only로 origin IP를 그대로 노출</strong>하고 있는 걸 발견했다.
+        <code>curl --resolve</code>로 그 IP에 직접 접속하니 Cloudflare 헤더 없이 origin이 그대로 응답했다. 이는 서브도메인 단위로만 보안 설정을 점검하고, 전체 존(zone)의 레코드를 빠짐없이 검토하지 않을 때 생기는 전형적인 사고다.
+      </p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">실제 사례 2 — 메일 서버 IP 노출을 통한 직접 공격</div>
+      <p>
+        웹 서비스 앞단은 Cloudflare로 완전히 보호돼 있었지만, 같은 서버에서 동작하던 메일 서버의 IP(MX 레코드가 가리키는 A 레코드, 당연히 DNS-only)가 공개돼 있었다.
+        공격자는 이 IP로 직접 DDoS 트래픽을 쏟아부어 대역폭을 소진시켰다. 웹과 메일이 같은 origin을 공유한다면, "웹은 proxied로 안전하다"는 판단이 전체 인프라의 안전을 보장하지 않는다.
+      </p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">실제 사례 3 — Cross-tenant 우회 리서치 (2023)</div>
+      <p>
+        보안 연구팀은 공격자가 무료 Cloudflare 계정을 만들어 <strong>피해자의 origin IP를 가리키는 커스텀 도메인</strong>을 등록하고, 자신의 테넌트에서는 보호 기능을 모두 꺼버린 뒤 그 경로로 공격 트래픽을 흘려보내는 방식이 가능함을 보였다.
+        이는 "Cloudflare를 쓰고 있다"는 사실 자체가 안전을 보장하지 않으며, <strong>origin이 Cloudflare의 IP 대역에서만 오는 트래픽을 받도록(Authenticated Origin Pulls) 스스로 강제</strong>해야 함을 보여주는 사례다.
+      </p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">실제 사례 4 — Cloudflare 자체 WAF 규칙이 만든 전세계 502 장애 (2024-10-10)</div>
+      <p>
+        Cloudflare가 공식 post-mortem에서 밝힌 사례다. 인라인 JavaScript 공격 탐지를 개선하는 새 WAF Managed Rule을 <strong>"simulate(로그만 남기고 차단은 안 함)" 모드</strong>로 배포했는데, 그 규칙의 정규식이 특정 트래픽에서 <strong>재앙적 백트래킹(ReDoS)</strong>을 일으켜 전세계 엣지 서버 CPU가 100%까지 치솟았다.
+        결과적으로 정상 트래픽까지 502 에러를 받으며 전체 트래픽이 한때 약 82% 급감했다. 20~30분 만에 WAF Managed Rulesets를 전역 강제 종료해 복구했다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: "Log 모드는 안전하다"는 가정이 항상 맞지는 않는다 — 차단 여부와 무관하게 <strong>규칙을 평가하는 것 자체</strong>가 비용이 될 수 있다. origin을 보호하려고 만든 계층(WAF)이 오히려 전체 장애의 원인이 될 수 있다는 것도 시니어가 짚어야 할 포인트다.</p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">실제 사례 5 — 내부 설정 파일 전파로 인한 대규모 장애 (2025-11-18)</div>
+      <p>
+        데이터베이스 권한 변경으로, Bot Management가 5분마다 재생성해 전 세계 엣지에 배포하는 "feature file"에 중복 행이 섞여 파일 크기가 예상보다 커졌다. 이 파일에는 200개 features라는 하드코딩된 상한이 있었는데, 상한을 넘는 파일이 들어오자 소프트웨어가 우아하게 처리하지 못하고 <strong>그대로 죽어버렸다(panic)</strong>.
+        권한 변경이 DB 클러스터 일부에만 먼저 적용돼, 5분 주기마다 정상 파일과 비정상 파일이 번갈아 배포되며 <strong>간헐적으로 복구됐다가 다시 죽는</strong> 패턴을 보여 원인 파악이 더 어려웠다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: "설정 파일 배포"도 "코드 배포"와 똑같이 canary·크기 검증·circuit breaker가 필요하다는 것을 보여준다. Cloudflare는 이 사건 이후 blast radius를 줄이는 "Fail Small" 회복탄력성 계획을 공개했다.</p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 — Flexible SSL이 만든 무한 리다이렉트</div>
+      <p>
+        origin 애플리케이션 프레임워크가 기본적으로 HTTP 요청을 HTTPS로 강제 리다이렉트하도록 설정돼 있었다. Cloudflare SSL/TLS 모드가 Flexible이면, Cloudflare는 origin에 <strong>HTTP</strong>로 요청을 보낸다.
+        origin은 이를 HTTPS로 리다이렉트하고, 방문자는 다시 Cloudflare의 HTTPS 엔드포인트로 오고, Cloudflare는 다시 origin에 HTTP로 요청한다 — 무한 루프. 이 문제는 SSL/TLS 모드를 Full 이상으로 바꾸면 해결된다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>면접에서 "DNS부터 보안 경계까지 어떻게 구성하겠습니까"라는 질문을 받으면, 아래 순서로 사고하고 답변하라.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>트래픽 특성 파악</strong>
+        <p>정적 콘텐츠 비중, 동적/개인화 콘텐츠 비중, API 트래픽 여부, 메일 등 비-HTTP 서비스가 같은 도메인에 있는지 확인한다.</p>
+      </li>
+      <li>
+        <strong>레코드별 proxied/DNS-only 결정</strong>
+        <p>웹 트래픽(A/AAAA/CNAME)은 proxied 기본, 메일(MX가 가리키는 레코드)이나 비-HTTP 서비스는 DNS-only로 명확히 분리한다.</p>
+      </li>
+      <li>
+        <strong>SSL/TLS 모드와 origin 인증서 결정</strong>
+        <p>Full (strict)를 기본으로 하고, origin에 Origin CA 또는 공인 CA 인증서를 설치한다.</p>
+      </li>
+      <li>
+        <strong>캐시 전략 설계 (Cache Rules)</strong>
+        <p>무엇을 캐싱할지(정적 자산), 무엇을 캐싱하면 안 되는지(로그인 세션이 섞인 응답)를 Cache Key와 함께 설계한다. Page Rules가 아니라 Cache Rules로 설계한다.</p>
+      </li>
+      <li>
+        <strong>보안 계층 설계 (WAF → Rate Limiting → Bot Management)</strong>
+        <p>Managed Rules로 기본 방어를 깔고, 서비스 특화 로직은 Custom Rules로, 로그인/API 남용은 Rate Limiting Rules로, 자동화 트래픽은 Bot Management/Turnstile로 처리한다.</p>
+      </li>
+      <li>
+        <strong>Origin 은닉 확정</strong>
+        <p>Authenticated Origin Pulls(mTLS) 또는 origin 방화벽에서 Cloudflare IP 대역만 허용, 필요하면 Cloudflare Tunnel로 inbound 포트 자체를 열지 않는다.</p>
+      </li>
+      <li>
+        <strong>관측성과 롤백 계획</strong>
+        <p>Logpush/Analytics로 캐시 히트율, WAF 차단율, 오탐률을 모니터링하고, 신규 규칙은 Log 모드로 먼저 배포한 뒤 Block으로 전환한다.</p>
+      </li>
+    </ol>
+
+    <div class="card why-card">
+      <div class="card-label">핵심 팁</div>
+      <p>순서를 정확히 맞추는 것보다, <strong>"origin 은닉"을 스스로 언급하는지</strong>가 시니어와 미드레벨을 가르는 핵심 포인트다. 이 부분은 물어보지 않아도 먼저 말해야 한다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — 신규 서비스 도메인 구성</div>
+      <p>
+        "먼저 이 도메인에 어떤 트래픽이 붙는지 확인하겠습니다. 웹 서비스 외에 메일이나 다른 비-HTTP 서비스가 같은 도메인을 쓴다면, 그 레코드는 반드시 DNS-only로 분리합니다. 메일 레코드를 proxied로 두면 수신·발신이 즉시 끊기는 사고로 이어지기 때문입니다.
+      </p>
+      <p>
+        웹 트래픽용 A/CNAME 레코드는 proxied로 설정해서 origin IP를 감춥니다. SSL/TLS 모드는 Full (strict)로 설정하고, origin에는 Cloudflare Origin CA 인증서를 설치합니다. Flexible은 Cloudflare-origin 구간이 평문이라 도청 위험과 리다이렉트 루프 위험이 있어 프로덕션에서는 쓰지 않습니다.
+      </p>
+      <p>
+        캐시는 Cache Rules로 설계합니다. 정적 자산은 공격적으로 캐싱하고, 로그인 세션이 섞인 API 응답은 캐싱 대상에서 명확히 제외합니다. 과거 Page Rules 방식은 규칙이 순서에 의존하고 개수 제한이 있어 신규 구성에는 쓰지 않습니다.
+      </p>
+      <p>
+        보안은 WAF Managed Rules로 기본 방어를 깔고, 로그인/결제 엔드포인트에는 Rate Limiting Rules를 별도로 적용합니다. 봇 트래픽이 문제가 되는 서비스라면 Bot Management나 Turnstile을 도입합니다.
+      </p>
+      <p>
+        가장 중요한 마지막 단계는 origin 은닉입니다. Authenticated Origin Pulls를 켜서 origin이 Cloudflare가 보낸 요청만 mTLS로 검증하게 하고, origin 방화벽에서도 Cloudflare IP 대역 외의 접근을 차단합니다. 이 단계가 없으면 앞의 모든 보안 설정은 origin IP가 새어나가는 순간 무력화됩니다.
+      </p>
+      <p>
+        마지막으로 신규 WAF 규칙은 항상 Log 모드로 먼저 배포해 오탐률을 확인한 뒤 Block으로 전환하고, Logpush로 캐시 히트율과 차단 로그를 지속적으로 모니터링하겠습니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① 레코드 타입별 판단 근거 제시 ② 최신 용어(Cache Rules, WAF Custom/Rate Limiting Rules) 사용 ③ origin 은닉을 스스로 마지막 방어선으로 언급 ④ 단계적 배포(Log → Block)로 운영 리스크 관리를 보여줌
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "Flexible SSL이 왜 위험한지 좀 더 구체적으로 설명해 주세요."</div>
+      <div class="followup-a">
+        <p>Flexible은 방문자-Cloudflare 구간만 HTTPS이고 Cloudflare-origin 구간은 평문 HTTP다. 이 구간이 인터넷을 통과한다면(같은 데이터센터 내부망이 아니라면) 도청이나 변조에 노출된다.</p>
+        <p>더 실무적인 문제는 리다이렉트 루프다. origin이 HTTP 요청을 HTTPS로 강제 리다이렉트하도록 설정돼 있으면, Cloudflare(HTTP로 요청) → origin(HTTPS로 리다이렉트) → 방문자는 다시 Cloudflare HTTPS로 → Cloudflare는 다시 origin에 HTTP로 요청, 이 루프가 반복돼 사이트 전체가 리다이렉트 에러로 다운된다.</p>
+        <p>따라서 origin이 HTTPS를 지원한다면 최소 Full, 인증서를 검증할 수 있다면 Full (strict)를 써야 한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "Page Rules가 아직 동작한다고 들었는데, 왜 새로 안 만드나요?"</div>
+      <div class="followup-a">
+        <p>기존 zone에 있는 Page Rules는 여전히 동작한다. 하지만 Cloudflare는 이를 레거시로 전환하고 있고, 실제로 2025년부터 기존 Page Rules를 Cache Rules로 자동 마이그레이션하는 작업을 진행했다. 다만 "Disable Security", "Disable Performance" 같은 일부 옵션은 자동 전환 대상이 아니었다.</p>
+        <p>Page Rules는 "첫 번째 매칭 규칙만 적용"이라 규칙이 늘어날수록 순서 관리가 어렵고, 계정당 규칙 개수 제한도 빡빡하다. 반면 Cache Rules/Configuration Rules/Origin Rules/Redirect Rules는 목적별로 분리돼 있고 여러 규칙이 함께 누적 적용된다. 신규 구성이라면 처음부터 이 제품군으로 설계하는 게 유지보수 측면에서 명백히 유리하다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "origin IP를 완전히 숨기는 방법에는 뭐가 있고, 뭐가 더 강력한가요?"</div>
+      <div class="followup-a">
+        <p>두 단계가 있다. ① <strong>Authenticated Origin Pulls</strong>: origin이 mTLS로 "이 요청이 진짜 Cloudflare에서 왔는가"를 검증한다. origin에 여전히 열린 inbound 포트가 있지만, Cloudflare 클라이언트 인증서 없이는 응답하지 않는다. ② <strong>origin 방화벽에서 Cloudflare IP 대역만 허용</strong>: 네트워크 레벨에서 아예 다른 곳의 접속을 차단한다.</p>
+        <p>더 강력한 방법은 <strong>Cloudflare Tunnel</strong>이다. origin 서버에 아웃바운드로만 연결하는 커넥터를 설치하면, origin은 inbound 포트를 아예 열지 않아도 된다. 공격자가 IP를 알아내도 접속할 포트 자체가 없으니, 위 두 방법보다 근본적으로 노출 표면을 줄인다. 다만 아키텍처 변경 비용이 있으므로 신규 구축이나 Zero Trust 전환 프로젝트에서 우선 검토한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "DNS-only로 둬야 하는 레코드의 구체적인 예시를 들어주세요."</div>
+      <div class="followup-a">
+        <p>① MX 레코드가 가리키는 메일 서버 A/CNAME 레코드 — proxied로 두면 SMTP 트래픽이 깨진다. ② SSH나 커스텀 TCP 포트로 직접 접근해야 하는 관리용 서버 — Cloudflare 프록시는 HTTP(S) 위주라 임의 포트/프로토콜을 지원하지 않는다(Spectrum 같은 별도 상품이 있지만 기본 프록시와는 다르다). ③ SPF/TXT 레코드처럼애초에 proxied 개념이 적용되지 않는 레코드 타입.</p>
+        <p>핵심은 "이 레코드가 HTTP(S) 트래픽을 받는가, Cloudflare가 이해하는 프로토콜인가"를 레코드마다 확인하는 것이다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "캐시가 왜 성능 주제를 넘어서 보안 주제로도 다뤄지나요?"</div>
+      <div class="followup-a">
+        <p>캐시 설계를 잘못하면 그 자체가 취약점이 된다. 예를 들어 로그인한 사용자의 개인화된 응답이 실수로 캐싱되면, 다른 사용자에게 그 응답이 그대로 노출되는 <strong>캐시 오염(cache poisoning)/캐시 기만(cache deception)</strong> 문제가 생길 수 있다.</p>
+        <p>그래서 Cache Rules를 설계할 때는 "어떤 헤더/쿠키/쿼리 파라미터를 Cache Key에 포함시킬지"를 신중히 정해야 한다. 캐시는 성능 최적화 도구이자, 잘못 쓰면 정보 유출 통로가 되는 양날의 검이다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q6. "Cloudflare 자체가 장애를 일으킨 적이 있나요? 그런 경우 어떻게 대비합니까?"</div>
+      <div class="followup-a">
+        <p>있다. 2024년 10월 Cloudflare는 새 WAF Managed Rule의 정규식이 "로그만 남기는 simulate 모드"였음에도 ReDoS로 전세계 엣지 CPU를 100%까지 소진시켜 502 장애를 냈다고 공식 post-mortem에서 밝혔다. 2025년 11월에는 Bot Management용 내부 설정 파일이 DB 권한 변경으로 예상보다 커지면서 하드코딩된 상한을 넘어 소프트웨어가 죽는 대규모 장애도 있었다.</p>
+        <p>이런 사례는 "Cloudflare를 쓰면 무조건 더 안전/안정적"이라는 가정이 항상 맞지는 않음을 보여준다. 실무적으로는 ① 신규 보안 규칙을 일부 트래픽/리전에 먼저 적용하는 점진적 롤아웃을 요청하거나 자체 트래픽에 대해 모니터링을 강화하고, ② Cloudflare 상태 페이지·RSS를 장애 대응 온콜 알림에 연동하고, ③ 단일 CDN/보안 벤더 의존이 비즈니스 리스크로 얼마나 큰지 판단해 필요 시 멀티 벤더 전략(예: DNS 페일오버)을 검토하는 것으로 대비한다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>레코드 타입별로 proxied/DNS-only를 구분해서 설명한다</li>
+          <li>SSL/TLS 모드를 두 구간(방문자-Cloudflare, Cloudflare-origin)으로 나눠 설명한다</li>
+          <li>origin 은닉(Authenticated Origin Pulls, IP 허용목록, Tunnel)을 스스로 언급한다</li>
+          <li>Page Rules가 레거시임을 알고 Cache Rules/Configuration Rules로 설명한다</li>
+          <li>신규 WAF 규칙을 Log 모드로 먼저 검증하는 단계적 배포를 언급한다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"Cloudflare 켜면 다 proxied로 하면 된다"고 단순화한다</li>
+          <li>SSL/TLS 모드를 "HTTPS 켜는 옵션" 정도로만 이해한다</li>
+          <li>WAF/DDoS 방어만 이야기하고 origin 보호는 언급하지 않는다</li>
+          <li>Page Rules를 여전히 현재 표준 도구처럼 설명한다</li>
+          <li>캐시를 "빠르게 해주는 기능"으로만 설명하고 잘못된 캐싱의 위험은 모른다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        "Cloudflare 켜면 안전하다"는 도구를 써봤다는 것만 보여준다. 시니어 면접에서는 <strong>그 도구가 어디까지 보호하고, 어디서부터는 스스로 origin을 지켜야 하는지</strong>를 구분할 수 있는지를 본다.
+        Cloudflare가 아무리 강력해도 origin IP가 새어나가면 방어선이 통째로 무력화된다는 것을 모르면, 실제 장애나 침해 사고 앞에서 원인을 못 찾는다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"Proxied만 켜면 origin이 완전히 안전하다."</p>
+      <div class="mc-right">실제</div>
+      <p>Proxied는 <strong>DNS 응답이 Cloudflare IP로 나가게 할 뿐</strong>이다. origin IP가 다른 경로(같은 서버의 DNS-only 레코드, 과거 인증서 발급 기록의 Certificate Transparency 로그, 메일 헤더 등)로 노출되면 그 경로로 직접 공격이 가능하다. Authenticated Origin Pulls나 IP 허용목록으로 "Cloudflare가 아닌 곳에서 온 요청은 아예 응답하지 않는다"까지 해야 진짜 보호가 된다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"Flexible SSL이면 브라우저에 자물쇠가 뜨니까 안전한 것이다."</p>
+      <div class="mc-right">실제</div>
+      <p>자물쇠 아이콘은 방문자-Cloudflare 구간이 암호화됐다는 뜻일 뿐, <strong>Cloudflare-origin 구간은 평문 HTTP</strong>다. 이 구간이 도청당하면 데이터가 그대로 노출된다. 게다가 origin이 자체적으로 HTTPS 리다이렉트를 강제하면 무한 리다이렉트 루프까지 발생할 수 있다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"Page Rules가 아직 대시보드에 보이니 지금도 새로 만들 수 있다."</p>
+      <div class="mc-right">실제</div>
+      <p>기존 zone에 이미 있는 Page Rules는 계속 동작하지만, <strong>2025-01-06부터는 어떤 플랜의 어떤 계정도 신규 Page Rule을 생성할 수 없다</strong>(Free/Pro/Business는 2024-07-01부터, Enterprise 신규 계정은 2024-08-01부터 이미 막혔다). Cloudflare는 기존 규칙을 Cache Rules 등으로 자동 전환하는 작업을 진행 중이며, "Disable Security"/"Disable Performance"/Railgun 같은 일부 옵션은 자동 전환 대상이 아니므로 마이그레이션 시 수동 확인이 필요하다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"WAF Managed Rules만 켜면 애플리케이션 보안은 다 해결된다."</p>
+      <div class="mc-right">실제</div>
+      <p>Managed Rules는 OWASP 계열의 <strong>일반적인 공격 패턴</strong>을 막아준다. 우리 서비스만의 로그인 brute-force, 특정 API 엔드포인트 남용 같은 것은 Custom Rules와 Rate Limiting Rules로 별도 설계해야 한다. 또한 Managed Rules는 오탐(false positive)이 발생할 수 있어, 배포 전 Log 모드로 트래픽을 관찰하는 단계가 필요하다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"DNS-only로 두는 것 자체가 보안 취약점이다."</p>
+      <div class="mc-right">실제</div>
+      <p>DNS-only 자체는 문제가 아니다. 메일 서버처럼 애초에 Cloudflare 프록시가 지원하지 않는 트래픽이라면 DNS-only가 <strong>올바른 선택</strong>이다. 진짜 문제는 "이 레코드가 가리키는 서버가 웹 서비스와 같은 origin을 공유하는데도 보호 없이 노출돼 있는가"이다. 레코드 하나하나를 트래픽 종류에 맞게 판단하는 것이 핵심이지, "무조건 proxied가 정답"은 아니다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Proxied/DNS-only 판단</strong></td>
+          <td>레코드 타입/프로토콜별로 근거를 들어 구분한다</td>
+          <td>"웹은 proxied, 메일은 DNS-only" 정도만 안다</td>
+          <td>차이를 설명하지 못하거나 모든 걸 proxied로 하면 된다고 답한다</td>
+        </tr>
+        <tr>
+          <td><strong>SSL/TLS 모드 이해</strong></td>
+          <td>두 구간을 나눠 설명하고 Full (strict)를 이유와 함께 권장한다</td>
+          <td>모드 이름은 알지만 위험을 구체적으로 설명 못한다</td>
+          <td>"HTTPS 켜는 옵션" 정도로만 이해한다</td>
+        </tr>
+        <tr>
+          <td><strong>Origin 은닉 인식</strong></td>
+          <td>Authenticated Origin Pulls/IP 허용목록/Tunnel을 스스로 언급한다</td>
+          <td>물어보면 한두 가지는 말한다</td>
+          <td>origin 보호를 전혀 언급하지 않는다</td>
+        </tr>
+        <tr>
+          <td><strong>캐시/Rules 최신성</strong></td>
+          <td>Cache Rules/Configuration Rules로 설명하고 Page Rules의 한계를 안다</td>
+          <td>Cache Rules는 알지만 Page Rules와의 차이는 모른다</td>
+          <td>Page Rules를 현재 표준처럼 설명한다</td>
+        </tr>
+        <tr>
+          <td><strong>계층형 보안 설계</strong></td>
+          <td>DDoS → WAF → Rate Limiting → Bot → Origin까지 전 계층을 순서 있게 설명한다</td>
+          <td>2~3개 계층만 언급한다</td>
+          <td>"WAF 켠다" 정도로 뭉뚱그린다</td>
+        </tr>
+        <tr>
+          <td><strong>trade-off 언급</strong></td>
+          <td>캐시 공격성, WAF 오탐, 운영 비용 등 trade-off를 자발적으로 말한다</td>
+          <td>물어보면 말할 수 있다</td>
+          <td>trade-off 개념이 없다</td>
+        </tr>
+        <tr>
+          <td><strong>장애/실무 사례 연결</strong></td>
+          <td>구체적 사고 유형(메일 단절, 리다이렉트 루프, IP 노출 우회)을 사례로 든다</td>
+          <td>이론적으로 가능하다고만 말한다</td>
+          <td>실무 연결이 없다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면, 해당 주제가 Day 2~10에서 깊게 다뤄진다. 특히 origin 은닉과 Zero Trust는 Day 9에서, 캐시 세부 설계는 Day 3에서 집중적으로 다룬다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <span></span>
+    <a href="./index.html">← 목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>

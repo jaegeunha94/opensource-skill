@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cloudflare 구성 인터뷰 대비 학습 목록</title>
+  <style>
+    :root {
+      --bg: #14100c;
+      --surface: #211a13;
+      --border: #4a3a26;
+      --accent: #f6821f;
+      --text: #f2e9de;
+      --text2: #c9b8a3;
+      --text3: #8f8071;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 2.5rem 1rem;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    header { margin-bottom: 2rem; border-left: 4px solid var(--accent); padding-left: 1.2rem; }
+    header h1 { font-size: 1.5rem; font-weight: 700; color: #fff; }
+    header p { color: var(--text2); font-size: 0.92rem; margin-top: 0.4rem; }
+    ul { list-style: none; padding: 0; }
+    li {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 0.7rem;
+      transition: border-color 0.15s;
+    }
+    li:hover { border-color: var(--accent); }
+    a {
+      display: block;
+      padding: 1rem 1.3rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+    a:hover { color: var(--accent); }
+    .day-badge {
+      font-size: 0.72rem;
+      color: var(--accent);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      margin-bottom: 0.25rem;
+    }
+    .lesson-title { font-size: 1rem; font-weight: 600; }
+    .lesson-topics { font-size: 0.83rem; color: var(--text3); margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Cloudflare 구성 인터뷰 대비 학습 목록</h1>
+    <p>10년차 이상 개발자 인터뷰 — DNS/CDN/보안 경계 설계 · origin 보호 · 캐시 전략 · 장애 대응 · 비용/성능 trade-off</p>
+  </header>
+  <ul>
+    <li>
+      <a href="./0001-cloudflare-dns-cdn-security-boundary-framework.html">
+        <div class="day-badge">Day 1</div>
+        <div class="lesson-title">Cloudflare DNS/CDN/보안 경계 구성 프레임워크</div>
+        <div class="lesson-topics">Proxied vs DNS-only · CDN 캐시 · Page Rules → Cache Rules 전환 · SSL/TLS 모드 · 계층형 보안 경계 · origin 은닉</div>
+      </a>
+    </li>
+  </ul>
+</div>
+</body>
+</html>
