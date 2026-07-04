@@ -84,6 +84,9 @@
 - **Surfaces**: Terminal, VS Code, JetBrains(베타), Desktop app, Web(claude.ai/code), Remote Control, Slack, Chrome(GA), GitHub Actions/GitLab CI/CD까지 확장됨. 문서는 "모든 surface가 동일한 agentic loop과 엔진을 공유하며, CLAUDE.md/설정/MCP 서버가 surface 간에 공유된다"는 점을 강조한다. 실행 환경은 Local(로컬 머신) / Cloud(Anthropic 관리 VM) / Remote Control(로컬 실행 + 브라우저 제어) 3가지로 구분된다.
 - **최근 changelog 주요 흐름(버전 2.1.17x ~ 2.1.199)**: 서브에이전트 기본 백그라운드 실행 및 최대 5단계 중첩 스폰, Agent Teams의 실패 리포팅 개선, Auto mode의 안전장치 강화(파괴적 git/terraform 명령 차단), `sandbox.credentials`/`sandbox.allowAppleEvents` 등 샌드박스 세분화 설정 추가, `/simplify`가 `/code-review`로 개명, `/agents` 위저드 제거 등 UI 정리가 계속 진행 중. 버전 번호와 세부 동작은 몇 달 내 다시 바뀔 수 있으므로 재확인 없이 특정 버전 번호를 단정적으로 답하지 않는다.
 - **Agent SDK와 Claude Code CLI의 관계**: Agent SDK는 Claude Code CLI와 동일한 실행 루프·도구 세트를 프로그래밍 방식으로 노출하는 별도 패키지로, CLI 설치 없이도 커스텀 에이전트를 만들 수 있다. `permission_mode`, `max_turns`, `max_budget_usd`, `effort` 같은 옵션으로 자율성/비용/추론 깊이를 세밀하게 통제한다.
+- **(Day 2 조사, 2026-07-04) Surfaces와 실행 환경**: 공식 문서(`/en/overview`, `/en/how-claude-code-works`)는 "각 surface는 동일한 엔진에 연결되며 CLAUDE.md/설정/MCP 서버가 surface 간 공유된다"고 명시하고, 실행 환경을 Local/Cloud/Remote Control 3가지로 구분한다. Remote Control은 Cloud가 아니라 Local 실행 + 브라우저 원격 제어라는 점이 Web(claude.ai/code, Cloud 실행)과 가장 혼동되는 지점이다.
+- **(Day 2 조사) CLI headless 자동화**: `-p`/`--print` 모드는 `--output-format text|json|stream-json`, `--max-turns`, `--max-budget-usd`, `--permission-mode`, `--allowedTools`/`--disallowedTools` 등으로 사람의 실시간 승인을 대체하는 명시적 상한선을 설정한다. `claude-code-action`은 베타에서 GA `v1`으로 전환되며 `mode` 설정 제거(자동 감지), `direct_prompt`→`prompt`, 개별 옵션들이 `claude_args`로 통합되는 breaking change가 있었다.
+- **(Day 2 조사) Surface 간 브리지 기능**: 최근 changelog에는 `claude --teleport`(웹/모바일 세션을 터미널로), Dispatch(모바일→Desktop 세션 기동), Channels(Telegram/Discord/iMessage/webhook 연동), Agent view(`claude agents`), Ultraplan(클라우드 계획 초안→웹 리뷰→원격/로컬 실행, 초기 프리뷰), Routines(웹에서 스케줄/이벤트/API로 템플릿 클라우드 에이전트 실행) 등이 계속 추가되고 있다. 세부 명령어와 GA/beta 상태는 몇 주 단위로 바뀌므로 `/en/whats-new`로 재확인한다.
 
 ## 심화 학습
 

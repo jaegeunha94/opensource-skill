@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-03 | Claude Code 기반 agentic coding 운영 프레임워크 | [0001-agentic-coding-operating-framework.html](lessons/0001-agentic-coding-operating-framework.html) |
+| 2 | 2026-07-04 | Surfaces — Terminal/IDE/Desktop/Web/CI 아키텍처와 선택 기준 | [0002-surfaces-architecture-and-selection.html](lessons/0002-surfaces-architecture-and-selection.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | Surfaces — Terminal/IDE/Desktop/Web/CI 아키텍처와 선택 기준 | 동일 엔진 공유, 실행 환경(Local/Cloud/Remote Control), VS Code/JetBrains, Desktop app, claude.ai/code, `claude -p` headless |
 | 3 | 코드베이스 컨텍스트 설계 — CLAUDE.md와 auto memory | CLAUDE.md 로드 순서, 서브디렉토리 규칙, auto memory(MEMORY.md), large codebase 전략, 컨텍스트 비용 |
 | 4 | 권한 모델 심화 — permission mode와 규칙 문법 | default/acceptEdits/plan/auto/dontAsk/bypassPermissions, allow/deny/ask 평가 순서, settings precedence |
 | 5 | 샌드박싱과 shell/file 도구 실행 경계 | OS 레벨 파일시스템/네트워크 격리, permission과 sandbox의 계층 분리, credential 보호 |
@@ -34,7 +34,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — Day 2: Surfaces(Terminal/IDE/Desktop/Web/CI)로 진행 예정.
+**Day 2 완료** — Day 3: 코드베이스 컨텍스트 설계(CLAUDE.md와 auto memory)로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -44,7 +44,8 @@
 - [x] 세션 독립성, 컨텍스트 윈도우 구성 요소, 자동 compaction 동작(오래된 tool output 삭제 → 요약), CLAUDE.md 재주입 (Day 1)
 - [x] checkpoint(파일 되돌리기)와 permission(승인 통제)의 역할 분리, 4대 권한 모드 개요 (Day 1)
 - [x] 확장 레이어(Skills/MCP/Hooks/Subagents)가 core loop 위에 있다는 아키텍처 구분 (Day 1)
-- [ ] Surfaces 아키텍처 (예정 Day 2)
+- [x] 인터페이스 vs 실행 환경(두 독립 축)으로 surface를 분해하는 프레임워크, Web(Cloud)과 Remote Control(Local+원격 제어)의 구분 (Day 2)
+- [x] "모든 surface가 동일 엔진을 공유하며 CLAUDE.md/설정/MCP가 이식된다"는 원칙과 headless(-p) 자동화가 실행 환경이 아닌 상호작용 모드의 차이라는 것, GitHub Actions(claude-code-action v1 GA) 구조 (Day 2)
 - [ ] CLAUDE.md/auto memory 설계 (예정 Day 3)
 - [ ] 권한 모델 심화 (예정 Day 4)
 - [ ] 샌드박싱 (예정 Day 5)

@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — Surfaces: Terminal/IDE/Desktop/Web/CI 아키텍처와 선택 기준</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #222538;
+      --border: #2e3150;
+      --accent: #7c83ff;
+      --accent2: #50e3c2;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #e2e4f0;
+      --text2: #9da3c8;
+      --text3: #6b7099;
+      --good: #50e3c2;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card {
+      border-left: 4px solid var(--accent);
+    }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card {
+      border-left: 4px solid var(--accent2);
+      background: #1a2430;
+    }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card {
+      border-left: 4px solid var(--warn);
+      background: #1f1d10;
+    }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card {
+      border-left: 4px solid #a07bff;
+      background: #1a1828;
+    }
+    .answer-card .card-label { color: #a07bff; }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box {
+      background: #0f2420;
+      border: 1px solid var(--good);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box {
+      background: #28100f;
+      border: 1px solid var(--weak);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.91rem;
+      margin-top: 0.5rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:nth-child(odd) td { background: #15182a; }
+    .rubric-table tr:nth-child(even) td { background: #1a1d2e; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.89rem;
+      margin: 0.8rem 0 1.2rem;
+    }
+    .matrix-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.55rem 0.7rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .matrix-table td {
+      padding: 0.55rem 0.7rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .matrix-table tr:nth-child(odd) td { background: #15182a; }
+    .matrix-table tr:nth-child(even) td { background: #1a1d2e; }
+    .pillar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1.2rem;
+    }
+    .pillar-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+    }
+    .pillar-name { font-weight: 700; color: var(--accent); margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .pillar-key { font-size: 0.83rem; color: var(--text2); }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.2rem;
+      margin-bottom: 0.7rem;
+    }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.1rem;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.78rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .misconception {
+      background: #1f1520;
+      border: 1px solid #6e3880;
+      border-radius: 8px;
+      padding: 1rem 1.3rem;
+      margin-bottom: 0.9rem;
+    }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 0.75rem;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      margin: 0.15rem 0.15rem 0.15rem 0;
+    }
+    .source-note {
+      font-size: 0.82rem;
+      color: var(--text3);
+      margin-top: 0.4rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 2 · Claude Code 인터뷰 대비</div>
+    <h1>Surfaces — Terminal/IDE/Desktop/Web/CI 아키텍처와 선택 기준</h1>
+    <p class="subtitle">
+      인터페이스와 실행 환경의 분리 · Local/Cloud/Remote Control 3분류 · headless(<code>-p</code>) 자동화 · GitHub Actions/GitLab CI 통합 · (2026-07 기준 공식 문서 반영)
+    </p>
+  </header>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "Claude Code는 터미널, VS Code/JetBrains, Desktop app, 웹(claude.ai/code), GitHub Actions/GitLab CI 등 여러 곳에서 쓸 수 있습니다. 이들이 내부적으로 같은 것인지 다른 것인지 설명하고, 우리 팀이 새 워크플로우를 도입할 때 어떤 surface를 선택할지 판단 기준을 제시해보세요."
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"VS Code/JetBrains 확장과 터미널 CLI의 관계는 무엇입니까? 하나가 다른 하나를 감싸는 겁니까?"</li>
+        <li>"claude.ai/code(웹)와 Desktop app이 둘 다 존재하는 이유는 무엇입니까? 실행되는 위치가 어떻게 다릅니까?"</li>
+        <li>"Remote Control은 정확히 무엇을 원격으로 제어합니까? 코드가 클라우드에서 실행되는 겁니까, 아니면 내 컴퓨터에서 실행되는 겁니까?"</li>
+        <li>"GitHub Actions에서 자동으로 도는 Claude Code는 터미널에서 대화하며 쓰는 것과 무엇이 근본적으로 다릅니까?"</li>
+        <li>"여러 surface를 함께 쓰는 팀에서, 설정(CLAUDE.md, MCP, 권한 정책)이 surface마다 따로 노는 문제를 어떻게 막습니까?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">Execution Environment</span>
+      <span class="tag">Local/Cloud/Remote Control</span>
+      <span class="tag">Headless Automation (-p)</span>
+      <span class="tag">GitHub Actions / GitLab CI</span>
+      <span class="tag">Config Portability</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>"Surface"를 이해하려면 먼저 두 축을 분리해야 한다</h3>
+    <p>
+      Day 1에서 Claude Code를 "모델을 감싸는 하네스(harness)"라고 정의했다. 이 하네스를 실제로 쓰는 방법이 여러 가지인데, 이걸 그냥 "제품이 여러 개 있다"고 뭉뚱그리면 인터뷰에서 얕은 답이 된다. 정확하게 이해하려면 서로 독립적인 두 개의 축을 분리해야 한다.
+    </p>
+    <div class="pillar-grid">
+      <div class="pillar-box">
+        <div class="pillar-name">축 1 — 인터페이스 (Interface)</div>
+        <div class="pillar-key">사람이 무엇으로 상호작용하는가. 터미널 텍스트, IDE 사이드 패널, 독립 GUI 앱, 브라우저 화면, 채팅 메시지, 혹은 아무 상호작용 없이 이벤트로 트리거되는 CI 잡(job) 등.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">축 2 — 실행 환경 (Execution Environment)</div>
+        <div class="pillar-key">실제로 파일을 읽고 셸 명령을 실행하는 컴퓨터가 어디인가. 공식 문서는 이걸 <strong>Local(내 머신) / Cloud(Anthropic 관리 VM) / Remote Control(내 머신을 브라우저로 원격 제어)</strong> 3가지로 구분한다.</div>
+      </div>
+    </div>
+    <p>
+      "Surface"라고 부르는 각각의 진입점(터미널, VS Code, Desktop app, 웹, CI 등)은 사실 <strong>이 두 축의 특정 조합</strong>이다. 이렇게 나눠서 봐야 "왜 이 두 surface는 다르게 느껴지는가"를 정확히 설명할 수 있다.
+    </p>
+
+    <h3>실행 환경 3분류</h3>
+    <table class="matrix-table">
+      <thead>
+        <tr><th>실행 환경</th><th>코드가 실행되는 위치</th><th>주 용도</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Local</strong></td><td>내 머신</td><td>기본값. 내 파일·도구·환경에 완전히 접근</td></tr>
+        <tr><td><strong>Cloud</strong></td><td>Anthropic 관리 VM</td><td>작업을 오프로드, 로컬에 없는 저장소에서도 작업, 여러 태스크 병렬 실행</td></tr>
+        <tr><td><strong>Remote Control</strong></td><td>내 머신 (브라우저로 원격 제어)</td><td>모든 걸 로컬에 유지한 채 웹 UI로 조작</td></tr>
+      </tbody>
+    </table>
+
+    <h3>각 surface를 두 축의 조합으로 매핑하기</h3>
+    <p>이 표가 이번 Day의 핵심이다. 각 surface 이름을 외우지 말고, "인터페이스가 뭐고 실행 환경이 뭔지"로 재구성해서 이해해야 새 surface가 추가돼도 스스로 분류할 수 있다.</p>
+    <table class="matrix-table">
+      <thead>
+        <tr><th>Surface</th><th>인터페이스</th><th>실행 환경</th><th>비고</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Terminal CLI</td><td>터미널</td><td>Local (기본값)</td><td>가장 기본이 되는 형태. 다른 surface들이 결국 이 CLI를 감싸거나 호출한다</td></tr>
+        <tr><td>VS Code / JetBrains 확장</td><td>IDE 사이드 패널</td><td>Local</td><td>인라인 diff, @-멘션, plan 리뷰를 IDE 안에서 제공. JetBrains 플러그인은 별도 설치된 CLI가 있어야 동작한다</td></tr>
+        <tr><td>Desktop app</td><td>독립 GUI 앱</td><td>Local 기본, 클라우드 세션도 기동 가능</td><td>여러 세션 나란히 보기, 비주얼 diff 리뷰, 예약 작업(scheduled tasks), 클라우드 세션 kick-off</td></tr>
+        <tr><td>Web (claude.ai/code) / iOS 앱</td><td>브라우저 / 모바일 앱</td><td>Cloud</td><td>로컬 셋업 없이 시작. 로컬에 없는 저장소 작업, 장시간 작업을 걸어두고 나중에 확인</td></tr>
+        <tr><td>Remote Control</td><td>브라우저 / 모바일</td><td>Local (원격 제어만)</td><td>클라우드가 아니라 "내 로컬 세션을 다른 기기 화면으로 조작"하는 것. Web과 가장 헷갈리는 지점</td></tr>
+        <tr><td>GitHub Actions / GitLab CI</td><td>없음 (이벤트로 트리거되는 headless 잡)</td><td>CI 러너 (일종의 임시 Local)</td><td><code>-p</code>(print/headless) 모드 위에서 동작. 사람의 실시간 승인이 없다</td></tr>
+        <tr><td>Slack / Channels</td><td>채팅 메시지</td><td>메시지가 라우팅되는 세션의 실행 환경을 따름</td><td>Telegram/Discord/iMessage/자체 webhook 이벤트도 세션에 밀어넣을 수 있다</td></tr>
+        <tr><td>Chrome (Claude in Chrome)</td><td>브라우저 탭 (추가 도구)</td><td>별도 실행 환경이 아니라 기존 세션에 브라우저 조작 도구를 얹는 것</td><td>살아있는 웹앱을 열어보고 디버깅할 때 사용</td></tr>
+      </tbody>
+    </table>
+
+    <div class="card concept-card">
+      <div class="card-label">이 구분이 왜 헷갈리기 쉬운가</div>
+      <p>
+        가장 흔한 혼동은 <strong>Web(클라우드 실행)</strong>과 <strong>Remote Control(로컬 실행 + 원격 제어)</strong>을 같은 것으로 오해하는 것이다. 둘 다 "브라우저로 접속한다"는 인터페이스 경험은 비슷하지만, 실제로 코드가 실행되는 위치는 정반대다. Web은 내 컴퓨터가 꺼져 있어도 Anthropic 인프라에서 계속 돈다. Remote Control은 내 컴퓨터가 꺼지면 세션도 멈춘다 — 대신 내 로컬 파일이 어디로도 나가지 않는다는 보안상 이점이 있다.
+      </p>
+    </div>
+
+    <h3>모든 surface가 같은 엔진을 공유한다는 원칙</h3>
+    <p>
+      공식 문서는 이 지점을 명시적으로 강조한다: <strong>"각 surface는 동일한 Claude Code 엔진에 연결되므로, CLAUDE.md 파일·설정·MCP 서버가 모든 surface에서 동일하게 동작한다."</strong> 즉 터미널에서 만든 <code>CLAUDE.md</code>, <code>.claude/settings.json</code>, MCP 서버 설정은 VS Code에서도, 웹에서도, CI에서도 그대로 적용된다. 다른 것은 딱 두 가지뿐이다 — <strong>어디서 실행되는가</strong>(Local/Cloud/Remote Control)와 <strong>무엇으로 상호작용하는가</strong>(터미널/IDE/GUI/브라우저/이벤트). 에이전틱 루프 자체, 즉 도구 호출 판단 로직은 surface에 따라 달라지지 않는다.
+    </p>
+
+    <h3>Headless 자동화 — 사람이 없는 상호작용 모드</h3>
+    <p>
+      GitHub Actions나 GitLab CI에서 도는 Claude Code는 "IDE 확장처럼 또 다른 인터페이스"가 아니라, <strong>애초에 사람과 실시간으로 상호작용하지 않는 모드</strong>로 실행된다. 이걸 가능하게 하는 것이 CLI의 <code>-p</code>(또는 <code>--print</code>) 플래그, 즉 <strong>print/headless 모드</strong>다.
+    </p>
+    <ul>
+      <li><code>claude -p "PR을 보안 관점에서 리뷰해줘"</code> — 세션을 열지 않고 한 번 실행하고 결과를 반환한 뒤 종료한다</li>
+      <li><code>--output-format text|json|stream-json</code> — 사람이 읽는 텍스트 대신 스크립트가 파싱할 수 있는 구조화된 출력을 받을 수 있다</li>
+      <li><code>--max-turns</code>, <code>--max-budget-usd</code> — 사람이 <code>Esc</code>로 멈출 수 없으므로, 턴 수나 비용 상한을 프로그램적으로 강제한다</li>
+      <li><code>--permission-mode</code>, <code>--allowedTools</code>/<code>--disallowedTools</code> — 승인 프롬프트를 사람이 볼 수 없는 환경이므로, 어떤 도구를 쓸 수 있는지를 실행 전에 미리 못박아 둔다</li>
+    </ul>
+    <p>
+      즉 CI 통합은 완전히 새로운 기술이 아니라, <strong>"같은 엔진 + headless 상호작용 모드 + 사람의 실시간 승인을 대체하는 명시적 상한선"</strong>의 조합이다. 이 관계를 이해하면 "CI에서는 왜 이렇게 설정을 빡빡하게 잡아야 하는가"를 논리적으로 설명할 수 있다.
+    </p>
+
+    <h3>GitHub Actions 통합의 구체적 구조</h3>
+    <p>
+      공식 통합은 <code>anthropics/claude-code-action</code>(현재 <code>v1</code>, GA)으로 제공된다. 이 액션은 두 가지 트리거 방식을 자동으로 감지한다 — 이슈/PR 코멘트의 <code>@claude</code> 멘션에 반응하는 "태그 모드"와, 워크플로우 자체가 스케줄이나 이벤트로 즉시 실행되는 "자동화 모드"다. 설정은 <code>prompt</code>(지시문 또는 skill 이름)와 <code>claude_args</code>(CLI 인자를 그대로 전달)로 단순화되어 있고, 인증은 <code>ANTHROPIC_API_KEY</code> 시크릿(또는 Bedrock/Vertex를 OIDC로 연동)으로 처리한다. 리포지토리 루트의 <code>CLAUDE.md</code>는 CI에서 실행될 때도 그대로 적용되어, PR 자동 생성 시 팀 코딩 표준을 따르게 만드는 핵심 장치가 된다.
+    </p>
+
+    <div class="card concept-card">
+      <div class="card-label">2026-07 기준 확인 사항</div>
+      <p>
+        <code>claude-code-action</code>은 베타(<code>@beta</code>, <code>mode: "tag"/"agent"</code> 명시 필요)에서 GA <code>v1</code>으로 전환되며 <code>mode</code> 설정이 제거되고 자동 감지로 바뀌었고, <code>direct_prompt</code>는 <code>prompt</code>로, <code>max_turns</code>/<code>model</code>/<code>allowed_tools</code> 등 개별 옵션은 <code>claude_args</code> 하나로 통합됐다. 또한 최근 changelog에는 surface 간 이동을 돕는 기능들이 계속 추가되고 있다 — 웹/모바일에서 시작한 세션을 터미널로 당겨오는 <code>claude --teleport</code>, 모바일에서 메시지 하나로 Desktop 세션을 기동하는 Dispatch, Telegram/Discord/iMessage/자체 webhook 이벤트를 세션에 연결하는 Channels, 실행 중인 모든 세션을 한 화면에서 보는 Agent view(<code>claude agents</code>), 클라우드에서 계획을 초안하고 웹 에디터로 리뷰한 뒤 원격 또는 로컬로 실행하는 Ultraplan(초기 프리뷰), 웹에서 스케줄/GitHub 이벤트/API 호출로 템플릿화된 클라우드 에이전트를 실행하는 Routines 등이다. 이런 기능들은 "surface가 늘어날수록 그 사이를 이동/연결하는 브리지 기능도 함께 늘어난다"는 흐름을 보여준다. 세부 명령어와 가용 상태(GA/beta/preview)는 몇 주 단위로 바뀌므로 <code>code.claude.com/docs/en/whats-new</code>로 재확인한다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>표면적 기능 나열이 아니라 아키텍처적 구분 능력:</strong> "터미널도 되고 웹도 되고 CI도 됩니다"는 사용자 매뉴얼 수준이다. "인터페이스와 실행 환경은 독립된 축이고, 각 surface는 그 조합이다"라고 설명할 수 있어야 아키텍처를 이해했다는 신호가 된다.</li>
+        <li><strong>보안/데이터 위치 판단력:</strong> Cloud 실행은 로컬 네트워크 뒤의 내부 서비스나 사설 리포지토리에 접근하지 못할 수 있고, 코드가 Anthropic 관리 인프라로 이동한다. Local/Remote Control은 데이터가 내 머신을 벗어나지 않는다. 이 차이를 모르면 민감한 코드베이스에 잘못된 surface를 골라 쓰는 실수를 한다.</li>
+        <li><strong>자동화 설계 능력:</strong> headless 모드에서는 사람이 실시간으로 제동을 걸 수 없다는 것을 이해해야, CI 파이프라인에 <code>max-turns</code>/<code>budget</code>/<code>permission-mode</code> 같은 대체 안전장치를 설계할 수 있다.</li>
+        <li><strong>팀 도입 리더십:</strong> 여러 surface를 팀에 들여올 때 설정(CLAUDE.md, MCP, 권한 정책)을 흩어지지 않게 관리하는 것은 시니어의 책임이다. "모든 surface가 같은 엔진과 설정을 공유한다"는 사실을 정책 설계에 활용할 수 있는지를 본다.</li>
+      </ul>
+    </div>
+
+    <p>
+      이 질문은 "surface 이름을 몇 개 아는가"를 묻지 않는다. <strong>"인터페이스의 차이와 실행 환경의 차이를 분리해서, 그로부터 보안/자동화/팀 운영 판단을 끌어낼 수 있는가"</strong>를 묻는다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <h3>실제로 이 지식이 필요한 순간들</h3>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 1 — Remote Control을 클라우드 실행으로 오해해서 정책을 잘못 세운 사례</div>
+      <p>
+        한 팀이 "Remote Control도 브라우저로 접속하니까 웹이랑 똑같이 클라우드에서 도는 것"이라고 생각해서, 사내 규정상 민감한 리포지토리에는 Remote Control 사용을 전면 금지했다. 나중에 문서를 다시 읽고 나서야, Remote Control은 실제로는 <strong>내 로컬 머신에서 실행되고 브라우저는 그저 리모컨 역할</strong>이라는 것, 즉 코드가 로컬을 벗어나지 않는다는 것을 알게 됐다.
+      </p>
+      <p>
+        결과적으로 이 팀은 오히려 반대 정책 오류를 저지른 셈이다 — 실제로 데이터 유출 위험이 있는 것은 Web(Cloud 실행)이었는데, 그 위험은 검토하지 않고 안전한 Remote Control만 막았던 것이다. "브라우저로 접속한다"는 인터페이스의 유사성과 "코드가 어디서 실행되는가"라는 실행 환경을 구분하지 못하면 이런 식으로 보안 정책의 초점이 엉뚱한 곳을 향하게 된다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 2 — 대규모 마이그레이션 작업을 Cloud로 병렬 위임한 사례</div>
+      <p>
+        한 팀이 수십 개 서비스에 걸친 라이브러리 버전 업그레이드 작업을 해야 했다. 로컬 머신 하나에서 순차적으로 처리하면 하루 종일 걸릴 작업이었는데, 각 서비스 저장소별로 웹(claude.ai/code)에서 별도 클라우드 세션을 병렬로 띄워 동시에 진행했다. 로컬 머신 리소스를 전혀 쓰지 않고, 로컬에 클론해두지 않은 저장소에서도 바로 작업을 시작할 수 있었다는 점이 핵심 이득이었다.
+      </p>
+      <p>
+        다만 이 과정에서 사내 VPN 뒤에 있는 내부 패키지 레지스트리에 접근해야 하는 서비스 하나는 Cloud 환경에서 실패했다. Cloud 실행 환경은 Anthropic 관리 인프라이므로 사내 네트워크 안쪽 리소스에는 기본적으로 닿지 않는다 — 이 서비스만 Local로 다시 돌려야 했다. "Cloud가 항상 더 낫다"가 아니라 "작업이 사설 네트워크에 의존하는지"가 surface 선택의 실질적 기준이라는 것을 보여주는 사례다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 3 — GitHub Actions 자동 코드 리뷰 도입 시 비용/보안을 뒤늦게 챙긴 사례</div>
+      <p>
+        한 팀이 PR마다 <code>@claude</code> 멘션으로 보안 리뷰를 자동화하는 GitHub Actions 워크플로우를 붙였다. 처음엔 대화형 세션과 똑같이 동작할 거라 생각했지만, 실제로는 headless 모드라 사람이 매 단계 승인할 수 없고, 기본 <code>max-turns</code> 상한(기본값 10)과 GitHub Actions 실행 분(minutes) + API 토큰 비용이 PR 건수에 비례해서 누적된다는 것을 뒤늦게 파악했다.
+      </p>
+      <p>
+        이후 팀은 트리거 조건을 좁히고(모든 PR이 아니라 특정 라벨이 붙은 PR만), <code>claude_args</code>로 <code>--max-turns</code>와 워크플로우 타임아웃을 명시적으로 잡고, 시크릿은 리포지토리 시크릿으로만 관리하도록 정책을 세웠다. "CI 통합 = 대화형 세션의 자동 버전"이 아니라 "사람의 실시간 개입이 빠진 만큼 다른 방식으로 상한선을 설계해야 하는 별도 모드"라는 걸 배운 사례다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>면접에서 "surface들이 어떻게 다른가"류의 질문을 받으면, 아래 순서로 답을 구성하라.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>인터페이스와 실행 환경, 두 축을 먼저 분리한다</strong>
+        <p>"터미널이냐 웹이냐"는 인터페이스 차이고, "내 머신이냐 클라우드냐"는 실행 환경 차이라는 것을 먼저 규정한다. 이 구분 없이 답을 시작하면 이후 설명이 전부 뭉뚱그려진다.</p>
+      </li>
+      <li>
+        <strong>실행 환경 3분류(Local/Cloud/Remote Control)를 설명한다</strong>
+        <p>특히 Web(Cloud)과 Remote Control(Local + 원격 제어)의 차이를 명확히 짚는다 — 이 둘을 구분하는지가 이 주제에서 가장 강력한 시니어 신호다.</p>
+      </li>
+      <li>
+        <strong>각 surface를 두 축의 조합으로 매핑한다</strong>
+        <p>터미널/IDE 확장/Desktop/Web/Remote Control/CI를 각각 "인터페이스 + 실행 환경"으로 분류해서 설명한다.</p>
+      </li>
+      <li>
+        <strong>"동일 엔진 공유" 원칙과 설정 이식성을 강조한다</strong>
+        <p>CLAUDE.md/설정/MCP 서버가 모든 surface에서 동일하게 동작한다는 것, 그래서 팀 설정을 한 곳에서 관리하면 모든 surface에 자동으로 적용된다는 것을 설명한다.</p>
+      </li>
+      <li>
+        <strong>headless 자동화를 별도 상호작용 모드로 위치시킨다</strong>
+        <p>CI 통합이 "또 하나의 surface"가 아니라 "사람의 실시간 승인이 빠진 상호작용 모드(<code>-p</code>)이고, 그래서 다른 안전장치가 필요하다"는 것을 설명한다.</p>
+      </li>
+      <li>
+        <strong>실무 선택 기준으로 마무리한다</strong>
+        <p>보안/데이터 위치(사설 네트워크 접근 필요 여부), 협업 형태(개인 작업 vs 팀 자동화), 리소스 위치(로컬 머신 부하 vs 오프로드 필요성)를 기준으로 어떤 surface를 언제 쓸지 판단 근거를 제시하며 답을 맺는다.</p>
+      </li>
+    </ol>
+
+    <div class="card why-card">
+      <div class="card-label">핵심 팁</div>
+      <p>surface 이름을 나열하는 데서 멈추지 말고, 반드시 "그래서 우리 팀은 이런 기준으로 surface를 고른다"로 연결하라. 표를 외운 것처럼 들리는 답은 판단력이 아니라 암기력으로 읽힌다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — "여러 surface, 내부적으로 같은 겁니까 다른 겁니까?"</div>
+      <p>
+        "핵심은 두 가지를 분리해서 보는 겁니다. 하나는 사람이 무엇으로 상호작용하느냐는 인터페이스이고, 다른 하나는 실제로 코드가 어디서 실행되느냐는 실행 환경입니다. 공식 문서는 실행 환경을 Local(내 머신), Cloud(Anthropic 관리 VM), Remote Control(내 머신을 브라우저로 원격 제어) 세 가지로 나눕니다.
+      </p>
+      <p>
+        이 기준으로 보면 터미널과 VS Code/JetBrains 확장은 둘 다 Local에서 실행되고, 인터페이스만 터미널이냐 IDE 패널이냐로 다릅니다. Desktop app도 기본은 Local이지만 클라우드 세션을 기동할 수도 있습니다. 반면 claude.ai/code, 즉 웹은 Cloud에서 실행되고요. 여기서 실무적으로 가장 헷갈리기 쉬운 지점이 Remote Control인데, 이건 브라우저로 접속한다는 점에서 웹과 비슷해 보이지만 실제 실행은 여전히 제 로컬 머신에서 일어납니다. 브라우저는 리모컨일 뿐이고, 코드는 로컬을 벗어나지 않습니다. 이 차이를 모르면 보안 정책을 반대로 세우게 됩니다 — 실제로 저희 팀이 처음에 그런 실수를 했었고요.
+      </p>
+      <p>
+        그리고 GitHub Actions나 GitLab CI에서 도는 건 또 다른 종류의 차이인데, 이건 실행 환경의 문제가 아니라 상호작용 모드의 문제입니다. <code>-p</code>, 즉 headless 모드로 실행되기 때문에 사람이 실시간으로 승인 프롬프트에 답할 수 없습니다. 그래서 <code>max-turns</code>나 예산 상한, 허용 도구 목록을 미리 명시적으로 설정해서, 사람의 개입을 대신할 안전장치를 코드로 박아둬야 합니다.
+      </p>
+      <p>
+        중요한 건 이 모든 차이에도 불구하고, 공식 문서가 명시하듯 모든 surface가 같은 엔진에 연결되어 있고 CLAUDE.md, 설정, MCP 서버 구성이 surface 간에 그대로 공유된다는 점입니다. 그래서 저희 팀에서는 이 공유 원칙을 활용해서, 팀 표준은 리포지토리의 CLAUDE.md 한 곳에서 관리하고, surface 선택은 순수하게 '이 작업이 사설 네트워크에 접근해야 하는가', '로컬 리소스를 오프로드해야 하는가', '사람이 실시간 개입할 수 있는 작업인가'라는 세 가지 기준으로만 결정합니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① 인터페이스와 실행 환경을 분리해서 설명 ② Web과 Remote Control의 차이 — 가장 자주 틀리는 지점 — 를 정확히 짚음 ③ CI 통합을 "또 다른 surface"가 아니라 "상호작용 모드의 차이"로 재구성 ④ "동일 엔진 공유" 원칙을 팀 설정 관리 전략으로 연결해 시니어다운 판단력을 드러냄
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "VS Code/JetBrains 확장과 터미널 CLI의 관계는 무엇입니까? 하나가 다른 하나의 상위집합입니까?"</div>
+      <div class="followup-a">
+        <p>상위집합이라기보다 같은 엔진에 다른 인터페이스를 얹은 관계입니다. 실제로 JetBrains 플러그인은 별도로 설치된 Claude Code CLI가 있어야 동작하도록 되어 있습니다 — 즉 IDE 확장이 CLI를 감싸거나 그 위에 UI를 얹는 형태에 가깝습니다. IDE 확장이 주는 추가 가치는 인라인 diff 뷰, 코드 선택 영역을 컨텍스트로 바로 넘기는 기능, 대화 이력을 에디터 안에서 보는 것 같은 <strong>인터페이스 편의성</strong>이지, 에이전트의 판단 로직 자체가 달라지는 게 아닙니다.</p>
+        <p>그래서 "IDE 확장에서만 되는 특별한 리팩터링"같은 건 없습니다. 실행 환경은 둘 다 Local이고, CLAUDE.md와 설정도 동일하게 적용됩니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "claude.ai/code(웹)와 Desktop app이 왜 둘 다 존재합니까? 겹치는 것 아닌가요?"</div>
+      <div class="followup-a">
+        <p>인터페이스는 겹쳐 보이지만 기본 실행 환경과 용도가 다릅니다. 웹은 기본적으로 Cloud 실행이고, 로컬 셋업 없이 바로 시작해서 로컬에 없는 저장소에서도 작업하거나 여러 작업을 병렬로 걸어두는 데 최적화되어 있습니다. Desktop app은 기본적으로 Local 실행이면서, 동시에 여러 세션을 나란히 보고 비주얼 diff를 검토하고 예약 작업을 걸 수 있는 GUI이고, 필요하면 거기서 클라우드 세션을 기동할 수도 있습니다.</p>
+        <p>즉 웹은 "가볍게 클라우드에 작업을 던져놓는 창구"에 가깝고, Desktop app은 "로컬 작업을 시각적으로 관리하는 허브이면서 클라우드로도 뻗어나가는 창구"에 가깝습니다. 겹치는 지점(클라우드 세션 기동)이 있다는 것 자체가, 두 surface가 경쟁 관계가 아니라 같은 엔진 위에서 다른 사용 패턴에 최적화된 인터페이스라는 증거입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "Remote Control이 정확히 무엇을 원격으로 제어합니까? 클라우드에서 실행되는 겁니까?"</div>
+      <div class="followup-a">
+        <p>아닙니다. Remote Control은 실행 환경 축에서는 여전히 Local입니다 — 실제 실행은 제 로컬 머신에서 일어나고, 브라우저나 모바일은 그 세션을 들여다보고 조작하는 원격 화면일 뿐입니다. Web(Cloud)과 다른 점이 바로 이겁니다: Web은 제 컴퓨터를 꺼도 세션이 계속 돌지만, Remote Control은 로컬 머신이 꺼지면 세션도 함께 멈춥니다.</p>
+        <p>대신 Remote Control의 이점은 코드와 자격 증명이 로컬을 벗어나지 않는다는 것입니다. 그래서 사설 네트워크 접근이 필요하거나 민감한 코드베이스를 다루는 작업에는 Cloud보다 Remote Control이 더 적합한 선택일 수 있습니다 — 자리를 비웠지만 로컬 환경의 접근 권한은 그대로 써야 하는 경우입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "GitHub Actions에서 자동으로 도는 세션은 사람이 상호작용하는 세션과 무엇이 근본적으로 다릅니까?"</div>
+      <div class="followup-a">
+        <p>실행 환경(어디서 도는가)의 차이가 아니라 <strong>상호작용 모드</strong>의 차이입니다. 대화형 세션에서는 사람이 <code>Esc</code>로 즉시 멈추거나, 권한 모드 프롬프트에서 승인/거부하거나, 방향을 바꿀 수 있습니다. headless(<code>-p</code>) 모드로 도는 CI 잡에는 이 실시간 인간 루프가 없습니다.</p>
+        <p>그래서 CI 워크플로우를 설계할 때는 사람의 판단을 대체할 명시적 상한선 — <code>max-turns</code>, 예산 상한, 허용 도구 화이트리스트, 워크플로우 타임아웃 — 을 미리 코드로 박아둬야 합니다. "대화형에서 잘 됐으니 CI에서도 그대로 승인 없이 돌리면 되겠지"라고 생각하면, 폭주하거나 의도치 않은 명령을 실행할 위험을 사람이 아니라 아무도 막지 못하는 상태가 됩니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "여러 surface에 걸쳐 설정(CLAUDE.md, MCP, 권한 정책)을 어떻게 일관되게 유지합니까?"</div>
+      <div class="followup-a">
+        <p>공식 아키텍처가 이미 이 문제를 어느 정도 풀어줍니다 — CLAUDE.md, <code>.claude/settings.json</code>, MCP 서버 설정은 리포지토리나 조직 단위로 한 번 정의하면 모든 surface(터미널/IDE/웹/CI)에서 동일하게 로드됩니다. 그래서 실무적으로는 "surface마다 따로 설정한다"가 아니라 "한 곳(리포지토리 루트 CLAUDE.md, 조직 managed settings)에 정의하고 모든 surface가 그걸 상속받게 한다"가 정답입니다.</p>
+        <p>다만 CI처럼 headless로 도는 surface는 추가로 <code>claude_args</code>나 워크플로우 레벨 설정(<code>--max-turns</code>, <code>--permission-mode</code>)이 필요할 수 있는데, 이건 "설정이 따로 논다"기보다 "headless 모드에 특화된 안전장치를 얹는 것"으로 이해하는 게 정확합니다. 공통 설정 위에 surface별 안전장치를 얹는 계층 구조로 설계하는 것이 핵심입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>인터페이스와 실행 환경을 독립된 두 축으로 분리해서 설명한다</li>
+          <li>Web(Cloud)과 Remote Control(Local + 원격 제어)의 차이를 정확히 구분한다</li>
+          <li>CI 통합을 "실행 환경의 차이"가 아니라 "headless 상호작용 모드의 차이"로 설명한다</li>
+          <li>"동일 엔진 공유 + 설정 이식성" 원칙을 팀 설정 관리 전략으로 연결한다</li>
+          <li>surface 선택 기준을 보안/데이터 위치, 협업 형태, 리소스 위치 같은 구체적 기준으로 제시한다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"터미널도 되고 웹도 되고 IDE도 됩니다"처럼 기능을 나열만 한다</li>
+          <li>Web과 Remote Control을 "둘 다 브라우저니까 같은 것"이라고 뭉뚱그린다</li>
+          <li>CI에서 도는 것도 "그냥 또 다른 surface"라고만 말하고 headless 모드의 함의를 놓친다</li>
+          <li>surface마다 설정을 따로 관리해야 한다고 잘못 전제한다</li>
+          <li>selection 기준 없이 "다 상황에 맞게 쓰면 됩니다"로 끝낸다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        surface 목록은 문서 한 페이지만 읽어도 나열할 수 있다. 시니어 면접이 확인하려는 건 <strong>"인터페이스의 유사성에 속지 않고 실행 환경이라는 실질적 차이를 짚어낼 수 있는가", 그리고 "그 차이를 보안·비용·협업 판단으로 연결할 수 있는가"</strong>다. 특히 Web과 Remote Control을 혼동하는 것은 실제로 보안 정책 실수로 이어지는 흔한 실무 오류이기 때문에, 이 구분 하나만으로도 답변의 신뢰도가 크게 갈린다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"Remote Control도 브라우저로 접속하니까 웹(claude.ai/code)처럼 클라우드에서 실행되는 것이다."</p>
+      <div class="mc-right">실제</div>
+      <p>Remote Control은 실행 환경 축에서 여전히 <strong>Local</strong>이다. 브라우저/모바일은 리모컨일 뿐이고 코드는 내 로컬 머신에서 실행된다. 반면 Web(claude.ai/code)은 Anthropic 관리 VM, 즉 Cloud에서 실행된다. 이 둘을 구분하지 못하면 데이터 위치에 대한 보안 판단을 정반대로 내리게 된다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"VS Code/JetBrains 확장은 터미널 CLI와 완전히 별도로 개발되는 다른 제품이다."</p>
+      <div class="mc-right">실제</div>
+      <p>같은 에이전틱 루프 엔진을 공유하며, 특히 JetBrains 플러그인은 별도로 설치된 CLI가 있어야 동작하는 구조다. IDE 확장이 추가하는 것은 인라인 diff, 선택 영역 컨텍스트 공유 같은 <strong>인터페이스 편의 기능</strong>이지, 별개의 에이전트 로직이 아니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"CI에서 도는 Claude Code는 다른 버전이거나 더 제한된 기능만 쓸 수 있다."</p>
+      <div class="mc-right">실제</div>
+      <p>같은 엔진과 같은 도구 세트를 쓴다. 다른 것은 <strong>상호작용 모드</strong>다 — 사람이 실시간으로 승인할 수 없는 headless(<code>-p</code>) 모드로 실행되기 때문에, 그 공백을 <code>max-turns</code>/예산 상한/허용 도구 화이트리스트 같은 명시적 설정으로 미리 메워야 한다는 것이 차이다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"Desktop app은 그냥 터미널을 GUI로 감싼 것뿐이다."</p>
+      <div class="mc-right">실제</div>
+      <p>여러 세션을 동시에 관리하고 비주얼하게 diff를 검토하는 것 외에도, 예약 작업(scheduled tasks)을 로컬에서 직접 실행하거나 클라우드 세션을 새로 기동하는 등 터미널 단일 세션에는 없는 상호작용 계층을 제공한다. "GUI 버전 터미널"이 아니라 "로컬 작업 관리 허브 + 클라우드로의 창구"로 이해하는 게 정확하다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"GitHub Actions 통합은 설정 파일만 있으면 되고, CLAUDE.md 같은 코드베이스 컨텍스트 설계는 CI에서는 의미가 없다."</p>
+      <div class="mc-right">실제</div>
+      <p>리포지토리 루트의 CLAUDE.md는 CI에서 실행될 때도 동일하게 로드되어 적용된다. 오히려 headless로 자동 실행되는 CI 워크플로우일수록, 사람이 그때그때 지시를 보완해줄 수 없기 때문에 CLAUDE.md에 코딩 표준과 리뷰 기준을 명확히 적어두는 것이 더 중요해진다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>두 축 분리</strong></td>
+          <td>인터페이스와 실행 환경을 독립된 축으로 분리해서 설명한다</td>
+          <td>차이가 있다는 건 알지만 축을 명확히 분리하지 못한다</td>
+          <td>모든 surface를 그냥 "다른 제품"이라고 뭉뚱그린다</td>
+        </tr>
+        <tr>
+          <td><strong>Web vs Remote Control</strong></td>
+          <td>Cloud 실행과 Local+원격 제어의 차이를 정확히 구분하고 보안 함의까지 설명한다</td>
+          <td>다르다는 건 알지만 구체적 차이를 설명하지 못한다</td>
+          <td>둘을 같은 것으로 착각한다</td>
+        </tr>
+        <tr>
+          <td><strong>Headless 자동화 이해</strong></td>
+          <td>CI 통합을 상호작용 모드의 차이로 설명하고 대체 안전장치의 필요성을 짚는다</td>
+          <td>"CI에서도 된다"는 것은 알지만 안전장치 설계까지 연결하지 못한다</td>
+          <td>CI에서도 대화형과 똑같이 사람이 개입한다고 착각한다</td>
+        </tr>
+        <tr>
+          <td><strong>설정 이식성 이해</strong></td>
+          <td>CLAUDE.md/설정/MCP가 surface 간 공유된다는 것을 알고 관리 전략에 활용한다</td>
+          <td>공유된다는 것은 알지만 활용 전략은 없다</td>
+          <td>surface마다 설정을 따로 해야 한다고 잘못 알고 있다</td>
+        </tr>
+        <tr>
+          <td><strong>선택 기준 제시</strong></td>
+          <td>보안/데이터 위치, 협업 형태, 리소스 위치 등 구체적 기준으로 surface 선택을 설명한다</td>
+          <td>물어보면 사례는 든다</td>
+          <td>기능 나열에서 끝나고 선택 기준을 제시하지 못한다</td>
+        </tr>
+        <tr>
+          <td><strong>최신성</strong></td>
+          <td>최근 changelog(Teleport, Dispatch, Channels, Agent view, Ultraplan, Routines 등)를 알고 버전에 따라 바뀔 수 있음을 인지한다</td>
+          <td>대체로 맞지만 최신 브리지 기능은 모른다</td>
+          <td>오래된 surface 구성을 최신인 것처럼 말한다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면, 특히 headless 자동화와 안전장치의 관계는 Day 4~6(권한/샌드박스/보안)에서, GitHub Actions/GitLab CI의 구체적 운영은 Day 16에서, Remote Control과 멀티 디바이스 운영은 Day 14에서 더 깊게 다룬다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./0001-agentic-coding-operating-framework.html">← Day 1</a>
+    <a href="./index.html">목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>
