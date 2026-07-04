@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-03 | AI Harness와 Agent Runtime 설계/운영 프레임워크 | [0001-ai-agent-harness-runtime-design-framework.html](lessons/0001-ai-agent-harness-runtime-design-framework.html) |
+| 2 | 2026-07-04 | Model/Tool/Runtime 경계와 Provider 추상화 | [0002-model-tool-runtime-boundary-provider-abstraction.html](lessons/0002-model-tool-runtime-boundary-provider-abstraction.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | Model/Tool/Runtime 경계와 Provider 추상화 | tool calling 스키마 표준화, provider abstraction layer, tool 설계 원칙(Vercel 80% 도구 삭감 사례), tool error handling |
 | 3 | Prompt/Context/Memory Scaffolding | context window 예산, context rot, context poisoning, compaction, session/memory 설계 |
 | 4 | Control-Flow Scaffolding과 루프 안정성 | ReAct 루프, step cap/budget cap/repeated-state detection, 종료 조건 설계, circuit breaker |
 | 5 | Guardrail과 Prompt Injection 방어 | lethal trifecta, input/output/tool guardrail, tripwire, defense-in-depth, OWASP Agentic Top 10 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — 다음: Day 2 — Model/Tool/Runtime 경계와 Provider 추상화
+**Day 2 완료** — 다음: Day 3 — Prompt/Context/Memory Scaffolding
 
 ## 습득한 핵심 개념
 
@@ -35,7 +35,10 @@
 - [x] Agent loop: gather context → take action → verify → repeat (Day 1)
 - [x] Claude Agent SDK vs OpenAI Agents SDK 아키텍처 비교 (Day 1)
 - [x] Build vs Framework 판단 기준 (Day 1)
-- [ ] Model/Tool/Runtime 경계, Provider 추상화 (예정 Day 2)
+- [x] Tool calling 스키마 표준화(Anthropic/OpenAI/MCP 공통 핵심과 provider별 차이) (Day 2)
+- [x] Provider abstraction layer 설계와 leaky abstraction(caching/reasoning 토큰/tool_choice/스트리밍) (Day 2)
+- [x] Tool 설계 원칙(통합, 네임스페이싱, poka-yoke, Vercel d0 80% 삭감 사례) (Day 2)
+- [x] Tool error handling(is_error, 정보 노출/인젝션 방어, idempotency) (Day 2)
 - [ ] Context/Memory scaffolding, context rot/poisoning (예정 Day 3)
 - [ ] Control-flow scaffolding, 루프 안정성 (예정 Day 4)
 - [ ] Guardrail, prompt injection 방어 (예정 Day 5)

@@ -21,6 +21,10 @@
 - [Context compaction (server-side, beta)](https://platform.claude.com/docs/en/build-with-claude/compaction)
 - [Streaming Messages](https://platform.claude.com/docs/en/build-with-claude/streaming) / [Fine-grained tool streaming](https://platform.claude.com/docs/en/agents-and-tools/tool-use/fine-grained-tool-streaming)
 - [Choosing the right model (모델 라우팅/티어링)](https://docs.anthropic.com/en/docs/about-claude/models/choosing-a-model)
+- [Tool use with Claude — overview (input_schema, tool_choice)](https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview)
+- [Structured outputs (GA, output_config.format)](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
+- [Introducing advanced tool use — Tool Search Tool, Programmatic Tool Calling (Anthropic Engineering)](https://www.anthropic.com/engineering/advanced-tool-use)
+- [Extended thinking (reasoning 토큰, effort 파라미터)](https://platform.claude.com/docs/en/build-with-claude/extended-thinking)
 
 ## 공식 문서 — OpenAI
 
@@ -32,6 +36,8 @@
 - [Deprecations 목록 (Assistants API 등)](https://developers.openai.com/api/docs/deprecations)
 - [Assistants → Responses/Conversations 마이그레이션 가이드](https://developers.openai.com/api/docs/guides/migrate-to-responses)
 - [Prompt caching (OpenAI)](https://developers.openai.com/api/docs/guides/prompt-caching)
+- [Function calling — Responses API tools](https://developers.openai.com/api/docs/guides/function-calling)
+- [Structured model outputs (strict 모드, additionalProperties 제약)](https://developers.openai.com/api/docs/guides/structured-outputs)
 - [openai/swarm (레거시, 교육용 참고)](https://github.com/openai/swarm)
 - [PyPI — openai-agents (Python SDK 릴리스)](https://pypi.org/project/openai-agents/)
 - [npm — @openai/agents (TS SDK 릴리스)](https://www.npmjs.com/package/@openai/agents)
@@ -44,6 +50,8 @@
 - [MCP Registry Preview 발표](https://blog.modelcontextprotocol.io/posts/2025-09-08-mcp-registry-preview/) / [registry.modelcontextprotocol.io](https://registry.modelcontextprotocol.io/)
 - [Anthropic — MCP를 Agentic AI Foundation에 기부(Linux Foundation 이관)](https://www.anthropic.com/news/donating-the-model-context-protocol-and-establishing-of-the-agentic-ai-foundation)
 - [modelcontextprotocol/modelcontextprotocol GitHub Releases](https://github.com/modelcontextprotocol/modelcontextprotocol/releases)
+- [MCP Tools spec (inputSchema/outputSchema)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools)
+- [MCP primitives 정리 (tools/resources/prompts/sampling/roots)](https://portkey.ai/blog/mcp-primitives-the-mental-model-behind-the-protocol/)
 
 ## Observability / OpenTelemetry GenAI
 
@@ -74,11 +82,20 @@
 ## 아키텍처 딥다이브 / 엔지니어링 블로그 / 사례 연구
 
 - [Martin Fowler — Harness Engineering](https://martinfowler.com/articles/harness-engineering.html) — "LLM은 agent 시스템에서 가장 작은 부분" 프레임 정립
-- [Vercel — We removed 80% of our agent's tools](https://vercel.com/blog/we-removed-80-percent-of-our-agents-tools) — 도구 축소로 성공률 80%→100%, 응답시간 3.5배 개선 사례
+- [Vercel — We removed 80% of our agent's tools](https://vercel.com/blog/we-removed-80-percent-of-our-agents-tools) — 도구 축소로 성공률 80%→100%, 응답시간 3.5배 개선 사례 (d0 text-to-SQL agent)
+- [Anthropic — Writing effective tools for AI agents (Engineering)](https://www.anthropic.com/engineering/writing-tools-for-agents) — 통합/네임스페이싱/응답 형식 제어/poka-yoke 원칙
 - [Chroma Research — Context Rot](https://www.trychroma.com/research/context-rot) — 컨텍스트 길이 증가에 따른 성능 저하 실증 연구
 - [Redis — Context Poisoning in Agent Reasoning](https://redis.io/blog/context-poisoning-agent-reasoning/)
 - [Arize — Common AI Agent Failure Modes](https://arize.com/blog/common-ai-agent-failures/)
 - [MongoDB — Agent Harness: Why the LLM Is the Smallest Part of Your Agent System](https://www.mongodb.com/company/blog/technical/agent-harness-why-llm-is-smallest-part-of-your-agent-system)
+
+## Provider 추상화 레이어 (Day 2)
+
+- [Vercel AI SDK](https://ai-sdk.dev/docs/introduction) / [AI SDK 6 — ToolLoopAgent](https://vercel.com/blog/ai-sdk-6)
+- [LiteLLM 문서 (100+ provider 번역 레이어)](https://docs.litellm.ai/) / [tool calling 통합](https://deepwiki.com/BerriAI/litellm/8.1-tool-calling-and-function-integration)
+- [OpenRouter API Reference (finish_reason 정규화, native_finish_reason)](https://openrouter.ai/docs/api/reference/overview)
+- [OpenRouter — Prompt caching 가이드 (provider별 breakpoint 차이)](https://openrouter.ai/docs/guides/best-practices/prompt-caching)
+- [PromptHub — Prompt Caching 비교 (OpenAI/Anthropic/Google)](https://www.prompthub.us/blog/prompt-caching-with-openai-anthropic-and-google-models)
 
 ## 사용 시 주의사항
 
@@ -86,3 +103,4 @@
 - 이 트랙에 등장하는 모델 이름(Sonnet 5, Opus 4.8, Fable 5 등), 버전 번호, 가격, deprecation 날짜는 레슨 작성 시점(2026-07) 기준이며 빠르게 바뀔 수 있다. 실제 면접 전 공식 changelog/deprecation 페이지로 최종 확인해야 한다.
 - **OpenAI Assistants API는 2026-08-26에 완전히 종료된다.** 이 트랙의 예시는 Responses API + Agents SDK 기준으로 작성한다.
 - **MCP 2026-07-28 개정판(RC)**은 이 레슨 작성 시점 기준 아직 최종본이 아니다(발행 예정). Sampling/Roots/Logging deprecation 등은 RC 내용이므로 실제 적용 여부를 재확인한다.
+- Day 2의 Vercel d0(80% tool 삭감) 수치와 Anthropic "Writing effective tools" 원칙은 원문 접근(403)이 안 되어 벤더 공식 소셜 포스트 + 다수의 독립적 2차 인용으로 교차검증했다. 핵심 수치(성공률 80%→100%, 응답시간 274초→77초/3.5배, 토큰/스텝 40% 감소)는 3개 이상 출처에서 일치했으나, 정확한 원문 인용이 필요하면 실제 브라우저로 재확인한다.
