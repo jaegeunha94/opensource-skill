@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — LangChain Middleware 아키텍처</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 3 · LangChain / LangGraph Interview</div>
+    <h1>Middleware 아키텍처</h1>
+    <div class="subtitle">서브클래싱 대신 middleware로 agent를 확장하는 이유, hook 종류와 실행 순서, 그리고 프로덕션에서 middleware 조합을 잘못 설계했을 때 생기는 문제</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전 기준:</strong> 이 레슨은 2026-07 기준 <strong>LangChain 1.x (GA)</strong>의
+    <code>langchain.agents.middleware</code> 모듈을 기준으로 작성됐다. Middleware는 1.0에서 가장 크게 바뀐 확장 지점이며,
+    과거의 <code>AgentExecutor</code> 서브클래싱이나 <code>create_react_agent</code>의 개별 파라미터(예: <code>pre_model_hook</code>)로
+    하던 커스터마이징을 대체한다. 실제 클래스/함수 시그니처는 면접 준비 시점에 공식 문서(<code>reference.langchain.com</code>)로
+    다시 확인하라 — hook 이름과 동작 방식은 안정화됐지만 built-in middleware 목록은 계속 추가되고 있다.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "LangChain 에이전트를 커스터마이징할 때 왜 서브클래싱 대신 middleware를 쓰나요? before_model/after_model 같은 hook과
+      wrap_model_call/wrap_tool_call 같은 hook은 뭐가 다르고, 언제 각각을 선택하나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "여러 middleware를 동시에 등록하면 실행 순서는 어떻게 결정되나요? 순서를 잘못 배치하면 실무에서 어떤 문제가 생길 수 있나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "SummarizationMiddleware나 HumanInTheLoopMiddleware 같은 built-in middleware를 프로덕션에 적용할 때 뭘 검증해야 하나요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Middleware란 무엇이고, 왜 서브클래싱을 대체했는가</h2>
+
+    <h3>문제의 출발점: agent 루프를 어디서 가로챌 것인가</h3>
+    <p>
+      Agent의 기본 동작은 단순하다 — "모델을 호출한다 → 모델이 tool 호출을 요청하면 tool을 실행한다 →
+      결과를 다시 모델에 보여준다 → 반복한다." 그런데 실무에서는 이 루프의 특정 지점에
+      <strong>공통 로직을 끼워 넣어야</strong> 하는 경우가 계속 생긴다. 예를 들어 "모델 호출 전에 대화가
+      너무 길면 요약한다", "tool 호출 결과에서 개인정보를 지운다", "위험한 tool은 사람 승인을 받는다",
+      "모델 호출 비용이 임계치를 넘으면 강제로 멈춘다" 같은 것들이다.
+    </p>
+    <p>
+      과거 <code>AgentExecutor</code> 시절에는 이런 요구가 생길 때마다 <strong>클래스를 서브클래싱</strong>하거나
+      개별 파라미터(예: <code>pre_model_hook</code>, <code>post_model_hook</code>)를 하나씩 늘리는 방식으로 대응했다.
+      문제는 요구사항이 늘어날수록 서브클래스 계층이 꼬이고, "이 로직들이 정확히 어떤 순서로 실행되는지"를
+      코드를 직접 추적해야만 알 수 있었다는 점이다. Supervisor 패턴, swarm 패턴, deep agent(계획 목록을 관리하는
+      에이전트) 패턴은 사실상 각자 <strong>비슷한 확장 로직을 매번 처음부터 다시 구현</strong>한 것에 가까웠다.
+    </p>
+    <p>
+      Middleware는 이 문제를 <strong>"agent 루프의 정해진 지점(hook)에 함수를 꽂아 넣는 방식"</strong>으로
+      재구성한다. 웹 서버의 middleware(요청이 들어올 때 인증을 검사하고, 응답이 나갈 때 로깅하는 계층)와
+      정확히 같은 사고방식이다 — 핵심 로직(모델 호출, tool 실행)은 그대로 두고, 그 앞뒤에
+      <strong>독립적으로 조립 가능한 조각</strong>을 끼워 넣는다.
+    </p>
+
+    <div class="callout callout-info">
+      <strong>핵심 전제:</strong> Middleware는 "부가 기능을 위한 편의 도구"가 아니라, <strong>agent 확장의 표준 단위</strong>다.
+      Supervisor나 deep agent 같은 이전의 "개별 아키텍처"들도 이제는 middleware 여러 개를
+      조합해서 재현할 수 있다. 즉 "어떤 아키텍처 패턴을 쓸 것인가"라는 질문이 상당 부분
+      "어떤 middleware를 어떤 순서로 조합할 것인가"라는 질문으로 바뀌었다.
+    </div>
+
+    <h3>Hook은 두 종류다 — "생명주기형(node-style)"과 "감싸기형(wrap-style)"</h3>
+    <p>
+      Middleware가 끼어들 수 있는 지점은 크게 두 가지 방식으로 나뉜다. 이 구분을 정확히 이해하는 것이
+      이 주제 전체의 핵심이다.
+    </p>
+    <table>
+      <tr><th>구분</th><th>Hook</th><th>동작 방식</th><th>반환 값</th></tr>
+      <tr><td rowspan="4">생명주기형<br>(node-style)</td><td><code>before_agent</code></td><td>agent 실행 시작 전 1회</td><td rowspan="4"><code>dict</code> (state 업데이트, reducer로 병합) 또는 <code>None</code></td></tr>
+      <tr><td><code>before_model</code></td><td>매 모델 호출 직전</td></tr>
+      <tr><td><code>after_model</code></td><td>매 모델 응답 직후</td></tr>
+      <tr><td><code>after_agent</code></td><td>agent 실행 종료 후 1회</td></tr>
+      <tr><td rowspan="2">감싸기형<br>(wrap-style)</td><td><code>wrap_model_call</code></td><td>모델 호출 자체를 <code>handler</code> 콜백으로 감쌈</td><td><code>ModelResponse</code> / <code>AIMessage</code></td></tr>
+      <tr><td><code>wrap_tool_call</code></td><td>tool 실행 자체를 <code>handler</code> 콜백으로 감쌈</td><td><code>ToolMessage</code> / <code>Command</code></td></tr>
+    </table>
+    <p>
+      <strong>생명주기형 hook</strong>은 "관찰하고 state를 업데이트"하는 데 적합하다. <code>dict</code>를 반환하면
+      LangGraph의 reducer 메커니즘으로 state에 병합된다. 반면 <strong>감싸기형 hook</strong>은 실행 자체를
+      제어할 수 있다 — <code>handler</code>를 호출하면 실제 모델/tool 호출이 일어나고, <strong>호출하지 않으면
+      아예 실행을 건너뛸 수도(short-circuit)</strong>, 여러 번 호출하면 <strong>재시도</strong>를 구현할 수도 있다.
+    </p>
+
+    <div class="callout callout-warn">
+      <strong>선택 기준:</strong> "모델/tool 호출이 실제로 일어나는지 자체를 통제해야 하는가?"
+      — 그렇다면 <code>wrap_model_call</code>/<code>wrap_tool_call</code>. "호출 전후에 관찰하거나
+      부가 정보를 state에 기록하기만 하면 되는가?" — 그렇다면 <code>before_model</code>/<code>after_model</code>이
+      더 단순하고 안전하다. Retry, fallback, 캐싱처럼 <strong>호출 자체를 여러 번 하거나 건너뛰는 로직</strong>은
+      반드시 wrap 계열이어야 한다.
+    </div>
+
+    <h3>여러 middleware를 등록하면? — 실행 순서는 "양파(onion)" 구조다</h3>
+    <p>
+      <code>create_agent(model, tools, middleware=[m1, m2, m3])</code>처럼 여러 middleware를 리스트로 등록하면,
+      실행 순서는 <strong>등록한 순서 그대로 "들어가고", 반대 순서로 "나온다."</strong>
+    </p>
+    <pre><code><span class="comment"># before_* / wrap_*: 등록 순서대로 (m1 → m2 → m3 → 실제 모델 호출)</span>
+<span class="comment"># after_*: 반대 순서로 (실제 모델 호출 → m3 → m2 → m1)</span>
+
+<span class="comment">#            m1 진입 → m2 진입 → m3 진입 → [ 모델 호출 ] → m3 탈출 → m2 탈출 → m1 탈출</span></code></pre>
+    <p>
+      이건 우연이 아니라 <strong>웹 서버 middleware 체인과 동일한 설계</strong>다. <code>wrap_model_call</code>
+      관점에서 보면 <code>m1</code>이 가장 바깥 껍질이고, <code>m3</code>이 실제 모델 호출을 가장 가까이서
+      감싼다. 즉 <strong>먼저 등록한 middleware일수록 더 넓은 범위(다른 모든 middleware를 포함해서)를
+      감싼다</strong>는 뜻이다. 이 순서를 착각하면 "PII를 지운 다음에 요약해야 하는데, 순서가 반대로 등록돼서
+      요약본에 개인정보가 남는" 것 같은 실제 버그가 생긴다.
+    </p>
+
+    <h3>제어 흐름(jump_to) — middleware가 그래프의 다음 목적지를 바꾼다</h3>
+    <p>
+      생명주기형 hook은 단순 관찰을 넘어 <strong>그래프의 다음 노드를 강제로 바꾸는 것</strong>도 할 수 있다.
+      반환하는 <code>dict</code>에 <code>"jump_to"</code> 키를 포함시키면 되는데, 이때 middleware는
+      <code>can_jump_to</code>로 자신이 어떤 목적지로 점프할 수 있는지 미리 선언해야 한다
+      (허용된 값은 <code>"tools"</code>, <code>"model"</code>, <code>"end"</code>).
+    </p>
+    <pre><code><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> AgentMiddleware, hook_config
+
+<span class="keyword">class</span> MessageLimitMiddleware(AgentMiddleware):
+    <span class="func">def</span> __init__(<span class="keyword">self</span>, max_messages: int = <span class="number">20</span>):
+        <span class="keyword">self</span>.max_messages = max_messages
+
+    <span class="keyword">@hook_config</span>(can_jump_to=[<span class="string">"end"</span>])
+    <span class="func">def</span> before_model(<span class="keyword">self</span>, state, runtime):
+        <span class="keyword">if</span> len(state[<span class="string">"messages"</span>]) >= <span class="keyword">self</span>.max_messages:
+            <span class="comment"># 모델을 더 호출하지 않고 즉시 그래프를 종료시킨다</span>
+            <span class="keyword">return</span> {
+                <span class="string">"messages"</span>: [AIMessage(content=<span class="string">"대화가 너무 길어져 상담원에게 연결합니다."</span>)],
+                <span class="string">"jump_to"</span>: <span class="string">"end"</span>,
+            }
+        <span class="keyword">return</span> <span class="keyword">None</span></code></pre>
+    <p>
+      이 메커니즘 덕분에 "무한 루프에 빠진 agent를 강제 종료", "위험 신호가 감지되면 즉시 사람에게
+      넘기기" 같은 <strong>가드레일을 middleware 하나로 캡슐화</strong>할 수 있다. 이건 Day 6(Guardrails/Context
+      Engineering)에서 더 깊게 다룬다.
+    </p>
+
+    <h3>작성 방식 두 가지 — 데코레이터 vs 클래스</h3>
+    <p>
+      간단한 로직은 <strong>데코레이터</strong>(<code>@before_model</code>, <code>@wrap_model_call</code> 등)로
+      함수 하나만 작성하면 된다. 상태(설정값, 카운터 등)를 유지하거나 여러 hook을 함께 구현해야 하면
+      <strong><code>AgentMiddleware</code> 서브클래스</strong>로 작성한다.
+    </p>
+    <pre><code><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> wrap_model_call
+<span class="keyword">from</span> langchain.agents.middleware.types <span class="keyword">import</span> ModelRequest, ModelResponse
+<span class="keyword">from</span> typing <span class="keyword">import</span> Callable
+
+<span class="keyword">@wrap_model_call</span>
+<span class="func">def</span> retry_on_rate_limit(
+    request: ModelRequest,
+    handler: Callable[[ModelRequest], ModelResponse],
+) -> ModelResponse:
+    <span class="comment"># handler(request)를 여러 번 호출할 수 있다 = retry를 middleware 레벨에서 구현</span>
+    <span class="keyword">for</span> attempt <span class="keyword">in</span> range(<span class="number">3</span>):
+        <span class="keyword">try</span>:
+            <span class="keyword">return</span> handler(request)
+        <span class="keyword">except</span> RateLimitError:
+            <span class="keyword">if</span> attempt == <span class="number">2</span>:
+                <span class="keyword">raise</span>
+            time.sleep(<span class="number">2</span> ** attempt)</code></pre>
+
+    <h3>Built-in Middleware — 자주 쓰는 문제는 이미 구현되어 있다</h3>
+    <p>
+      LangChain은 실무에서 반복적으로 필요한 패턴을 built-in middleware로 제공한다.
+      직접 구현하기 전에 이미 있는지부터 확인하는 것이 실무 원칙이다.
+    </p>
+    <table>
+      <tr><th>Middleware</th><th>구현 hook</th><th>용도</th></tr>
+      <tr><td><code>SummarizationMiddleware</code></td><td><code>before_model</code></td><td>토큰/메시지 수 임계치 초과 시 오래된 메시지를 요약해서 context 예산을 관리. AI/Tool 메시지 쌍이 끊기지 않게 안전한 절단 지점을 탐색</td></tr>
+      <tr><td><code>HumanInTheLoopMiddleware</code></td><td><code>wrap_tool_call</code>(interrupt)</td><td>지정된 tool 호출 전에 실행을 멈추고 사람의 승인/거부/수정을 기다림</td></tr>
+      <tr><td><code>PIIMiddleware</code></td><td><code>before_model</code> / <code>after_model</code></td><td>모델 입력·출력·tool 결과에서 개인정보를 마스킹/삭제/해시 처리</td></tr>
+      <tr><td><code>ModelCallLimitMiddleware</code></td><td><code>before_model</code></td><td>thread/run 단위로 모델 호출 횟수를 제한해 폭주 비용을 방지</td></tr>
+      <tr><td><code>ToolCallLimitMiddleware</code></td><td><code>wrap_tool_call</code></td><td>tool 전체 또는 tool별로 호출 횟수 상한을 걸어 무한 루프/과다 호출 방지</td></tr>
+      <tr><td><code>ModelFallbackMiddleware</code></td><td><code>wrap_model_call</code></td><td>주 모델 호출 실패 시 대체 모델로 자동 전환</td></tr>
+      <tr><td><code>ModelRetryMiddleware</code> / <code>ToolRetryMiddleware</code></td><td><code>wrap_model_call</code> / <code>wrap_tool_call</code></td><td>일시적 실패에 대한 재시도 정책(backoff 등)을 표준화</td></tr>
+      <tr><td><code>TodoListMiddleware</code></td><td><code>before_model</code> 계열</td><td>agent가 스스로 할 일 목록을 관리하게 함 (deep agent 패턴의 핵심 조각)</td></tr>
+      <tr><td><code>LLMToolSelectorMiddleware</code> / <code>LLMToolEmulator</code></td><td><code>wrap_model_call</code> / <code>wrap_tool_call</code></td><td>tool이 너무 많을 때 관련 tool만 추리거나, 테스트 단계에서 실제 tool 대신 LLM으로 응답을 흉내냄</td></tr>
+    </table>
+
+    <pre><code><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent
+<span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> (
+    SummarizationMiddleware,
+    HumanInTheLoopMiddleware,
+    PIIMiddleware,
+    ToolCallLimitMiddleware,
+)
+
+agent = create_agent(
+    model=<span class="string">"claude-sonnet-5"</span>,
+    tools=[search_tool, send_refund_tool],
+    middleware=[
+        <span class="comment"># 순서 중요: PII 마스킹을 요약보다 먼저 둬서, 요약본에 원본 개인정보가 남지 않게 한다</span>
+        PIIMiddleware(pii_types=[<span class="string">"email"</span>, <span class="string">"phone"</span>], strategy=<span class="string">"redact"</span>),
+        SummarizationMiddleware(model=<span class="string">"claude-haiku-4-5"</span>, trigger=({<span class="string">"tokens"</span>: <span class="number">4000</span>},)),
+        ToolCallLimitMiddleware(tool_name=<span class="string">"send_refund_tool"</span>, run_limit=<span class="number">1</span>),
+        HumanInTheLoopMiddleware(interrupt_on={<span class="string">"send_refund_tool"</span>: <span class="keyword">True</span>}),
+    ],
+)</code></pre>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <p>
+      Middleware 질문은 <strong>"create_agent에 tools 목록을 붙일 줄 아는가"</strong>가 아니라,
+      <strong>"agent 내부 루프의 확장 지점을 이해하고, 여러 확장 지점을 조합했을 때의 상호작용까지
+      예측할 수 있는가"</strong>를 본다. 이건 실무에서 "간단한 튜토리얼 agent"와 "여러 팀의 요구사항이
+      누적된 프로덕션 agent"의 차이를 가르는 지점이다.
+    </p>
+
+    <ul>
+      <li>
+        <strong>확장 메커니즘의 본질을 이해하는가:</strong> middleware가 왜 서브클래싱을 대체했는지,
+        "재사용 가능한 조합 단위"라는 설계 의도를 설명할 수 있는가
+      </li>
+      <li>
+        <strong>hook 종류를 구분하고 올바르게 선택하는가:</strong> 관찰/state 업데이트에는 생명주기형,
+        호출 자체를 제어(재시도/폴백/차단)해야 할 때는 감싸기형을 쓰는 판단 기준이 있는가
+      </li>
+      <li>
+        <strong>합성(composition)의 함정을 아는가:</strong> 여러 middleware를 등록했을 때
+        순서가 결과를 바꾼다는 것, 그리고 순서를 잘못 설계했을 때 생기는 실제 실패 사례를
+        떠올릴 수 있는가
+      </li>
+      <li>
+        <strong>바퀴를 다시 만들지 않는가:</strong> built-in middleware의 존재를 알고,
+        직접 구현하기 전에 "이미 있는 것을 재사용할 수 있는지"부터 검토하는 습관이 있는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      Senior 개발자는 middleware를 "훅 몇 개 붙이는 기능"이 아니라, <strong>"agent 아키텍처를
+      조립 가능한 단위로 분해하는 설계 원칙"</strong>으로 설명해야 한다. 이 관점이 있어야
+      Day 9(Human-in-the-loop), Day 10(Multi-agent), Day 11(Fault Tolerance)에서 다룰
+      더 복잡한 패턴도 "특수 기술"이 아니라 "middleware 조합의 응용"으로 자연스럽게 연결된다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 고객센터 agent의 대화가 길어져 컨텍스트가 넘침</h3>
+    <p>
+      장시간 상담이 이어지면 메시지 이력이 모델의 context window를 초과해 에러가 나거나
+      비용이 급증한다. → <code>SummarizationMiddleware</code>를 <code>before_model</code>에 등록해서
+      임계치를 넘으면 자동으로 오래된 대화를 요약한다. 이때 <strong>AI/Tool 메시지 쌍이 끊기지
+      않게</strong> 안전한 절단 지점을 찾는 로직이 이미 구현돼 있으므로, 직접 절단 로직을
+      짤 필요가 없다.
+    </p>
+
+    <h3>상황 2: 환불 처리 tool을 agent가 스스로 호출하게 뒀다가 사고 발생</h3>
+    <p>
+      모델이 애매한 요청을 "환불해달라는 뜻"으로 해석해 실제 환불 tool을 호출해버린 사고가 났다.
+      → <code>HumanInTheLoopMiddleware</code>로 금액이 큰 tool 호출은 실행 직전에 멈추고
+      사람이 승인하게 하며, 동시에 <code>ToolCallLimitMiddleware(tool_name="send_refund_tool", run_limit=1)</code>로
+      한 세션에서 같은 tool이 반복 호출되는 것 자체를 막는다.
+    </p>
+
+    <h3>상황 3: PII 마스킹과 요약을 둘 다 등록했는데 순서를 잘못 배치</h3>
+    <p>
+      <code>middleware=[SummarizationMiddleware(...), PIIMiddleware(...)]</code> 순서로 등록했더니,
+      먼저 등록된 <code>SummarizationMiddleware</code>가 원본 메시지를 요약하면서 <strong>요약문 안에
+      이메일 주소가 그대로 남아버렸다</strong>. PII 마스킹은 그 뒤에 실행됐지만 이미 요약본에
+      개인정보가 녹아든 뒤였다. → 순서를 <code>[PIIMiddleware(...), SummarizationMiddleware(...)]</code>로
+      바꿔서, <strong>마스킹이 먼저 실행되고 이미 마스킹된 텍스트를 요약하도록</strong> 수정했다.
+      "여러 middleware의 등록 순서 = 실행 순서"라는 원칙을 실무에서 검증하지 않으면 이런 사고가 생긴다.
+    </p>
+
+    <h3>상황 4: 모델 provider 장애로 agent 전체가 에러 응답</h3>
+    <p>
+      주력 모델 provider가 순단(짧은 장애)이 발생하면 agent가 그대로 에러를 반환해 사용자에게
+      노출됐다. → <code>wrap_model_call</code> 기반 <code>ModelFallbackMiddleware</code>로 1차 실패 시
+      보조 모델로 자동 전환하고, <code>ModelRetryMiddleware</code>로 일시적 오류는 지수 백오프로
+      재시도한다. 이때 fallback/retry는 반드시 <strong>감싸기형 hook</strong>이어야 한다 —
+      생명주기형 hook은 "호출을 다시 시도"하는 제어 자체를 할 수 없기 때문이다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>middleware가 해결하는 문제부터 짚기</strong>
+        "서브클래싱은 요구사항이 늘수록 계층이 꼬이고 실행 순서를 코드로 추적해야 했습니다.
+        Middleware는 agent 루프의 정해진 지점(hook)에 조합 가능한 단위를 꽂는 방식으로 이를 대체합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>두 종류의 hook을 구분해서 설명하기</strong>
+        "before/after 같은 생명주기형은 관찰과 state 업데이트에, wrap_model_call/wrap_tool_call 같은
+        감싸기형은 호출 자체의 실행 여부·횟수를 제어(재시도, 폴백, 차단)하는 데 씁니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>실행 순서(onion 구조)를 명확히 하기</strong>
+        "여러 middleware를 등록하면 등록 순서대로 들어가고 반대 순서로 나옵니다. 이 순서 자체가
+        결과에 영향을 주기 때문에, 예를 들어 PII 마스킹은 요약보다 먼저 실행되도록 배치해야 합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Built-in부터 검토하는 습관 언급하기</strong>
+        "Summarization, HITL, PII, 호출 제한, fallback 같은 자주 나오는 요구는 이미 built-in
+        middleware로 제공되므로, 직접 구현하기 전에 재사용 가능한지부터 확인합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>가드레일/제어 흐름까지 연결하기 (Senior 포인트)</strong>
+        "before_model 같은 hook에서 jump_to로 그래프 실행을 즉시 종료시키는 가드레일도
+        middleware 하나로 캡슐화할 수 있습니다. 이 덕분에 supervisor나 deep agent 같은
+        패턴도 middleware 조합의 특수 사례로 이해합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "Middleware는 agent 루프에서 반복적으로 필요한 확장 로직을, 서브클래싱 없이 조합 가능한
+        단위로 끼워 넣는 메커니즘입니다. Hook은 크게 두 종류로 나뉘는데, before_model/after_model
+        같은 생명주기형은 호출 전후에 관찰하고 state를 업데이트하는 용도이고, wrap_model_call/wrap_tool_call
+        같은 감싸기형은 handler 콜백을 통해 실제 호출 자체를 제어합니다 — 재시도, 폴백, 캐싱처럼
+        호출을 여러 번 하거나 아예 건너뛰어야 하는 로직은 반드시 감싸기형으로 구현해야 합니다.
+      </p>
+      <p>
+        여러 middleware를 함께 등록할 때 실행 순서는 등록한 순서 그대로 들어가고 반대 순서로
+        나오는 양파 구조입니다. 이 순서는 결과에 실제로 영향을 주기 때문에, 예를 들어 PII
+        마스킹과 요약을 함께 쓴다면 마스킹을 먼저 실행해서 요약본에 원본 개인정보가 남지
+        않도록 순서를 설계해야 합니다.
+      </p>
+      <p>
+        실무에서는 요약, human-in-the-loop 승인, PII 마스킹, 호출 횟수 제한, 모델 fallback처럼
+        자주 나오는 요구는 이미 built-in middleware로 제공되기 때문에, 직접 구현하기 전에
+        재사용 가능한지부터 검토합니다. 그리고 무한 루프 방지 같은 가드레일은 before_model에서
+        jump_to로 그래프를 즉시 종료시키는 방식으로 middleware 하나에 캡슐화합니다. 이런 관점으로
+        보면 supervisor나 deep agent 같은 이전의 개별 아키텍처들도 결국 middleware를 어떤 조합과
+        순서로 쌓느냐의 문제로 환원됩니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "wrap_model_call 안에서 handler를 두 번 이상 호출하면 무슨 일이 일어나나요?"</h3>
+    <p><strong>약한 답변:</strong> "에러가 나거나 안 될 것 같습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "정상적으로 동작합니다. handler는 '실제로 모델을 한 번 호출하는' 콜백일 뿐이라서, 여러 번
+      호출하면 그만큼 모델이 여러 번 불립니다. 이게 바로 재시도(retry) 로직을 middleware
+      레벨에서 구현하는 방법입니다. 예외를 잡아서 조건에 따라 handler를 다시 호출하거나,
+      아예 다른 request(다른 모델)로 handler를 호출하면 fallback이 됩니다. 다만 이때
+      토큰 비용과 지연시간이 호출 횟수만큼 늘어난다는 점을 감안해서 재시도 상한과
+      백오프 전략을 반드시 함께 설계해야 합니다."
+    </p>
+
+    <h3>F2. "같은 tool에 ToolCallLimitMiddleware를 tool별로도, 전체 기준으로도 걸어놨다면 어떤 게 먼저 적용되나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "여러 인스턴스를 등록한 순서대로 wrap_tool_call 체인이 쌓이기 때문에, 등록 순서상 먼저
+      온 인스턴스가 더 바깥에서 검사합니다. 예를 들어 특정 tool 전용 제한을 먼저 등록하고
+      전체 제한을 나중에 등록했다면, tool 전용 제한이 먼저 걸립니다. 실무에서는 이걸
+      우연에 맡기지 않고, '가장 좁은 범위(특정 tool)의 제한을 먼저, 가장 넓은 범위(전체)의
+      제한을 나중에'라는 규칙을 팀 컨벤션으로 정해둡니다."
+    </p>
+
+    <h3>F3. "middleware 안에서 예외가 발생하면 agent 전체가 죽나요, 아니면 격리되나요?"</h3>
+    <p><strong>약한 답변:</strong> "middleware는 독립적이니까 격리될 것 같습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "격리되지 않습니다. Middleware는 agent 실행 그래프 안에 컴파일되어 들어가는 코드이기
+      때문에, 여기서 처리하지 않은 예외는 그래프 실행 자체를 중단시킵니다. 그래서 재시도나
+      fallback을 구현하는 wrap 계열 middleware는 반드시 자기 책임 범위의 예외를 명시적으로
+      잡아야 하고, '이 예외는 복구 불가능하니 의도적으로 전파시킨다'는 판단도 코드에
+      드러나야 합니다. Day 2에서 다룬 tool 에러의 '일시적 vs 구조적' 구분이 middleware
+      설계에도 그대로 적용됩니다."
+    </p>
+
+    <h3>F4. "커스텀 middleware를 클래스로 작성할 때 state_schema는 왜 필요한가요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "Middleware가 agent의 기본 state(메시지 목록 등)에 없는 자기만의 필드(예: 호출 횟수 카운터,
+      마지막 요약 시각)를 state에 추가해서 그래프 전체에서 공유하고 싶을 때 state_schema로
+      선언합니다. 이걸 선언하지 않고 임의의 키를 반환하면 reducer가 그 키를 어떻게 병합해야
+      할지 모르거나, 다른 middleware/노드와 필드명이 충돌할 위험이 있습니다. state_schema는
+      '이 middleware가 그래프 상태에 어떤 계약을 추가하는지'를 명시적으로 선언하는 장치입니다."
+    </p>
+
+    <h3>F5. "Deep agent(할 일 목록을 관리하는 agent)나 supervisor 패턴이 왜 middleware 조합으로 재현 가능하다고 하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "이 패턴들의 실체는 결국 '모델 호출 전에 계획을 확인시키고(before_model 또는
+      TodoListMiddleware), tool 호출 전에 위험도를 검사하고(wrap_tool_call), 특정 조건에서
+      다른 흐름으로 점프시키는(jump_to)' 것의 조합입니다. 과거에는 이런 걸 하나의 커스텀
+      그래프/클래스로 통째로 짰지만, middleware로 쪼개면 '계획 관리'와 '위험 tool 승인'을
+      독립적으로 켜고 끄거나 다른 프로젝트에 재사용할 수 있습니다. 이게 middleware 아키텍처의
+      핵심 이점이라고 생각합니다 — 아키텍처 패턴이 코드 재사용 단위가 됐다는 것입니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>생명주기형(관찰/state 업데이트)과 감싸기형(호출 제어)을 <strong>구분하고 선택 기준</strong>을 제시한다</li>
+          <li>여러 middleware의 <strong>실행 순서(onion)가 결과를 바꾼다</strong>는 것을 실제 사례로 설명한다</li>
+          <li>재시도/fallback을 구현하려면 반드시 <strong>wrap 계열</strong>이어야 하는 이유를 안다</li>
+          <li>built-in middleware를 <strong>먼저 검토</strong>하는 습관을 언급한다</li>
+          <li>middleware 예외가 <strong>격리되지 않고 그래프 전체에 영향</strong>을 준다는 것을 안다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"middleware는 그냥 before/after 콜백 몇 개다" — <strong>hook 종류 구분 못 함</strong></li>
+          <li>여러 middleware를 등록할 때 <strong>순서는 상관없다</strong>고 단정</li>
+          <li>재시도/fallback도 before_model 같은 생명주기형 hook으로 구현하려 함</li>
+          <li>PII, 요약, 승인 게이트 같은 기능을 <strong>매번 처음부터 직접 구현</strong>하려 함</li>
+          <li>"middleware는 독립적이라 에러가 나도 격리될 것"이라고 근거 없이 추측</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 middleware를 "기능 목록"으로 나열하지 않고,
+      <strong>"어떤 hook 종류가 어떤 제어 능력을 갖는지, 여러 개를 합성했을 때 순서가 왜 중요한지"</strong>를
+      구조적으로 설명한다. 이는 곧 프로덕션에서 실제로 middleware 조합을 설계할 능력이 있다는 신호다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "Middleware는 단순 로깅이나 프롬프트 전처리용이다"</h3>
+    <p>
+      <strong>사실:</strong> wrap_model_call/wrap_tool_call은 handler 호출 여부와 횟수를 제어할 수 있어
+      재시도, fallback, 캐싱, 심지어 "실제 tool을 호출하지 않고 흉내만 내기"(<code>LLMToolEmulator</code>)까지
+      구현할 수 있다. 로깅은 middleware가 할 수 있는 일 중 극히 일부다.
+    </p>
+
+    <h3>오해 2: "여러 middleware를 등록할 때 순서는 상관없다"</h3>
+    <p>
+      <strong>사실:</strong> 등록 순서는 곧 실행 순서(onion 구조)다. PII 마스킹과 요약처럼
+      한쪽 결과가 다른 쪽 입력에 영향을 주는 조합에서는 순서를 잘못 두면 조용히 잘못된
+      결과(예: 요약본에 개인정보 잔존)를 만든다.
+    </p>
+
+    <h3>오해 3: "복잡한 agent 패턴(supervisor, deep agent)은 middleware와 별개의 고급 기술이다"</h3>
+    <p>
+      <strong>사실:</strong> 이런 패턴들은 이제 middleware(계획 관리, 위험 tool 승인 게이트, 조건부 jump_to)의
+      조합으로 재현 가능하다. "완전히 새로운 아키텍처"가 아니라 "middleware를 어떻게 조립하는가"의
+      문제로 재구성됐다.
+    </p>
+
+    <h3>오해 4: "before_model에서 return None만 하면 아무 일도 안 일어난다"</h3>
+    <p>
+      <strong>사실:</strong> 맞는 말이지만, 이 사실 자체가 중요한 설계 지점이다. state를 굳이 바꿀
+      필요가 없는 middleware(순수 관찰/검증 목적)는 <code>None</code>을 반환하면 되고, 반대로
+      <code>jump_to</code>를 포함한 dict를 반환하면 그래프의 다음 목적지를 강제로 바꿀 수 있다는
+      양쪽 극단을 모두 이해해야 middleware를 가드레일 용도로 정확히 설계할 수 있다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Middleware 조합 설계 전 점검표</h2>
+
+    <table>
+      <tr>
+        <th>항목</th>
+        <th>확인할 것</th>
+        <th>리스크</th>
+      </tr>
+      <tr>
+        <td>hook 선택</td>
+        <td>호출 자체를 제어(재시도/폴백/차단)해야 하면 wrap 계열을, 관찰/state 업데이트만 필요하면 생명주기형을 썼는가</td>
+        <td><span class="badge badge-yellow">기능 미달 또는 과도한 복잡도</span></td>
+      </tr>
+      <tr>
+        <td>등록 순서</td>
+        <td>PII 마스킹 → 요약처럼 선후 관계가 있는 middleware의 순서를 의도적으로 배치했는가</td>
+        <td><span class="badge badge-red">개인정보 유출·데이터 손상</span></td>
+      </tr>
+      <tr>
+        <td>재사용 우선</td>
+        <td>Summarization/HITL/PII/호출 제한/fallback을 직접 구현하기 전에 built-in을 검토했는가</td>
+        <td><span class="badge badge-yellow">불필요한 유지보수 비용</span></td>
+      </tr>
+      <tr>
+        <td>예외 처리 범위</td>
+        <td>wrap 계열 middleware 안에서 잡아야 할 예외와 의도적으로 전파해야 할 예외를 구분했는가</td>
+        <td><span class="badge badge-red">그래프 전체 중단</span></td>
+      </tr>
+      <tr>
+        <td>비용/지연 상한</td>
+        <td>재시도·fallback 로직에 시도 횟수 상한과 백오프를 명시했는가</td>
+        <td><span class="badge badge-yellow">토큰 비용·지연시간 폭증</span></td>
+      </tr>
+      <tr>
+        <td>가드레일 캡슐화</td>
+        <td>무한 루프/위험 tool 방지 로직을 jump_to 기반 middleware로 명시적으로 분리했는가</td>
+        <td><span class="badge badge-red">런어웨이 비용·오작동</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>middleware를 "before/after 콜백 몇 개"로만 이해하고, 어떤 문제를 해결하려고 등장했는지 설명 못 함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>create_agent에 middleware 리스트를 붙여본 경험이 있고, before_model/after_model 정도는 구분함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>생명주기형과 감싸기형 hook의 차이를 이해하고, 재시도/fallback은 wrap 계열로 구현해야 함을 앎.
+      built-in middleware 목록을 알고 우선 검토하는 습관이 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>hook 종류 구분, 여러 middleware의 실행 순서(onion)와 그로 인한 실제 실패 사례,
+      jump_to 기반 가드레일 설계, 예외 격리 여부까지 하나의 흐름으로 연결해서 설명함.
+      supervisor/deep agent 같은 복잡한 패턴도 middleware 조합의 관점으로 재구성해서 설명함</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. before_model과 wrap_model_call 중 재시도 로직을 어디에 구현해야 하는지, 그리고 왜 안 되는 쪽은 안 되는지 설명할 수 있는가?<br>
+      2. PII 마스킹과 요약을 함께 쓸 때 어떤 순서로 등록해야 하는지, 순서를 반대로 하면 무슨 문제가 생기는지 즉석에서 예를 들 수 있는가?<br>
+      3. 여러 개의 ToolCallLimitMiddleware를 tool별/전체로 겹쳐 등록했을 때 어떤 게 먼저 검사되는지 설명할 수 있는가?<br>
+      4. middleware 안에서 발생한 예외가 agent 전체에 어떤 영향을 주는지, 그리고 이를 어떻게 방지하는지 말할 수 있는가?<br>
+      5. supervisor나 deep agent 패턴을 "middleware 조합"이라는 관점으로 30초 안에 재설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>Middleware는 서브클래싱을 대체하는 조합 가능한 확장 단위</strong>다. Agent 루프의
+      정해진 지점(hook)에 독립적인 로직을 꽂아 넣는다.</li>
+      <li><strong>Hook은 생명주기형(before/after)과 감싸기형(wrap_model_call/wrap_tool_call) 두 종류</strong>다.
+      관찰·state 업데이트는 생명주기형, 재시도·폴백·차단처럼 호출 자체를 제어해야 하면 반드시 감싸기형이다.</li>
+      <li><strong>여러 middleware의 실행 순서는 양파(onion) 구조</strong>다 — 등록 순서대로 들어가고
+      반대 순서로 나온다. 순서가 실제 결과를 바꾼다.</li>
+      <li><strong>jump_to</strong>로 생명주기형 hook이 그래프의 다음 목적지를 강제로 바꿀 수 있다 —
+      가드레일과 조기 종료 로직의 핵심 메커니즘이다.</li>
+      <li><strong>Built-in middleware</strong>(Summarization, HumanInTheLoop, PII, 호출 제한, Fallback/Retry 등)가
+      자주 필요한 패턴을 이미 구현해 두었으므로, 직접 구현 전에 재사용 가능성부터 검토한다.</li>
+      <li>Supervisor·swarm·deep agent 같은 이전의 "개별 아키텍처"도 이제는 <strong>middleware 조합의
+      응용</strong>으로 이해할 수 있다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 3 완료 · 다음: Day 4 — Structured Output과 Streaming</span>
+  </div>
+
+</div>
+</body>
+</html>

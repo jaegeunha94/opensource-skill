@@ -22,6 +22,9 @@
 - [langchain-ai/langgraphjs Releases (GitHub)](https://github.com/langchain-ai/langgraphjs/releases) — JS/TS 버전 변경 이력(Python과 개념 비교용)
 - [Custom Middleware 가이드](https://docs.langchain.com/oss/python/langchain/middleware/custom) — 커스텀 middleware 작성법
 - [Prebuilt Middleware 목록](https://docs.langchain.com/oss/python/langchain/middleware/built-in) — HITL, summarization, PII redaction 등 내장 middleware
+- [middleware | LangChain Python Reference](https://reference.langchain.com/python/langchain/middleware) — `AgentMiddleware` hook 시그니처(`before_agent`/`before_model`/`wrap_model_call`/`wrap_tool_call`/`after_model`/`after_agent`), 데코레이터, `JumpTo`/`hook_config` 원본 API(Day 3 근거, `docs.langchain.com` 403 차단 시 대체 소스로 사용)
+- [langchain-ai/langchain — agents/middleware 소스 (GitHub)](https://github.com/langchain-ai/langchain/tree/master/libs/langchain_v1/langchain/agents/middleware) — `types.py`, `summarization.py`, `pii.py`, `tool_call_limit.py` 등 middleware 구현 원본. `docs.langchain.com`/`reference.langchain.com`이 막힐 때 `raw.githubusercontent.com`으로 직접 소스를 확인 가능(Day 3 근거)
+- [How Middleware Lets You Customize Your Agent Harness — LangChain 공식 블로그](https://www.langchain.com/blog/how-middleware-lets-you-customize-your-agent-harness) — middleware가 서브클래싱을 대체한 설계 배경, 실행 순서(onion) 설명
 
 ## 아키텍처 딥다이브 / 엔지니어링 블로그
 

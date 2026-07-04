@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | LangChain·LangGraph 기반 Agent 설계/운영 프레임워크 | [0001-langchain-langgraph-agent-architecture-framework.html](lessons/0001-langchain-langgraph-agent-architecture-framework.html) |
 | 2 | 2026-07-03 | Model / Tool / Message abstraction | [0002-langchain-model-tool-message-abstraction.html](lessons/0002-langchain-model-tool-message-abstraction.html) |
+| 3 | 2026-07-04 | Middleware 아키텍처 | [0003-langchain-middleware-architecture.html](lessons/0003-langchain-middleware-architecture.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | Middleware 아키텍처 | `before_model`/`after_model`/`wrap_model_call`/`wrap_tool_call`/`before_agent`/`after_agent`, built-in middleware, custom middleware 설계 |
 | 4 | Structured Output과 Streaming | `with_structured_output`, streaming mode(values/updates/messages/custom), 지연시간 vs UX trade-off |
 | 5 | Retrieval과 Memory | RAG 통합 지점, short-term vs long-term memory, memory 설계가 agent 품질에 미치는 영향 |
 | 6 | Guardrails와 Context Engineering | context window 예산 관리, prompt injection 방어, tool scoping, context 압축/요약 middleware |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — 다음: Day 3 — Middleware 아키텍처
+**Day 3 완료** — 다음: Day 4 — Structured Output과 Streaming
 
 ## 습득한 핵심 개념
 
@@ -36,7 +36,9 @@
 - [x] ChatModel/Message 표준화(content_blocks)와 provider 독립성 (Day 2)
 - [x] Tool 정의(`@tool`, docstring/타입 힌트가 곧 스펙)와 `ToolRuntime` 실행 컨텍스트 주입 (Day 2)
 - [x] Tool error handling 원칙과 `handle_tool_errors` 기본값 변경 운영 리스크 (Day 2)
-- [ ] Middleware 아키텍처 (예정 Day 3)
+- [x] 생명주기형(`before_agent`/`before_model`/`after_model`/`after_agent`) vs 감싸기형(`wrap_model_call`/`wrap_tool_call`) hook 구분 (Day 3)
+- [x] 다중 middleware 실행 순서(onion 구조)와 등록 순서에 따른 실무 실패 사례 (Day 3)
+- [x] `jump_to` 기반 제어 흐름과 built-in middleware 카탈로그(Summarization/HITL/PII/호출 제한/Fallback) (Day 3)
 - [ ] Structured Output / Streaming (예정 Day 4)
 - [ ] Retrieval / Memory 설계 (예정 Day 5)
 - [ ] Guardrails / Context Engineering (예정 Day 6)
