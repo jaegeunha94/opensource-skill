@@ -231,17 +231,44 @@ After `git push origin main`, verify that GitHub Pages has published the pushed 
 
    Every URL must return `200`.
 
-If the Pages run fails with a transient deployment error such as `Deployment failed, try again later.`:
+If the Pages run fails but the `build` job succeeded and only the `deploy` job failed, treat it as a GitHub Pages deployment service or queue failure first. Do not stop after a single retry. Use a bounded publish-retry loop:
 
-1. Create and push an empty rebuild trigger commit:
+1. Inspect the failed run and deployment status:
+
+   ```bash
+   curl -s "https://api.github.com/repos/jaegeunha94/opensource-skill/actions/runs/{run_id}/jobs"
+   curl -s "https://api.github.com/repos/jaegeunha94/opensource-skill/deployments?per_page=5"
+   curl -s "https://api.github.com/repos/jaegeunha94/opensource-skill/deployments/{deployment_id}/statuses"
+   ```
+
+   Evidence for this retry path is: `build` is `success`, `deploy` is `failure`, and the latest `github-pages` deployment status is `failure`. Job log downloads may return `403`; deployment statuses are enough to continue.
+
+2. Before each retry, confirm there is no active Pages run for `main`:
+
+   ```bash
+   curl -s "https://api.github.com/repos/jaegeunha94/opensource-skill/actions/runs?branch=main&per_page=5"
+   ```
+
+   If any relevant Pages run is `queued`, `waiting`, or `in_progress`, wait for it to reach `completed` before creating another commit. Do not stack multiple rebuild commits while a Pages deployment is still active.
+
+3. Wait with backoff between retries to let the Pages deployment queue settle:
+
+   ```text
+   retry 1: wait 60 seconds
+   retry 2: wait 120 seconds
+   retry 3: wait 240 seconds
+   ```
+
+4. Create and push one empty rebuild trigger commit per retry:
 
    ```bash
    git commit --allow-empty -m "chore: trigger GitHub Pages rebuild"
    git push origin main
+   final_sha=$(git rev-parse HEAD)
    ```
 
-2. Set `final_sha` to the new `HEAD`.
-3. Repeat the Pages run and URL verification.
+5. Repeat the Pages run verification, root freshness check, and lesson URL checks after each retry.
+6. Stop retrying after 3 empty rebuild attempts, or sooner if a run succeeds.
 
 If Pages deployment still fails, or any lesson URL is not `200`, stop. Report:
 
