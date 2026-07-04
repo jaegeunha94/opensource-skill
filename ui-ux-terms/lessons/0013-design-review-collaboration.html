@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 13 — 디자인 리뷰 & 협업 프로세스 용어</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; font-size: 16px; line-height: 1.7; color: #1a1a2e; background: #f8f9fc; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+    /* header */
+    header { background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%); color: #fff; border-radius: 12px; padding: 2rem 2rem 1.75rem; margin-bottom: 2rem; }
+    header .day-badge { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-bottom: 0.5rem; }
+    header h1 { font-size: 1.7rem; font-weight: 700; line-height: 1.3; }
+    header p.subtitle { margin-top: 0.6rem; opacity: 0.9; font-size: 0.95rem; }
+
+    /* nav breadcrumb */
+    .breadcrumb { font-size: 0.82rem; color: #6c757d; margin-bottom: 1.5rem; }
+    .breadcrumb a { color: #3a7bd5; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* section */
+    section { background: #fff; border-radius: 10px; padding: 1.75rem 2rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    section h2 { font-size: 1.15rem; font-weight: 700; color: #3a7bd5; margin-bottom: 1rem; border-left: 4px solid #3a7bd5; padding-left: 0.75rem; }
+    section h3 { font-size: 1rem; font-weight: 700; color: #2d3436; margin: 1.4rem 0 0.5rem; }
+    section p { margin-bottom: 0.85rem; }
+    section ul, section ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    section ul li, section ol li { margin-bottom: 0.4rem; }
+
+    /* term card */
+    .term-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+    .term-card .term-title { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.25rem; }
+    .term-card .term-eng { font-size: 0.82rem; color: #6c757d; margin-bottom: 0.5rem; font-style: italic; }
+    .term-card .term-body { font-size: 0.93rem; }
+
+    /* table */
+    .table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+    th { background: #f0f4ff; color: #3a7bd5; font-weight: 700; text-align: left; padding: 0.6rem 0.9rem; border-bottom: 2px solid #d0d9f5; }
+    td { padding: 0.55rem 0.9rem; border-bottom: 1px solid #eee; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fbff; }
+
+    /* callout */
+    .callout { border-left: 4px solid #00d2ff; background: #f0faff; border-radius: 0 8px 8px 0; padding: 0.9rem 1.1rem; margin: 1rem 0; font-size: 0.9rem; }
+    .callout.warn { border-color: #f39c12; background: #fffbf0; }
+    .callout.tip  { border-color: #27ae60; background: #f0fff4; }
+
+    /* code */
+    code { background: #f4f4f8; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.85em; font-family: 'Fira Code', monospace; }
+    pre { background: #1e1e2e; color: #cdd6f4; border-radius: 8px; padding: 1.1rem 1.3rem; overflow-x: auto; font-size: 0.85rem; margin: 0.75rem 0; }
+    pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+
+    /* copy compare */
+    .compare-row { display: flex; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .compare-col { flex: 1 1 240px; border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.9rem; }
+    .compare-col.bad { background: #fff4f4; border-left: 4px solid #e74c3c; }
+    .compare-col.good { background: #f0fff4; border-left: 4px solid #27ae60; }
+    .compare-col .label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+    .compare-col.bad .label { color: #e74c3c; }
+    .compare-col.good .label { color: #27ae60; }
+
+    /* quiz */
+    .quiz { background: #fafbfe; border: 1px solid #d0d9f5; border-radius: 8px; padding: 1.25rem 1.4rem; margin-top: 1.5rem; }
+    .quiz h3 { font-size: 1rem; color: #3a7bd5; margin-bottom: 0.75rem; }
+    .quiz .q { font-weight: 600; margin-bottom: 0.6rem; }
+    .quiz .options li { margin-bottom: 0.3rem; cursor: pointer; padding: 0.3rem 0.5rem; border-radius: 4px; transition: background 0.15s; }
+    .quiz .options li:hover { background: #e8f0ff; }
+    .quiz details { margin-top: 0.75rem; }
+    .quiz details summary { cursor: pointer; color: #3a7bd5; font-size: 0.9rem; }
+    .quiz details p { margin-top: 0.5rem; font-size: 0.9rem; background: #f0fff4; border-left: 3px solid #27ae60; padding: 0.6rem 0.8rem; border-radius: 0 6px 6px 0; }
+
+    /* footer */
+    footer { text-align: center; font-size: 0.82rem; color: #aaa; margin-top: 2.5rem; }
+    footer a { color: #3a7bd5; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="breadcrumb">
+    <a href="./index.html">← UI/UX 용어 학습 목록</a>
+  </div>
+
+  <header>
+    <div class="day-badge">Day 13 · UI/UX 용어</div>
+    <h1>디자인 리뷰 & 협업 프로세스 용어</h1>
+    <p class="subtitle">Design Critique · Design Review · Design QA · Design Debt · DesignOps</p>
+  </header>
+
+  <!-- ───────────────── 1. 왜 이 용어가 중요한가 ───────────────── -->
+  <section>
+    <h2>1. 왜 이 용어들이 중요한가</h2>
+    <p>
+      지금까지 배운 용어(디자인 시스템, 핸드오프, 프로토타입 등)는 대부분 "무엇을 만드는가"에
+      관한 것이었다. 이번 레슨은 그 결과물을 <strong>어떻게 검토하고, 합의하고, 품질을
+      유지하는가</strong>에 관한 용어를 다룬다. 디자인 리뷰 회의에서 "이건 크리틱이야,
+      아니면 승인 리뷰야?"를 구분하지 못하면 회의 목적이 흐려지고, 어떤 피드백이
+      "제안"인지 "필수 수정 사항"인지 팀이 서로 다르게 이해하게 된다.
+    </p>
+    <p>
+      또한 디자인이 실제로 구현된 뒤 명세와 어긋나는 문제(<strong>Design QA</strong>),
+      임시방편으로 쌓인 미해결 디자인 이슈(<strong>Design Debt</strong>), 그리고 이
+      전체 프로세스를 관리하는 조직 기능(<strong>DesignOps</strong>)은 실무에서 매우
+      자주 등장하지만 정확히 구분해 쓰이는 경우가 드물다. 이 용어들을 정확히 쓰면
+      스프린트 회의에서 "지금 이 이슈는 QA로 넘길 문제인지, 다음 크리틱에서 논의할
+      문제인지"를 빠르게 합의할 수 있다.
+    </p>
+  </section>
+
+  <!-- ───────────────── 2. 핵심 용어 카드 ───────────────── -->
+  <section>
+    <h2>2. 핵심 용어 카드</h2>
+
+    <div class="term-card">
+      <div class="term-title">디자인 크리틱</div>
+      <div class="term-eng">Design Critique</div>
+      <div class="term-body">
+        디자인이 <strong>완성되기 전 단계</strong>에서 동료 디자이너·PM·개발자가 모여
+        작업물에 대한 반응과 대안을 나누는 <strong>비공식적·탐색적</strong> 세션.
+        목적은 승인이 아니라 <em>더 나은 방향을 찾는 것</em>이다. 크리틱에서 나온
+        의견은 제안이지, 반드시 반영해야 하는 확정 사항이 아니다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">디자인 리뷰</div>
+      <div class="term-eng">Design Review</div>
+      <div class="term-body">
+        디자인이 <strong>다음 단계(개발 착수, 릴리스)로 넘어가도 되는지</strong>를
+        이해관계자가 공식적으로 승인·반려하는 <strong>게이트(gate) 성격의 회의</strong>.
+        크리틱과 달리 결과는 "승인" 또는 "재작업 요청"처럼 명확한 의사결정으로 끝나야 한다.
+        크리틱을 승인 리뷰처럼 진행하면 팀원들이 방어적으로 변해 솔직한 피드백이 줄어든다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">"I like, I wish, What if" 피드백 프레임워크</div>
+      <div class="term-eng">I Like / I Wish / What If</div>
+      <div class="term-body">
+        디자인 크리틱에서 널리 쓰이는 구조화된 피드백 형식. <strong>I like</strong>(잘 된
+        점), <strong>I wish</strong>(아쉬운 점과 이유), <strong>What if</strong>(대안
+        제안) 세 문장 구조로 의견을 말하게 해, "이거 별로예요" 같은 모호하고 감정적인
+        피드백을 <em>구체적이고 건설적인</em>피드백으로 바꾼다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">디자인 QA</div>
+      <div class="term-eng">Design QA</div>
+      <div class="term-body">
+        개발이 완료된 화면을 <strong>디자인 명세(스펙, 토큰, 인터랙션)와 픽셀 단위로
+        대조·검증</strong>하는 절차. 기능 버그를 찾는 일반 QA와 달리, 여백·타이포그래피·
+        컬러 토큰·상태(hover, focus, disabled)·반응형 브레이크포인트가 디자인 의도와
+        일치하는지를 본다. 보통 핸드오프 이후, 릴리스 직전에 수행한다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">디자인 부채</div>
+      <div class="term-eng">Design Debt</div>
+      <div class="term-body">
+        일정 압박으로 <strong>임시방편으로 처리하고 나중에 고치기로 미룬 디자인
+        불일치</strong>. 기술 부채(Technical Debt)의 디자인 버전이다. 예: "이번엔 기존
+        버튼 컴포넌트를 재사용하지 않고 임시로 새 스타일을 넣었다"가 쌓이면 디자인
+        시스템의 일관성이 깨진다. 부채를 인지하고 기록해 두지 않으면 나중에 어떤
+        불일치가 "의도된 예외"인지 "미해결 부채"인지 구분할 수 없게 된다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">디자인옵스</div>
+      <div class="term-eng">DesignOps</div>
+      <div class="term-body">
+        디자인 팀의 <strong>프로세스·툴·협업 방식 자체를 관리하는 기능</strong>.
+        디자인 시스템 운영, 크리틱/리뷰 케이던스 설계, 핸드오프 표준화, 디자인 부채
+        추적 등이 모두 DesignOps의 범위다. 개별 화면을 디자인하는 역할이 아니라,
+        디자이너들이 <em>더 빠르고 일관되게 일할 수 있는 환경</em>을 만드는 역할이다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────── 3. 크리틱 vs 리뷰, 좋은 피드백 vs 나쁜 피드백 ───────────────── -->
+  <section>
+    <h2>3. 헷갈리기 쉬운 개념 비교</h2>
+
+    <h3>① Design Critique vs Design Review</h3>
+    <div class="compare-row">
+      <div class="compare-col bad">
+        <div class="label">Design Critique</div>
+        완성 전 · 비공식 · 목적은 탐색과 대안 발굴 · 결과는 "제안"
+      </div>
+      <div class="compare-col good">
+        <div class="label">Design Review</div>
+        완성 후 · 공식 게이트 · 목적은 승인/반려 · 결과는 "결정"
+      </div>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d; margin-top:-0.5rem;">
+      두 회의를 같은 이름으로 부르면, 크리틱 단계에서 나온 자유로운 의견을 "확정된
+      요구사항"으로 오해하는 문제가 생긴다. 회의 초대장이나 아젠다에 명시적으로
+      구분해 표기하는 것이 좋다.
+    </p>
+
+    <h3>② 피드백 문구 — 모호함 vs 구조화</h3>
+    <div class="compare-row">
+      <div class="compare-col bad">
+        <div class="label">Bad Feedback</div>
+        이 화면 좀 답답해 보여요
+      </div>
+      <div class="compare-col good">
+        <div class="label">I Like / I Wish / What If</div>
+        I like: 정보 위계는 명확해요.<br>
+        I wish: 카드 사이 여백이 좁아서 답답해 보여요.<br>
+        What if: 카드 gap을 24px로 늘려보면 어떨까요?
+      </div>
+    </div>
+
+    <h3>③ Design Debt vs Bug</h3>
+    <div class="compare-row">
+      <div class="compare-col bad">
+        <div class="label">Bug</div>
+        의도한 대로 동작하지 않는 결함 (예: 버튼 클릭이 안 됨)
+      </div>
+      <div class="compare-col good">
+        <div class="label">Design Debt</div>
+        의도적으로 표준을 벗어나 임시로 처리했고, 나중에 정리하기로 한 항목
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────── 4. Design QA 체크리스트 ───────────────── -->
+  <section>
+    <h2>4. Design QA 실전 체크리스트</h2>
+    <p>핸드오프 이후 구현 결과를 검토할 때 아래 항목을 기준으로 점검한다.</p>
+    <ol>
+      <li><strong>여백/그리드</strong> — 스펙에 정의된 spacing 토큰과 실제 여백이 일치하는가?</li>
+      <li><strong>타이포그래피</strong> — 폰트 크기·굵기·줄간격이 디자인 시스템 텍스트 스타일과 일치하는가?</li>
+      <li><strong>컬러 토큰</strong> — 임의의 hex 값이 아니라 정의된 디자인 토큰을 쓰고 있는가?</li>
+      <li><strong>상태(States)</strong> — hover, focus, active, disabled, error 상태가 모두 구현되어 있는가?</li>
+      <li><strong>반응형 브레이크포인트</strong> — 정의된 브레이크포인트에서 레이아웃이 명세대로 전환되는가?</li>
+      <li><strong>인터랙션·모션</strong> — 마이크로인터랙션의 타이밍과 이징이 명세와 일치하는가?</li>
+    </ol>
+    <div class="callout warn">
+      <strong>주의 — Design QA는 릴리스 직전 1회성 이벤트가 아니다:</strong>
+      스프린트마다 반복하지 않으면 발견되지 않은 불일치가 디자인 부채로 쌓인다.
+      DesignOps가 자리 잡은 팀은 Design QA를 정기 케이던스로 운영한다.
+    </div>
+    <div class="callout tip">
+      <strong>Tip — 디자인 부채는 기록하고 우선순위를 매겨라:</strong>
+      "나중에 고치자"로 끝내지 말고, 기술 부채와 마찬가지로 백로그에 티켓으로
+      남겨 정기적으로 우선순위를 재검토해야 실제로 해소된다.
+    </div>
+  </section>
+
+  <!-- ───────────────── 5. 용어 요약 ───────────────── -->
+  <section>
+    <h2>5. 용어 요약</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>용어</th><th>한국어</th><th>한 줄 설명</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Design Critique</td><td>디자인 크리틱</td><td>완성 전 단계의 비공식적 탐색 피드백 세션</td></tr>
+          <tr><td>Design Review</td><td>디자인 리뷰</td><td>승인·반려를 결정하는 공식 게이트 회의</td></tr>
+          <tr><td>I Like / I Wish / What If</td><td>구조화 피드백 프레임워크</td><td>크리틱에서 쓰는 3문장 구조 피드백 형식</td></tr>
+          <tr><td>Design QA</td><td>디자인 QA</td><td>구현 결과를 디자인 명세와 대조·검증하는 절차</td></tr>
+          <tr><td>Design Debt</td><td>디자인 부채</td><td>임시방편으로 미룬 미해결 디자인 불일치</td></tr>
+          <tr><td>DesignOps</td><td>디자인옵스</td><td>디자인 프로세스·툴·협업 방식을 관리하는 기능</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───────────────── 6. 셀프 체크 퀴즈 ───────────────── -->
+  <section>
+    <h2>6. 셀프 체크 퀴즈</h2>
+
+    <div class="quiz">
+      <h3>Q1</h3>
+      <p class="q">아직 완성되지 않은 시안을 두고 팀원들이 자유롭게 의견과 대안을 나누는, 승인/반려를 결정하지 않는 회의를 가리키는 용어는?</p>
+      <ol class="options" type="A">
+        <li>A. Design Review</li>
+        <li>B. Design QA</li>
+        <li>C. Design Critique</li>
+        <li>D. DesignOps</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: C — Design Critique</strong><br>
+          크리틱은 완성 전 단계에서 대안을 탐색하는 비공식 세션이다.
+          A(Design Review)는 승인/반려를 결정하는 공식 게이트이고,
+          B(Design QA)는 구현 결과 검증 절차, D(DesignOps)는 프로세스 관리
+          기능이라 이 상황과 맞지 않는다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q2</h3>
+      <p class="q">개발이 끝난 화면을 스펙의 여백·타이포그래피·컬러 토큰·상태와 픽셀 단위로 대조하는 절차는?</p>
+      <ol class="options" type="A">
+        <li>A. Design Critique</li>
+        <li>B. Design QA</li>
+        <li>C. I Like / I Wish / What If</li>
+        <li>D. Design Debt</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — Design QA</strong><br>
+          구현 결과와 디자인 명세를 대조·검증하는 절차가 Design QA다.
+          A(Critique)는 완성 전 피드백 세션, C는 피드백을 말하는 형식,
+          D(Design Debt)는 미해결 불일치 그 자체를 가리키므로 절차를
+          뜻하는 이 문제의 정답이 될 수 없다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q3</h3>
+      <p class="q">일정 압박으로 디자인 시스템 표준을 벗어나 임시로 처리하고 나중에 고치기로 미룬 디자인 불일치를 가리키는 용어는?</p>
+      <ol class="options" type="A">
+        <li>A. Design Review</li>
+        <li>B. DesignOps</li>
+        <li>C. Design Debt</li>
+        <li>D. Design QA</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: C — Design Debt</strong><br>
+          기술 부채와 마찬가지로, 나중에 정리하기로 미룬 디자인 불일치를
+          Design Debt라 부른다. A(Review)는 승인 회의, B(DesignOps)는
+          프로세스 관리 기능, D(Design QA)는 불일치를 찾아내는 검증
+          절차이지 불일치 자체를 가리키는 용어가 아니다.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ───────────────── 7. 다음 학습 예고 ───────────────── -->
+  <section>
+    <h2>7. 다음 학습 예고</h2>
+    <p>
+      다음 Day에서는 지금까지 다룬 기초 개념, 정보 구조, 컴포넌트 시스템, 인터랙션,
+      접근성, 협업 툴, 사용자 조사, 프로토타이핑, 사용성 테스트, 반응형/모바일,
+      UX 라이팅, 다크 패턴, 디자인 리뷰 프로세스를 바탕으로 실무 심화 주제나 인접
+      영역으로 계속 확장할 예정이다.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      <a href="./index.html">← 전체 목록</a> &nbsp;|&nbsp;
+      UI/UX 용어 학습 워크스페이스 · Day 13 · 2026-07-04
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>
