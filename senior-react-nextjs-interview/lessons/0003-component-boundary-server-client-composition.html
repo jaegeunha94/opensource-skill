@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — Component Boundary 설계 | React / Next.js 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .data-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .data-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">React / Next.js 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 3
+  </nav>
+
+  <h1>Day 3 — Component Boundary 설계</h1>
+  <p class="subtitle">Server/Client 컴포넌트 경계를 가르는 기준, "use client" 전이 문제, composition pattern · 2026-07-04</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#propagation">"use client" 전이(propagation) 문제</a></li>
+      <li><a href="#composition">Composition Pattern — children으로 경계 넘기기</a></li>
+      <li><a href="#serialization">Prop 직렬화 경계 — 무엇을 넘길 수 있고 무엇을 못 넘기는가</a></li>
+      <li><a href="#decision-table">경계 설계 판단표</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"Client Component 안에서 Server Component를 직접 import해서 사용할 수 없는 이유와, 그 대안이 되는 composition pattern을 코드로 설명해 주세요."</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"팀원이 페이지 최상단 레이아웃 파일에 <code>&quot;use client&quot;</code>를 걸어서 문제를 해결했다고 합니다. 이 방식의 문제점은 무엇이고, 어떻게 다시 설계하시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"DB 조회 로직이 들어있는 서버 전용 라이브러리를 import한 컴포넌트를 실수로 Client Component 트리 안에 두었더니, 번들에 DB 자격 증명 관련 코드가 포함됐습니다. 왜 이런 일이 일어났고, 어떻게 구조를 바꿔야 하나요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"<code>&quot;use client&quot;</code>를 파일 맨 위에 쓰면 된다는 것을 아는가"가 아니라 "그 한 줄이 모듈 그래프 전체에 어떤 컴파일 타임 결정을 강제하는지 이해하고 있는가"</strong>를 테스트합니다. App Router 프로젝트에서 실제로 가장 흔하게 발생하는 사고가 "빌드는 되고 화면도 잘 나오는데, 번들 분석기를 열어보면 서버 전용 코드나 무거운 라이브러리가 클라이언트 번들에 들어가 있다"는 유형입니다. 이 사고는 컴파일 에러 없이 조용히 발생하기 때문에, 경계를 어디에 그을지에 대한 정확한 모델이 없으면 프로덕션에서야 발견됩니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>"use client"의 정확한 의미</strong> — 이것이 "이 컴포넌트만 클라이언트에서 실행하라"는 지시가 아니라 "이 모듈과, 이 모듈이 import하는 모든 것을 클라이언트 번들 경계의 시작점으로 취급하라"는 <strong>모듈 그래프 분할 지시</strong>라는 것을 아는가.</li>
+      <li><strong>전이(propagation) 문제에 대한 인식</strong> — 경계를 트리 상단(레이아웃, 페이지)에 잘못 그으면 그 하위 전체가 의도치 않게 클라이언트 번들로 편입된다는 것을 이해하는가.</li>
+      <li><strong>composition pattern을 실제로 아는가</strong> — "Client Component는 Server Component를 import할 수 없지만, children이나 다른 prop으로 이미 렌더링된 Server Component 결과를 받을 수는 있다"는 패턴을 코드로 설명할 수 있는가.</li>
+      <li><strong>경계 설계가 아키텍처 판단이라는 인식</strong> — "이 인터랙션(클릭, 입력, 상태)이 정확히 어디서 필요한가"를 먼저 찾고, 그 인터랙티브한 리프(leaf) 노드에만 <code>&quot;use client&quot;</code>를 붙이는 최소 경계 설계 습관이 있는가.</li>
+      <li><strong>보안·비용 감각</strong> — 서버 전용 자원(DB 클라이언트, API 시크릿, 무거운 서버 라이브러리)이 클라이언트 번들에 노출되는 것이 단순 성능 문제가 아니라 보안 사고로 이어질 수 있다는 것을 아는가.</li>
+    </ul>
+
+    <p>10년차 이하에서 자주 나오는 답변 패턴: "에러가 나서 <code>&quot;use client&quot;</code>를 위에 붙였더니 해결됐어요." 이 답변은 증상을 없앴을 뿐, 그 결정이 트리 전체의 번들 경계를 어떻게 바꿨는지 인식하지 못한 상태입니다. 시니어는 에러를 만나면 "왜 이 경계에서 막혔는가"를 먼저 진단하고, "이 파일 전체를 클라이언트로 보낼 것인가, 아니면 인터랙티브한 부분만 분리할 것인가"를 의식적으로 선택합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Server Component가 실제로 클라이언트로 보내는 것</h3>
+    <p>Day 1에서 "Server Component는 코드가 아니라 결과를 클라이언트로 보낸다"고 배웠습니다. 조금 더 정확히 말하면, Next.js는 서버에서 컴포넌트 트리를 렌더링한 결과를 <strong>RSC(React Server Component) 페이로드</strong>라는 직렬화된 트리 구조로 만들어 브라우저에 전달합니다. 이 페이로드에는 HTML로 변환될 내용과, 그 사이사이에 "여기부터는 Client Component이니 이 JS 모듈을 불러와서 실행하라"는 참조(reference)가 섞여 있습니다. 즉 <strong>Server Component는 애초에 클라이언트에서 실행될 코드 자체가 존재하지 않습니다</strong> — 결과만 있을 뿐입니다.</p>
+
+    <h3>"use client"가 실제로 하는 일 — 코드 위치 지시가 아니라 모듈 그래프 경계 지시</h3>
+    <p>초보적인 설명은 "<code>&quot;use client&quot;</code>를 붙이면 그 컴포넌트가 브라우저에서 실행된다"입니다. 틀린 말은 아니지만, 이 설명만으로는 "왜 Client Component가 Server Component를 import하면 안 되는가"를 설명할 수 없습니다. 정확한 모델은 이렇습니다.</p>
+    <ul>
+      <li><code>&quot;use client&quot;</code>는 파일(모듈) 맨 위에 선언하는 지시어이며, <strong>"이 모듈은 서버 모듈 그래프와 클라이언트 모듈 그래프의 경계선이다"</strong>라고 번들러(webpack/Turbopack)에게 알려주는 컴파일 타임 표시입니다.</li>
+      <li>이 표시가 붙은 모듈은 클라이언트 번들에 실제 코드로 포함되고, 서버 렌더링 시에는 그 모듈이 "클라이언트에서 이 모듈을 불러오라"는 참조로 대체됩니다.</li>
+      <li>중요한 점: <strong>이 모듈이 import하는 다른 모듈들도 전부 같은 클라이언트 번들에 포함됩니다.</strong> "use client" 파일 안에서 별도 표시 없이 import한 헬퍼 함수, 유틸리티, 다른 컴포넌트는 모두 자동으로 클라이언트 번들의 일부가 됩니다.</li>
+    </ul>
+
+    <h3>왜 Client Component가 Server Component를 import할 수 없는가</h3>
+    <p>이제 핵심 질문에 답할 수 있습니다. Client Component 파일 안에서 <code>import ServerComp from './ServerComp'</code>처럼 Server Component를 직접 import하면, 번들러는 "이 모듈(<code>ServerComp</code>)도 클라이언트 번들에 포함해야 한다"고 판단합니다. 그런데 <code>ServerComp</code>는 애초에 서버 전용 API(파일 시스템 접근, DB 쿼리, 서버 전용 환경 변수 등)를 쓰고 있을 수 있고, 무엇보다 <strong>서버에서 한 번만 렌더링되고 결과만 전달되는 것을 전제로 설계된 컴포넌트</strong>입니다. 이를 클라이언트에서 다시 "코드로" 실행하면 서버 전용 자원에 접근할 수 없어 에러가 나거나, 최악의 경우 서버 전용 코드(그리고 그 안에 하드코딩되었을 수 있는 민감한 로직)가 그대로 클라이언트 번들에 노출됩니다. React/Next.js는 이 위험을 아예 컴파일 타임에 막기 위해, Client Component 파일 안에서 Server Component를 import하면 <strong>실제로는 그 Server Component가 "use client" 규칙에 따라 강제로 Client Component로 취급되어 렌더링됩니다</strong> — 즉 서버에서만 쓰려던 로직이 조용히 클라이언트에서 실행되거나, 서버 전용 API를 쓰는 코드라면 그 시점에 런타임 에러가 납니다.</p>
+  </section>
+
+  <!-- 4. 전이 문제 -->
+  <section id="propagation">
+    <h2>4. "use client" 전이(propagation) 문제</h2>
+
+    <p>"use client"의 가장 위험한 특성은 <strong>위쪽으로는 전이되지 않지만, 아래쪽(import하는 방향)으로는 전이된다</strong>는 것입니다. 이 방향성을 정확히 알아야 경계를 어디에 그어야 할지 판단할 수 있습니다.</p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>상황</th>
+          <th>결과</th>
+          <th>이유</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>레이아웃 파일(<code>layout.tsx</code>)에 <code>&quot;use client&quot;</code>를 붙임</td>
+          <td>그 레이아웃이 import하는 <strong>모든 하위 컴포넌트</strong>가 클라이언트 번들로 편입됨(명시적으로 Server Component를 children으로 받는 부분 제외)</td>
+          <td>전이는 import 그래프를 따라 아래로 퍼짐 — 상위에서 건 경계가 하위 전체를 끌고 감</td>
+        </tr>
+        <tr>
+          <td>Client Component 안에서 순수 함수(날짜 포맷팅 등)를 import</td>
+          <td>그 유틸 함수도 클라이언트 번들에 포함됨</td>
+          <td>서버 전용 API를 안 쓰는 코드라도, "use client" 파일이 import하면 무조건 같은 번들로 편입됨</td>
+        </tr>
+        <tr>
+          <td>Server Component가 Client Component를 import해서 자식으로 렌더링</td>
+          <td>Server Component 자체는 여전히 서버에서 실행됨. 그 Client Component만 별도 번들 청크로 분리되어 클라이언트에 전달됨</td>
+          <td>전이는 아래로만 퍼지고 위로는 퍼지지 않음 — "use client" 컴포넌트를 사용하는 부모까지 클라이언트가 되지는 않음</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>실무에서 실제로 벌어지는 사고</h4>
+      <p>가장 흔한 실수는 "이 페이지에 인터랙티브한 버튼 하나가 필요하다"는 이유로 페이지 컴포넌트 전체 또는 레이아웃 전체에 <code>&quot;use client&quot;</code>를 붙이는 것입니다. 이렇게 하면 그 페이지가 서버에서 fetch하던 데이터 조회 로직까지 전부 클라이언트로 옮겨가거나(서버 전용 API를 쓰면 빌드/런타임 에러), 무거운 날짜 처리 라이브러리, 마크다운 렌더러 같은 서버에서만 필요했던 무거운 의존성이 그대로 클라이언트 번들에 포함되어 초기 로딩 JS 크기가 급격히 커집니다. 이것이 시니어 인터뷰에서 "왜 번들이 갑자기 커졌는지 진단해보라"는 형태로 자주 등장하는 이유입니다.</p>
+    </div>
+
+    <h3>올바른 원칙 — "리프(leaf)에 경계를 그어라"</h3>
+    <p>정답은 인터랙티브한 부분(state, event handler, 브라우저 전용 API를 쓰는 부분)만 <strong>트리에서 가장 아래쪽의 작은 컴포넌트</strong>로 분리하고, 그 리프 컴포넌트에만 <code>&quot;use client&quot;</code>를 붙이는 것입니다. 페이지 전체나 레이아웃 전체가 아니라, "좋아요 버튼", "드롭다운 메뉴", "실시간 검색창" 같은 작은 단위에 경계를 그으면 나머지 트리(데이터 조회, 정적 콘텐츠 렌더링)는 계속 서버에 남아 있고 클라이언트 번들에는 포함되지 않습니다.</p>
+  </section>
+
+  <!-- 5. Composition Pattern -->
+  <section id="composition">
+    <h2>5. Composition Pattern — children으로 경계 넘기기</h2>
+
+    <p>그런데 실무에서는 "Client Component 레이아웃(예: 토글 가능한 사이드바, 테마 provider) 안에, 서버에서 데이터를 조회해 렌더링한 콘텐츠를 넣고 싶다"는 요구가 자주 생깁니다. import로는 불가능하지만, <strong>이미 렌더링된 Server Component의 결과를 <code>children</code> 같은 prop으로 전달</strong>하는 것은 가능합니다. 이것이 composition pattern입니다.</p>
+
+    <div class="card">
+      <h4>왜 이게 가능한가 — "import"와 "결과를 값으로 전달"의 차이</h4>
+      <p>Client Component가 금지된 것은 "Server Component 모듈을 import해서 그 코드를 클라이언트 번들에 포함시키려는 시도"입니다. 반면 부모(Server Component)가 자식(Server Component)을 먼저 렌더링한 <strong>결과(React element)</strong>를 Client Component에게 <code>children</code>이나 일반 prop으로 넘겨주는 것은 전혀 다른 일입니다. 이 경우 Client Component는 그 Server Component를 import하지도, 그 코드를 알지도 못합니다. 단지 "이미 만들어진 결과물(트리 조각)을 어디에 배치할지"만 결정할 뿐입니다. Server Component는 여전히 서버에서만 렌더링되고, Client Component는 그 결과를 감싸는 "틀(shell)" 역할만 합니다.</p>
+    </div>
+
+    <pre><code>// ClientShell.tsx
+"use client";
+
+import { useState } from "react";
+
+// children으로 받은 것은 "이미 서버에서 렌더링된 결과"일 뿐,
+// 이 파일이 그 내부 컴포넌트를 import하지 않는다.
+export function ClientShell({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(true);
+
+  return (
+    &lt;div&gt;
+      &lt;button onClick={() =&gt; setOpen(!open)}&gt;토글&lt;/button&gt;
+      {open &amp;&amp; &lt;div className="panel"&gt;{children}&lt;/div&gt;}
+    &lt;/div&gt;
+  );
+}
+
+// page.tsx (Server Component)
+import { ClientShell } from "./ClientShell";
+import { getDashboardData } from "./data"; // 서버 전용 DB 조회
+
+export default async function Page() {
+  const data = await getDashboardData(); // 서버에서만 실행
+
+  return (
+    &lt;ClientShell&gt;
+      {/* 이 부분은 여전히 서버 컴포넌트다. ClientShell은 이 내용을
+          "children"이라는 값으로 받아 배치할 뿐, import하지 않는다. */}
+      &lt;DashboardContent data={data} /&gt;
+    &lt;/ClientShell&gt;
+  );
+}</code></pre>
+
+    <div class="card">
+      <h4>이 패턴이 실무에서 중요한 이유</h4>
+      <p>이 패턴 덕분에 "토글 가능한 UI 틀은 클라이언트에서, 그 안에 들어갈 실제 데이터 조회와 콘텐츠 렌더링은 서버에서"라는 이상적인 경계 분리가 가능합니다. <code>ClientShell</code>은 여전히 인터랙티브하지만, <code>getDashboardData</code> 같은 서버 전용 조회 로직이나 <code>DashboardContent</code>가 쓰는 무거운 렌더링 로직은 클라이언트 번들에 전혀 포함되지 않습니다. Context Provider, 테마 전환, 모달/드로어처럼 "인터랙션은 필요하지만 내용물은 서버가 만들어야 하는" 거의 모든 레이아웃성 컴포넌트에 이 패턴이 적용됩니다.</p>
+    </div>
+  </section>
+
+  <!-- 6. Prop 직렬화 경계 -->
+  <section id="serialization">
+    <h2>6. Prop 직렬화 경계 — 무엇을 넘길 수 있고 무엇을 못 넘기는가</h2>
+
+    <p>Server Component에서 Client Component로 prop을 넘길 때는 <strong>RSC 페이로드로 직렬화 가능한 값</strong>만 전달할 수 있습니다. 이 제약을 모르면 "왜 이 함수를 prop으로 넘기면 에러가 나는가"를 설명하지 못합니다.</p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>전달 가능</th>
+          <th>전달 불가능(일반 함수)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>문자열, 숫자, boolean, 배열, 일반 객체(JSON 직렬화 가능)</td>
+          <td>클로저를 포함한 일반 함수(예: 서버에서 정의한 콜백)</td>
+        </tr>
+        <tr>
+          <td>Date, Map, Set 등 React가 지원하는 확장 직렬화 타입</td>
+          <td>클래스 인스턴스(직렬화 방법이 정의되지 않은 경우), Symbol</td>
+        </tr>
+        <tr>
+          <td>다른 React element(children으로 전달되는 렌더링 결과)</td>
+          <td>DB 커넥션, 파일 핸들 같은 서버 전용 객체</td>
+        </tr>
+        <tr>
+          <td><strong>Server Action</strong>(<code>&quot;use server&quot;</code>로 표시된 함수) — 특별히 직렬화 가능한 참조로 전달됨</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>여기서 <strong>Server Action은 예외</strong>라는 점이 중요합니다. 일반 함수는 직렬화할 수 없지만, <code>&quot;use server&quot;</code>로 표시된 함수는 React가 "클라이언트가 호출하면 서버로 요청을 보내는 특수한 참조"로 변환해 전달할 수 있습니다. 이 덕분에 Client Component의 폼에서 서버 로직을 직접 호출하는 패턴(예: <code>&lt;form action={serverAction}&gt;</code>)이 가능해집니다. 이 내용은 Data Fetching과 Server Actions를 본격적으로 다루는 이후 Day에서 더 깊게 다룹니다.</p>
+  </section>
+
+  <!-- 7. 경계 설계 판단표 -->
+  <section id="decision-table">
+    <h2>7. 경계 설계 판단표</h2>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>이 컴포넌트가...</th>
+          <th>권장 경계</th>
+          <th>이유</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>DB/파일 시스템 접근, 서버 전용 시크릿 사용</td>
+          <td>Server Component 유지</td>
+          <td>클라이언트로 넘어가면 접근 자체가 불가능하거나 시크릿이 노출됨</td>
+        </tr>
+        <tr>
+          <td><code>useState</code>, <code>onClick</code> 등 이벤트 핸들러, 브라우저 전용 API(<code>window</code>, <code>localStorage</code>)가 필요</td>
+          <td>가장 작은 리프 단위로 분리해 <code>&quot;use client&quot;</code></td>
+          <td>인터랙션이 필요한 최소 범위에만 경계를 그어야 전이 범위를 줄일 수 있음</td>
+        </tr>
+        <tr>
+          <td>인터랙티브한 "틀"이 필요하지만 내부 콘텐츠는 서버가 조회해야 함(사이드바, 모달, 테마 provider)</td>
+          <td>Client Component + <code>children</code> composition</td>
+          <td>틀만 클라이언트로, 내용물은 서버 렌더링 결과를 값으로 전달받아 유지</td>
+        </tr>
+        <tr>
+          <td>서드파티 UI 라이브러리가 내부적으로 <code>useState</code>나 Context를 씀(하지만 라이브러리에 <code>&quot;use client&quot;</code> 표시가 없음)</td>
+          <td>얇은 래퍼 컴포넌트를 만들어 그 래퍼에만 <code>&quot;use client&quot;</code> 부여</td>
+          <td>서드파티 코드 자체를 수정할 수 없으므로, 경계를 명시하는 얇은 wrapper로 감싸야 함</td>
+        </tr>
+        <tr>
+          <td>순수 계산/포맷팅 유틸 함수(부수효과 없음)</td>
+          <td>서버/클라이언트 구분 없이 공용 모듈로 두되, 호출하는 쪽의 경계를 따라감</td>
+          <td>이런 유틸은 어느 쪽에서 import되든 문제없지만, Client Component가 import하면 결국 번들에 포함됨을 인지해야 함</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 8. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>8. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>"use client"의 정의를 정확히 말합니다.</strong> "이건 컴포넌트 하나를 클라이언트에서 실행하라는 지시가 아니라, 이 모듈을 시작점으로 하는 모듈 그래프 전체를 클라이언트 번들 경계로 표시하는 컴파일 타임 지시다."</li>
+      <li><strong>왜 Client Component가 Server Component를 import할 수 없는지 설명합니다.</strong> "import하면 그 모듈도 클라이언트 번들에 포함되어야 하는데, Server Component는 서버 전용 자원에 의존하거나 클라이언트에서 재실행되도록 설계되지 않았기 때문이다."</li>
+      <li><strong>대안(composition)을 제시합니다.</strong> "대신 부모인 Server Component가 자식을 먼저 렌더링한 결과를 children이나 prop으로 Client Component에 넘기면, Client Component는 그 컴포넌트를 import하지 않고도 결과물을 배치할 수 있다."</li>
+      <li><strong>이 패턴이 실무에서 왜 중요한지 연결합니다.</strong> "이 패턴 덕분에 인터랙티브한 틀(클라이언트)과 데이터 조회/무거운 렌더링(서버)을 분리해서, 서버 전용 로직이나 무거운 의존성이 클라이언트 번들에 섞이지 않게 할 수 있다."</li>
+      <li><strong>잘못된 경계 설정의 대가를 짚습니다.</strong> "경계를 트리 상단에 두면 전이 때문에 하위 전체가 클라이언트로 편입되어 번들이 커지고, 서버 전용 자원 접근이 막히거나 노출될 위험이 생긴다."</li>
+    </ol>
+  </section>
+
+  <!-- 9. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>9. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "팀원이 페이지 최상단 레이아웃 파일에 <code>&quot;use client&quot;</code>를 걸어서 문제를 해결했다고 합니다. 이 방식의 문제점은 무엇이고, 어떻게 다시 설계하시겠어요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>레이아웃 파일에 <code>&quot;use client&quot;</code>를 붙이면, 그 파일이 import하는 모든 하위 컴포넌트가 같은 클라이언트 번들 경계 안으로 편입됩니다. "use client"는 컴포넌트 하나를 클라이언트에서 실행하라는 지시가 아니라, 그 모듈을 시작점으로 하는 모듈 그래프 전체를 클라이언트 번들로 표시하는 컴파일 타임 지시이기 때문입니다. 레이아웃은 보통 페이지 콘텐츠 대부분을 감싸는 최상위 컴포넌트이므로, 여기에 경계를 걸면 원래 서버에서 데이터를 조회하고 렌더링하던 하위 트리 전체가 클라이언트 번들에 포함되어 초기 로딩 JS 크기가 크게 늘어납니다. 또한 서버 전용 API(DB 조회, 파일 시스템 접근 등)를 쓰는 하위 컴포넌트가 있다면 빌드 또는 런타임 에러로 이어질 수 있습니다.</p>
+      <br>
+      <p>먼저 팀원이 왜 레이아웃 전체에 <code>&quot;use client&quot;</code>를 걸었는지 원인을 확인하겠습니다. 대부분은 "레이아웃 안에 토글 가능한 사이드바나 테마 전환 버튼처럼 인터랙션이 필요한 작은 부분이 있는데, 그 부분이 상태를 쓰기 때문에 상위 파일 전체에 경계를 걸어버린 경우"입니다. 이 경우 인터랙션이 실제로 필요한 부분(사이드바 토글 버튼, 테마 스위처)만 별도의 작은 컴포넌트로 분리해 그 컴포넌트에만 <code>&quot;use client&quot;</code>를 붙이고, 레이아웃 자체는 다시 Server Component로 되돌립니다.</p>
+      <br>
+      <p>만약 "토글 가능한 틀 안에 서버에서 조회한 콘텐츠를 넣어야 한다"는 요구가 있다면, 그 틀 컴포넌트(<code>ClientShell</code>)를 Client Component로 두되 <code>children</code> prop을 받도록 만들고, 레이아웃(Server Component)에서 데이터를 조회해 렌더링한 콘텐츠를 <code>children</code>으로 전달합니다. 이렇게 하면 <code>ClientShell</code>은 내부 콘텐츠 컴포넌트를 import하지 않으므로, 데이터 조회 로직과 무거운 렌더링 로직은 여전히 서버에만 남고 클라이언트 번들에는 포함되지 않습니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>"use client"를 컴포넌트 단위가 아니라 모듈 그래프 경계로 정확히 정의함</li>
+      <li>레이아웃 전체에 경계를 거는 것의 구체적인 대가(번들 크기, 서버 API 접근 불가)를 명시함</li>
+      <li>문제의 근본 원인(왜 그렇게 했을지)을 먼저 진단하는 접근을 보여줌</li>
+      <li>단순히 "나누세요"에 그치지 않고 composition pattern으로 구체적인 재설계안을 제시함</li>
+    </ul>
+  </section>
+
+  <!-- 10. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>10. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"레이아웃에 <code>&quot;use client&quot;</code>를 걸면 안 되는 건 알고 있어요. 그냥 필요한 컴포넌트에만 <code>&quot;use client&quot;</code>를 따로 붙이면 됩니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"안 되는 건 안다"는 규칙만 말할 뿐, <em>왜</em> 안 되는지(전이, 모듈 그래프 경계)를 설명하지 못합니다.</li>
+        <li>"토글 틀 안에 서버 콘텐츠가 들어가야 하는 경우" 같은, 실무에서 실제로 발생하는 더 어려운 상황(composition이 필요한 경우)에 대한 대응이 없습니다.</li>
+        <li>면접관이 "그럼 인터랙티브한 틀 안에 서버에서 조회한 콘텐츠를 넣어야 하면 어떻게 하나요?"라고 물으면 답이 막힐 가능성이 높습니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"Server Component는 서버에서 실행되고 Client Component는 클라이언트에서 실행되니까, 섞어 쓰려면 그냥 client 쪽에서 fetch를 다시 하면 됩니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>질문의 핵심(경계 설계, composition pattern)을 회피하고 "클라이언트에서 다시 조회하라"는 다른 해결책으로 우회합니다.</li>
+        <li>이 접근은 서버에서 이미 조회 가능한 데이터를 클라이언트에서 중복 요청하게 만들어, 워터폴과 불필요한 네트워크 요청을 추가하는 더 나쁜 설계로 이어질 수 있습니다.</li>
+        <li>"왜 Client Component가 Server Component를 import할 수 없는가"라는 근본 메커니즘을 전혀 다루지 않았습니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>"use client"가 컴포넌트 단위가 아니라 모듈 그래프 경계 지시라는 것을 명시한다</li>
+        <li>전이가 아래쪽(import 방향)으로만 퍼진다는 방향성을 정확히 설명한다</li>
+        <li>잘못된 경계의 구체적 대가(번들 크기, 서버 API 접근 불가, 보안 노출 가능성)를 짚는다</li>
+        <li>children을 이용한 composition pattern을 코드 수준으로 설명한다</li>
+        <li>"인터랙션이 필요한 최소 리프 단위에만 경계를 그어야 한다"는 설계 원칙으로 마무리한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11. Follow-up -->
+  <section id="followups">
+    <h2>11. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: Client Component가 Server Component를 <code>children</code>으로 받는 것과, 그냥 Server Component를 일반 prop(예: <code>content</code>)으로 받는 것에 차이가 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 메커니즘상으로는 동일합니다. <code>children</code>이든 다른 이름의 prop이든, "이미 렌더링된 React element를 값으로 전달한다"는 원리는 같습니다. <code>children</code>을 관용적으로 쓰는 이유는 JSX 문법상 <code>&lt;ClientShell&gt;...&lt;/ClientShell&gt;</code> 형태로 자연스럽게 중첩해서 쓸 수 있고, "이 자리에 슬롯이 있다"는 의도가 코드만 봐도 명확하기 때문입니다. 슬롯이 여러 개 필요하면(예: 헤더 영역, 본문 영역을 따로 받아야 하면) <code>header</code>, <code>body</code>처럼 이름 있는 prop 여러 개로 나눠 받는 것도 흔한 패턴입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: Server Component에서 Client Component로 함수를 이벤트 핸들러가 아니라 일반 콜백으로 넘기고 싶으면 어떻게 하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 일반 함수(클로저를 포함한 임의의 서버 함수)는 직렬화할 수 없으므로 그대로 넘길 수 없습니다. 방법은 두 가지입니다. 첫째, 그 함수가 서버에서 어떤 부수효과(DB 저장, 재검증 등)를 수행해야 하는 로직이라면 <code>&quot;use server&quot;</code>로 표시한 Server Action으로 만들어 전달합니다 — React가 이를 "호출 가능한 참조"로 직렬화해주기 때문입니다. 둘째, 단순히 클라이언트 쪽에서 값을 조작하는 로직(포맷팅, 필터링 등)이라면 그 함수 자체를 Client Component 내부에 정의하거나 공용 유틸 모듈로 옮겨서 Client Component가 직접 import하게 만듭니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">서드파티 라이브러리(예: 특정 UI 라이브러리)가 내부적으로 Context나 <code>useState</code>를 쓰는데, 그 라이브러리 파일 자체에는 <code>&quot;use client&quot;</code>가 없어서 에러가 납니다. 어떻게 해결하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 라이브러리 소스 코드를 직접 수정할 수 없으므로, 그 라이브러리를 감싸는 아주 얇은 wrapper 파일을 직접 만들고 그 wrapper 파일 맨 위에만 <code>&quot;use client&quot;</code>를 붙입니다. 예를 들어 <code>MyLibWrapper.tsx</code>라는 파일에서 <code>&quot;use client&quot;</code>를 선언한 뒤 라이브러리 컴포넌트를 그대로 재export하거나 감싸서 사용하고, 애플리케이션 코드에서는 원본 라이브러리 대신 이 wrapper를 import합니다. 이렇게 하면 "이 라이브러리는 클라이언트 전용이다"라는 경계를 명시적으로 표시할 수 있고, 향후 라이브러리가 공식적으로 <code>&quot;use client&quot;</code>를 지원하면 wrapper를 제거하기도 쉽습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Server Component와 Client Component 사이에 <code>context</code>(React Context)를 공유할 수 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> Context Provider와 Consumer는 <code>useContext</code>라는 Hook에 의존하므로, Provider와 그 값을 읽는 Consumer 모두 Client Component여야 합니다. Server Component는 렌더링이 요청마다 서버에서 일회성으로 일어나고 Hook의 실행 모델 자체가 없기 때문에 Context에 직접 참여할 수 없습니다. 그래서 실무 패턴은 "Context Provider를 Client Component로 만들고, 그 Provider가 <code>children</code>으로 Server Component 트리를 감싸게" 하는 것입니다. Provider 자체는 클라이언트 상태(테마, 로케일 등)를 관리하지만, 그 안에 배치되는 콘텐츠는 여전히 서버에서 렌더링된 결과를 그대로 받을 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">경계를 "너무 잘게" 쪼개는 것도 문제가 될 수 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 네. 극단적으로 모든 작은 인터랙션마다 별도의 Client Component 파일을 만들면, 각 파일이 별도의 JS 청크로 분리되면서 청크 수가 과도하게 늘어나 네트워크 요청 오버헤드가 커질 수 있고, 코드 재사용성도 떨어질 수 있습니다. 실무에서는 "정말 인터랙티브한 최소 단위"를 기준으로 삼되, 같은 화면 영역에서 함께 동작하는 관련 인터랙션(예: 폼 안의 여러 입력 필드)은 하나의 Client Component로 묶는 것이 합리적입니다. 원칙은 "서버 전용 로직/데이터를 오염시키지 않는 선에서, 응집도 있는 인터랙션 단위로 나누는 것"입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>12. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"use client"는 그 컴포넌트 하나만 클라이언트에서 실행되게 만든다"</strong></p>
+      <p>정확히는 그 모듈을 시작점으로 import 그래프 전체가 클라이언트 번들 경계 안으로 편입됩니다. "컴포넌트 하나"가 아니라 "모듈 그래프 전체"라는 점을 놓치면 전이 문제를 예측할 수 없습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"Server Component를 prop으로 넘기면 그 컴포넌트도 클라이언트에서 다시 렌더링된다"</strong></p>
+      <p>children이나 prop으로 넘기는 것은 "이미 서버에서 렌더링이 끝난 결과(React element)"입니다. Client Component는 그 결과를 배치할 뿐, 해당 Server Component의 렌더링 함수를 다시 실행하지 않습니다. 이 차이를 모르면 "그럼 결국 서버 컴포넌트도 클라이언트에서 실행되는 거 아닌가요?"라는 혼동이 생깁니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"안전하게 하려면 모든 컴포넌트에 use client를 붙이는 게 낫다"</strong></p>
+      <p>정반대입니다. 기본값은 Server Component이고, 필요한 최소 범위에만 <code>&quot;use client&quot;</code>를 붙이는 것이 번들 크기와 서버 자원 접근성 양쪽에서 유리합니다. "안전"이라는 말과 달리, 무분별한 <code>&quot;use client&quot;</code>는 오히려 서버 전용 자원 노출과 번들 폭증이라는 실제 위험을 키웁니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"use client 경계를 한 번 잘못 그으면 코드를 전부 다시 짜야 한다"</strong></p>
+      <p>대부분의 경우 리팩터링은 "인터랙티브한 부분을 찾아 별도 파일로 추출하고 그 파일에만 <code>&quot;use client&quot;</code>를 옮기는" 국소적인 작업입니다. 전체 아키텍처를 다시 짜야 하는 경우는 드물며, 오히려 이 리팩터링 능력 자체(어디를 분리해야 하는지 빠르게 판단하는 능력)가 시니어에게 요구되는 실무 스킬입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"use client 파일 안에서도 서버 환경 변수(process.env의 시크릿)를 그냥 읽으면 안전하다"</strong></p>
+      <p>Client Component 코드는 번들러에 의해 실제로 브라우저에 전달되는 JS 파일이 됩니다. 그 안에서 서버 전용 시크릿을 참조하면(설령 그 값이 빌드 시점에 인라인되더라도) 브라우저로 전송되는 코드에 그대로 노출됩니다. 시크릿은 반드시 Server Component나 Server Action, 서버 전용 모듈 안에서만 다뤄야 합니다.</p>
+    </div>
+  </section>
+
+  <!-- 13. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>13. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 3를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"use client"가 컴포넌트 단위 지시가 아니라 모듈 그래프 경계를 표시하는 컴파일 타임 지시라는 것을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Client Component가 Server Component를 import할 수 없는 이유를 서버 전용 자원 접근과 번들 편입 관점에서 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"use client" 전이가 import 방향(아래쪽)으로만 퍼진다는 방향성을 정확히 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>레이아웃/페이지 최상단에 "use client"를 거는 것이 왜 위험한지 구체적인 사고 사례로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>children을 이용한 composition pattern을 코드로 작성하고, "import"와 "결과를 값으로 전달"의 차이를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Server Component에서 Client Component로 넘길 수 있는 prop과 없는 prop(일반 함수 vs Server Action)을 구분할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>서드파티 클라이언트 전용 라이브러리를 wrapper로 감싸 경계를 명시하는 패턴을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"모든 컴포넌트에 use client를 붙이면 안전하다"는 오해가 왜 틀렸는지 반박할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 4</h3>
+      <p><strong>Hooks 심화</strong></p>
+      <p>Day 3에서 Server/Client 경계를 어디에 그을지 배웠다면, Day 4에서는 그 경계 안쪽, 즉 Client Component 내부에서 <code>useEffect</code>/<code>useMemo</code>/<code>useCallback</code>이 실제로 어떤 함정을 만드는지, 의존성 배열을 어떻게 사고해야 하는지를 다룹니다.</p>
+      <p>면접 질문 예고: "<code>useEffect</code>의 의존성 배열에 함수를 넣었더니 무한 루프가 발생했습니다. 원인과 해결책을 설명해 주세요."</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    React / Next.js 시니어 인터뷰 · Day 3 of 20 · 2026-07-04
+  </p>
+
+</div>
+</body>
+</html>
