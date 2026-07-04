@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — 인증과 인가: JWT · OAuth2 · RBAC · 토큰 갱신 전략</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="lesson-wrap">
+
+  <!-- ── Header ────────────────────────────────────── -->
+  <header class="lesson-header">
+    <div class="lesson-meta">
+      <span class="tag tag-day">Day 6</span>
+      <span class="tag tag-level">실무자 기준</span>
+      <span class="tag tag-time">약 65분</span>
+    </div>
+    <h1 class="lesson-title">인증과 인가<br>JWT 구조와 검증 · OAuth2 Password Flow · RBAC · 토큰 갱신 전략</h1>
+    <p class="lesson-subtitle">
+      Day 4에서 FastAPI <code>Depends</code>로 레이어를 조립했다. 이 레슨은 그 조립 지점에
+      "이 요청은 누구인가(인증)"와 "이 사용자가 이 자원에 접근할 권한이 있는가(인가)"를
+      끼워 넣는 방법을 다룬다 — 토큰을 위조당하거나, 만료된 세션이 계속 유효하거나,
+      권한 없는 사용자가 관리자 API를 호출하는 사고를 코드로 어떻게 막는지가 핵심이다.
+    </p>
+  </header>
+
+  <!-- ── 1. 왜 사고로 이어지는가 ─────────────────────── -->
+  <h2>1. "로그인은 되는데 보안은 안 된" 코드</h2>
+
+  <p>
+    아래 코드는 로그인에 성공하면 토큰을 내려주고, 요청마다 토큰을 검사한다.
+    기능 테스트는 통과하지만 세 가지 사고를 그대로 안고 있다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# 절대 이렇게 하지 말 것 — 문제가 있는 예시
+SECRET = "mysecret"
+
+def create_token(user_id: int) -> str:
+    payload = {"user_id": user_id}          # ← 만료 시각(exp)이 없음: 영원히 유효
+    return jwt.encode(payload, SECRET, algorithm="HS256")
+
+def verify_token(token: str) -> dict:
+    return jwt.decode(token, options={"verify_signature": False})  # ← 서명 검증을 꺼버림!
+</pre>
+  </div>
+
+  <blockquote class="callout danger">
+    <div class="callout-title">이 코드가 실제로 뚫리는 방식</div>
+    <ul style="margin:0;padding-left:1.4rem;">
+      <li><code>exp</code>가 없다 → 토큰이 유출되면 <strong>영구적으로</strong> 그 사용자로 행세할 수 있다</li>
+      <li><code>verify_signature: False</code> → 공격자가 <code>{"user_id": 1}</code>을 직접 만들어 관리자로 위장할 수 있다</li>
+      <li>비밀번호를 평문 비교했다면(코드에는 없지만 흔한 실수) DB 유출 시 전체 계정이 즉시 뚫린다</li>
+    </ul>
+  </blockquote>
+
+  <p>
+    이 레슨은 이 세 문제 — 만료 없는 토큰, 서명 미검증, 안전하지 않은 비밀번호 저장 —
+    를 순서대로 해결하고, 그 위에 역할 기반 접근 제어(RBAC)와 토큰 갱신 전략을 쌓는다.
+  </p>
+
+  <!-- ── 2. 인증 vs 인가 ─────────────────────────────── -->
+  <h2>2. 인증(Authentication)과 인가(Authorization)는 다른 질문이다</h2>
+
+  <table>
+    <thead>
+      <tr><th>구분</th><th>질문</th><th>실패 시 응답</th><th>실무 예시</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>인증 (AuthN)</strong></td>
+        <td>"당신은 누구인가?"</td>
+        <td><code>401 Unauthorized</code></td>
+        <td>로그인, 토큰 검증, 세션 확인</td>
+      </tr>
+      <tr>
+        <td><strong>인가 (AuthZ)</strong></td>
+        <td>"당신이 이 작업을 할 권한이 있는가?"</td>
+        <td><code>403 Forbidden</code></td>
+        <td>관리자 전용 API, 본인 소유 리소스만 수정 가능</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <blockquote class="callout warn">
+    <div class="callout-title">흔한 실수 — 상태 코드 혼동</div>
+    인증되지 않은 요청(토큰 없음/만료)에 403을, 권한이 없는 요청(토큰은 유효하지만
+    관리자가 아님)에 401을 반환하는 API가 많다. 클라이언트 입장에서 401은
+    "다시 로그인하라", 403은 "로그인은 유지하되 이 작업은 불가능하다"는 신호다.
+    두 코드를 바꿔 쓰면 프런트엔드가 잘못된 재시도 로직(예: 불필요한 재로그인)을 타게 된다.
+  </blockquote>
+
+  <!-- ── 3. 비밀번호 저장 ────────────────────────────── -->
+  <h2>3. 비밀번호는 절대 평문/단순 해시로 저장하지 않는다</h2>
+
+  <p>
+    MD5, SHA-256 같은 일반 해시 함수는 <strong>빠르다는 이유로</strong> 비밀번호 저장에는
+    부적합하다. 공격자가 DB를 탈취하면 GPU로 초당 수십억 번 해시를 시도(brute-force)할 수
+    있기 때문이다. <code>bcrypt</code>/<code>argon2</code>는 의도적으로 느리고, 매 해시마다
+    다른 salt를 자동으로 섞는다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# infrastructure/security/password.py
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(plain: str) -> str:
+    return pwd_context.hash(plain)          # salt는 결과 문자열에 포함되어 저장됨
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain, hashed)  # 상수 시간 비교로 타이밍 공격 방지
+</pre>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>선택지</th><th>비고</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>argon2</strong> (권장)</td>
+        <td>2015년 Password Hashing Competition 우승. 메모리 하드(memory-hard)라 GPU 공격에 더 강함</td>
+      </tr>
+      <tr>
+        <td>bcrypt</td>
+        <td>가장 널리 검증됨. 72바이트 입력 길이 제한에 주의</td>
+      </tr>
+      <tr>
+        <td>MD5 / SHA-256 / SHA-1</td>
+        <td>비밀번호 저장에 사용 금지 — 너무 빠름</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ── 4. JWT 구조 ─────────────────────────────────── -->
+  <h2>4. JWT 구조 — 서명이 실제로 무엇을 보장하는가</h2>
+
+  <p>
+    JWT(JSON Web Token)는 <code>Header.Payload.Signature</code> 세 부분을 점(.)으로 이어
+    Base64URL로 인코딩한 문자열이다. 여기서 반드시 기억해야 할 것: <strong>Payload는
+    암호화되지 않는다.</strong> 누구나 디코드해서 내용을 읽을 수 있다 — 서명은 오직
+    "이 내용이 서버가 발급한 그대로이고 변조되지 않았음"만 보장한다.
+  </p>
+
+  <div class="diagram">
+JWT = base64url(Header) . base64url(Payload) . Signature
+
+Header:  {"alg": "HS256", "typ": "JWT"}
+Payload: {"sub": "42", "role": "admin", "iat": 1751500000, "exp": 1751503600, "jti": "a1b2..."}
+Signature: HMACSHA256(base64url(Header) + "." + base64url(Payload), SECRET_KEY)
+
+검증 과정:
+1. 토큰을 세 부분으로 분리
+2. Header + Payload를 SECRET_KEY로 다시 서명 계산
+3. 계산한 서명 == 토큰에 담긴 서명 → 변조 없음 확인
+4. exp가 현재 시각보다 미래인지 확인 → 만료 여부 확인
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>표준 클레임</th><th>의미</th><th>실무에서 반드시 넣어야 하는 이유</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>sub</code></td><td>subject — 사용자 식별자</td><td>토큰이 누구의 것인지 특정</td></tr>
+      <tr><td><code>exp</code></td><td>만료 시각</td><td>없으면 유출된 토큰이 영구히 유효 (Section 1 참고)</td></tr>
+      <tr><td><code>iat</code></td><td>발급 시각</td><td>토큰 수명 감사, 발급 시점 기준 정책 적용</td></tr>
+      <tr><td><code>jti</code></td><td>토큰 고유 ID</td><td>특정 토큰만 콕 집어 폐기(revoke)할 때 필요 (Section 6)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="code-block">
+<pre>
+# infrastructure/security/jwt.py
+import jwt
+from datetime import datetime, timedelta, timezone
+from uuid import uuid4
+
+SECRET_KEY = settings.jwt_secret        # 환경 변수에서 로드, 코드에 하드코딩 금지
+ALGORITHM = "HS256"
+
+def create_access_token(user_id: int, role: str) -> str:
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": str(user_id),
+        "role": role,
+        "iat": now,
+        "exp": now + timedelta(minutes=15),   # 짧게 — Section 6에서 이유 설명
+        "jti": str(uuid4()),
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+def decode_access_token(token: str) -> dict:
+    try:
+        return jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],           # ← 반드시 화이트리스트로 알고리즘 고정
+        )
+    except jwt.ExpiredSignatureError:
+        raise TokenExpiredError()
+    except jwt.InvalidTokenError:
+        raise TokenInvalidError()
+</pre>
+  </div>
+
+  <blockquote class="callout danger">
+    <div class="callout-title">"alg: none" 공격과 알고리즘 혼동 공격</div>
+    <code>jwt.decode()</code>를 호출할 때 <code>algorithms=</code> 파라미터를 생략하거나
+    비워두면, 공격자가 토큰 헤더의 <code>alg</code>를 <code>none</code>으로 바꿔 서명
+    검증 자체를 건너뛰게 만들 수 있다. RS256(비대칭키)을 쓰는 서버에서 클라이언트가
+    보낸 토큰의 <code>alg</code>를 HS256으로 바꾸고 <strong>공개키</strong>를 비밀키로
+    악용하는 공격도 있다. 반드시 서버가 <strong>기대하는 알고리즘을 명시적으로 고정</strong>해야 한다.
+  </blockquote>
+
+  <!-- ── 5. OAuth2 Password Flow ─────────────────────── -->
+  <h2>5. FastAPI의 OAuth2 Password Flow — 로그인부터 보호된 엔드포인트까지</h2>
+
+  <p>
+    FastAPI는 OAuth2 스펙의 <strong>Password Flow</strong>(리소스 오너 자신의 서비스에서
+    아이디/비밀번호로 직접 로그인하는 방식 — 서드파티 로그인 위임과는 다르다)를
+    <code>OAuth2PasswordBearer</code>와 <code>OAuth2PasswordRequestForm</code>으로 지원한다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# presentation/routers/auth_router.py
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+
+router = APIRouter(prefix="/auth", tags=["auth"])
+
+@router.post("/login", response_model=TokenResponse)
+async def login(
+    form: OAuth2PasswordRequestForm = Depends(),   # username, password 필드를 표준화
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    user = await auth_service.authenticate(form.username, form.password)
+    if user is None:
+        # 사용자 없음과 비밀번호 틀림을 구분해서 응답하지 않는다 — 계정 존재 여부 노출 방지
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="이메일 또는 비밀번호가 올바르지 않습니다",
+        )
+    access_token = create_access_token(user.id, user.role)
+    refresh_token = await auth_service.issue_refresh_token(user.id)
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+</pre>
+  </div>
+
+  <div class="code-block">
+<pre>
+# presentation/dependencies/security.py
+from fastapi.security import OAuth2PasswordBearer
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")   # Swagger UI에 로그인 폼 자동 노출
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    user_repo: UserRepository = Depends(get_user_repository),
+) -> User:
+    payload = decode_access_token(token)          # 만료/변조 시 여기서 예외 발생
+    user = await user_repo.get(int(payload["sub"]))
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=401, detail="유효하지 않은 사용자입니다")
+    return user
+
+# presentation/routers/order_router.py
+@router.get("/orders/me")
+async def get_my_orders(current_user: User = Depends(get_current_user)):
+    ...   # 이 지점부터 current_user는 "인증된 사용자"임이 보장된다
+</pre>
+  </div>
+
+  <blockquote class="callout info">
+    <div class="callout-title">Day 4 레이어 구조와의 연결</div>
+    <code>get_current_user</code>는 Presentation 레이어의 Dependency다. 도메인 서비스는
+    JWT나 OAuth2의 존재를 몰라야 한다 — 라우터가 토큰을 검증해 얻은 <code>User</code>
+    도메인 객체만 응용 서비스에 전달한다. "토큰 검증"과 "비즈니스 로직"이 같은 함수에
+    섞이면 인증 방식이 바뀔 때(JWT → 세션 쿠키 등) 도메인 코드까지 건드려야 한다.
+  </blockquote>
+
+  <!-- ── 6. Access/Refresh 토큰 전략 ─────────────────── -->
+  <h2>6. Access Token은 짧게, Refresh Token은 회전시킨다</h2>
+
+  <p>
+    Access Token 수명을 길게(예: 7일) 잡으면 유출 시 피해 기간이 길어진다.
+    반대로 매번 로그인시키면 사용성이 무너진다. 실무 표준은 <strong>둘을 분리</strong>하는 것이다.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>토큰</th><th>수명</th><th>저장 위치</th><th>역할</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Access Token</td>
+        <td>짧음 (5~15분)</td>
+        <td>메모리 또는 Authorization 헤더로만 전송</td>
+        <td>매 요청 인증 — 유출돼도 곧 만료</td>
+      </tr>
+      <tr>
+        <td>Refresh Token</td>
+        <td>김 (7~30일)</td>
+        <td><strong>httpOnly, Secure 쿠키</strong> (JS로 접근 불가 → XSS로 탈취 어려움)</td>
+        <td>Access Token 재발급 전용, 자주 전송되지 않음</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="diagram">
+1. 로그인 → access_token(15분) + refresh_token(7일, httpOnly 쿠키) 발급
+2. Access token으로 API 호출 → 15분 후 만료
+3. 클라이언트: refresh_token으로 /auth/refresh 호출
+4. 서버: refresh_token 유효성 확인 → 새 access_token 발급
+        + 기존 refresh_token 폐기, 새 refresh_token 발급 (Refresh Token Rotation)
+5. 만약 이미 폐기된 refresh_token이 재사용되면 → 탈취 의심, 해당 사용자의
+   모든 세션을 강제 만료
+  </div>
+
+  <div class="code-block">
+<pre>
+# application/services/auth_service.py
+class AuthService:
+    def __init__(self, user_repo: UserRepository, token_store: RefreshTokenStore):
+        self._user_repo = user_repo
+        self._token_store = token_store   # Redis 등에 저장된 refresh token 상태
+
+    async def refresh(self, refresh_token: str) -> TokenResponse:
+        record = await self._token_store.get(refresh_token)
+        if record is None:
+            # 이미 사용되었거나 존재하지 않는 토큰 재사용 시도
+            raise SuspiciousTokenReuseError()   # 해당 사용자의 모든 refresh token 폐기 처리
+
+        if record.is_revoked or record.expires_at < now():
+            raise TokenExpiredError()
+
+        await self._token_store.revoke(refresh_token)          # 회전: 기존 토큰 즉시 폐기
+        new_refresh = await self.issue_refresh_token(record.user_id)  # 새 토큰 발급
+        user = await self._user_repo.get(record.user_id)
+        new_access = create_access_token(user.id, user.role)
+        return TokenResponse(access_token=new_access, refresh_token=new_refresh)
+</pre>
+  </div>
+
+  <blockquote class="callout tip">
+    <div class="callout-title">로그아웃과 토큰 폐기(Revocation)</div>
+    JWT는 원래 서버에 상태를 두지 않는(stateless) 방식이지만, "즉시 로그아웃"이나
+    "비밀번호 변경 시 기존 세션 전부 무효화"를 구현하려면 결국 서버 측 상태가 필요하다.
+    실무에서는 Access Token은 짧아서 블랙리스트 없이 그냥 만료를 기다리고,
+    <code>jti</code> 기반 블랙리스트를 Redis에 TTL과 함께 저장해 필요한 경우만
+    조회한다. Refresh Token은 애초에 DB/Redis에 상태로 저장하므로 폐기가 자연스럽다.
+  </blockquote>
+
+  <!-- ── 7. RBAC ─────────────────────────────────────── -->
+  <h2>7. RBAC — 역할 기반 접근 제어를 Dependency로 조립하기</h2>
+
+  <p>
+    인증(누구인지 확인)과 인가(권한 확인)를 분리된 Dependency로 쌓으면, 라우터마다
+    필요한 권한 수준을 선언적으로 표현할 수 있다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# presentation/dependencies/rbac.py
+from enum import Enum
+
+class Role(str, Enum):
+    USER = "user"
+    STAFF = "staff"
+    ADMIN = "admin"
+
+ROLE_RANK = {Role.USER: 0, Role.STAFF: 1, Role.ADMIN: 2}   # 상위 역할이 하위 권한 포함
+
+def require_role(minimum: Role):
+    async def _check(current_user: User = Depends(get_current_user)) -> User:
+        if ROLE_RANK[current_user.role] < ROLE_RANK[minimum]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="이 작업을 수행할 권한이 없습니다",
+            )
+        return current_user
+    return _check
+
+# presentation/routers/admin_router.py
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    current_user: User = Depends(require_role(Role.ADMIN)),   # 관리자만 통과
+    user_service: UserService = Depends(get_user_service),
+):
+    await user_service.delete(user_id)
+</pre>
+  </div>
+
+  <p>
+    "본인 소유 리소스만 수정 가능" 같은 <strong>객체 단위 인가</strong>는 역할만으로는
+    표현할 수 없다. 이 경우 응용 서비스에서 소유권을 명시적으로 검사한다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# application/services/order_service.py
+class OrderService:
+    async def cancel_order(self, current_user: User, order_id: int) -> None:
+        order = await self._order_repo.get(order_id)
+        if order is None:
+            raise OrderNotFoundError(order_id)
+        if order.user_id != current_user.id and current_user.role != Role.ADMIN:
+            raise HTTPException(status_code=403, detail="본인 주문만 취소할 수 있습니다")
+        order.cancel()
+        await self._session.commit()
+</pre>
+  </div>
+
+  <blockquote class="callout warn">
+    <div class="callout-title">흔한 실수 — 프런트엔드에서만 권한을 숨김</div>
+    관리자 메뉴를 화면에서 숨기는 것은 UX일 뿐 보안이 아니다. 브라우저 개발자 도구로
+    누구나 API를 직접 호출할 수 있으므로, <strong>모든 인가 검사는 반드시 서버(API) 쪽에서</strong>
+    다시 확인해야 한다. "프런트엔드가 이미 막았으니 백엔드는 생략"은 IDOR(Insecure
+    Direct Object Reference) 취약점으로 직결된다.
+  </blockquote>
+
+  <!-- ── 8. 체크리스트 ───────────────────────────────── -->
+  <h2>8. 인증/인가 셀프 리뷰 체크리스트</h2>
+
+  <blockquote class="callout info">
+    <div class="callout-title">코드 리뷰 시 확인할 것</div>
+    <ul style="margin:0;padding-left:1.4rem;">
+      <li>비밀번호는 bcrypt/argon2로 해시하고, 평문/단순 해시로 저장하지 않는다</li>
+      <li>모든 JWT에 <code>exp</code>가 있고, <code>decode()</code>에 <code>algorithms</code>를 명시적으로 고정했다</li>
+      <li>Access Token은 짧고(≤15분), Refresh Token은 httpOnly 쿠키 + 회전(rotation) 전략을 쓴다</li>
+      <li>재사용된 Refresh Token 감지 시 해당 사용자의 전체 세션을 폐기한다</li>
+      <li>401(인증 실패)과 403(인가 실패)을 정확히 구분해서 반환한다</li>
+      <li>역할 기반 검사(RBAC)와 별개로, 소유권 기반 인가(IDOR 방지)를 응용 서비스에서 확인한다</li>
+      <li>인가 검사를 프런트엔드에만 두지 않고 반드시 API에서 재확인한다</li>
+    </ul>
+  </blockquote>
+
+  <!-- ── 9. 퀴즈 ─────────────────────────────────────── -->
+  <section class="quiz-section">
+    <h2>🧠 이해도 점검</h2>
+
+    <div class="quiz-question"
+         data-answer="c"
+         data-explanation="JWT의 Payload는 Base64URL로 인코딩만 될 뿐 암호화되지 않으므로 누구나 디코드해 내용을 읽을 수 있다. 서명(Signature)은 오직 내용이 서버가 발급한 그대로이며 변조되지 않았음만 증명하지, 내용을 비밀로 유지해주지 않는다.">
+      <p>Q1. JWT의 서명(Signature)이 실제로 보장하는 것은 무엇인가?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>Payload 내용이 외부에서 읽히지 않도록 암호화한다</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>토큰이 항상 만료되지 않도록 보장한다</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>Header와 Payload가 발급 시점 그대로이며 변조되지 않았음을 보장한다</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>비밀번호를 대신 저장해주는 역할을 한다</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="d"
+         data-explanation="jwt.decode()에서 algorithms 파라미터를 생략하거나 검증을 끄면, 공격자가 헤더의 alg를 none으로 바꾸거나 RS256→HS256 알고리즘 혼동 공격으로 서명 검증을 우회할 수 있다. 반드시 서버가 기대하는 알고리즘을 화이트리스트로 명시해야 한다.">
+      <p>Q2. jwt.decode() 호출 시 algorithms 파라미터를 생략하거나 비워두면 생기는 위험은?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>토큰이 조금 더 느리게 디코딩된다</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>exp 클레임이 자동으로 무시된다</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>Refresh Token이 자동으로 재사용 방지된다</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>공격자가 alg를 none으로 바꾸거나 알고리즘 혼동 공격으로 서명 검증을 우회할 수 있다</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="b"
+         data-explanation="Access Token은 매 요청 전송되고 탈취 위험이 상대적으로 높으므로 짧게 유지해 유출 피해 기간을 줄인다. Refresh Token은 httpOnly 쿠키에 담아 JS(XSS)로 접근하지 못하게 하고, 회전(rotation) 전략으로 재사용을 탐지해 상대적으로 긴 수명에도 안전성을 확보한다.">
+      <p>Q3. Access Token은 짧게(5~15분), Refresh Token은 길게(7~30일) 설계하는 이유로 가장 정확한 것은?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>Refresh Token은 암호화되어 있어 절대 탈취될 수 없기 때문이다</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>Access Token은 매 요청 전송되어 유출 위험이 크므로 유출 시 피해 기간을 최소화하고, Refresh Token은 httpOnly 쿠키 + 회전 전략으로 안전하게 관리하기 때문이다</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>서버 성능을 높이기 위해서일 뿐 보안과는 무관하다</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>OAuth2 스펙이 반드시 이 수명을 강제하기 때문이다</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="a"
+         data-explanation="RBAC(역할 기반 검사)는 '이 역할이면 이 API를 호출할 수 있다'만 판단하며, '이 리소스가 이 사용자 소유인가'는 판단하지 못한다. 관리자가 아닌데도 다른 사용자의 주문 ID를 URL에 넣어 접근하는 IDOR을 막으려면 응용 서비스에서 소유권을 별도로 검사해야 한다.">
+      <p>Q4. 역할 기반 접근 제어(RBAC)만 적용하고 소유권 검사를 생략했을 때 발생할 수 있는 취약점은?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>다른 사용자의 주문 ID를 URL에 넣어 접근하는 IDOR(Insecure Direct Object Reference)</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>SQL Injection</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>Lost Update로 인한 재고 초과 판매</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>N+1 쿼리로 인한 성능 저하</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </section>
+
+  <!-- ── 1차 자료 ────────────────────────────────────── -->
+  <h2>권장 1차 자료</h2>
+  <ul>
+    <li>
+      <a href="https://datatracker.ietf.org/doc/html/rfc7519" target="_blank" rel="noopener">RFC 7519 — JSON Web Token (JWT)</a> —
+      JWT의 공식 표준 클레임과 구조 정의.
+    </li>
+    <li>
+      <a href="https://fastapi.tiangolo.com/tutorial/security/" target="_blank" rel="noopener">FastAPI 공식 문서 — Security</a> —
+      OAuth2PasswordBearer, OAuth2PasswordRequestForm 실전 튜토리얼.
+    </li>
+    <li>
+      <a href="https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP — JWT Cheat Sheet</a> —
+      알고리즘 혼동 공격, alg none 공격 등 실제 취약점 사례.
+    </li>
+    <li>
+      <a href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP — Password Storage Cheat Sheet</a> —
+      argon2/bcrypt 선택 기준과 파라미터 권장값.
+    </li>
+    <li>
+      <a href="https://datatracker.ietf.org/doc/html/rfc6819" target="_blank" rel="noopener">RFC 6819 — OAuth 2.0 Threat Model and Security Considerations</a> —
+      Refresh Token 회전과 재사용 탐지의 근거가 되는 위협 모델.
+    </li>
+  </ul>
+
+  <!-- ── Ask teacher ────────────────────────────────── -->
+  <div class="ask-teacher">
+    <strong>질문이 있으신가요?</strong><br>
+    Access/Refresh Token 수명을 프로젝트 상황에 맞게 어떻게 조정해야 할지,
+    또는 소셜 로그인(OAuth2 Authorization Code Flow)과 오늘 배운 Password Flow가
+    어떻게 다른지 궁금하면 질문하세요. 예시: "모바일 앱에서는 Refresh Token을
+    어디에 저장해야 하나요?"
+  </div>
+
+  <!-- ── Footer ─────────────────────────────────────── -->
+  <footer class="lesson-footer">
+    <a href="./0005-transactions-and-concurrency.html">← Day 5: 트랜잭션과 동시성</a>
+    <span style="color:var(--text-dim);font-size:0.85rem;">Day 6 — 인증과 인가</span>
+    <span style="color:var(--text-dim);font-size:0.85rem;">Day 7: 백그라운드 작업 →</span>
+  </footer>
+
+</main>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -9,19 +9,19 @@
 | 3 | 2026-07-01 | 데이터 모델링과 ORM — SQLAlchemy 2.x, Alembic 실전 | [0003-data-modeling-and-orm.html](lessons/0003-data-modeling-and-orm.html) |
 | 4 | 2026-07-02 | 서비스 경계 설계 — 레이어드 아키텍처, Repository 패턴 | [0004-service-boundaries.html](lessons/0004-service-boundaries.html) |
 | 5 | 2026-07-03 | 트랜잭션과 동시성 — ACID, 격리 수준, 낙관적/비관적 잠금, 데드락 방지 | [0005-transactions-and-concurrency.html](lessons/0005-transactions-and-concurrency.html) |
+| 6 | 2026-07-04 | 인증과 인가 — JWT 구조와 검증, OAuth2 Password Flow, RBAC, 토큰 갱신 전략 | [0006-authentication-and-authorization.html](lessons/0006-authentication-and-authorization.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | 인증과 인가 | JWT 구조와 검증, OAuth2 Password Flow, RBAC, 토큰 갱신 전략 |
 | 7 | 백그라운드 작업 | Celery + Redis 아키텍처, 재시도 전략, 태스크 幂等성 |
 | 8 | 관측성 | 구조화 로깅, Prometheus 메트릭, OpenTelemetry 트레이싱 |
 | 9 | 배포와 운영 | Docker 이미지 최적화, Compose, 헬스체크, 환경 변수 관리, CI/CD |
 
 ## 현재 학습 위치
 
-**Day 5 완료** — Day 6 (인증과 인가)로 진행 예정.
+**Day 6 완료** — Day 7 (백그라운드 작업)로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -49,7 +49,11 @@
 - [x] ACID와 트랜잭션 격리 수준 (Day 5)
 - [x] 낙관적 잠금 vs 비관적 잠금 선택 기준 (Day 5)
 - [x] 데드락 원인과 잠금 순서 예방 전략 (Day 5)
-- [ ] JWT 인증 흐름 (예정 Day 6)
+- [x] 비밀번호 해싱(bcrypt/argon2)과 안전한 저장 (Day 6)
+- [x] JWT 구조, 서명 검증, 알고리즘 혼동 공격 방지 (Day 6)
+- [x] OAuth2 Password Flow와 FastAPI Depends 인증 조립 (Day 6)
+- [x] Access/Refresh Token 분리와 Refresh Token Rotation (Day 6)
+- [x] RBAC와 소유권 기반 인가(IDOR 방지) (Day 6)
 - [ ] Celery 태스크 설계 (예정 Day 7)
 - [ ] 구조화 로깅 (예정 Day 8)
 - [ ] Docker 배포 패턴 (예정 Day 9)
