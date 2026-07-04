@@ -58,6 +58,25 @@
 > 공통 인용되는 내용으로, 개별 원 출처 접근이 어려운 경우 위 2차 자료(denser.ai, firecrawl)의 요약을
 > 통해 확인했다. 실제 도입 전 자체 데이터로 재검증이 필요하다.
 
+## Embedding 모델 최신 근거 (Day 4, 2026년 7월 조사 반영)
+
+- [Embedding Model Leaderboard: MTEB Rankings, April 2026 | Awesome Agents](https://awesomeagents.ai/leaderboards/embedding-model-leaderboard-mteb-april-2026/) — Gemini Embedding 001/2, Qwen3-Embedding, Cohere embed-v4, OpenAI text-3-large 순위
+- [New embedding models and API updates | OpenAI](https://openai.com/index/new-embedding-models-and-api-updates/) — text-embedding-3 시리즈, Matryoshka 차원 축소(dimensions 파라미터)
+- [voyage-3-large: the new state-of-the-art general-purpose embedding model – Voyage AI](https://blog.voyageai.com/2025/01/07/voyage-3-large/) — Matryoshka + quantization-aware training, int8/binary quantization 지원
+- [Voyage 3.5 vs OpenAI vs Cohere Embedding Models 2026](https://www.buildmvpfast.com/blog/best-embedding-model-comparison-voyage-openai-cohere-2026) — Voyage 4(MoE 아키텍처), 도메인 특화 버전(code/finance) 비교
+- [Gemini Embedding 2 Review 2026](https://computertech.co/gemini-embedding-2-review/) — 멀티모달(텍스트/이미지/영상/오디오), 다국어 리더 포지션
+- [Best Embedding Models for RAG in 2026 | InnovativeAIs](https://innovativeais.com/blog/best-embedding-models-for-rag-in-2026) — BGE-M3(MIT, dense+sparse+multi-vector), Qwen3-Embedding self-host 가이드
+- [Vector Quantization: Compress Vectors 4–32x Without Losing Accuracy | Tacnode Blog](https://tacnode.io/post/vector-quantization-explained) — binary/int8 quantization 원리와 recall 트레이드오프
+- [Vector Quantization - MongoDB Vector Search 공식 문서](https://www.mongodb.com/docs/atlas/atlas-vector-search/vector-quantization/) — binary quantization으로 RAM 비용 약 1/24 절감 사례
+- [Any plans of deprecating text-embedding-ada-002? | OpenAI Developer Community](https://community.openai.com/t/any-plans-of-deprecating-text-embedding-ada-002/700561) — ada-002 지원 종료/마이그레이션 관련 논의(제공사별 정책 상이하니 공식 공지 확인 필요)
+- [OpenAI's Text Embeddings v3 | Pinecone](https://www.pinecone.io/learn/openai-embeddings-v3/) — ada-002 대비 text-embedding-3 품질/차원 개선 데이터
+- [Fine-tune Embedding models for Retrieval Augmented Generation (RAG) | Philschmid](https://www.philschmid.de/fine-tune-embedding-model-for-rag) — 임베딩 파인튜닝 실행 방법과 비용
+- [RAG vs Fine-Tuning — What Actually Works in Production (2026) | DEV Community](https://dev.to/tyson_cung/rag-vs-fine-tuning-what-actually-works-in-production-2026-20jg) — 재인덱싱 비용 정량 사례(5천만 문서 기준), 파인튜닝 vs 저비용 대안 우선순위
+
+> 참고: 임베딩 모델 순위·가격은 제공사가 자주 갱신하므로, 위 자료는 레슨 작성 시점(2026년 7월) 기준
+> 최신 공개 정보를 반영한 것이다. 실제 모델 선택 전에는 반드시 각 제공사의 최신 공식 문서와 가격
+> 페이지, 그리고 자신의 도메인 평가셋으로 재검증해야 한다.
+
 ## 인터뷰 준비
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 검색 시스템 설계 문제와 유사한 사고 프레임
