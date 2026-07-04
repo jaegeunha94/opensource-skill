@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — 캐시 전략 설계: 히트율, 무효화, 일관성 trade-off | 성능 최적화 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; color: #c8dae8; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .timeline { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1rem; font-size: 0.85rem; }
+    .timeline .row { display: flex; align-items: center; margin-bottom: 0.5rem; gap: 0.8rem; }
+    .timeline .row:last-child { margin-bottom: 0; }
+    .timeline .label { width: 190px; flex-shrink: 0; color: var(--text-muted); }
+    .timeline .bar-track { flex: 1; background: #0a0c12; border-radius: 4px; height: 1.4rem; position: relative; overflow: hidden; }
+    .timeline .bar { position: absolute; top: 0; bottom: 0; border-radius: 4px; display: flex; align-items: center; padding-left: 0.4rem; font-size: 0.75rem; color: #0a0c12; font-weight: 600; white-space: nowrap; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">성능 최적화 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 5
+  </nav>
+
+  <h1>Day 5 — 캐시 전략 설계: 히트율, 무효화, 일관성 trade-off</h1>
+  <p class="subtitle">캐시는 "빠르게 만드는 도구"가 아니라 "정합성과 속도를 맞바꾸는 도구"라는 것을 증명하는 능력 · 2026-07-04</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#invalidation">무효화 전략 심화</a></li>
+      <li><a href="#stampede">Cache Stampede — 캐시가 만드는 새로운 장애</a></li>
+      <li><a href="#practice">실무 연결</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"조회가 많은 API에 캐시를 적용하려고 합니다. 어떤 기준으로 캐시 대상을 정하고, 무효화는 어떻게 설계하시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"캐시를 적용했는데도 DB 부하가 줄지 않는다면 무엇을 의심하시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"인기 상품 하나의 캐시가 동시에 만료되는 순간 DB에 무슨 일이 벌어질 수 있고, 어떻게 막으시겠어요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>Day 1~4가 "병목이 어디인지 특정하는 능력"이었다면, Day 5는 그 병목(대개 DB 반복 조회)을 실제로 줄이는 첫 번째 도구인 캐시를 <strong>안전하게 설계할 수 있는가</strong>를 봅니다. 캐시는 코드 몇 줄로 붙일 수 있지만, 잘못 설계하면 "오래된 데이터를 보여주는 버그"나 "캐시 서버가 죽는 순간 DB까지 함께 죽는 장애"를 만듭니다. 면접관은 캐시를 "빠르게 하는 트릭"이 아니라 "정합성과 속도를 맞바꾸는 아키텍처 결정"으로 다루는지를 확인합니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>캐시 대상 선정 기준이 있는가</strong> — "일단 다 캐시하자"가 아니라, 읽기/쓰기 비율(Read/Write Ratio), 데이터의 최신성 요구 수준, 페이로드 크기 같은 근거로 캐시 여부를 판단하는가.</li>
+      <li><strong>무효화(Invalidation)를 1급 설계 요소로 다루는가</strong> — "캐시를 붙였다"는 절반의 이야기이고, "이 캐시가 언제 틀린 값을 반환할 수 있고 어떻게 막는가"까지 답할 수 있는가. 컴퓨터과학에는 "캐시 무효화와 이름 짓기가 어렵다(There are only two hard things in Computer Science: cache invalidation and naming things)"는 유명한 농담이 있을 만큼, 무효화는 캐싱에서 가장 어려운 부분입니다.</li>
+      <li><strong>일관성 수준의 trade-off를 이해하는가</strong> — 모든 데이터를 항상 최신 상태로 유지하는 강한 일관성과, 약간의 지연을 감수하고 성능을 얻는 최종 일관성(Eventual Consistency) 사이에서 서비스 요구에 맞게 선택하는가.</li>
+      <li><strong>캐시가 만드는 새로운 실패 모드를 아는가</strong> — Cache Stampede, Hot Key, 캐시 서버 장애 시 fallback 설계처럼 캐시 도입 자체가 만드는 위험을 예측하고 대비하는가.</li>
+    </ul>
+
+    <p>10년차 이하의 전형적인 약한 패턴: "Redis에 캐시하면 빨라집니다"에서 답이 끝남. 시니어는 여기서 한 걸음 더 들어가 "언제 이 캐시 값이 실제 DB 값과 달라질 수 있고, 그 차이를 서비스가 감당할 수 있는가"까지 설명합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>캐시 히트율(Hit Rate) — 냉장고에 비유</h3>
+    <p>캐시는 자주 찾는 재료를 냉장고 문 앞칸에 미리 꺼내두는 것과 비슷합니다. 문 앞칸에서 바로 찾으면(Cache Hit) 냉장고 깊숙한 창고(DB)까지 갈 필요가 없어 빠릅니다. 문 앞칸에 없으면(Cache Miss) 결국 창고까지 가야 하고, 창고에서 꺼낸 김에 다음을 위해 문 앞칸에도 채워둡니다. <strong>히트율</strong>은 "전체 조회 중 문 앞칸에서 바로 찾은 비율"입니다. 히트율이 낮으면 캐시가 있어도 대부분 창고(DB)까지 가야 하므로 캐시의 이점이 거의 없습니다.</p>
+
+    <h3>캐시가 잘 맞는 데이터 vs 안 맞는 데이터</h3>
+    <p>모든 데이터가 캐시에 적합한 것은 아닙니다. 판단 기준은 대략 세 가지입니다.</p>
+
+    <table class="method-table">
+      <tr><th>기준</th><th>캐시에 적합</th><th>캐시에 부적합</th></tr>
+      <tr><td>읽기/쓰기 비율</td><td>읽기가 압도적으로 많음 (상품 상세, 설정값)</td><td>쓰기가 잦고 읽기 직후 최신값이 중요 (재고 수량, 잔액)</td></tr>
+      <tr><td>최신성 요구</td><td>몇 초~몇 분 지연을 감당 가능 (인기글 순위)</td><td>즉시 반영이 필수 (결제 상태, 주문 처리 결과)</td></tr>
+      <tr><td>재계산 비용</td><td>원본 조회/계산 비용이 큼 (복잡한 집계, 외부 API)</td><td>원본 조회가 이미 충분히 빠름 (단순 PK 조회)</td></tr>
+    </table>
+
+    <h3>캐시 패턴 — Cache-Aside, Write-Through, Write-Behind</h3>
+    <p>캐시를 애플리케이션에 붙이는 방식에는 크게 세 가지가 있고, 각각 일관성과 복잡도의 trade-off가 다릅니다.</p>
+
+    <table class="method-table">
+      <tr><th>패턴</th><th>동작 방식</th><th>trade-off</th></tr>
+      <tr><td>Cache-Aside (Lazy Loading)</td><td>조회 시 캐시를 먼저 확인 → 없으면(Miss) DB 조회 후 캐시에 채움. 쓰기 시에는 DB만 갱신하고 캐시는 삭제(무효화)</td><td>구현이 단순하고 가장 흔히 쓰임. 하지만 무효화 시점과 DB 갱신 사이에 짧은 순간 stale 데이터가 보일 수 있음</td></tr>
+      <tr><td>Write-Through</td><td>쓰기 시 캐시와 DB를 동시에(또는 캐시 경유로) 갱신</td><td>캐시가 항상 최신에 가깝지만, 모든 쓰기가 캐시 계층을 거치므로 쓰기 지연이 늘고 캐시에 자주 안 쓰이는 데이터까지 계속 채워질 수 있음</td></tr>
+      <tr><td>Write-Behind (Write-Back)</td><td>쓰기를 캐시에 먼저 반영하고, DB 반영은 비동기로 지연시켜 배치 처리</td><td>쓰기 성능은 가장 좋지만, 캐시 장애 시 아직 DB에 반영되지 않은 데이터를 잃을 위험이 있음</td></tr>
+    </table>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> 실무에서 가장 많이 쓰이는 것은 Cache-Aside입니다. 이유는 단순합니다 — 캐시 서버가 통째로 죽어도 DB만으로 서비스가 계속 동작하기 때문입니다(캐시는 "있으면 좋은" 보조 계층). Write-Behind는 DB 쓰기 성능이 극도로 중요한 특수한 경우(예: 카운터 집계)에 한정적으로 씁니다.
+    </div>
+
+    <h3>TTL(Time To Live) — 유통기한이 있는 재료</h3>
+    <p>TTL은 캐시 항목에 붙이는 "유통기한"입니다. TTL이 지나면 캐시는 자동으로 만료되어 다음 조회 시 DB에서 다시 가져옵니다. TTL을 짧게 잡으면 최신성은 좋아지지만 캐시 효과(히트율)가 떨어지고, 길게 잡으면 히트율은 좋아지지만 오래된 데이터를 보여줄 위험이 커집니다. <strong>TTL 값 자체가 "속도 vs 최신성" trade-off를 숫자로 표현한 것</strong>입니다.</p>
+  </section>
+
+  <!-- 4. 무효화 전략 심화 -->
+  <section id="invalidation">
+    <h2>4. 무효화 전략 심화</h2>
+
+    <h3>TTL 기반 무효화 vs 이벤트 기반 무효화</h3>
+    <p>캐시를 최신 상태로 유지하는 방법은 크게 두 축으로 나뉩니다.</p>
+
+    <ul>
+      <li><strong>TTL 기반(수동적)</strong> — 데이터가 바뀌든 안 바뀌든 정해진 시간이 지나면 무조건 만료시킵니다. 구현이 단순하지만, TTL이 지나기 전까지는 최대 TTL만큼 오래된 데이터를 보여줄 수 있습니다.</li>
+      <li><strong>이벤트 기반(능동적)</strong> — 원본 데이터가 실제로 바뀌는 시점(쓰기 트랜잭션 커밋 직후)에 해당 캐시 키를 명시적으로 삭제하거나 갱신합니다. 최신성은 훨씬 좋아지지만, "이 데이터가 바뀌면 어떤 캐시 키들이 영향을 받는지"를 코드 전체에서 빠짐없이 추적해야 하는 복잡도가 생깁니다.</li>
+    </ul>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> 대부분의 실무 시스템은 두 가지를 함께 씁니다 — 이벤트 기반 무효화를 기본으로 하되, 무효화 로직이 놓친 경우를 대비한 "안전망"으로 TTL을 짧게라도 걸어둡니다. 이벤트 기반만 믿고 TTL을 아예 안 걸면, 무효화 코드에 버그가 생겼을 때 캐시가 영원히 낡은 값을 반환하는 위험이 있습니다.
+    </div>
+
+    <h3>캐시 키 버전 관리(Versioning)로 무효화를 단순화하기</h3>
+    <p>연관된 여러 캐시 키를 한 번에 무효화해야 할 때(예: "카테고리 정보가 바뀌면 그 카테고리에 속한 모든 상품 목록 캐시가 무효화되어야 한다"), 하나씩 찾아 삭제하는 대신 <strong>버전 번호를 캐시 키에 포함</strong>시키는 방법을 씁니다. 예를 들어 <code>category:5:v3:products</code>처럼 키에 버전을 넣고, 카테고리가 바뀌면 버전 값(<code>v3</code> → <code>v4</code>)만 별도로 증가시킵니다. 이후 조회는 새 버전 번호로 키를 만들기 때문에 이전 버전 캐시는 자동으로 "안 쓰이는 키"가 되어 참조되지 않고, TTL이 지나면 자연히 사라집니다.</p>
+
+    <h3>일관성 모델 선택 — 강한 일관성 vs 최종 일관성</h3>
+    <p>캐시를 도입한다는 것 자체가 이미 "약간의 지연된 정보를 감수하고 속도를 얻겠다"는 <strong>최종 일관성(Eventual Consistency)</strong> 쪽으로 한 걸음 이동하는 결정입니다. 반대로 "이 데이터는 조회 즉시 최신이어야 한다"는 요구가 있다면(결제 잔액, 재고 예약 확정 등), 그 데이터는 애초에 캐시 대상에서 제외하거나, 캐시를 쓰더라도 쓰기 경로에서 캐시를 동기적으로 무효화한 뒤 응답하는 방식으로 지연을 최소화해야 합니다.</p>
+  </section>
+
+  <!-- 5. Cache Stampede -->
+  <section id="stampede">
+    <h2>5. Cache Stampede — 캐시가 만드는 새로운 장애</h2>
+
+    <h3>Cache Stampede(=Thundering Herd)란 무엇인가</h3>
+    <p>인기 상품 하나의 캐시가 TTL 만료로 사라지는 순간, 그 짧은 틈에 수백~수천 개의 동시 요청이 동시에 Cache Miss를 겪고, <strong>모두가 동시에 DB에 같은 쿼리를 날리는 현상</strong>입니다. 캐시는 원래 DB 부하를 줄이려고 도입한 것인데, 만료 순간에는 오히려 캐시가 없던 것보다 더 심한 순간 부하를 DB에 몰아주는 역설이 발생합니다.</p>
+
+    <div class="timeline">
+      <div class="row"><span class="label">캐시 정상 (TTL 만료 전)</span><div class="bar-track"><div class="bar" style="left:0%; width:70%; background:#34d399;">1000 req/s 모두 캐시에서 응답</div></div></div>
+      <div class="row"><span class="label">TTL 만료 순간</span><div class="bar-track"><div class="bar" style="left:0%; width:15%; background:#f87171;">동시 Miss 폭주</div></div></div>
+      <div class="row"><span class="label">DB로 몰리는 순간 부하</span><div class="bar-track"><div class="bar" style="left:0%; width:95%; background:#fb923c;">동일 쿼리 1000건 동시 실행</div></div></div>
+    </div>
+
+    <h3>완화 전략</h3>
+
+    <table class="method-table">
+      <tr><th>전략</th><th>방식</th><th>trade-off</th></tr>
+      <tr><td>분산 락(Mutex/Lock)</td><td>Miss가 발생하면 첫 번째 요청만 DB 조회+캐시 채우기를 수행하고, 나머지 요청은 잠시 대기했다가 채워진 캐시를 읽음</td><td>DB 폭주는 막지만, 대기하는 요청들의 응답 지연이 늘어남</td></tr>
+      <tr><td>Jittered TTL(TTL 분산)</td><td>동일한 TTL(예: 300초)을 주는 대신 TTL에 무작위 값(±10~20%)을 더해, 관련 키들이 동시에 만료되지 않도록 시간을 흩뜨림</td><td>구현이 간단하고 효과적이지만, 완전히 동시 만료를 막지는 못함(확률적 완화)</td></tr>
+      <tr><td>Early Recomputation(선제적 갱신)</td><td>TTL이 아직 남아있을 때(예: 남은 시간이 10% 이하) 백그라운드에서 미리 새 값을 계산해 캐시를 갱신, 사용자 요청은 계속 기존 캐시로 응답</td><td>Miss 자체가 거의 발생하지 않아 가장 안정적이지만, 사용되지 않을 수도 있는 값을 미리 계산하는 비용이 듦</td></tr>
+      <tr><td>Stale-While-Revalidate</td><td>TTL이 지나도 즉시 삭제하지 않고, 오래된 값을 우선 반환하면서 백그라운드로 새 값을 가져와 갱신</td><td>사용자는 항상 빠른 응답을 받지만, 짧은 시간 동안 의도적으로 stale 데이터를 노출함</td></tr>
+    </table>
+
+    <h3>Hot Key 문제 — 한 곳으로 쏠리는 트래픽</h3>
+    <p>특정 캐시 키(예: 메인 페이지 배너, 초특가 상품 하나)에 트래픽이 극단적으로 쏠리면, 캐시가 분산 구성(클러스터)이어도 그 키를 담당하는 노드 하나에만 부하가 집중될 수 있습니다. 이런 경우 애플리케이션 서버의 로컬 메모리에 초단기(수 초) 캐시를 한 겹 더 두는 <strong>다층 캐시(Local + Distributed Cache)</strong>로 분산 캐시 노드 하나에 몰리는 부하 자체를 줄이기도 합니다.</p>
+  </section>
+
+  <!-- 6. 실무 연결 -->
+  <section id="practice">
+    <h2>6. 실무 연결</h2>
+
+    <h3>상황 1: 캐시를 붙였는데 DB 부하가 그대로였다</h3>
+    <p>알고 보니 캐시 키에 사용자별 필터 파라미터가 포함되어 있어서, 같은 상품 목록이라도 정렬 기준이나 페이지 번호가 조금만 달라도 다른 캐시 키가 되어 사실상 히트율이 5% 미만이었습니다. 캐시 적용 여부만 확인하고 <strong>히트율 지표</strong>를 실제로 측정하지 않았던 것이 원인이었고, 자주 쓰이는 조합만 캐시하도록 키 설계를 다시 했습니다.</p>
+
+    <h3>상황 2: 인기 이벤트 상품 캐시가 만료되는 순간 DB CPU가 100%를 찍었다</h3>
+    <p>전형적인 Cache Stampede였습니다. TTL을 고정 60초에서 <code>60초 ± 10초 랜덤</code>으로 바꾸고, 추가로 Miss 발생 시 분산 락으로 한 요청만 DB를 조회하도록 바꿔 재발을 막았습니다.</p>
+
+    <h3>상황 3: 캐시된 재고 수량을 보고 주문을 눌렀는데 실제로는 품절이었다는 컴플레인</h3>
+    <p>재고 "수량 표시"는 캐시해도 괜찮지만, "주문 확정 시점의 재고 차감"은 캐시가 아니라 반드시 DB(또는 락이 걸린 원본)에서 다시 확인하도록 경로를 분리했습니다. 캐시는 사용자에게 보여주는 화면(읽기)에만 쓰고, 실제 트랜잭션이 걸리는 쓰기 경로에는 관여하지 않게 한 것이 핵심이었습니다.</p>
+
+    <h3>상황 4: 캐시 서버(Redis)가 잠깐 다운되자 서비스 전체가 함께 죽었다</h3>
+    <p>Cache-Aside 패턴이었음에도, 캐시 조회 실패 시 예외 처리 없이 곧바로 애플리케이션 에러로 전파되도록 코드가 짜여 있었습니다. 캐시는 "있으면 좋은" 보조 계층이라는 원칙에 맞게, 캐시 조회/쓰기 실패 시 DB로 직접 fallback하도록 수정해 캐시 장애가 서비스 전체 장애로 번지지 않게 격리했습니다.</p>
+  </section>
+
+  <!-- 7. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>7. 답변 사고 순서</h2>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>캐시 대상 여부를 먼저 판단한다</strong>
+          <p style="margin-top:0.3rem">읽기/쓰기 비율, 최신성 요구 수준, 원본 조회 비용을 근거로 이 데이터가 캐시에 적합한지 먼저 검토합니다. "다 캐시하면 빠르다"로 시작하지 않습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>캐시 패턴과 TTL을 정한다</strong>
+          <p style="margin-top:0.3rem">Cache-Aside를 기본으로 고려하고, 서비스의 쓰기 패턴에 따라 Write-Through/Behind가 필요한지 판단합니다. TTL은 "속도 vs 최신성" trade-off의 숫자임을 명시합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>무효화 전략을 설계한다</strong>
+          <p style="margin-top:0.3rem">이벤트 기반 무효화를 기본으로 하되, 놓칠 경우를 대비해 TTL을 안전망으로 함께 둡니다. 연관 캐시가 많다면 버전 관리로 무효화 범위를 단순화합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>캐시가 만드는 실패 모드를 예측한다</strong>
+          <p style="margin-top:0.3rem">Cache Stampede, Hot Key, 캐시 서버 장애 시 전체 서비스 영향 여부를 미리 검토하고 완화책(Jittered TTL, 분산 락, fallback)을 함께 설계합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>히트율과 부하 감소를 지표로 검증한다</strong>
+          <p style="margin-top:0.3rem">캐시를 붙인 뒤 "빨라진 느낌"이 아니라 히트율, DB 쿼리 수 감소, p99 latency 변화를 실측해 효과를 증명합니다.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 8. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>8. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "조회가 많은 API에 캐시를 적용하려고 합니다. 어떤 기준으로 캐시 대상을 정하고, 무효화는 어떻게 설계하시겠어요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>먼저 이 데이터가 캐시에 적합한지부터 봅니다 — 읽기/쓰기 비율이 압도적으로 읽기 쪽이고, 몇 초에서 몇 분 정도의 지연을 서비스가 감당할 수 있으며, 원본 조회 비용(복잡한 조인이나 집계, 외부 API 호출)이 충분히 크다면 캐시 대상으로 선정합니다. 반대로 결제 잔액처럼 즉시 최신성이 필요한 데이터는 캐시하지 않거나, 쓰기 경로에서 캐시를 무효화한 직후 응답하도록 설계합니다.</p>
+      <br>
+      <p>패턴은 Cache-Aside를 기본으로 씁니다 — 조회 시 캐시를 먼저 보고 Miss면 DB에서 가져와 채우고, 쓰기 시에는 DB만 갱신한 뒤 해당 캐시 키를 삭제합니다. 이 방식은 캐시가 죽어도 DB만으로 서비스가 계속 동작한다는 장점이 있습니다. 무효화는 데이터가 바뀌는 시점에 관련 캐시 키를 명시적으로 삭제하는 이벤트 기반 방식을 기본으로 하되, 무효화 로직이 놓친 경우를 대비해 TTL을 안전망으로 짧게라도 함께 겁니다.</p>
+      <br>
+      <p>마지막으로 캐시 도입 자체가 만드는 위험도 함께 설계합니다. 인기 데이터의 TTL이 동시에 만료되면 Cache Stampede로 DB에 순간 부하가 몰릴 수 있으므로 TTL에 랜덤 값을 더해 분산시키고, 필요하면 Miss 시 분산 락으로 한 요청만 DB를 조회하게 합니다. 그리고 캐시 조회/쓰기 자체가 실패하더라도 예외가 전파되지 않고 DB로 직접 fallback하도록 만들어, 캐시 장애가 서비스 전체 장애로 번지지 않게 격리합니다. 적용 후에는 히트율과 DB 쿼리 수 감소를 실측해 실제로 효과가 있었는지 검증합니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>캐시 대상 선정 기준을 근거(읽기/쓰기 비율, 최신성 요구)로 제시함</li>
+      <li>패턴 선택 이유(Cache-Aside의 장애 격리 이점)를 명확히 설명함</li>
+      <li>무효화를 "붙이면 끝"이 아니라 이벤트 기반 + TTL 안전망의 이중 구조로 설계함</li>
+      <li>Cache Stampede와 캐시 장애 시 fallback까지 실패 모드를 선제적으로 고려함</li>
+      <li>검증 단계로 끝맺어 "캐시를 붙였다"가 아니라 "효과를 증명했다"로 마무리함</li>
+    </ul>
+  </section>
+
+  <!-- 9. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>9. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"Redis를 붙여서 자주 조회되는 데이터를 캐싱하면 됩니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"자주 조회되는 데이터"를 어떤 기준으로 판단하는지 근거가 없음</li>
+        <li>무효화를 전혀 언급하지 않음 — 데이터가 바뀌었을 때 캐시가 어떻게 되는지 답이 없음</li>
+        <li>캐시 자체가 만드는 위험(Stampede, 장애 시 전파)을 전혀 고려하지 않음</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"TTL을 짧게(예: 5초) 걸어두면 데이터가 항상 최신에 가깝게 유지되니 안전합니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>TTL을 짧게 걸면 최신성은 좋아지지만 히트율이 떨어져 캐시의 효과 자체가 사라질 수 있음 — trade-off를 한쪽만 봄</li>
+        <li>TTL만으로는 "데이터가 바뀐 순간 즉시 반영"이 필요한 경우를 해결하지 못함(최대 TTL만큼 지연 발생)</li>
+        <li>TTL 단축이 Cache Stampede 위험을 오히려 늘릴 수 있다는 점을 고려하지 않음</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>읽기/쓰기 비율과 최신성 요구로 캐시 대상을 선정한다</li>
+        <li>Cache-Aside/Write-Through/Write-Behind 중 서비스 특성에 맞는 패턴을 선택하고 이유를 설명한다</li>
+        <li>이벤트 기반 무효화 + TTL 안전망의 이중 구조를 제시한다</li>
+        <li>Cache Stampede, Hot Key, 캐시 장애 전파 같은 실패 모드를 예측하고 완화책을 제시한다</li>
+        <li>히트율과 DB 부하 감소를 실측해 효과를 검증하는 단계를 포함한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. Follow-up -->
+  <section id="followups">
+    <h2>10. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: 캐시를 적용했는데도 DB 부하가 줄지 않는다면 무엇을 의심하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 가장 먼저 히트율 지표를 확인합니다. 히트율이 낮다면 캐시 키 설계 문제(파라미터가 조금만 달라도 다른 키가 되어 사실상 캐시가 안 되는 경우)를 의심합니다. 히트율이 높은데도 DB 부하가 줄지 않는다면, 캐시된 요청과 DB로 가는 요청이 실제로 겹치는 집합인지(캐시하지 않은 다른 API가 같은 테이블을 계속 조회하고 있지는 않은지) 확인합니다. 또한 TTL이 너무 짧아 히트율 자체가 낮게 설계된 경우도 흔합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 인기 상품 하나의 캐시가 동시에 만료되는 순간 DB에 무슨 일이 벌어질 수 있고, 어떻게 막으시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> Cache Stampede가 발생해 그 순간 수백~수천 개의 동시 요청이 동일 쿼리를 DB에 동시에 날릴 수 있습니다. TTL에 랜덤 값을 더해(Jittered TTL) 동시 만료 확률을 낮추고, Miss 발생 시 분산 락으로 첫 번째 요청만 DB를 조회하고 나머지는 대기 후 캐시를 읽게 하거나, TTL 만료 전 미리 백그라운드에서 값을 갱신하는 Early Recomputation으로 Miss 자체를 없앨 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 캐시와 DB의 값이 짧은 순간 다를 수 있다는 것을 어떻게 설명하고, 언제는 허용하고 언제는 안 되나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 캐시를 쓰는 순간부터 이미 최종 일관성을 선택한 것입니다. 무효화 시점과 다음 조회 사이, 또는 TTL이 남아있는 동안 캐시와 DB 값이 다를 수 있습니다. 상품 조회수나 목록 화면처럼 사용자가 몇 초 지연을 인지하지 못하는 데이터는 이 차이를 허용합니다. 반대로 결제 상태나 재고 확정처럼 잘못된 값이 사용자의 실제 행동(주문 확정)에 직접 영향을 주는 데이터는 캐시 대상에서 제외하거나, 쓰기 경로에서 캐시를 동기적으로 무효화한 뒤 응답합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: Write-Through와 Write-Behind는 각각 언제 선택하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 대부분의 경우 Cache-Aside로 충분하지만, 캐시가 항상 최신 상태를 유지해야 하고 쓰기 지연이 다소 늘어도 괜찮다면 Write-Through를 씁니다. 반대로 쓰기 자체의 처리량이 매우 중요하고(예: 실시간 카운터, 조회수 집계) DB 반영이 약간 지연돼도 되는 경우에는 Write-Behind로 쓰기를 캐시에 먼저 반영하고 DB에는 배치로 몰아서 씁니다. 다만 Write-Behind는 캐시 장애 시 아직 DB에 반영되지 않은 데이터를 잃을 위험이 있으므로, 유실을 감당할 수 있는 데이터에만 적용합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 캐시 서버(Redis)가 완전히 다운되면 서비스는 어떻게 동작해야 하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 캐시는 "있으면 좋은" 보조 계층이라는 원칙이 여기서 검증됩니다. 캐시 조회/쓰기 실패 시 예외를 애플리케이션 전체로 전파시키지 않고 즉시 DB로 fallback하도록 설계해야 합니다. 다만 캐시 없이 DB만으로 트래픽을 감당할 수 있는지는 별개 문제이므로, 캐시 장애 시 DB가 순간적으로 늘어난 부하를 버틸 수 있는지(커넥션 풀, DB 스케일) 사전에 용량 계획을 해두어야 합니다. 캐시 장애가 곧 서비스 전체 장애로 이어진다면, 그 시스템은 이미 캐시를 "보조 계층"이 아니라 "필수 의존성"으로 잘못 설계한 것입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>11. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"캐시는 무조건 빠르게 만들어주는 도구다"</strong></p>
+      <p>캐시는 속도와 정합성을 맞바꾸는 도구입니다. 잘못 설계하면 오래된 데이터를 보여주거나, 무효화 버그로 영구히 잘못된 값을 반환하거나, Cache Stampede로 오히려 장애를 만들 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"TTL만 짧게 걸면 무효화 문제는 해결된다"</strong></p>
+      <p>TTL 단축은 최신성을 개선하지만 히트율을 희생시키고, 데이터가 바뀐 순간 즉시 반영이 필요한 경우는 여전히 해결하지 못합니다. 무효화는 TTL만이 아니라 이벤트 기반 삭제와 함께 설계해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"캐시 히트율이 높으면 캐시 전략이 성공한 것이다"</strong></p>
+      <p>히트율이 높아도 캐시 대상이 실제 병목(DB 부하가 큰 쿼리)과 무관하다면 체감 개선이 없습니다. 히트율은 "캐시가 잘 맞았는가"의 지표이지 "병목이 해소됐는가"의 지표가 아닙니다. 둘을 함께 봐야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"캐시는 읽기 성능 문제이므로 쓰기 경로와는 무관하다"</strong></p>
+      <p>무효화는 쓰기 경로에서 트리거됩니다. 캐시를 붙이는 순간 쓰기 로직에도 "이 데이터가 바뀌면 어떤 캐시 키를 무효화해야 하는가"라는 새로운 책임이 생기고, 이를 빠뜨리면 stale 데이터 버그로 이어집니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"캐시 서버가 다운될 일은 거의 없으니 fallback까지 설계할 필요는 없다"</strong></p>
+      <p>캐시 서버도 네트워크 장애, 배포, 메모리 초과(eviction 폭증)로 언제든 응답이 늦어지거나 실패할 수 있습니다. Cache-Aside 패턴을 쓰더라도 fallback 코드를 실제로 작성해두지 않으면, 캐시 장애가 그대로 서비스 장애로 전파됩니다.</p>
+    </div>
+  </section>
+
+  <!-- 12. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>12. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 5를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>어떤 데이터가 캐시에 적합하고 어떤 데이터가 부적합한지, 읽기/쓰기 비율과 최신성 요구로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Cache-Aside, Write-Through, Write-Behind의 동작 방식과 각각의 trade-off를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>TTL이 "속도 vs 최신성" trade-off를 숫자로 표현한 것임을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>TTL 기반 무효화와 이벤트 기반 무효화의 차이, 왜 둘을 함께 쓰는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Cache Stampede가 왜 발생하고, Jittered TTL/분산 락/Early Recomputation으로 어떻게 완화하는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>캐시가 만드는 새로운 실패 모드(Hot Key, 캐시 서버 장애 전파)를 예측하고 fallback 설계를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>캐시 히트율과 실제 병목 해소가 다른 지표임을 구분해 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>캐시 도입이 곧 최종 일관성을 선택하는 결정이라는 것을 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 6</h3>
+      <p><strong>비동기 처리와 동시성 — async가 해결책인 경우와 함정</strong></p>
+      <p>Day 5에서 캐시로 반복 조회 부하를 흡수하는 법을 다뤘다면, Day 6은 응답을 즉시 돌려주고 무거운 작업은 뒤에서 처리하는 비동기화가 언제 진짜 해결책이고 언제 오히려 복잡도만 늘리는 함정인지를 다룹니다. async I/O, 스레드 풀, GIL, 이벤트 루프 블로킹 같은 개념을 실무 판단 기준과 함께 봅니다.</p>
+      <p>면접 질문 예고: "동기 API를 비동기로 바꾸면 항상 성능이 좋아지나요? 아니라면 어떤 경우에 그런가요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    성능 최적화 시니어 인터뷰 · Day 5 of 20 · 2026-07-04
+  </p>
+
+</div>
+</body>
+</html>

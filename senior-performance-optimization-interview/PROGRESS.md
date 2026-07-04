@@ -8,12 +8,12 @@
 | 2 | 2026-07-01 | DB 쿼리 튜닝 — EXPLAIN 읽기와 N+1 문제 | [0002-db-query-tuning-explain-n-plus-one.html](lessons/0002-db-query-tuning-explain-n-plus-one.html) |
 | 3 | 2026-07-02 | 인덱스 최적화 — 언제 인덱스가 오히려 느려지나 | [0003-index-optimization-when-indexes-slow-you-down.html](lessons/0003-index-optimization-when-indexes-slow-you-down.html) |
 | 4 | 2026-07-03 | 느린 API 분석 — latency 분해와 병목 특정 | [0004-slow-api-latency-breakdown-bottleneck-isolation.html](lessons/0004-slow-api-latency-breakdown-bottleneck-isolation.html) |
+| 5 | 2026-07-04 | 캐시 전략 설계 — 히트율, 무효화, 일관성 trade-off | [0005-cache-strategy-hit-rate-invalidation-consistency.html](lessons/0005-cache-strategy-hit-rate-invalidation-consistency.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | 캐시 전략 설계 — 히트율, 무효화, 일관성 trade-off | cache hit/miss, TTL, invalidation, cache stampede |
 | 6 | 비동기 처리와 동시성 — async가 해결책인 경우와 함정 | async I/O, thread pool, GIL, event loop blocking |
 | 7 | 부하 테스트 설계 — 현실적인 트래픽 시뮬레이션 | 부하 패턴, k6/Locust, ramp-up, 병목 판별 |
 | 8 | Profiling 실전 — CPU/메모리/I/O 해석 | py-spy, cProfile, flame graph, I/O wait |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — 다음: Day 5 — 캐시 전략 설계 (히트율, 무효화, 일관성 trade-off)
+**Day 5 완료** — 다음: Day 6 — 비동기 처리와 동시성 (async가 해결책인 경우와 함정)
 
 ## 습득한 핵심 개념
 
@@ -48,5 +48,10 @@
 - [x] Fan-out과 Tail Latency Amplification (Day 4)
 - [x] Processing Time vs Queueing Time 구분 (Day 4)
 - [x] 외부 의존성 격리 — timeout budget, fallback, 비동기 처리 (Day 4)
-- [ ] 캐시 무효화 전략 (예정 Day 5)
+- [x] 캐시 히트율과 캐시 적합/부적합 데이터 판단 기준 (Day 5)
+- [x] Cache-Aside / Write-Through / Write-Behind trade-off (Day 5)
+- [x] TTL 기반 vs 이벤트 기반 무효화, 캐시 키 버전 관리 (Day 5)
+- [x] Cache Stampede와 완화 전략 (Jittered TTL, 분산 락, Early Recomputation) (Day 5)
+- [x] 캐시 장애 격리와 최종 일관성(Eventual Consistency) trade-off (Day 5)
+- [ ] async I/O와 GIL, 이벤트 루프 블로킹 (예정 Day 6)
 - [ ] 부하 테스트 설계 원칙 (예정 Day 7)
