@@ -554,6 +554,27 @@
 - 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-rag-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
 ```
 
+## LLM Wiki / File Format RAG Interview
+
+```text
+`.claude/skills/study-track` 스킬을 사용해서 LLM Wiki / File Format RAG 10년차 이상 개발자 Interview 대비 학습 워크스페이스를 생성하거나 재개해줘.
+
+과목: LLM Wiki / File Format RAG
+폴더 slug: `senior-llm-wiki-file-format-rag-interview`
+
+요구사항:
+- 기존 `.claude/skills/teach` 스킬은 수정하지 마.
+- 단순 RAG 데모나 파일 업로드 기능 구현이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 heterogeneous document ingestion, knowledge/wiki curation, 검색 품질, 근거 추적, 권한/보안, 운영 안정성, 비용/성능 trade-off 중심으로 진행해줘.
+- llm-wiki 스타일의 지식 베이스와 skill 문서 관리, 파일 형식별 수집/정제 파이프라인, PDF/DOCX/PPTX/XLSX/HTML/Markdown/code/CSV/JSON/YAML parsing, OCR, table/image extraction, metadata/provenance, 문서 구조 기반 semantic chunking, incremental indexing, deduplication/versioning, embedding 모델 선택, vector database, hybrid search, metadata filtering, reranking, citation grounding, context 구성, prompt injection 방어, permission-aware retrieval, 평가 지표, offline/online evaluation, 관측성, 장애 대응을 다뤄줘.
+- LLM Wiki와 File Format RAG 분야는 빠르게 변하므로 레슨 생성 시점의 최신 공식 문서, changelog/release note, deprecation/migration guide, 주요 production 사례를 먼저 확인하고 커리큘럼과 예시를 조정해줘. 위 기술 목록은 최소 기준이며, 최신 인터뷰 트렌드나 실무 표준과 충돌하면 최신 근거를 우선해줘.
+- 각 레슨에는 면접 질문, 전제 개념, 왜 면접에서 묻는지, 실무 연결, 답변 사고 순서, 핵심 답변 예시, senior-level follow-up, 좋은 답변과 약한 답변의 차이, 자기 점검 rubric을 포함해줘.
+- 어려운 개념은 전제 개념부터 쉬운 한국어로 설명하고, 어떤 실무 상황과 연결되는지, trade-off와 흔한 오해까지 풀어서 설명해줘.
+- 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
+- 폴더가 있으면 `MISSION.md`와 `PROGRESS.md`를 먼저 읽고, 새 인터뷰 커리큘럼 기준의 다음 미완료 Day 레슨 하나를 생성해줘.
+- 현재 인터뷰 커리큘럼은 Day 1부터 다시 시작하는 기준이므로, `PROGRESS.md`가 "Day 1 시작 전"이면 Day 1 — LLM Wiki와 파일 형식 RAG 시스템 설계/운영 프레임워크부터 진행해줘.
+- 작업 후 변경사항을 요약하고, 적절한 커밋 메시지로 commit한 뒤 `study/senior-llm-wiki-file-format-rag-interview` 브랜치에 push해줘. `main`에는 직접 push하지 마.
+```
+
 ## LangChain / LangGraph Interview
 
 ```text

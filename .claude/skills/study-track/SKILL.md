@@ -68,6 +68,7 @@ Examples:
 - `senior-redis-cache-strategy-interview`
 - `senior-message-queue-async-processing-interview`
 - `senior-rag-interview`
+- `senior-llm-wiki-file-format-rag-interview`
 - `senior-langchain-langgraph-interview`
 - `senior-ai-harness-interview`
 - `senior-llm-engineering-interview`
@@ -184,6 +185,14 @@ If the user gives a Korean subject name, map it to a stable English slug. Prefer
 - `RAG 10년차 이상 개발자 Interview` -> `senior-rag-interview`
 - `RAG 시니어 인터뷰` -> `senior-rag-interview`
 - `Retrieval Augmented Generation Interview` -> `senior-rag-interview`
+- `llm-wiki` -> `senior-llm-wiki-file-format-rag-interview`
+- `LLM Wiki` -> `senior-llm-wiki-file-format-rag-interview`
+- `LLM Wiki Interview` -> `senior-llm-wiki-file-format-rag-interview`
+- `llm-wiki 관련 스킬` -> `senior-llm-wiki-file-format-rag-interview`
+- `파일 형식 RAG` -> `senior-llm-wiki-file-format-rag-interview`
+- `파일형식 RAG` -> `senior-llm-wiki-file-format-rag-interview`
+- `File Format RAG Interview` -> `senior-llm-wiki-file-format-rag-interview`
+- `LLM Wiki File Format RAG 10년차 이상 개발자 Interview` -> `senior-llm-wiki-file-format-rag-interview`
 - `LangChain / LangGraph Interview` -> `senior-langchain-langgraph-interview`
 - `LangChain LangGraph Interview` -> `senior-langchain-langgraph-interview`
 - `LangChain LangGraph 10년차 이상 개발자 Interview` -> `senior-langchain-langgraph-interview`
@@ -259,6 +268,7 @@ For specialized senior interview subjects, keep the same 10+ year practitioner i
 - `senior-redis-cache-strategy-interview`: Redis data structures, TTL, cache invalidation, session stores, distributed locks, ranking, Pub/Sub, Streams, cache stampede prevention, hot keys, pipelining, Lua scripting, transactions, persistence modes, eviction policies, replication, Sentinel, Cluster, memory sizing, latency diagnosis, failover behavior, and production incident response.
 - `senior-message-queue-async-processing-interview`: Kafka, RabbitMQ, SQS, Celery, asynchronous job design, retries, idempotency, dead-letter queues, ordering, backpressure, failure isolation, and large-scale processing.
 - `senior-rag-interview`: RAG architecture, document ingestion and cleaning, chunking strategy, embedding model selection, vector databases, hybrid search, metadata filtering, reranking, context construction, prompt design, hallucination mitigation, answer grounding, offline and online evaluation, access control, privacy, caching, cost/performance trade-offs, observability, and production incident response.
+- `senior-llm-wiki-file-format-rag-interview`: LLM wiki and file-format RAG architecture, skill and knowledge-base curation, heterogeneous document ingestion, PDF/DOCX/PPTX/XLSX/HTML/Markdown/code/CSV/JSON/YAML parsing, OCR and table extraction, metadata and provenance, semantic chunking by document structure, incremental indexing, hybrid retrieval, reranking, citation grounding, permission-aware retrieval, prompt injection defense, evaluation, observability, cost/performance trade-offs, and production incident response.
 - `senior-langchain-langgraph-interview`: LangChain agent construction, model/tool/message abstractions, middleware, retrieval, memory, structured output, streaming, guardrails, context engineering, LangGraph StateGraph design, nodes and edges, persistence, checkpointers, stores, interrupts, human-in-the-loop, subgraphs, fault tolerance, deployment, LangSmith tracing/evaluation, and production troubleshooting.
 - `senior-ai-harness-interview`: AI harness and agent harness architecture, agent loops, model/tool/runtime boundaries, prompt/tool/memory/control-flow scaffolding, provider abstraction, tool calling, handoffs, guardrails, sessions, sandboxed workspace execution, MCP, streaming, telemetry, tracing, evaluation harnesses, cost/performance trade-offs, security, and incident response.
 - `senior-llm-engineering-interview`: LLM application engineering, model selection, model capability boundaries, tokenization and context windows, prompt engineering, reasoning models, structured outputs, function and tool calling, multimodal input/output, embeddings, fine-tuning and reinforcement fine-tuning, evaluation, hallucination mitigation, safety and guardrails, prompt injection defense, latency/cost optimization, caching, observability, rate limits, fallback design, vendor abstraction, and production incidents.
@@ -267,7 +277,7 @@ For specialized senior interview subjects, keep the same 10+ year practitioner i
 - `senior-hermes-agent-interview`: Hermes Agent architecture and operation, always-on agent runtime, local-first execution, task refinement, self-learning and skill capture, model/tool/runtime boundaries, memory and sessions, planning and execution handoffs, provider abstraction, tool calling, MCP and API integrations, Gateway and channel integrations, scheduling, replay and evaluation loops, sandboxing and permissions, provenance and prompt injection defense, OpenClaw interoperability, observability, troubleshooting, cost/reliability trade-offs, and production operation patterns.
 - `senior-openclaw-interview`: OpenClaw local-first assistant architecture, Gateway control plane, multi-channel messaging, onboarding and update flow, model provider configuration and failover, tools, sessions, prompt/memory files, skills and ClawHub, multi-agent routing, sandboxing, DM pairing and allowlists, remote exposure, companion apps and nodes, deployment topology, logging, troubleshooting, marketplace security, and production operation trade-offs.
 
-For fast-moving AI application subjects such as `senior-rag-interview`, `senior-langchain-langgraph-interview`, `senior-ai-harness-interview`, `senior-llm-engineering-interview`, and `senior-chatbot-service-interview`, treat the listed topic scope as a baseline, not a frozen syllabus. Before creating or extending lessons, check current official documentation, changelogs or release notes, deprecation and migration guides, and credible production practice references. If the stored curriculum conflicts with current guidance, update `PROGRESS.md`, `RESOURCES.md`, and the new lesson plan to follow the current evidence, while noting the reason for the adjustment.
+For fast-moving AI application subjects such as `senior-rag-interview`, `senior-llm-wiki-file-format-rag-interview`, `senior-langchain-langgraph-interview`, `senior-ai-harness-interview`, `senior-llm-engineering-interview`, and `senior-chatbot-service-interview`, treat the listed topic scope as a baseline, not a frozen syllabus. Before creating or extending lessons, check current official documentation, changelogs or release notes, deprecation and migration guides, and credible production practice references. If the stored curriculum conflicts with current guidance, update `PROGRESS.md`, `RESOURCES.md`, and the new lesson plan to follow the current evidence, while noting the reason for the adjustment.
 
 For fast-moving cloud edge and CDN platform subjects such as `senior-cloudflare-configuration-interview`, treat the listed topic scope as a baseline, not a frozen syllabus. Before creating or extending lessons, check current Cloudflare official documentation, changelogs or release notes, deprecation and migration guides, and credible production practice references. If the stored curriculum conflicts with current guidance, update `PROGRESS.md`, `RESOURCES.md`, and the new lesson plan to follow the current evidence, while noting the reason for the adjustment.
 
