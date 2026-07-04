@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 1 — LLM Wiki와 파일 형식 RAG 시스템 설계/운영 프레임워크</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #3aa0e2;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: #e2523a; border: 1px solid #e2523a; }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 1 · LLM Wiki / File Format RAG Interview</div>
+    <h1>LLM Wiki와 파일 형식 RAG 시스템 설계/운영 프레임워크</h1>
+    <div class="subtitle">이기종 파일 형식 지식 베이스의 전체 아키텍처를 설계하고, "매번 다시 검색하는" RAG와 "지식을 누적하는" LLM Wiki 중 무엇을 선택할지 판단하며, 장애가 발생했을 때 어느 계층(수집/파싱/큐레이션/검색/생성/권한)의 문제인지 구조적으로 좁혀나가는 능력</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "사내에는 PDF, Word, PPT, Excel, Confluence 페이지, 소스 코드, 설정 파일(YAML/JSON)이
+      뒤섞여 있습니다. 이걸 하나의 질의 응답 가능한 지식 베이스로 만들어야 합니다.
+      전체 아키텍처를 설계해주세요."
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "질문할 때마다 문서를 처음부터 다시 검색하는 방식(RAG) 대신, 지식을 미리 정리해서
+      누적해 두는 위키 같은 구조(LLM Wiki)로 바꾸고 싶다고 팀장이 요청합니다. 어떻게
+      설계하고, 기존 RAG와는 어떤 관계를 가져야 할까요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "이 시스템에서 장애가 발생했습니다 — 어떤 문서는 검색이 안 되고, 어떤 답변은
+      오래된 정보를 말하고, 어떤 사용자는 권한이 없는 문서 내용을 답변으로 받았습니다.
+      어느 계층부터 점검하시겠습니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>왜 "파일 형식 RAG"와 "LLM Wiki"가 별도로 어려운 문제인가</h2>
+
+    <h3>일반 RAG 인터뷰가 가정하는 이상화된 상황</h3>
+    <p>
+      일반적인 RAG(Retrieval-Augmented Generation) 논의는 흔히 "텍스트 문서를 청킹해서
+      벡터 DB에 넣고 검색한다"는 단순한 그림을 가정한다. 하지만 실무의 지식 베이스는
+      그렇게 깔끔하지 않다. 같은 "문서 하나"라도 포맷에 따라 구조가 완전히 다르다.
+    </p>
+
+    <table>
+      <tr>
+        <th>포맷</th>
+        <th>구조적 특징</th>
+        <th>파싱 시 흔한 문제</th>
+      </tr>
+      <tr>
+        <td>PDF</td>
+        <td>레이아웃 기반(텍스트 위치 좌표), 다단 구성 가능</td>
+        <td>다단 레이아웃에서 문장이 섞여 읽힘, 스캔 이미지면 텍스트 자체가 없음</td>
+      </tr>
+      <tr>
+        <td>DOCX/PPTX</td>
+        <td>XML 기반 구조(제목, 목록, 슬라이드 노트 등 명시적 태그)</td>
+        <td>구조 태그를 무시하고 텍스트만 뽑으면 제목/본문 위계 정보 소실</td>
+      </tr>
+      <tr>
+        <td>XLSX</td>
+        <td>셀 좌표 기반 표, 병합 셀, 다중 시트, 수식</td>
+        <td>단순 텍스트 변환 시 행/열 관계가 깨져 표 의미 소실</td>
+      </tr>
+      <tr>
+        <td>HTML/Markdown</td>
+        <td>시맨틱 태그(heading, list, table) 명시적 포함</td>
+        <td>불필요한 네비게이션/광고 영역까지 본문으로 수집</td>
+      </tr>
+      <tr>
+        <td>코드/CSV/JSON/YAML</td>
+        <td>엄격한 구문 구조(AST, 스키마)</td>
+        <td>자연어처럼 임의로 청킹하면 함수/레코드 경계가 잘림</td>
+      </tr>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>핵심 전제:</strong> 파일 형식 RAG는 "청킹 전략을 어떻게 짤까"보다 먼저
+      <strong>"이 포맷에서 구조 정보를 어떻게 보존한 채로 텍스트를 추출할까"</strong>라는
+      문제를 푼다. 파싱 단계에서 구조를 잃으면, 그 뒤의 청킹·임베딩·검색을 아무리
+      정교하게 만들어도 이미 손실된 정보를 복구할 수 없다.
+    </div>
+
+    <h3>Query-time RAG vs LLM Wiki — 두 가지 지식 활용 패러다임</h3>
+    <p>
+      전통적인 RAG는 <strong>질의 시점(query-time)</strong>에 원본 문서를 검색한다. 질문이
+      들어올 때마다 "관련 있어 보이는 chunk"를 다시 찾는다. 이 방식은 원본 데이터가
+      자주 바뀌어도 최신성을 유지하기 쉽지만, 매 질문마다 파편화된 chunk에서 답을
+      재구성해야 하므로 <strong>같은 지식을 반복해서 다시 조립</strong>하는 비효율이 있다.
+    </p>
+    <p>
+      2026년 초 Andrej Karpathy가 공개한 <strong>LLM Wiki</strong> 패턴은 이와 다른 접근을
+      제안한다. LLM이 원본 자료(<code>raw/</code>)를 읽고, 이를 <strong>구조화된 마크다운
+      위키 페이지(<code>wiki/</code>)</strong>로 미리 정리해서 누적하는 것이다. 질문이
+      들어오면 원본을 다시 뒤지는 대신, 이미 정제된 위키 페이지를 먼저 참고한다.
+      스키마(<code>schema</code> — 어떤 종류의 페이지를 어떤 구조로 쓸지 정의한 규칙)를
+      두고, <strong>ingest(새 자료 반영) → query(질의 응답) → lint(위키 정합성 점검)</strong>
+      세 가지 연산으로 위키를 운영한다.
+    </p>
+
+    <pre><code><span class="comment"># Query-time RAG: 질문마다 원본을 다시 검색</span>
+<span class="keyword">사용자 질문</span> <span class="func">→</span> <span class="keyword">벡터 검색</span>(원본 chunk top-k) <span class="func">→</span> <span class="keyword">LLM이 그때그때 답 조립</span>
+
+<span class="comment"># LLM Wiki: 지식을 미리 정제해서 누적</span>
+<span class="keyword">원본 자료(raw/)</span> <span class="func">→</span> <span class="keyword">LLM이 구조화된 위키 페이지(wiki/) 작성·갱신</span>
+<span class="keyword">사용자 질문</span> <span class="func">→</span> <span class="keyword">정제된 위키 페이지 우선 참고</span> <span class="func">→</span> <span class="keyword">필요시 raw/ 로 근거 보강(RAG)</span></code></pre>
+
+    <div class="callout callout-warn">
+      <strong>둘은 경쟁 관계가 아니다.</strong> LLM Wiki는 "자주 참조되고 안정적인 지식"을
+      미리 정리해 응답 속도와 일관성을 높이고, RAG는 "위키에 아직 반영되지 않았거나
+      드물게 조회되는 최신·세부 정보"를 그때그때 채운다. 시니어 면접에서는 이 둘을
+      <strong>계층으로 조합</strong>할 줄 아는지를 본다 — "위키가 이 정도 커버리지에
+      도달하면 RAG 호출량이 줄고 비용도 줄어든다"는 식의 정량적 판단까지 포함해서.
+    </div>
+
+    <h3>전체 아키텍처 — 이기종 문서에서 근거 있는 답변까지</h3>
+    <pre><code><span class="comment">1. 수집(Ingestion)</span>
+   커넥터(Confluence/Drive/S3/GitHub 등) <span class="func">→</span> 포맷 감지 <span class="func">→</span> 포맷별 파서 라우팅
+
+<span class="comment">2. 정제(Extraction)</span>
+   구조 보존 파싱(PDF/DOCX/PPTX/XLSX) + OCR/표/이미지 추출
+   <span class="func">→</span> 메타데이터/출처(provenance) 부착
+
+<span class="comment">3. 큐레이션(Curation) — 선택적, LLM Wiki 계층</span>
+   반복 조회되는 지식을 구조화된 위키 페이지로 정리·누적, lint로 정합성 점검
+
+<span class="comment">4. 색인(Indexing)</span>
+   문서 구조 기반 semantic chunking <span class="func">→</span> embedding <span class="func">→</span> incremental indexing
+   <span class="func">→</span> 중복 제거/버전 관리 <span class="func">→</span> 권한(ACL) 메타데이터 결합
+
+<span class="comment">5. 검색과 생성(Retrieval &amp; Generation)</span>
+   권한 필터링 <span class="func">→</span> hybrid search <span class="func">→</span> reranking
+   <span class="func">→</span> context 구성(prompt injection 방어) <span class="func">→</span> 생성 <span class="func">→</span> citation 근거 표시
+
+<span class="comment">6. 평가와 운영(Evaluation &amp; Ops)</span>
+   포맷별 파싱 정확도, retrieval/generation 지표, 관측성, 장애 대응, 비용 추적</code></pre>
+
+    <p>
+      이 6단계는 Day 2~15에서 각각 깊이 다룬다. Day 1에서 기억해야 할 것은,
+      <strong>답변 품질 문제가 이 6단계 중 정확히 어느 단계에서 발생했는지 좁혀나가는
+      진단 능력</strong>이 이 트랙 전체를 관통하는 핵심 역량이라는 점이다.
+    </p>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <p>
+      이 질문은 <strong>"벡터 DB에 파일을 넣어봤느냐"</strong>가 아니라
+      <strong>"이기종 데이터와 지식 운영이라는, 현실에서 가장 지저분한 부분을 구조적으로
+      설계하고 디버깅할 수 있느냐"</strong>를 본다.
+    </p>
+
+    <ul>
+      <li>
+        <strong>포맷 다양성을 실제로 다뤄봤는가:</strong> "PDF는 text extractor로 뽑으면
+        됩니다" 수준인지, 아니면 다단 레이아웃·병합 셀·스캔 이미지처럼 포맷별로
+        발생하는 구체적인 실패 양상을 아는지
+      </li>
+      <li>
+        <strong>지식 운영 패러다임의 선택 기준이 있는가:</strong> query-time RAG와
+        LLM Wiki 같은 사전 큐레이션 방식 중 언제 무엇을 쓰는지, 왜 그런지 근거를
+        댈 수 있는지
+      </li>
+      <li>
+        <strong>증상을 계층으로 좁힐 수 있는가:</strong> "검색이 안 됨" → "수집 문제인지
+        파싱 문제인지 청킹 문제인지" → "권한 문제인지 신선도 문제인지"로 가설을
+        좁혀나가는 사고를 하는가
+      </li>
+      <li>
+        <strong>보안과 운영을 처음부터 설계에 포함하는가:</strong> 권한(ACL)과
+        provenance를 "나중에 추가"하는 것이 아니라 처음부터 데이터 모델의 1급
+        요소로 설계하는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      Senior 엔지니어는 "RAG 파이프라인을 만들었다"가 아니라,
+      <strong>"이기종 데이터를 다루는 지식 시스템은 결국 데이터 엔지니어링 + 검색 시스템 +
+      보안 + 평가 체계"</strong>라는 관점에서 전체를 설계하고, 장애 시 어느 계층의
+      문제인지 재현 가능하게 좁혀낸다는 것을 보여줘야 한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 스캔된 계약서 PDF에서 정보를 못 찾음</h3>
+    <p>
+      사용자가 특정 계약 조항을 물었는데 챗봇이 "찾을 수 없다"고 답한다. 확인해보니
+      해당 PDF는 스캔 이미지였고, 파서가 이미지에서 텍스트를 추출하지 않아 애초에
+      인덱스에 텍스트가 없었다. → <strong>수집/정제 단계 실패(OCR 누락)</strong>이다.
+      검색 알고리즘을 아무리 튜닝해도 존재하지 않는 텍스트는 찾을 수 없다.
+    </p>
+
+    <h3>상황 2: 매번 같은 질문에 다른 요약이 나옴</h3>
+    <p>
+      "우리 회사 휴가 정책이 뭐야?"라는, 자주 반복되는 질문에 매번 조금씩 다른 답이
+      나온다. 원본 문서 여러 개에서 매번 다른 조합의 chunk가 검색되기 때문이다.
+      → <strong>query-time RAG의 구조적 한계</strong>다. 이런 "자주 묻고 안정적인 지식"은
+      LLM Wiki 방식으로 하나의 정제된 페이지로 미리 정리해두면 일관성과 응답 속도가
+      함께 개선된다.
+    </p>
+
+    <h3>상황 3: 퇴사자가 접근 권한이 없어야 할 연봉 스프레드시트 내용을 답변으로 받음</h3>
+    <p>
+      벡터 검색은 "의미적으로 관련 있는 chunk"만 찾을 뿐, 그 chunk를 이 사용자가 봐도
+      되는지는 모른다. 애플리케이션 레이어에서만 권한을 체크하면, 검색 자체가 이미
+      권한 없는 chunk를 후보로 올려버려서 프롬프트 인젝션 같은 우회 경로로 유출될 수
+      있다. → <strong>권한이 벡터/인덱스 계층에 강제되지 않은 설계 결함</strong>이다.
+    </p>
+
+    <h3>상황 4: 어제 업데이트된 정책 문서가 반영되지 않음</h3>
+    <p>
+      Confluence 문서를 수정했는데 하루가 지나도 챗봇 답변에 반영되지 않는다.
+      → RAG 알고리즘 문제가 아니라 <strong>incremental indexing 주기와 변경 감지</strong>
+      문제다. 배치 재인덱싱 주기가 길거나, 변경 감지(webhook/polling)가 해당 커넥터에
+      구현되어 있지 않은 경우다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>데이터 다양성과 규모부터 명확히 한다</strong>
+        "먼저 어떤 포맷이 얼마나 있는지, 얼마나 자주 바뀌는지, 스캔 문서 비중이
+        얼마나 되는지부터 파악합니다. 포맷 다양성이 아키텍처의 복잡도를 결정합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>수집→파싱→메타데이터를 포맷 독립적인 파이프라인으로 분리</strong>
+        "커넥터가 원본을 가져오고, 포맷 감지 후 포맷별 파서로 라우팅하고, 파싱
+        결과는 공통 스키마(텍스트+구조+메타데이터)로 정규화합니다. 이렇게 하면
+        새 포맷이 추가돼도 하위 파이프라인은 그대로 재사용됩니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>query-time RAG와 LLM Wiki 큐레이션을 계층으로 조합</strong>
+        "자주 조회되고 안정적인 지식은 위키 형태로 미리 정리해 응답 속도와 일관성을
+        높이고, 드물게 조회되거나 최신성이 중요한 정보는 RAG로 그때그때 원본에서
+        가져옵니다. 어느 쪽 비중을 늘릴지는 조회 빈도 로그로 판단합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>권한과 provenance를 처음부터 데이터 모델에 포함</strong>
+        "각 chunk에는 출처 문서, 원본 시스템의 접근 권한, 버전/타임스탬프를
+        메타데이터로 부착합니다. 권한은 애플리케이션 레이어가 아니라 검색 쿼리
+        자체에 필터로 강제합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>장애 진단은 계층별로 좁혀나간다</strong>
+        "증상이 들어오면 수집(문서가 인덱스에 있는가) → 파싱(구조/텍스트가 온전한가)
+        → 큐레이션(위키가 최신인가) → 검색(권한 필터링 후 정답 chunk가 top-k에
+        있는가) → 생성(context를 제대로 근거로 삼았는가) 순서로 좁혀갑니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>평가/관측성/비용을 설계에 포함 (Senior 포인트)</strong>
+        "포맷별 파싱 정확도, retrieval/generation 지표를 분리해서 관측하고,
+        파싱·OCR·임베딩·재인덱싱 비용을 정량적으로 추적해서 어디에 투자할지
+        데이터로 판단합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "저는 이런 시스템을 6단계로 나눠서 설계합니다. 먼저 커넥터로 이기종 소스를
+        수집하고, 포맷을 감지해 포맷별 파서로 라우팅한 뒤, 결과를 텍스트+구조+
+        메타데이터로 정규화합니다. PDF는 레이아웃 분석과 필요시 OCR을, DOCX/PPTX는
+        구조 태그를, XLSX는 표 구조를 보존하는 방식으로 각각 다르게 다룹니다.
+      </p>
+      <p>
+        그 다음 이 데이터를 어떻게 활용할지는 조회 패턴에 따라 두 계층으로 나눕니다.
+        자주 반복되고 안정적으로 묻는 지식은 LLM이 구조화된 위키 페이지로 미리
+        정리해서 누적하고, 드물게 조회되거나 최신성이 중요한 정보는 기존 RAG처럼
+        질의 시점에 원본에서 검색합니다. 이렇게 하면 반복 질문에 대한 응답 일관성과
+        속도를 높이면서도, 위키가 아직 못 따라간 최신 정보는 RAG가 보완합니다.
+      </p>
+      <p>
+        권한은 처음부터 데이터 모델에 넣습니다. 모든 chunk에 출처 문서의 접근 권한을
+        메타데이터로 부착하고, 검색 쿼리 자체에 권한 필터를 강제해서 애플리케이션
+        레이어의 실수나 프롬프트 인젝션으로 우회되지 않게 합니다.
+      </p>
+      <p>
+        장애가 나면 저는 수집(문서가 인덱스에 존재하는지) → 파싱(구조와 텍스트가
+        온전한지) → 큐레이션(위키가 최신인지) → 검색(권한 필터링 후에도 정답
+        chunk가 top-k에 있는지) → 생성(context를 실제로 근거로 삼았는지) 순서로
+        가설을 좁혀갑니다. 그리고 이 모든 단계의 지표를 분리해서 관측하고, 파싱·
+        OCR·임베딩·재인덱싱 비용을 추적해서 다음에 어디에 투자할지 데이터로
+        판단합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "LLM Wiki 방식이 항상 RAG보다 좋은가요?"</h3>
+    <p><strong>약한 답변:</strong> "네, 미리 정리해두니까 더 빠르고 정확합니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "아니요. LLM Wiki는 큐레이션 비용(LLM이 위키를 쓰고 갱신하는 비용)과 최신성
+      지연(원본이 바뀐 뒤 위키에 반영되기까지의 시차)이라는 대가가 있습니다.
+      조회 빈도가 낮은 롱테일 지식까지 모두 위키로 정리하면 큐레이션 비용 대비
+      효용이 떨어집니다. 그래서 저는 조회 로그를 기준으로 상위 빈도 지식만
+      위키화하고, 나머지는 RAG로 커버하는 하이브리드 구조를 기본값으로 둡니다."
+    </p>
+
+    <h3>F2. "이기종 파서를 운영할 때 가장 큰 운영 리스크는 무엇인가요?"</h3>
+    <p><strong>약한 답변:</strong> "파서가 에러 안 나게 잘 짜면 됩니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "가장 큰 리스크는 <strong>조용한 실패(silent failure)</strong>입니다. 파서가
+      에러 없이 실행됐지만 표를 깨뜨리거나, 다단 레이아웃에서 문장 순서를
+      뒤섞거나, OCR 신뢰도가 낮은데도 그대로 인덱싱하는 경우입니다. 에러 로그에는
+      안 잡히지만 검색 품질에는 치명적입니다. 그래서 저는 포맷별로 파싱 결과의
+      품질을 정량 지표(표 셀 수 일치율, OCR confidence score, 문단 순서 일관성 등)로
+      측정하고, 임계값 미만이면 인덱싱 전에 격리해서 사람이 검토하도록 합니다."
+    </p>
+
+    <h3>F3. "권한 모델이 서로 다른 여러 출처 시스템을 어떻게 하나로 합치나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "각 출처 시스템(Confluence 그룹 권한, Google Drive 공유 설정, GitHub 리포지토리
+      권한 등)의 권한 모델을 그대로 유지하지 않고, 인덱스 계층에서 공통 권한 스키마
+      (예: 사용자/그룹 ID 목록)로 정규화합니다. 그리고 이 권한 메타데이터를 소스
+      권한이 바뀔 때마다 동기화하는 잡을 별도로 둡니다 — 동기화 지연이 있으면
+      '권한이 회수됐는데도 계속 검색되는' 유출 사고로 이어지기 때문에, 동기화
+      지연 자체를 SLO로 관리합니다."
+    </p>
+
+    <h3>F4. "이 시스템이 프로덕션에서 가장 먼저 병목이 생기는 곳은 어디입니까?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "초기에는 <strong>포맷별 파싱 품질</strong>에서 병목이 생깁니다. 특히 스캔 PDF의
+      OCR과 병합 셀이 많은 Excel 표가 가장 많이 깨집니다. 데이터가 늘어나면
+      <strong>재인덱싱 비용과 권한 동기화 지연</strong>이 병목이 되고, 트래픽이 커지면
+      <strong>검색 지연시간과 생성 비용</strong>이 병목이 됩니다. 그래서 단계별 지표를
+      분리해서 보고, '지금 이 순간 어느 단계가 SLO를 위협하는지'를 대시보드로
+      바로 볼 수 있게 만듭니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>포맷별로 <strong>구체적인 파싱 실패 양상</strong>(다단 레이아웃, 병합 셀,
+          스캔 이미지 등)을 안다</li>
+          <li>query-time RAG와 LLM Wiki를 <strong>대립이 아니라 계층</strong>으로
+          조합하며, 선택 기준을 조회 빈도 같은 정량 근거로 설명한다</li>
+          <li>권한과 provenance를 <strong>설계 초기부터</strong> 1급 데이터로 다룬다</li>
+          <li>장애 진단을 <strong>수집→파싱→큐레이션→검색→생성</strong> 계층으로 좁혀나간다</li>
+          <li>파싱 실패를 에러가 아니라 <strong>품질 지표로 측정</strong>해야 한다는 점을
+          안다(조용한 실패 개념)</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"PDF도 텍스트로 뽑아서 청킹하면 됩니다" — <strong>포맷별 차이 이해 부족</strong></li>
+          <li>"위키가 RAG보다 항상 좋습니다"처럼 <strong>트레이드오프 없이 단정</strong>한다</li>
+          <li>권한을 "나중에 애플리케이션에서 체크하면 된다"고 가볍게 넘긴다</li>
+          <li>장애 시 "다시 인덱싱해보겠습니다" 같은 재현 불가능한 대응으로 끝난다</li>
+          <li>파싱 성공 여부를 에러 발생 유무로만 판단한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 "여러 파일 형식을 지원한다"가 아니라
+      <strong>"이기종 데이터, 권한, 지식 신선도라는 서로 다른 축의 실패를 독립적으로
+      진단하고 정량적으로 관리한다"</strong>는 것을 보여준다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "PDF는 다 텍스트 추출 라이브러리 하나로 처리하면 된다"</h3>
+    <p>
+      <strong>사실:</strong> 텍스트 레이어가 있는 PDF와 스캔 이미지 PDF는 완전히 다른
+      처리가 필요하고, 다단 레이아웃·표·이미지가 섞인 문서는 레이아웃 분석 모델
+      없이는 읽기 순서 자체가 깨진다. 포맷 안에서도 문서 유형별 분기가 필요하다
+      (Day 4, 6에서 자세히 다룬다).
+    </p>
+
+    <h3>오해 2: "LLM Wiki는 RAG를 완전히 대체하는 차세대 기술이다"</h3>
+    <p>
+      <strong>사실:</strong> LLM Wiki는 <strong>사전 큐레이션</strong>이 유리한 지식에
+      대한 보완 계층이지, 모든 지식을 대체하는 구조가 아니다. 희귀하게 조회되거나
+      실시간성이 중요한 정보까지 위키로 미리 정리하면 큐레이션 비용만 늘어난다
+      (Day 2에서 자세히 다룬다).
+    </p>
+
+    <h3>오해 3: "메타데이터/권한 정보는 검색이 잘 되고 나서 나중에 붙여도 된다"</h3>
+    <p>
+      <strong>사실:</strong> 권한을 인덱싱 이후에 붙이려면 전체 재인덱싱이 필요한 경우가
+      많고, 그 사이 기간 동안 권한 없는 사용자에게 노출되는 창(window)이 생긴다.
+      메타데이터/provenance/권한은 파싱 직후, 인덱싱 이전에 확정해야 한다
+      (Day 7, 13에서 자세히 다룬다).
+    </p>
+
+    <h3>오해 4: "OCR은 스캔 문서가 드물면 신경 안 써도 된다"</h3>
+    <p>
+      <strong>사실:</strong> 스캔 문서 비율이 낮아도, 놓친 문서가 하필 법무·계약·재무처럼
+      리스크가 큰 문서일 수 있다. OCR 커버리지는 문서 수가 아니라
+      <strong>업무 중요도</strong> 기준으로 판단해야 한다(Day 6에서 자세히 다룬다).
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>장애 발생 시 계층별 진단 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>확인 항목</th>
+        <th>정상 신호</th>
+        <th>이상 신호 → 의심 계층</th>
+      </tr>
+      <tr>
+        <td>해당 문서가 인덱스에 존재하는가</td>
+        <td><span class="badge badge-green">있음</span></td>
+        <td><span class="badge badge-red">없음 → 수집(Ingestion) 실패</span></td>
+      </tr>
+      <tr>
+        <td>추출된 텍스트/표가 원본과 일치하는가</td>
+        <td><span class="badge badge-green">일치</span></td>
+        <td><span class="badge badge-red">깨짐/누락 → 파싱/OCR 실패</span></td>
+      </tr>
+      <tr>
+        <td>최근 수정된 원본이 답변에 반영되는가</td>
+        <td><span class="badge badge-green">반영됨</span></td>
+        <td><span class="badge badge-yellow">지연 → Incremental Indexing 주기 문제</span></td>
+      </tr>
+      <tr>
+        <td>권한 없는 사용자에게 필터링이 적용되는가</td>
+        <td><span class="badge badge-green">차단됨</span></td>
+        <td><span class="badge badge-red">노출됨 → 벡터 계층 권한 강제 미흡</span></td>
+      </tr>
+      <tr>
+        <td>정답 근거 chunk가 top-k 안에 있는가</td>
+        <td><span class="badge badge-green">있음</span></td>
+        <td><span class="badge badge-yellow">없음 → 검색/청킹/임베딩 계층 확인</span></td>
+      </tr>
+      <tr>
+        <td>답변이 인용한 근거와 실제로 일치하는가</td>
+        <td><span class="badge badge-green">일치</span></td>
+        <td><span class="badge badge-red">불일치 → 생성/context 구성 계층 확인</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"파일들을 텍스트로 바꿔서 벡터 DB에 넣고 검색하면 됩니다" 정도로만
+      설명하고, 포맷별 차이나 권한/신선도 문제를 언급하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>수집→파싱→청킹→임베딩→검색→생성의 흐름을 순서대로 나열할 수 있음.
+      포맷마다 다른 파서가 필요하다는 것은 알지만 구체적인 실패 양상은 막연함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>포맷별 파싱 차이와 권한 메타데이터의 필요성을 설명할 수 있고,
+      query-time RAG와 사전 큐레이션(위키) 방식이 다르다는 개념을 알고 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>증상을 수집/파싱/큐레이션/검색/생성/권한 계층으로 즉시 분류하고,
+      각 계층 안에서 원인을 정량 지표로 좁혀나가며, query-time RAG와 LLM Wiki를
+      조회 빈도 기준으로 조합하는 하이브리드 설계를 근거와 함께 제시한다.
+      "조용한 파싱 실패"와 "권한 동기화 지연"처럼 눈에 잘 안 띄는 리스크까지
+      선제적으로 짚어낸다</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. PDF/DOCX/PPTX/XLSX/HTML/코드 각각에서 구조 정보를 잃지 않으려면 무엇이
+      필요한지 설명할 수 있는가?<br>
+      2. Query-time RAG와 LLM Wiki를 언제, 어떤 기준으로 조합할지 설명할 수 있는가?<br>
+      3. 답변 품질/보안 문제가 발생했을 때 어느 계층부터 점검할지 순서를 댈 수 있는가?<br>
+      4. "메타데이터/권한은 나중에 붙여도 된다"는 말이 왜 위험한지 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>파일 형식 RAG의 본질은 "포맷별로 구조 정보를 잃지 않고 텍스트를
+      추출하는 것"</strong>이다. 파싱 단계에서 잃은 정보는 이후 단계에서 복구할 수 없다.</li>
+      <li><strong>Query-time RAG와 LLM Wiki는 경쟁이 아니라 계층</strong>이다. 자주
+      조회되는 안정적 지식은 위키로 미리 정리하고, 드물거나 최신성이 중요한
+      정보는 RAG로 그때그때 가져온다.</li>
+      <li><strong>전체 아키텍처는 수집→정제→(선택)큐레이션→색인→검색/생성→평가/운영</strong>
+      6단계로 나뉘며, 장애 진단은 이 계층 순서로 좁혀나간다.</li>
+      <li><strong>권한과 provenance는 처음부터 데이터 모델의 1급 요소</strong>다.
+      나중에 붙이면 노출 창(window)이 생긴다.</li>
+      <li><strong>파싱 실패는 대부분 "조용한 실패"</strong>다. 에러 로그가 아니라
+      품질 지표(구조 일치율, OCR confidence 등)로 측정해야 한다.</li>
+      <li>진단과 설계 모두 감이 아니라 <strong>계층별로 분리된 정량 지표</strong>를
+      기반으로 재현 가능하게 만들어야 한다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 1 완료 · 다음: Day 2 — LLM Wiki 지식 큐레이션과 Skill 문서 관리</span>
+  </div>
+
+</div>
+</body>
+</html>
