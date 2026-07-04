@@ -14,6 +14,7 @@
 | 2 | 2026-07-01 | 배열과 연결 리스트 | [interview-day02-arrays-and-linked-lists.html](lessons/interview-day02-arrays-and-linked-lists.html) |
 | 3 | 2026-07-02 | 스택과 큐 | [interview-day03-stack-and-queue.html](lessons/interview-day03-stack-and-queue.html) |
 | 4 | 2026-07-03 | 해시 테이블 | [interview-day04-hash-tables.html](lessons/interview-day04-hash-tables.html) |
+| 5 | 2026-07-04 | 트리와 균형 트리 | [interview-day05-trees-and-balanced-trees.html](lessons/interview-day05-trees-and-balanced-trees.html) |
 
 ## 다음 예정 학습
 
@@ -32,7 +33,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — 다음은 Day 5: 트리와 균형 트리 (정렬된 데이터를 다룰 때 배열, BST, balanced tree를 어떻게 비교하는가).
+**Day 5 완료** — 다음은 Day 6: 힙과 우선순위 큐 (작업 스케줄러나 top-k 문제에서 힙을 선택하는 이유는 무엇인가).
 
 ## Interview 답변 체크리스트
 
@@ -53,4 +54,5 @@
 - [x] 배열 vs 연결 리스트 실무 성능 차이 (locality, pointer chasing, resize spike, 포인터 오버헤드) — Day 2
 - [x] 스택/큐 bounded/unbounded, backpressure, 원형 큐 경계 조건, call stack과 재귀 깊이 — Day 3
 - [x] 해시 테이블 충돌, load factor, resize, 해시 편향과 해시 DoS — Day 4
-- [ ] 균형 트리 rebalancing 비용 (예정 Day 5)
+- [x] BST 편향(degenerate tree), 회전(rotation), AVL vs Red-Black trade-off, in-memory tree vs 디스크 B-Tree — Day 5
+- [ ] 힙과 우선순위 큐, top-k / 스케줄러 활용 (예정 Day 6)
