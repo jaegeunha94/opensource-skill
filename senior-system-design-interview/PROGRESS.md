@@ -8,12 +8,12 @@
 | 2 | 2026-07-01 | Capacity Estimation 심화 — QPS, 저장 용량, 대역폭 계산 | [0002-capacity-estimation-deep-dive.html](lessons/0002-capacity-estimation-deep-dive.html) |
 | 3 | 2026-07-02 | 수평 확장과 로드밸런싱 — Stateless 서버, L4/L7 LB, Sticky Session | [0003-horizontal-scaling-load-balancing.html](lessons/0003-horizontal-scaling-load-balancing.html) |
 | 4 | 2026-07-03 | 캐시 전략과 CDN — Cache-aside vs Write-through, 캐시 무효화, Cache Stampede | [0004-caching-strategy-cdn.html](lessons/0004-caching-strategy-cdn.html) |
+| 5 | 2026-07-04 | 데이터베이스 확장 — 복제와 샤딩, Hot Shard 문제 | [0005-database-replication-sharding.html](lessons/0005-database-replication-sharding.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | 데이터베이스 확장 — 복제와 샤딩 | Primary-Replica, Sharding 전략, Hot Shard 문제 |
 | 6 | 메시지 큐와 비동기 처리 | Kafka vs RabbitMQ, 이벤트 드리븐 아키텍처, Backpressure |
 | 7 | 장애 격리와 고가용성 | Circuit Breaker, Bulkhead, Retry with backoff, 다중 AZ |
 | 8 | 분산 시스템과 일관성 | CAP Theorem, BASE vs ACID, Eventual Consistency, 분산 트랜잭션 |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — Day 5: 데이터베이스 확장 — 복제와 샤딩으로 이어짐.
+**Day 5 완료** — Day 6: 메시지 큐와 비동기 처리로 이어짐.
 
 ## 습득한 핵심 개념
 
@@ -39,7 +39,7 @@
 - [x] Peak Factor와 저장소별 복제 전략 차이 (Day 2)
 - [x] Stateless 서버 전환, L4/L7 로드밸런서 차이, Sticky Session의 한계 (Day 3)
 - [x] Cache-aside/Write-through/Write-behind, 캐시 무효화, Cache Stampede 방지, CDN 전략 (Day 4)
-- [ ] DB 복제 / 샤딩 (예정 Day 5)
+- [x] 복제(Read Replica)와 샤딩의 목적 차이, 복제 지연/read-your-writes, 샤딩 키 선택, Hot Shard, Cross-shard Saga (Day 5)
 - [ ] 메시지 큐 (예정 Day 6)
 - [ ] 장애 격리 / 고가용성 (예정 Day 7)
 - [ ] CAP Theorem / 분산 일관성 (예정 Day 8)
