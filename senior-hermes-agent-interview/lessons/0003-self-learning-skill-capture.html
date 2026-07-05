@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — Self-Learning과 Skill Capture</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 3 · Hermes Agent Interview</div>
+    <h1>Self-Learning과 Skill Capture</h1>
+    <div class="subtitle">"쓸수록 똑똑해진다"는 마케팅 카피 뒤에는 어떤 파이프라인과 어떤 안전장치가 있는가</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전/출처 기준:</strong> 이 레슨은 2026-07 기준 <strong>Nous Research의 Hermes Agent</strong>
+    (<code>github.com/NousResearch/hermes-agent</code>, 최신 태그 <strong>v0.18.0 "The Judgment Release"</strong>,
+    2026-07-01)를 기준으로 작성됐다. 이 버전에서 <code>/learn</code>과 <code>/journey</code> 명령이 새로
+    추가되어 스킬 캡처 경험이 한층 매끄러워졌다. 핵심 근거는 공식 문서(<code>hermes-agent.nousresearch.com/docs/</code>,
+    GitHub 미러 <code>website/docs/user-guide/features/skills.md</code> 및 <code>security.md</code>)이며,
+    GEPA 기반 self-evolution은 코어 저장소가 아닌 <strong>별도 오픈소스 저장소
+    (<code>NousResearch/hermes-agent-self-evolution</code>)</strong>에서 옵션으로 제공되는 애드온이다 —
+    이 구분을 헷갈리면 면접에서 "코어 기능"과 "실험적 애드온"을 뒤섞어 말하는 실수를 하게 된다.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "Hermes Agent는 '내장 학습 루프(learning loop)를 가진 유일한 에이전트'라고 홍보합니다. 이게 실제로
+      어떤 메커니즘으로 동작하는지, 그리고 단순히 대화 기록을 저장하는 메모리 기능과 무엇이 다른지
+      설명해주세요."
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "<code>/learn</code> 명령이 에이전트 스스로 <code>SKILL.md</code>를 써서 자기 행동을 바꾼다고
+      하는데, 에이전트가 자기 자신을 수정하는 파일을 계속 만들어낸다는 것 자체가 보안 리스크 아닌가요?
+      실제로 어떤 안전장치가 있습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "스킬이 수백 개로 늘어나면 매번 프롬프트에 다 욱여넣을 수는 없을 텐데, Hermes는 이 문제를 어떻게
+      해결합니까? 토큰 비용과 학습 루프가 어떻게 같이 설계되어야 하는지 설명해주세요."
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>"학습 루프"라는 말이 실제로 가리키는 것</h2>
+
+    <h3>메모리와 스킬은 다른 층위의 저장이다</h3>
+    <p>
+      먼저 헷갈리기 쉬운 두 개념부터 구분한다. <strong>메모리(memory, Day 7에서 심화)</strong>는
+      "지난번에 사용자가 무슨 말을 했는지, 무슨 일이 있었는지"를 기억하는 것이다. 반면
+      <strong>스킬(skill)</strong>은 "그 일을 어떻게 하면 성공하는지"를 절차로 응고시켜 재사용
+      가능하게 만든 것이다. 쉬운 비유로, 메모리가 <strong>일기장</strong>(무슨 일이 있었는지 기록)이라면
+      스킬은 <strong>업무 매뉴얼/체크리스트</strong>(다음에 같은 상황이 오면 이렇게 하면 된다)에 가깝다.
+    </p>
+    <p>
+      Hermes Agent가 "그냥 대화를 기억하는 챗봇"과 다르다고 주장하는 지점이 바로 여기다. 공식 설명에
+      따르면 에이전트는 어떤 작업을 마치면 <strong>"무엇이 효과가 있었는지"를 추출해서 재사용 가능한
+      스킬로 기록</strong>하고, 다음에 비슷한 문제가 생기면 그 스킬을 다시 불러와 쓴다. 이게 "쓸수록
+      똑똑해진다(gets more capable the longer it runs)"는 문구의 실제 의미다 — 모델 파라미터가
+      바뀌는 게 아니라, <strong>모델이 참조할 수 있는 절차 파일이 축적</strong>되는 것이다.
+    </p>
+
+    <h3><code>SKILL.md</code> 표준 포맷과 <code>agentskills.io</code></h3>
+    <p>
+      스킬은 YAML frontmatter + 마크다운 본문으로 구성된 파일이다. 공식 문서 기준 구조는 다음과 같다.
+    </p>
+    <table>
+      <tr>
+        <th>영역</th>
+        <th>구성 요소</th>
+        <th>비고</th>
+      </tr>
+      <tr>
+        <td>Frontmatter(필수)</td>
+        <td><code>name</code>, <code>description</code>(60자 이내 권장)</td>
+        <td>Level 0 목록에 노출되는 최소 정보</td>
+      </tr>
+      <tr>
+        <td>Frontmatter(선택)</td>
+        <td><code>version</code>, <code>platforms</code>, <code>metadata.hermes.tags/category/config</code>,
+          <code>required_environment_variables</code></td>
+        <td>조건부 활성화(<code>requires_toolsets</code> 등)도 여기서 제어</td>
+      </tr>
+      <tr>
+        <td>본문 표준 섹션</td>
+        <td>When to Use / Procedure / Pitfalls / Verification</td>
+        <td>"언제 쓰는지 → 어떻게 하는지 → 뭘 조심해야 하는지 → 어떻게 검증하는지" 순서</td>
+      </tr>
+    </table>
+    <p>
+      이 포맷이 <strong><code>agentskills.io</code> 오픈 표준</strong>을 따르기 때문에, 이론적으로는
+      Hermes가 만든 스킬 파일을 다른 agentskills.io 호환 런타임에서도 읽을 수 있고, 반대로 다른 곳에서
+      만든 스킬을 Hermes가 가져다 쓸 수도 있다. 즉 스킬이 "이 에이전트 전용 설정"이 아니라
+      <strong>포터블한 지식 자산</strong>으로 설계된 것이다.
+    </p>
+
+    <h3>스킬을 부르는 3가지 경로 + <code>/learn</code>으로 만드는 법</h3>
+    <ul>
+      <li><strong>슬래시 커맨드:</strong> <code>/스킬이름 [지시문]</code> 형태로 명시적으로 호출</li>
+      <li><strong>자연어 대화:</strong> 대화 맥락에서 관련 스킬이 있으면 에이전트가 알아서 로드</li>
+      <li><strong>번들(bundle):</strong> 여러 스킬을 하나의 명령으로 묶어서 호출(예: <code>/backend-dev refactor auth</code>)</li>
+    </ul>
+    <p>
+      v0.18.0에서 추가된 <code>/learn</code>은 스킬을 만드는 진입 장벽을 크게 낮췄다. 디렉토리든, URL이든,
+      "방금 5분 전에 같이 했던 작업"이든 <strong>소스를 가리키기만 하면</strong>, 에이전트가 그 내용을
+      추상화해서 프로젝트의 <code>CONTRIBUTING.md</code> 같은 표준에 맞춰 <code>SKILL.md</code>를 직접
+      작성해준다. 예전에는 사람이 직접 SKILL.md 문법을 배워서 손으로 써야 했다면, 이제는 "이 작업을
+      스킬로 만들어줘"라고 지시하는 것만으로 충분하다.
+    </p>
+
+    <h3>실제 자기수정 메커니즘: <code>skill_manage</code> 툴</h3>
+    <p>
+      "에이전트가 스스로 스킬을 만든다"는 문장 뒤에는 <code>skill_manage</code>라는 구체적인 도구 호출이
+      있다. 이 툴은 6가지 액션을 지원한다 — <code>create</code>(새로 생성), <code>patch</code>(부분
+      수정, 업데이트 시 권장), <code>edit</code>(전체 재작성), <code>delete</code>(삭제),
+      <code>write_file</code>/<code>remove_file</code>(스킬에 딸린 참조 파일 관리). 즉 "학습 루프"는
+      막연한 개념이 아니라 <strong>정의된 파일 시스템 쓰기 작업의 집합</strong>이고, 이게 바로 다음에
+      나올 안전장치가 필요한 지점이다.
+    </p>
+
+    <h3>토큰 비용을 위한 3단계 점진적 로딩(progressive disclosure)</h3>
+    <p>
+      스킬이 수십, 수백 개로 늘어나면 매 요청마다 모든 스킬 본문을 프롬프트에 넣는 건 비현실적이다.
+      Hermes는 이를 3단계로 나눠 해결한다.
+    </p>
+    <table>
+      <tr>
+        <th>레벨</th>
+        <th>로드되는 것</th>
+        <th>대략적인 토큰 비용</th>
+      </tr>
+      <tr>
+        <td>Level 0</td>
+        <td>모든 스킬의 이름 + 한 줄 설명 + 카테고리 목록</td>
+        <td>약 3천 토큰 수준(상시 로드)</td>
+      </tr>
+      <tr>
+        <td>Level 1</td>
+        <td>실제로 필요하다고 판단된 스킬의 전체 본문</td>
+        <td>필요할 때만 온디맨드로 로드</td>
+      </tr>
+      <tr>
+        <td>Level 2</td>
+        <td>그 스킬이 참조하는 개별 참조 파일</td>
+        <td>더 깊이 필요할 때만 추가 로드</td>
+      </tr>
+    </table>
+    <div class="callout callout-tip">
+      이건 RAG의 "먼저 요약본을 보여주고, 필요하면 원문을 가져온다"는 아이디어와 본질적으로 같다.
+      스킬이 수백 개라도 상시 컨텍스트 비용은 목록 수준으로 고정하고, 실제로 쓰이는 스킬만 온디맨드로
+      확장하는 것 — 이게 "스킬이 늘어나도 컨텍스트가 안 터지는" 구조적 이유다.
+    </div>
+
+    <h3>자기수정에 대한 안전장치: <code>write_approval</code></h3>
+    <p>
+      <code>skill_manage</code>의 쓰기 계열 액션(<code>create</code>/<code>edit</code>/<code>patch</code>/
+      <code>delete</code>/<code>write_file</code>/<code>remove_file</code>)은 <code>skills.write_approval: true</code>로
+      설정하면 즉시 반영되지 않고 <strong>스테이징(staging)</strong>된다. 사용자는 <code>/skills pending</code>으로
+      대기 중인 변경을 확인하고, <code>/skills diff</code>로 실제 변경 내용을 검토한 뒤,
+      <code>/skills approve</code>로 승인해야 실제로 반영된다. 즉 "에이전트가 스스로를 고친다"가 아니라
+      <strong>"에이전트가 스스로를 고치자고 제안하고, 사람이 그 diff를 리뷰한다"</strong>는 것이 실제
+      기본 안전 모델이다.
+    </p>
+
+    <h3>Skills Hub — 외부 스킬 유통과 <code>Skills Guard</code></h3>
+    <p>
+      스킬은 자기 학습으로만 늘어나는 게 아니라, 외부에서도 들어온다. <code>~/.hermes/skills/</code>
+      외에 <code>config.yaml</code>의 <code>external_dirs</code>로 팀 공유 디렉토리를 추가할 수 있고,
+      <strong>Skills Hub</strong>는 공식 optional skills, <code>skills.sh</code> 디렉토리, well-known
+      엔드포인트, 특정 GitHub 저장소, 그리고 ClawHub/LobeHub 같은 커뮤니티 마켓플레이스까지 여러 소스를
+      통합한다. 모든 Hub 설치 시 <strong><code>Skills Guard</code>가 스킬 내용에서 의심스러운 환경변수
+      접근 패턴 등을 사전 스캔</strong>한다 — 이건 Day 11(provenance/prompt injection 방어)의 context 파일
+      스캐너와 같은 계열의 방어 메커니즘이다.
+    </p>
+
+    <h3>주의: GEPA 기반 self-evolution은 별도 계층이다</h3>
+    <p>
+      <code>NousResearch/hermes-agent-self-evolution</code>이라는 별도 저장소는 DSPy + <strong>GEPA
+      (Genetic-Pareto, ICLR 2026 Oral)</strong>를 이용해 스킬·툴 설명·시스템 프롬프트·코드까지
+      진화적으로 최적화하는 실험적 애드온이다. 실행 트레이스를 모아 실패 원인을 반성적으로(reflective)
+      분석하고, 실패 모드당 10~20개의 SKILL.md 변이를 생성한 뒤, 성공률 × 토큰 효율 × 속도라는
+      다목적(Pareto) 기준으로 평가하고, 최종적으로 <strong>PR 리뷰 게이트</strong>를 통과해야 배포된다.
+      이건 코어 <code>/learn</code> 루프(그때그때 즉시 스킬을 캡처)와는 <strong>다른 층위</strong>다 —
+      코어 루프는 "일상적으로 계속 도는 저비용 캡처"이고, GEPA 계층은 "주기적으로 실행하는 고비용 최적화
+      실험"에 가깝다. 면접에서 이 둘을 뭉뚱그려 "Hermes는 GEPA로 자기 진화한다"고만 답하면 코어 기능과
+      옵션 애드온을 구분하지 못한 것으로 비친다.
+    </p>
+
+    <h3>안전성 문제: 자기수정이 곧 공격 표면이다</h3>
+    <p>
+      독립 보안 분석(RESOURCES.md 참고)에서 반복적으로 지적되는 세 가지 패턴이 있다.
+    </p>
+    <ul>
+      <li><strong>자격증명 응고(credential hardening):</strong> 작업 중 우연히 마주친 API 키 형식을
+        "재사용 가능한 상수"로 착각하고 스킬 파일에 평문으로 박아 넣는 경우 — 악의가 아니라 "유용해지려는"
+        동기에서 발생한다.</li>
+      <li><strong>스킬 위장 prompt injection:</strong> 겉보기에 정상적인 코딩 가이드라인처럼 보이는 스킬
+        본문에 안전장치를 우회하는 지시가 숨어 있는 경우</li>
+      <li><strong>데이터 유출 경로화:</strong> 스킬이 <code>.env</code>나 SSH 키를 읽어서 생성 코드에
+        포함시키고, 그 코드가 그대로 커밋·푸시되는 경로</li>
+    </ul>
+    <div class="callout callout-warn">
+      핵심 우려는 "에이전트가 사람이 안 보는 사이에 스스로 진화한다"는 <strong>비대칭성</strong>이다.
+      전통적인 소프트웨어는 사람이 코드를 리뷰한 뒤 배포하지만, self-evolving 에이전트는 스킬 업데이트가
+      곧 행동 변화이자 새로운 공격 표면이 될 수 있다. 그래서 <code>write_approval</code>, <code>Skills
+      Guard</code>, GEPA의 PR 리뷰 게이트가 모두 같은 원칙 — <strong>"행동을 바꾸는 쓰기에는 사람의
+      승인 단계를 남긴다"</strong> — 을 서로 다른 층위에서 구현한 것이다.
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+    <ul>
+      <li>
+        <strong>마케팅 카피 뒤의 실제 메커니즘을 아는가:</strong> "학습 루프"를 막연한 컨셉이 아니라
+        <code>SKILL.md</code> + <code>skill_manage</code> + 로딩 전략이라는 구체적 구현으로 설명할 수 있는가
+      </li>
+      <li>
+        <strong>메모리와 스킬을 구분하는가:</strong> "기억"과 "재사용 가능한 절차"라는 서로 다른 층위를
+        섞어서 말하지 않는가(둘을 혼동하면 Day 7 메모리 설계 질문에서도 흔들린다)
+      </li>
+      <li>
+        <strong>자동화된 자기수정 시스템에 필요한 안전 설계 감각이 있는가:</strong> "자동으로 좋아진다"가
+        아니라 승인 게이트·스캐닝이 왜 필요한지 구조적으로 설명하는가
+      </li>
+      <li>
+        <strong>컨텍스트/토큰 비용을 아키텍처 문제로 다루는가:</strong> 스킬이 늘어날 때 발생하는 컨텍스트
+        폭증 문제와 그 해법(점진적 로딩)을 연결할 수 있는가
+      </li>
+      <li>
+        <strong>코어 기능과 실험적 애드온을 구분하는가:</strong> <code>/learn</code> 기반 캡처와 GEPA
+        기반 진화적 최적화를 같은 것으로 뭉뚱그리지 않는가
+      </li>
+    </ul>
+    <div class="callout callout-warn">
+      실무에서 이 판단을 잘못하면, 팀이 <code>write_approval</code>을 꺼둔 채로 몇 주를 운영하다가
+      뒤늦게 스킬 디렉토리에서 평문 API 키나 의심스러운 셸 명령 패턴을 발견하는 사고가 난다. 면접관은
+      후보가 "편의성과 승인 오버헤드 사이의 트레이드오프"를 미리 설계 판단으로 갖고 있는지를 본다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 매번 같은 디버깅 절차를 반복 설명하고 있다</h3>
+    <p>
+      배포 실패 시 로그 확인 → 특정 서비스 재시작 → 헬스체크라는 절차를 매번 대화로 새로 설명하고
+      있다면, 그 대화 직후 <code>/learn</code>으로 해당 절차를 스킬화한다. → 다음번에는 같은 상황에서
+      에이전트가 자연어 대화만으로도 그 절차를 자동으로 불러와 실행한다.
+    </p>
+
+    <h3>상황 2: 팀 스킬을 공유했는데 프로덕션 자격증명이 새어 나갔다</h3>
+    <p>
+      개인이 만든 배포 스킬을 팀 공유 디렉토리에 그대로 올렸는데, 그 스킬 안에 특정 환경의 API 키가
+      예시값처럼 평문으로 박혀 있었던 사고. → <strong><code>required_environment_variables</code>로
+      선언해 자격증명은 참조만 하고 값 자체는 스킬 파일에 남기지 않도록 팀 컨벤션을 정하고,
+      <code>Skills Guard</code> 스캔을 공유 전 필수 단계로 강제</strong>해야 한다.
+    </p>
+
+    <h3>상황 3: <code>write_approval</code>을 꺼두고 "완전 자동화"를 추구하다가 생긴 사고</h3>
+    <p>
+      승인 단계가 번거롭다는 이유로 <code>write_approval: false</code>로 운영하다가, 에이전트가 스스로
+      만든 스킬 중 하나에 의도치 않은 위험 셸 패턴이 포함된 채로 계속 재사용되는 상황이 발생. →
+      <strong>스킬 생성 빈도가 낮은 개인 환경에서는 승인 단계의 마찰 비용이 적으니 기본값(승인 켬)을
+      유지</strong>하고, 승인 부담이 커지는 고빈도 팀 환경에서는 "저위험 패치는 자동 승인, 신규
+      생성/삭제는 항상 사람 승인"처럼 <strong>액션별로 승인 정책을 차등</strong>하는 것이 현실적인
+      절충이다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>메모리와 스킬을 먼저 구분한다</strong>
+        "무슨 일이 있었는지"를 기억하는 것과 "어떻게 하면 되는지"를 절차로 응고하는 것은 다른 층위임을
+        짚는다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>실제 구현 메커니즘을 구체적으로 설명한다</strong>
+        <code>SKILL.md</code> 표준 포맷, <code>/learn</code> 커맨드, <code>skill_manage</code> 툴의
+        6가지 액션까지 이름을 대며 설명한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>토큰 비용 관리(점진적 로딩)를 언급한다</strong>
+        스킬이 늘어나도 컨텍스트가 터지지 않는 구조적 이유를 설명한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>안전장치로 연결한다</strong>
+        <code>write_approval</code> 승인 게이트와 <code>Skills Guard</code> 사전 스캔이 왜 필요한지,
+        "자기수정 = 새로운 공격 표면"이라는 원칙으로 설명한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>코어 루프와 GEPA 애드온을 구분해서 마무리한다</strong>
+        일상적 저비용 캡처(코어)와 주기적 고비용 진화적 최적화(GEPA)를 같은 것으로 섞지 않는다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+    <p>
+      "저는 먼저 메모리와 스킬을 구분해서 설명하겠습니다. 메모리는 지난 대화에서 무슨 일이 있었는지를
+      기억하는 것이고, 스킬은 그 일을 어떻게 하면 성공하는지를 재사용 가능한 절차로 응고시킨 것입니다.
+      Hermes Agent가 '쓸수록 똑똑해진다'고 말하는 건 모델 파라미터가 바뀌는 게 아니라, 이 스킬 파일이
+      계속 축적된다는 뜻으로 이해하고 있습니다.
+    </p>
+    <p>
+      구체적으로는 <code>SKILL.md</code>라는 YAML frontmatter + 마크다운 본문 표준 포맷이 있고, 에이전트가
+      <code>skill_manage</code>라는 툴을 통해 생성·패치·수정·삭제를 스스로 수행합니다. v0.18.0에서 추가된
+      <code>/learn</code> 커맨드는 디렉토리나 URL, 혹은 방금 했던 작업을 가리키기만 하면 자동으로 표준에
+      맞는 스킬 파일을 만들어줘서, 손으로 SKILL.md 문법을 배울 필요가 없어졌습니다.
+    </p>
+    <p>
+      스킬이 수백 개로 늘어나는 걸 감당하기 위해 3단계 점진적 로딩을 씁니다 — 평소에는 이름과 한 줄
+      설명 정도만 담긴 목록(약 3천 토큰)만 유지하고, 실제로 필요한 스킬만 온디맨드로 전체 내용을 불러오는
+      구조입니다. 그래서 스킬 개수가 늘어도 상시 컨텍스트 비용은 크게 늘지 않습니다.
+    </p>
+    <p>
+      다만 이 자기수정 능력 자체가 새로운 보안 리스크이기도 합니다. 실제로 API 키가 스킬 파일에 평문으로
+      박히거나, 정상적인 코딩 가이드라인처럼 위장한 프롬프트 인젝션이 스킬에 심어질 수 있다는 지적이
+      있었습니다. 그래서 <code>write_approval</code>을 켜면 스킬을 만들거나 고치는 모든 쓰기 작업이
+      즉시 반영되지 않고 스테이징되고, 사람이 <code>/skills diff</code>로 실제 변경 내용을 검토한 뒤
+      승인해야 반영됩니다. 외부에서 들어오는 스킬도 Skills Guard가 의심스러운 환경변수 접근 패턴을
+      사전에 스캔합니다.
+    </p>
+    <p>
+      마지막으로, 이 코어 학습 루프와 별개로 GEPA라는 진화적 최적화 기법을 쓰는 self-evolution 애드온이
+      별도 저장소로 존재하는데, 이건 일상적으로 도는 저비용 캡처가 아니라 실행 트레이스를 분석해서 여러
+      변이를 만들고 PR 리뷰를 거쳐 배포하는 훨씬 무거운 주기적 최적화 파이프라인이라, 둘을 같은 것으로
+      뭉뚱그리면 안 된다고 생각합니다."
+    </p>
+  </div>
+
+  <!-- Senior-level Follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>Follow-up 1: "<code>write_approval</code>을 켜면 매번 승인해야 해서 자동화의 이점이 줄어드는
+      것 아닌가요? 실무에서는 어떻게 균형을 잡습니까?"</h3>
+    <p>
+      모범적인 사고 방향: 위험도가 다른 액션을 하나의 스위치로 뭉뚱그리지 않는다. <code>patch</code>처럼
+      기존 스킬을 다듬는 저위험 수정과, <code>create</code>/<code>delete</code>처럼 새로운 행동을
+      추가하거나 기존 절차를 완전히 없애는 고위험 변경을 구분해서, 고위험 액션에만 승인을 강제하는
+      정책을 제안하는 것이 시니어다운 답이다. 개인 단독 운영처럼 스킬 생성 빈도가 낮은 환경에서는
+      승인 마찰이 작으므로 기본값(전체 승인)을 유지하는 것도 합리적이라고 덧붙이면 좋다.
+    </p>
+
+    <h3>Follow-up 2: "GEPA 기반 self-evolution과 코어 <code>/learn</code> 루프는 뭐가 다른가요? 왜
+      별도 저장소로 분리했을까요?"</h3>
+    <p>
+      모범적인 사고 방향: <code>/learn</code>은 그때그때 즉시, 저비용으로 스킬 하나를 캡처하는 온라인
+      루프이고, GEPA는 이미 존재하는 스킬·프롬프트·코드를 실행 트레이스 기반으로 반성적으로 분석해서
+      여러 변이를 만들고 다목적 평가를 거치는 훨씬 무거운 오프라인 최적화다. 코어에 넣지 않고 별도
+      저장소로 분리한 이유를 추론하자면, GEPA는 계산 비용(러닝당 약 2~10달러 수준으로 알려짐)과
+      실험적 리스크가 더 크기 때문에 코어 런타임의 기본 신뢰 경계 밖에 두고 옵트인으로 운영하는 것이
+      합리적이라고 답하는 것이 좋다 — 이 부분은 공식 문서가 명시한 설계 의도가 아니라 추론임을 밝힌다.
+    </p>
+
+    <h3>Follow-up 3: "여러 사용자가 스킬을 공유하는 Hub 모델에서, 악성 스킬을 사전에 어떻게 걸러냅니까?"</h3>
+    <p>
+      모범적인 사고 방향: Skills Guard의 사전 스캔(의심스러운 환경변수 접근 패턴 탐지)이 첫 번째
+      방어선이지만, 이건 알려진 패턴 기반 탐지이므로 새로운 형태의 공격까지 완벽히 막지는 못한다는
+      한계를 인정하는 것이 중요하다. 그래서 실무적으로는 공식 optional skills나 신뢰할 수 있는 출처
+      우선 사용, 신규/낯선 출처 스킬은 <code>write_approval</code> 승인 흐름을 통해 사람이 diff를
+      직접 읽어보는 이중 방어가 필요하다고 답하는 것이 좋다.
+    </p>
+
+    <h3>Follow-up 4: "스킬이 잘못 학습된 경우 — 예를 들어 틀린 절차인데 우연히 성공해서 스킬로
+      굳어진 경우 — 어떻게 되돌립니까?"</h3>
+    <p>
+      모범적인 사고 방향: <code>skill_manage</code>의 <code>delete</code>/<code>edit</code> 액션으로
+      직접 수정하거나 폐기할 수 있고, v0.18.0의 <code>/journey</code> 뷰에서 축적된 스킬·메모리
+      타임라인을 사람이 직접 보고 편집·삭제할 수 있다는 점을 언급한다. 즉 "한 번 학습되면 영구적으로
+      고정된다"가 아니라, 스킬도 코드처럼 리뷰하고 되돌릴 수 있는 대상으로 취급하는 것이 설계 의도라고
+      설명하면 좋다.
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변</span> <span class="tag tag-weak">vs 약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>좋은 답변</h4>
+        <ul>
+          <li>메모리(기억)와 스킬(재사용 절차)을 명확히 구분해서 설명한다</li>
+          <li><code>SKILL.md</code> 포맷, <code>/learn</code>, <code>skill_manage</code> 등 구체적
+            메커니즘을 이름으로 짚는다</li>
+          <li>스킬 증가에 따른 토큰 비용 문제와 점진적 로딩 해법을 연결한다</li>
+          <li>자기수정이 곧 새로운 공격 표면이라는 원칙과 <code>write_approval</code>/Skills Guard를
+            연결해서 설명한다</li>
+          <li>코어 <code>/learn</code> 루프와 GEPA 애드온을 서로 다른 층위로 구분한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변</h4>
+        <ul>
+          <li>"에이전트가 알아서 학습한다"고 막연하게만 설명하고 구체적 메커니즘을 대지 못한다</li>
+          <li>메모리와 스킬을 같은 것으로 뭉뚱그린다</li>
+          <li>스킬이 늘어나면 컨텍스트가 어떻게 되는지 고려하지 않는다</li>
+          <li>"자동화니까 무조건 좋다"고만 말하고 보안 리스크를 언급하지 않는다</li>
+          <li>GEPA를 코어 기능인 것처럼 설명한다</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 흔한 오해 정정 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <div class="callout callout-danger">
+      <strong>오해 1: "self-learning이니까 모델 자체가 파인튜닝되면서 좋아지는 것이다."</strong><br>
+      실제로는 모델 가중치가 바뀌는 게 아니라, 모델이 참조할 수 있는 <code>SKILL.md</code> 파일이
+      축적되는 것이다. "학습"은 파라미터 업데이트가 아니라 <strong>재사용 가능한 절차의 문서화</strong>에
+      가깝다.
+    </div>
+
+    <div class="callout callout-danger">
+      <strong>오해 2: "스킬이 늘어나도 어차피 필요할 때만 쓰니까 컨텍스트 문제는 없다."</strong><br>
+      3단계 점진적 로딩이라는 구체적 설계가 없다면 스킬 목록 자체만으로도 컨텍스트를 잠식한다. "온디맨드로
+      쓴다"는 결과는 Level 0/1/2로 나눈 명시적인 로딩 전략이 있어야 성립하는 것이지 저절로 되는 게 아니다.
+    </div>
+
+    <div class="callout callout-danger">
+      <strong>오해 3: "write_approval을 켜면 학습 루프의 자동화 이점이 사라진다."</strong><br>
+      승인은 학습을 막는 게 아니라 <strong>학습 결과가 실제로 반영되기 전에 사람이 검토하는 단계</strong>를
+      추가하는 것이다. 스킬 캡처와 제안 자체는 그대로 자동으로 일어나고, 다만 최종 반영에만 승인이
+      필요하다 — "완전 자동" vs "완전 수동"의 이분법이 아니라 "제안은 자동, 반영은 승인"이라는 중간
+      지점이다.
+    </div>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">Weak</span>
+      <span>"에이전트가 스스로 학습한다"고 개념만 반복하고 구체적 메커니즘을 전혀 대지 못한다.</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">Junior</span>
+      <span><code>SKILL.md</code>와 <code>/learn</code> 정도는 알지만, 메모리와 스킬의 차이나
+        토큰 비용 관리(점진적 로딩)까지는 연결하지 못한다.</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">Mid</span>
+      <span>메커니즘과 로딩 전략은 설명하지만, 자기수정에 필요한 승인 게이트나 보안 리스크를 구조적으로
+        짚어내지 못한다.</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">Senior</span>
+      <span>메모리 vs 스킬 구분 → 구체적 캡처 메커니즘(<code>SKILL.md</code>/<code>/learn</code>/
+        <code>skill_manage</code>) → 토큰 비용을 위한 점진적 로딩 → "자기수정 = 새 공격 표면"이라는
+        원칙과 <code>write_approval</code>/Skills Guard → 코어 루프와 GEPA 애드온의 구분까지
+        하나의 논리로 연결한다.</span>
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li>메모리는 "무슨 일이 있었는지"를 기억하고, 스킬은 "어떻게 하면 되는지"를 재사용 가능한 절차로
+        응고시킨 것이다 — 서로 다른 층위다</li>
+      <li>"학습 루프"의 실제 구현은 <code>SKILL.md</code> 표준 포맷 + <code>/learn</code> 커맨드 +
+        <code>skill_manage</code> 툴(6가지 액션)이다</li>
+      <li>스킬이 늘어나도 컨텍스트가 안 터지는 이유는 Level 0(목록)/1(전체 내용)/2(참조 파일)로 나눈
+        점진적 로딩 구조 때문이다</li>
+      <li>자기수정은 곧 새로운 공격 표면이 될 수 있고, <code>write_approval</code>(승인 게이트)과
+        <code>Skills Guard</code>(사전 스캔)가 이를 완화하는 기본 안전장치다</li>
+      <li>GEPA 기반 self-evolution은 코어 <code>/learn</code> 루프와 다른, 더 무겁고 실험적인 별도
+        저장소 애드온이므로 같은 것으로 뭉뚱그려 말하지 않는다</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span>Day 3 / 14</span>
+    <a href="./index.html">← 레슨 목록으로</a>
+  </div>
+
+</div>
+</body>
+</html>

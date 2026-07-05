@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-07-03 | Hermes Agent Runtime과 Task Refinement 운영 프레임워크 | [0001-hermes-agent-runtime-task-refinement-framework.html](lessons/0001-hermes-agent-runtime-task-refinement-framework.html) |
 | 2 | 2026-07-04 | Local-first 실행과 배포 토폴로지 | [0002-local-first-execution-deployment-topology.html](lessons/0002-local-first-execution-deployment-topology.html) |
+| 3 | 2026-07-05 | Self-Learning과 Skill Capture | [0003-self-learning-skill-capture.html](lessons/0003-self-learning-skill-capture.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | Self-Learning과 Skill Capture | 학습 루프(learning loop), 작업 후 자동 스킬 생성, agentskills.io 표준, Skills Hub, 스킬 자기개선의 안전성 문제 |
 | 4 | Model/Tool/Runtime 경계와 Provider 추상화 | `hermes model` provider 전환, Nous Portal/OpenRouter/OpenAI 등 다중 provider, tool dispatch 설계 |
 | 5 | MCP와 API 통합, ACP 기반 IDE 연동 | MCP 서버 연결, Agent Control Protocol(ACP), VS Code/Zed/JetBrains 연동, diff/터미널 렌더링 |
 | 6 | Gateway와 채널 통합 | 단일 gateway의 다중 채널 팬아웃(Telegram/Discord/Slack/WhatsApp/Signal), 채널 간 대화 연속성, 신뢰 경계 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — 다음: Day 3 — Self-Learning과 Skill Capture
+**Day 3 완료** — 다음: Day 4 — Model/Tool/Runtime 경계와 Provider 추상화
 
 ## 습득한 핵심 개념
 
@@ -38,7 +38,9 @@
 - [x] 6개 실행 backend(local/Docker/SSH/Daytona/Singularity/Modal)를 격리·상시성·비용 축으로 분류 (Day 2)
 - [x] hibernate-on-idle과 always-on의 구조적 충돌, cold start/wake 지연시간 trade-off (Day 2)
 - [x] "$5 VPS + Docker + 프로세스 매니저" 패턴의 근거와 스케일 한계(SPOF) (Day 2)
-- [ ] Self-learning/skill capture 루프와 안전성 (예정 Day 3)
+- [x] 메모리(기억) vs 스킬(재사용 절차)의 구분, `SKILL.md`/`/learn`/`skill_manage` 캡처 메커니즘 (Day 3)
+- [x] 스킬 3단계 점진적 로딩(Level 0/1/2)을 통한 토큰 비용 관리 (Day 3)
+- [x] `write_approval` 승인 게이트, Skills Guard, GEPA self-evolution 애드온과 코어 루프의 구분 (Day 3)
 - [ ] Model/Tool/Runtime 경계, provider 추상화 (예정 Day 4)
 - [ ] MCP/ACP 통합 (예정 Day 5)
 - [ ] Gateway/채널 통합 (예정 Day 6)

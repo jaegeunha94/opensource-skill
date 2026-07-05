@@ -17,6 +17,24 @@
 - "$5 VPS" always-on 배포 패턴 — DigitalOcean/Hetzner/Vultr 등 월 5~7달러 VPS, Docker 공식 이미지(`nousresearch/hermes-agent`) 권장, PM2/systemd로 프로세스 상주, 메모리 사용량 500MB 미만(로컬 LLM 미사용 시) — 다수의 실무 배포 가이드(Contabo, Servury, Hostinger 튜토리얼)에서 반복 확인된 패턴
 - Daytona hibernate-on-idle: 장시간 유휴 후 첫 요청 약 300ms 깨어남 지연, 이후 요청은 컨테이너 상주로 빠름 / Modal cold start: 워크로드에 따라 약 200ms~2-4초 — 서드파티 인프라 비교 아티클(Modal 공식 블로그, mcp.directory 비교 글) 기준, 수치는 워크로드·리전에 따라 달라질 수 있어 참고치로만 사용
 
+## Day 3 리서치 — Self-Learning/Skill Capture (1차 출처 우선, 2026-07-05 확인)
+
+- [Skills System 공식 문서](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills) 및 GitHub 미러
+  [`website/docs/user-guide/features/skills.md`](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/skills.md) —
+  `SKILL.md` YAML frontmatter 포맷, When to Use/Procedure/Pitfalls/Verification 표준 섹션, 3가지 호출 경로(슬래시/자연어/번들),
+  3단계 점진적 로딩(Level 0 목록 ~3k 토큰 / Level 1 전체 본문 / Level 2 참조 파일), `skill_manage` 툴 6개 액션(create/patch/edit/delete/write_file/remove_file),
+  `write_approval` 승인 스테이징(`/skills pending`, `/skills diff`, `/skills approve`), Skills Hub(외부 디렉토리·skills.sh·well-known·GitHub 저장소·ClawHub/LobeHub),
+  bundled skill manifest(`.bundled_manifest`, `hermes skills reset/--restore`) — WebFetch 직접 접근은 403이었으나 GitHub raw 미러로 원문 확인
+- [Security 공식 문서](https://hermes-agent.nousresearch.com/docs/user-guide/security) — Skills Guard의 사전 스캔(의심스러운 env 접근 패턴),
+  `required_environment_variables` 선언 기반 자격증명 passthrough, 컨테이너 격리 시 승인 스킵("컨테이너 자체가 보안 경계") — GitHub raw 미러로 확인
+- [MarkTechPost — Nous Research Adds /learn to Hermes Agent's Skills System](https://www.marktechpost.com/2026/06/24/nous-research-adds-learn-to-hermes-agents-skills-system-capturing-workflows-as-slash-commands-without-hand-writing-skill-md/) —
+  v0.18.0에서 추가된 `/learn` 커맨드(디렉토리/URL/직전 대화를 소스로 지정해 자동으로 `SKILL.md` 생성), `/journey` 커맨드(스킬·메모리 타임라인 열람/편집/삭제) — 2차 출처, WebSearch 스니펫 기준
+- [GitHub — NousResearch/hermes-agent-self-evolution](https://github.com/NousResearch/hermes-agent-self-evolution) — DSPy + GEPA(Genetic-Pareto, ICLR 2026 Oral)
+  기반 스킬/프롬프트/코드 진화적 최적화. 실행 트레이스 수집 → 반성적 실패 분석 → 실패 모드당 10~20개 변이 생성 → 다목적(성공률×토큰효율×속도) Pareto 평가 → PR 리뷰 게이트,
+  러닝당 약 $2~10 비용 — 코어 저장소와 분리된 별도 애드온이라는 점에 유의(WebSearch 스니펫 기준, 원문은 브라우저로 재확인 권장)
+- [Security Boulevard — 8 Self-Evolving Skills Hermes Agent Writes on Its Own](https://securityboulevard.com/2026/06/8-self-evolving-skills-hermes-agent-writes-on-its-own/) —
+  자기수정형 스킬의 보안 리스크 3계열: 자격증명 응고(credential hardening), 스킬 위장 prompt injection, `.env`/SSH 키 유출 경로화 — 2차 출처
+
 ## 보안 감사 / CVE
 
 - 독립 보안 감사(연구자 @Anic888, 2026-04-11) — 기본 설정 기준 Critical 4건 + High 9건: 무제한 셸 실행, 컨테이너 승인 우회, 지속적인 skill-injection 벡터
