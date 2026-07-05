@@ -5,6 +5,7 @@
 ### 표준 / 공식 문서
 
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/) — 웹 애플리케이션 보안 위험 표준 목록
+- [OWASP API Security Top 10](https://owasp.org/www-project-api-security/) — BOLA, Mass Assignment, 과도한 데이터 노출 등 API 특유의 취약점 표준 목록
 - [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/) — 주제별 실무 체크리스트 (인증, JWT, SQL Injection 등)
 - [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/) — 애플리케이션 보안 검증 표준
 - [NIST SP 800-63](https://pages.nist.gov/800-63-3/) — 디지털 신원 및 인증 가이드라인

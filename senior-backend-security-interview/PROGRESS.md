@@ -9,12 +9,12 @@
 | 3 | 2026-07-02 | SQL Injection — 탐지, 방어, 실무 패턴 | [0003-sql-injection.html](lessons/0003-sql-injection.html) |
 | 4 | 2026-07-03 | XSS와 CSRF — 공격 원리와 방어 설계 | [0004-xss-csrf.html](lessons/0004-xss-csrf.html) |
 | 5 | 2026-07-04 | 파일 업로드 보안과 SSRF | [0005-file-upload-ssrf.html](lessons/0005-file-upload-ssrf.html) |
+| 6 | 2026-07-05 | API 보안 — 인증, 속도 제한, 데이터 노출 | [0006-api-security.html](lessons/0006-api-security.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | API 보안 | Rate Limiting, 과도한 데이터 노출, Mass Assignment |
 | 7 | 비밀번호 저장 | bcrypt vs Argon2, rainbow table, 솔팅 |
 | 8 | Secret 관리 | 환경 변수, Vault, KMS, 비밀 로테이션 |
 | 9 | Secure Coding 원칙 | 입력 검증, 최소 권한, 보안 기본값, 코드 리뷰 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — Day 6 (API 보안)이 다음 차례.
+**Day 6 완료** — Day 7 (비밀번호 저장)이 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -53,5 +53,9 @@
 - [x] SSRF 원리 — 서버 자신의 네트워크 위치·권한이 대리 악용되는 구조 (Day 5)
 - [x] 클라우드 메타데이터 엔드포인트 공격과 IMDSv2 (Day 5)
 - [x] SSRF 블랙리스트 우회(DNS Rebinding, IP 인코딩, 리다이렉트)와 네트워크 세그멘테이션 방어 (Day 5)
-- [ ] Rate Limiting, 과도한 데이터 노출, Mass Assignment, BOLA (예정 Day 6)
-- [ ] bcrypt/Argon2 비교 (예정 Day 7)
+- [x] 인증(Authentication)과 인가(Authorization)를 API 엔드포인트/객체 레벨로 세분화하는 관점 (Day 6)
+- [x] BOLA(IDOR) — 객체 단위 인가 누락과 UUID가 근본 방어가 아닌 이유 (Day 6)
+- [x] Mass Assignment — 화이트리스트 입력 DTO 설계 (Day 6)
+- [x] 과도한 데이터 노출 — 화이트리스트 응답 DTO 설계, GraphQL 필드 레벨 인가 (Day 6)
+- [x] Rate Limiting — Gateway/애플리케이션 레이어 역할 구분, IP+계정 복합 키 설계 (Day 6)
+- [ ] bcrypt/Argon2 비교, 솔팅, 레인보우 테이블 (예정 Day 7)
