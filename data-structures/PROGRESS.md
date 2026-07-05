@@ -15,6 +15,7 @@
 | 3 | 2026-07-02 | 스택과 큐 | [interview-day03-stack-and-queue.html](lessons/interview-day03-stack-and-queue.html) |
 | 4 | 2026-07-03 | 해시 테이블 | [interview-day04-hash-tables.html](lessons/interview-day04-hash-tables.html) |
 | 5 | 2026-07-04 | 트리와 균형 트리 | [interview-day05-trees-and-balanced-trees.html](lessons/interview-day05-trees-and-balanced-trees.html) |
+| 6 | 2026-07-05 | 힙과 우선순위 큐 | [interview-day06-heap-and-priority-queue.html](lessons/interview-day06-heap-and-priority-queue.html) |
 
 ## 다음 예정 학습
 
@@ -33,7 +34,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 다음은 Day 6: 힙과 우선순위 큐 (작업 스케줄러나 top-k 문제에서 힙을 선택하는 이유는 무엇인가).
+**Day 6 완료** — 다음은 Day 7: 트라이와 문자열 검색 (자동완성을 구현할 때 trie를 쓰면 어떤 비용을 치르는가).
 
 ## Interview 답변 체크리스트
 
@@ -55,4 +56,5 @@
 - [x] 스택/큐 bounded/unbounded, backpressure, 원형 큐 경계 조건, call stack과 재귀 깊이 — Day 3
 - [x] 해시 테이블 충돌, load factor, resize, 해시 편향과 해시 DoS — Day 4
 - [x] BST 편향(degenerate tree), 회전(rotation), AVL vs Red-Black trade-off, in-memory tree vs 디스크 B-Tree — Day 5
-- [ ] 힙과 우선순위 큐, top-k / 스케줄러 활용 (예정 Day 6)
+- [x] 힙의 배열 표현과 sift-up/down, decrease-key 한계와 지연 삭제/인덱스 힙, top-k/k-way merge 활용 — Day 6
+- [ ] 트라이 구조와 prefix search, 메모리 오버헤드와 압축(radix trie) (예정 Day 7)
