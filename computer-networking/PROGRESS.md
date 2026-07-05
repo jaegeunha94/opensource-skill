@@ -15,12 +15,12 @@
 | 3 | 2026-07-02 | TCP vs UDP와 연결 관리 | `lessons/interview-day-03-tcp-udp-connection-management.html` |
 | 4 | 2026-07-03 | DNS와 서비스 발견 | `lessons/interview-day-04-dns-service-discovery.html` |
 | 5 | 2026-07-04 | HTTP/HTTPS와 TLS 핸드셰이크 | `lessons/interview-day-05-https-tls-handshake.html` |
+| 6 | 2026-07-05 | 로드밸런싱과 프록시 | `lessons/interview-day-06-load-balancing-and-proxy.html` |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 6 | 로드밸런싱과 프록시 | "L4와 L7 로드밸런서를 어떤 기준으로 선택합니까?" | 성능, 기능, 관측성, 장애 범위 trade-off |
 | 7 | 클라우드 네트워킹 | "VPC 안에서 외부 API 호출이 실패하면 어떤 순서로 확인합니까?" | subnet, route table, NAT, security group, NACL |
 | 8 | 네트워크 보안 | "방화벽, NAT, VPN, zero trust를 실무 관점에서 비교해보세요." | 경계 보안 vs identity 기반 보안 |
 | 9 | 성능 최적화 | "RTT가 큰 환경에서 API 성능을 어떻게 개선합니까?" | keep-alive, batching, compression, CDN, protocol 선택 |
@@ -28,14 +28,14 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료, Day 6 예정** — 로드밸런싱과 프록시.
+**Day 6 완료, Day 7 예정** — 클라우드 네트워킹(VPC).
 
 ## Interview 답변 체크리스트
 
-- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1~5 적용)
-- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1~5 적용)
-- [x] 실제 운영 상황과 연결한다. (Day 1~5 적용)
-- [x] 답변 순서를 단계적으로 제시한다. (Day 1~5 적용)
-- [x] trade-off를 최소 2개 이상 비교한다. (Day 1~5 적용)
-- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1~5 적용)
-- [x] follow-up 질문까지 대비한다. (Day 1~5 적용)
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1~6 적용)
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1~6 적용)
+- [x] 실제 운영 상황과 연결한다. (Day 1~6 적용)
+- [x] 답변 순서를 단계적으로 제시한다. (Day 1~6 적용)
+- [x] trade-off를 최소 2개 이상 비교한다. (Day 1~6 적용)
+- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1~6 적용)
+- [x] follow-up 질문까지 대비한다. (Day 1~6 적용)

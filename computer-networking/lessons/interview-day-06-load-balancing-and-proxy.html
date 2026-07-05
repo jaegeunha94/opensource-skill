@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interview Day 6 — 로드밸런싱과 프록시</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.72; color: #1a1d23; background: #fff; }
+    h1 { margin: 0 0 8px; font-size: 2rem; line-height: 1.25; }
+    .subtitle { color: #57606a; margin: 0 0 32px; font-size: 1.05rem; }
+    h2 { margin-top: 48px; padding-top: 12px; border-top: 2px solid #e5e7eb; font-size: 1.4rem; }
+    h3 { margin-top: 32px; color: #1a1d23; }
+    h4 { margin-top: 20px; color: #444; font-size: 1rem; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.93rem; }
+    th, td { border: 1px solid #d8dee4; padding: 9px 12px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 18px; background: #0d1117; color: #e6edf3; border-radius: 8px; font-size: 0.88rem; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.35em; border-radius: 4px; border: 1px solid #d8dee4; }
+    blockquote { margin: 20px 0; padding: 4px 20px; border-left: 4px solid #0b57d0; background: #f0f4ff; color: #2d3748; }
+    blockquote.warn { border-left-color: #e3a008; background: #fffbeb; }
+    blockquote.good { border-left-color: #16a34a; background: #f0fdf4; }
+    blockquote.bad  { border-left-color: #dc2626; background: #fef2f2; }
+    details { margin: 20px 0; padding: 14px 18px; border: 1px solid #d8dee4; border-radius: 8px; background: #fafafa; }
+    summary { cursor: pointer; font-weight: 600; font-size: 1rem; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 36px 0; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-right: 6px; }
+    .badge-senior { background: #dbeafe; color: #1d4ed8; }
+    .badge-tool   { background: #fce7f3; color: #9d174d; }
+    .badge-trap   { background: #fee2e2; color: #991b1b; }
+    .badge-tip    { background: #dcfce7; color: #15803d; }
+    .back { margin-bottom: 32px; font-size: 0.95rem; }
+    .rubric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+    .rubric-col { padding: 16px; border-radius: 8px; }
+    .rubric-col.weak  { background: #fef2f2; border: 1px solid #fca5a5; }
+    .rubric-col.strong { background: #f0fdf4; border: 1px solid #86efac; }
+    .rubric-col h4 { margin-top: 0; }
+    @media (max-width: 640px) { .rubric-grid { grid-template-columns: 1fr; } }
+    .step-list { counter-reset: step; padding: 0; list-style: none; }
+    .step-list li { counter-increment: step; padding: 10px 0 10px 52px; position: relative; border-bottom: 1px solid #f0f0f0; }
+    .step-list li::before { content: counter(step); position: absolute; left: 0; top: 10px; width: 32px; height: 32px; background: #0b57d0; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+    .interview-q { background: #1a1d23; color: #e6edf3; padding: 20px 24px; border-radius: 8px; margin: 20px 0; font-size: 1.05rem; font-style: italic; }
+    .interview-q::before { content: "💬 면접 질문"; display: block; font-size: 0.78rem; font-style: normal; font-weight: 700; color: #8b949e; margin-bottom: 8px; letter-spacing: 0.05em; }
+    .toc { background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 8px; padding: 20px 24px; margin: 24px 0 40px; }
+    .toc h3 { margin-top: 0; font-size: 1rem; }
+    .toc ol { margin: 0; padding-left: 20px; }
+    .toc li { margin: 4px 0; font-size: 0.93rem; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+
+  <h1>Interview Day 6</h1>
+  <p class="subtitle">로드밸런싱과 프록시 — "트래픽을 어디서 나누고, 어디서 들여다볼 것인가"</p>
+
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#interview-q">면접 질문</a></li>
+      <li><a href="#prerequisite">전제 개념 — 알아야 할 기초</a></li>
+      <li><a href="#why-asked">왜 면접에서 이걸 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#thinking-order">답변 사고 순서</a></li>
+      <li><a href="#answer-example">핵심 답변 예시</a></li>
+      <li><a href="#tradeoff">Trade-off</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#followup">Senior-level Follow-up 질문</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <h2 id="interview-q">1. 면접 질문</h2>
+
+  <div class="interview-q">
+    "대규모 세일 이벤트로 트래픽이 평소의 10배로 급증했습니다. 로드밸런서 뒤에 있는 8대 서버 중 유독 2대만 CPU 사용률이 90%를 넘고 나머지는 20% 수준에 머물러 있습니다. 전체 요청 수는 서버 대수로 나눈 평균과 비슷한데도 이런 편차가 생기는 이유를 L4/L7 로드밸런서의 동작 방식으로 설명하고, 이 상황에서 무엇을 확인하고 어떻게 조치하시겠습니까? 그리고 새 버전을 배포할 때 이 로드밸런서 구성이 순단(연결 끊김) 없이 배포되도록 하려면 무엇을 준비해야 합니까?"
+  </div>
+
+  <p>이 질문이 어려운 이유는 "로드밸런서가 트래픽을 골고루 분산한다"는 상식만으로는 <strong>왜 골고루 분산되지 않는 경우가 실무에서 오히려 흔한지</strong>를 설명하지 못하기 때문이다. 로드밸런서는 트래픽의 "개수"를 균등하게 나눠줄 뿐, 그 트래픽이 서버에 얼마나 무거운 "일"을 시키는지는 모른다. 면접관은 지원자가 로드밸런서를 "블랙박스"로 취급하는지, 아니면 L4/L7의 동작 계층 차이, 분산 알고리즘, 헬스체크, 세션 유지(sticky session), connection draining까지 구조적으로 설명하며 실제 편차의 원인을 좁혀낼 수 있는지를 확인하려 한다.</p>
+
+  <hr>
+
+  <!-- 2. 전제 개념 -->
+  <h2 id="prerequisite">2. 전제 개념 — 알아야 할 기초</h2>
+
+  <h3>2-1. L4 로드밸런서 — "봉투를 보지 않고 주소만 보고 배달한다"</h3>
+  <p>L4(전송 계층) 로드밸런서는 IP 주소와 포트, TCP/UDP 연결 단위로만 트래픽을 분산한다. 패킷 안에 어떤 HTTP 요청이 들어있는지, URL이 무엇인지는 들여다보지 않는다. 마치 우체국 집배원이 <strong>봉투 겉면의 주소만 보고 배달하고, 봉투 안 편지 내용은 읽지 않는 것</strong>과 같다. 그래서 처리 속도가 빠르고 CPU 부하가 적지만, "이 URL은 이 서버로, 저 헤더가 있으면 저 서버로" 같은 내용 기반 라우팅은 할 수 없다.</p>
+
+  <h3>2-2. L7 로드밸런서 — "봉투를 열어 내용을 읽고 배달할 곳을 정한다"</h3>
+  <p>L7(응용 계층) 로드밸런서는 HTTP 요청의 내용(URL 경로, 헤더, 쿠키, 메서드 등)까지 파싱해서 분산 대상을 결정한다. 예를 들어 <code>/api/*</code>는 API 서버군으로, <code>/static/*</code>은 정적 파일 서버군으로 나눌 수 있고, 특정 쿠키 값이 있으면 카나리(canary) 버전 서버로 보낼 수도 있다. 대신 봉투를 열어 읽는 데 CPU와 시간을 쓰기 때문에 L4보다 처리 비용이 높고, TLS를 여기서 종단하는 경우가 많아 암복호화 연산까지 겹치면 L7 계층 자체가 병목이 될 수 있다.</p>
+
+  <table>
+    <thead>
+      <tr><th>구분</th><th>L4 로드밸런서</th><th>L7 로드밸런서</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>동작 기준</td><td>IP, 포트, TCP/UDP 연결</td><td>HTTP 메서드, URL, 헤더, 쿠키, 바디</td></tr>
+      <tr><td>처리 속도/비용</td><td>빠름, CPU 부하 적음</td><td>상대적으로 느림, 파싱·TLS 종단 비용</td></tr>
+      <tr><td>라우팅 정교함</td><td>낮음 (내용 기반 불가)</td><td>높음 (경로/헤더/쿠키 기반 라우팅)</td></tr>
+      <tr><td>대표 사례</td><td>AWS NLB, LVS, 순수 TCP 프록시</td><td>AWS ALB, Nginx, HAProxy(HTTP 모드), Envoy</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2-3. 로드밸런싱 알고리즘 — "누구에게 몇 번째 손님을 보낼 것인가"</h3>
+  <p>같은 로드밸런서라도 어떤 알고리즘으로 다음 요청을 보낼 서버를 고르는지에 따라 부하 편차가 크게 달라진다.</p>
+
+  <table>
+    <thead>
+      <tr><th>알고리즘</th><th>동작</th><th>함정</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Round Robin</strong></td><td>순서대로 돌아가며 배분</td><td>요청 "개수"는 균등해도 요청마다 처리 비용이 다르면 서버별 실제 부하는 편차가 생긴다</td></tr>
+      <tr><td><strong>Least Connections</strong></td><td>현재 활성 연결이 가장 적은 서버로 배분</td><td>요청 처리 시간이 짧고 연결이 금방 끝나는 서버로 편중될 수 있음(연결 수 ≠ 실제 부하)</td></tr>
+      <tr><td><strong>Weighted (가중치)</strong></td><td>서버 스펙에 비례해 가중치를 두고 배분</td><td>가중치를 배포 초기값 그대로 방치하면, 스케일 아웃/다운 후에도 옛 비율로 쏠릴 수 있음</td></tr>
+      <tr><td><strong>IP Hash / Consistent Hash</strong></td><td>클라이언트 IP나 특정 키를 해시해 항상 같은 서버로 보냄</td><td>특정 대형 고객사(회사 프록시로 다수 사용자가 같은 IP를 공유)의 트래픽이 통째로 한 서버에 몰릴 수 있음</td></tr>
+    </tbody>
+  </table>
+
+  <blockquote class="warn">
+    <strong>핵심:</strong> 로드밸런서가 "요청 개수"를 균등하게 나누는 것과, 서버가 실제로 느끼는 "부하"가 균등한 것은 다른 문제다. 무거운 요청(대용량 조회, 복잡한 연산, 캐시 미스)이 특정 알고리즘·세션 유지 때문에 특정 서버로 쏠리면, 요청 수는 비슷해도 CPU는 크게 벌어질 수 있다.
+  </blockquote>
+
+  <h3>2-4. 헬스체크 — "죽은 서버로 보내지 않기 위한 감시"</h3>
+  <p>로드밸런서는 주기적으로 각 서버에 헬스체크(예: <code>/healthz</code> 호출)를 보내 응답이 정상인 서버에만 트래픽을 보낸다. 이때 <strong>liveness(살아있는가)</strong>와 <strong>readiness(지금 트래픽을 받을 준비가 됐는가)</strong>를 구분하지 않으면, 서버 프로세스는 살아있지만 캐시 워밍업 중이거나 DB 커넥션 풀이 아직 안 찬 상태에서도 트래픽을 받아 초기 요청들이 느려지거나 실패하는 문제가 생긴다.</p>
+
+  <h3>2-5. Sticky Session(세션 고정) — 왜 필요하고 왜 문제인가</h3>
+  <p>서버가 로그인 세션이나 장바구니 같은 상태를 메모리에 들고 있으면, 같은 사용자의 다음 요청이 <strong>항상 같은 서버</strong>로 가야 한다(sticky session, 보통 쿠키 기반). 하지만 이는 로드밸런서 입장에서 "이 사용자는 반드시 이 서버로"라는 제약이 되어, 특정 사용자(혹은 소수의 대형 세션)의 트래픽 패턴에 따라 특정 서버만 유독 바빠지는 원인이 될 수 있다. 근본적인 해결은 서버를 무상태(stateless)로 만들고 세션을 Redis 같은 외부 저장소로 빼는 것이다.</p>
+
+  <h3>2-6. Reverse Proxy vs Forward Proxy vs API Gateway</h3>
+  <table>
+    <thead>
+      <tr><th>구분</th><th>누구를 대신하는가</th><th>대표 용도</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Forward Proxy</strong></td><td>클라이언트를 대신해 외부로 나감</td><td>사내망에서 외부 접속 통제, 캐싱, 익명화</td></tr>
+      <tr><td><strong>Reverse Proxy</strong></td><td>서버를 대신해 클라이언트 요청을 받음</td><td>TLS 종단, 로드밸런싱, 캐싱, 정적 파일 서빙, 내부 서버 은닉</td></tr>
+      <tr><td><strong>API Gateway</strong></td><td>Reverse Proxy + 인증/인가/rate limiting/라우팅 정책까지 담당</td><td>마이크로서비스 진입점, 인증 토큰 검증, 서비스별 트래픽 정책</td></tr>
+    </tbody>
+  </table>
+  <p>클라이언트 입장에서는 forward proxy가 "나(클라이언트)의 대리인"이고, reverse proxy는 "서버의 대리인"이다. 둘 다 중간에서 요청을 가로챈다는 점은 같지만 <strong>누구의 이익을 위해 동작하는지</strong>가 다르다.</p>
+
+  <h3>2-7. Connection Draining(연결 배수) — 배포 중 요청을 끊지 않는 법</h3>
+  <p>배포를 위해 기존 서버 인스턴스를 종료할 때, 이미 처리 중인 요청을 강제로 끊으면 사용자는 에러를 본다. Connection draining(또는 graceful shutdown)은 해당 서버를 로드밸런서의 <strong>"신규 요청 대상"에서만 제외</strong>하고, 이미 진행 중인 요청은 끝까지 처리하도록 일정 시간을 유예하는 메커니즘이다. 이 유예 시간이 너무 짧으면 긴 요청이 강제 종료되고, 너무 길면 배포 시간이 늘어난다.</p>
+
+  <h3>2-8. 클라이언트 원본 IP 보존 — X-Forwarded-For와 PROXY Protocol</h3>
+  <p>로드밸런서/리버스 프록시가 중간에 끼면, 서버가 보는 접속 IP는 실제 사용자 IP가 아니라 <strong>로드밸런서의 IP</strong>가 된다. L7에서는 <code>X-Forwarded-For</code> 헤더에 원본 IP를 실어 전달하고, L4처럼 HTTP 헤더 자체가 없는 계층에서는 <strong>PROXY Protocol</strong>이라는 별도 프리앰블로 원본 IP/포트를 전달한다. 이를 신뢰할 수 없는 경로(인터넷 어디서든)에서 그대로 믿으면 IP 스푸핑으로 접근 제어(IP allowlist, rate limit)를 우회당할 수 있다 — 반드시 "신뢰된 프록시에서만" 이 헤더를 덮어쓰도록 구성해야 한다.</p>
+
+  <h3>2-9. GSLB / Anycast — 리전을 넘어서는 분산</h3>
+  <p>단일 리전 안의 로드밸런서를 넘어, 여러 리전에 걸친 트래픽 분산은 DNS 기반 GSLB(Global Server Load Balancing)나 Anycast(같은 IP를 여러 위치에서 광고해 가장 가까운 곳으로 라우팅)로 처리한다. 이는 "서버 대 서버"가 아니라 "리전 대 리전" 단위의 장애 격리와 지연 최적화를 담당한다는 점에서 로컬 로드밸런서와 역할이 다르다.</p>
+
+  <hr>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <h2 id="why-asked">3. 왜 면접에서 이걸 묻는가</h2>
+
+  <ol>
+    <li><strong>1단계 필터 (정의 vs 계층 이해)</strong> — L4와 L7의 차이를 "포트 번호만 보느냐 URL도 보느냐" 수준을 넘어, 처리 비용과 라우팅 정교함의 trade-off로 설명할 수 있는지 확인한다.</li>
+    <li><strong>2단계 필터 (지식 vs 진단 능력)</strong> — "요청 수는 비슷한데 CPU가 다르다"는 증상을 보고, 알고리즘/세션 고정/요청 무게 편차라는 원인 후보를 구조적으로 좁혀낼 수 있는지 본다.</li>
+    <li><strong>3단계 필터 (진단 vs 운영 경험)</strong> — connection draining, 헬스체크 설계, sticky session 제거 같은 실제 운영 경험이 있는지, 배포 시 순단을 막기 위해 무엇을 준비했는지 follow-up으로 확인한다.</li>
+  </ol>
+
+  <blockquote class="warn">
+    <strong>면접관이 피하고 싶은 답변:</strong> "로드밸런서가 트래픽을 나눠주는데 한 서버만 이상하면 그 서버를 재시작하겠습니다." 재시작이 임시방편은 될 수 있지만, <strong>왜 편중이 생겼는지(알고리즘, 세션 고정, 요청 무게 차이)</strong>를 진단하지 않으면 같은 문제가 반복된다.
+  </blockquote>
+
+  <hr>
+
+  <!-- 4. 실무 연결 -->
+  <h2 id="real-world">4. 실무 연결</h2>
+
+  <h3>실제 장애 시나리오 A — Sticky Session 때문에 특정 서버만 과부하</h3>
+  <p>이벤트 프로모션 페이지에서 대량 트래픽이 몰렸는데, 로그인한 VIP 회원들의 세션이 특정 서버 2대에 고정(sticky)되어 있었다. 마침 그 VIP 그룹의 활동량이 이벤트 기간 중 유독 높아, 세션이 고정된 두 서버만 CPU가 치솟았다. 근본 원인은 세션을 서버 로컬 메모리에 저장하고 있었기 때문이었고, 이를 Redis 기반 외부 세션 저장소로 옮기고 나서야 로드밸런서가 sticky session 제약 없이 자유롭게 분산할 수 있게 됐다.</p>
+
+  <h3>실제 장애 시나리오 B — 배포 중 connection draining 미설정으로 5xx 급증</h3>
+  <p>새 버전을 롤링 배포하면서 기존 인스턴스를 즉시 종료하도록 설정되어 있었다. 처리 중이던 장시간 요청(대용량 리포트 생성 API)이 강제로 끊기며 5xx 에러가 배포 시점마다 스파이크로 발생했다. Connection draining 유예 시간을 해당 API의 최대 처리 시간보다 여유 있게 설정하고, 로드밸런서가 "신규 요청 중단 → 기존 요청 완료 대기 → 인스턴스 종료" 순서를 지키도록 배포 파이프라인을 수정해 해결했다.</p>
+
+  <h3>실제 장애 시나리오 C — 헬스체크가 readiness를 반영하지 못해 배포 직후 에러율 급등</h3>
+  <p>새로 뜬 컨테이너는 프로세스가 시작되자마자 헬스체크(<code>/healthz</code>)에 200을 반환했지만, 실제로는 DB 커넥션 풀과 캐시 워밍업이 끝나지 않은 상태였다. 로드밸런서는 "살아있다"는 신호만 보고 즉시 트래픽을 보냈고, 배포 직후 몇 초간 응답 지연과 타임아웃이 몰렸다. 헬스체크 엔드포인트를 "프로세스 생존"과 "트래픽 처리 준비 완료"를 구분하는 readiness 체크로 나누고, 준비가 끝난 뒤에만 로드밸런서 대상에 등록되도록 바꿔 해결했다.</p>
+
+  <hr>
+
+  <!-- 5. 답변 사고 순서 -->
+  <h2 id="thinking-order">5. 답변 사고 순서</h2>
+
+  <ol class="step-list">
+    <li>
+      <strong>"요청 수 균등"과 "부하 균등"을 분리해서 생각한다</strong>
+      <br>로드밸런서 지표에서 서버별 요청 수, 연결 수, 응답 시간, CPU/메모리를 함께 비교해 "개수는 같은데 무게가 다른 것"인지 "실제로 개수 자체가 쏠린 것"인지부터 구분한다.
+    </li>
+    <li>
+      <strong>분산 알고리즘과 세션 고정 여부를 확인한다</strong>
+      <br>현재 알고리즘이 Round Robin인지 Least Connections인지, IP Hash/sticky session이 걸려 있는지 로드밸런서 설정을 확인한다. 세션 고정이 걸려 있다면 어떤 사용자 그룹이 어느 서버에 몰려 있는지 로그로 추적한다.
+    </li>
+    <li>
+      <strong>요청 내용 자체의 편차를 본다</strong>
+      <br>특정 서버로 무겁게 몰리는 요청 유형(대용량 조회, 캐시 미스, 특정 API 경로)이 있는지 L7 접근 로그를 분석한다. 이는 인프라 문제가 아니라 애플리케이션/데이터 분포 문제일 수 있다.
+    </li>
+    <li>
+      <strong>단기 완화책과 근본 해결책을 분리해서 제시한다</strong>
+      <br>단기적으로는 문제 서버를 헬스체크에서 일시 제외하거나 가중치를 낮춰 부하를 분산시키고, 근본적으로는 세션을 무상태로 전환하거나 분산 알고리즘을 Least Connections/Least Response Time으로 바꾸는 방향을 제시한다.
+    </li>
+    <li>
+      <strong>배포 순단 방지책을 별도로 짚는다</strong>
+      <br>Connection draining 유예 시간, readiness 기반 헬스체크, 롤링/블루-그린 배포 시 신규 인스턴스가 완전히 준비된 뒤에만 트래픽을 받도록 하는 절차를 설명한다.
+    </li>
+    <li>
+      <strong>재발 방지 관점에서 관측성을 강화한다</strong>
+      <br>서버별 CPU/응답시간 편차를 실시간으로 감지하는 대시보드와 알람을 추가해, 다음에는 장애가 커지기 전에 편중을 조기에 발견할 수 있게 한다.
+    </li>
+  </ol>
+
+  <hr>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <h2 id="answer-example">6. 핵심 답변 예시</h2>
+
+  <h3>짧은 답변 (60초 버전)</h3>
+  <blockquote class="good">
+    "로드밸런서는 요청의 '개수'는 균등하게 나눠도 각 요청이 서버에 주는 실제 '부하'까지 보장하지는 않습니다. 그래서 저는 먼저 서버별 요청 수, 연결 수, 응답 시간, CPU를 함께 비교해서 개수는 비슷한데 무게가 다른 것인지 확인합니다. 그다음 sticky session이나 IP Hash처럼 특정 사용자군을 특정 서버에 고정하는 설정이 있는지, 그 사용자군의 요청이 유독 무거운지 확인합니다. 근본 원인이 세션 고정이면 세션을 Redis 같은 외부 저장소로 옮겨 서버를 무상태로 만들고, 그러면 로드밸런서가 Least Connections 같은 알고리즘으로 자유롭게 분산할 수 있습니다. 배포 순단 방지는 별개로, connection draining 유예 시간을 API의 최대 처리 시간보다 여유 있게 설정하고, 새 인스턴스는 readiness 체크를 통과한 뒤에만 트래픽을 받도록 구성하겠습니다."
+  </blockquote>
+
+  <h3>깊이 있는 답변 (면접관이 "더 자세히"라고 물을 때)</h3>
+  <blockquote class="good">
+    "조금 더 나눠보면, 이 문제는 '로드밸런서 레이어의 문제'와 '애플리케이션/데이터 레이어의 문제'가 섞여 있을 수 있다고 생각합니다. 로드밸런서 레이어에서는 현재 알고리즘이 Round Robin이라면 연결 수 기준이 아니라 단순 순번 기준이라 무거운 요청이 몰릴 때 편차가 생기기 쉬우니 Least Connections나 응답시간 기반 알고리즘으로 바꾸는 걸 검토합니다. 세션 고정이 걸려 있다면 그 자체가 로드밸런서의 분산 자유도를 제한하는 구조적 원인이므로, 세션을 외부 저장소로 옮겨 무상태 서버로 만드는 게 근본적인 해법입니다.
+
+    애플리케이션 레이어에서는 특정 요청 유형(대용량 리포트, 캐시 미스가 잦은 조회)이 우연히 특정 서버에 몰렸을 수도 있어, L7 로그에서 요청 경로별 처리 시간 분포를 봐야 합니다. 이 둘을 구분하지 않고 무작정 서버를 늘리기만 하면, 편중 구조 자체는 그대로 남아 스케일 아웃 효과가 기대만큼 안 나올 수 있습니다. 배포 순단 방지는 별도 축으로, connection draining과 readiness 체크를 통해 '새 인스턴스는 완전히 준비된 뒤에만 트래픽을 받고, 종료되는 인스턴스는 기존 요청을 다 끝낸 뒤에만 빠지는' 두 방향의 안전장치를 모두 확인합니다."
+  </blockquote>
+
+  <hr>
+
+  <!-- 7. Trade-off -->
+  <h2 id="tradeoff">7. Trade-off</h2>
+
+  <table>
+    <thead>
+      <tr><th>선택</th><th>장점</th><th>단점 / 주의사항</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>L4 로드밸런서</strong></td>
+        <td>낮은 지연, 높은 처리량, 단순한 구조</td>
+        <td>내용 기반 라우팅 불가, 애플리케이션 레벨 헬스체크 정교함이 떨어질 수 있음</td>
+      </tr>
+      <tr>
+        <td><strong>L7 로드밸런서</strong></td>
+        <td>경로/헤더/쿠키 기반 정교한 라우팅, TLS 종단·카나리 배포에 유리</td>
+        <td>파싱·TLS 연산 비용으로 L4보다 처리량 낮음, LB 자체가 병목이 될 수 있음</td>
+      </tr>
+      <tr>
+        <td><strong>Sticky Session 유지</strong></td>
+        <td>서버 코드 변경 없이 상태 저장 가능, 구현이 단순</td>
+        <td>부하 편중 위험, 특정 서버 장애 시 해당 세션 사용자만 집중 영향, 스케일 아웃 효과 제한</td>
+      </tr>
+      <tr>
+        <td><strong>무상태 전환(외부 세션 저장소)</strong></td>
+        <td>로드밸런서가 자유롭게 분산 가능, 서버 추가/제거가 쉬움</td>
+        <td>외부 저장소(Redis 등) 자체가 새로운 단일 장애점이 될 수 있어 별도 이중화 필요</td>
+      </tr>
+      <tr>
+        <td><strong>Connection Draining 유예 시간 김</strong></td>
+        <td>진행 중인 요청 손실 최소화</td>
+        <td>배포 전체 소요 시간 증가, 오토스케일링 축소 반응 지연</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 8. 흔한 오해 -->
+  <h2 id="misconceptions">8. 흔한 오해</h2>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 1</span> "로드밸런서가 있으면 서버 부하는 항상 균등하다"</summary>
+    <p>로드밸런서는 요청 "개수"를 알고리즘에 따라 분배할 뿐, 각 요청이 서버에 주는 실제 연산/IO 부하까지 균등하게 만들어주지는 않는다. 무거운 요청의 분포, sticky session, 캐시 히트율 차이에 따라 CPU 사용률은 얼마든지 벌어질 수 있다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 2</span> "L7이 항상 L4보다 좋은 선택이다"</summary>
+    <p>L7은 더 정교하지만 그만큼 처리 비용이 크다. 순수 TCP 프록시나 매우 높은 처리량이 필요한 내부 트래픽에는 L4가 더 적합할 수 있고, 실무에서는 L4(외곽) + L7(내부) 조합처럼 계층을 나눠 쓰는 경우도 많다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 3</span> "헬스체크가 200이면 트래픽을 받아도 안전하다"</summary>
+    <p>프로세스가 살아있다는 것(liveness)과 실제로 트래픽을 처리할 준비가 됐다는 것(readiness)은 다르다. 캐시 워밍업, 커넥션 풀 초기화가 끝나지 않은 상태에서 트래픽을 받으면 초기 요청들이 느려지거나 실패할 수 있다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 4</span> "X-Forwarded-For 헤더 값은 항상 실제 클라이언트 IP다"</summary>
+    <p>신뢰되지 않은 경로에서 온 <code>X-Forwarded-For</code> 값은 클라이언트가 임의로 조작할 수 있다. 반드시 신뢰된 프록시/로드밸런서에서만 이 헤더를 마지막으로 덮어쓰도록 구성해야 IP 기반 접근 제어나 rate limiting을 우회당하지 않는다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 5</span> "서버를 더 추가하면 부하 편중 문제는 자동으로 해결된다"</summary>
+    <p>편중의 원인이 sticky session이나 특정 요청 유형 쏠림처럼 구조적인 것이라면, 서버를 늘려도 같은 비율로 편중이 재현될 뿐 근본 해결이 되지 않는다. 원인을 진단하지 않은 채 스케일 아웃만 하면 비용만 늘고 문제는 반복된다.</p>
+  </details>
+
+  <hr>
+
+  <!-- 9. Follow-up 질문 -->
+  <h2 id="followup">9. Senior-level Follow-up 질문</h2>
+
+  <table>
+    <thead>
+      <tr><th>Follow-up 질문</th><th>면접관의 의도</th><th>답변 포인트</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>"L4와 L7 로드밸런서를 함께 쓰는 아키텍처는 어떤 모습입니까?"</td>
+        <td>계층별 로드밸런서를 조합해서 설계할 수 있는지</td>
+        <td>외곽에서 L4(NLB)로 대량 트래픽을 빠르게 받아 TLS는 뒤에서 종단하거나, L4 뒤에 L7(ALB/Nginx/Envoy)을 두어 경로 기반 라우팅과 세밀한 정책을 적용하는 계층형 구조를 설명한다.</td>
+      </tr>
+      <tr>
+        <td>"Sticky session 없이도 상태를 유지해야 하는 서비스는 어떻게 설계합니까?"</td>
+        <td>무상태 아키텍처로 전환하는 설계 능력</td>
+        <td>세션 데이터를 Redis 등 외부 저장소로 분리하고, 서버는 요청마다 필요한 상태를 저장소에서 조회하도록 만들어 어떤 서버가 요청을 받아도 동일하게 동작하게 한다는 점을 설명한다.</td>
+      </tr>
+      <tr>
+        <td>"Blue-Green 배포와 로드밸런서는 어떻게 연동됩니까?"</td>
+        <td>배포 전략과 트래픽 전환 메커니즘의 연결을 이해하는지</td>
+        <td>새 버전(Green)을 완전히 준비한 뒤 로드밸런서의 타겟 그룹을 한 번에 전환하고, 문제 발생 시 즉시 이전 타겟 그룹(Blue)으로 되돌릴 수 있다는 구조를 설명하며 connection draining과의 관계도 짚는다.</td>
+      </tr>
+      <tr>
+        <td>"로드밸런서 자체가 장애 지점이 되는 것은 어떻게 방지합니까?"</td>
+        <td>단일 장애점(SPOF) 제거 설계 능력</td>
+        <td>로드밸런서를 다중 가용영역에 이중화하고, DNS나 Anycast/Floating IP로 장애 시 자동 failover가 되도록 구성하며, 로드밸런서 자체의 헬스체크와 오토스케일링도 함께 고려해야 한다는 점을 설명한다.</td>
+      </tr>
+      <tr>
+        <td>"Rate limiting은 로드밸런서/API Gateway 어느 레벨에서 하는 것이 맞습니까?"</td>
+        <td>계층별 책임 분리에 대한 판단</td>
+        <td>L4는 내용을 몰라 사용자/API 단위 제한이 어렵고, L7/API Gateway는 사용자 인증 정보나 API 키 단위로 정교한 rate limiting이 가능하다는 점, 다만 그만큼 처리 비용이 추가된다는 trade-off를 설명한다.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 10. Rubric -->
+  <h2 id="rubric">10. 자기 점검 Rubric</h2>
+
+  <div class="rubric-grid">
+    <div class="rubric-col weak">
+      <h4>약한 답변 (Junior 수준)</h4>
+      <ul>
+        <li>"로드밸런서가 트래픽을 나눠준다"는 정의에서 멈추고 L4/L7 차이를 설명하지 못함</li>
+        <li>요청 "개수" 균등과 서버 "부하" 균등을 구분하지 못함</li>
+        <li>sticky session이 부하 편중과 스케일 확장 제약의 원인이 될 수 있다는 것을 모름</li>
+        <li>헬스체크의 liveness/readiness 구분 없이 "헬스체크가 통과하면 안전하다"고만 답함</li>
+        <li>connection draining 개념이 없어 배포 시 요청이 끊기는 문제를 설명하지 못함</li>
+        <li>X-Forwarded-For를 무조건 신뢰해도 되는 값으로 착각함</li>
+      </ul>
+    </div>
+    <div class="rubric-col strong">
+      <h4>강한 답변 (Senior 수준)</h4>
+      <ul>
+        <li>L4/L7의 동작 계층과 처리 비용/라우팅 정교함의 trade-off를 구조적으로 설명</li>
+        <li>서버별 요청 수·연결 수·응답시간·CPU를 함께 비교해 편중 원인(알고리즘/세션 고정/요청 무게)을 좁혀내는 절차를 제시</li>
+        <li>세션을 무상태로 전환해 로드밸런서의 분산 자유도를 높이는 근본 해법을 제시</li>
+        <li>liveness/readiness를 구분한 헬스체크 설계와 connection draining을 통한 배포 순단 방지를 함께 설명</li>
+        <li>X-Forwarded-For/PROXY Protocol의 신뢰 경계 문제와 스푸핑 위험을 인지</li>
+        <li>로드밸런서 자체의 이중화, GSLB/Anycast까지 확장해서 설명 가능</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>자기 점검 체크리스트</h3>
+  <ul>
+    <li>☐ L4와 L7 로드밸런서의 동작 계층과 처리 비용 차이를 설명했는가?</li>
+    <li>☐ "요청 개수 균등"과 "실제 부하 균등"이 다르다는 것을 구조적으로 짚었는가?</li>
+    <li>☐ Sticky session/알고리즘/요청 무게 편차 중 원인을 좁혀내는 진단 절차를 제시했는가?</li>
+    <li>☐ 세션을 무상태로 전환하는 근본 해법과 그 trade-off를 설명했는가?</li>
+    <li>☐ 헬스체크의 liveness/readiness 차이와 connection draining을 통한 배포 순단 방지를 설명했는가?</li>
+    <li>☐ X-Forwarded-For/PROXY Protocol의 신뢰 경계 문제를 언급했는가?</li>
+  </ul>
+
+  <hr>
+
+  <h2>다음 레슨 예고</h2>
+  <blockquote>
+    <strong>Interview Day 7</strong> — 클라우드 네트워킹
+    <br>핵심 질문: "VPC 안에서 외부 API 호출이 실패하면 어떤 순서로 확인합니까?"
+    <br>subnet, route table, NAT, security group, NACL을 실무 판단 기준으로 다룬다.
+  </blockquote>
+
+  <nav class="back" style="margin-top:48px;"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+</body>
+</html>
