@@ -77,6 +77,26 @@
 > 최신 공개 정보를 반영한 것이다. 실제 모델 선택 전에는 반드시 각 제공사의 최신 공식 문서와 가격
 > 페이지, 그리고 자신의 도메인 평가셋으로 재검증해야 한다.
 
+## Vector Database 최신 근거 (Day 5, 2026년 7월 조사 반영)
+
+- [Best Vector Databases in 2026: Complete Comparison Guide — Encore](https://encore.dev/articles/best-vector-databases) — Pinecone/Qdrant/Weaviate/Milvus/pgvector/Chroma 2026년 프로덕션 선택 기준 비교
+- [pgvector vs Pinecone vs Qdrant vs Weaviate (2026): Which We Actually Use in Production — Kalvium Labs](https://www.kalviumlabs.ai/blog/vector-databases-compared-pgvector-pinecone-qdrant-weaviate/) — 기존 Postgres 스택 재사용 vs 전용 벡터 DB 도입 기준
+- [HNSW vs DiskANN: comparing the leading ANN algorithms — Vectroid](https://www.vectroid.com/resources/HNSW-vs-DiskANN-comparing-the-leading-ANN-algorithm) — 메모리 상주(HNSW) vs SSD 기반(DiskANN) 트레이드오프
+- [Vamana vs. HNSW - Exploring ANN algorithms Part 1 — Weaviate](https://weaviate.io/blog/ann-algorithms-vamana-vs-hnsw) — Vamana/DiskANN 원리와 HNSW 비교
+- [HNSW vs. DiskANN — Tiger Data](https://www.tigerdata.com/learn/hnsw-vs-diskann) — billion-scale 규모에서의 실무 선택 기준
+- [Introducing Pinecone Serverless — Pinecone](https://www.pinecone.io/blog/serverless/) — 스토리지/쿼리 과금 분리 서버리스 아키텍처
+- [Pinecone Pods vs. Serverless: Migration Guide — Pinecone](https://www.pinecone.io/lp/pods-vs-serverless/) — pod 기반과 서버리스의 마이그레이션·손익분기점
+- [Vector Database Pricing Comparison 2026: Real Cost Breakdown — Ranksquire](https://ranksquire.com/2026/03/04/vector-database-pricing-comparison-2026/) — 콜드 스타트 지연, 견적 대비 실제 청구서 괴리(2.5~4배) 사례
+- [The Art of Scaling a Vector Database like Weaviate — Weaviate](https://weaviate.io/blog/scaling-and-weaviate) — UUID 기반 virtual shard 샤딩 구조
+- [Vector Database Reindexing Pipeline — Medium](https://medium.com/@kandaanusha/vector-database-reindexing-pipeline-87efa1d1cd19) — Blue-Green 재인덱싱 전략, 라이브 세그먼트 추가/백필
+- [TurboPuffer: Object Storage-First Vector Database Architecture — Jason Liu](https://jxnl.co/writing/2025/09/11/turbopuffer-object-storage-first-vector-database-architecture/) — SPFresh 인덱스, 오브젝트 스토리지 계층화 구조
+- [turbopuffer: fast search on object storage](https://turbopuffer.com/blog/turbopuffer) — 클러스터 기반 인덱스와 비용 절감 근거
+- [LanceDB vs Turbopuffer (2026): Features, Pricing & Verdict — Respan](https://www.respan.ai/market-map/compare/lancedb-vs-turbopuffer) — Lance 컬럼 포맷 기반 디스크 아키텍처 비교
+
+> 참고: 1억 2천만 벡터 재구축(약 18시간) 장애 사례는 여러 2026년 벡터 DB 운영 리뷰 아티클에서 공통
+> 인용되는 내용이며, 벤더별 아키텍처·가격 정책은 자주 갱신되므로 실제 도입 전에는 각 제공사의
+> 최신 공식 문서로 재검증해야 한다.
+
 ## 인터뷰 준비
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 검색 시스템 설계 문제와 유사한 사고 프레임

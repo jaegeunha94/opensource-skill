@@ -8,12 +8,12 @@
 | 2 | 2026-07-02 | 문서 수집과 정제 파이프라인 | [0002-document-ingestion-and-cleaning-pipeline.html](lessons/0002-document-ingestion-and-cleaning-pipeline.html) |
 | 3 | 2026-07-03 | Chunking 전략 설계 | [0003-chunking-strategy-design.html](lessons/0003-chunking-strategy-design.html) |
 | 4 | 2026-07-04 | Embedding 모델 선택과 트레이드오프 | [0004-embedding-model-selection-and-tradeoffs.html](lessons/0004-embedding-model-selection-and-tradeoffs.html) |
+| 5 | 2026-07-05 | Vector Database 선택과 운영 | [0005-vector-database-selection-and-operations.html](lessons/0005-vector-database-selection-and-operations.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | Vector Database 선택과 운영 | ANN 인덱스, HNSW, 샤딩, 재인덱싱 운영 |
 | 6 | Hybrid Search — BM25와 Vector 결합 | Sparse vs Dense, RRF, 하이브리드 스코어링 |
 | 7 | Metadata Filtering과 검색 정밀도 | Pre/Post filtering, 스키마 설계, ACL 결합 |
 | 8 | Reranking 전략 | Cross-encoder reranking, 비용 대비 품질 개선 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — 다음: Day 5 — Vector Database 선택과 운영
+**Day 5 완료** — 다음: Day 6 — Hybrid Search — BM25와 Vector 결합
 
 ## 습득한 핵심 개념
 
@@ -41,7 +41,9 @@
 - [x] Late chunking과 Contextual Retrieval의 원리·비용 차이 (Day 3)
 - [x] Embedding 모델 선택 기준(MTEB 재검증, MRL, quantization, self-host vs API) (Day 4)
 - [x] 임베딩 모델 교체의 재인덱싱 비용과 마이그레이션 전략, 파인튜닝 도입 순서 (Day 4)
-- [ ] Vector Database 운영 (예정 Day 5)
+- [x] ANN 인덱스 구조(HNSW/DiskANN/오브젝트 스토리지)의 메모리·비용 트레이드오프 (Day 5)
+- [x] 매니지드 vs self-host TCO 판단, 서버리스 비용 구조와 콜드 스타트 (Day 5)
+- [x] 샤딩·복제 목적 구분과 Blue-Green 재인덱싱 운영 전략 (Day 5)
 - [ ] Hybrid Search 설계 (예정 Day 6)
 - [ ] Metadata Filtering (예정 Day 7)
 - [ ] Reranking 전략 (예정 Day 8)
