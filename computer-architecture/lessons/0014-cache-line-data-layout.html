@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — 캐시와 데이터 배치 | 컴퓨터 구조 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">컴퓨터 구조 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 4
+  </nav>
+
+  <h1>Day 4 — 캐시와 데이터 배치</h1>
+  <p class="subtitle">cache line, 공간적 지역성, pointer chasing으로 "왜 배열이 빠른가"에 답하기 · 2026-07-05</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#deep">cache line 단위 동작을 깊이 이해하기</a></li>
+      <li><a href="#example">구체 예시 — AoS vs SoA, 배열 vs 연결 리스트</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"같은 알고리즘인데 배열 기반 구현이 연결 리스트보다 빠를 수 있는 하드웨어적 이유는 무엇입니까?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"cache line이란 무엇이고, CPU는 왜 데이터를 1바이트씩이 아니라 그 단위로 가져오나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"객체 배열(array-of-structs)을 순회하며 필드 하나만 합산하는 코드가 예상보다 느립니다. 어떻게 접근하고, 어떻게 개선하시겠습니까?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"배열이 빠르다"는 결론을 Big-O가 아니라 하드웨어 동작 단위(cache line)로 설명할 수 있는가</strong>를 확인합니다. 면접관이 원하는 답은 "배열은 캐시 친화적이에요"라는 구호가 아니라, <strong>CPU가 메모리에서 데이터를 몇 바이트 단위로 가져오는지, 그 단위가 왜 그렇게 정해졌는지, 그리고 그 단위를 자료구조 설계에 어떻게 반영하는지</strong>입니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>cache line이라는 하드웨어 단위에 대한 정확한 이해</strong> — 캐시는 바이트 단위가 아니라 고정 크기 블록(대개 64바이트) 단위로 채워진다는 것을 알고, 이 사실이 자료구조 순회 성능에 어떤 의미인지 설명할 수 있는가.</li>
+      <li><strong>공간적 지역성을 구체적인 메모리 배치 문제로 번역하는 능력</strong> — "지역성이 좋다"는 말을 "인접한 메모리 주소에 있는 데이터가 같은 cache line에 실려 함께 캐싱된다"는 구체적 메커니즘으로 풀어낼 수 있는가.</li>
+      <li><strong>자료구조 선택이 성능에 미치는 영향을 실무 설계 판단으로 연결하는 능력</strong> — array-of-structs와 struct-of-arrays 중 접근 패턴에 따라 어느 쪽이 유리한지 트레이드오프로 설명할 수 있는가.</li>
+      <li><strong>"포인터를 없애면 무조건 빠르다"는 성급한 일반화를 하지 않는가</strong> — 실제로 중요한 것은 포인터의 유무가 아니라 데이터가 메모리에 <strong>연속적으로</strong> 배치되어 있는지 여부라는 것을 구분하는가.</li>
+    </ul>
+
+    <p>주니어 답변의 전형적인 패턴: "배열은 캐시에 잘 올라가서 빠르고 연결 리스트는 그렇지 않다"는 결론만 말하고 멈춥니다. 10년차 이상은 <strong>cache line 크기, 한 번의 메모리 요청으로 몇 개의 유효한 데이터를 확보하는지, 그리고 이를 기준으로 자료구조를 재설계한 경험</strong>까지 연결해서 말합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Cache line이란 무엇인가</h3>
+    <p>CPU가 메모리에서 데이터를 가져올 때는 필요한 값 1바이트만 딱 가져오지 않습니다. 대신 그 값이 속한 <strong>고정 크기 블록 전체</strong>를 가져와 캐시에 채워 넣습니다. 이 블록을 <strong>cache line</strong>이라고 부르며, 대부분의 현대 CPU에서 크기는 <strong>64바이트</strong>입니다. 예를 들어 배열의 4바이트짜리 정수 하나를 읽으면, 실제로는 그 정수를 포함한 앞뒤 64바이트(정수 16개 분량)가 통째로 캐시에 올라옵니다.</p>
+
+    <p>도서관 비유를 쓰면 이해가 쉽습니다. 책 한 페이지(4바이트)만 보고 싶어도, 사서(하드웨어)는 그 페이지가 속한 <strong>챕터 전체(64바이트 묶음)</strong>를 서가에서 뽑아다가 내 책상(캐시)에 놓아줍니다. 다음에 같은 챕터의 다른 페이지를 찾으면 이미 책상 위에 있으니 서가까지 다시 갈 필요가 없습니다.</p>
+
+    <h3>공간적 지역성(Spatial Locality) — 복습과 구체화</h3>
+    <p>Day 1에서 "최근에 접근한 데이터 근처의 데이터도 곧 접근할 가능성이 높다"는 것이 공간적 지역성이라고 배웠습니다. 이제 그 이유를 cache line 단위로 구체화할 수 있습니다: 배열 원소를 순서대로 읽으면, 첫 원소를 읽을 때 이미 그 근처 15개 원소(64바이트 기준 4바이트 정수 16개)가 <strong>같은 cache line에 공짜로 딸려 옵니다.</strong> 그래서 실제 메모리 요청(cache miss)은 16번에 1번 꼴로만 발생하고, 나머지 15번은 이미 캐시에 있는 데이터를 재사용(cache hit)합니다.</p>
+
+    <h3>Pointer Chasing이란 무엇인가</h3>
+    <p>연결 리스트나 트리처럼, 다음에 접근할 주소를 알기 위해 현재 노드의 포인터 필드를 <strong>먼저 읽어야 하는</strong> 접근 패턴을 pointer chasing이라고 부릅니다. 문제는 접근 패턴 자체가 아니라, 이런 자료구조의 노드들이 대개 <strong>힙(heap)에 개별적으로 할당되어 메모리상 서로 멀리 떨어진 채 흩어져 있다</strong>는 점입니다. 그 결과 한 노드를 읽어와도 그 cache line에 딸려온 나머지 바이트는 대부분 이 연결 리스트와 무관한 다른 데이터이고, 다음 노드는 완전히 다른 cache line에 있어 <strong>거의 매번 cache miss</strong>가 발생합니다.</p>
+
+    <h3>Array-of-Structs(AoS)와 Struct-of-Arrays(SoA)</h3>
+    <p>여러 필드를 가진 객체를 여러 개 다룰 때 메모리에 배치하는 두 가지 방식입니다.</p>
+    <ul>
+      <li><strong>AoS(Array of Structs)</strong>: <code>struct Particle { x, y, z, vx, vy, vz }; Particle particles[N];</code> 처럼 객체 하나의 모든 필드를 붙여서 저장하고, 그 객체들을 배열로 나열합니다.</li>
+      <li><strong>SoA(Struct of Arrays)</strong>: <code>float xs[N], ys[N], zs[N], vxs[N], vys[N], vzs[N];</code> 처럼 같은 필드끼리 모아서 별도의 배열로 저장합니다.</li>
+    </ul>
+    <p>이 두 배치의 성능 차이는 뒤에서 cache line 관점으로 자세히 다룹니다.</p>
+  </section>
+
+  <!-- 4. 심화 -->
+  <section id="deep">
+    <h2>4. cache line 단위 동작을 깊이 이해하기</h2>
+
+    <h3>Cache Miss 하나의 비용을 cache line 관점에서 다시 보기</h3>
+    <p>Day 3에서 DRAM latency가 약 200~300 cycle이라고 배웠습니다. 이 비용은 <strong>cache line 하나를 통째로</strong> 가져오는 데 드는 비용입니다. 즉 순차 배열 접근에서는 이 200~300 cycle의 대가로 16개(또는 자료형에 따라 그 이상)의 값을 한 번에 확보하는 셈이라, <strong>실질 원소당 비용은 크게 낮아집니다.</strong> 반면 pointer chasing에서는 이 200~300 cycle의 대가로 노드 하나만 확보하고, 그마저도 다음 노드는 또 새로운 cache line miss를 일으킵니다. 알고리즘의 반복 횟수(원소 개수)는 같아도, <strong>cache miss가 발생하는 실제 횟수가 수십 배 차이</strong> 나는 것이 배열과 연결 리스트의 체감 성능 차이를 만드는 핵심 원인입니다.</p>
+
+    <h3>왜 하필 64바이트인가</h3>
+    <p>cache line 크기는 트레이드오프의 결과입니다.</p>
+    <table class="method-table">
+      <thead><tr><th>크기</th><th>장점</th><th>단점</th></tr></thead>
+      <tbody>
+        <tr><td>더 작게(예: 16바이트)</td><td>불필요한 데이터를 덜 가져옴(대역폭 낭비 감소)</td><td>공간적 지역성 활용도가 낮아짐, 태그/관리 오버헤드 비율 증가</td></tr>
+        <tr><td>더 크게(예: 256바이트)</td><td>순차 접근 시 지역성 활용 극대화</td><td>필요 없는 데이터까지 대량으로 가져와 대역폭 낭비, false sharing 위험 증가(Day 6에서 다룸)</td></tr>
+      </tbody>
+    </table>
+    <p>64바이트는 실제 워크로드(순차 접근과 랜덤 접근이 섞인 일반적인 프로그램)에서 이 두 극단 사이의 균형점으로 오랜 기간 정착된 값입니다.</p>
+
+    <h3>AoS vs SoA — 접근 패턴에 따라 유효 대역폭이 갈린다</h3>
+    <p>Particle 구조체가 <code>x, y, z, vx, vy, vz</code> 6개의 4바이트 float 필드(총 24바이트)를 갖는다고 합시다. "모든 파티클의 <code>x</code> 값 평균만 구하기" 같은 작업을 할 때:</p>
+    <ul>
+      <li><strong>AoS</strong>에서는 각 Particle이 24바이트를 연속으로 차지하므로, 64바이트 cache line 하나에는 약 2.6개의 Particle만 들어갑니다. 그런데 우리가 실제로 쓰는 건 각 Particle의 <code>x</code> 필드(4바이트)뿐이므로, <strong>가져온 64바이트 중 약 33%(2.6 × 4바이트)만 유효하게 쓰이고 나머지 67%는 낭비</strong>됩니다.</li>
+      <li><strong>SoA</strong>에서는 <code>xs</code> 배열 하나가 그 자체로 연속된 float 배열이므로, 64바이트 cache line 하나에 <code>x</code> 값 16개가 빼곡히 들어갑니다. <strong>가져온 바이트의 100%가 유효하게 쓰입니다.</strong></li>
+    </ul>
+    <p>즉 AoS와 SoA의 성능 차이는 "포인터가 있냐 없냐"가 아니라 <strong>실제로 순회에 필요한 필드가 cache line 안에서 얼마나 밀도 있게 배치되어 있는가</strong>의 문제입니다. 이 관점이 없으면 "배열이니까 무조건 빠르다"는 잘못된 결론(오해로 뒤에서 다룸)에 빠지기 쉽습니다.</p>
+
+    <h3>Prefetcher와의 연결(Day 3 복습)</h3>
+    <p>순차적으로 cache line을 채워가는 접근 패턴은 하드웨어 프리페처가 다음 cache line을 예측하기 쉬운 패턴이기도 합니다. 그래서 배열 순회는 "지역성으로 인한 재사용"과 "예측 가능한 패턴으로 인한 프리페칭 이득"이 겹쳐서 이중으로 유리합니다. 반면 pointer chasing은 다음 주소가 현재 값을 읽어야만 정해지므로 프리페처가 미리 예측할 수 없다는 것을 Day 3에서 다뤘습니다 — 이번 Day 4는 그 이유를 cache line 배치 관점에서 보강한 것입니다.</p>
+  </section>
+
+  <!-- 5. 구체 예시 -->
+  <section id="example">
+    <h2>5. 구체 예시 — AoS vs SoA, 배열 vs 연결 리스트</h2>
+
+    <pre><code>// (A) Array-of-Structs — x 필드만 필요한데도 24바이트 전체가 함께 로드됨
+struct Particle { float x, y, z, vx, vy, vz; };
+Particle particles[N];
+
+float sumX = 0;
+for (int i = 0; i < N; i++) {
+    sumX += particles[i].x;   // y,z,vx,vy,vz는 캐시 라인에 딸려오지만 이번 루프에서 쓰이지 않음
+}</code></pre>
+
+    <pre><code>// (B) Struct-of-Arrays — 필요한 x 값만 연속으로 배치되어 캐시 라인 활용률 100%
+float xs[N], ys[N], zs[N], vxs[N], vys[N], vzs[N];
+
+float sumX = 0;
+for (int i = 0; i < N; i++) {
+    sumX += xs[i];   // 이번 cache line miss로 가져온 16개 float가 전부 유효하게 쓰임
+}</code></pre>
+
+    <p>두 코드 모두 시간 복잡도는 동일한 O(N)이지만, (B)는 cache line 하나당 유효 데이터 비율이 (A)보다 훨씬 높아 <strong>실제 cache miss 횟수가 더 적습니다.</strong> N이 커질수록(cache에 다 담기지 않을수록) 이 차이는 체감 성능 차이로 뚜렷하게 드러납니다.</p>
+
+    <pre><code>// (C) 연결 리스트 순회 — 노드가 힙에 흩어져 있어 사실상 매 원소가 cache miss
+struct Node { int value; Node* next; };
+long sum = 0;
+Node* cur = head;
+while (cur != nullptr) {
+    sum += cur->value;   // 이 노드의 cache line에 다음 노드가 실려 있을 가능성이 거의 없음
+    cur = cur->next;
+}</code></pre>
+
+    <p>(C)는 Day 3에서 "순차 의존 체인이라 MLP를 못 쓴다"는 관점으로 다뤘던 코드와 같지만, 이번 Day 4의 초점은 <strong>애초에 노드들이 연속된 메모리 공간에 있지 않다</strong>는 점입니다. 설령 각 <code>malloc</code> 호출이 순간적으로는 인접한 주소를 반환하더라도, 삽입·삭제가 반복되면 메모리가 점점 흩어져(fragmentation) 지역성이 더 나빠집니다. 이것이 "왜 연결 리스트가 배열보다 느릴 수 있는가"에 대한, cache line 배치 관점의 완전한 답입니다.</p>
+  </section>
+
+  <!-- 6. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>6. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>질문이 알고리즘 복잡도 문제가 아님을 먼저 명시합니다.</strong> "두 구현의 Big-O가 같다면, 차이는 하드웨어가 데이터를 가져오는 방식에서 옵니다."</li>
+      <li><strong>cache line 단위(보통 64바이트)로 데이터가 이동한다는 사실을 근거로 제시합니다.</strong></li>
+      <li><strong>대상 자료구조의 실제 메모리 배치를 그려봅니다.</strong> "이 데이터가 연속된 주소에 있는가, 아니면 포인터로 흩어져 있는가?"</li>
+      <li><strong>cache line 하나당 유효하게 쓰이는 바이트 비율을 계산해봅니다.</strong> AoS/SoA처럼 필요 없는 필드가 섞여 있으면 이 비율도 함께 짚습니다.</li>
+      <li><strong>측정으로 검증하고 개선안을 제시합니다.</strong> "cache miss율을 프로파일러로 확인한 뒤, 자료구조를 접근 패턴에 맞게 재배치(SoA, 배열 기반 구조로 전환)하는 방안을 제안합니다."</li>
+    </ol>
+  </section>
+
+  <!-- 7. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>7. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "같은 알고리즘인데 배열 기반 구현이 연결 리스트보다 빠를 수 있는 이유를 설명해보세요."</p>
+    </div>
+
+    <h3>짧은 버전 (엘리베이터 피치)</h3>
+    <div class="good-answer">
+      <div class="tag">SHORT ANSWER</div>
+      <p>CPU는 메모리에서 데이터를 바이트 단위가 아니라 64바이트 cache line 단위로 가져옵니다. 배열은 원소가 연속된 주소에 있어서 하나를 읽으면 근처 원소들도 같은 cache line에 공짜로 딸려오지만, 연결 리스트는 노드가 힙에 흩어져 있어 사실상 매 노드마다 새로운 cache line miss가 발생합니다. 그래서 원소 개수가 같아도 실제 cache miss 횟수가 수십 배 차이 나고, 이것이 체감 성능 차이로 이어집니다.</p>
+    </div>
+
+    <h3>깊이 있는 버전</h3>
+    <div class="good-answer">
+      <div class="tag">DEEP ANSWER</div>
+      <p>배열을 순차 순회하면 첫 원소를 읽는 순간 같은 cache line에 속한 나머지 15개(4바이트 정수 기준) 원소도 함께 캐시에 올라옵니다. 즉 200~300 cycle이 걸리는 cache miss 한 번의 비용을 16개 원소가 나눠 갖는 셈이라 원소당 평균 비용이 크게 낮아집니다. 반면 연결 리스트는 다음 노드 주소를 알려면 현재 노드를 읽어야 하는 pointer chasing 패턴인 데다, 노드들이 <code>malloc</code>으로 개별 할당되어 메모리상 서로 멀리 떨어져 있어 한 노드의 cache line에 다음 노드가 포함될 가능성이 거의 없습니다. 결과적으로 노드 하나당 거의 매번 cache miss가 발생합니다.</p>
+      <br>
+      <p>이 원리는 객체 배열에서도 그대로 적용됩니다. 예를 들어 6개 필드를 가진 구조체 배열에서 필드 하나만 순회한다면(array-of-structs), 필요 없는 나머지 필드까지 cache line에 함께 실려와 유효 대역폭의 상당 부분이 낭비됩니다. 저는 실제로 시뮬레이션 코드에서 위치 좌표만 순회하는 루프가 예상보다 느린 것을 <code>perf stat -e cache-misses</code>로 확인하고, 구조체를 struct-of-arrays로 재배치해서 cache line 활용률을 높여 처리량을 개선한 경험이 있습니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>cache line이라는 구체적인 하드웨어 단위(64바이트)를 근거로 제시함</li>
+      <li>배열과 연결 리스트 각각의 실제 메모리 배치를 그려서 설명함</li>
+      <li>객체 배열(AoS/SoA)까지 확장해서 원리의 일반성을 보여줌</li>
+      <li>프로파일링 도구와 실제 개선 경험으로 마무리함</li>
+    </ul>
+  </section>
+
+  <!-- 8. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"배열은 메모리에 연속으로 있어서 캐시에 잘 올라가고, 연결 리스트는 포인터를 써서 캐시 효율이 안 좋습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"캐시에 잘 올라간다"는 표현이 모호합니다 — cache line이라는 구체적 단위와 크기를 언급하지 않습니다.</li>
+        <li>"왜" 연속된 배치가 유리한지(같은 cache line에 인접 원소가 딸려온다는 메커니즘)를 설명하지 않고 결론만 반복합니다.</li>
+        <li>포인터의 유무 자체를 원인으로 지목해서, "포인터가 있어도 데이터가 연속 배치되어 있으면 지역성을 유지할 수 있다"는 사실을 놓칩니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"구조체 배열(AoS)이든 struct-of-arrays든 결국 배열이니까 성능은 비슷합니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"배열이다"라는 표면적 사실만 보고, cache line 안에서 <strong>실제로 필요한 필드의 밀도</strong>가 다르다는 점을 놓칩니다.</li>
+        <li>접근 패턴(필드 하나만 순회하는지, 여러 필드를 함께 쓰는지)에 따라 유불리가 달라진다는 트레이드오프를 고려하지 않습니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>cache line의 존재와 대략적인 크기(64바이트)를 근거로 제시한다</li>
+        <li>공간적 지역성을 "인접 데이터가 같은 cache line에 함께 로드된다"는 메커니즘으로 설명한다</li>
+        <li>연결 리스트의 문제를 포인터 자체가 아니라 "노드가 메모리상 흩어져 있다"는 배치 문제로 짚는다</li>
+        <li>AoS와 SoA의 트레이드오프를 접근 패턴(단일 필드 vs 다중 필드)에 연결해서 설명한다</li>
+        <li>측정 도구(perf, cache miss율)와 실제 재배치 경험으로 근거를 뒷받침한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9. Follow-up -->
+  <section id="followups">
+    <h2>9. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: cache line 크기가 왜 하필 64바이트인가요? 더 크게 만들면 항상 좋지 않나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> cache line을 키우면 순차 접근의 지역성 활용은 늘지만, 그만큼 실제로 안 쓸 데이터까지 가져오는 대역폭 낭비가 커지고, 여러 스레드가 서로 다른 변수를 같은 cache line에서 다루면 false sharing(Day 6에서 다룸) 위험도 커집니다. 반대로 너무 작으면 지역성 이득이 줄고 캐시 태그 관리 오버헤드 비율이 늘어납니다. 64바이트는 일반적인 워크로드에서 이 트레이드오프의 균형점으로 정착된 값입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 배열이라도 인덱스를 랜덤하게 접근하면 어떻게 되나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 데이터가 연속으로 배치되어 있어도 <strong>접근 순서가 순차적이지 않으면</strong> 공간적 지역성의 이득을 온전히 누리지 못합니다. 이미 캐시에 올라온 같은 cache line의 다른 원소를 곧바로 다시 쓰지 않고 멀리 떨어진 인덱스로 건너뛰면, 그 cache line은 재사용되기 전에 다른 데이터로 밀려날(eviction) 수 있습니다. 즉 "배열이다"가 아니라 "접근 패턴이 순차적이다"가 실제 성능을 좌우하는 핵심 조건입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 그러면 연결 리스트는 절대 쓰면 안 되나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 아닙니다. 트레이드오프의 문제입니다. 중간 삽입/삭제가 잦고 순회 성능이 크게 중요하지 않은 경우, 혹은 원소 이동 비용(배열의 삽입/삭제)이 더 치명적인 경우에는 연결 리스트가 여전히 적절할 수 있습니다. 다만 "순회가 잦고 성능이 중요한 대량 데이터"라면 배열 기반 구조(또는 캐시 친화적인 트리 배치)가 유리하다는 것을 근거를 갖고 판단해야 한다는 뜻입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 이 개념이 DB의 row-store와 column-store 설계와 어떻게 연결되나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> row-store는 한 행의 모든 컬럼을 연속으로 저장한다는 점에서 array-of-structs와, column-store는 같은 컬럼의 값들을 모아서 저장한다는 점에서 struct-of-arrays와 원리가 같습니다. "특정 컬럼 몇 개만 집계"하는 분석 쿼리(OLAP)에서는 column-store가 필요한 컬럼만 연속으로 읽어 캐시/디스크 I/O 효율이 높고, "행 전체를 자주 읽고 쓰는" 트랜잭션 처리(OLTP)에서는 row-store가 유리한 경우가 많습니다. cache line과 DB 페이지 단위 I/O는 스케일만 다를 뿐 같은 지역성 원리를 공유합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 프리페처가 있으면 연결 리스트의 문제도 해결되지 않나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 아닙니다. 하드웨어 프리페처는 "다음 주소가 이런 규칙(예: +64바이트)으로 예측 가능하다"는 패턴에서 작동합니다. 연결 리스트는 다음 노드 주소가 현재 노드를 읽어야만 알 수 있는 데다, 그 주소 자체가 힙 할당 시점에 따라 사실상 무작위이기 때문에 프리페처가 예측할 규칙 자체가 없습니다. 이것이 pointer chasing이 프리페칭으로 구제되지 않는 근본 이유입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>10. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"Big-O가 같으면 성능도 비슷하다"</strong></p>
+      <p>알고리즘 복잡도는 연산 횟수의 증가율만 설명할 뿐, 각 연산이 cache hit인지 miss인지는 설명하지 않습니다. 같은 O(N) 순회라도 cache miss 발생 빈도에 따라 상수 배 이상의 실제 실행 시간 차이가 날 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"캐시는 필요한 값 하나만 가져온다"</strong></p>
+      <p>CPU 캐시는 항상 cache line(보통 64바이트) 단위로 채워집니다. 이 사실을 모르면 "왜 인접 데이터를 함께 쓰는 코드가 더 빠른가"를 설명할 근거가 없어집니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"포인터를 없애면 무조건 캐시 효율이 좋아진다"</strong></p>
+      <p>포인터 자체가 문제가 아니라, 포인터가 가리키는 데이터들이 메모리상 <strong>흩어져 있는지</strong>가 문제입니다. 포인터를 쓰더라도 관련 데이터를 하나의 연속된 블록(arena, object pool)에 할당하면 지역성을 상당 부분 회복할 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"구조체를 최적화하려면 항상 SoA를 써야 한다"</strong></p>
+      <p>SoA는 필드 하나만 순회하는 접근 패턴에서 유리하지만, 한 객체의 여러 필드를 항상 함께 사용하는 접근 패턴이라면 오히려 AoS가 관련 필드를 같은 cache line에 묶어두어 유리할 수 있습니다. 어떤 배치가 좋은지는 <strong>실제 접근 패턴</strong>에 달려 있지, 절대적으로 우월한 배치는 없습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"배열이면 무조건 캐시 친화적이다"</strong></p>
+      <p>배열이라도 랜덤하게 인덱싱하거나, 실제로 쓰이지 않는 필드가 많이 섞인 큰 구조체 배열을 순회하면 cache line의 유효 활용률이 낮아 지역성 이득이 크게 줄어듭니다. "연속된 메모리"와 "그 메모리를 순차적이고 밀도 있게 활용하는 접근 패턴"이 함께 갖춰져야 진짜 이득이 납니다.</p>
+    </div>
+  </section>
+
+  <!-- 11. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>11. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 4를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>cache line이 무엇이고 대략적인 크기(64바이트)를 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>공간적 지역성을 "인접 데이터가 같은 cache line에 함께 로드된다"는 메커니즘으로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>pointer chasing이 느린 이유를 포인터 자체가 아니라 메모리 배치(흩어짐) 문제로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>array-of-structs와 struct-of-arrays의 트레이드오프를 접근 패턴(단일 필드 vs 다중 필드)에 연결해 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>cache line 크기가 왜 트레이드오프의 결과인지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>배열이라도 랜덤 접근이면 지역성 이득이 줄어드는 이유를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>이 원리가 DB의 row-store/column-store 설계와 어떻게 연결되는지 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 5</h3>
+      <p><strong>파이프라인과 분기 예측</strong></p>
+      <p>Day 4에서 데이터 배치와 캐시 관점의 성능 이야기를 다뤘습니다. Day 5에서는 관점을 CPU 내부 실행 흐름으로 옮겨, if 분기가 많은 코드가 왜 느려질 수 있는지를 pipeline hazard와 branch prediction으로 설명합니다.</p>
+      <p>면접 질문 예고: "if 분기가 많은 코드가 느려질 수 있는 이유를 설명해보세요."</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    컴퓨터 구조 시니어 인터뷰 · Day 4 of 10 · 2026-07-05
+  </p>
+
+</div>
+</body>
+</html>
