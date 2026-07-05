@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 14 — 폼 & 인풋 UX 용어</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; font-size: 16px; line-height: 1.7; color: #1a1a2e; background: #f8f9fc; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+    /* header */
+    header { background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%); color: #fff; border-radius: 12px; padding: 2rem 2rem 1.75rem; margin-bottom: 2rem; }
+    header .day-badge { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-bottom: 0.5rem; }
+    header h1 { font-size: 1.7rem; font-weight: 700; line-height: 1.3; }
+    header p.subtitle { margin-top: 0.6rem; opacity: 0.9; font-size: 0.95rem; }
+
+    /* nav breadcrumb */
+    .breadcrumb { font-size: 0.82rem; color: #6c757d; margin-bottom: 1.5rem; }
+    .breadcrumb a { color: #3a7bd5; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* section */
+    section { background: #fff; border-radius: 10px; padding: 1.75rem 2rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    section h2 { font-size: 1.15rem; font-weight: 700; color: #3a7bd5; margin-bottom: 1rem; border-left: 4px solid #3a7bd5; padding-left: 0.75rem; }
+    section h3 { font-size: 1rem; font-weight: 700; color: #2d3436; margin: 1.4rem 0 0.5rem; }
+    section p { margin-bottom: 0.85rem; }
+    section ul, section ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    section ul li, section ol li { margin-bottom: 0.4rem; }
+
+    /* term card */
+    .term-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+    .term-card .term-title { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.25rem; }
+    .term-card .term-eng { font-size: 0.82rem; color: #6c757d; margin-bottom: 0.5rem; font-style: italic; }
+    .term-card .term-body { font-size: 0.93rem; }
+
+    /* table */
+    .table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+    th { background: #f0f4ff; color: #3a7bd5; font-weight: 700; text-align: left; padding: 0.6rem 0.9rem; border-bottom: 2px solid #d0d9f5; }
+    td { padding: 0.55rem 0.9rem; border-bottom: 1px solid #eee; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fbff; }
+
+    /* callout */
+    .callout { border-left: 4px solid #00d2ff; background: #f0faff; border-radius: 0 8px 8px 0; padding: 0.9rem 1.1rem; margin: 1rem 0; font-size: 0.9rem; }
+    .callout.warn { border-color: #f39c12; background: #fffbf0; }
+    .callout.tip  { border-color: #27ae60; background: #f0fff4; }
+
+    /* code */
+    code { background: #f4f4f8; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.85em; font-family: 'Fira Code', monospace; }
+    pre { background: #1e1e2e; color: #cdd6f4; border-radius: 8px; padding: 1.1rem 1.3rem; overflow-x: auto; font-size: 0.85rem; margin: 0.75rem 0; }
+    pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+
+    /* copy compare */
+    .compare-row { display: flex; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .compare-col { flex: 1 1 240px; border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.9rem; }
+    .compare-col.bad { background: #fff4f4; border-left: 4px solid #e74c3c; }
+    .compare-col.good { background: #f0fff4; border-left: 4px solid #27ae60; }
+    .compare-col .label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+    .compare-col.bad .label { color: #e74c3c; }
+    .compare-col.good .label { color: #27ae60; }
+
+    /* quiz */
+    .quiz { background: #fafbfe; border: 1px solid #d0d9f5; border-radius: 8px; padding: 1.25rem 1.4rem; margin-top: 1.5rem; }
+    .quiz h3 { font-size: 1rem; color: #3a7bd5; margin-bottom: 0.75rem; }
+    .quiz .q { font-weight: 600; margin-bottom: 0.6rem; }
+    .quiz .options li { margin-bottom: 0.3rem; cursor: pointer; padding: 0.3rem 0.5rem; border-radius: 4px; transition: background 0.15s; }
+    .quiz .options li:hover { background: #e8f0ff; }
+    .quiz details { margin-top: 0.75rem; }
+    .quiz details summary { cursor: pointer; color: #3a7bd5; font-size: 0.9rem; }
+    .quiz details p { margin-top: 0.5rem; font-size: 0.9rem; background: #f0fff4; border-left: 3px solid #27ae60; padding: 0.6rem 0.8rem; border-radius: 0 6px 6px 0; }
+
+    /* footer */
+    footer { text-align: center; font-size: 0.82rem; color: #aaa; margin-top: 2.5rem; }
+    footer a { color: #3a7bd5; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="breadcrumb">
+    <a href="./index.html">← UI/UX 용어 학습 목록</a>
+  </div>
+
+  <header>
+    <div class="day-badge">Day 14 · UI/UX 용어</div>
+    <h1>폼 & 인풋 UX 용어</h1>
+    <p class="subtitle">Progressive Disclosure · Inline Validation · Error Prevention · Input Mask</p>
+  </header>
+
+  <!-- ───────────────── 1. 왜 이 용어가 중요한가 ───────────────── -->
+  <section>
+    <h2>1. 왜 이 용어들이 중요한가</h2>
+    <p>
+      회원가입, 결제, 설정 화면 등 실무에서 가장 자주 다시 만드는 화면이 바로
+      <strong>폼(Form)</strong>이다. 그런데 "이 필드는 입력하자마자 바로 검증해 주세요"
+      같은 요청은 디자이너·PM·개발자가 서로 다른 그림을 떠올리게 만든다. 언제 검증할지
+      (<strong>Inline Validation</strong>의 타이밍), 처음부터 얼마나 많은 필드를 보여줄지
+      (<strong>Progressive Disclosure</strong>), 애초에 실수를 못 하게 막을지 아니면
+      실수 후 안내할지(<strong>Error Prevention</strong> vs Error Correction)는 모두
+      구현 방식이 크게 달라지는 결정이다.
+    </p>
+    <p>
+      이 용어들을 정확히 쓰면 스프린트 기획 단계에서 "이 필드는 온블러(on blur) 검증인지
+      실시간 검증인지", "이 옵션 필드는 처음부터 노출할지 아니면 접어 둘지"를 회의
+      한 번으로 합의할 수 있다. 용어가 없으면 매번 화면을 그려서 보여줘야 하고,
+      스토리 포인트 산정도 어긋난다.
+    </p>
+  </section>
+
+  <!-- ───────────────── 2. 핵심 용어 카드 ───────────────── -->
+  <section>
+    <h2>2. 핵심 용어 카드</h2>
+
+    <div class="term-card">
+      <div class="term-title">점진적 정보 노출</div>
+      <div class="term-eng">Progressive Disclosure</div>
+      <div class="term-body">
+        모든 옵션과 필드를 한 번에 보여주지 않고, <strong>핵심 정보만 먼저 보여준 뒤
+        필요할 때 추가 옵션을 펼치는</strong> 설계 원칙. 예: 회원가입 폼에서 "고급 설정"을
+        접어 두고, 클릭했을 때만 회사명·직책 같은 선택 필드를 펼쳐 보여준다. 목적은
+        인지 부하를 줄여 첫 화면의 완료율을 높이는 것이다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">인라인 유효성 검사</div>
+      <div class="term-eng">Inline Validation</div>
+      <div class="term-body">
+        폼 전체를 제출한 뒤가 아니라, <strong>필드 단위로 그 자리에서</strong> 입력값의
+        유효성을 검사하고 결과를 보여주는 패턴. 검사 시점에 따라 실시간(입력 중),
+        온블러(필드를 벗어날 때), 제출 시로 나뉘며, 어느 시점을 쓰느냐에 따라 사용자
+        경험이 크게 달라진다. 다음 섹션의 비교표를 참고.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">에러 방지</div>
+      <div class="term-eng">Error Prevention</div>
+      <div class="term-body">
+        사용자가 <strong>애초에 실수를 저지르지 못하도록 인터페이스로 미리 막는</strong>
+        설계 전략. 예: 시작일이 종료일보다 늦을 수 없도록 날짜 선택기 자체를 제한하거나,
+        숫자만 입력 가능한 필드에 문자 입력을 아예 막는 것. 실수가 일어난 뒤 에러
+        메시지로 안내하는 <strong>Error Correction(사후 교정)</strong>보다 사용자
+        부담이 적어, 가능하면 우선적으로 고려해야 하는 원칙이다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">필드 단위 피드백</div>
+      <div class="term-eng">Field-level Feedback</div>
+      <div class="term-body">
+        폼 상단에 "입력값을 확인해주세요"처럼 뭉뚱그려 안내하지 않고, <strong>문제가
+        있는 바로 그 필드 옆에</strong> 구체적인 안내를 붙이는 패턴. 사용자가 어떤
+        필드를 고쳐야 하는지 다시 스캔할 필요가 없어 수정 시간이 단축된다.
+        Inline Validation의 결과가 보통 Field-level Feedback 형태로 표시된다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">필수 입력 표시</div>
+      <div class="term-eng">Required Field Indicator</div>
+      <div class="term-body">
+        필수 필드와 선택 필드를 구분해 보여주는 시각 장치(보통 <code>*</code> 표시).
+        실무에서는 필수 필드가 더 많은 폼이라면 <strong>선택 필드에만 "(선택)"을
+        표시</strong>하는 편이 별표를 반복하는 것보다 스캔하기 쉽다는 점이 자주
+        논쟁거리가 된다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">인풋 마스크</div>
+      <div class="term-eng">Input Mask</div>
+      <div class="term-body">
+        전화번호, 카드번호, 날짜처럼 <strong>정해진 형식이 있는 입력값</strong>을
+        사용자가 타이핑하는 동안 자동으로 구분자(하이픈, 슬래시 등)를 넣어주며
+        형식을 강제하는 패턴. 형식 오류를 사전에 방지한다는 점에서 Error Prevention의
+        한 구현 방법이지만, 지나치게 엄격한 마스크는 붙여넣기(paste)를 방해해
+        오히려 사용자를 불편하게 만들 수 있다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">자동완성</div>
+      <div class="term-eng">Autofill / Autocomplete</div>
+      <div class="term-body">
+        브라우저나 OS에 저장된 정보(주소, 카드 정보, 비밀번호)를 활용해 필드를
+        자동으로 채워주는 기능. <code>autocomplete</code> HTML 속성과 <code>name</code>
+        속성을 표준에 맞게 지정하지 않으면 브라우저가 필드를 인식하지 못해
+        자동완성이 동작하지 않는다 — 디자인 문제가 아니라 마크업 문제로
+        발생하는 대표적인 사례.
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────── 3. 헷갈리기 쉬운 개념 비교 ───────────────── -->
+  <section>
+    <h2>3. 헷갈리기 쉬운 개념 비교</h2>
+
+    <h3>① 유효성 검사 타이밍 — Real-time vs On Blur vs On Submit</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>타이밍</th><th>동작 시점</th><th>장점</th><th>단점</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Real-time</td><td>키를 입력할 때마다 즉시</td><td>가장 빠른 피드백</td><td>입력 중간에 "에러"가 깜빡여 방해될 수 있음(예: 이메일 입력 중 "@" 치기 전 에러 표시)</td></tr>
+          <tr><td>On Blur</td><td>필드에서 포커스가 빠져나갈 때</td><td>입력이 끝난 뒤 검사해 방해가 적음</td><td>다음 필드로 넘어가기 전까지는 오류를 모름</td></tr>
+          <tr><td>On Submit</td><td>폼 전체를 제출할 때</td><td>구현이 가장 단순함</td><td>여러 필드 오류를 한 번에 만나 수정 부담이 큼</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d;">
+      실무 기본값으로 흔히 쓰이는 조합은 <strong>"On Blur로 첫 검사 + 이후 수정 중에는
+      Real-time으로 에러 해제"</strong>다. 즉 에러를 보여줄 때는 성급하지 않게,
+      에러를 없앨 때는 최대한 빠르게 반응한다.
+    </p>
+
+    <h3>② Error Prevention vs Error Correction</h3>
+    <div class="compare-row">
+      <div class="compare-col good">
+        <div class="label">Error Prevention</div>
+        날짜 선택기에서 과거 날짜를 아예 선택 불가로 비활성화
+      </div>
+      <div class="compare-col bad">
+        <div class="label">Error Correction</div>
+        과거 날짜를 선택하게 둔 뒤 제출 시 "유효하지 않은 날짜입니다" 에러 표시
+      </div>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d; margin-top:-0.5rem;">
+      Error Correction이 나쁜 것은 아니다. 모든 실수를 UI로 막을 수는 없으므로
+      Prevention이 불가능하거나 비용이 큰 경우엔 명확한 Correction 메시지가 대안이
+      된다. 다만 Prevention이 가능한데 Correction으로만 처리하면 불필요하게
+      사용자 실수를 유발하는 설계로 간주된다.
+    </p>
+
+    <h3>③ Progressive Disclosure vs 그냥 필드 숨기기</h3>
+    <div class="compare-row">
+      <div class="compare-col bad">
+        <div class="label">단순 숨기기</div>
+        사용자가 필요한 옵션이 있는지조차 모르게 완전히 감춤
+      </div>
+      <div class="compare-col good">
+        <div class="label">Progressive Disclosure</div>
+        "고급 옵션 보기" 같은 명확한 트리거를 노출해, 있다는 것은 알려주되 필요할 때만 펼침
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────── 4. 실전 체크리스트 ───────────────── -->
+  <section>
+    <h2>4. 폼 리뷰 실전 체크리스트</h2>
+    <p>디자인 리뷰나 개발 착수 전, 폼 화면에서 아래 항목을 팀과 함께 확인한다.</p>
+    <ol>
+      <li><strong>검증 타이밍</strong> — 이 필드는 Real-time / On Blur / On Submit 중 무엇인가?</li>
+      <li><strong>Prevention 우선</strong> — 에러 메시지로 안내하기 전에, UI 자체로 막을 방법은 없는가?</li>
+      <li><strong>피드백 위치</strong> — 에러 안내가 폼 상단 뭉뚱그린 문구가 아니라 필드 단위로 붙어 있는가?</li>
+      <li><strong>노출 범위</strong> — 처음부터 모든 필드를 보여줘야 하는가, 일부는 Progressive Disclosure로 접을 수 있는가?</li>
+      <li><strong>마크업 속성</strong> — <code>autocomplete</code>, <code>name</code>, <code>type</code> 속성이 표준에 맞게 지정되어 브라우저 자동완성이 동작하는가?</li>
+      <li><strong>필수/선택 표기</strong> — 필수·선택 표시 방식이 폼 전체에서 일관되는가?</li>
+    </ol>
+    <div class="callout tip">
+      <strong>Tip — Error Prevention이 항상 이긴다:</strong>
+      "에러 메시지를 더 친절하게 쓰자"는 논의보다, "애초에 그 실수가 나지 않게
+      막을 수 있는가"를 먼저 검토하는 편이 대개 더 나은 해결책이다.
+    </div>
+    <div class="callout warn">
+      <strong>주의 — Real-time 검증 남용:</strong>
+      모든 필드를 실시간으로 검사하면, 아직 입력을 끝내지 않은 사용자에게
+      성급하게 에러를 보여줘 오히려 불안감을 준다. 최소 길이·형식이 명확한
+      필드(비밀번호 강도 등)에만 제한적으로 쓰는 것이 좋다.
+    </div>
+  </section>
+
+  <!-- ───────────────── 5. 용어 요약 ───────────────── -->
+  <section>
+    <h2>5. 용어 요약</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>용어</th><th>한국어</th><th>한 줄 설명</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Progressive Disclosure</td><td>점진적 정보 노출</td><td>핵심 정보만 먼저 보여주고 필요할 때 추가 옵션을 펼치는 원칙</td></tr>
+          <tr><td>Inline Validation</td><td>인라인 유효성 검사</td><td>필드 단위로 그 자리에서 입력값을 검사하는 패턴</td></tr>
+          <tr><td>Error Prevention</td><td>에러 방지</td><td>실수를 사후 교정이 아니라 UI로 사전에 막는 전략</td></tr>
+          <tr><td>Field-level Feedback</td><td>필드 단위 피드백</td><td>문제가 있는 필드 바로 옆에 구체적으로 안내하는 방식</td></tr>
+          <tr><td>Required Field Indicator</td><td>필수 입력 표시</td><td>필수·선택 필드를 구분해 보여주는 시각 장치</td></tr>
+          <tr><td>Input Mask</td><td>인풋 마스크</td><td>정해진 형식을 입력 중 자동으로 강제하는 패턴</td></tr>
+          <tr><td>Autofill / Autocomplete</td><td>자동완성</td><td>저장된 정보를 활용해 필드를 자동으로 채우는 기능</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───────────────── 6. 셀프 체크 퀴즈 ───────────────── -->
+  <section>
+    <h2>6. 셀프 체크 퀴즈</h2>
+
+    <div class="quiz">
+      <h3>Q1</h3>
+      <p class="q">시작일이 종료일보다 늦은 날짜를 애초에 선택하지 못하도록 날짜 선택기 자체를 제한하는 설계는 어떤 원칙에 해당하는가?</p>
+      <ol class="options" type="A">
+        <li>A. Error Correction</li>
+        <li>B. Error Prevention</li>
+        <li>C. Progressive Disclosure</li>
+        <li>D. Field-level Feedback</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — Error Prevention</strong><br>
+          실수가 일어난 뒤 안내하는 것이 아니라 UI 자체로 실수를 아예 못 하게
+          막는 것이 Error Prevention이다. A(Error Correction)는 실수 후 사후
+          안내, C(Progressive Disclosure)는 정보 노출 범위 조절, D(Field-level
+          Feedback)는 에러를 보여주는 위치에 관한 개념이라 이 상황과 맞지 않는다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q2</h3>
+      <p class="q">사용자가 필드에서 포커스를 빼기 전까지는 검사하지 않고, 다른 필드로 넘어가는 순간 유효성을 검사하는 타이밍은?</p>
+      <ol class="options" type="A">
+        <li>A. Real-time</li>
+        <li>B. On Submit</li>
+        <li>C. On Blur</li>
+        <li>D. Progressive Disclosure</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: C — On Blur</strong><br>
+          포커스가 필드를 벗어나는 시점에 검사하는 것이 On Blur다. A(Real-time)는
+          입력 중 즉시 검사, B(On Submit)는 폼 전체 제출 시 검사이며,
+          D(Progressive Disclosure)는 검증과 무관하게 정보 노출 범위를 다루는
+          용어라 정답이 될 수 없다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q3</h3>
+      <p class="q">회원가입 폼에서 회사명·직책 같은 선택 필드를 "고급 설정 보기"를 눌러야만 펼쳐지도록 접어 두는 설계를 가리키는 용어는?</p>
+      <ol class="options" type="A">
+        <li>A. Input Mask</li>
+        <li>B. Progressive Disclosure</li>
+        <li>C. Autofill</li>
+        <li>D. Required Field Indicator</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — Progressive Disclosure</strong><br>
+          핵심 정보만 먼저 보여주고 추가 옵션은 트리거를 눌러야 펼쳐지게 하는
+          원칙이 Progressive Disclosure다. A(Input Mask)는 입력 형식을 강제하는
+          패턴, C(Autofill)는 저장된 정보로 필드를 자동 채우는 기능,
+          D(Required Field Indicator)는 필수 여부 표시 방식이라 이 문제와
+          맞지 않는다.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ───────────────── 7. 다음 학습 예고 ───────────────── -->
+  <section>
+    <h2>7. 다음 학습 예고</h2>
+    <p>
+      다음 Day에서는 지금까지 다룬 기초 개념, 정보 구조, 컴포넌트 시스템, 인터랙션,
+      접근성, 협업 툴, 사용자 조사, 프로토타이핑, 사용성 테스트, 반응형/모바일,
+      UX 라이팅, 다크 패턴, 디자인 리뷰 프로세스, 폼/인풋 UX를 바탕으로 실무 심화
+      주제나 인접 영역으로 계속 확장할 예정이다.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      <a href="./index.html">← 전체 목록</a> &nbsp;|&nbsp;
+      UI/UX 용어 학습 워크스페이스 · Day 14 · 2026-07-05
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>

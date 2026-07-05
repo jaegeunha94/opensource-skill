@@ -17,6 +17,7 @@
 | 11 | 2026-07-01 | UX 글쓰기 — 마이크로카피와 인터페이스 언어 | [0011-ux-writing-microcopy.html](lessons/0011-ux-writing-microcopy.html) |
 | 12 | 2026-07-03 | 다크 패턴(Dark Pattern)과 윤리적 디자인 | [0012-dark-patterns-ethical-design.html](lessons/0012-dark-patterns-ethical-design.html) |
 | 13 | 2026-07-04 | 디자인 리뷰 & 협업 프로세스 용어 | [0013-design-review-collaboration.html](lessons/0013-design-review-collaboration.html) |
+| 14 | 2026-07-05 | 폼 & 인풋 UX 용어 — Progressive Disclosure·Inline Validation·Error Prevention | [0014-form-input-ux.html](lessons/0014-form-input-ux.html) |
 
 ## 다음 예정 학습
 
@@ -25,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 13 완료** — 다음 주제 미정. 다음 세션에서 MISSION.md와 완료 내용을 바탕으로 새 주제를 선정 예정.
+**Day 14 완료** — 다음 주제 미정. 다음 세션에서 MISSION.md와 완료 내용을 바탕으로 새 주제를 선정 예정.
 
 ## 습득한 핵심 개념
 
@@ -122,3 +123,10 @@
 - [x] Design QA (디자인 QA) — Day 13
 - [x] Design Debt (디자인 부채) — Day 13
 - [x] DesignOps (디자인옵스) — Day 13
+- [x] Progressive Disclosure (점진적 정보 노출) — Day 14
+- [x] Inline Validation (인라인 유효성 검사) — Day 14
+- [x] Error Prevention (에러 방지) — Day 14
+- [x] Field-level Feedback (필드 단위 피드백) — Day 14
+- [x] Required Field Indicator (필수 입력 표시) — Day 14
+- [x] Input Mask (인풋 마스크) — Day 14
+- [x] Autofill / Autocomplete (자동완성) — Day 14
