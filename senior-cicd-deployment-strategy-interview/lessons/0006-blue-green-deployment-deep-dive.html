@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — Blue-Green 배포 심층 분석 | CI/CD 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* header */
+    .lesson-header {
+      border-left: 4px solid var(--accent);
+      padding: 1.5rem 1.5rem 1.5rem 2rem;
+      background: var(--surface);
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .lesson-title { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
+    .lesson-subtitle { color: var(--muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    /* section */
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 1.2rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.8rem; color: var(--text); }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.88em;
+      color: #a5b4fc;
+    }
+
+    /* cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    /* interview question highlight */
+    .interview-q {
+      background: linear-gradient(135deg, #1e2a4a 0%, #1a2035 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .interview-q .label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .interview-q .question {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.5;
+    }
+
+    /* comparison grid */
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .strategy-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .strategy-card .name {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .strategy-card.blue-green .name { color: #60a5fa; }
+    .strategy-card.rolling .name { color: #34d399; }
+    .strategy-card.canary .name { color: #f59e0b; }
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-right: 0.3rem;
+      margin-bottom: 0.3rem;
+    }
+    .tag-green { background: #14532d; color: #4ade80; }
+    .tag-red { background: #450a0a; color: #f87171; }
+    .tag-yellow { background: #422006; color: #fbbf24; }
+    .tag-blue { background: #1e3a5f; color: #93c5fd; }
+
+    /* answer example */
+    .answer-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+    .answer-block .speaker {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    /* good vs weak */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .compare-card.good {
+      background: #052e16;
+      border: 1px solid #166534;
+    }
+    .compare-card.weak {
+      background: #2d0a0a;
+      border: 1px solid #7f1d1d;
+    }
+    .compare-label {
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .compare-card.good .compare-label { color: #4ade80; }
+    .compare-card.weak .compare-label { color: #f87171; }
+
+    /* reasoning steps */
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent2);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.1rem;
+    }
+
+    /* follow-up */
+    .followup-item {
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .followup-item .q {
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 0.5rem;
+    }
+    .followup-item .a {
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    /* rubric */
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:last-child td { border-bottom: none; }
+    .rubric-table tr:nth-child(even) td { background: #12141e; }
+    .level-badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .level-1 { background: #450a0a; color: #fca5a5; }
+    .level-2 { background: #422006; color: #fcd34d; }
+    .level-3 { background: #14532d; color: #86efac; }
+    .level-4 { background: #1e3a5f; color: #93c5fd; }
+
+    /* callout */
+    .callout {
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .callout-warn {
+      background: #2d1b00;
+      border: 1px solid var(--yellow);
+      color: #fef3c7;
+    }
+    .callout-info {
+      background: #0c1a3a;
+      border: 1px solid var(--accent);
+      color: #dbeafe;
+    }
+    .callout-icon { font-weight: 700; margin-right: 0.4rem; }
+
+    /* flow diagram (ascii-style) */
+    .flow-diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #a5b4fc;
+      overflow-x: auto;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      white-space: pre;
+    }
+
+    /* nav */
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .nav-bar a {
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-bar a:hover { text-decoration: underline; }
+    .nav-center { color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-header">
+    <div class="lesson-meta">CI/CD와 배포 전략 인터뷰 · Day 6</div>
+    <div class="lesson-title">Blue-Green 배포 심층 분석</div>
+    <div class="lesson-subtitle">Day 1에서 다룬 Blue-Green의 개념을 넘어, 실제로 어떻게 이중 환경을 구성하고, 트래픽을 어떤 메커니즘으로 전환하며, DB 마이그레이션과 비용 문제를 어떻게 실무에서 풀어내는지 다룬다.</div>
+  </div>
+
+  <!-- ─── SECTION 1: 면접 질문 ─── -->
+  <section>
+    <h2>🎯 오늘의 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">주질문 (Main Question)</div>
+      <div class="question">
+        "Blue-Green 배포를 실제로 구현한다면,<br>
+        트래픽 전환은 구체적으로 어떤 메커니즘으로 하시겠습니까?"
+      </div>
+    </div>
+
+    <div class="interview-q" style="border-color: var(--accent2);">
+      <div class="label" style="color: var(--accent2);">변형 질문 (Variation)</div>
+      <div class="question" style="font-size: 1rem;">
+        "Blue-Green 배포의 인프라 비용이 부담스럽다는 지적을 받으면 어떻게 대응하시겠습니까?<br>
+        그리고 DB를 공유하는 상황에서 트래픽 전환 시점과 마이그레이션 시점을 어떻게 맞추시겠습니까?"
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 2: 왜 면접에서 묻는가 ─── -->
+  <section>
+    <h2>🔍 왜 면접에서 이 질문을 하는가</h2>
+
+    <p>Day 1에서 "Blue-Green이 무엇인가"를 물었다면, 이번 질문은 "그걸 실제로 어떻게 만들어봤는가"를 묻는다. 개념은 5분이면 외울 수 있지만, <strong>트래픽을 순간적으로 전환하는 구현 메커니즘</strong>과 <strong>그 과정에서 생기는 부작용</strong>은 실제로 구축하거나 운영해본 사람만 구체적으로 말할 수 있다.</p>
+
+    <div class="card">
+      <div class="card-title">면접관이 실제로 평가하는 것</div>
+      <ul>
+        <li><strong>구현 해상도:</strong> "로드밸런서로 전환한다"에서 멈추는가, DNS/LB/서비스 메시/컨테이너 오케스트레이터 수준에서 구체적으로 설명하는가</li>
+        <li><strong>세션·연결 처리 감각:</strong> 트래픽을 전환하는 그 찰나에 이미 맺어진 연결과 세션을 어떻게 다루는지 아는가</li>
+        <li><strong>DB 설계 판단력:</strong> "같은 DB를 공유한다"는 제약이 배포 시점 설계에 어떤 영향을 미치는지 아는가</li>
+        <li><strong>비용 감각:</strong> 인프라를 2배로 쓰는 것을 당연하게 받아들이는가, 최적화 여지를 고민해봤는가</li>
+        <li><strong>실패 시나리오 대비:</strong> "전환이 절반만 되다 멈추면 어떻게 되는가" 같은 엣지 케이스를 생각해봤는가</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>주니어 vs 시니어 차이:</strong> 주니어는 "블루에서 그린으로 트래픽을 옮긴다"까지만 말한다. 시니어는 "어떤 계층에서, 어떤 순서로, 진행 중인 요청은 어떻게 되는지"까지 설명하고, 실패했을 때의 부분 전환 상태까지 대비한다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 3: 전제 개념 ─── -->
+  <section>
+    <h2>📚 전제 개념: "트래픽 전환"이 실제로 의미하는 것</h2>
+
+    <h3>왜 "전환"이 단순한 스위치가 아닌가</h3>
+    <p>Blue-Green 배포를 처음 배우면 "트래픽을 Blue에서 Green으로 스위치처럼 딱 전환한다"고 상상하기 쉽다. 하지만 실제 서비스에는 <strong>이미 연결을 맺고 요청을 처리 중인 클라이언트</strong>가 항상 존재한다. 전환 순간에 이 요청들을 어떻게 처리하느냐가 무중단 배포의 핵심 난이도다.</p>
+
+    <p>또한 "트래픽 전환"은 하나의 기술이 아니라, <strong>어떤 계층(layer)에서 라우팅을 바꾸는가</strong>에 따라 완전히 다른 구현이 된다. 이 계층 선택이 곧 인터뷰에서 묻는 "구체적으로 어떻게"에 대한 답이다.</p>
+
+    <h3>트래픽 전환이 일어날 수 있는 4개 계층</h3>
+    <div class="card">
+      <ul>
+        <li><strong>DNS 레벨:</strong> 도메인이 가리키는 IP를 바꾼다 (Route53 등). 가장 단순하지만 TTL과 클라이언트 측 DNS 캐싱 때문에 전환이 "즉시"가 아니다.</li>
+        <li><strong>로드밸런서(LB) 레벨:</strong> ALB/NLB의 타겟 그룹을 Blue에서 Green으로 바꾼다. 초 단위로 빠르고 가장 흔히 쓰인다.</li>
+        <li><strong>서비스 메시 / Ingress 레벨:</strong> Istio VirtualService, Kubernetes Service의 selector를 바꾼다. 컨테이너 환경에서 세밀한 트래픽 제어가 가능하다.</li>
+        <li><strong>애플리케이션 레벨:</strong> Feature flag나 API Gateway 라우팅 규칙으로 논리적으로 분리한다. 인프라 복제 없이도 부분적으로 흉내낼 수 있다.</li>
+      </ul>
+    </div>
+    <p>이 네 계층 중 무엇을 쓰느냐에 따라 "전환 속도", "롤백 속도", "부분 전환 가능 여부"가 완전히 달라진다. 이걸 구분해서 말하는 것이 Day 1보다 한 단계 깊은 답변이다.</p>
+  </section>
+
+  <!-- ─── SECTION 4: 이중 환경 구성과 트래픽 전환 메커니즘 ─── -->
+  <section>
+    <h2>🏗️ 이중 환경 구성과 트래픽 전환 메커니즘</h2>
+
+    <h3>1) 로드밸런서 레벨 전환 (가장 흔한 실무 패턴)</h3>
+    <div class="flow-diagram">[ALB]
+  Target Group A (Blue)  ← 현재 100% 트래픽
+  Target Group B (Green) ← 배포 후 헬스체크 통과 대기
+
+전환 절차:
+  1. Green 인스턴스에 신버전 배포
+  2. ALB 헬스체크가 Green을 "healthy"로 표시할 때까지 대기
+  3. ALB 리스너 규칙을 Target Group A → B로 변경 (원자적 전환)
+  4. Blue의 커넥션 드레이닝 시작 (기존 요청은 끝까지 처리, 신규 요청만 차단)
+  5. 드레이닝 완료 후 Blue 인스턴스 스케일 다운 (즉시 삭제하지 않음)</div>
+
+    <p><strong>핵심 포인트:</strong> ALB 리스너 규칙 변경 자체는 원자적이라 "절반은 Blue, 절반은 Green"이 되는 순간이 없다. 하지만 <strong>이미 Blue로 연결된 커넥션은 즉시 끊기지 않도록 커넥션 드레이닝(connection draining) 시간을 반드시 설정</strong>해야 한다. 이 설정이 없으면 전환 순간 진행 중이던 요청이 강제 종료되어 순간적인 5xx 에러가 발생한다.</p>
+
+    <h3>2) Kubernetes Service selector 전환</h3>
+    <div class="flow-diagram">Deployment "app-blue"  (label: version=blue)  ← Service selector: version=blue
+Deployment "app-green" (label: version=green) ← 대기
+
+kubectl patch service app -p '{"spec":{"selector":{"version":"green"}}}'
+   ↓
+Service의 selector가 바뀌는 순간 신규 요청은 즉시 green Pod로 라우팅
+   ↓
+문제: 이미 kube-proxy/Endpoint에 연결된 기존 커넥션은
+      graceful하게 처리되지 않을 수 있음 (구현체에 따라 다름)</div>
+
+    <p><strong>주의점:</strong> Kubernetes의 Service selector 전환은 ALB보다 더 즉각적이지만, 그만큼 커넥션 드레이닝을 애플리케이션 레벨(graceful shutdown, <code>preStop</code> hook, <code>terminationGracePeriodSeconds</code>)에서 직접 챙겨야 한다. 인프라가 자동으로 봐주지 않는다.</p>
+
+    <h3>3) 세션 어피니티(Sticky Session) 문제</h3>
+    <div class="card">
+      <div class="card-title">전환 시 자주 놓치는 문제</div>
+      <ul>
+        <li>사용자 세션이 특정 서버 메모리에 저장되어 있으면(sticky session), Blue → Green 전환 시 세션이 유실되어 로그아웃되거나 장바구니가 사라진다.</li>
+        <li><strong>해결책:</strong> 세션을 서버 메모리가 아닌 Redis 같은 외부 세션 스토어에 저장한다. Blue-Green 전환은 "무상태(stateless) 애플리케이션"을 전제로 설계해야 진짜 무중단이 된다.</li>
+        <li>이 문제를 인식하지 못하면 "무중단 배포라고 했는데 사용자가 로그아웃됐다"는 장애로 이어진다.</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>흔한 오해:</strong> "로드밸런서 전환 = 즉시 무중단"이라고 생각하기 쉽다. 실제로는 커넥션 드레이닝 설정, 애플리케이션의 graceful shutdown 구현, 세션 외부화까지 세 가지가 모두 갖춰져야 진짜 무중단이 된다. 하나라도 빠지면 전환 순간 소수의 사용자가 에러를 경험한다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 5: DB 마이그레이션 심층 — Expand-Contract 실전 ─── -->
+  <section>
+    <h2>🗄️ DB 마이그레이션 문제 — Expand-Contract 패턴 실전 적용</h2>
+
+    <p>Day 1에서 "Expand-Contract 패턴을 쓴다"고 짧게 언급했다면, 이번에는 <strong>왜 그렇게 해야 하는지, 각 단계에서 무엇이 배포되고 무엇이 위험한지</strong>까지 구체적으로 설명할 수 있어야 한다.</p>
+
+    <h3>왜 문제가 되는가 — 공유 DB라는 제약</h3>
+    <p>Blue와 Green은 별도의 애플리케이션 서버지만, 보통 <strong>같은 DB를 공유</strong>한다. DB까지 복제하면 데이터 정합성 문제(어느 쪽에 쓴 데이터가 최신인가)가 생기기 때문이다. 그 결과, 전환 전후 짧은 시간 동안 <strong>구버전 코드와 신버전 코드가 동시에 같은 스키마를 바라보는 상황</strong>이 반드시 발생한다.</p>
+
+    <h3>Expand-Contract 3단계 실전 적용</h3>
+    <div class="flow-diagram">[1단계: Expand]
+  - 새 컬럼을 nullable로 추가 (또는 새 테이블 추가)
+  - 구버전(Blue) 코드는 새 컬럼 존재를 모른 채 그대로 동작
+  - 이 시점에는 아직 애플리케이션 배포 없이 스키마 변경만 먼저 나간다
+
+[2단계: Migrate & Deploy]
+  - 신버전(Green) 배포 — 새 컬럼을 읽고 쓰기 시작
+  - 트래픽 전환 완료 후에도 당분간 구버전 재배포 가능성을 열어둔다
+  - 기존 데이터는 백필(backfill) 스크립트로 별도 채운다 (배포와 분리)
+
+[3단계: Contract]
+  - 구버전 코드가 완전히 제거되고, 롤백 가능성이 사라졌다고 확신한 뒤에만
+  - NOT NULL 제약 추가, 구 컬럼 삭제, 구 테이블 제거 등 되돌릴 수 없는 정리 수행</div>
+
+    <div class="card">
+      <div class="card-title">핵심 규칙</div>
+      <ul>
+        <li><strong>스키마 변경과 애플리케이션 배포를 분리한다.</strong> 한 번의 배포에 "컬럼 추가 + 신버전 배포 + 구 컬럼 삭제"를 다 넣으면 롤백이 불가능해진다.</li>
+        <li><strong>되돌릴 수 없는 작업(Contract 단계)은 트래픽 전환이 끝나고 충분한 관찰 기간이 지난 뒤에만 수행한다.</strong> Blue-Green의 장점인 "즉시 롤백"은 Contract 단계 전까지만 유효하다.</li>
+        <li><strong>백필은 배포 트랜잭션과 분리한다.</strong> 대량 데이터 마이그레이션을 배포 순간에 동기로 실행하면 락, 타임아웃, 장애로 이어진다.</li>
+      </ul>
+    </div>
+
+    <h3>공유 DB vs 마이그레이션 없는 트래픽 전환의 타이밍 문제</h3>
+    <p>인터뷰에서 자주 나오는 심화 질문: "스키마 변경을 트래픽 전환 전에 하는가, 후에 하는가?" 정답은 <strong>항상 전(Expand 단계)</strong>이다. 트래픽 전환 후에 스키마를 바꾸면, 이미 Green으로 넘어간 신버전이 아직 존재하지 않는 컬럼을 참조하려는 순간이 생길 수 있다. 반대로 구버전(Blue)이 여전히 롤백 대상으로 남아있는 동안에는, 그 구버전이 이해하지 못하는 방식으로 스키마를 절대 바꾸면 안 된다.</p>
+  </section>
+
+  <!-- ─── SECTION 6: 비용 문제와 최적화 ─── -->
+  <section>
+    <h2>💰 인프라 비용 문제와 실무 최적화</h2>
+
+    <p>"Blue-Green은 비용이 2배"라는 말은 Day 1에서 이미 다뤘다. 시니어 인터뷰에서는 여기서 한 걸음 더 나아가 "그 비용을 어떻게 줄이는가"까지 답해야 한다.</p>
+
+    <div class="card">
+      <div class="card-title">비용 최적화 실무 전략</div>
+      <ul>
+        <li><strong>Green 환경을 배포 시점에만 생성:</strong> 상시 두 환경을 유지하지 않고, 배포 파이프라인이 트리거될 때만 Green을 프로비저닝하고 전환 완료 후 Blue를 삭제한다 (Immutable Infrastructure + IaC로 자동화).</li>
+        <li><strong>Auto Scaling 활용:</strong> Green을 최소 인스턴스 수로 띄워 헬스체크만 통과시키고, 트래픽 전환 후 실제 부하에 맞춰 스케일 아웃한다. 전환 전 100% 용량을 미리 유지할 필요는 없다.</li>
+        <li><strong>서버리스/컨테이너 기반 전환:</strong> Kubernetes에서는 VM 전체를 복제하는 대신 Deployment(Pod) 단위로만 이중화하므로, VM 기반 Blue-Green보다 비용 증가폭이 훨씬 작다.</li>
+        <li><strong>선택적 적용:</strong> 모든 서비스에 Blue-Green을 적용하지 않는다. 다운타임 허용이 불가능한 핵심 서비스에만 적용하고, 나머지는 Rolling으로 비용을 아낀다.</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>시니어 신호:</strong> "비용이 2배라서 어쩔 수 없다"가 아니라 "어떤 서비스에 어느 정도 비용을 투자할 가치가 있는지 판단하고, 남은 비용은 자동화로 최소화한다"고 말하는 것이 핵심 답변이다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 7: 롤백 — 부분 전환 실패와 데이터 되돌리기 ─── -->
+  <section>
+    <h2>🔄 롤백 심화 — 부분 전환 실패와 데이터 되돌리기의 한계</h2>
+
+    <h3>"전환이 절반만 되다 멈추면?" — 부분 실패 시나리오</h3>
+    <p>ALB 리스너 규칙 변경 자체는 원자적이지만, <strong>여러 리전이나 여러 클러스터에 걸쳐 전환하는 경우</strong>에는 일부 리전만 전환되고 나머지는 전환되지 않는 상태가 생길 수 있다. 이때는 전환 절차를 처음부터 다시 실행하는 것이 아니라, <strong>어느 리전이 어느 버전을 가리키는지 명시적으로 확인 가능한 상태 기록(전환 로그, IaC의 state)</strong>이 있어야 빠르게 판단할 수 있다.</p>
+
+    <h3>롤백해도 되돌아가지 않는 것들</h3>
+    <div class="card">
+      <ul>
+        <li><strong>이미 커밋된 트랜잭션:</strong> 신버전이 새 컬럼에 쓴 데이터는 코드만 Blue로 되돌린다고 사라지지 않는다. 구버전이 그 데이터를 무시하거나, 혹은 잘못 해석할 수 있다.</li>
+        <li><strong>외부 시스템에 이미 전달된 이벤트:</strong> 결제 완료 웹훅, 알림 발송 등 외부로 나간 부수효과는 코드 롤백으로 취소되지 않는다.</li>
+        <li><strong>캐시에 남은 신버전 응답 형식:</strong> CDN이나 애플리케이션 캐시에 새 응답 스키마가 캐싱돼 있으면, 롤백 후 구버전이 그 캐시를 읽고 파싱 오류를 낼 수 있다.</li>
+      </ul>
+    </div>
+
+    <p>그래서 시니어 엔지니어는 "롤백 = 안전한 되돌리기"라고 단순화하지 않는다. <strong>롤백이 정말 안전하려면 Expand 단계까지만 전환하고, Contract는 절대 서두르지 않는다</strong>는 원칙을 지킨다.</p>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>실무 팁:</strong> 롤백 절차는 문서로만 존재하면 안 된다. 정기적으로 "게임 데이 (Game Day)" 형태로 실제 롤백을 리허설해봐야, 정말 필요한 순간에 절차가 맞는지 확인할 수 있다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 8: 답변 사고 순서 ─── -->
+  <section>
+    <h2>🧠 답변 사고 순서</h2>
+    <p>"트래픽 전환을 구체적으로 어떻게 하시겠습니까"라는 질문을 받았을 때 아래 순서로 답변을 전개한다.</p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>전환 계층 선택 명시</strong><br>
+          DNS, 로드밸런서, 서비스 메시/Kubernetes Service, 애플리케이션 레벨 중 어느 계층에서 전환할지 먼저 밝히고, 그 계층을 선택한 이유(인프라 환경, 전환 속도 요구사항)를 말한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>기존 연결 처리 방식 설명</strong><br>
+          커넥션 드레이닝, graceful shutdown, 세션 외부화 등 "이미 맺힌 요청을 어떻게 안전하게 마무리하는가"를 구체적으로 언급한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>DB 마이그레이션과 전환 시점 분리</strong><br>
+          스키마 변경(Expand)은 트래픽 전환 전에 미리 배포하고, 완전한 정리(Contract)는 롤백 가능성이 사라진 뒤로 미룬다는 원칙을 설명한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>비용 인식과 최적화 방안 제시</strong><br>
+          비용이 2배라는 것을 인정하되, 상시 이중화가 아닌 배포 시점 프로비저닝, Auto Scaling, 선택적 적용 등으로 완화할 수 있음을 언급한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>롤백의 한계를 명확히 인정</strong><br>
+          "롤백하면 다 되돌아간다"고 단순화하지 않고, 이미 커밋된 데이터·외부 이벤트·캐시처럼 되돌릴 수 없는 부분을 언급하며 마무리한다.
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ─── SECTION 9: 핵심 답변 예시 ─── -->
+  <section>
+    <h2>💬 핵심 답변 예시</h2>
+
+    <div class="answer-block">
+      <div class="speaker">답변 예시 (시니어 수준)</div>
+      <p>"저는 보통 로드밸런서 레벨에서 전환합니다. ALB의 리스너 규칙을 Blue 타겟 그룹에서 Green 타겟 그룹으로 바꾸는 방식인데, 이 변경 자체는 원자적이라 절반씩 걸치는 상태는 없습니다. 다만 이미 Blue로 연결돼 처리 중인 요청이 있기 때문에, 커넥션 드레이닝 시간을 충분히 설정하고, 애플리케이션도 SIGTERM을 받으면 새 요청은 거부하되 진행 중인 요청은 끝까지 처리하도록 graceful shutdown을 구현합니다. 세션은 서버 메모리가 아니라 Redis에 저장해서, 전환 순간 사용자가 로그아웃되지 않게 합니다.</p>
+      <p>DB는 Blue와 Green이 공유하기 때문에, 스키마 변경이 있으면 Expand-Contract 패턴을 씁니다. 트래픽 전환 전에 먼저 nullable 컬럼을 추가해서 구버전이 영향받지 않게 하고, 전환 후 신버전이 그 컬럼을 쓰기 시작합니다. 구버전을 완전히 제거하고 롤백 가능성이 없다고 확신한 뒤에만 NOT NULL 제약이나 구 컬럼 삭제 같은 되돌릴 수 없는 작업을 합니다.</p>
+      <p>비용은 상시로 두 환경을 유지하지 않고, 배포 파이프라인이 실행될 때만 Green을 IaC로 프로비저닝하고 전환이 끝나면 Blue를 스케일 다운합니다. 모든 서비스에 이 전략을 쓰지는 않고, 다운타임이 절대 불가한 핵심 서비스에만 선택적으로 적용합니다.</p>
+      <p>그리고 롤백이 만능은 아니라는 것도 인지하고 있습니다. 이미 커밋된 트랜잭션이나 외부로 나간 웹훅은 코드 롤백으로 되돌아가지 않기 때문에, Contract 단계 전까지만 진짜 안전한 롤백이 보장된다고 판단하고 그 원칙을 지킵니다."</p>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 10: Senior Follow-up ─── -->
+  <section>
+    <h2>🔺 Senior-Level Follow-up 질문</h2>
+
+    <div class="followup-item">
+      <div class="q">Q. "여러 리전에 걸쳐 Blue-Green을 전환하는데, 한 리전만 전환되고 나머지는 실패하면 어떻게 하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 전환 절차가 리전별로 독립적이라면 "전체 재시도"가 아니라 "실패한 리전만 재시도"가 맞다. 이를 위해서는 각 리전의 현재 상태를 명확히 추적하는 장치가 있어야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> IaC의 상태 파일이나 배포 파이프라인 로그로 각 리전이 Blue/Green 중 무엇을 가리키는지 항상 확인 가능하게 만든다. 실패한 리전만 별도로 재전환을 시도하고, 전체 재배포는 하지 않는다. 또한 전환 절차 자체를 멱등(idempotent)하게 설계해, 같은 절차를 여러 번 실행해도 안전하게 만든다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "Green 환경에서 배포 직후 통과했던 헬스체크가, 트래픽 전환 후 몇 분 뒤에 문제를 일으키면 왜 그럴까요?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 헬스체크는 보통 "프로세스가 떠 있고 기본 요청에 응답하는가"만 확인한다. 실 트래픽의 특정 패턴(동시성, 특정 엔드포인트, 캐시 워밍 안 됨)은 헬스체크로 잡히지 않는다.
+        <br><br>
+        <strong>핵심 답변:</strong> 헬스체크와 실 트래픽 검증은 다른 문제다. 커넥션 풀, 캐시, JIT 워밍업이 안 된 상태에서 갑자기 100% 트래픽을 받으면 지연이 튈 수 있다. 그래서 완전한 Blue-Green이라도 전환 직후 일정 시간은 모니터링을 강화하고, 가능하면 트래픽을 점진적으로 늘리는 하이브리드(Blue-Green + 부분 Canary) 방식을 고려한다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "Blue-Green과 Feature Flag를 함께 쓸 이유가 있습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> Blue-Green은 인프라 레벨 전환이고, Feature Flag는 애플리케이션 레벨 제어다. 둘은 대체 관계가 아니라 보완 관계다.
+        <br><br>
+        <strong>핵심 답변:</strong> Blue-Green으로 인프라 전환의 안전성(즉시 롤백)을 확보하고, 그 안에서 특정 기능만 Feature Flag로 껐다 켰다 하면 배포와 기능 활성화를 분리할 수 있다. 즉 "코드는 이미 Green에 배포됐지만 기능은 아직 꺼둔 상태"를 만들 수 있어, 배포 리스크와 기능 리스크를 독립적으로 관리할 수 있다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "DB를 아예 Blue와 Green이 분리해서 쓰면 안 됩니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 이론적으로 가능하지만 데이터 정합성 문제가 매우 커진다. "왜 안 하는가"를 구조적으로 설명할 수 있어야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> DB를 분리하면 전환 시점에 Blue에 쓰인 데이터를 Green으로 동기화해야 하는데, 실시간 양방향 동기화는 충돌 해결, 지연, 데이터 유실 위험이 크다. 그래서 대부분의 실무에서는 DB는 공유하고 애플리케이션 서버만 이중화하며, 스키마 호환성 관리(Expand-Contract)로 문제를 해결한다. DB 자체를 분리하는 경우는 마이그레이션처럼 완전히 새로운 시스템으로 전환할 때 등 예외적인 상황에 한정된다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 11: 좋은 답변 vs 약한 답변 ─── -->
+  <section>
+    <h2>⚖️ 좋은 답변과 약한 답변의 차이</h2>
+
+    <div class="compare-grid">
+      <div class="compare-card good">
+        <div class="compare-label">✅ 좋은 답변</div>
+        <ul>
+          <li>전환이 일어나는 계층(DNS/LB/서비스 메시/앱)을 구체적으로 명시</li>
+          <li>커넥션 드레이닝, graceful shutdown, 세션 외부화까지 언급</li>
+          <li>Expand-Contract의 각 단계를 실제 스키마 변경 순서로 설명</li>
+          <li>비용을 인정하면서도 구체적인 최적화 방안 제시</li>
+          <li>롤백이 안전하지 않은 경우(이미 커밋된 데이터, 외부 이벤트)를 명확히 인지</li>
+          <li>부분 전환 실패 같은 엣지 케이스를 스스로 언급</li>
+        </ul>
+      </div>
+      <div class="compare-card weak">
+        <div class="compare-label">❌ 약한 답변</div>
+        <ul>
+          <li>"로드밸런서로 트래픽을 옮깁니다"에서 설명이 끝남</li>
+          <li>기존 연결이 어떻게 되는지 전혀 언급하지 않음</li>
+          <li>"DB는 그냥 마이그레이션합니다" — 순서와 되돌릴 수 없는 지점을 모름</li>
+          <li>비용에 대해 "어쩔 수 없다"고만 답함</li>
+          <li>"롤백하면 다 원래대로 돌아갑니다"라고 단정</li>
+          <li>Blue-Green을 무조건 정답처럼 말함 (Day 1 수준에서 진전 없음)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>핵심 차이:</strong> Day 1이 "무엇을 선택하는가"를 다뤘다면, Day 6은 "선택한 것을 어떻게 실제로 안전하게 구현하는가"를 다룬다. 좋은 답변은 구현의 디테일과 실패 시나리오까지 파고든다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 12: 실무 연결 ─── -->
+  <section>
+    <h2>🏭 실무 연결 — 인프라 환경별 구현 선택</h2>
+
+    <div class="card">
+      <div class="card-title">인프라 환경별 Blue-Green 구현 가이드</div>
+      <table class="rubric-table">
+        <thead>
+          <tr><th>인프라 환경</th><th>전환 메커니즘</th><th>주의점</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>AWS EC2 + ALB</td>
+            <td>타겟 그룹 스위치 + 리스너 규칙 변경</td>
+            <td>Deregistration delay(드레이닝 시간) 설정 필수</td>
+          </tr>
+          <tr>
+            <td>Kubernetes</td>
+            <td>Service selector 변경 또는 Argo Rollouts BlueGreen 전략</td>
+            <td>preStop hook, terminationGracePeriodSeconds로 graceful shutdown 구현</td>
+          </tr>
+          <tr>
+            <td>멀티 리전 서비스</td>
+            <td>Route53 가중치 기반 라우팅 + 헬스체크 연동</td>
+            <td>DNS TTL로 인해 완전한 즉시 전환은 아님, 캐싱된 클라이언트 존재 가능</td>
+          </tr>
+          <tr>
+            <td>서버리스 (Lambda 등)</td>
+            <td>Alias 트래픽 시프팅 (예: CodeDeploy Lambda 배포)</td>
+            <td>콜드 스타트로 인한 초기 지연 고려</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 13: 자기 점검 Rubric ─── -->
+  <section>
+    <h2>📋 자기 점검 Rubric</h2>
+    <p>아래 기준으로 자신의 답변 수준을 체크하라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>레벨</th>
+          <th>할 수 있는 것</th>
+          <th>부족한 것</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="level-badge level-1">Lv 1</span></td>
+          <td>"로드밸런서로 전환한다"고 말할 수 있다</td>
+          <td>전환 계층 구분, 커넥션 드레이닝, DB 마이그레이션 순서 모름</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-2">Lv 2</span></td>
+          <td>DNS/LB/서비스 메시 계층 차이를 설명할 수 있다</td>
+          <td>세션 외부화, Expand-Contract 세부 단계, 비용 최적화 방안 부족</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-3">Lv 3</span></td>
+          <td>커넥션 드레이닝, graceful shutdown, Expand-Contract 순서를 설명할 수 있다</td>
+          <td>부분 전환 실패, 롤백 불가능한 케이스에 대한 대비 부족</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-4">Lv 4 (목표)</span></td>
+          <td>전환 계층 선택 + 커넥션/세션 처리 + DB 마이그레이션 타이밍 + 비용 최적화 + 롤백의 한계까지 통합 설명 + 실 경험 사례 연결</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>셀프 체크리스트</h3>
+    <div class="card">
+      <ul>
+        <li>☐ 트래픽 전환이 일어날 수 있는 4개 계층(DNS/LB/서비스 메시/앱)을 구분해서 말할 수 있는가</li>
+        <li>☐ 커넥션 드레이닝과 graceful shutdown이 왜 함께 필요한지 설명할 수 있는가</li>
+        <li>☐ 세션 외부화가 왜 Blue-Green의 전제 조건인지 말할 수 있는가</li>
+        <li>☐ Expand-Contract 패턴의 3단계를 순서대로 설명할 수 있는가</li>
+        <li>☐ 스키마 변경을 트래픽 전환 "전"에 해야 하는 이유를 말할 수 있는가</li>
+        <li>☐ 비용 최적화를 위한 구체적인 방법 2가지 이상을 말할 수 있는가</li>
+        <li>☐ 롤백해도 되돌릴 수 없는 것(커밋된 데이터, 외부 이벤트, 캐시)을 말할 수 있는가</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 14: 흔한 오해 ─── -->
+  <section>
+    <h2>🚫 흔한 오해와 교정</h2>
+
+    <div class="card">
+      <div class="card-title">오해 1</div>
+      <p><strong>"로드밸런서 전환만 하면 자동으로 무중단이 된다."</strong></p>
+      <p>→ 로드밸런서 전환은 신규 요청을 즉시 새 버전으로 보낼 뿐이다. 이미 진행 중인 요청을 안전하게 마무리하는 커넥션 드레이닝과 애플리케이션의 graceful shutdown 구현이 없으면, 전환 순간 일부 요청이 강제 종료된다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 2</div>
+      <p><strong>"DB 마이그레이션은 배포와 같이 한 번에 처리하는 게 효율적이다."</strong></p>
+      <p>→ 스키마 변경과 애플리케이션 배포를 한 번에 묶으면, 문제가 생겼을 때 무엇 때문인지 구분할 수 없고 롤백도 불가능해진다. Expand는 배포 전에, Contract는 배포와 관찰 기간이 지난 후로 반드시 분리해야 한다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 3</div>
+      <p><strong>"Blue-Green은 비용이 2배라서 무조건 비효율적이다."</strong></p>
+      <p>→ 상시로 두 환경을 유지할 때만 2배 비용이 고정된다. 배포 시점에만 Green을 프로비저닝하고 전환 후 Blue를 스케일 다운하면 실제 추가 비용은 배포 기간에 한정된다. 또한 모든 서비스가 아니라 다운타임이 정말 중요한 서비스에만 선택적으로 적용하면 비용 대비 효과가 커진다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 4</div>
+      <p><strong>"트래픽 전환이 원자적이면 롤백도 완전히 안전하다."</strong></p>
+      <p>→ 전환 자체가 원자적이어도, 그 사이에 신버전이 이미 쓴 데이터, 외부로 나간 이벤트, 캐시에 남은 응답 형식은 코드 롤백으로 되돌아가지 않는다. "즉시 롤백 가능"은 애플리케이션 계층의 이야기이지, 데이터와 부수효과까지 포함하는 것은 아니다.</p>
+    </div>
+  </section>
+
+  <div class="nav-bar">
+    <a href="./0005-artifact-management-versioning-strategy.html">← Day 5</a>
+    <span class="nav-center">Day 6 / 10 — CI/CD와 배포 전략 인터뷰</span>
+    <a href="./index.html">목록으로 →</a>
+  </div>
+
+</div>
+</body>
+</html>
