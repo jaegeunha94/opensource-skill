@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — 쿼리 튜닝 | 데이터베이스 10년차 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3148;
+      --accent: #7c6af7;
+      --accent2: #4fa3e0;
+      --success: #3ecf8e;
+      --warn: #f5a623;
+      --danger: #e05c5c;
+      --text: #e2e4f0;
+      --text2: #a0a8c0;
+      --text3: #6b738f;
+      --code-bg: #13151f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1d27 0%, #161927 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 1rem 2rem;
+      text-align: center;
+    }
+    .page-header .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .page-header h1 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .page-header p {
+      color: var(--text2);
+      font-size: 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin: 2rem 0;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+    .toc ol { padding-left: 1.25rem; color: var(--accent2); }
+    .toc ol li { margin-bottom: 0.35rem; }
+    .toc ol li a { color: var(--accent2); text-decoration: none; font-size: 0.93rem; }
+    .toc ol li a:hover { text-decoration: underline; }
+
+    section { margin: 2.5rem 0; }
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section-title .icon {
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.75rem;
+    }
+    .card p, .card li { color: var(--text2); font-size: 0.95rem; }
+    .card ul, .card ol { padding-left: 1.2rem; }
+    .card li { margin-bottom: 0.4rem; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #1e1a3a 0%, #1a1d27 100%);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+    }
+    .interview-q p {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.6;
+    }
+
+    .concept-box {
+      background: var(--surface2);
+      border-left: 4px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 1.25rem 1.5rem;
+      margin: 1rem 0;
+    }
+    .concept-box h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.6rem;
+    }
+    .concept-box p, .concept-box li { font-size: 0.93rem; color: var(--text2); }
+    .concept-box ul { padding-left: 1.2rem; }
+    .concept-box li { margin-bottom: 0.35rem; }
+
+    .step-list { counter-reset: steps; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      align-items: flex-start;
+    }
+    .step-list li::before {
+      content: counter(steps);
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-top: 0.15rem;
+    }
+    .step-list li .step-content {}
+    .step-list li .step-content strong { color: #fff; font-size: 0.97rem; display: block; margin-bottom: 0.25rem; }
+    .step-list li .step-content p { color: var(--text2); font-size: 0.92rem; }
+    .step-list li .step-content ul { color: var(--text2); font-size: 0.92rem; padding-left: 1.1rem; margin-top: 0.3rem; }
+    .step-list li .step-content li { margin-bottom: 0.25rem; }
+
+    .answer-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1rem 0;
+      font-size: 0.92rem;
+      color: var(--text2);
+      line-height: 1.8;
+    }
+    .answer-block .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-short { background: #1e3a2e; color: var(--success); }
+    .tag-deep  { background: #1a2e3a; color: var(--accent2); }
+    .tag-good  { background: #1e3a2e; color: var(--success); }
+    .tag-weak  { background: #3a1e1e; color: var(--danger); }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+    .compare-card.good { border-top: 3px solid var(--success); }
+    .compare-card.weak { border-top: 3px solid var(--danger); }
+    .compare-card h4 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; }
+    .compare-card.good h4 { color: var(--success); }
+    .compare-card.weak h4 { color: var(--danger); }
+    .compare-card p { font-size: 0.88rem; color: var(--text2); line-height: 1.7; font-style: italic; }
+    .compare-card .why { font-size: 0.82rem; color: var(--text3); margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.6rem; font-style: normal; }
+
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .followup-card .q { color: var(--accent); font-size: 0.93rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .followup-card .intent { font-size: 0.82rem; color: var(--text3); margin-bottom: 0.75rem; }
+    .followup-card .a { font-size: 0.9rem; color: var(--text2); }
+
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      border-bottom: 2px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text2);
+      vertical-align: top;
+    }
+    .rubric-table tr:last-child td { border-bottom: none; }
+    .rubric-table tr:hover td { background: var(--surface2); }
+    .level-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .level-strong { background: #1e3a2e; color: var(--success); }
+    .level-mid    { background: #2a2a10; color: var(--warn); }
+    .level-weak   { background: #3a1e1e; color: var(--danger); }
+
+    .misconception {
+      background: #2a1e1e;
+      border: 1px solid #5a2e2e;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.85rem;
+    }
+    .misconception .myth { font-size: 0.88rem; color: var(--danger); font-weight: 600; margin-bottom: 0.4rem; }
+    .misconception .myth::before { content: "✗ 오해: "; }
+    .misconception .truth { font-size: 0.88rem; color: var(--success); }
+    .misconception .truth::before { content: "✓ 실제: "; }
+
+    .nav-footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav-footer a {
+      color: var(--accent2);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .nav-footer a:hover { text-decoration: underline; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.35rem;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.85em;
+      color: #a8d8f0;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: #a8d8f0;
+      line-height: 1.65;
+      margin: 0.75rem 0;
+    }
+    .highlight-keyword { color: #c792ea; }
+    .highlight-string  { color: #c3e88d; }
+    .highlight-comment { color: #546e7a; font-style: italic; }
+    .highlight-number  { color: #f78c6c; }
+    .highlight-fn      { color: #82aaff; }
+
+    .tip {
+      background: #1a2e1e;
+      border: 1px solid #2e5e3e;
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.88rem;
+      color: #7ed9a8;
+    }
+    .tip::before { content: "💡 "; }
+    .warn-box {
+      background: #2a2010;
+      border: 1px solid #5a4e20;
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.88rem;
+      color: var(--warn);
+    }
+    .warn-box::before { content: "⚠ "; }
+
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin: 1rem 0;
+    }
+    .matrix-table th, .matrix-table td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.7rem;
+      text-align: center;
+    }
+    .matrix-table th { background: var(--surface2); color: var(--text2); }
+    .matrix-table td { color: var(--text2); }
+    .matrix-table td.yes { color: var(--danger); font-weight: 700; }
+    .matrix-table td.no { color: var(--success); font-weight: 700; }
+    .matrix-table td.maybe { color: var(--warn); font-weight: 700; }
+    .matrix-table th:first-child, .matrix-table td:first-child { text-align: left; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="day-badge">Day 6 · 인터뷰 커리큘럼</div>
+  <h1>쿼리 튜닝</h1>
+  <p>EXPLAIN을 읽고 통계·선택도·리라이트 근거로 병목을 좁혀가는 법</p>
+</div>
+
+<div class="container">
+
+  <nav class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#prerequisite">전제 개념</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-flow">답변 사고 순서</a></li>
+      <li><a href="#answer-example">핵심 답변 예시</a></li>
+      <li><a href="#tradeoff">Trade-off</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followup">Senior-level Follow-up</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </nav>
+
+  <!-- ① 면접 질문 -->
+  <section id="interview-question">
+    <h2 class="section-title"><span class="icon">💬</span> 면접 질문</h2>
+    <div class="interview-q">
+      <div class="label">Core Question</div>
+      <p>"EXPLAIN에서 rows가 큰데 key가 잡혀 있습니다. 무엇을 의심하겠습니까?"</p>
+    </div>
+    <div class="card">
+      <h3>함께 출제되는 변형 질문</h3>
+      <ul>
+        <li>"실행 계획에서 type이 ALL로 나옵니다. 이건 항상 나쁜 신호입니까?"</li>
+        <li>"인덱스가 분명히 있는데 옵티마이저가 그 인덱스를 쓰지 않습니다. 왜 그럴까요?"</li>
+        <li>"WHERE 조건을 바꾸지 않고 쿼리를 리라이트해서 성능을 개선한 경험을 설명해주세요."</li>
+        <li>"페이지네이션에서 페이지 번호가 뒤로 갈수록 느려집니다. 어떻게 접근하겠습니까?"</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ② 왜 면접에서 묻는가 -->
+  <section id="why-asked">
+    <h2 class="section-title"><span class="icon">🎯</span> 왜 면접에서 묻는가</h2>
+    <div class="card">
+      <p>이 질문은 "EXPLAIN 컬럼 이름을 아는가"가 아니라 <strong style="color:#fff">옵티마이저의 추정과 실제 데이터 사이의 간극을 읽어내고, 그 간극이 어디서 왔는지 추론할 수 있는가</strong>를 확인하기 위한 것입니다.</p>
+      <br>
+      <ul>
+        <li><strong>추정 vs 실측을 구분하는 능력:</strong> EXPLAIN의 <code>rows</code>는 옵티마이저의 "예상"일 뿐 실제 스캔 행 수가 아닙니다. 이 둘이 크게 어긋난다는 걸 알아채고, 왜 어긋났는지(통계 노후화, 낮은 선택도, 상관관계 미반영) 설명할 수 있는지를 봅니다.</li>
+        <li><strong>Day 3 인덱스 지식의 응용력:</strong> 인덱스가 "있다"와 "효과적으로 쓰인다"는 다른 이야기입니다. key가 잡혀 있어도 선택도가 낮으면 사실상 풀스캔에 가까운 비용이 들 수 있다는 걸 이해하는지 확인합니다.</li>
+        <li><strong>코드 레벨 개선 능력:</strong> 인덱스 추가만이 아니라, 쿼리 자체를 sargable하게 리라이트하거나 서브쿼리를 조인으로 바꾸는 등 SQL 작성 습관을 교정할 수 있는지를 봅니다.</li>
+        <li><strong>측정 기반 검증 습관:</strong> "느낌"이 아니라 실행 계획과 실제 실행 시간을 비교하며 가설을 세우고 검증하는 절차적 사고를 하는지 확인합니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ③ 전제 개념 -->
+  <section id="prerequisite">
+    <h2 class="section-title"><span class="icon">📚</span> 전제 개념</h2>
+
+    <div class="concept-box">
+      <h4>EXPLAIN이 보여주는 것 — 쉬운 말로</h4>
+      <p>
+        DB는 같은 결과를 내는 방법이 여러 개 있을 때(인덱스로 찾을지, 테이블을 처음부터 끝까지 훑을지, 조인 순서를 어떻게 할지) 그중 하나를 "비용이 가장 적을 것 같다"고 골라서 실행합니다. 이 선택 과정을 <strong>쿼리 실행 계획(execution plan)</strong>이라 하고, <code>EXPLAIN</code>은 그 계획을 사람이 읽을 수 있게 보여주는 명령입니다.
+        중요한 건 <code>EXPLAIN</code>이 보여주는 숫자(특히 <code>rows</code>)가 <strong>실제 값이 아니라 통계 기반 추정치</strong>라는 점입니다.
+      </p>
+    </div>
+
+    <div class="concept-box">
+      <h4>MySQL EXPLAIN 핵심 컬럼 읽는 법</h4>
+      <ul>
+        <li><strong>type:</strong> 행에 접근하는 방식. <code>const</code> &gt; <code>eq_ref</code> &gt; <code>ref</code> &gt; <code>range</code> &gt; <code>index</code> &gt; <code>ALL</code> 순으로 일반적으로 더 비쌉니다. <code>ALL</code>은 풀 테이블 스캔입니다.</li>
+        <li><strong>key:</strong> 실제로 선택된 인덱스. <code>possible_keys</code>(후보)와 다를 수 있습니다.</li>
+        <li><strong>rows:</strong> 옵티마이저가 "이 단계에서 훑을 것"으로 <strong>추정</strong>한 행 수. 통계 기반 근사치이지 실측이 아닙니다.</li>
+        <li><strong>filtered:</strong> <code>rows</code> 중에서 WHERE 조건까지 통과할 것으로 추정되는 비율(%). <code>rows × filtered</code>가 실제로 다음 단계로 넘어갈 것으로 예상되는 행 수입니다.</li>
+        <li><strong>Extra:</strong> <code>Using index</code>(커버링 인덱스로 테이블 접근 없이 해결), <code>Using filesort</code>(추가 정렬 필요), <code>Using temporary</code>(임시 테이블 필요) 같은 부가 정보. 후자 둘은 대개 성능 경고 신호입니다.</li>
+      </ul>
+      <p style="margin-top:0.6rem;">PostgreSQL은 <code>EXPLAIN ANALYZE</code>로 "추정치(estimated rows)"와 "실제 실행 결과(actual rows)"를 나란히 보여줍니다. 이 둘의 차이가 클수록 통계가 실제 데이터 분포를 반영하지 못하고 있다는 신호입니다.</p>
+    </div>
+
+    <div class="concept-box">
+      <h4>Cardinality와 Selectivity — 왜 "인덱스가 있어도 느릴 수 있는가"</h4>
+      <p><strong>Cardinality(카디널리티)</strong>는 한 컬럼이 가질 수 있는 서로 다른 값의 개수이고, <strong>Selectivity(선택도)</strong>는 조건 하나가 전체 행 중 얼마나 좁은 범위로 걸러내는지를 뜻합니다. 선택도가 낮다는 것은 "조건을 걸어도 여전히 결과가 많이 남는다"는 뜻입니다.</p>
+      <ul>
+        <li>예: <code>status</code> 컬럼 값이 <code>'ACTIVE'</code>, <code>'INACTIVE'</code> 두 가지뿐이고 전체 행의 90%가 <code>'ACTIVE'</code>라면, <code>WHERE status = 'ACTIVE'</code>는 인덱스가 있어도 결국 행의 90%를 읽어야 하므로 옵티마이저가 인덱스 대신 풀스캔을 선택하는 것이 실제로 더 합리적일 수 있습니다.</li>
+        <li>반대로 <code>user_id</code>처럼 카디널리티가 높은 컬럼은 조건 하나로 결과를 극히 소수로 좁혀주므로 인덱스 효과가 큽니다.</li>
+      </ul>
+      <div class="tip">실무 팁: "이 컬럼에 인덱스가 없어서 느리다"는 판단 전에, 그 컬럼의 선택도가 애초에 인덱스를 쓸 만큼 좋은지부터 확인해야 합니다. 선택도가 낮은 컬럼에 인덱스를 추가하는 건 쓰기 비용만 늘리고 읽기 성능은 거의 개선하지 못하는 경우가 많습니다.</div>
+    </div>
+
+    <div class="concept-box">
+      <h4>통계(Statistics)가 오래되면 생기는 문제</h4>
+      <p>옵티마이저는 매 쿼리마다 실제 데이터를 다 세어보는 대신, 미리 계산해 둔 <strong>통계(테이블 행 수, 컬럼별 값의 분포, 히스토그램)</strong>를 참고해 비용을 추정합니다. 이 통계는 실시간이 아니라 주기적으로(또는 <code>ANALYZE TABLE</code> 실행 시) 갱신됩니다.</p>
+      <ul>
+        <li>대량 INSERT/DELETE/UPDATE 직후 통계를 갱신하지 않으면, 옵티마이저는 "예전 분포"를 기준으로 계획을 짜서 실제와 크게 어긋난 선택(예: 이미 데이터가 줄었는데 여전히 인덱스 대신 풀스캔을 고르거나, 그 반대)을 할 수 있습니다.</li>
+        <li>바로 이 지점이 면접 질문의 핵심입니다. <strong>"key는 잡혔는데 rows가 크다"</strong>는 것은, 옵티마이저가 "이 인덱스를 쓰는 게 낫다"고 판단은 했지만 그 인덱스로도 여전히 많은 행을 훑어야 할 것으로 추정한다는 뜻입니다. 원인은 대개 다음 중 하나입니다: (1) 조건의 선택도가 실제로 낮음, (2) 통계가 오래되어 실제보다 카디널리티를 잘못 추정, (3) 복합 인덱스의 앞부분 컬럼만 조건에 걸려 있어 뒤 컬럼의 선택도를 활용하지 못함.</li>
+      </ul>
+    </div>
+
+    <div class="concept-box">
+      <h4>Sargable하지 않은 쿼리 — 인덱스를 무력화시키는 흔한 실수</h4>
+      <p><strong>Sargable(Search ARGument ABLE)</strong>은 "인덱스를 그대로 활용해 조건을 판단할 수 있는 형태"를 뜻합니다. WHERE 절의 컬럼에 함수나 연산을 씌우면 옵티마이저는 인덱스에 저장된 원래 값을 그대로 비교할 수 없어, 각 행마다 함수를 계산해야 하므로 인덱스를 못 쓰거나 풀스캔으로 전환됩니다.</p>
+      <pre><span class="highlight-comment">-- Sargable하지 않음: created_at 컬럼에 함수를 씌워 인덱스 무력화</span>
+<span class="highlight-keyword">SELECT</span> * <span class="highlight-keyword">FROM</span> orders <span class="highlight-keyword">WHERE</span> <span class="highlight-fn">DATE</span>(created_at) = <span class="highlight-string">'2026-07-01'</span>;
+
+<span class="highlight-comment">-- Sargable: 범위 조건으로 바꿔 인덱스 그대로 활용</span>
+<span class="highlight-keyword">SELECT</span> * <span class="highlight-keyword">FROM</span> orders
+<span class="highlight-keyword">WHERE</span> created_at &gt;= <span class="highlight-string">'2026-07-01 00:00:00'</span>
+  <span class="highlight-keyword">AND</span> created_at &lt;  <span class="highlight-string">'2026-07-02 00:00:00'</span>;</pre>
+      <p style="margin-top:0.6rem;">같은 원리로 <code>WHERE UPPER(email) = ...</code>, <code>WHERE price * 1.1 &gt; ...</code>, <code>WHERE column LIKE '%keyword'</code>(앞이 와일드카드) 등도 인덱스를 무력화시키는 대표적인 패턴입니다.</p>
+    </div>
+
+    <div class="concept-box">
+      <h4>서브쿼리 vs 조인, OFFSET 페이지네이션의 함정</h4>
+      <ul>
+        <li><strong>비상관 서브쿼리:</strong> 옵티마이저가 조인으로 잘 변환해 처리하는 경우가 많지만, 일부 상관 서브쿼리(correlated subquery)는 바깥 쿼리의 행마다 반복 실행되어 명시적 JOIN보다 비효율적일 수 있습니다. 실행 계획으로 "몇 번 반복 실행되는지" 확인해야 합니다.</li>
+        <li><strong>OFFSET 페이지네이션:</strong> <code>LIMIT 20 OFFSET 100000</code>은 DB가 100,020개의 행을 읽어 앞의 100,000개를 버리는 방식으로 동작하는 경우가 많아, 뒤 페이지로 갈수록 선형적으로 느려집니다. <strong>Keyset(커서 기반) 페이지네이션</strong>(<code>WHERE id &gt; 마지막_id ORDER BY id LIMIT 20</code>)은 인덱스로 바로 다음 구간을 찾아가므로 페이지 번호와 무관하게 일정한 성능을 유지합니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ④ 실무 연결 -->
+  <section id="real-world">
+    <h2 class="section-title"><span class="icon">🏭</span> 실무 연결</h2>
+    <div class="card">
+      <h3>시나리오: 대량 삭제 배치 이후 갑자기 느려진 관리자 검색</h3>
+      <p>
+        야간 배치가 오래된 로그성 데이터 수백만 건을 삭제한 다음 날, 같은 인덱스를 쓰던 관리자 검색 API가 갑자기 느려졌다는 보고가 들어왔습니다.
+        EXPLAIN을 확인하니 여전히 같은 인덱스가 <code>key</code>로 잡혀 있었지만 <code>rows</code> 추정치가 삭제 전 테이블 크기 그대로였습니다. <code>ANALYZE TABLE</code>로 통계를 갱신하지 않아 옵티마이저가 옛날 분포를 기준으로 다른 조인 순서를 선택한 것이 원인이었습니다.
+        통계를 수동으로 갱신하고, 대량 변경 배치 뒤에는 통계 갱신을 파이프라인에 포함시키는 것으로 재발을 막았습니다.
+      </p>
+    </div>
+    <div class="card">
+      <h3>시나리오: 검색 필터에 함수가 섞여 들어간 리팩터링</h3>
+      <p>
+        이메일 대소문자 구분 없이 검색하기 위해 <code>WHERE LOWER(email) = LOWER(?)</code>로 조건을 바꾼 뒤, <code>email</code> 컬럼에 인덱스가 있었음에도 EXPLAIN의 <code>type</code>이 <code>ref</code>에서 <code>ALL</code>로 바뀌었습니다.
+        해결책은 애플리케이션에서 저장 시점에 이메일을 항상 소문자로 정규화해 저장하거나, <code>LOWER(email)</code>에 대한 함수 기반 인덱스(PostgreSQL의 expression index)를 별도로 만드는 것이었습니다. 후자를 택하면 쓰기 비용이 약간 늘지만 기존 조회 패턴을 바꾸지 않아도 됩니다.
+      </p>
+    </div>
+    <div class="card">
+      <h3>시나리오: 페이지 번호가 커질수록 느려지는 게시판 목록 API</h3>
+      <p>
+        게시판 100페이지쯤부터 응답 시간이 눈에 띄게 늘어난다는 사용자 불만이 있었습니다. <code>OFFSET</code> 기반 페이지네이션이 원인이었고, DB는 매 요청마다 앞쪽 수만 개의 행을 읽고 버리는 비용을 치르고 있었습니다.
+        "이전/다음" 이동만 지원하면 되는 UI였기 때문에, 마지막으로 본 글의 ID를 커서로 넘기는 keyset 페이지네이션으로 바꿔 페이지 번호와 무관하게 응답 시간을 일정하게 만들었습니다. 임의 페이지 점프가 필요한 화면은 이 방식이 맞지 않아, 그 화면만 별도로 근사 카운트를 캐싱하는 절충안을 적용했습니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ⑤ 답변 사고 순서 -->
+  <section id="answer-flow">
+    <h2 class="section-title"><span class="icon">🔍</span> 답변 사고 순서</h2>
+    <div class="tip">쿼리 튜닝 질문은 "인덱스를 추가하면 됩니다"로 끝내면 약한 답변입니다. 추정과 실측의 간극을 좁혀가는 진단 절차를 보여주는 것이 핵심입니다.</div>
+
+    <ol class="step-list">
+      <li>
+        <div class="step-content">
+          <strong>1단계 — 증상 정의: 언제부터, 어떤 조건에서 느려졌는가</strong>
+          <p>특정 파라미터에서만 느린지, 특정 시점(배치 이후) 이후 전체적으로 느려졌는지, 데이터량이 늘며 서서히 느려졌는지 구분한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>2단계 — EXPLAIN(가능하면 ANALYZE)으로 실행 계획 확인</strong>
+          <p>type, key, rows, filtered, Extra를 확인하고, 가능하면 추정 rows와 실제 실행 결과의 행 수를 비교한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>3단계 — 추정과 실제의 간극이 왜 생겼는지 가설 수립</strong>
+          <p>조건의 선택도가 원래 낮은 것인지, 통계가 오래되어 잘못 추정된 것인지, 복합 인덱스의 활용 컬럼 순서 문제인지를 구분한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>4단계 — 쿼리 구조 자체의 sargability 확인</strong>
+          <p>WHERE 절 컬럼에 함수·연산·앞쪽 와일드카드가 섞여 인덱스를 무력화하는지 점검한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>5단계 — 통계 갱신 또는 인덱스/쿼리 리라이트 적용</strong>
+          <p>원인에 따라 <code>ANALYZE</code>로 통계 갱신, 복합 인덱스 컬럼 순서 조정, sargable하게 쿼리 리라이트, keyset 페이지네이션 전환 등을 적용한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>6단계 — 변경 전후 실행 계획과 실제 실행 시간 비교</strong>
+          <p>"느낌"이 아니라 EXPLAIN ANALYZE와 실측 응답 시간으로 개선을 검증하고, 다른 쿼리 패턴에 회귀가 없는지 확인한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>7단계 — 재발 방지: 모니터링·통계 갱신 주기 점검</strong>
+          <p>슬로우 쿼리 로그, 정기적인 통계 갱신 정책, 대량 변경 배치 이후 통계 갱신을 파이프라인에 포함시키는 등 재발을 구조적으로 막는다.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ⑥ 핵심 답변 예시 -->
+  <section id="answer-example">
+    <h2 class="section-title"><span class="icon">💡</span> 핵심 답변 예시</h2>
+
+    <div class="answer-block">
+      <span class="tag tag-short">짧은 버전 (1분)</span>
+      <p>
+        "key가 잡혀 있는데 rows가 크다는 건 옵티마이저가 그 인덱스를 쓰기로는 했지만, 그 조건으로도 여전히 많은 행을 훑어야 할 것으로 추정한다는 뜻입니다. 먼저 그 컬럼의 실제 선택도가 낮은 건지, 아니면 통계가 오래되어 실제 분포와 어긋난 건지를 구분합니다. 대량 데이터 변경 직후라면 통계 갱신부터 의심하고, 원래 선택도가 낮은 조건이라면 복합 인덱스 순서를 조정하거나 쿼리 자체를 sargable하게 리라이트하는 방향으로 접근합니다. 마지막엔 EXPLAIN ANALYZE로 추정치와 실측치가 좁혀졌는지 반드시 확인합니다."
+      </p>
+    </div>
+
+    <div class="answer-block">
+      <span class="tag tag-deep">깊이 있는 버전 (3~4분)</span>
+      <p>
+        "이 상황은 '인덱스가 있으니 빠를 것이다'라는 가정이 항상 성립하지는 않는다는 걸 보여주는 대표적인 신호라서, 저는 추정과 실제 사이의 간극을 좁혀가는 순서로 접근합니다.<br><br>
+        <strong>첫째, 그 rows 추정치가 최근에 생긴 문제인지부터 확인합니다.</strong> 최근 대량 INSERT/DELETE/UPDATE 배치가 있었다면 통계가 실제 데이터 분포를 반영하지 못해 옵티마이저가 옛 분포 기준으로 비용을 잘못 계산했을 가능성이 큽니다. 이 경우 <code>ANALYZE TABLE</code>로 통계를 갱신하는 것만으로 계획이 바뀌기도 합니다.<br><br>
+        <strong>둘째, 통계 문제가 아니라면 그 조건 자체의 선택도를 의심합니다.</strong> 예를 들어 status 컬럼처럼 값의 종류가 적고 한쪽으로 치우친 컬럼이라면, 인덱스가 있어도 그 조건 하나로는 결과를 충분히 좁히지 못해 rows 추정치가 클 수밖에 없습니다. 이런 경우 인덱스를 억지로 강제하기보다, 선택도가 높은 다른 조건과 복합 인덱스로 묶는 방향을 검토합니다.<br><br>
+        <strong>셋째, 복합 인덱스를 쓰고 있다면 조건이 인덱스의 앞쪽 컬럼만 걸고 있는지 확인합니다.</strong> 복합 인덱스는 왼쪽 컬럼부터 순서대로 활용되므로, 뒤쪽 컬럼의 높은 선택도를 활용하지 못하고 있다면 컬럼 순서를 재배치하거나 커버링 인덱스로 확장하는 걸 고려합니다.<br><br>
+        <strong>넷째, 쿼리 자체가 sargable한지 다시 봅니다.</strong> WHERE 절 컬럼에 함수나 형변환이 섞여 있으면 통계나 인덱스 설계와 무관하게 옵티마이저가 인덱스를 제대로 활용할 수 없으므로, 쿼리 리라이트가 먼저입니다.<br><br>
+        <strong>마지막으로, 어떤 조치를 취하든 EXPLAIN ANALYZE로 추정 rows와 실제 rows가 좁혀졌는지, 실제 응답 시간이 개선됐는지를 반드시 재측정합니다.</strong> 추정치만 보고 '고쳤다'고 판단하지 않는 것이 이 과정의 핵심입니다."
+      </p>
+    </div>
+  </section>
+
+  <!-- ⑦ Trade-off -->
+  <section id="tradeoff">
+    <h2 class="section-title"><span class="icon">⚖️</span> Trade-off</h2>
+    <div class="card">
+      <h3>옵티마이저 신뢰 vs 인덱스 힌트(FORCE INDEX) 강제</h3>
+      <ul>
+        <li><strong>옵티마이저 신뢰 이득:</strong> 데이터 분포가 바뀌어도 자동으로 최적 계획을 다시 찾아줌. 유지보수 부담이 적음</li>
+        <li><strong>옵티마이저 신뢰 비용:</strong> 통계가 오래되거나 상관관계를 반영하지 못하면 잘못된 계획을 선택할 수 있음</li>
+        <li><strong>힌트 강제 이득:</strong> 특정 상황에서 확실히 나은 계획을 즉시 보장</li>
+        <li><strong>힌트 강제 비용:</strong> 데이터 분포가 바뀌어도 그 계획에 고정되어, 나중에는 오히려 더 나쁜 선택이 될 수 있음. 코드에 DB 내부 지식이 하드코딩됨</li>
+        <li><strong>판단 기준:</strong> 통계 갱신·복합 인덱스 재설계로 해결되지 않는 예외적 상황에서만 힌트를 임시 조치로 쓰고, 근본적으로는 통계·인덱스 설계를 고치는 방향을 우선한다.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>커버링 인덱스 확장 vs 쓰기 비용</h3>
+      <ul>
+        <li><strong>커버링 인덱스 이득:</strong> 테이블 접근 없이 인덱스만으로 결과를 만들어(<code>Using index</code>) 조회 성능이 크게 개선됨</li>
+        <li><strong>커버링 인덱스 비용:</strong> 인덱스 크기가 커지고, INSERT/UPDATE/DELETE마다 그 인덱스도 함께 갱신해야 하므로 쓰기 비용이 늘어남</li>
+        <li><strong>판단 기준:</strong> 읽기 비중이 압도적으로 높고 자주 실행되는 쿼리 위주로 커버링 인덱스를 선별 적용한다.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>OFFSET 페이지네이션 vs Keyset 페이지네이션</h3>
+      <ul>
+        <li><strong>OFFSET 이득:</strong> 임의 페이지로 바로 이동 가능(사용자가 "50페이지로 가기" 요청 가능)</li>
+        <li><strong>OFFSET 비용:</strong> 뒤 페이지로 갈수록 앞쪽 행을 읽고 버리는 비용이 선형으로 증가</li>
+        <li><strong>Keyset 이득:</strong> 페이지 번호와 무관하게 일정한 성능. 대용량 목록에 적합</li>
+        <li><strong>Keyset 비용:</strong> 임의 페이지 점프를 지원하기 어려움(이전/다음 이동에 최적)</li>
+        <li><strong>판단 기준:</strong> 무한 스크롤·피드처럼 순차 이동이 대부분인 화면은 keyset을, 페이지 번호 직접 이동이 꼭 필요한 화면은 근사 카운트 캐싱 등으로 OFFSET 비용을 완화한다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ⑧ 흔한 오해 -->
+  <section id="misconceptions">
+    <h2 class="section-title"><span class="icon">🚫</span> 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="myth">인덱스가 있으면(key가 잡히면) 무조건 빠르다.</div>
+      <div class="truth">인덱스를 "쓴다"와 "효과적으로 결과를 좁힌다"는 다른 문제입니다. 선택도가 낮은 조건이라면 인덱스를 타도 여전히 많은 행을 읽어야 해 풀스캔과 큰 차이가 없을 수 있습니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">EXPLAIN의 rows는 실제로 스캔될 행 수와 같다.</div>
+      <div class="truth">rows는 통계 기반 추정치일 뿐입니다. 통계가 오래되었거나 컬럼 간 상관관계를 반영하지 못하면 실제 값과 크게 다를 수 있습니다. 정확한 값은 <code>EXPLAIN ANALYZE</code>(또는 실제 실행 로그)로 확인해야 합니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">type이 ALL(풀 테이블 스캔)이면 항상 나쁜 신호다.</div>
+      <div class="truth">테이블 전체가 작거나, 조건의 선택도가 낮아 어차피 대부분의 행을 읽어야 한다면 풀스캔이 인덱스 스캔보다 오히려 더 효율적일 수 있습니다(랜덤 I/O보다 순차 I/O가 유리). 테이블 크기와 선택도를 함께 보고 판단해야 합니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">쿼리 튜닝은 인덱스를 추가하면 끝난다.</div>
+      <div class="truth">쿼리 자체가 sargable하지 않으면(컬럼에 함수를 씌우는 등) 아무리 좋은 인덱스를 추가해도 활용되지 않습니다. 통계 갱신, 쿼리 리라이트, 인덱스 설계는 함께 점검해야 하는 세 축입니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">LIMIT을 걸면 쿼리는 항상 빠르다.</div>
+      <div class="truth">정렬(<code>ORDER BY</code>)이나 <code>OFFSET</code>이 함께 있으면 DB는 LIMIT으로 잘라내기 전에 정렬 대상 전체 또는 앞쪽 OFFSET만큼의 행을 먼저 처리해야 할 수 있습니다. LIMIT은 결과 개수를 줄일 뿐, 그 이전 단계의 비용을 자동으로 없애주지 않습니다.</div>
+    </div>
+  </section>
+
+  <!-- ⑨ 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2 class="section-title"><span class="icon">📊</span> 좋은 답변 vs 약한 답변</h2>
+    <div class="compare-grid">
+      <div class="compare-card good">
+        <h4>강한 답변</h4>
+        <p>"key가 잡혔는데 rows가 크다는 건 그 인덱스로도 많은 행을 훑어야 할 것으로 옵티마이저가 추정한다는 뜻입니다. 최근 대량 변경이 있었다면 통계 노후화를, 아니라면 그 조건의 선택도 자체가 낮은지, 복합 인덱스의 앞쪽 컬럼만 활용되고 있는지를 확인합니다. 함수나 형변환이 WHERE 절에 섞여 sargability를 깨고 있는지도 함께 봅니다. 조치 후에는 EXPLAIN ANALYZE로 추정과 실제가 좁혀졌는지 재확인합니다."</p>
+        <p class="why">
+          왜 강한가: 추정치와 실측치를 구분하고, 통계·선택도·복합 인덱스 순서·sargability라는 네 가지 원인을 체계적으로 좁혀가며, 마지막에 반드시 재측정으로 검증합니다.
+        </p>
+      </div>
+      <div class="compare-card weak">
+        <h4>약한 답변</h4>
+        <p>"인덱스가 이미 있는데 느리다면 새 인덱스를 하나 더 추가하면 해결될 것 같습니다."</p>
+        <p class="why">
+          왜 약한가: rows가 큰 이유(통계, 선택도, sargability)를 전혀 진단하지 않고 "인덱스 추가"라는 단일 처방으로 건너뜁니다. 원인을 모르는 채 추가한 인덱스는 문제를 해결하지 못하고 쓰기 비용만 늘릴 수 있습니다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑩ Follow-up -->
+  <section id="followup">
+    <h2 class="section-title"><span class="icon">🎓</span> Senior-level Follow-up 질문</h2>
+
+    <div class="followup-card">
+      <div class="q">Q. 통계를 갱신했는데도 옵티마이저가 여전히 비효율적인 계획을 선택합니다. 다음으로 무엇을 의심하겠습니까?</div>
+      <div class="intent">의도: "통계 갱신"을 만능 해결책처럼 암기했는지, 아니면 그 한계(컬럼 간 상관관계, 히스토그램 해상도)까지 이해하는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 기본 통계는 대개 컬럼을 독립적으로 취급하기 때문에, 두 컬럼이 서로 강하게 연관되어 있을 때(예: <code>city='서울'</code>이면 <code>district</code> 값의 분포가 특정 구에 몰리는 경우) 옵티마이저는 실제보다 결과 행 수를 과대/과소 추정할 수 있습니다. 이런 경우 다중 컬럼 통계(PostgreSQL의 extended statistics, MySQL의 히스토그램 확장)를 별도로 생성하거나, 쿼리를 리라이트해 옵티마이저가 상관관계를 추정할 필요 자체를 줄이는 방향을 검토합니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. 복합 인덱스 <code>(a, b, c)</code>가 있는데 <code>WHERE b = ? AND c = ?</code> 조건에서는 왜 이 인덱스가 거의 쓸모없습니까?</div>
+      <div class="intent">의도: 복합 인덱스의 "왼쪽 우선(leftmost prefix)" 원칙을 정의로만 아는지, 실제 쿼리 패턴 설계에 적용할 수 있는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 복합 인덱스는 정렬된 트리 구조에서 <code>a</code> 값으로 먼저 정렬되고 그 안에서 <code>b</code>, 다시 그 안에서 <code>c</code> 순으로 정렬됩니다. 조건에 <code>a</code>가 빠져 있으면 인덱스 트리에서 시작점을 좁힐 방법이 없어 결국 인덱스 전체를 스캔하거나(index full scan) 아예 활용하지 못합니다. 이 쿼리 패턴이 자주 실행된다면 <code>(b, c)</code> 조합의 별도 인덱스를 추가하거나, 실제 조회 패턴에 맞게 복합 인덱스 컬럼 순서를 재설계해야 합니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. 개발 환경에서는 빠른 쿼리가 운영 DB에서만 느립니다. 통계나 인덱스가 동일한데도 이런 차이가 왜 생길 수 있습니까?</div>
+      <div class="intent">의도: 쿼리 튜닝 문제를 "쿼리문 자체"로만 국한하지 않고, 데이터 규모·분포·환경 차이까지 원인 후보에 넣는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 개발 DB는 데이터량이 훨씬 적어 같은 쿼리도 옵티마이저가 다른(더 저렴해 보이는) 계획을 선택하거나, 인덱스 없이도 충분히 빠를 수 있습니다. 또한 운영 DB는 실제 값의 분포가 치우쳐 있어(데이터 skew) 개발 환경의 균등한 테스트 데이터로는 재현되지 않는 선택도 문제가 생길 수 있습니다. 따라서 튜닝 검증은 반드시 운영과 유사한 규모·분포의 데이터(또는 운영 DB의 read replica)에서 EXPLAIN ANALYZE로 확인해야 합니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. Keyset 페이지네이션으로 바꾸면 모든 페이지네이션 문제가 해결됩니까?</div>
+      <div class="intent">의도: 하나의 해결책을 모든 상황에 적용하려는 사고를 하는지, 트레이드오프를 인지하고 있는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> Keyset은 순차 이동(다음 페이지)에는 강하지만, "정렬 기준이 자주 바뀌는 화면"이나 "임의 페이지로 점프"가 필요한 화면에는 적용하기 어렵습니다. 또한 정렬 기준 컬럼에 동률 값이 많으면 커서 조건에 보조 정렬 키(예: <code>id</code>)를 추가해 순서를 고유하게 만들어야 중복/누락 없이 동작합니다. 모든 목록 API를 일괄로 바꾸기보다, 실제 사용 패턴(무한 스크롤 vs 페이지 번호 직접 이동)에 따라 선택적으로 적용하는 것이 맞습니다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑪ Rubric -->
+  <section id="rubric">
+    <h2 class="section-title"><span class="icon">✅</span> 자기 점검 Rubric</h2>
+    <div style="overflow-x: auto;">
+      <table class="rubric-table">
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>강한 답변</th>
+            <th>중간 답변</th>
+            <th>약한 답변</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>추정치 vs 실측치 구분</td>
+            <td><span class="level-badge level-strong">rows를 추정치로 인지하고 EXPLAIN ANALYZE로 실측 비교</span></td>
+            <td><span class="level-badge level-mid">"rows가 크면 느리다" 정도로만 이해</span></td>
+            <td><span class="level-badge level-weak">rows를 실제 스캔 값으로 오인</span></td>
+          </tr>
+          <tr>
+            <td>원인 후보 분리</td>
+            <td><span class="level-badge level-strong">통계 노후화·선택도·복합 인덱스 순서·sargability를 구분해 진단</span></td>
+            <td><span class="level-badge level-mid">"인덱스가 안 맞나보다" 정도만 언급</span></td>
+            <td><span class="level-badge level-weak">원인 구분 없이 인덱스 추가만 제안</span></td>
+          </tr>
+          <tr>
+            <td>Selectivity 이해</td>
+            <td><span class="level-badge level-strong">컬럼 값 분포와 선택도를 근거로 인덱스 효용을 판단</span></td>
+            <td><span class="level-badge level-mid">"인덱스가 있으니 도움 될 것" 정도로만 판단</span></td>
+            <td><span class="level-badge level-weak">언급 없음</span></td>
+          </tr>
+          <tr>
+            <td>쿼리 리라이트 감각</td>
+            <td><span class="level-badge level-strong">sargable 여부를 점검하고 구체적 리라이트 예시 제시</span></td>
+            <td><span class="level-badge level-mid">"쿼리를 바꿔볼 수도 있다" 정도의 언급</span></td>
+            <td><span class="level-badge level-weak">쿼리 구조는 고려하지 않음</span></td>
+          </tr>
+          <tr>
+            <td>검증 절차</td>
+            <td><span class="level-badge level-strong">변경 전후 실행 계획·실측 시간을 비교해 근거로 제시</span></td>
+            <td><span class="level-badge level-mid">"적용 후 빨라졌다" 정도로만 언급</span></td>
+            <td><span class="level-badge level-weak">검증 절차 없음</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem;">
+      <h3>이 Day 레슨 이후 스스로 확인할 것</h3>
+      <ul>
+        <li>본인이 쓰는 DB에서 <code>EXPLAIN</code>과 <code>EXPLAIN ANALYZE</code>(또는 동급 명령)의 출력 차이를 실제로 비교해보기</li>
+        <li>자주 실행되는 쿼리 중 WHERE 절에 함수나 형변환이 섞여 있는 것이 있는지 점검해보기</li>
+        <li>Day 6 면접 질문을 소리 내어 2분 내로 답변해보기. "추정 vs 실측 구분 → 통계/선택도/인덱스 순서/sargability 진단 → 조치 → 재측정" 흐름이 자연스럽게 나오는지 확인하기</li>
+        <li>위 Rubric 기준으로 본인 답변을 스스로 채점하기</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="nav-footer">
+    <a href="./interview-day-005-lock-deadlock.html">← Day 5 — Lock과 Deadlock</a>
+    <a href="./interview-day-007-replication-ha.html">Day 7 — 복제와 고가용성 →</a>
+  </div>
+
+</div>
+</body>
+</html>
