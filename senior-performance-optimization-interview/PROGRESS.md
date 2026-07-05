@@ -9,12 +9,12 @@
 | 3 | 2026-07-02 | 인덱스 최적화 — 언제 인덱스가 오히려 느려지나 | [0003-index-optimization-when-indexes-slow-you-down.html](lessons/0003-index-optimization-when-indexes-slow-you-down.html) |
 | 4 | 2026-07-03 | 느린 API 분석 — latency 분해와 병목 특정 | [0004-slow-api-latency-breakdown-bottleneck-isolation.html](lessons/0004-slow-api-latency-breakdown-bottleneck-isolation.html) |
 | 5 | 2026-07-04 | 캐시 전략 설계 — 히트율, 무효화, 일관성 trade-off | [0005-cache-strategy-hit-rate-invalidation-consistency.html](lessons/0005-cache-strategy-hit-rate-invalidation-consistency.html) |
+| 6 | 2026-07-05 | 비동기 처리와 동시성 — async가 해결책인 경우와 함정 | [0006-async-concurrency-when-it-helps-and-traps.html](lessons/0006-async-concurrency-when-it-helps-and-traps.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | 비동기 처리와 동시성 — async가 해결책인 경우와 함정 | async I/O, thread pool, GIL, event loop blocking |
 | 7 | 부하 테스트 설계 — 현실적인 트래픽 시뮬레이션 | 부하 패턴, k6/Locust, ramp-up, 병목 판별 |
 | 8 | Profiling 실전 — CPU/메모리/I/O 해석 | py-spy, cProfile, flame graph, I/O wait |
 | 9 | 성능 지표 해석 — p50/p95/p99, throughput, error rate | percentile latency, histogram, SLO |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 다음: Day 6 — 비동기 처리와 동시성 (async가 해결책인 경우와 함정)
+**Day 6 완료** — 다음: Day 7 — 부하 테스트 설계 (현실적인 트래픽 시뮬레이션)
 
 ## 습득한 핵심 개념
 
@@ -53,5 +53,9 @@
 - [x] TTL 기반 vs 이벤트 기반 무효화, 캐시 키 버전 관리 (Day 5)
 - [x] Cache Stampede와 완화 전략 (Jittered TTL, 분산 락, Early Recomputation) (Day 5)
 - [x] 캐시 장애 격리와 최종 일관성(Eventual Consistency) trade-off (Day 5)
-- [ ] async I/O와 GIL, 이벤트 루프 블로킹 (예정 Day 6)
+- [x] 동시성(Concurrency)과 병렬성(Parallelism)의 구분 (Day 6)
+- [x] I/O bound vs CPU bound와 적합한 동시성 모델 선택 (Day 6)
+- [x] 이벤트 루프 단일 스레드 모델과 Event Loop Blocking (Day 6)
+- [x] GIL의 범위 — CPU 병렬성 제한, I/O 대기 동시 처리는 무관 (Day 6)
+- [x] Thread Pool Executor를 통한 blocking 코드 격리 (Day 6)
 - [ ] 부하 테스트 설계 원칙 (예정 Day 7)
