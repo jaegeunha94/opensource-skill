@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-04 | Cloudflare DNS/CDN/보안 경계 구성 프레임워크 | [0001-cloudflare-dns-cdn-security-boundary-framework.html](lessons/0001-cloudflare-dns-cdn-security-boundary-framework.html) |
+| 2 | 2026-07-05 | DNS 심화 설계와 DNSSEC | [0002-dns-deep-dive-cname-flattening-dnssec.html](lessons/0002-dns-deep-dive-cname-flattening-dnssec.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | DNS 심화 설계와 DNSSEC | 레코드 타입별 proxied 가능 여부, CNAME flattening, DNSSEC 체인, 마이그레이션 시 TTL 전략 |
 | 3 | CDN 캐시 전략과 Cache Rules | Cache Rules vs 레거시 Page Rules, Cache Key 커스터마이징, Edge TTL vs Browser TTL, Tiered Cache, 캐시 스탬피드 |
 | 4 | SSL/TLS 모드와 Origin 보호 | Flexible/Full/Full(strict), Origin CA, Authenticated Origin Pulls, mTLS, 리다이렉트 루프 장애 |
 | 5 | WAF와 Rate Limiting 설계 | Managed Rules, Custom Rules, Rate Limiting Rules, 오탐(false positive) 대응, 단계적 배포(Log → Block) |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — Day 2: DNS 심화 설계와 DNSSEC로 진행 예정.
+**Day 2 완료** — Day 3: CDN 캐시 전략과 Cache Rules로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -32,7 +32,10 @@
 - [x] WAF/DDoS/Rate Limiting/Bot Management가 계층을 이루는 방식 (Day 1)
 - [x] Page Rules → Cache Rules/Configuration Rules/Origin Rules 전환 배경 (Day 1)
 - [x] 시니어 면접 답변 프레임워크: 요구사항 → 경계 설계 → 장애 시나리오 → trade-off (Day 1)
-- [ ] DNSSEC와 레코드별 마이그레이션 전략 (예정 Day 2)
+- [x] 레코드 타입별 proxied 가능 여부와 "이름 단위" 묶임 규칙 (Day 2)
+- [x] CNAME flattening 동작과 부작용(도메인 검증 실패, dangling CNAME) (Day 2)
+- [x] DNSSEC 체인 구조와 마이그레이션 시 DS 레코드 처리 (Day 2)
+- [x] Multi-signer DNSSEC과 마이그레이션 시 TTL/SOA 전략 (Day 2)
 - [ ] Cache Rules 세부 설계와 캐시 스탬피드 방지 (예정 Day 3)
 - [ ] Origin 인증서와 mTLS 설계 (예정 Day 4)
 - [ ] WAF/Rate Limiting 단계적 배포 전략 (예정 Day 5)
@@ -45,6 +48,7 @@
 ## 커리큘럼 기준 노트
 
 - 이 커리큘럼은 2026-07-04 기준 Cloudflare 공식 문서(developers.cloudflare.com), changelog, Page Rules 마이그레이션 가이드, 공식 post-mortem 블로그를 확인한 뒤 작성됐다. 상세 출처는 `RESOURCES.md` 참고.
+- **Day 2 작성 시(2026-07-05) 재확인 내용**: DNS proxy status/limitations, CNAME flattening, DNSSEC, multi-signer DNSSEC, DNSSEC active migration, full setup(네임서버 전환) 공식 문서를 다시 확인했다. 기존 커리큘럼과 충돌하는 내용은 없었고, 다음 세부 규칙을 새로 반영했다: ① 같은 이름(name)의 A/AAAA 레코드는 하나라도 proxied면 전체가 proxied로 취급된다(레코드 단위가 아닌 이름 단위 규칙). ② Cloudflare는 multi-signer DNSSEC에서 공급자별 별도 KSK를 쓰는 "model 2"를 공식 권장한다. ③ 네임서버 전환 전 DNSSEC은 반드시 registrar에서 먼저 해제(또는 active migration)해야 하며, 그러지 않으면 DNSSEC을 검증하는 리졸버 사용자에게만 전면 장애가 발생한다.
 - **Page Rules**: 공식 문서에 "(deprecated)"로 명시. 2025-01-06부로 전 플랜에서 신규 생성이 완전히 차단됐다(Free/Pro/Business는 2024-07-01부터, Enterprise 신규 계정은 2024-08-01부터 순차 차단). 기존 규칙은 계속 동작하며 Cloudflare가 Cache Rules 등으로 자동 전환 중이다. 신규 구성은 Cache Rules / Configuration Rules / Origin Rules / Redirect Rules / Transform Rules로 설계한다. (Day 1, 3, 8에 반영)
 - **Firewall Rules / 구 Rate Limiting**: API 지원이 2025-06-15부로 종료되고 WAF Custom Rules / Rate Limiting Rules로 완전히 통합됐다. 대시보드 경로도 Security &gt; Security rules로 바뀌었다. (Day 5에 반영)
 - **Origin 보호 우선순위**: 공식 가이드(protect-your-origin-server)는 Cloudflare Tunnel을 최상위 권장으로 명시하고, 공개 IP를 유지해야 하는 경우의 차선책으로 Authenticated Origin Pulls + IP 허용목록을 제시한다. (Day 1, 9에 반영)
