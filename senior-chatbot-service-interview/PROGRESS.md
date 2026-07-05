@@ -5,12 +5,12 @@
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-04 | 챗봇 서비스 요구사항과 intent/entity/context 설계 프레임워크 | [0001-chatbot-service-requirements-and-intent-entity-context-framework.html](lessons/0001-chatbot-service-requirements-and-intent-entity-context-framework.html) |
+| 2 | 2026-07-05 | Intent 분류 체계와 Utterance/동의어 사전 설계 | [0002-intent-taxonomy-utterance-synonym-dictionary-design.html](lessons/0002-intent-taxonomy-utterance-synonym-dictionary-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 2 | Intent 분류 체계와 Utterance/동의어 사전 설계 | Intent taxonomy, utterance 데이터 설계, synonym dictionary |
 | 3 | Entity·Slot 추출 설계와 검증 | Slot filling, multi-value entity, NER vs LLM 추출 |
 | 4 | NLU-LLM Hybrid Routing 아키텍처 | 비용/지연/컴플라이언스 기준 라우팅, semantic router |
 | 5 | Dialogue State 설계 | FSM vs graph 기반 state, 상태 전이 설계 |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 1 완료** — 다음: Day 2 — Intent 분류 체계와 Utterance/동의어 사전 설계
+**Day 2 완료** — 다음: Day 3 — Entity·Slot 추출 설계와 검증
 
 ## 습득한 핵심 개념
 
@@ -35,7 +35,10 @@
 - [x] Intent/Entity/Context 3요소 모델과 각 요소가 실패했을 때의 증상 구분 (Day 1)
 - [x] 규칙 기반 NLU vs LLM 기반 이해 vs 하이브리드 선택 기준 (Day 1)
 - [x] 2023년식 "intent tree만" 설계가 2026년 기준으로 재배치된 이유 (Day 1)
-- [ ] Intent taxonomy, utterance 설계, synonym dictionary (예정 Day 2)
+- [x] Intent 경계를 시스템 행동(같은 API/로직) 기준으로 나누는 원칙 (Day 2)
+- [x] Utterance 표현 공간 설계(문장형태·격식·생략·오탈자·부정 표현 축) (Day 2)
+- [x] 동의어 사전(synonym dictionary)과 intent 분류의 책임 분리 (Day 2)
+- [x] LLM 기반 시스템에서도 taxonomy 품질이 성능 상한이 되는 이유 (Day 2)
 - [ ] Entity/Slot 추출과 검증 (예정 Day 3)
 - [ ] NLU-LLM Hybrid Routing (예정 Day 4)
 - [ ] Dialogue State 설계 (예정 Day 5)
@@ -58,3 +61,8 @@
   아니라 "NLU/규칙 기반 로직을 빠른 전처리 필터로 두고 LLM 기반 이해·tool
   calling을 중심에 두는 하이브리드 아키텍처" 관점으로 커리큘럼을 설계함.
   근거는 `RESOURCES.md` 참고.
+- 2026-07-05: Day 2 작성 전 최신 조사(Label Your Data "Intent Classification:
+  2026 Techniques", raia AI Training "Intent Taxonomy Design", Rasa 동의어
+  entity 매핑 공식 문서)를 확인한 결과 기존 커리큘럼 방향과 상충하는 내용은
+  없었음. Intent당 80~100개 utterance 권장치와 taxonomy 품질이 모델 성능의
+  상한이 된다는 논지를 레슨에 반영함. 근거는 `RESOURCES.md` 참고.

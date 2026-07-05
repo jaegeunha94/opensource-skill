@@ -21,6 +21,13 @@
 - ["Toward Super Agent System with Hybrid AI Routers" (arXiv 2504.10519, 2025-04)](https://arxiv.org/pdf/2504.10519)
 - **정리**: "규칙 기반 트리는 정형화된 80%를 처리하고 LLM은 나머지 20%의 복잡한/모호한 턴을 처리한다"는 하이브리드 공존 프레이밍이 "트리는 죽었다"는 단순 대체 서사보다 더 근거가 명확하다.
 
+## Intent Taxonomy / Utterance / 동의어 사전 (Day 2 보강, 2026-07-05 확인)
+
+- [Label Your Data — "Intent Classification: 2026 Techniques for NLP Models"](https://labelyourdata.com/articles/machine-learning/intent-classification) — intent당 80–100개 다양한 training utterance 권장, 동의어·구어체·오탈자 포함 다양성 강조, taxonomy 품질이 모델 성능의 상한이 된다는 논지.
+- [raia — "Intent Taxonomy Design"](https://docs.raiaai.com/ai-training/ai-training/how-to-train-an-ai-agent/module-4-routing-and-intent-mapping/lesson-4.2-intent-taxonomy-design) — intent taxonomy를 계층적 목표 분류 체계로 설계하고, "living document"로 지속 갱신해야 한다는 가이드.
+- [Rasa — Entities and Synonyms](https://rasa.com/docs) (Rasa 공식 문서, entity synonym 매핑) — 동의어는 intent가 아니라 entity 값을 canonical value로 정규화하는 메커니즘임을 명시.
+- **정리**: LLM 기반 분류로 넘어가도 intent taxonomy·utterance 데이터 설계·동의어 사전의 역할 자체는 사라지지 않으며, "결정론적 분류기를 학습시키는 용도"에서 "LLM 프롬프트/tool 스키마의 후보 정의 및 평가 기준선" 용도로 재배치되었다. Day 1의 하이브리드 라우팅 프레이밍과 일관된 결론이므로 기존 커리큘럼 방향을 유지함.
+
 ## Dialogue State / Session / Context 관리
 
 - [LangGraph Persistence — Checkpointer/Store](https://docs.langchain.com/oss/python/langgraph/persistence) — 그래프 기반 상태 저장(MemorySaver/SqliteSaver/PostgresSaver), human-in-the-loop `interrupt_before`, time-travel.

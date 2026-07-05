@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — Intent 분류 체계와 Utterance/동의어 사전 설계</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #2dd4bf;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #123230; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #0f1117;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .src-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+    .src-note a { color: var(--blue); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 2 · 챗봇 서비스 Interview</div>
+    <h1>Intent 분류 체계와 Utterance/동의어 사전 설계</h1>
+    <div class="subtitle">Intent taxonomy를 비즈니스 목표에 맞게 설계하고, utterance 학습 데이터와
+    동의어 사전을 품질 있게 구축해서 LLM 시대에도 여전히 필요한 "구조화된 분류 계층"을
+    유지보수 가능하게 만드는 능력</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "챗봇의 intent 체계를 처음부터 설계한다면, 몇 개 정도의 intent를 어떤 기준으로 나누고
+      어떻게 계층화하시겠습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "Intent 분류기를 학습시킬 utterance 데이터를 어떻게 설계하고, 데이터 품질을 어떻게
+      관리하시나요? LLM 시대에도 utterance 데이터가 왜 여전히 필요한가요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "동의어 사전(synonym dictionary)은 어떤 문제를 해결하고, 언제 필요하며, 실제 운영에서
+      어떻게 관리하시나요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Intent taxonomy란 무엇인가 — "카테고리 목록"이 아니라 "결정 트리의 뼈대"</h2>
+
+    <p>
+      Day 1에서 Intent를 "사용자가 원하는 것의 분류"라고 정의했다. Intent taxonomy는 이
+      분류들을 <strong>하나의 일관된 체계로 계층화한 것</strong>이다. 단순히 "가능한 질문들을
+      쭉 나열한 목록"이 아니라, <strong>어떤 intent가 어떤 상위 그룹에 속하고, 어디까지가
+      하나의 intent이고 어디서부터 별개의 intent로 나눠야 하는지를 규정하는 설계 산출물</strong>이다.
+    </p>
+
+    <div class="callout callout-info">
+      <strong>핵심 전제:</strong> Intent taxonomy의 품질이 나쁘면, 그 위에 아무리 좋은
+      분류 모델(규칙 기반이든 LLM이든)을 올려도 성능이 taxonomy 품질 이상으로 올라가지
+      않는다. "모델 성능은 taxonomy 품질에 의해 상한(capped)된다"는 것이 실무에서
+      가장 자주 간과되는 사실이다.
+    </div>
+
+    <h3>① Intent를 나누는 기준 — "말이 다르다"가 아니라 "처리 로직이 다르다"</h3>
+    <p>
+      Intent를 나누는 가장 흔한 실수는 <strong>표현이 다르면 별개의 intent로 만드는 것</strong>이다.
+      "환불하고 싶어요"와 "돈 돌려주세요"는 표현은 다르지만 처리 로직(환불 API 호출, 필요한
+      slot, 후속 흐름)이 완전히 같다면 <strong>같은 intent, 다른 utterance</strong>로 다뤄야
+      한다. 반대로 "배송 조회"와 "배송 취소"는 언뜻 비슷해 보여도 처리 로직과 실패 비용이
+      완전히 다르므로 <strong>별개의 intent</strong>로 분리해야 한다.
+    </p>
+
+    <div class="callout callout-warn">
+      <strong>판별 기준:</strong> "이 두 발화가 최종적으로 같은 API를 호출하고 같은 후속
+      질문을 던지는가?"에 Yes면 같은 intent, No면 다른 intent다. 언어적 유사성이 아니라
+      <strong>시스템 행동(system behavior)의 동일성</strong>이 기준이다.
+    </div>
+
+    <h3>② 계층 구조 — 평면 목록이 무너지는 시점</h3>
+    <p>
+      Intent가 20~30개를 넘어가면 평면(flat) 목록은 관리가 무너진다. 실무에서는 보통
+      2단계 계층을 쓴다.
+    </p>
+
+    <pre><code><span class="keyword">도메인(Domain)</span>          <span class="comment">// 예: 주문, 결제, 배송, 계정, 일반문의</span>
+  <span class="func">└</span> <span class="keyword">Intent</span>              <span class="comment">// 예: 주문_조회, 주문_취소, 주문_변경</span>
+      <span class="func">└</span> <span class="keyword">Sub-intent(선택)</span>  <span class="comment">// 예: 주문_취소_전체, 주문_취소_부분</span></code></pre>
+
+    <p>
+      도메인 계층을 두면 두 가지 실무 이점이 생긴다. 첫째, <strong>라우팅 단계에서 먼저
+      도메인만 분류</strong>하고, 그 안에서 세부 intent를 분류하는 2단계 분류로 오분류
+      확률을 낮출 수 있다(Day 4의 hybrid routing과 직결). 둘째, <strong>담당 팀이나
+      데이터 오너십을 도메인 단위로 나눌 수 있어</strong> taxonomy가 커져도 유지보수가
+      가능하다.
+    </p>
+
+    <h3>③ Utterance 설계 — "예문을 많이 넣는 것"이 아니라 "표현 공간을 커버하는 것"</h3>
+    <p>
+      Utterance는 하나의 intent를 표현하는 실제 발화 예시다. 여기서 흔한 오해는 "예문을
+      많이 넣을수록 좋다"인데, 실제로 중요한 건 <strong>표현 공간(expression space)의
+      다양성</strong>이지 개수 자체가 아니다. 표현 공간은 최소한 다음 축을 커버해야 한다.
+    </p>
+
+    <table>
+      <tr>
+        <th>축</th>
+        <th>설명</th>
+        <th>예시</th>
+      </tr>
+      <tr>
+        <td><strong>문장 형태</strong></td>
+        <td>질문형/명령형/평서형이 섞여야 함</td>
+        <td>"환불 되나요?" / "환불해주세요" / "환불하고 싶어요"</td>
+      </tr>
+      <tr>
+        <td><strong>격식/구어체</strong></td>
+        <td>채널마다 사용자의 격식 수준이 다름</td>
+        <td>"환불 부탁드립니다" vs "이거 환불 ㄱㄴ?"</td>
+      </tr>
+      <tr>
+        <td><strong>생략/축약</strong></td>
+        <td>실제 사용자는 문장을 끝까지 말하지 않음</td>
+        <td>"이거 환불" (동사 생략)</td>
+      </tr>
+      <tr>
+        <td><strong>오탈자/음성인식 오류</strong></td>
+        <td>실제 로그에는 오타와 STT 오류가 섞여 있음</td>
+        <td>"환뷸해주세요", "환불 해 주새요"</td>
+      </tr>
+      <tr>
+        <td><strong>부정/제외 표현</strong></td>
+        <td>부정형이 반대 intent로 오분류되기 쉬움</td>
+        <td>"환불 안 하고 교환만요" → 교환 intent</td>
+      </tr>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>2026년 실무 기준:</strong> intent 하나당 80~100개 수준의 다양한 utterance를
+      확보하는 것이 권장되며, 이때 동의어·구어체·오탈자까지 포함한 다양성이 핵심이다.
+      다만 이 숫자 자체보다 중요한 건 <strong>표현 공간 커버리지를 정량적으로 측정하는
+      습관</strong>이다 — 실제 운영 로그에서 misclassification이 발생한 발화 패턴을 주기적으로
+      수집해 taxonomy와 utterance 세트를 갱신하는 루프가 없으면, 아무리 초기에 많이
+      넣어도 시간이 지나며 커버리지가 낮아진다.
+    </div>
+    <div class="src-note">
+      근거: Label Your Data, "Intent Classification: 2026 Techniques for NLP Models";
+      raia AI Training, "Intent Taxonomy Design" (상세 URL은 <code>RESOURCES.md</code> 참고)
+    </div>
+
+    <h3>④ 동의어 사전(Synonym Dictionary) — Intent가 아니라 Entity 값을 정규화하는 도구</h3>
+    <p>
+      동의어 사전은 흔히 intent와 혼동되지만, 실제로는 <strong>entity 값을 하나의 정규
+      값(canonical value)으로 매핑</strong>하는 도구다. 예를 들어 사용자가 "서울", "서울시",
+      "서울특별시"라고 말해도 시스템 내부에서는 동일한 <code>seoul</code> 값으로 처리되어야
+      한다. Rasa 같은 프레임워크에서도 동의어는 entity 레벨에 정의되며, "New York", "New York
+      City", "NYC"를 하나의 값으로 매핑하는 것이 전형적인 사용 예다.
+    </p>
+
+    <pre><code><span class="comment">// entity: city 의 동의어 매핑 예시</span>
+<span class="string">"canonical_value"</span>: <span class="string">"seoul"</span>,
+<span class="string">"synonyms"</span>: [<span class="string">"서울"</span>, <span class="string">"서울시"</span>, <span class="string">"서울특별시"</span>, <span class="string">"Seoul"</span>]</code></pre>
+
+    <div class="callout callout-warn">
+      <strong>왜 이걸 intent 분류와 헷갈리면 안 되는가:</strong> intent 분류가 틀리면
+      "완전히 엉뚱한 기능"이 실행되지만, 동의어 사전이 부실하면 <strong>intent는 맞게
+      분류됐는데 entity 값이 시스템 내부 값과 매칭되지 않아 조회/처리가 실패</strong>한다.
+      Day 1의 실패 증상 표에서 다뤘듯, 이 둘은 원인 위치가 다르므로 디버깅 시 먼저
+      구분해야 한다.
+    </div>
+
+    <h3>⑤ LLM 시대에 이 모든 게 왜 여전히 필요한가</h3>
+    <p>
+      "LLM이 자연어를 알아서 이해하는데 taxonomy나 동의어 사전이 왜 필요한가"라는 질문이
+      자주 나온다. 답은 세 가지다.
+    </p>
+    <ol>
+      <li>
+        <strong>시스템 행동은 결국 유한한 집합으로 귀결된다.</strong> LLM이 아무리 유연하게
+        이해해도, 최종적으로 호출할 API·실행할 액션은 유한하다. Intent taxonomy는 이
+        유한한 행동 집합을 정의하는 설계 문서 역할을 한다(function/tool calling의 스키마
+        설계와 직결 — Day 4, Day 8).
+      </li>
+      <li>
+        <strong>평가(evaluation)의 기준선이 된다.</strong> "이 LLM 기반 시스템이 잘
+        작동하는가"를 판단하려면 결국 "의도한 대로 분류/처리됐는가"를 측정해야 하고,
+        이때 taxonomy가 정답 레이블(ground truth) 역할을 한다.
+      </li>
+      <li>
+        <strong>빠른 전처리 필터(fast path)의 근거가 된다.</strong> Day 1에서 다룬 대로
+        정형화된 트래픽은 경량 분류기로 먼저 걸러내는 것이 비용/지연 면에서 유리한데,
+        이 경량 분류기 자체가 taxonomy와 utterance 데이터로 학습된다.
+      </li>
+    </ol>
+    <div class="callout callout-tip">
+      LLM 프롬프트에서 intent 후보를 나열할 때도(예: "다음 intent 중 하나로 분류하라")
+      결국 taxonomy 설계 품질이 프롬프트 품질을 결정한다. LLM은 taxonomy를
+      "대체"한 것이 아니라 taxonomy를 "적용하는 방식" 중 하나를 추가한 것이다.
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <ul>
+      <li>
+        <strong>데이터 설계 감각이 있는가:</strong> "예문을 많이 넣으면 된다"는 양적 접근이
+        아니라, 표현 공간을 체계적으로 커버하는 질적 접근을 하는가
+      </li>
+      <li>
+        <strong>Intent 경계를 시스템 행동 기준으로 판단하는가:</strong> 언어적 유사성이
+        아니라 "같은 API를 호출하는가"라는 기준으로 intent를 나누고 합치는가
+      </li>
+      <li>
+        <strong>운영 관점을 갖고 있는가:</strong> taxonomy를 한 번 만들고 끝내는 것이
+        아니라, 실제 로그 기반으로 지속적으로 갱신하는 루프를 설계하는가
+      </li>
+      <li>
+        <strong>동의어 사전과 intent 분류의 책임을 구분하는가:</strong> 두 메커니즘이
+        해결하는 문제가 다르다는 것을 명확히 아는가
+      </li>
+      <li>
+        <strong>LLM 시대에도 왜 이 개념들이 유효한지 설명할 수 있는가:</strong> "이제 다
+        필요 없다"는 식의 얕은 답이 아니라, 역할이 어떻게 재배치됐는지 설명하는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      Senior 엔지니어는 taxonomy를 "한 번 만들고 끝나는 정적 산출물"이 아니라
+      <strong>"운영 로그로 계속 검증하고 갱신해야 하는 살아있는 자산"</strong>으로
+      다룬다는 것을 보여줘야 한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: Intent가 너무 잘게 쪼개져서 관리가 무너진 경우</h3>
+    <p>
+      "환불_신청", "환불_문의", "환불_취소요청"처럼 언어적으로 비슷한 표현마다 별개
+      intent를 만들다 보니 intent 수가 200개를 넘어가고, 신규 개발자는 어떤 intent에
+      새 utterance를 넣어야 할지조차 판단하지 못하게 됐다. → <strong>처리 로직이 같으면
+      합치고, 표현 다양성은 utterance 레벨에서 흡수</strong>해야 한다는 기준이 없었던
+      것이 원인이다.
+    </p>
+
+    <h3>상황 2: 초기엔 잘 작동했는데 6개월 뒤 정확도가 떨어진 챗봇</h3>
+    <p>
+      런칭 초기에는 정확도가 높았지만, 신규 상품·정책이 추가되며 사용자들이 새로운 방식으로
+      질문하기 시작했는데 utterance 데이터는 갱신되지 않았다. → <strong>운영 로그에서
+      낮은 신뢰도(confidence)로 분류된 발화나 fallback으로 빠진 발화를 주기적으로
+      리뷰해서 taxonomy와 utterance 세트를 갱신하는 루프</strong>가 없었던 것이 근본
+      원인이다.
+    </p>
+
+    <h3>상황 3: 도시명은 맞게 인식했는데 시스템에서 "찾을 수 없음"이 뜨는 경우</h3>
+    <p>
+      사용자가 "서울역"이라고 말했는데 시스템 DB에는 <code>seoul_station</code>이라는
+      코드로만 저장돼 있어 매칭에 실패했다. → intent 분류는 정확했지만 <strong>동의어
+      사전에 해당 표현이 등록되지 않아 entity 정규화가 실패</strong>한 전형적 사례다.
+      이런 문제는 intent 재학습으로는 해결되지 않는다.
+    </p>
+
+    <h3>상황 4: LLM 기반 시스템인데도 오분류가 잦은 경우</h3>
+    <p>
+      "LLM이 알아서 이해하겠지"라는 가정으로 intent 후보 목록을 대충 나열한 프롬프트를
+      썼더니, 서로 겹치는 intent 설명 때문에 LLM도 자주 헷갈렸다. → <strong>LLM 기반
+      분류라도 taxonomy 자체가 모호하면 성능이 taxonomy 품질 이상으로 올라가지 않는다</strong>는
+      원칙이 그대로 적용된 사례다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>실제 데이터(로그/상담 이력)에서 시작</strong>
+        "저는 가상의 시나리오가 아니라 실제 문의 로그나 상담원 인터뷰를 바탕으로 top
+        intent 후보를 추출하는 것부터 시작합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>시스템 행동 기준으로 intent 경계를 정함</strong>
+        "표현이 다르더라도 최종적으로 같은 API를 호출하고 같은 후속 로직을 타면 하나의
+        intent로 합치고, 표현 다양성은 utterance 레벨에서 흡수합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>도메인 단위로 계층화</strong>
+        "intent 수가 늘어나는 것을 대비해 도메인-intent 2단계 계층을 미리 설계하고,
+        이는 이후 2단계 라우팅과 팀 오너십 분리에도 활용합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Utterance는 축(axis) 기준으로 다양성을 확보</strong>
+        "문장 형태, 격식, 생략, 오탈자, 부정 표현이라는 축으로 utterance를 설계하고,
+        단순히 개수를 늘리는 것이 아니라 표현 공간 커버리지를 기준으로 품질을 관리합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>동의어 사전은 별도 계층으로 관리</strong>
+        "동의어 사전은 intent 분류가 아니라 entity 값 정규화를 위한 것이므로, intent
+        taxonomy와 별도 파이프라인으로 유지보수하고 신규 상품/지역이 추가될 때마다 갱신
+        절차를 정의합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>운영 로그 기반 갱신 루프를 처음부터 설계 (Senior 포인트)</strong>
+        "낮은 신뢰도로 분류된 발화나 fallback으로 빠진 발화를 주기적으로 리뷰하는 프로세스를
+        초기 설계 단계부터 포함시켜서, taxonomy가 시간이 지나도 커버리지를 유지하도록
+        합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "Intent taxonomy를 설계할 때 저는 먼저 실제 문의 로그나 상담원 인터뷰에서 빈도가
+        높은 intent 후보를 추출합니다. 이때 intent 경계는 표현이 얼마나 다른가가 아니라
+        최종적으로 같은 시스템 행동(같은 API 호출, 같은 후속 로직)으로 이어지는가를
+        기준으로 정합니다. 표현이 다양해도 처리 로직이 같으면 하나의 intent로 두고,
+        그 다양성은 utterance 데이터에서 흡수합니다.
+      </p>
+      <p>
+        Intent 수가 늘어나는 것을 대비해서 도메인-intent 2단계 계층을 미리 설계하고,
+        이 계층은 나중에 라우팅 단계에서 먼저 도메인을 분류한 뒤 세부 intent를 분류하는
+        구조에도 활용합니다.
+      </p>
+      <p>
+        Utterance 데이터는 단순히 예문 개수를 늘리는 게 아니라 문장 형태(질문형/명령형),
+        격식 수준, 생략 표현, 오탈자, 부정 표현이라는 축으로 다양성을 확보합니다. 그리고
+        동의어 사전은 intent 분류와는 별개로, entity 값을 정규 값으로 매핑하는 용도로만
+        관리합니다. 두 메커니즘의 책임을 명확히 나눠야 문제가 생겼을 때 intent 재학습을
+        해야 하는지, 동의어 사전을 갱신해야 하는지를 빠르게 판단할 수 있기 때문입니다.
+      </p>
+      <p>
+        마지막으로, taxonomy는 한 번 만들고 끝나는 것이 아니라고 생각합니다. 운영 로그에서
+        낮은 신뢰도로 분류되거나 fallback으로 빠진 발화를 주기적으로 리뷰해서 taxonomy와
+        utterance 세트를 갱신하는 루프를 처음 설계 단계부터 포함시킵니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "LLM으로 intent를 분류하면 taxonomy를 왜 여전히 잘 설계해야 하나요?"</h3>
+    <p><strong>약한 답변:</strong> "LLM은 알아서 잘 이해하니까 큰 상관없습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "LLM에게 intent를 분류시킬 때도 결국 프롬프트에 후보 intent 목록과 설명을 넣어야
+      하는데, 이 목록 자체가 taxonomy입니다. Intent 설명이 서로 겹치거나 경계가 모호하면
+      LLM도 똑같이 헷갈립니다. 게다가 최종적으로 호출할 API나 실행할 tool은 유한한
+      집합이므로, taxonomy는 이 유한한 행동 집합을 정의하는 설계 문서 역할을 합니다.
+      LLM은 taxonomy를 '적용하는 방법' 하나를 추가했을 뿐, taxonomy 설계의 필요성
+      자체를 없애지 않았습니다."
+    </p>
+
+    <h3>F2. "Intent가 너무 많아지면 어떻게 관리하나요?"</h3>
+    <p><strong>약한 답변:</strong> "필요하면 그때그때 추가합니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "먼저 도메인-intent 2단계 계층으로 나눠서 팀별 오너십을 분리하고, 신규 intent를
+      추가하기 전에 기존 intent와 시스템 행동이 겹치는지부터 확인하는 리뷰 절차를
+      둡니다. 또한 분기마다 운영 로그를 기준으로 사용 빈도가 매우 낮은 intent는 통합
+      또는 제거를 검토해서, taxonomy가 무한정 커지지 않도록 관리합니다."
+    </p>
+
+    <h3>F3. "동의어 사전을 다국어/다지역 서비스에서는 어떻게 확장하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "지역별·언어별로 별도의 동의어 매핑 테이블을 두되, 정규 값(canonical value)은
+      언어에 무관하게 하나로 통일합니다. 예를 들어 도시 entity는 한국어 표현이든 영어
+      표현이든 동일한 내부 코드로 매핑되도록 설계하고, 신규 지역이 추가될 때 동의어
+      테이블 갱신을 배포 체크리스트에 포함시켜 운영 중 매칭 실패를 예방합니다."
+    </p>
+
+    <h3>F4. "Utterance 데이터의 품질을 어떻게 검증하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "단순히 개수가 아니라 표현 공간 커버리지를 봅니다. 실제 운영 로그에서 낮은
+      신뢰도로 분류되거나 fallback으로 빠진 발화를 표본 추출해서, 그 발화들이 이미
+      학습 데이터에 있는 패턴과 얼마나 다른지 검토합니다. 또한 라벨러 간 판단이 갈리는
+      경계 사례(edge case)를 별도로 모아서 taxonomy 정의 자체를 명확히 하는 데도
+      활용합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>Intent 경계를 <strong>시스템 행동(같은 API/로직) 기준</strong>으로
+          판단한다</li>
+          <li>Utterance 다양성을 <strong>축(문장형태·격식·생략·오탈자·부정)</strong>
+          기준으로 설계한다</li>
+          <li>동의어 사전과 intent 분류의 <strong>책임 범위를 명확히 구분</strong>한다</li>
+          <li>Taxonomy를 <strong>운영 로그로 계속 갱신하는 살아있는 자산</strong>으로
+          다룬다</li>
+          <li>LLM 시대에도 taxonomy가 필요한 이유를 <strong>구체적으로</strong> 설명한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>표현이 다르면 무조건 별개 intent로 나눠 <strong>taxonomy가 과도하게
+          잘게 쪼개진다</strong></li>
+          <li>"예문을 많이 넣으면 된다"는 <strong>양적 접근</strong>에 그친다</li>
+          <li>동의어 사전을 intent 분류의 일부로 뭉뚱그려 설명한다</li>
+          <li>Taxonomy를 <strong>한 번 만들고 끝나는 정적 산출물</strong>로 취급한다</li>
+          <li>"LLM 시대엔 필요 없다"는 식으로 근거 없이 단정한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 taxonomy와 utterance 설계를
+      <strong>"운영 데이터로 검증하고 갱신하는 시스템"</strong>으로 다루고, 약한 답변은
+      "처음에 한 번 잘 만들면 끝나는 정적 문서"로 다룬다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "표현이 다르면 다른 intent다"</h3>
+    <p>
+      <strong>사실:</strong> intent 경계는 언어적 유사성이 아니라 시스템 행동(같은 API
+      호출, 같은 후속 로직)의 동일성으로 판단해야 한다. 표현 다양성은 utterance
+      데이터에서 흡수하는 것이지, intent를 쪼개는 근거가 아니다.
+    </p>
+
+    <h3>오해 2: "Utterance는 많이 넣을수록 무조건 좋다"</h3>
+    <p>
+      <strong>사실:</strong> 비슷한 패턴의 utterance를 아무리 늘려도 표현 공간 커버리지는
+      늘지 않는다. 중요한 건 문장 형태·격식·생략·오탈자·부정 표현 같은 축을 의도적으로
+      다양화하는 것이며, 무작정 개수를 늘리는 것은 오히려 유지보수 비용만 키운다.
+    </p>
+
+    <h3>오해 3: "동의어 사전은 intent 분류를 보완하는 부가 기능이다"</h3>
+    <p>
+      <strong>사실:</strong> 동의어 사전은 intent 분류와 전혀 다른 층위인 entity 값
+      정규화를 담당한다. Intent는 맞게 분류됐는데 entity 값이 시스템 내부 값과 매칭되지
+      않아 실패하는 경우가 실무에서 매우 흔하며, 이를 intent 문제로 오인하면 엉뚱한
+      곳(분류 모델 재학습)에 시간을 쓰게 된다.
+    </p>
+
+    <h3>오해 4: "LLM 기반 시스템에서는 taxonomy 설계가 덜 중요하다"</h3>
+    <p>
+      <strong>사실:</strong> LLM 기반 분류도 결국 taxonomy(intent 후보와 설명)를
+      프롬프트나 tool 스키마에 넣어야 작동한다. Taxonomy가 모호하면 LLM도 사람처럼
+      혼동하며, 평가 지표의 기준선(ground truth) 자체도 taxonomy에서 나온다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Intent Taxonomy 설계 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>확인 항목</th>
+        <th>점검 질문</th>
+      </tr>
+      <tr>
+        <td>Intent 경계 기준</td>
+        <td>이 두 intent가 최종적으로 <span class="badge badge-green">다른 API/로직</span>을
+        호출하는가, 아니면 <span class="badge badge-yellow">같은 로직에 표현만 다른가</span>?</td>
+      </tr>
+      <tr>
+        <td>계층 구조</td>
+        <td>Intent 수가 늘어날 것을 대비해 <span class="badge badge-green">도메인 단위
+        계층</span>이 정의되어 있는가?</td>
+      </tr>
+      <tr>
+        <td>Utterance 다양성</td>
+        <td>문장 형태·격식·생략·오탈자·부정 표현 <span class="badge badge-green">5개 축</span>이
+        모두 커버되는가?</td>
+      </tr>
+      <tr>
+        <td>동의어 사전 범위</td>
+        <td>Intent 분류와 <span class="badge badge-green">별도 파이프라인</span>으로
+        entity 값 정규화만 담당하는가?</td>
+      </tr>
+      <tr>
+        <td>운영 갱신 루프</td>
+        <td>낮은 신뢰도/fallback 발화를 <span class="badge badge-green">주기적으로
+        리뷰</span>해서 taxonomy를 갱신하는 절차가 있는가?</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>Intent를 표현이 다르면 무조건 나누고, utterance는 "많이 넣으면 된다" 정도로만
+      설명하며 동의어 사전과 intent 분류를 구분하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>Intent taxonomy와 동의어 사전의 정의는 설명할 수 있으나, 경계를 나누는
+      구체적 기준(시스템 행동 동일성)이나 utterance 다양성 축을 제시하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>시스템 행동 기준으로 intent 경계를 나누고 utterance 다양성 축을 설명할 수
+      있음. 다만 taxonomy를 운영 로그로 지속 갱신하는 루프까지는 다루지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>Intent 경계, 계층 구조, utterance 설계, 동의어 사전을 각각의 책임으로
+      명확히 구분하고, 운영 로그 기반 갱신 루프를 설계 초기부터 포함시키며, LLM 시대에도
+      taxonomy가 필요한 이유를 구체적 근거로 설명함</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. Intent 경계를 나누는 기준을 언어적 유사성이 아닌 다른 기준으로 설명할 수 있는가?<br>
+      2. Utterance 다양성을 확보하는 구체적인 축을 5개 이상 말할 수 있는가?<br>
+      3. 동의어 사전과 intent 분류가 왜 서로 다른 문제를 푸는지 설명할 수 있는가?<br>
+      4. LLM 기반 시스템에서도 taxonomy 설계가 왜 여전히 중요한지 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>Intent 경계는 언어적 유사성이 아니라 시스템 행동의 동일성</strong>으로
+      정한다 — 같은 API/로직이면 같은 intent, 다르면 별개 intent다.</li>
+      <li>Intent 수가 늘어나는 것을 대비해 <strong>도메인-intent 2단계 계층</strong>을
+      미리 설계한다.</li>
+      <li>Utterance 다양성은 <strong>문장 형태·격식·생략·오탈자·부정 표현</strong> 축으로
+      확보하며, 단순 개수 증가는 커버리지를 늘리지 않는다.</li>
+      <li>동의어 사전은 <strong>intent 분류가 아니라 entity 값 정규화</strong>를 담당하는
+      별개의 메커니즘이다.</li>
+      <li><strong>모델 성능은 taxonomy 품질에 의해 상한(capped)된다</strong> — LLM 기반
+      시스템도 예외가 아니다.</li>
+      <li>Taxonomy는 <strong>운영 로그로 지속 갱신해야 하는 살아있는 자산</strong>이다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 2 완료 · 다음: Day 3 — Entity·Slot 추출 설계와 검증</span>
+  </div>
+
+</div>
+</body>
+</html>
