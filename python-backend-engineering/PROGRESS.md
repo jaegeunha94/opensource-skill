@@ -10,18 +10,18 @@
 | 4 | 2026-07-02 | 서비스 경계 설계 — 레이어드 아키텍처, Repository 패턴 | [0004-service-boundaries.html](lessons/0004-service-boundaries.html) |
 | 5 | 2026-07-03 | 트랜잭션과 동시성 — ACID, 격리 수준, 낙관적/비관적 잠금, 데드락 방지 | [0005-transactions-and-concurrency.html](lessons/0005-transactions-and-concurrency.html) |
 | 6 | 2026-07-04 | 인증과 인가 — JWT 구조와 검증, OAuth2 Password Flow, RBAC, 토큰 갱신 전략 | [0006-authentication-and-authorization.html](lessons/0006-authentication-and-authorization.html) |
+| 7 | 2026-07-05 | 백그라운드 작업 — Celery + Redis 아키텍처, 재시도 전략, 태스크 멱등성 | [0007-background-jobs.html](lessons/0007-background-jobs.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | 백그라운드 작업 | Celery + Redis 아키텍처, 재시도 전략, 태스크 幂等성 |
 | 8 | 관측성 | 구조화 로깅, Prometheus 메트릭, OpenTelemetry 트레이싱 |
 | 9 | 배포와 운영 | Docker 이미지 최적화, Compose, 헬스체크, 환경 변수 관리, CI/CD |
 
 ## 현재 학습 위치
 
-**Day 6 완료** — Day 7 (백그라운드 작업)로 진행 예정.
+**Day 7 완료** — Day 8 (관측성)로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -54,6 +54,10 @@
 - [x] OAuth2 Password Flow와 FastAPI Depends 인증 조립 (Day 6)
 - [x] Access/Refresh Token 분리와 Refresh Token Rotation (Day 6)
 - [x] RBAC와 소유권 기반 인가(IDOR 방지) (Day 6)
-- [ ] Celery 태스크 설계 (예정 Day 7)
+- [x] Celery + Redis 태스크 큐 아키텍처 (Broker/Worker/Result Backend) (Day 7)
+- [x] 태스크 멱등성 설계 (상태 체크, Idempotency Key, UPSERT) (Day 7)
+- [x] 재시도 전략 (autoretry_for, backoff, jitter, max_retries) (Day 7)
+- [x] acks_late의 유실/중복 트레이드오프와 Dead Letter 처리 (Day 7)
+- [x] 태스크 직렬화 보안 (pickle 대신 json) (Day 7)
 - [ ] 구조화 로깅 (예정 Day 8)
 - [ ] Docker 배포 패턴 (예정 Day 9)
