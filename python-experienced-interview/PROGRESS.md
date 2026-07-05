@@ -10,12 +10,12 @@
 | 4 | 2026-07-02 | Iterator/Generator 프로토콜과 lazy evaluation | [0004-iterator-generator.html](lessons/0004-iterator-generator.html) |
 | 5 | 2026-07-03 | asyncio와 이벤트 루프 — 협력적 멀티태스킹과 `await`의 실행 모델 | [0005-asyncio-event-loop.html](lessons/0005-asyncio-event-loop.html) |
 | 6 | 2026-07-04 | Context Manager — 리소스 관리 패턴과 `with`의 실행 모델 | [0006-context-manager.html](lessons/0006-context-manager.html) |
+| 7 | 2026-07-05 | Descriptor 프로토콜 — `__get__`/`__set__`/`__delete__`와 속성 접근의 실체 | [0007-descriptor-protocol.html](lessons/0007-descriptor-protocol.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | Descriptor 프로토콜 | `__get__`, `__set__`, `__delete__`, data/non-data descriptor |
 | 8 | Decorator — 함수형 패턴과 실무 활용 | closure, `functools.wraps`, 클래스 decorator, stacking |
 | 9 | Python 실행 모델 | 바이트코드, CPython 인터프리터, 네임스페이스, LEGB |
 | 10 | Typing — 타입 힌트 심화 | `Protocol`, `Generic`, `TypeVar`, `Literal`, `overload` |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 6 완료** — Day 7 (Descriptor 프로토콜)부터 계속.
+**Day 7 완료** — Day 8 (Decorator — 함수형 패턴과 실무 활용)부터 계속.
 
 ## 습득한 핵심 개념
 
@@ -59,6 +59,9 @@
 - [x] `__exit__` 반환값에 의한 예외 억제와 그 위험성 (Day 6)
 - [x] `contextlib.contextmanager`와 제너레이터 기반 구현, 재진입 제약 (Day 6)
 - [x] 다중 리소스 정리 순서와 `contextlib.ExitStack` (Day 6)
+- [x] 속성 접근 탐색 순서 — data/non-data descriptor 우선순위 규칙 (Day 7)
+- [x] `property`의 descriptor 기반 구현 원리 (Day 7)
+- [x] 커스텀 descriptor 설계 — `__set_name__`, 상태 공유 함정 회피 (Day 7)
+- [x] `functools.cached_property`가 non-data descriptor인 설계 의도 (Day 7)
 
-- [ ] Descriptor 프로토콜 (예정 Day 7)
 - [ ] Decorator 구현 원리 (예정 Day 8)
