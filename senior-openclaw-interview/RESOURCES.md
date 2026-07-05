@@ -78,6 +78,12 @@
 - [OpenClaw Update Survival Guide 2026 — ManageMyClaw](https://managemyclaw.com/blog/openclaw-update-survival-guide/)
 - [OpenClaw Changelog: 2026 Release Notes and Updates — Fastio](https://fast.io/resources/openclaw-changelog-guide/)
 - [OpenClaw Release Notes - July 2026 Latest Updates — Releasebot](https://releasebot.io/updates/openclaw)
+- [Onboard CLI reference](https://docs.openclaw.ai/cli/onboard), [Migrate CLI reference](https://docs.openclaw.ai/cli/migrate), [Update CLI reference](https://docs.openclaw.ai/cli/update), [Doctor / Gateway diagnostics](https://docs.openclaw.ai/gateway/doctor), [Onboarding overview](https://docs.openclaw.ai/start/onboarding-overview), [Migrating from Hermes](https://docs.openclaw.ai/install/migrating-hermes) (Day 3 핵심 출처, 자동화 접근 시 403 가능 — raw.githubusercontent.com/openclaw/openclaw/main/docs/... 경로로 교차 확인)
+- [GitHub issue #35957 — v2026.3.3 config key rejection startup-loop outage](https://github.com/openclaw/openclaw/issues/35957) (Day 3 핵심 사고 사례, primary source)
+- [GitHub issue #38249 — `doctor --config-diff` feature request, closed not planned](https://github.com/openclaw/openclaw/issues/38249) (Day 3, primary source)
+- [GitHub issue #29552](https://github.com/openclaw/openclaw/issues/29552), [openclaw/openclaw releases](https://github.com/openclaw/openclaw/releases), [CHANGELOG.md](https://github.com/openclaw/openclaw/blob/main/CHANGELOG.md)
+- [OpenClaw 4.26 release — migrate tool introduction — openclaws.io](https://openclaws.io/blog/openclaw-4-26-release)
+- [OpenClaw upgrade & maintenance guide — LumaDock](https://lumadock.com/tutorials/openclaw-upgrade-maintenance)
 
 ## 사용 시 주의사항
 
