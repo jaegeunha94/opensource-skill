@@ -7,12 +7,12 @@
 | 1 | 2026-07-02 | LangChain·LangGraph 기반 Agent 설계/운영 프레임워크 | [0001-langchain-langgraph-agent-architecture-framework.html](lessons/0001-langchain-langgraph-agent-architecture-framework.html) |
 | 2 | 2026-07-03 | Model / Tool / Message abstraction | [0002-langchain-model-tool-message-abstraction.html](lessons/0002-langchain-model-tool-message-abstraction.html) |
 | 3 | 2026-07-04 | Middleware 아키텍처 | [0003-langchain-middleware-architecture.html](lessons/0003-langchain-middleware-architecture.html) |
+| 4 | 2026-07-05 | Structured Output과 Streaming | [0004-langchain-structured-output-streaming.html](lessons/0004-langchain-structured-output-streaming.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | Structured Output과 Streaming | `with_structured_output`, streaming mode(values/updates/messages/custom), 지연시간 vs UX trade-off |
 | 5 | Retrieval과 Memory | RAG 통합 지점, short-term vs long-term memory, memory 설계가 agent 품질에 미치는 영향 |
 | 6 | Guardrails와 Context Engineering | context window 예산 관리, prompt injection 방어, tool scoping, context 압축/요약 middleware |
 | 7 | LangGraph StateGraph 설계 | node/edge, conditional edge, state schema(TypedDict/Pydantic), reducer |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — 다음: Day 4 — Structured Output과 Streaming
+**Day 4 완료** — 다음: Day 5 — Retrieval과 Memory
 
 ## 습득한 핵심 개념
 
@@ -39,7 +39,11 @@
 - [x] 생명주기형(`before_agent`/`before_model`/`after_model`/`after_agent`) vs 감싸기형(`wrap_model_call`/`wrap_tool_call`) hook 구분 (Day 3)
 - [x] 다중 middleware 실행 순서(onion 구조)와 등록 순서에 따른 실무 실패 사례 (Day 3)
 - [x] `jump_to` 기반 제어 흐름과 built-in middleware 카탈로그(Summarization/HITL/PII/호출 제한/Fallback) (Day 3)
-- [ ] Structured Output / Streaming (예정 Day 4)
+- [x] `ToolStrategy`/`ProviderStrategy`/`AutoStrategy` 구조화된 출력 전략과 전략 폴백 검증 습관 (Day 4)
+- [x] 구조화된 출력 검증 실패 시 self-correction 재시도와 재시도 상한 설계 (Day 4)
+- [x] `tool_choice` 강제와 extended thinking의 provider-level 충돌 (Day 4)
+- [x] `stream_mode`(values/updates/messages/custom/debug) trade-off와 신규 event streaming(typed projection) 계층 (Day 4)
+- [x] 구조화된 출력과 토큰 스트리밍의 충돌 및 혼합 렌더링 전략 (Day 4)
 - [ ] Retrieval / Memory 설계 (예정 Day 5)
 - [ ] Guardrails / Context Engineering (예정 Day 6)
 - [ ] StateGraph 설계(node/edge/reducer) (예정 Day 7)

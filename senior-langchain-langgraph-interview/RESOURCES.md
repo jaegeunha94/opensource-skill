@@ -25,6 +25,15 @@
 - [middleware | LangChain Python Reference](https://reference.langchain.com/python/langchain/middleware) — `AgentMiddleware` hook 시그니처(`before_agent`/`before_model`/`wrap_model_call`/`wrap_tool_call`/`after_model`/`after_agent`), 데코레이터, `JumpTo`/`hook_config` 원본 API(Day 3 근거, `docs.langchain.com` 403 차단 시 대체 소스로 사용)
 - [langchain-ai/langchain — agents/middleware 소스 (GitHub)](https://github.com/langchain-ai/langchain/tree/master/libs/langchain_v1/langchain/agents/middleware) — `types.py`, `summarization.py`, `pii.py`, `tool_call_limit.py` 등 middleware 구현 원본. `docs.langchain.com`/`reference.langchain.com`이 막힐 때 `raw.githubusercontent.com`으로 직접 소스를 확인 가능(Day 3 근거)
 - [How Middleware Lets You Customize Your Agent Harness — LangChain 공식 블로그](https://www.langchain.com/blog/how-middleware-lets-you-customize-your-agent-harness) — middleware가 서브클래싱을 대체한 설계 배경, 실행 순서(onion) 설명
+- [Structured Output — LangChain 공식 문서](https://docs.langchain.com/oss/python/langchain/structured-output) — `response_format`, `ToolStrategy`/`ProviderStrategy`/`AutoStrategy` 개요(`docs.langchain.com` 403 차단 시 검색 요약과 아래 이슈로 보강, Day 4 근거)
+- [structured_output | langchain | LangChain Reference](https://reference.langchain.com/python/langchain/agents/structured_output) — `ToolStrategy`의 `handle_errors`, 검증·재시도 동작 원본 시그니처(Day 4 근거)
+- [Dynamic response_format with create_agent (GitHub Issue #34239)](https://github.com/langchain-ai/langchain/issues/34239) — `response_format`이 정적 스키마로 고정되는 현재 한계(Day 4 근거)
+- [`response_format` hardcodes `tool_choice="any"`, breaking Anthropic thinking (GitHub Issue #35539)](https://github.com/langchain-ai/langchain/issues/35539) — `ToolStrategy`의 강제 tool_choice와 Claude extended thinking의 provider-level 충돌 실제 사례(Day 4 근거)
+- [`ProviderStrategy` strict flag not exposed (GitHub Issue #34146)](https://github.com/langchain-ai/langchain/issues/34146) — `ProviderStrategy`가 OpenAI `strict: true` JSON schema를 완전히 노출하지 않는 현재 제약(Day 4 근거)
+- [create_agent falls back to ToolStrategy for Gemini 3 (GitHub Issue #34463)](https://github.com/langchain-ai/langchain/issues/34463) — 요청한 전략과 실제 적용 전략이 다를 수 있다는 조용한 폴백 사례(Day 4 근거)
+- [Streaming — LangChain 공식 문서](https://docs.langchain.com/oss/python/langchain/streaming) — `stream_mode`(values/updates/messages/custom/debug) 개요(`docs.langchain.com` 403 차단 시 검색 요약으로 보강, Day 4 근거)
+- [langchain-ai/streaming-cookbook (GitHub)](https://github.com/langchain-ai/streaming-cookbook) — `astream_events(version="v3")` 기반 신규 event streaming/typed projection(content block, tool call 상관관계, lifecycle 채널) 원본 예제(Day 4 근거)
+- [From Token Streams to Agent Streams — LangChain 공식 블로그](https://www.langchain.com/blog/token-streams-to-agent-streams) — event streaming 계층이 해결하려는 멀티 에이전트 UI 문제(Day 4 근거, `langchain.com` 403 차단 시 대체 소스로 검색 요약 사용)
 
 ## 아키텍처 딥다이브 / 엔지니어링 블로그
 

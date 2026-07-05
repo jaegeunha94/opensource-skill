@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — LangChain Structured Output과 Streaming</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 4 · LangChain / LangGraph Interview</div>
+    <h1>Structured Output과 Streaming</h1>
+    <div class="subtitle">Agent가 신뢰할 수 있는 형식으로 답을 내놓게 만드는 방법(ToolStrategy/ProviderStrategy)과, 실시간 UX를 위해 무엇을 얼마나 흘려보낼지 결정하는 stream_mode 설계, 그리고 이 둘이 실제로 충돌하는 지점</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전 기준:</strong> 이 레슨은 2026-07 기준 <strong>LangChain 1.x (GA, 1.2 계열 이후)</strong>의
+    <code>create_agent(response_format=...)</code>와 <code>agent.stream()/astream()</code>의 <code>stream_mode</code>를 기준으로 작성됐다.
+    구조화된 출력 전략(<code>ToolStrategy</code>/<code>ProviderStrategy</code>/<code>AutoStrategy</code>)과 <code>stream_mode</code>는 1.0에서 안정화된 API지만,
+    provider별 <code>strict</code> 지원 범위, 특정 모델의 조용한 전략 폴백, 그리고 <code>astream_events(version="v3")</code> 기반의
+    신규 <strong>event streaming(typed projection)</strong> 계층은 이 레슨 작성 시점에도 계속 움직이고 있다.
+    실제 면접·구현 전에는 <code>reference.langchain.com</code>과 GitHub 이슈 트래커로 현재 동작을 재확인하라.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "create_agent에서 response_format으로 구조화된 출력을 받을 때 ToolStrategy와 ProviderStrategy는 뭐가 다르고, 어떤 기준으로
+      선택하나요? 모델이 스키마에 맞지 않는 출력을 내면 어떻게 처리되나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "Agent 응답을 스트리밍할 때 stream_mode의 values, updates, messages, custom은 각각 언제 쓰나요?
+      UX와 payload 비용 측면에서 어떤 trade-off가 있나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "구조화된 출력을 요구하는 agent에서 스트리밍은 어떻게 동작하나요? 토큰 단위 스트리밍과 강제된 구조화 출력은
+      근본적으로 충돌하는 지점이 있지 않나요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>구조화된 출력이 필요한 이유, 그리고 3가지 전략</h2>
+
+    <h3>왜 "JSON으로 답해줘"라는 prompt로는 부족한가</h3>
+    <p>
+      LLM의 기본 출력은 자유 텍스트다. 그런데 애플리케이션(라우팅 로직, DB 저장, downstream API 호출)은
+      <strong>파싱 가능한 데이터</strong>가 필요하다. 가장 흔한 초심자 접근은 "JSON 형식으로만 답해줘"라고
+      prompt에 적고 <code>json.loads()</code>로 직접 파싱하는 것인데, 이 방법은 실무에서 조용히 무너진다.
+      모델이 설명 문장을 JSON 앞뒤에 덧붙이거나, 마크다운 코드블럭(<code>```json</code>)으로 감싸거나,
+      필드명을 오타내거나, 따옴표를 깨뜨리는 경우가 실제로 자주 발생한다. 이런 실패는 <strong>결정적(deterministic)이지
+      않고 모델·prompt·입력에 따라 산발적으로 발생</strong>하기 때문에, 매번 다른 방어 코드를 덧붙이게 되고
+      결국 유지보수 불가능한 파싱 레이어가 쌓인다.
+    </p>
+    <p>
+      LangChain은 이 문제를 <strong>스키마를 코드로 선언하고, 모델이 그 스키마를 지키도록 강제하거나
+      검증 후 실패 시 되돌려서 재시도시키는 계층</strong>으로 해결한다. 이 계층은 두 군데에 존재한다 —
+      개별 모델 호출에 붙이는 <code>with_structured_output</code>(model-level)과, agent 루프 전체의 최종
+      응답 형식을 지정하는 <code>response_format</code>(agent-level, <code>create_agent</code>의 파라미터).
+    </p>
+
+    <div class="callout callout-info">
+      <strong>핵심 전제:</strong> 구조화된 출력은 "모델에게 예쁘게 부탁하는 기술"이 아니라, <strong>"모델의 자유
+      출력을 코드가 검증 가능한 계약(schema)으로 바꾸고, 계약 위반 시 되돌리는 제어 흐름을 agent 루프 안에
+      내장하는 것"</strong>이다. 이 관점이 있어야 아래에서 다루는 세 가지 전략의 차이와 실패 처리 방식이
+      자연스럽게 이해된다.
+    </div>
+
+    <h3>ToolStrategy — 스키마를 강제된 tool 호출로 감싸기</h3>
+    <p>
+      <code>ToolStrategy</code>는 지정한 스키마(Pydantic 모델/TypedDict/dataclass/JSON schema)를
+      <strong>하나의 tool 정의</strong>로 변환하고, 모델이 반드시 그 tool을 호출하도록(<code>tool_choice</code>를
+      강제) 만든다. 모델은 tool 호출 인자로 스키마에 맞는 JSON을 생성하고, LangChain이 그 인자를 코드로
+      파싱·검증한다. 이 방식은 <strong>tool calling을 지원하는 모든 provider에서 동작</strong>하므로 범용성이
+      가장 높다.
+    </p>
+    <pre><code><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent
+<span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy
+<span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel
+
+<span class="keyword">class</span> TicketTriage(BaseModel):
+    intent: str
+    priority: str
+    needs_human: bool
+
+agent = create_agent(
+    model=<span class="string">"claude-sonnet-5"</span>,
+    tools=[search_kb_tool],
+    response_format=ToolStrategy(
+        schema=TicketTriage,
+        handle_errors=<span class="keyword">True</span>,  <span class="comment"># 검증 실패 시 에러를 모델에 되돌려 재시도</span>
+    ),
+)
+result = agent.invoke({<span class="string">"messages"</span>: [...]})
+result[<span class="string">"structured_response"</span>]  <span class="comment"># -> TicketTriage 인스턴스</span></code></pre>
+
+    <h3>ProviderStrategy — provider의 네이티브 구조화 출력 API 사용</h3>
+    <p>
+      OpenAI, Anthropic(Claude), Gemini, xAI(Grok) 같은 일부 provider는 API 레벨에서 <strong>네이티브
+      구조화된 출력</strong>을 지원한다(예: OpenAI의 JSON schema response format). <code>ProviderStrategy</code>는
+      이 네이티브 기능을 직접 사용하므로, 지원되는 provider/모델 조합에서는 <strong>가장 신뢰할 수 있는
+      방법</strong>이다 — tool 호출을 흉내 낼 필요 없이 API 자체가 스키마 준수를 보장하기 때문이다.
+    </p>
+    <pre><code><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ProviderStrategy
+
+agent = create_agent(
+    model=<span class="string">"gpt-5"</span>,
+    response_format=ProviderStrategy(schema=TicketTriage),
+)</code></pre>
+    <div class="callout callout-warn">
+      <strong>실무 주의:</strong> "ProviderStrategy가 항상 더 안전하다"고 단정하면 안 된다. 2026-07 시점 실제
+      이슈 트래커에는 <code>ProviderStrategy</code>를 써도 OpenAI의 <code>strict: true</code> JSON schema 플래그가
+      LangChain을 통해 완전히 노출되지 않는 경우, 그리고 일부 모델(예: Gemini 계열 + tools 동시 사용)에서
+      <code>ProviderStrategy</code>를 요청해도 <strong>조용히 ToolStrategy로 폴백</strong>하는 사례가 보고돼 있다.
+      즉 "어떤 전략을 요청했는가"와 "실제로 어떤 전략이 적용됐는가"가 다를 수 있으므로, LangSmith
+      트레이싱(Day 12)으로 실제 요청 payload를 확인하는 습관이 필요하다.
+    </div>
+
+    <h3>AutoStrategy — 스키마만 넘기면 자동으로 고른다</h3>
+    <p>
+      <code>response_format</code>에 <code>ToolStrategy</code>/<code>ProviderStrategy</code>로 감싸지 않고
+      스키마 타입을 <strong>직접</strong> 넘기면, LangChain이 현재 모델이 provider-native 구조화 출력을
+      지원하면 <code>ProviderStrategy</code>를, 지원하지 않으면 <code>ToolStrategy</code>를 자동으로 선택한다.
+      빠르게 시작할 때는 편리하지만, <strong>어떤 전략이 실제로 선택됐는지 모른 채로 프로덕션에 배포하면</strong>
+      위에서 언급한 폴백/제약 문제를 인지하지 못한 채 넘어갈 위험이 있다.
+    </p>
+    <pre><code><span class="comment"># 스키마를 직접 넘기면 AutoStrategy가 provider 지원 여부를 보고 전략을 고른다</span>
+agent = create_agent(model=<span class="string">"claude-sonnet-5"</span>, response_format=TicketTriage)</code></pre>
+
+    <h3>검증 실패는 어떻게 처리되는가 — self-correction 루프</h3>
+    <p>
+      <code>ToolStrategy</code>는 <code>handle_errors</code> 파라미터로 실패 처리 방식을 제어한다
+      (<code>bool</code>/문자열 커스텀 메시지/특정 예외 타입/callable). 기본적으로 검증에 실패하면
+      LangChain은 <strong>에러 내용을 담은 ToolMessage를 대화에 추가하고 모델을 다시 호출</strong>해서
+      스스로 출력을 고치게 한다. 이건 Day 2에서 다룬 "tool 에러를 예외로 던지지 않고 모델에게 되돌려
+      스스로 고치게 한다"는 원칙과 정확히 같은 패턴이 구조화된 출력에도 적용된 것이다.
+    </p>
+    <div class="callout callout-danger">
+      <strong>런어웨이 위험:</strong> 재시도 상한을 두지 않으면, 모델이 계속 스키마를 못 맞출 때
+      <strong>모델 호출이 무한히 반복</strong>될 수 있다. Day 3에서 다룬 <code>ModelCallLimitMiddleware</code>를
+      구조화된 출력 재시도 루프에도 함께 걸어두는 것이 실무 원칙이다.
+    </div>
+
+    <h3>알려진 한계 — 실무에서 맞닥뜨리는 진짜 제약</h3>
+    <ul>
+      <li>
+        <strong>정적 스키마:</strong> <code>response_format</code>은 agent 생성 시점에 고정되는 정적 스키마다.
+        "대화 상태에 따라 허용 가능한 필드 값을 런타임에 좁히고 싶다" 같은 동적 스키마는 2026-07 시점
+        공식적으로 지원되지 않는다(관련 GitHub 이슈로 요청은 올라가 있으나 미해결).
+      </li>
+      <li>
+        <strong>Claude extended thinking과의 충돌:</strong> <code>ToolStrategy</code>는 구조화된 출력을 위해
+        <code>tool_choice</code>를 강제로 설정하는데, Anthropic API는 <strong>tool 사용을 강제할 때
+        extended thinking을 함께 켜는 것을 허용하지 않는다.</strong> 그래서 "reasoning 모델의 사고 과정도
+        보고 싶고, 최종 답은 구조화된 형식으로도 받고 싶다"는 요구를 <code>create_agent</code> 하나로는
+        바로 만족시키지 못하는 조합이 실제로 존재한다. 이런 경우 수동으로 LangGraph를 구성하거나,
+        마지막 턴에서만 <code>with_structured_output</code>을 별도로 호출하는 식으로 우회해야 한다.
+      </li>
+    </ul>
+
+    <h3>with_structured_output vs response_format — 언제 어느 것을 쓰는가</h3>
+    <p>
+      <code>with_structured_output</code>은 <strong>ChatModel 하나에 스키마를 바인딩하는 model-level API</strong>다.
+      Tool을 호출하며 여러 턴을 도는 agent 루프가 필요 없고, "이 입력을 한 번에 구조화된 형태로 추출/분류"하는
+      단발성 호출이면 이걸로 충분하다. 반면 <strong>agent가 tool을 여러 번 호출하며 작업을 수행한 뒤, 최종
+      결과만 구조화된 형태로 받고 싶다</strong>면 <code>create_agent(response_format=...)</code>가 맞는 선택이다 —
+      agent 루프 중간의 tool 호출과 최종 구조화 응답은 서로 다른 관심사이기 때문이다.
+    </p>
+
+    <h3>스트리밍 — stream_mode 기본기</h3>
+    <p>
+      Agent 응답은 수 초에서 수십 초가 걸릴 수 있다. 사용자가 아무 반응 없이 기다리게 하지 않으려면
+      <strong>결과가 완성되기 전에 부분 결과를 흘려보내는 스트리밍</strong>이 필요하다. LangGraph 기반
+      agent(<code>create_agent</code>도 내부적으로 컴파일된 그래프)는 <code>.stream()</code>/<code>.astream()</code>의
+      <code>stream_mode</code> 파라미터로 무엇을 흘릴지 고른다.
+    </p>
+    <table>
+      <tr><th>stream_mode</th><th>흘려보내는 것</th><th>대표 용도</th></tr>
+      <tr><td><code>values</code></td><td>매 단계 후의 <strong>전체 state 스냅샷</strong></td><td>클라이언트가 단순히 "현재 전체 상태"만 렌더링하면 될 때</td></tr>
+      <tr><td><code>updates</code></td><td>매 단계에서 <strong>변경된 부분(diff)만</strong></td><td>대화 이력이 길어질수록 payload가 커지는 걸 피해야 할 때</td></tr>
+      <tr><td><code>messages</code></td><td><strong>토큰 단위</strong>의 <code>AIMessageChunk</code></td><td>ChatGPT 스타일의 타이핑 효과 UI</td></tr>
+      <tr><td><code>custom</code></td><td>개발자가 <code>get_stream_writer()</code>로 직접 흘려보내는 <strong>임의 이벤트</strong></td><td>tool 실행 중 "검색 중 40%..." 같은 진행 상태 보고</td></tr>
+      <tr><td><code>debug</code></td><td>내부 실행 이벤트 전부(가장 verbose)</td><td>로컬 디버깅 전용, 프로덕션 UI에는 부적합</td></tr>
+    </table>
+    <p>
+      <code>stream_mode=["updates", "custom"]</code>처럼 <strong>리스트로 여러 모드를 동시에</strong> 요청할 수
+      있고, 이때 각 이벤트는 어떤 모드에서 온 것인지 태그가 붙어서 나온다.
+    </p>
+    <pre><code><span class="keyword">for</span> mode, chunk <span class="keyword">in</span> agent.stream(
+    {<span class="string">"messages"</span>: [...]},
+    stream_mode=[<span class="string">"updates"</span>, <span class="string">"messages"</span>],
+):
+    <span class="keyword">if</span> mode == <span class="string">"messages"</span>:
+        token, metadata = chunk
+        <span class="comment"># token.content를 그대로 프론트로 흘려보내 타이핑 효과 구현</span>
+    <span class="keyword">elif</span> mode == <span class="string">"updates"</span>:
+        <span class="comment"># 어떤 노드가 state의 어떤 부분을 바꿨는지 diff 형태로 확인</span>
+        ...</code></pre>
+
+    <div class="callout callout-warn">
+      <strong>values vs updates 선택 기준:</strong> <code>values</code>는 클라이언트 구현이 단순하지만
+      대화 이력이 길어질수록 <strong>매 이벤트마다 전체 상태를 다시 보내는 비용</strong>이 누적된다.
+      <code>updates</code>는 payload가 작지만 클라이언트가 diff를 <strong>스스로 누적해서 재구성</strong>해야
+      하므로 클라이언트 로직이 더 복잡해진다. "payload 비용이 문제인가, 클라이언트 복잡도가 문제인가"로
+      트레이드오프를 판단한다.
+    </div>
+
+    <h3>새로 등장한 계층 — event streaming(typed projection)</h3>
+    <p>
+      2026년 들어 LangChain/LangGraph는 <code>stream_mode</code> 위에 <strong>더 상위의 이벤트 프로토콜
+      계층</strong>을 추가했다(<code>astream_events(..., version="v3")</code>와 이를 감싸는
+      <code>stream.messages</code>/<code>stream.tools</code>/<code>stream.lifecycle</code> 같은 typed projection API).
+      이 계층은 메시지를 <strong>content block(텍스트, reasoning, tool-call 등) 단위</strong>로 모델링해서
+      "블록이 시작 → 여러 delta → 블록 종료"라는 명시적 경계를 갖게 하고, tool 실행 이벤트를
+      <strong>tool call ID로 원래 메시지의 tool-call 블록에 다시 연결</strong>할 수 있게 해준다. 또한 서브그래프/서브에이전트
+      상태를 추적하는 lifecycle 채널, 장시간 실행 중 연결이 끊겼다가 재연결(reconnect)하는 시나리오까지
+      다룬다.
+    </p>
+    <p>
+      이 계층은 <code>stream_mode</code>를 <strong>대체하는 것이 아니라</strong>, 복잡한 멀티 에이전트/서브그래프
+      UI(예: 여러 서브에이전트가 동시에 작업하는 화면을 각각 독립적으로 렌더링해야 하는 경우)를 위한
+      상위 추상화다. 대부분의 실무 코드는 여전히 <code>stream_mode</code>로 충분하지만, "최근 LangChain
+      스트리밍 아키텍처에 뭐가 추가됐는가"를 아는 것은 이 분야가 얼마나 빠르게 움직이는지 보여주는
+      senior-level 신호다.
+    </p>
+
+    <h3>구조화된 출력과 스트리밍의 충돌</h3>
+    <p>
+      <code>ToolStrategy</code> 기반 구조화된 출력은 <strong>하나의 강제된 tool 호출</strong>이다. 이 tool 호출의
+      인자(JSON)는 토큰 단위로 생성되긴 하지만, <strong>완성되지 않은 중간 JSON 조각은 대부분 사용자에게
+      보여줄 수 없는 형태</strong>다(예: <code>{"intent": "refu</code>처럼 잘린 문자열). 자유 텍스트 응답처럼
+      "글자가 타이핑되는 느낌"의 스트리밍 UX를 그대로 구조화된 필드에 적용하면 깨진 조각이 화면에 노출되는
+      사고가 난다.
+    </p>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+    <p>
+      이 질문은 <strong>"with_structured_output 한 줄 써봤는가"</strong>가 아니라, <strong>"모델의 확률적 출력을
+      애플리케이션이 신뢰할 수 있는 계약으로 바꾸는 전체 파이프라인(전략 선택 → 검증 → 실패 처리 → 재시도 상한)을
+      설계할 수 있는가"</strong>, 그리고 <strong>"지연시간이 존재하는 시스템에서 사용자 체감 성능을 어떻게
+      관리하는가"</strong>를 함께 본다.
+    </p>
+    <ul>
+      <li><strong>전략 선택의 근거:</strong> ToolStrategy/ProviderStrategy/AutoStrategy의 차이와, "무엇을
+      요청했는가"와 "실제로 무엇이 적용됐는가"가 다를 수 있다는 것을 아는가</li>
+      <li><strong>실패를 설계에 포함하는가:</strong> 검증 실패 시 재시도가 자동으로 일어난다는 것과, 상한을
+      두지 않으면 비용이 폭주할 수 있다는 것을 동시에 이해하는가</li>
+      <li><strong>스트리밍 trade-off 판단력:</strong> values/updates/messages/custom을 상황에 맞게 고르고,
+      payload 비용과 클라이언트 복잡도 사이의 균형을 설명할 수 있는가</li>
+      <li><strong>두 주제의 교차점을 보는가:</strong> 구조화된 출력과 토큰 스트리밍이 근본적으로 다른
+      성격의 요구라는 것, 그리고 실무에서 이를 혼합 전략으로 푸는 방법을 아는가</li>
+    </ul>
+    <div class="callout callout-warn">
+      Senior 개발자는 "구조화된 출력을 쓴다"와 "스트리밍을 쓴다"를 각각의 기능으로 나열하지 않고,
+      <strong>"사용자 체감 지연시간, 데이터 신뢰성, 비용이라는 세 축 사이에서 어떤 조합을 선택했는지"</strong>를
+      하나의 설계 결정으로 설명한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 고객 문의 분류 결과를 downstream 라우팅 시스템에 넘겨야 함</h3>
+    <p>
+      고객 문의 agent의 최종 응답이 자유 텍스트라서, 이걸 다시 정규식/프롬프트로 파싱해 라우팅
+      시스템에 넘기다가 파싱 실패로 티켓이 잘못된 큐에 들어가는 사고가 반복됐다. →
+      <code>response_format=ToolStrategy(schema=TicketTriage, handle_errors=True)</code>로 바꿔서
+      <code>intent</code>/<code>priority</code>/<code>needs_human</code> 필드를 코드가 검증한 뒤에만
+      downstream으로 넘기게 했다. 검증 실패는 모델이 스스로 재시도하고, 그래도 실패하면
+      명시적으로 사람에게 에스컬레이션한다.
+    </p>
+
+    <h3>상황 2: Reasoning 모델의 사고 과정과 구조화된 최종 답을 동시에 받고 싶음</h3>
+    <p>
+      Claude의 extended thinking을 켜서 판단 과정을 로깅하려던 팀이 동시에 <code>response_format</code>을
+      추가했더니 API가 "thinking이 켜진 상태에서 tool 사용을 강제할 수 없다"는 에러를 반환했다. →
+      원인은 <code>ToolStrategy</code>가 <code>tool_choice</code>를 강제하기 때문이었고, 팀은 마지막 턴에서
+      <code>with_structured_output</code>을 별도 호출로 분리하는 식으로 우회했다. "편의 API 하나로 모든
+      조합이 가능하지는 않다"는 걸 실제 장애로 배운 사례다.
+    </p>
+
+    <h3>상황 3: 챗봇 응답이 늦게 느껴진다는 사용자 불만</h3>
+    <p>
+      Agent가 tool을 여러 번 호출한 뒤에야 최종 텍스트를 반환해서, 사용자는 그 사이 아무 반응도 못
+      보고 수 초를 기다려야 했다. → <code>stream_mode="messages"</code>로 최종 답변의 토큰 단위 스트리밍을
+      적용했지만, tool 실행 구간에는 여전히 "멈춘 것처럼 보이는" 공백이 남았다. → <code>custom</code> 모드로
+      tool 내부에서 <code>get_stream_writer()</code>를 호출해 "검색 중...", "문서 3건 확인 중..." 같은
+      진행 상태를 함께 흘려보내 체감 지연시간을 줄였다.
+    </p>
+
+    <h3>상황 4: 구조화된 출력 필드를 그대로 스트리밍했다가 깨진 JSON이 화면에 노출</h3>
+    <p>
+      구조화된 응답도 "타이핑되는" 느낌을 주고 싶어서 <code>stream_mode="messages"</code>로 tool 호출
+      인자의 토큰을 그대로 화면에 흘렸다가, <code>{"prior</code>처럼 잘린 조각이 사용자에게 노출되는
+      사고가 났다. → 정책을 바꿔서 <strong>구조화된 필드는 검증이 끝난 뒤 한 번에 렌더링</strong>하고,
+      자유 텍스트로 된 설명/요약 필드만 토큰 단위로 스트리밍하도록 스키마를 "스트리밍 가능 필드"와
+      "완료 후 렌더링 필드"로 나눠 설계했다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>구조화된 출력이 해결하는 문제부터 짚기</strong>
+        "자유 텍스트를 prompt로 JSON처럼 유도하는 방식은 산발적으로 실패합니다. 구조화된 출력은
+        스키마를 코드로 선언하고, 모델 출력을 검증한 뒤 실패하면 되돌려 재시도시키는 계약을
+        agent 루프에 내장하는 방식입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>세 전략을 구분해서 설명하기</strong>
+        "ToolStrategy는 스키마를 강제 tool 호출로 감싸 범용적으로 동작하고, ProviderStrategy는
+        provider의 네이티브 구조화 출력 API를 써서 지원 범위 내에서 가장 신뢰할 수 있습니다.
+        AutoStrategy는 이 둘 중 자동으로 고르지만, 실제로 뭐가 선택됐는지는 트레이싱으로
+        확인해야 합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>실패 처리와 비용 상한을 함께 언급하기</strong>
+        "검증 실패는 handle_errors로 자동 재시도되는데, 상한이 없으면 무한 재시도로 비용이
+        폭주할 수 있어 ModelCallLimitMiddleware 같은 가드레일을 함께 겁니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>스트리밍 trade-off를 구조적으로 설명하기</strong>
+        "values는 구현이 단순하지만 payload가 누적되고, updates는 payload가 작지만 클라이언트가
+        diff를 재구성해야 합니다. messages는 토큰 단위 타이핑 UX, custom은 tool 실행 중 진행
+        상태처럼 임의 이벤트를 위해 씁니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>두 주제의 충돌 지점까지 연결하기 (Senior 포인트)</strong>
+        "구조화된 출력의 tool 호출 인자는 완성 전까지 사용자에게 보여줄 수 없는 조각이라서,
+        구조화된 필드는 완료 후 렌더링하고 자유 텍스트 필드만 토큰 스트리밍하는 혼합 전략을
+        씁니다. 최근에는 이런 요구를 위해 content block 단위의 event streaming 계층도 추가됐습니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+    <div class="callout callout-tip">
+      <p>
+        "구조화된 출력은 모델의 자유 텍스트 출력을 코드가 검증 가능한 계약으로 바꾸는 계층입니다.
+        create_agent의 response_format에 ToolStrategy를 쓰면 스키마가 강제된 tool 호출로 변환되어
+        모든 tool calling provider에서 동작하고, ProviderStrategy를 쓰면 provider의 네이티브
+        구조화 출력 API를 직접 사용해 지원 범위 내에서 가장 신뢰할 수 있습니다. 스키마를 직접
+        넘기면 AutoStrategy가 둘 중 하나를 자동으로 고르지만, 실제로 어떤 전략이 적용됐는지는
+        LangSmith 트레이싱으로 확인하는 게 안전합니다 — 일부 모델 조합에서는 요청한 전략이 조용히
+        폴백되는 경우도 있기 때문입니다.
+      </p>
+      <p>
+        검증에 실패하면 handle_errors 설정에 따라 에러 내용이 모델에 다시 전달되어 스스로 고치는
+        재시도가 일어나는데, 재시도 상한을 걸어두지 않으면 모델이 계속 스키마를 못 맞출 때 호출이
+        폭주할 수 있어 호출 제한 middleware를 함께 씁니다. 또한 ToolStrategy는 tool_choice를
+        강제하기 때문에, Claude의 extended thinking처럼 강제 tool 사용과 충돌하는 기능이 있다는
+        것도 실제 제약으로 인지하고 있어야 합니다.
+      </p>
+      <p>
+        스트리밍은 stream_mode로 무엇을 흘릴지 고르는데, values는 전체 상태 스냅샷이라 구현이
+        단순하지만 대화가 길어질수록 payload가 커지고, updates는 diff만 보내 가볍지만 클라이언트가
+        상태를 스스로 재구성해야 합니다. messages는 토큰 단위 타이핑 UX에, custom은 tool 실행
+        중 진행 상태 같은 임의 이벤트에 씁니다. 다만 구조화된 출력의 tool 호출 인자는 완성되기
+        전까지 사용자에게 보여줄 수 없는 조각이기 때문에, 저는 구조화된 필드는 검증이 끝난 뒤
+        한 번에 렌더링하고 자유 텍스트 필드만 토큰 스트리밍하는 방식으로 두 요구를 함께
+        만족시킵니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "ProviderStrategy가 항상 ToolStrategy보다 더 신뢰할 수 있나요?"</h3>
+    <p><strong>약한 답변:</strong> "네, provider가 직접 지원하니까 항상 더 안전합니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "일반적으로는 그렇지만 절대적이지는 않습니다. Provider별로 strict 검증 지원 수준이 다르고,
+      일부 provider/모델 조합에서는 프레임워크가 요청한 대로 완전히 노출되지 않는 옵션(예: JSON
+      schema의 strict 플래그)이 있을 수 있습니다. 또한 tools와 response_format을 동시에 쓰는 특정
+      모델 조합에서는 ProviderStrategy를 요청해도 내부적으로 ToolStrategy로 폴백하는 경우도
+      보고돼 있습니다. 그래서 '요청한 전략'과 '실제 적용된 전략'을 구분해서 검증하는 습관이
+      필요합니다."
+    </p>
+
+    <h3>F2. "response_format을 쓸 때 tool_choice가 강제되는 것과 extended thinking이 왜 충돌하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "ToolStrategy는 모델이 반드시 구조화된 출력용 tool을 호출하도록 tool_choice를 강제합니다.
+      그런데 Anthropic API 자체가 tool 사용을 강제하는 상태에서는 extended thinking(모델의 내부
+      사고 블록)을 함께 켤 수 없다는 제약을 두고 있습니다. 이건 LangChain의 버그가 아니라 provider
+      API의 제약이 그대로 전파된 것이라, 이 조합이 필요하면 create_agent의 편의 기능 대신 수동으로
+      LangGraph를 구성하거나, 사고 과정은 별도 턴에서 확인하고 마지막에만 구조화된 출력을
+      받는 식으로 흐름을 나눠야 합니다."
+    </p>
+
+    <h3>F3. "stream_mode를 리스트로 여러 개 넘기면 이벤트를 어떻게 구분하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "각 이벤트가 (mode, payload) 튜플 형태로 나와서, mode 값을 보고 어떤 스트림에서 온
+      이벤트인지 분기 처리합니다. 예를 들어 updates와 messages를 함께 요청하면, 노드 실행
+      결과 diff와 토큰 단위 텍스트가 같은 반복문 안에서 태그가 붙은 채로 함께 흘러나옵니다.
+      이걸 활용하면 하나의 스트림 소비 루프에서 '진행 상태'와 '실제 답변 텍스트'를 동시에
+      다른 UI 요소에 매핑할 수 있습니다."
+    </p>
+
+    <h3>F4. "구조화된 출력 검증에 계속 실패하면 무한 루프에 빠질 위험은 없나요?"</h3>
+    <p><strong>약한 답변:</strong> "handle_errors를 켜두면 자동으로 해결됩니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "handle_errors는 실패를 모델에게 되돌려 재시도를 유도할 뿐, 재시도 횟수 자체를 제한하지는
+      않습니다. 모델이 계속 스키마를 못 맞추면 이론상 호출이 계속 반복될 수 있으므로, Day 3에서
+      다룬 ModelCallLimitMiddleware나 재시도 횟수를 직접 세는 커스텀 middleware로 상한을 명시적으로
+      걸어야 합니다. '자동 재시도'와 '재시도 상한'은 반드시 함께 설계해야 하는 짝입니다."
+    </p>
+
+    <h3>F5. "새로 나온 event streaming(typed projection)은 언제 stream_mode 대신 써야 하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "대부분의 단일 agent, 단순 챗봇 UI는 여전히 stream_mode로 충분합니다. 하지만 여러 서브에이전트가
+      동시에 작업하는 복잡한 멀티 에이전트 UI에서, 각 서브에이전트의 진행 상태를 독립적으로
+      렌더링하거나, tool 실행 이벤트를 원래 메시지의 tool-call 블록과 정밀하게 매칭하거나, 장시간
+      실행 중 연결이 끊겼다가 재연결해야 하는 시나리오라면 content block과 lifecycle 채널을 갖춘
+      event streaming 계층이 더 적합합니다. 이건 대체재가 아니라 더 복잡한 프로덕션 UI를 위한
+      상위 추상화로 이해하고 있습니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>ToolStrategy/ProviderStrategy/AutoStrategy를 <strong>동작 방식과 신뢰 범위</strong>로 구분한다</li>
+          <li>"요청한 전략"과 "실제 적용된 전략"이 다를 수 있다는 것을 알고 <strong>트레이싱으로 검증</strong>하는 습관을 언급한다</li>
+          <li>검증 실패의 <strong>자동 재시도와 재시도 상한을 짝</strong>으로 설계한다</li>
+          <li>values/updates/messages/custom을 <strong>payload 비용·클라이언트 복잡도·UX</strong> 관점에서 고른다</li>
+          <li>구조화된 출력과 토큰 스트리밍의 <strong>근본적인 충돌 지점</strong>과 혼합 전략을 설명한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"with_structured_output 쓰면 된다"고만 말하고 <strong>agent-level response_format과의 차이를 구분 못 함</strong></li>
+          <li>ProviderStrategy가 <strong>항상 무조건 더 안전하다</strong>고 근거 없이 단정</li>
+          <li>재시도가 자동으로 된다는 것만 알고 <strong>비용 폭주 위험을 언급하지 않음</strong></li>
+          <li>stream_mode는 "그냥 messages 쓰면 된다"로 <strong>단순화</strong>해버림</li>
+          <li>구조화된 출력도 <strong>자유 텍스트처럼 자연스럽게 스트리밍된다</strong>고 잘못 가정</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 각 API를 "기능 설명"으로 나열하지 않고, <strong>신뢰성·비용·UX라는
+      세 축 사이의 trade-off를 실제 실패 사례와 함께</strong> 설명한다. 이는 실무에서 이 결정을 이미
+      내려본 경험이 있다는 신호다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "prompt에 'JSON으로만 답해줘'라고 쓰면 충분하다"</h3>
+    <p>
+      <strong>사실:</strong> 이 방법은 마크다운 코드블럭, 설명 문장 덧붙이기, 필드 오타 등으로
+      산발적으로 실패한다. 구조화된 출력 API는 여기에 <strong>스키마 검증과 실패 시 재시도</strong>까지
+      포함된 계약을 제공한다는 점이 본질적으로 다르다.
+    </p>
+
+    <h3>오해 2: "ProviderStrategy가 항상 ToolStrategy보다 안전하다"</h3>
+    <p>
+      <strong>사실:</strong> Provider/모델 조합에 따라 strict 지원 범위가 다르고, 특정 조합에서는
+      요청한 전략이 조용히 폴백되는 경우도 있다. "요청 = 실제 적용"이 아니라는 것을 트레이싱으로
+      확인해야 한다.
+    </p>
+
+    <h3>오해 3: "stream_mode=values가 기본값이자 더 나은 선택이다"</h3>
+    <p>
+      <strong>사실:</strong> values는 구현이 단순할 뿐, 항상 더 나은 것은 아니다. 대화 이력이 길어지는
+      서비스에서는 payload 비용이 누적되는 updates보다 오히려 더 비효율적일 수 있다.
+    </p>
+
+    <h3>오해 4: "구조화된 출력도 자유 텍스트처럼 토큰 단위로 자연스럽게 스트리밍된다"</h3>
+    <p>
+      <strong>사실:</strong> 강제된 tool 호출의 인자는 완성 전까지 사용자에게 보여주기 부적절한
+      중간 조각이다. 자유 텍스트 필드와 구조화된 필드를 구분해서 각기 다른 렌더링 전략(토큰 스트리밍
+      vs 완료 후 일괄 렌더링)을 적용해야 한다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>구조화된 출력·스트리밍 설계 전 점검표</h2>
+    <table>
+      <tr><th>항목</th><th>확인할 것</th><th>리스크</th></tr>
+      <tr>
+        <td>전략 선택</td>
+        <td>ToolStrategy/ProviderStrategy/AutoStrategy 중 어떤 게 실제로 적용됐는지 트레이싱으로 확인했는가</td>
+        <td><span class="badge badge-yellow">기대한 신뢰성 미달</span></td>
+      </tr>
+      <tr>
+        <td>재시도 상한</td>
+        <td>handle_errors의 자동 재시도에 호출 횟수 상한(middleware)을 함께 걸었는가</td>
+        <td><span class="badge badge-red">비용 폭주</span></td>
+      </tr>
+      <tr>
+        <td>모델 기능 충돌</td>
+        <td>Extended thinking 등 강제 tool_choice와 충돌하는 모델 기능을 함께 쓰고 있지 않은가</td>
+        <td><span class="badge badge-red">API 에러로 서비스 중단</span></td>
+      </tr>
+      <tr>
+        <td>stream_mode 선택</td>
+        <td>대화 길이·클라이언트 복잡도를 고려해 values/updates를 의도적으로 선택했는가</td>
+        <td><span class="badge badge-yellow">payload 비용 누적</span></td>
+      </tr>
+      <tr>
+        <td>구조화 필드 렌더링</td>
+        <td>구조화된 필드를 완료 후 렌더링하도록 자유 텍스트 필드와 분리했는가</td>
+        <td><span class="badge badge-red">깨진 데이터 노출</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>구조화된 출력을 "prompt로 JSON 요청"과 같은 것으로 이해하고, 스트리밍은 "토큰이 조금씩 나오는 것" 정도로만 설명함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>with_structured_output이나 response_format을 사용해본 경험이 있고, stream_mode="messages"로 스트리밍을 구현해본 적 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>ToolStrategy와 ProviderStrategy의 차이, handle_errors 기반 재시도, values/updates/custom의 용도를 구분해서 설명함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>전략 폴백 가능성과 트레이싱 검증 습관, 재시도 상한 설계, extended thinking과의 충돌 같은 provider 제약,
+      구조화된 출력과 토큰 스트리밍의 근본적 충돌과 혼합 렌더링 전략까지 하나의 설계 결정으로 연결해서 설명함</span>
+    </div>
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. ToolStrategy와 ProviderStrategy 중 하나를 요청했는데 실제로는 다른 전략이 적용됐을 수 있다는 것을 어떻게 확인하는가?<br>
+      2. 구조화된 출력 검증 실패의 자동 재시도에 상한을 걸지 않으면 어떤 문제가 생기는지 설명할 수 있는가?<br>
+      3. Claude extended thinking과 강제된 구조화 출력이 왜 함께 쓰기 어려운지 원인까지 설명할 수 있는가?<br>
+      4. stream_mode=values와 updates 중 어떤 상황에서 어떤 것을 선택할지 payload 비용과 클라이언트 복잡도로 설명할 수 있는가?<br>
+      5. 구조화된 출력 필드와 자유 텍스트 필드를 스트리밍 UI에서 왜 다르게 렌더링해야 하는지 구체적 사고 예시로 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>구조화된 출력은 모델의 자유 출력을 코드가 검증 가능한 계약으로 바꾸는 계층</strong>이다.
+      ToolStrategy(범용, 강제 tool 호출)와 ProviderStrategy(provider 네이티브, 지원 범위 내 최고 신뢰성)를
+      구분하고, AutoStrategy가 자동으로 고른 결과를 트레이싱으로 검증해야 한다.</li>
+      <li><strong>검증 실패는 자동 재시도되지만 상한이 없으면 비용이 폭주</strong>할 수 있다 — 재시도와
+      호출 제한 middleware는 항상 짝으로 설계한다.</li>
+      <li><strong>ToolStrategy의 강제 tool_choice는 Claude extended thinking 등 일부 모델 기능과 충돌</strong>한다.
+      "편의 API 하나로 모든 조합이 가능하지는 않다"는 provider 제약을 인지해야 한다.</li>
+      <li><strong>stream_mode(values/updates/messages/custom/debug)</strong>는 payload 비용·클라이언트
+      복잡도·UX 목적에 따라 선택한다. 리스트로 여러 모드를 동시에 요청할 수 있다.</li>
+      <li>더 복잡한 멀티 에이전트 UI를 위한 <strong>content block 기반 event streaming(typed projection)</strong>
+      계층이 stream_mode 위에 추가되고 있다 — 대체가 아니라 상위 추상화다.</li>
+      <li><strong>구조화된 출력과 토큰 스트리밍은 근본적으로 다른 성격</strong>이다. 구조화된 필드는 완료 후
+      렌더링하고, 자유 텍스트 필드만 토큰 스트리밍하는 혼합 전략이 실무 표준이다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 4 완료 · 다음: Day 5 — Retrieval과 Memory</span>
+  </div>
+
+</div>
+</body>
+</html>
