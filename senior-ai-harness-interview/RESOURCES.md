@@ -89,6 +89,20 @@
 - [Arize — Common AI Agent Failure Modes](https://arize.com/blog/common-ai-agent-failures/)
 - [MongoDB — Agent Harness: Why the LLM Is the Smallest Part of Your Agent System](https://www.mongodb.com/company/blog/technical/agent-harness-why-llm-is-smallest-part-of-your-agent-system)
 
+## Context Engineering / Compaction / Memory (Day 3)
+
+- [Effective context engineering for AI agents (Anthropic Engineering)](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) — "context engineering" 용어 정립, "just enough context" 원칙
+- [Context compaction (server-side, beta) 문서](https://platform.claude.com/docs/en/build-with-claude/compaction) — `compact-2026-01-12`
+- [Context editing 문서](https://platform.claude.com/docs/en/build-with-claude/context-editing) — `context-management-2025-06-27`
+- [Memory tool 문서](https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool) — `memory_20250818`, 베타 헤더 없이 GA
+- [Chroma Research — Context Rot](https://www.trychroma.com/research/context-rot) / [연구 코드](https://github.com/chroma-core/context-rot) — 18개 모델 대상 실증 연구
+- [Redis — Context Poisoning in Agent Reasoning](https://redis.io/blog/context-poisoning-agent-reasoning/)
+- [Redis — Quality Context: Why AI Agents Need Better Info, Not More](https://redis.io/blog/quality-context-ai-agents/)
+- [OWASP Top 10 for Agentic Applications 2026 — ASI06 Memory and Context Poisoning](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html)
+- [Cognition — Don't Build Multi-Agents](https://cognition.ai/blog/dont-build-multi-agents) / [Multi-Agents: What's Actually Working](https://cognition.ai/blog)
+- [OpenAI Agents SDK — Sessions](https://openai.github.io/openai-agents-python/sessions/)
+- [Mem0 — Architecture (ADD/UPDATE/DELETE/NOOP)](https://docs.mem0.ai/)
+
 ## Provider 추상화 레이어 (Day 2)
 
 - [Vercel AI SDK](https://ai-sdk.dev/docs/introduction) / [AI SDK 6 — ToolLoopAgent](https://vercel.com/blog/ai-sdk-6)
@@ -104,3 +118,4 @@
 - **OpenAI Assistants API는 2026-08-26에 완전히 종료된다.** 이 트랙의 예시는 Responses API + Agents SDK 기준으로 작성한다.
 - **MCP 2026-07-28 개정판(RC)**은 이 레슨 작성 시점 기준 아직 최종본이 아니다(발행 예정). Sampling/Roots/Logging deprecation 등은 RC 내용이므로 실제 적용 여부를 재확인한다.
 - Day 2의 Vercel d0(80% tool 삭감) 수치와 Anthropic "Writing effective tools" 원칙은 원문 접근(403)이 안 되어 벤더 공식 소셜 포스트 + 다수의 독립적 2차 인용으로 교차검증했다. 핵심 수치(성공률 80%→100%, 응답시간 274초→77초/3.5배, 토큰/스텝 40% 감소)는 3개 이상 출처에서 일치했으나, 정확한 원문 인용이 필요하면 실제 브라우저로 재확인한다.
+- Day 3의 `platform.claude.com`(compaction/context-editing/memory-tool) 문서는 직접 접근해 확인한 1차 출처다. 반면 Anthropic "Effective context engineering" 블로그와 Chroma의 "Context Rot" 연구는 원문 접근(403)이 안 되어 검색 스니펫과 다수의 2차 출처(요약 블로그, 커뮤니티 글)로 교차검증했다 — 특히 Context Rot의 정확한 수치(30%p, 7.9% 등)와 MINJA/멀티에이전트 오염 통계(95% 이상, 4시간 87%)는 정확한 원문 인용이 필요하면 실제 브라우저로 재확인한다.

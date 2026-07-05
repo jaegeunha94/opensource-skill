@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — Prompt/Context/Memory Scaffolding</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 3 · AI Harness / Agent Harness Interview</div>
+    <h1>Prompt/Context/Memory Scaffolding</h1>
+    <div class="subtitle">Context window을 유한한 자원으로 다루는 사고방식 — context rot, context poisoning, compaction, session/memory 설계</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전/시점 기준:</strong> 이 레슨은 2026-07 기준 Anthropic Messages API의 서버사이드
+    <strong>Compaction</strong>(베타 헤더 <code>compact-2026-01-12</code>), <strong>Context Editing</strong>
+    (베타 헤더 <code>context-management-2025-06-27</code>), <strong>Memory tool</strong>(<code>memory_20250818</code>,
+    이제 베타 헤더 없이 GA), 그리고 OpenAI Agents SDK의 <code>Session</code>/Compaction 세션을 기준으로 작성됐다.
+    <code>platform.claude.com</code>의 compaction/context-editing/memory-tool 문서 페이지는 직접 접근해 확인했고,
+    Anthropic 엔지니어링 블로그("Effective context engineering for AI agents")와 Chroma Research의 "Context Rot"
+    연구는 자동화 접근이 403으로 막혀 검색 스니펫과 다수의 2차 출처로 교차검증했다 — 정확한 원문 인용이 필요하면
+    실제 브라우저로 재확인해야 한다. 수치와 베타 상태는 빠르게 바뀔 수 있다.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "Context window는 유한한 자원입니다. Agent harness에서 컨텍스트를 어떻게 예산 편성(budget)하고, 왜
+      '컨텍스트를 많이 넣을수록 좋다'는 생각이 틀렸는지 설명해주세요."
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "Context poisoning이 무엇이고, 일반적인 hallucination과 어떻게 다른가요? Multi-agent 시스템에서 왜 더
+      위험한가요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "Long-running agent가 context window 한계에 다다랐을 때 harness는 어떻게 대응해야 하나요? Compaction과
+      context editing의 차이를 설명해주세요."
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q4 — 변형</span>
+      "Session과 memory를 왜 구분해서 설계해야 하나요? 장기 기억(long-term memory)을 설계한다면 어떤 방식을
+      쓰시겠어요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Context는 "더 채우는 것"이 아니라 "예산을 짜는 것"이다</h2>
+
+    <h3>Prompt Engineering에서 Context Engineering으로</h3>
+    <p>
+      Prompt engineering은 "이번 한 번의 요청에 어떤 문장을 쓸 것인가"를 다듬는 일이다. 반면 Anthropic이
+      정리한 <strong>context engineering</strong>은 "agent가 매 스텝마다 실제로 보게 되는 정보 전체
+      (시스템 프롬프트, tool 정의, 대화 기록, 검색된 문서, 이전 tool 실행 결과)를 동적으로 관리하는 일"이다.
+      한 번 잘 쓴 프롬프트를 고정하는 게 아니라, agent loop가 반복될 때마다 "지금 이 스텝에 정말 필요한
+      정보가 무엇인가"를 계속 다시 판단해야 한다는 뜻이다.
+    </p>
+    <p>
+      이 discipline의 핵심 원칙은 <strong>"가장 작은 고신호(high-signal) 토큰 집합을 찾아서 원하는 결과의
+      가능성을 최대화하라"</strong>는 것이다. Context는 "많을수록 좋은" 자원이 아니라 <strong>한계 효용이
+      체감하는 유한한 자원</strong>이다 — 관련 있어 보이는 정보를 무작정 더 채워 넣는다고 성능이 계속
+      좋아지지 않고, 오히려 나빠질 수 있다.
+    </p>
+
+    <h3>왜 컨텍스트가 길어지면 성능이 떨어지는가 — "Context Rot"</h3>
+    <p>
+      Transformer의 self-attention 연산 비용은 시퀀스 길이 <code>n</code>과 표현 차원 <code>d</code>에 대해
+      대략 <strong>O(n² × d)</strong>로 늘어난다. 즉 컨텍스트가 길어질수록 모델이 "각 토큰이 다른 모든
+      토큰과 얼마나 관련 있는지"를 계산하는 데 쓸 수 있는 <strong>주의 예산(attention budget)</strong>이
+      상대적으로 희석된다. Anthropic은 이 현상을 <strong>context rot</strong>라고 부르는데, 요점은
+      "context window 광고 스펙(예: 20만 토큰) 안에만 있으면 모델이 모든 토큰을 균일하게 처리한다"는 가정이
+      틀렸다는 것이다.
+    </p>
+    <p>
+      Chroma Research의 "Context Rot" 연구(GPT-4.1, Claude 4 계열, Gemini 2.5, Qwen3 등 <strong>18개 프론티어
+      모델</strong> 대상)는 이걸 실증했다. 확장된 Needle-in-a-Haystack(어휘 일치가 아니라 <em>의미</em> 일치
+      기준), LongMemEval(실제 대화형 장기 컨텍스트 QA), 반복 단어 스트레스 테스트 세 가지를 조합해서 측정한
+      결과:
+    </p>
+    <ul>
+      <li>
+        관련 정보가 20개 문서 중 중간 위치(대략 5~15번째)에 있을 때, 대부분 모델에서 정확도가
+        <strong>30퍼센트포인트 이상</strong> 떨어졌다.
+      </li>
+      <li>
+        방해 요소(distractor)를 통제해도 <strong>길이 자체만으로 약 7.9%</strong> 성능이 떨어졌다 — "방해
+        요소가 많아서"가 아니라 <strong>길이 자체에 독립적인 비용</strong>이 있다는 뜻이다.
+      </li>
+      <li>
+        질의(query)와 목표 정보 사이의 의미적 유사도가 낮을수록(모호한 질문일수록), 길이가 늘어남에 따른
+        저하가 더 가팔라졌다.
+      </li>
+      <li>
+        반직관적으로, 논리적으로 잘 짜인(coherent) haystack보다 <strong>순서를 뒤섞은(shuffled) haystack에서
+        오히려 성능이 더 좋았다</strong> — 자연스러운 서사 흐름이 오히려 attention을 잘못된 곳으로 유도할 수
+        있다는 뜻이다.
+      </li>
+    </ul>
+    <div class="callout callout-warn">
+      성능이 "완만하게" 떨어지는 게 아니라 <strong>절벽(cliff)처럼</strong> 떨어진다는 게 실무적으로 중요하다
+      — 3만 2천 토큰에서는 멀쩡하다가 6만 4천 토큰에서 갑자기 무너지는 식이라, "지금까지 잘 됐으니 계속
+      채워도 된다"는 판단이 특정 임계값을 넘는 순간 급격히 틀려질 수 있다. 그래서 일부 실무자는 광고된
+      window 크기의 <strong>25~30% 정도</strong>를 "실제로 신뢰할 수 있는 유효 예산"으로 보수적으로 잡는다.
+    </div>
+
+    <h3>Context 예산을 짜는 원칙 — "적정 고도(altitude)"와 Just-in-time 검색</h3>
+    <p>
+      Anthropic이 제시하는 시스템 프롬프트 설계 원칙은 <strong>"골디락스 존(Goldilocks zone)"</strong>이다 —
+      너무 구체적으로 if/else 스타일 규칙을 하드코딩하면 일반화가 안 되고, 너무 추상적이면 모델이 판단할
+      신호가 없다. Tool 정의도 최소한의, 서로 겹치지 않는 자기완결적(self-contained) 세트로 유지해야 한다
+      (Day 2의 tool 통합 원칙과 같은 결론).
+    </p>
+    <p>
+      가장 실무적인 전환은 <strong>"미리 다 채워넣기"에서 "필요할 때 가져오기(just-in-time retrieval)"로의
+      전환</strong>이다. 전통적인 RAG는 관련 있어 보이는 문서를 미리 컨텍스트에 채워 넣지만, just-in-time
+      방식은 파일 경로·저장된 쿼리·링크 같은 가벼운 참조만 들고 있다가 실제로 필요한 시점에 tool로 데이터를
+      끌어온다. Claude Code가 큰 데이터베이스를 전체 로드 없이 분석하는 방식이 이 패턴의 대표 사례다.
+    </p>
+
+    <h3>Context 예산이 한계에 다다랐을 때의 세 가지 완화 기법</h3>
+    <ol>
+      <li>
+        <strong>Compaction:</strong> 컨텍스트가 한계에 가까워지면 대화 전체를 요약하고 그 요약으로 재초기화한다.
+        길게 이어지는 단일 대화에 적합하다.
+      </li>
+      <li>
+        <strong>구조화된 노트 작성(structured note-taking / "agentic memory"):</strong> agent가 컨텍스트
+        window 밖의 영속적인 파일(예: NOTES.md, to-do 목록)에 진행 상황을 주기적으로 기록해두고, 나중에
+        필요할 때 다시 불러온다. 반복적/장기 프로젝트에 적합하다.
+      </li>
+      <li>
+        <strong>서브에이전트/멀티에이전트 아키텍처:</strong> 전문화된 서브에이전트마다 깨끗하고 집중된
+        컨텍스트 window를 주고, 오케스트레이터에게는 <strong>대략 1,000~2,000 토큰</strong> 수준으로 압축된
+        요약만 돌려준다. 오케스트레이터는 서브에이전트의 전체 작업 컨텍스트를 흡수하지 않고 고수준 종합만
+        수행한다.
+      </li>
+    </ol>
+
+    <h3>컨텍스트 window를 넘나드는 하네스 패턴 — Claude Agent SDK의 initializer/worker 분리</h3>
+    <p>
+      Anthropic의 "Effective harnesses for long-running agents"는 컨텍스트 리셋을 <em>가로질러</em> 진행
+      상황을 이어가는 구체적인 프로덕션 패턴을 설명한다. 역할을 둘로 나눈다 — <strong>initializer
+      agent</strong>(한 번만 실행돼 환경/범위를 설정)와 <strong>coding agent</strong>(매 세션 실행돼 점진적으로
+      진행하고 다음 세션을 위한 산출물을 남김). 핵심 산출물은 <code>claude-progress.txt</code> 파일과 git
+      히스토리다 — 이것 덕분에 새로 시작한 컨텍스트 window가 코드베이스 전체를 다시 탐색하지 않고도 싸게
+      "따라잡을" 수 있다. "기능이 완료됐다"는 표시는 코드를 작성했을 때가 아니라
+      <strong>엔드투엔드로 검증했을 때만</strong> 남기라는 규칙도 함께 강조된다.
+    </p>
+  </div>
+
+  <!-- 전제 개념 2: context poisoning -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Context Poisoning — 컨텍스트에 남은 오류가 "사실"이 되는 문제</h2>
+
+    <h3>정의와 일반 hallucination과의 차이</h3>
+    <p>
+      Context poisoning은 <strong>hallucination이나 잘못된 정보가 agent의 컨텍스트(대화 window나 영속
+      memory)에 들어간 뒤, 이후 모든 추론·계획·행동에서 "이미 확인된 사실"처럼 취급되는 현상</strong>이다.
+      일반적인 hallucination은 그 대화가 끝나면 함께 사라지지만, poisoned context는 <strong>이후 추론
+      스텝에서 반복적으로 참조되며 지속</strong>되고, memory에 기록되면 세션을 넘어서도 살아남는다.
+    </p>
+    <p>
+      가장 위험한 특징은 겉보기에 <strong>내적으로 일관된(coherent)</strong> 추론처럼 보인다는 점이다 —
+      transcript를 그냥 읽어보면 "말이 되는 것처럼" 보이지만, 전체 추론 사슬이 잘못된 하나의 전제 위에
+      쌓여 있다. 그래서 "추론 과정이 논리적인가"만 확인하는 리뷰로는 잡아내기 어렵다.
+    </p>
+
+    <h3>Multi-agent 시스템에서의 확산 — Anchoring과 공유 히스토리</h3>
+    <p>
+      메시지 히스토리를 공유하는 멀티에이전트 프레임워크(예: AutoGen의 GroupChat)에서는 한 에이전트가 만든
+      오류가 이후 그 공유 히스토리를 읽는 모든 에이전트로 전파될 수 있다. 이를 <strong>anchoring</strong>이라
+      부르는데, 가설을 처음 제시한 에이전트가 틀렸더라도 이후 에이전트들의 판단 기준점이 돼버리는 패턴이다.
+      Cognition(Devin 팀)은 "Don't Build Multi-Agents"에서 이 문제를 멀티에이전트의 근본적 약점으로
+      지적했고, 이후 "Multi-Agents: What's Actually Working"에서는 <strong>서브에이전트가 지능은
+      기여하되 상태 변경(write)은 단일 스레드로만 커밋되는 설계</strong>가 오염 확산을 막는 완화책이라고
+      정리했다 — 2026년 3월 "Devin can now Manage Devins" 기능은 격리된 VM의 sub-Devin들에게 작업을 스코핑하고
+      결과만 종합하는 코디네이터로, 서브에이전트 컨텍스트를 공유하지 않고 격리하는 방향을 그대로 반영한다.
+    </p>
+
+    <h3>장기 memory에서의 poisoning — "Cognitive State Traps"와 OWASP ASI06</h3>
+    <p>
+      단일 세션 안에서 벌어지는 "단기 컨텍스트 poisoning"은 이메일 제목, 캘린더 일정 이름, 공유 파일명처럼
+      agent가 작업 중 읽는 공유 리소스에 숨겨진 간접 프롬프트 인젝션으로 발생한다. 더 위험한 건 <strong>장기
+      memory</strong> 버전이다 — RAG 지식베이스에서 <strong>단 몇 개의 문서</strong>만 오염시켜도 특정 질의에
+      대한 agent 출력을 안정적으로 왜곡시킬 수 있다는 연구가 보고됐다. <strong>MINJA</strong>(Memory
+      Injection Attack) 연구는 권한 없는 일반 사용자가 순수하게 질의만으로 agent의 장기 memory를 오염시킬 수
+      있고, 프로덕션형 agent를 대상으로 <strong>95% 이상의 성공률</strong>을 보였다고 보고했다. 멀티에이전트
+      환경에서는 하나의 오염된 에이전트로부터 <strong>4시간 안에 하위 의사결정의 87%가 오염</strong>됐다는
+      수치도 보고된 바 있다.
+    </p>
+    <p>
+      이런 이유로 OWASP는 2026 Agentic AI Top 10에 <strong>"Memory and Context Poisoning"을 ASI06</strong>으로
+      추가해, 일반적인(세션 범위) prompt injection과 별개 위협으로 구분했다. 결정적인 차이는
+      <strong>시간적 분리(temporal decoupling)</strong>다 — 공격자가 오늘 오염된 내용을 심어두면, agent는
+      몇 달 뒤 전혀 관계없는 세션에서 그 내용을 바탕으로 행동할 수 있다.
+    </p>
+    <div class="callout callout-danger">
+      실무에서 더 흔한 건 악의적 공격보다 <strong>staleness(방치된 오래된 정보)</strong>다 — 한 번 기록된
+      memory가 갱신·만료 없이 남아 있다가, 바뀐 사실(고객 선호, 폐기된 API 등)을 여전히 "현재 사실"인 것처럼
+      되돌려주는 것도 결국 poisoning과 같은 실패 형태다. 공격이 없어도 memory 설계 자체가 이 문제를 만들 수
+      있다.
+    </div>
+  </div>
+
+  <!-- 전제 개념 3: compaction / context editing / memory tool -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Compaction · Context Editing · Memory — 세 가지는 서로 다른 레이어다</h2>
+
+    <p>
+      Anthropic API에는 이름이 비슷해 보이지만 <strong>역할이 다른 세 기능</strong>이 있다. 이 셋을 구분하는
+      것 자체가 senior 시그널이다.
+    </p>
+
+    <h3>① Context Editing (베타, <code>context-management-2025-06-27</code>) — 표적을 정해 "잘라내기"</h3>
+    <p>
+      대화 전체를 요약하는 게 아니라, <strong>특정 콘텐츠를 표적으로 삼아 정밀하게(surgically) 제거</strong>한다.
+    </p>
+    <ul>
+      <li>
+        <code>clear_tool_uses_20250919</code>: 오래된 <code>tool_use</code>/<code>tool_result</code> 쌍을
+        지운다(요약이 아니라 실제 제거/placeholder 치환). <code>trigger</code>는 입력 토큰(기본 10만) 또는
+        tool 호출 횟수 기준으로 설정하고, <code>keep</code>(기본 3개, 가장 최근 쌍은 보존),
+        <code>clear_at_least</code>(한 번 clear할 때 최소 이만큼은 확보 — 캐시를 깨는 대가에 비해 절약이
+        미미한 clear를 막기 위함), <code>exclude_tools</code>(절대 지우지 않을 tool 지정),
+        <code>clear_tool_inputs</code>(결과뿐 아니라 원래 호출 인자까지 지울지)를 세밀하게 제어한다.
+      </li>
+      <li>
+        <code>clear_thinking_20251015</code>: extended thinking 블록을 관리한다. 이 둘을 함께 쓸 경우
+        <strong><code>clear_thinking</code>이 <code>edits</code> 배열에서 먼저 와야 한다</strong>는 순서
+        제약이 있다.
+      </li>
+      <li>
+        서버 사이드에서 캐시를 고려해 처리되며, <strong>클라이언트는 원본 히스토리 전체를 그대로 들고
+        있는다</strong> — 클라이언트 상태 동기화가 필요 없다는 게 naive한 클라이언트 측 truncation과의
+        핵심 차이다(클라이언트 측에서 임의로 자르면 prompt cache prefix가 예측 불가능하게 깨진다).
+      </li>
+    </ul>
+
+    <h3>② Compaction (베타, <code>compact-2026-01-12</code>) — 대화 전체를 "요약"</h3>
+    <ul>
+      <li>
+        입력 토큰이 설정된 <code>trigger</code>(기본 15만, 최소 5만)에 가까워지면 이전 컨텍스트 전체를
+        자동으로 요약하고, <strong><code>compaction</code>이라는 전용 content block</strong>을 만든다.
+        이후 요청에서는 이 compaction 블록 이전의 모든 블록이 자동으로 드롭된다.
+      </li>
+      <li>
+        <code>pause_after_compaction: true</code>로 두면 요약 직후 <code>stop_reason: "compaction"</code>으로
+        멈춰서, 호출자가 요약 내용을 검토·개입한 뒤 이어갈 수 있다.
+      </li>
+      <li>
+        <code>instructions</code> 필드로 기본 요약 프롬프트를 완전히 <strong>대체</strong>할 수 있다 —
+        "코드 스니펫, 변수명, 기술적 결정은 반드시 보존하라" 같은 지시를 넣을 수 있다.
+      </li>
+      <li>
+        <strong>비용 집계 함정:</strong> 응답의 <code>usage</code>는 <code>iterations</code> 배열로
+        <code>"type": "compaction"</code> 반복과 <code>"type": "message"</code> 반복을 구분한다 —
+        최상위 <code>input_tokens</code>/<code>output_tokens</code>는 compaction이 아닌 반복만 반영하므로,
+        실제 청구 총액을 구하려면 <code>iterations</code> 전체를 합산해야 한다.
+      </li>
+      <li>
+        레거시로 존재했던 클라이언트 사이드 SDK 요약(<code>compaction_control</code>/<code>tool_runner</code>,
+        Python/TS/Ruby SDK 한정)은 이 서버사이드 방식으로 대체되며 <strong>deprecated</strong> 취급된다.
+      </li>
+    </ul>
+
+    <h3>③ Memory Tool (<code>memory_20250818</code>, 베타 헤더 없이 GA) — 리셋을 "건너뛰는" 영속 레이어</h3>
+    <ul>
+      <li>
+        완전히 <strong>클라이언트 사이드</strong>다 — 모델은 <code>view</code>/<code>create</code>/
+        <code>str_replace</code>/<code>insert</code>/<code>delete</code>/<code>rename</code> 같은 파일
+        연산을 "요청"만 하고, 실제 저장(파일시스템, DB, 클라우드 스토리지 등 무엇이든)은 개발자 쪽 인프라가
+        수행한다. Memory는 Anthropic이 아니라 <strong>여러분의 인프라에 저장</strong>된다.
+      </li>
+      <li>
+        관례상 <code>/memories</code> 경로 프리픽스를 쓰고, API가 시스템 프롬프트에 "작업을 시작하기 전에
+        항상 memory 디렉토리를 확인하고, 컨텍스트가 언제든 리셋될 수 있다고 가정하라"는 지시를 자동으로
+        주입한다.
+      </li>
+      <li>
+        <strong>보안은 전적으로 호출자 책임</strong>이다 — <code>/memories/../../secrets.env</code>류의
+        path traversal(URL 인코딩된 <code>%2e%2e%2f</code> 포함)을 반드시 방어해야 하고, memory 파일 크기를
+        제한하고 오래 접근되지 않은 파일을 주기적으로 만료시키는 것도 개발자가 직접 구현해야 한다 — API가
+        자동으로 해주지 않는다.
+      </li>
+      <li>
+        Anthropic이 보고한 벤치마크: context editing 단독으로 <strong>29%</strong>, context editing +
+        memory tool 조합으로 <strong>39%</strong>의 성능 개선.
+      </li>
+    </ul>
+
+    <div class="callout callout-tip">
+      <strong>세 기능의 관계(Anthropic 문서 원문 요지):</strong> "context editing은 특정 tool 결과를 표적으로
+      정리하고, compaction은 대화 전체를 서버에서 요약한다. 장기 실행 agent라면 둘 다 함께 쓰는 걸 고려하라 —
+      compaction은 클라이언트 측 관리 없이 활성 컨텍스트를 작게 유지하고, memory는 요약을 거쳐도 반드시
+      살아남아야 하는 정보를 보존한다." 즉 <strong>compaction/context editing은 "일시적(transient)
+      window"를 관리</strong>하고, <strong>memory는 그 리셋을 가로질러 살아남는 "영속(durable) 레이어"</strong>다.
+    </div>
+
+    <h3>Claude Code의 auto-compact — 하나의 LLM 호출 전에 거치는 5단계 계단식(cascade) 처리</h3>
+    <p>
+      Claude Code는 컨텍스트가 window의 <strong>약 95%</strong>에 도달하면 자동으로 compact하는데(환경변수
+      <code>CLAUDE_AUTOCOMPACT_PCT_OVERRIDE</code>로 조정 가능), 이 임계값에 도달하기 훨씬 전부터 이미 여러
+      단계의 저렴한 정리를 거친다.
+    </p>
+    <ol>
+      <li><strong>소스 레벨 truncation:</strong> 단일 tool 결과가 약 5만 문자를 넘으면 전체를 디스크에 쓰고
+      컨텍스트에는 약 2KB 미리보기 + 파일 경로만 남긴다.</li>
+      <li><strong>Microcompact:</strong> 매 API 호출 전에 실행되는 사전 정리 — 대화 크기 자체를 줄이진
+      않지만, 값비싼 실제 compaction 전에 값싼 노이즈부터 치운다.</li>
+      <li><strong>Tier 4 / "Auto":</strong> 값싼 단계로 충분하지 않을 때만 전용 서브에이전트가 LLM 기반
+      전체 요약을 수행한다. 원칙은 "예산 안에서 항상 가장 가벼운 단계를 우선한다"이다.</li>
+    </ol>
+    <p>
+      Claude Code 팀 구성원은 95%까지 기다리지 말고 <strong>50~60% 용량에서 선제적으로 compact</strong>할 것을
+      권장하는데, 이는 Chroma의 context rot 발견과 일치한다 — 하드 트리거가 걸리기 훨씬 전부터 이미 품질이
+      저하돼 있을 수 있기 때문이다.
+    </p>
+    <p>
+      비교 참고로, Codex CLI는 단일 계층의 <strong>암호화된(encrypted)</strong> handoff 요약을 쓴다(악의적
+      요약이 이후 모델 행동을 조작하지 못하게 막는 poisoning 내성 설계이자 속도 최적화), OpenCode는
+      메시지를 물리적으로 삭제하지 않고 <code>compacted</code> 타임스탬프만 찍어 이후 요청에서 안 보이게
+      만드는 <strong>비파괴적(non-destructive)</strong> 방식을 쓴다 — "가장 좋은 컨텍스트 관리는 기억 용량을
+      끝없이 늘리는 게 아니라, <strong>정밀하게 잊는 법을 배우는 것</strong>"이라는 표현이 이 셋을 관통하는
+      설계 철학이다.
+    </p>
+  </div>
+
+  <!-- 전제 개념 4: session/memory -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Session vs Memory — 단기 작업 기억과 장기 지속 기억 구분</h2>
+
+    <h3>OpenAI Agents SDK의 Session 추상화</h3>
+    <p>
+      OpenAI Agents SDK는 <code>Session</code>이라는 작은 프로토콜(항목 조회/추가를 담당하는 몇 개의 비동기
+      메서드)을 <code>Runner</code>에 넘기면, 매 실행마다 대화 히스토리를 수동으로 이어 붙이지 않아도 자동으로
+      관리해준다. 제공되는 구현체가 다양하다:
+    </p>
+    <table>
+      <tr><th>구현체</th><th>특징</th></tr>
+      <tr><td><code>SQLiteSession</code></td><td>기본은 인메모리(프로세스 종료 시 소실), 파일 경로를 주면 영속화</td></tr>
+      <tr><td><code>AsyncSQLiteSession</code></td><td>SQLAlchemy 기반 비동기 I/O</td></tr>
+      <tr><td><code>AdvancedSQLiteSession</code></td><td>대화 분기(branching), 턴 단위 사용량 분석 지원</td></tr>
+      <tr><td><code>SQLAlchemySession</code></td><td>범용 프로덕션 DB 백엔드</td></tr>
+      <tr><td><code>OpenAIConversationsSession</code></td><td>저장/조회를 OpenAI 호스팅 Conversations API에 완전히 위임</td></tr>
+      <tr><td><code>OpenAIResponsesCompactionSession</code></td><td>히스토리가 설정된 토큰 한도를 넘으면 <code>responses.compact</code>를 자동 호출하는 래퍼</td></tr>
+      <tr><td><code>EncryptedSession</code></td><td>기반 세션에 위임하기 전에 대화 항목을 암호화/복호화하는 래퍼</td></tr>
+    </table>
+    <p>
+      요점은 세션 구현이 무엇이든 <strong>"이 세션이 단기 작업 기억(working memory)을 관리한다"</strong>는
+      역할이 고정돼 있다는 것이다 — 세션은 대화가 끝나면(또는 리셋되면) 사라지는 것을 전제로 설계된다.
+    </p>
+
+    <h3>단기(session) memory vs 장기(persistent) memory</h3>
+    <p>
+      거의 모든 소스에서 일관되게 나타나는 구분이다. <strong>단기/작업 memory</strong>는 살아있는 컨텍스트
+      window·현재 세션의 메시지 히스토리를 뜻하며, compaction/context editing이 관리하는 대상이다.
+      <strong>장기/영속 memory</strong>는 세션 경계를 넘어 살아남는 상태를 뜻하며, memory tool, 구조화된
+      fact store, 벡터 스토어가 관리하는 대상이다. 이 둘은 <strong>서로 대체재가 아니라 상호보완 레이어</strong>다.
+    </p>
+
+    <h3>Memory 패턴 분류 4가지</h3>
+    <ol>
+      <li>
+        <strong>파일 기반(Anthropic memory tool, <code>claude-progress.txt</code> 패턴):</strong> 영속적이고
+        감사 가능(diff로 추적 가능)하며 구현이 저렴하지만, agent가 스스로 조회할 규율(view 먼저 하기)을
+        지켜야 한다.
+      </li>
+      <li>
+        <strong>구조화된 사실 추출(Mem0류):</strong> 대화 턴마다 "핵심 사실"을 추출하고, 새 후보 사실마다
+        기존 memory 대비 <code>ADD</code>/<code>UPDATE</code>/<code>DELETE</code>/<code>NOOP</code> 중
+        하나를 LLM이 판단해 중복 제거·병합한다. 대화당 평균 약 7천 토큰 규모로 보고되지만, <strong>추출된
+        모든 후보마다 매번 라우팅용 LLM 호출이 필요</strong>해서 실제로 새로운 정보가 얼마나 적든 유입되는
+        턴 수에 비례해 쓰기 비용이 발생한다는 트레이드오프가 있다.
+      </li>
+      <li>
+        <strong>그래프 기반:</strong> 엔티티를 노드로, 관계를 엣지로 표현해 여러 사실을 연결한 다단계 추론을
+        지원하지만 유지보수가 더 복잡하다.
+      </li>
+      <li>
+        <strong>벡터 스토어/RAG 기반:</strong> 구현이 가장 간단하지만, 앞서 다룬 "몇 개 문서만 오염시켜도
+        영향을 준다"는 공격에 가장 취약하고, 검색된 청크를 너무 많이 다시 컨텍스트에 채우면 context rot의
+        정밀도 저하 문제도 그대로 적용된다.
+      </li>
+    </ol>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+    <ul>
+      <li>
+        <strong>Context를 "글쓰기 문제"가 아니라 "자원 관리/엔지니어링 문제"로 보는가:</strong> "더 채우면
+        더 똑똑해진다"는 통념을 구체적 수치(Chroma의 30%p 하락, 7.9% 길이 단독 저하)로 반박할 수 있는가.
+      </li>
+      <li>
+        <strong>서로 다른 레이어를 구분할 수 있는가:</strong> compaction(요약)과 context editing(표적 삭제),
+        memory(영속)를 뭉뚱그려 "그냥 컨텍스트 관리"라고 답하지 않고, 각각이 언제 필요한지 설명할 수 있는가.
+      </li>
+      <li>
+        <strong>보안·운영 관점까지 확장하는가:</strong> memory를 설계할 때 poisoning·staleness·무한 성장·
+        path traversal 같은 실패 모드를 스스로 떠올리는가, 아니면 "저장만 하면 된다"는 순진한 설계에
+        머무르는가.
+      </li>
+      <li>
+        <strong>최신 변화를 추적하는가:</strong> compaction/context editing/memory tool처럼 2025~2026년에
+        걸쳐 빠르게 GA로 넘어가는 기능을 스스로 근거를 갖고 설명할 수 있는가.
+      </li>
+    </ul>
+    <div class="callout callout-warn">
+      이 영역은 "context window가 크면 문제가 해결된다"는 생각을 반증하는 게 핵심 시그널이다. 100만 토큰
+      window가 나와도 그 안의 <strong>모든 토큰이 균일하게 처리되지 않는다</strong>는 걸 아는 후보와, "window가
+      크니까 그냥 다 넣으면 되지 않나요"라고 답하는 후보는 확연히 구분된다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 고객지원 agent의 세션이 길어지며 응답 품질이 떨어지는 문제</h3>
+    <p>
+      한 세션이 몇 시간 동안 이어지는 고객지원 agent에서, 사용자는 "몇 시간 전엔 잘 답했는데 지금은 같은
+      질문에 이상하게 답한다"고 느낀다. 원인은 에러가 아니라 <strong>context rot</strong>일 수 있다 —
+      토큰이 절벽처럼 저하되는 임계값을 이미 넘겼을 가능성이 크다. → 95% 하드 트리거를 기다리지 말고, 예를
+      들어 입력 토큰이 5~6만(또는 window의 50~60%)에 도달하면 <code>trigger</code>를 설정한 compaction을
+      선제적으로 걸고, <code>instructions</code>로 "고객 계정 정보, 미해결 티켓 상태는 반드시 보존"처럼
+      도메인에 중요한 정보를 명시한다.
+    </p>
+
+    <h3>상황 2: 리서치 agent의 서브에이전트 하나가 만든 오류가 최종 보고서까지 이어지는 문제</h3>
+    <p>
+      멀티에이전트 리서치 파이프라인에서 서브에이전트 하나가 잘못된 통계를 만들어내면, 이후 그 결과를
+      읽는 종합(synthesis) 에이전트가 이를 "이미 검증된 사실"로 취급해 보고서 전체에 인용할 수 있다 —
+      전형적인 anchoring이다. → 서브에이전트의 출력은 오케스트레이터에게 "검증된 사실"이 아니라
+      "검증이 필요한 주장"으로 취급되도록 설계하고(출처 인용 강제, 교차검증 스텝 추가), 상태 변경(최종
+      보고서에 반영하는 write)은 종합 단계에서만 일어나도록 단일 스레드로 제한한다.
+    </p>
+
+    <h3>상황 3: 장기 실행 코딩 agent가 컨텍스트 리셋마다 처음부터 코드베이스를 다시 탐색하는 문제</h3>
+    <p>
+      컨텍스트가 리셋될 때마다 agent가 프로젝트 구조를 처음부터 다시 파악하느라 시간과 토큰을 낭비한다.
+      → Anthropic의 initializer/worker 분리 패턴처럼, 환경 설정은 한 번만 하는 initializer agent가 맡고,
+      매 세션 실행되는 worker agent는 <code>claude-progress.txt</code>와 git 히스토리만 읽고 이어서
+      작업하게 한다. "기능 완료" 표시는 코드 작성 시점이 아니라 엔드투엔드 검증 이후로 미룬다.
+    </p>
+
+    <h3>상황 4: 영속 memory가 오염되거나 방치되어 오래된 정보를 계속 사실처럼 되돌려주는 문제</h3>
+    <p>
+      사용자 프로필이나 조직 지식을 저장하는 장기 memory가 한 번 기록된 뒤 갱신되지 않아, 이미 바뀐 정책이나
+      폐기된 API를 여전히 "현재 사실"로 응답에 사용한다. 공격이 없어도 벌어지는 문제다. → memory tool
+      문서가 권장하듯 파일 크기 상한, 오래 접근되지 않은 파일의 주기적 만료, path traversal 방어를 애플리케이션
+      레벨에서 직접 구현하고, RAG 지식베이스라면 "단 몇 개 문서 오염으로도 특정 질의를 왜곡시킬 수 있다"는
+      MINJA류 공격 벡터를 염두에 두고 출처(provenance) 검증과 쓰기 권한 제한을 함께 설계한다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Context를 유한한 자원으로 정의하기</strong>
+        "Context window는 크기가 아니라 '주의 예산'입니다. Self-attention 연산 비용이 시퀀스 길이에 대해
+        제곱으로 늘어나기 때문에, window 안에만 있다고 모델이 모든 토큰을 균일하게 처리하지 않습니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>근거를 구체적 수치로 제시하기</strong>
+        "Chroma의 Context Rot 연구가 18개 모델에서 이걸 실증했는데, 관련 정보 위치가 중간이면 30%p 이상
+        떨어지고, 방해 요소를 통제해도 길이 단독으로 7.9% 저하가 나타났습니다. 성능은 완만하게 떨어지는 게
+        아니라 임계값을 넘는 순간 절벽처럼 떨어집니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>완화 기법을 계층으로 구분해서 설명하기</strong>
+        "그래서 harness는 compaction(전체 요약), context editing(표적 삭제), memory(영속 레이어)를 구분해서
+        씁니다. Compaction과 context editing은 일시적인 window를 관리하고, memory는 그 리셋을 가로질러
+        살아남아야 하는 정보를 보존합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Poisoning 관점으로 확장하기</strong>
+        "동시에 컨텍스트에 남은 오류가 이후 추론에서 사실처럼 취급되는 context poisoning 위험도 고려해야
+        합니다. 특히 영속 memory는 시간적으로 분리된 공격에 노출되기 때문에 OWASP도 이걸 별도 위협
+        (ASI06)으로 분류합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>운영 관점으로 마무리하기 (Senior 포인트)</strong>
+        "이 영역은 베타 기능이 빠르게 GA로 바뀌는 중이라, 특정 파라미터명을 외우기보다 '일시적 vs 영속',
+        '요약 vs 표적 삭제'라는 원리를 유지하고 최신 changelog로 재확인하는 습관이 더 중요하다고 생각합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+    <div class="callout callout-tip">
+      <p>
+        "Context window는 단순히 '더 크면 좋은' 자원이 아니라 '주의 예산'이라고 생각합니다. Self-attention
+        연산 비용이 시퀀스 길이에 대해 대략 제곱으로 늘어나기 때문에, window 크기 안에만 있다고 해서 모델이
+        모든 토큰을 균일하게 처리하지 않습니다. 실제로 Chroma Research가 18개 프론티어 모델을 대상으로 한
+        Context Rot 연구에서, 관련 정보가 문서 중간에 있을 때 정확도가 30%포인트 넘게 떨어지고, 방해 요소를
+        통제해도 길이 자체만으로 7.9% 저하가 나타났다는 걸 보였습니다. 게다가 이 저하는 완만한 게 아니라
+        특정 임계값을 넘는 순간 절벽처럼 떨어지는 패턴이라, '지금까지 잘 됐으니 계속 채워도 된다'는 판단이
+        위험할 수 있습니다.
+      </p>
+      <p>
+        그래서 저는 harness를 설계할 때 컨텍스트 관리 기능을 역할별로 구분합니다. Anthropic API 기준으로
+        보면, context editing은 오래된 tool 결과처럼 특정 콘텐츠를 표적으로 정밀하게 지우는 것이고,
+        compaction은 대화 전체를 서버에서 요약해서 재초기화하는 것이고, memory tool은 컨텍스트 리셋을
+        가로질러 반드시 살아남아야 하는 정보를 클라이언트가 관리하는 파일에 보존하는 겁니다. 이 셋은
+        서로 대체재가 아니라, '일시적 window 관리'와 '영속 레이어'라는 서로 다른 문제를 푸는 상호보완적인
+        도구라고 이해하고 있습니다. 실무적으로는 하드 트리거(예: Claude Code의 95% 임계값)를 기다리기보다
+        50~60% 수준에서 선제적으로 compact하는 게, 이미 품질이 저하된 이후에 대응하는 것보다 낫다고
+        봅니다.
+      </p>
+      <p>
+        마지막으로 컨텍스트에 남은 오류가 이후 추론에서 계속 '사실'처럼 취급되는 context poisoning도
+        함께 고려합니다. 특히 세션이 끝나도 남는 영속 memory는 오늘 오염된 내용이 몇 달 뒤 전혀 다른
+        세션에서 영향을 줄 수 있는 시간적으로 분리된 위협이라, OWASP도 이걸 일반 프롬프트 인젝션과
+        별개로 ASI06으로 분류했습니다. 그래서 memory를 설계할 때는 파일 크기 상한, 오래 접근되지 않은
+        정보의 만료, 출처 검증까지 함께 넣어야 한다고 생각합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "왜 95% 하드 트리거까지 기다리지 않고 50~60%에서 선제적으로 compact해야 하나요? 더 자주 요약하면 비용이 더 들지 않나요?"</h3>
+    <p><strong>약한 답변:</strong> "그냥 더 안전하니까요."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "Context rot이 절벽형으로 나타난다는 게 핵심입니다. 임계값을 넘기 훨씬 전부터 품질이 서서히
+      저하되고 있을 수 있는데, 이걸 인지하지 못한 채 95%까지 기다리면 이미 여러 턴 동안 저하된 품질로
+      작업한 뒤에야 요약을 하게 됩니다. Compaction 자체의 토큰 비용은 늘어나지만, 그건 '나쁜 답을 여러 번
+      받고 재작업하는 비용'보다 대체로 저렴합니다. 다만 이건 트레이드오프이기 때문에, 실제로는 도메인별로
+      compaction 빈도와 응답 품질을 같이 관측하면서 임계값을 튜닝해야 한다고 봅니다."
+    </p>
+
+    <h3>F2. "멀티에이전트 시스템에서 anchoring으로 인한 오염을 막으려면 어떻게 설계해야 하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "가장 실효성 있는 패턴은 Cognition이 정리한 '서브에이전트는 지능을 기여하되, 상태 변경은 단일
+      스레드로만 커밋한다'는 원칙이라고 생각합니다. 서브에이전트의 출력을 오케스트레이터가 '이미 검증된
+      사실'이 아니라 '검증이 필요한 주장'으로 취급하도록 설계하고, 출처 인용을 강제하거나 별도의
+      교차검증 스텝을 두는 것도 도움이 됩니다. 서브에이전트 각각에게 격리된 컨텍스트를 주고 요약만
+      돌려받는 구조 자체가 이미 poisoning 전파 범위를 줄이는 설계입니다."
+    </p>
+
+    <h3>F3. "영속 memory를 설계할 때 보안 관점에서 가장 먼저 챙겨야 할 건 무엇인가요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "저는 세 가지를 봅니다. 첫째, path traversal 방어 — memory tool처럼 클라이언트가 실제 저장소 경로를
+      매핑하는 구조라면, URL 인코딩된 상대 경로 공격까지 포함해서 반드시 지정된 prefix 밖으로 못 나가게
+      막아야 합니다. 둘째, 무한 성장과 staleness 방지 — 파일 크기 상한과, 오래 접근되지 않은 정보의 주기적
+      만료를 API가 자동으로 해주지 않으므로 직접 구현해야 합니다. 셋째, 쓰기 권한과 출처 검증 —
+      RAG 지식베이스라면 몇 개 문서만 오염돼도 특정 질의를 왜곡시킬 수 있다는 연구 결과가 있으니, 누가
+      memory에 쓸 수 있는지와 그 내용의 출처를 함께 추적해야 한다고 봅니다."
+    </p>
+
+    <h3>F4. "OpenAI Agents SDK의 Session과 Anthropic의 compaction/memory tool은 설계 철학이 어떻게 다른가요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "OpenAI Session은 '히스토리 이어붙이기'라는 반복 작업을 대신 해주는 얇은 프로토콜에 가깝고, 실제
+      저장 방식(SQLite, 암호화, OpenAI 호스팅 Conversations 등)을 자유롭게 갈아끼울 수 있게 설계돼
+      있습니다. 그중 OpenAIResponsesCompactionSession처럼 compaction을 세션 래퍼로 자동화하는 조합도
+      있습니다. Anthropic 쪽은 compaction/context editing/memory tool을 API 레벨의 서로 다른 프리미티브로
+      명시적으로 분리해서, '무엇을 요약할지', '무엇을 표적으로 지울지', '무엇을 영속시킬지'를 개발자가
+      각각 다른 다이얼로 제어하게 합니다. 결국 둘 다 '단기/장기를 구분한다'는 원리는 같지만, 하나는
+      '세션 백엔드를 교체 가능한 추상화'로, 다른 하나는 '컨텍스트 관리를 세분화된 API 기능들로' 접근한다는
+      차이가 있습니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>Context를 <strong>유한한 예산</strong>으로 다루고, context rot을 구체적 수치(30%p, 7.9%)로
+          설명한다</li>
+          <li>Compaction(요약) / context editing(표적 삭제) / memory(영속)를 <strong>역할별로 명확히
+          구분</strong>한다</li>
+          <li>Context poisoning을 <strong>일반 hallucination과 구분</strong>하고, 영속 memory의 시간적
+          분리 위협까지 이해한다</li>
+          <li>Memory 설계에 <strong>보안(path traversal, 출처 검증)과 운영(만료, 크기 상한)</strong>을
+          함께 고려한다</li>
+          <li>베타 기능의 파라미터를 암기하는 게 아니라 <strong>왜 그렇게 나뉘었는지 원리</strong>로
+          설명한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"context window가 크면 문제없다"는 <strong>검증되지 않은 직관</strong>을 그대로 전제</li>
+          <li>compaction/context editing/memory를 뭉뚱그려 "그냥 컨텍스트 관리"라고만 답함</li>
+          <li>Context poisoning을 <strong>단순 hallucination과 동일시</strong>하고 지속성/시간적 분리를
+          모름</li>
+          <li>Memory를 "저장소에 쓰기만 하면 된다"고 생각하고 <strong>보안·만료 설계를 고려하지 않음</strong></li>
+          <li>특정 파라미터 이름을 나열하지만 <strong>왜 그런 설계가 필요한지는 설명 못함</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "context window가 크면 클수록 좋다"</h3>
+    <p>
+      <strong>사실:</strong> Attention 연산 비용이 시퀀스 길이에 대해 제곱으로 늘어나기 때문에 컨텍스트가
+      길어질수록 모델의 주의 예산이 희석된다. Chroma의 연구처럼 window 스펙 안에 있어도 성능이 절벽처럼
+      떨어질 수 있고, 실무자들은 흔히 광고된 window의 25~30% 정도만 "실제로 신뢰 가능한 예산"으로 잡는다.
+    </p>
+
+    <h3>오해 2: "compaction과 memory tool은 결국 같은 것(컨텍스트 관리)이다"</h3>
+    <p>
+      <strong>사실:</strong> Compaction/context editing은 <strong>일시적(transient)</strong> window를
+      관리하는 서버 사이드 기능이고, memory tool은 컨텍스트 리셋을 가로질러 살아남는
+      <strong>영속(durable)</strong> 레이어를 클라이언트가 직접 관리하는 것이다. 둘은 대체재가 아니라
+      상호보완 관계이며, Anthropic은 장기 실행 agent에 둘 다 함께 쓰는 걸 권장한다.
+    </p>
+
+    <h3>오해 3: "hallucination은 대화가 끝나면 사라진다"</h3>
+    <p>
+      <strong>사실:</strong> 일반 hallucination은 사라지지만, context poisoning은 컨텍스트나 영속 memory에
+      남아 이후 추론에서 반복적으로 "사실"처럼 참조된다. 영속 memory에 기록되면 세션 경계를 넘어서도
+      살아남고, MINJA 같은 연구는 이 memory를 표적으로 한 공격이 95% 이상 성공률을 보였다고 보고했다.
+    </p>
+
+    <h3>오해 4: "memory는 많이 기억할수록 더 똑똑한 agent가 된다"</h3>
+    <p>
+      <strong>사실:</strong> 무한히 쌓이는 memory는 오히려 위험을 키운다. 오래돼 갱신되지 않은 정보가
+      staleness로 인해 조용히 잘못된 판단의 근거가 되고, 크기 상한과 접근 빈도 기반 만료가 없으면
+      비용·검색 정밀도도 함께 나빠진다. Anthropic의 memory tool 문서조차 이런 관리는 API가 자동으로 해주지
+      않으니 개발자가 직접 구현하라고 명시한다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Context/Memory 설계 체크리스트</h2>
+    <table>
+      <tr>
+        <th>항목</th>
+        <th>확인할 질문</th>
+      </tr>
+      <tr>
+        <td>예산 편성</td>
+        <td>광고된 window 크기가 아니라, 실제로 신뢰 가능한 "유효 예산"을 별도로 잡고 모니터링하는가?</td>
+      </tr>
+      <tr>
+        <td>선제적 compaction</td>
+        <td>하드 임계값(예: 95%)을 기다리지 않고 더 이른 시점에 compact하도록 설계했는가?</td>
+      </tr>
+      <tr>
+        <td>표적 삭제 vs 요약</td>
+        <td>도구 결과처럼 표적으로 지워도 되는 것과, 요약으로 압축해야 하는 것을 구분했는가?</td>
+      </tr>
+      <tr>
+        <td>영속 정보 식별</td>
+        <td>compaction/reset을 가로질러 반드시 살아남아야 하는 정보를 memory 레이어로 명시적으로
+        분리했는가?</td>
+      </tr>
+      <tr>
+        <td>Poisoning 내성</td>
+        <td>서브에이전트 출력을 "검증된 사실"이 아닌 "검증이 필요한 주장"으로 취급하고, 상태 변경을
+        단일 스레드로 제한했는가?</td>
+      </tr>
+      <tr>
+        <td>Memory 보안</td>
+        <td>path traversal 방어, 쓰기 권한 제한, 출처 추적이 memory 저장소에 구현돼 있는가?</td>
+      </tr>
+      <tr>
+        <td>Memory 위생</td>
+        <td>파일 크기 상한과 미접근 정보의 주기적 만료가 자동화돼 있는가?</td>
+      </tr>
+      <tr>
+        <td>비용 가시성</td>
+        <td>compaction 반복을 포함한 실제 토큰 사용량(iterations 전체 합산)을 모니터링하는가?</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"context window가 크면 문제없다"고 생각하고, compaction/memory 개념을 구분하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>context window에 한계가 있다는 건 알지만, context rot의 구체적 증거나 compaction/context
+      editing/memory의 역할 차이는 설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>Compaction과 memory를 구분해서 설명할 수 있고, context poisoning이 hallucination과 다르다는 것도
+      알지만, 보안/staleness 관점까지는 확장하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>Context rot의 근본 원인(attention 비용)과 실증 수치, compaction/context editing/memory의 역할
+      분리, context poisoning의 시간적 분리 위협(OWASP ASI06)과 multi-agent anchoring, memory의 보안·위생
+      설계까지 하나의 일관된 그림으로 연결해서 설명함</span>
+    </div>
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. Context rot이 왜 발생하는지 attention 연산 비용 관점에서 설명하고, 구체적 실증 수치를 하나 이상
+      들 수 있는가?<br>
+      2. Compaction, context editing, memory tool이 서로 다른 문제를 푸는 이유를 즉시 구분해서 말할 수
+      있는가?<br>
+      3. Context poisoning이 일반 hallucination과 어떻게 다른지, multi-agent anchoring 사례로 설명할 수
+      있는가?<br>
+      4. 영속 memory를 설계할 때 보안(path traversal)과 위생(만료, 크기 상한)을 왜 API가 자동으로 해주지
+      않는지, 그래서 무엇을 직접 구현해야 하는지 말할 수 있는가?<br>
+      5. Session(단기)과 memory(장기)를 구분해서 설계해야 하는 이유를 provider 무관한 원리로 설명할 수
+      있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>Context는 예산이다.</strong> Attention 비용이 길이에 대해 제곱으로 늘어나 context rot이
+      발생하며, window 스펙 안에 있어도 성능이 절벽처럼 떨어질 수 있다.</li>
+      <li><strong>Compaction(요약) / context editing(표적 삭제) / memory(영속)는 서로 다른 레이어다.</strong>
+      앞의 둘은 일시적 window를, memory는 리셋을 가로지르는 영속 정보를 관리한다.</li>
+      <li><strong>Context poisoning은 hallucination보다 위험하다.</strong> 컨텍스트/memory에 남아 이후
+      추론에서 계속 "사실"처럼 취급되며, multi-agent에서는 anchoring으로 전파되고, 영속 memory에서는
+      시간적으로 분리된 공격(OWASP ASI06)의 표적이 된다.</li>
+      <li><strong>Memory는 저장만으로 끝나지 않는다.</strong> Path traversal 방어, 크기 상한, 미접근 정보
+      만료, 출처 검증을 개발자가 직접 설계해야 한다.</li>
+      <li><strong>Session과 memory를 구분해서 설계하라.</strong> 단기 작업 기억과 장기 지속 기억은 요구되는
+      보장(consistency, 만료, 감사 가능성)이 다르다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 3 완료 · 다음: Day 4 — Control-Flow Scaffolding과 루프 안정성</span>
+  </div>
+
+</div>
+</body>
+</html>

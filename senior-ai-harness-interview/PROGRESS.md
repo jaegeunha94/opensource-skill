@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-07-03 | AI Harness와 Agent Runtime 설계/운영 프레임워크 | [0001-ai-agent-harness-runtime-design-framework.html](lessons/0001-ai-agent-harness-runtime-design-framework.html) |
 | 2 | 2026-07-04 | Model/Tool/Runtime 경계와 Provider 추상화 | [0002-model-tool-runtime-boundary-provider-abstraction.html](lessons/0002-model-tool-runtime-boundary-provider-abstraction.html) |
+| 3 | 2026-07-05 | Prompt/Context/Memory Scaffolding | [0003-prompt-context-memory-scaffolding.html](lessons/0003-prompt-context-memory-scaffolding.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | Prompt/Context/Memory Scaffolding | context window 예산, context rot, context poisoning, compaction, session/memory 설계 |
 | 4 | Control-Flow Scaffolding과 루프 안정성 | ReAct 루프, step cap/budget cap/repeated-state detection, 종료 조건 설계, circuit breaker |
 | 5 | Guardrail과 Prompt Injection 방어 | lethal trifecta, input/output/tool guardrail, tripwire, defense-in-depth, OWASP Agentic Top 10 |
 | 6 | Sandboxed Workspace Execution과 권한 스코핑 | OS 레벨 샌드박스(bubblewrap/Seatbelt), hosted code execution, E2B/Daytona, least-privilege 권한 설계 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — 다음: Day 3 — Prompt/Context/Memory Scaffolding
+**Day 3 완료** — 다음: Day 4 — Control-Flow Scaffolding과 루프 안정성
 
 ## 습득한 핵심 개념
 
@@ -39,7 +39,10 @@
 - [x] Provider abstraction layer 설계와 leaky abstraction(caching/reasoning 토큰/tool_choice/스트리밍) (Day 2)
 - [x] Tool 설계 원칙(통합, 네임스페이싱, poka-yoke, Vercel d0 80% 삭감 사례) (Day 2)
 - [x] Tool error handling(is_error, 정보 노출/인젝션 방어, idempotency) (Day 2)
-- [ ] Context/Memory scaffolding, context rot/poisoning (예정 Day 3)
+- [x] Context 예산 편성과 context rot(attention 비용, Chroma 실증 수치) (Day 3)
+- [x] Context poisoning과 hallucination의 차이, multi-agent anchoring, OWASP ASI06 (Day 3)
+- [x] Compaction/Context Editing/Memory tool의 역할 분리(Anthropic API) (Day 3)
+- [x] Session(단기) vs Memory(장기) 설계, memory 패턴 분류와 보안/위생 (Day 3)
 - [ ] Control-flow scaffolding, 루프 안정성 (예정 Day 4)
 - [ ] Guardrail, prompt injection 방어 (예정 Day 5)
 - [ ] Sandboxed execution, 권한 스코핑 (예정 Day 6)
