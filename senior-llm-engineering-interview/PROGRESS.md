@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | LLM 제품 품질과 모델 선택/운영 프레임워크 | [0001-llm-product-quality-and-model-selection-framework.html](lessons/0001-llm-product-quality-and-model-selection-framework.html) |
 | 2 | 2026-07-04 | LLM 동작 특성과 Capability Boundary | [0002-llm-behavior-and-capability-boundary.html](lessons/0002-llm-behavior-and-capability-boundary.html) |
+| 3 | 2026-07-05 | Tokenization과 Context Window | [0003-tokenization-and-context-window.html](lessons/0003-tokenization-and-context-window.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | Tokenization과 Context Window | 토큰화 메커니즘, 토큰 비용, context window 활용/함정 |
 | 4 | Prompt Engineering 실무 | 시스템 프롬프트 설계, few-shot, 프롬프트 버전 관리 |
 | 5 | Reasoning Model 사용 판단 | extended thinking/reasoning effort 판단 기준, latency/cost 대가 |
 | 6 | Structured Output 설계 | 스키마 강제, 파싱 실패 처리, 신뢰성 있는 출력 계약 |
@@ -29,7 +29,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — Day 3 (Tokenization과 Context Window)가 다음 차례.
+**Day 3 완료** — Day 4 (Prompt Engineering 실무)가 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -40,7 +40,10 @@
 - [x] LLM의 확률적 동작 특성(다음 토큰 예측)과 capability boundary (Day 2)
 - [x] 실패 모드 5분류(지식/추론/지시따르기/보정/분포이탈) 프레임워크와 원인별 완화 전략 (Day 2)
 - [x] 환각이 평가 인센티브 구조에서 비롯된다는 최신 연구 논지(OpenAI, 2025~2026) (Day 2)
-- [ ] 토큰화와 context window 활용/함정 (예정 Day 3)
+- [x] 토큰화(서브워드 단위)와 언어별 토큰 비용 차이 (Day 3)
+- [x] claimed context window vs effective context window 구분, context rot 연구 근거 (Day 3)
+- [x] 포지션 편향(U-shaped, lost in the middle)과 정보 배치 전략 (Day 3)
+- [x] RAG vs long-context stuffing 판단 기준, compaction/context editing/caching을 통한 장기 실행 컨텍스트 관리 (Day 3)
 - [ ] 프롬프트 엔지니어링 실무와 버전 관리 (예정 Day 4)
 - [ ] reasoning model 사용 판단 기준 (예정 Day 5)
 - [ ] structured output 설계와 실패 처리 (예정 Day 6)
@@ -60,4 +63,5 @@
 
 - 2026-07-02 Day 1 작성 시점 기준, Anthropic 최신 플래그십은 Claude Fable 5(적응형 thinking 기본 탑재), OpenAI는 GPT-5.5(reasoning effort 파라미터로 o-계열 통합), Google은 Gemini 3.5 Flash/3.1 Pro 조합을 확인함.
 - 2026-07-04 Day 2 작성 시점, OpenAI "Why Language Models Hallucinate"(2025, arXiv:2509.04664) 및 관련 2026년 후속 논의(평가 인센티브가 환각을 유도한다는 논지, Nature 게재 등)를 확인해 실패 모드/환각 섹션에 반영함. 2026년 프론티어 모델의 표준 벤치마크 환각률은 한 자릿수 %대까지 낮아졌으나, 실제 프로덕션 표본 조사에서는 여전히 도메인에 따라 두 자릿수 %대 환각이 보고된다는 간극도 함께 확인함.
+- 2026-07-05 Day 3 작성 시점, Anthropic Claude Platform Docs(context windows, token counting)를 확인해 2026년 중반 기준 Claude Opus 4.6/4.7/4.8·Sonnet 5·Sonnet 4.6이 API 기본값으로 1M 토큰 context window를 제공하며(Sonnet 4.5 등 일부는 200K 유지), OpenAI GPT-5.5도 1M 토큰 컨텍스트를 지원한다는 것을 확인함. Anthropic 문서가 공식 용어로 쓰는 "context rot"(컨텍스트가 커질수록 정확도·회상이 저하되는 현상)을 프레임워크의 핵심 개념으로 채택했고, Claude Opus 4.7 이후·Sonnet 5 등에서 새 토크나이저가 도입되어 동일 텍스트가 약 30% 더 많은 토큰으로 계산된다는 마이그레이션 함정도 반영함. Chroma의 다중 모델(GPT/Claude/Gemini/Qwen) context rot 벤치마크에서 확인된 "effective context window가 claimed보다 훨씬 작을 수 있다"는 수치와 포지션 편향(U-shaped) 연구도 근거로 사용함.
 - 특정 모델명·버전·수치는 인터뷰 시점에 따라 바뀔 수 있으므로, 새 레슨을 만들 때마다 공식 문서와 changelog를 다시 확인하고 이 메모를 갱신한다.

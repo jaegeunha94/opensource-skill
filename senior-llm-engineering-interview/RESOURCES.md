@@ -25,6 +25,18 @@
 | OpenAI — "Why Language Models Hallucinate" (arXiv:2509.04664, 2025) | 환각이 정답률만 보상하는 평가 인센티브 구조에서 비롯된다는 핵심 논지. capability boundary/실패 모드 논의의 이론적 근거 |
 | Knowledge Boundary Discovery 관련 연구 (arXiv, 2026) | 모델이 자신의 지식 경계를 스스로 판별(calibration)하도록 만드는 기법 동향 |
 
+## Tokenization & Context Window
+
+| 자료 | 설명 |
+|------|------|
+| Anthropic — Context Windows 공식 문서 (platform.claude.com/docs) | context window 구성 요소, 모델별 크기, extended thinking/tool use와의 상호작용, "context rot" 공식 용어 정의 |
+| Anthropic — Token Counting 공식 문서 | 토큰 카운팅 API, 토크나이저 세대 변경(신규 토크나이저 적용 시 토큰 수 약 30% 증가) 공지 |
+| Anthropic Engineering — "Effective context engineering for AI agents" | 컨텍스트를 "유한하고 저하되는 자원"으로 다루는 실무 원칙 |
+| Chroma — Context Rot 벤치마크 | GPT/Claude/Gemini/Qwen 등 다중 모델 대상, 입력 길이 증가에 따른 정확도 저하와 claimed vs effective context window 간극 실측 |
+| Lost in the Middle 계열 연구 (포지션 편향) | 정답 근거 위치(맨 앞/뒤 vs 중간)에 따른 U자형 회상률 저하 현상 |
+| Anthropic — Compaction / Context Editing 공식 문서 | 장기 실행 대화·에이전트를 위한 서버 사이드 컨텍스트 압축·정리 기능 |
+| OpenAI — API Changelog (컨텍스트 자동 요약/압축 공지) | 대화 이력 자동 압축을 통한 장기 실행 컨텍스트 관리 |
+
 ## Prompt Engineering & Structured Output
 
 | 자료 | 설명 |
