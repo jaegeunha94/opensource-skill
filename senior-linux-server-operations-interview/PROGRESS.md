@@ -9,19 +9,19 @@
 | 3 | 2026-07-02 | 메모리 진단 & OOM | [0003-memory-oom-diagnostics.html](lessons/0003-memory-oom-diagnostics.html) |
 | 4 | 2026-07-03 | 디스크 I/O 진단 | [0004-disk-io-diagnostics.html](lessons/0004-disk-io-diagnostics.html) |
 | 5 | 2026-07-04 | 로그 분석 & journalctl | [0005-log-analysis-journalctl.html](lessons/0005-log-analysis-journalctl.html) |
+| 6 | 2026-07-05 | systemd 서비스 관리 | [0006-systemd-service-management.html](lessons/0006-systemd-service-management.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | systemd 서비스 관리 | systemctl start/stop/enable/status, unit 파일 구조, ExecStart, Restart 정책, 의존성 After= |
 | 7 | 네트워크 진단 | ss -tuln, netstat, LISTEN/ESTABLISHED/TIME_WAIT, tcpdump 기초, ip route, 방화벽(firewalld/ufw) |
 | 8 | 권한 & 보안 관리 | chmod/chown 숫자/문자 표기, umask, sudo/sudoers, setuid/setgid, SELinux context, capability |
 | 9 | 종합 장애 시나리오 실습 | Day 1~8 개념 종합. 실전 시나리오 3개 — CPU 폭식, 디스크 풀, 서비스 재시작 반복 |
 
 ## 현재 학습 위치
 
-**Day 5 완료** — Day 6: systemd 서비스 관리 예정.
+**Day 6 완료** — Day 7: 네트워크 진단 예정.
 
 ## 습득한 핵심 개념
 
@@ -51,7 +51,10 @@
 - [x] 증상별 로그 소스 선택 (인증→auth.log, 커널/하드웨어→dmesg, 애플리케이션→자체 로그) (Day 5)
 - [x] grep/awk/sed 조합으로 정량적 원인 집계 (awk | sort | uniq -c) (Day 5)
 - [x] logrotate copytruncate의 유실 가능성 trade-off (Day 5)
-- [ ] systemd 서비스 관리 (예정 Day 6)
+- [x] systemctl start/stop vs enable/disable의 독립적인 축 구분 (Day 6)
+- [x] unit 파일 구조 ([Unit]/[Service]/[Install]) 와 After= vs Requires= 차이 (Day 6)
+- [x] Restart 정책과 StartLimitBurst/RestartSec의 crash loop 방지 trade-off (Day 6)
+- [x] systemctl status 필드(Active/Loaded/Process) 해석과 진단 연결 (Day 6)
 - [ ] 네트워크 진단 (예정 Day 7)
 - [ ] 권한 & 보안 관리 (예정 Day 8)
 - [ ] 종합 시나리오 실습 (예정 Day 9)

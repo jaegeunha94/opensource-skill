@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — systemd 서비스 관리 | Linux 서버 운영 인터뷰</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<header class="lesson-header">
+  <div class="header-inner">
+    <span class="subject-label">Linux 서버 운영 인터뷰 · Day 6</span>
+    <h1>systemd 서비스 관리</h1>
+    <p class="subtitle">
+      "서비스를 재시작했습니다"라는 말 뒤에 실제로 무슨 일이 일어나는지 —
+      unit 파일 구조, 재시작 정책, 의존성 순서까지 systemd가 프로세스를 어떻게
+      관리하는지 설명할 수 있는가
+    </p>
+    <p style="margin-top:1rem; font-size:0.82rem; color:#64748b;">
+      <span class="tag">systemctl</span>
+      <span class="tag">unit 파일</span>
+      <span class="tag">ExecStart</span>
+      <span class="tag">Restart 정책</span>
+      <span class="tag">After=/Wants=</span>
+    </p>
+  </div>
+</header>
+
+<nav class="lesson-nav">
+  <ul>
+    <li><a href="#questions">면접 질문</a></li>
+    <li><a href="#concepts">전제 개념</a></li>
+    <li><a href="#why">왜 묻는가</a></li>
+    <li><a href="#realworld">실무 연결</a></li>
+    <li><a href="#framework">답변 사고 순서</a></li>
+    <li><a href="#model-answer">핵심 답변 예시</a></li>
+    <li><a href="#followup">Senior Follow-up</a></li>
+    <li><a href="#comparison">좋은 vs 약한 답변</a></li>
+    <li><a href="#misconceptions">흔한 오해</a></li>
+    <li><a href="#rubric">자기 점검 Rubric</a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <!-- ══════════════════════════════════════
+       SECTION 1: 오늘의 면접 질문
+  ══════════════════════════════════════ -->
+  <section id="questions">
+    <h2><span class="icon">❓</span> 오늘의 면접 질문</h2>
+
+    <div class="question-card">
+      <span class="q-label main">핵심 질문</span>
+      <p class="q-text">
+        "배포한 서비스가 몇 분 간격으로 계속 재시작되고 있습니다(crash loop).
+        <code>systemctl status</code>만으로 어디까지 파악할 수 있고, 원인을 어떻게
+        좁혀나가시겠습니까?"
+      </p>
+    </div>
+
+    <div class="question-card">
+      <span class="q-label related">관련 질문</span>
+      <p class="q-text">
+        "새로 작성한 <code>myapp.service</code> unit 파일이 있는데, 서버가 재부팅되면
+        이 서비스가 DB 연결에 실패한 채로 시작됩니다. unit 파일의 어떤 설정이
+        원인일 수 있을까요?"
+      </p>
+    </div>
+
+    <div class="question-card">
+      <span class="q-label related">관련 질문</span>
+      <p class="q-text">
+        "<code>Restart=always</code>로 설정했더니 애플리케이션 버그로 무한 재시작 루프에
+        빠져서 CPU를 100% 소모하고 있습니다. 이 설정을 어떻게 개선하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="callout info">
+      <span class="icon">💡</span>
+      <p>
+        Day 1~5가 "이미 떠 있는 프로세스"를 진단하는 능력이었다면, Day 6은 "그 프로세스가
+        어떻게 태어나고, 죽고, 다시 태어나는지"를 관리하는 계층을 다룹니다. 면접관이 보는
+        것은 <code>systemctl restart</code> 같은 명령어 암기가 아니라, unit 파일의 선언이
+        실제 장애 상황(재시작 폭주, 시작 순서 실패, 자원 제한)에서 어떻게 동작하는지
+        예측할 수 있는가입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 2: 전제 개념
+  ══════════════════════════════════════ -->
+  <section id="concepts">
+    <h2><span class="icon">📚</span> 전제 개념 — 이것을 먼저 이해해야 한다</h2>
+
+    <div class="concept-box">
+      <h3>1. systemd란 무엇인가 — PID 1과 "관리자"의 역할</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 리눅스 커널이 부팅되면 가장 먼저 실행되는 프로세스가
+        하나 있고, 이 프로세스가 다른 모든 프로세스의 "조상"이 됩니다(PID 1). 현대
+        리눅스 배포판 대부분(Ubuntu, RHEL/CentOS, Debian 등)은 이 역할을 <code>systemd</code>가
+        맡습니다. 회사에 비유하면 systemd는 "신입 사원을 언제 채용하고, 문제가 생기면
+        재고용하고, 퇴사 처리를 하는 인사팀"입니다. 여기서 각 "직원"에 해당하는 것이
+        <strong>unit</strong>이고, 그중 프로세스를 관리하는 unit이 <strong>service unit</strong>입니다.
+      </p>
+      <pre><code><span class="comment"># 현재 시스템의 init 시스템이 systemd인지 확인</span>
+<span class="cmd">$ ps -p 1 -o comm=</span>
+<span class="output">systemd</span>
+<span class="comment"># 모든 서비스 unit의 상태 목록</span>
+<span class="cmd">$ systemctl list-units --type=service --state=running</span>
+<span class="comment"># 특정 서비스의 상세 상태 (활성 여부, 최근 로그 일부, PID)</span>
+<span class="cmd">$ systemctl status myapp.service</span></code></pre>
+      <div class="callout tip">
+        <span class="icon">✅</span>
+        <p>
+          면접 팁: "systemd는 단순 프로세스 실행기가 아니라 <strong>의존성 순서 관리, 실패 시
+          재시작, 자원 제한(cgroup), 소켓 활성화</strong>까지 포함하는 서비스 관리 프레임워크"라는
+          한 문장으로 정의할 수 있으면, systemctl 명령어만 아는 사람과 구분됩니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>2. systemctl 핵심 명령 — 상태 전이를 정확히 구분한다</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> <code>start</code>/<code>stop</code>은 "지금 당장" 서비스를
+        켜고 끄는 것이고, <code>enable</code>/<code>disable</code>은 "다음 부팅부터" 자동으로
+        켜질지 여부를 등록하는 것입니다. 이 둘은 <strong>완전히 독립적인 축</strong>입니다 —
+        지금 실행 중이라고 해서 다음 부팅에도 실행된다는 보장이 없고, enable 되어있다고
+        지금 실행 중이라는 보장도 없습니다.
+      </p>
+      <pre><code><span class="comment"># 지금 당장 시작 / 중지 / 재시작</span>
+<span class="cmd">$ sudo systemctl start myapp.service</span>
+<span class="cmd">$ sudo systemctl stop myapp.service</span>
+<span class="cmd">$ sudo systemctl restart myapp.service</span>
+<span class="comment"># 설정 파일만 다시 읽히면 되는 애플리케이션이면 무중단으로 시도</span>
+<span class="cmd">$ sudo systemctl reload myapp.service</span>
+<span class="comment"># 다음 부팅부터 자동 시작되도록 등록 / 해제 (지금 상태와는 무관)</span>
+<span class="cmd">$ sudo systemctl enable myapp.service</span>
+<span class="cmd">$ sudo systemctl disable myapp.service</span>
+<span class="comment"># unit 파일을 고쳤다면 커널/systemd가 새 정의를 읽도록 반드시 필요</span>
+<span class="cmd">$ sudo systemctl daemon-reload</span></code></pre>
+      <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="padding:0.5rem 0.75rem; text-align:left; border-bottom:2px solid #e2e8f0;">조합</th>
+            <th style="padding:0.5rem 0.75rem; text-align:left; border-bottom:2px solid #e2e8f0;">의미</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:0.5rem 0.75rem; border-bottom:1px solid #e2e8f0;">running + enabled</td>
+            <td style="padding:0.5rem 0.75rem; border-bottom:1px solid #e2e8f0;">정상 — 지금 실행 중이고 재부팅 후에도 자동 시작</td>
+          </tr>
+          <tr style="background:#f8fafc;">
+            <td style="padding:0.5rem 0.75rem;">running + disabled</td>
+            <td style="padding:0.5rem 0.75rem;">누군가 수동으로 <code>start</code>만 했다 — 재부팅하면 서비스가 사라짐(운영 사고의 흔한 원인)</td>
+          </tr>
+          <tr>
+            <td style="padding:0.5rem 0.75rem;">stopped + enabled</td>
+            <td style="padding:0.5rem 0.75rem;">부팅 시 시작 시도는 하지만 실패했거나 수동으로 <code>stop</code>한 상태 — 원인 확인 필요</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout warn">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>실무 연결:</strong> "긴급 배포라서 <code>systemctl start</code>만 하고
+          <code>enable</code>을 깜빡했다"는 실수는 실제로 흔합니다. 다음 서버 재부팅(패치
+          적용, 인스턴스 교체 등) 시 서비스가 조용히 사라져서 장애로 이어집니다. 배포
+          체크리스트에 <code>systemctl is-enabled myapp.service</code> 확인을 넣는 것이
+          이런 사고를 예방하는 senior의 습관입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>3. unit 파일 구조 — 선언적으로 "무엇을, 언제, 어떻게" 정의한다</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> unit 파일은 "이 서비스를 실행하는 방법"에 대한
+        설명서입니다. 셸 스크립트처럼 절차를 나열하는 것이 아니라, "이런 조건에서
+        이렇게 시작하고, 이렇게 실패를 처리하라"는 <strong>선언적</strong> 설정입니다.
+        크게 <code>[Unit]</code>(메타정보와 의존성), <code>[Service]</code>(실행 방법과
+        재시작 정책), <code>[Install]</code>(enable 시 어디에 연결할지) 세 섹션으로 나뉩니다.
+      </p>
+      <pre><code><span class="comment"># /etc/systemd/system/myapp.service</span>
+<span class="output">[Unit]
+Description=My Application Server
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=myapp
+WorkingDirectory=/opt/myapp
+ExecStart=/opt/myapp/bin/server --config /etc/myapp/config.yaml
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=200
+StartLimitBurst=5
+TimeoutStopSec=30
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target</span></code></pre>
+      <ul>
+        <li><code>[Unit]</code> <code>After=</code>: 시작 <strong>순서</strong>만 보장 (postgresql이 이 unit보다 먼저 시작되도록 순서를 정할 뿐, postgresql이 반드시 존재해야 한다는 의미는 아님).</li>
+        <li><code>[Unit]</code> <code>Requires=</code>: <strong>의존성</strong>을 강제 — 대상이 실패하면 이 unit도 함께 실패 처리됨. <code>After=</code>와 반드시 짝을 이뤄야 순서+강제 의존이 모두 보장됨.</li>
+        <li><code>[Service]</code> <code>Type=simple</code>: <code>ExecStart</code>로 실행한 프로세스 자체가 메인 프로세스 (가장 흔한 경우). <code>Type=forking</code>은 데몬화(자기 자신을 fork해서 부모를 종료)하는 전통적인 프로그램에 사용.</li>
+        <li><code>[Service]</code> <code>ExecStart</code>: 반드시 <strong>절대 경로</strong>여야 하며, 실패 시 재시작 정책(<code>Restart=</code>)이 적용되는 대상.</li>
+        <li><code>[Install]</code> <code>WantedBy=multi-user.target</code>: <code>enable</code> 시 이 target이 활성화될 때 함께 시작되도록 심볼릭 링크가 생성됨 — 이 섹션이 없으면 <code>enable</code> 자체가 동작하지 않음.</li>
+      </ul>
+      <div class="callout tip">
+        <span class="icon">✅</span>
+        <p>
+          면접 팁: <code>After=</code>와 <code>Requires=</code>/<code>Wants=</code>의 차이를
+          "순서 vs 강제성"으로 명확히 구분해서 설명하면, unit 파일을 복사-붙여넣기만 해본
+          사람과 실제로 설계해본 사람의 차이가 드러납니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>4. Restart 정책 — "다시 켜는 것"과 "무한 루프"는 한 끗 차이</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> <code>Restart=</code>는 "프로세스가 죽으면 자동으로
+        다시 켜라"는 지시이고, 이것만 켜두면 애플리케이션 자체에 버그가 있을 때
+        "죽고 → 켜지고 → 또 죽고"를 초당 수십 번 반복하며 CPU와 로그를 낭비할 수
+        있습니다(crash loop). systemd는 이를 막기 위해 <strong>속도 제한(rate limit)</strong>
+        장치를 함께 제공합니다.
+      </p>
+      <pre><code><span class="output">[Service]
+Restart=on-failure       # 0이 아닌 종료 코드/시그널로 죽었을 때만 재시작
+RestartSec=5             # 재시작 전 5초 대기 (즉시 재시작으로 인한 폭주 완화)
+StartLimitIntervalSec=200  # 200초 동안
+StartLimitBurst=5          # 5번 넘게 재시작을 시도하면 → 그 이후는 포기하고 failed 상태로 전환</span>
+<span class="comment"># 재시작 폭주로 failed 상태에 갇혔을 때 초기화 후 재시도</span>
+<span class="cmd">$ sudo systemctl reset-failed myapp.service</span>
+<span class="cmd">$ sudo systemctl start myapp.service</span></code></pre>
+      <ul>
+        <li><code>Restart=no</code>(기본값): 자동 재시작 안 함 — 배치 작업성 unit에 적합.</li>
+        <li><code>Restart=on-failure</code>: 비정상 종료(0이 아닌 exit code, 시그널에 의한 종료)일 때만 재시작 — 대부분의 서버 프로세스에 권장되는 균형점.</li>
+        <li><code>Restart=always</code>: 정상 종료를 포함해 어떤 이유로든 죽으면 무조건 재시작 — 의도적인 <code>systemctl stop</code>은 예외로 처리되지만, 애플리케이션 버그로 인한 즉시 재크래시에는 특히 주의가 필요.</li>
+        <li><code>StartLimitBurst</code>/<code>StartLimitIntervalSec</code> 없이 <code>Restart=always</code>만 쓰면, 버그가 있는 배포판이 CPU를 100% 소모하며 무한 재시작할 위험이 있습니다.</li>
+      </ul>
+      <div class="callout warn">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>trade-off:</strong> <code>RestartSec</code>을 너무 짧게 하면 재시작이
+          문제 해결의 시간을 벌어주지 못하고 폭주하고, 너무 길게 하면 실제 장애(예:
+          일시적 네트워크 문제로 죽은 경우) 복구가 느려집니다. 보통 5~10초 정도로
+          시작해 애플리케이션의 평균 복구 시간에 맞춰 조정합니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>5. systemctl status 해석 — 세 줄 요약 뒤에 숨은 정보</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> <code>systemctl status</code>는 짧은 요약을 보여주지만,
+        각 필드가 정확히 무엇을 의미하는지 알아야 다음 조사 방향을 정할 수 있습니다.
+      </p>
+      <pre><code><span class="cmd">$ systemctl status myapp.service</span>
+<span class="output">● myapp.service - My Application Server
+     Loaded: loaded (/etc/systemd/system/myapp.service; enabled; vendor preset: enabled)
+     Active: activating (auto-restart) (Result: exit-code) since Sat 2026-07-04 03:12:41 UTC; 4s ago
+    Process: 18422 ExecStart=/opt/myapp/bin/server --config /etc/myapp/config.yaml (code=exited, status=1/FAILURE)
+   Main PID: 18422 (code=exited, status=1/FAILURE)
+        CPU: 89ms</span></code></pre>
+      <ul>
+        <li><code>Loaded</code>: unit 파일 자체를 systemd가 정상적으로 읽었는지 (경로, enabled 여부). <code>not-found</code>면 파일 경로나 이름 오타부터 의심.</li>
+        <li><code>Active</code>: 실제 실행 상태. <code>active (running)</code>은 정상, <code>activating (auto-restart)</code>는 방금 죽어서 재시작을 시도 중(위 예시), <code>failed</code>는 재시작 한도(<code>StartLimitBurst</code>)까지 소진하고 포기한 상태.</li>
+        <li><code>Process</code>/<code>code=exited, status=1</code>: 프로세스가 어떤 종료 코드로 끝났는지 — <code>status=1/FAILURE</code>은 애플리케이션이 명시적으로 비정상 종료했다는 의미로, 애플리케이션 자체 로그를 봐야 진짜 원인을 알 수 있음.</li>
+        <li>화면에 보이는 로그 몇 줄은 <strong>요약</strong>일 뿐입니다 — 전체 맥락은 Day 5에서 다룬 <code>journalctl -u myapp.service</code>로 확인해야 합니다.</li>
+      </ul>
+      <div class="callout tip">
+        <span class="icon">✅</span>
+        <p>
+          면접 팁: "<code>status</code>의 <code>Active</code> 필드가 <code>activating
+          (auto-restart)</code>라면 이미 crash loop 중이라는 신호이므로, 재시작 카운트가
+          한도를 넘기 전에 서둘러 <code>journalctl -u myapp -n 50</code>으로 마지막 실패
+          직전 로그를 확인해야 한다"는 판단을 보여주면 상태 필드를 진짜로 읽을 줄 안다는
+          신호가 됩니다.
+        </p>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 3: 왜 면접에서 묻는가
+  ══════════════════════════════════════ -->
+  <section id="why">
+    <h2><span class="icon">🎯</span> 왜 면접에서 묻는가</h2>
+
+    <p>
+      systemd 질문은 명령어 암기가 아니라, "프로세스의 생명주기를 선언적으로 설계하고
+      실패 상황을 예측할 수 있는가"를 평가합니다. 이는 배포 안정성과 직결되는 운영
+      역량입니다.
+    </p>
+
+    <h3>면접관이 실제로 평가하는 것</h3>
+    <ol>
+      <li>
+        <strong>선언과 실제 동작을 연결할 수 있는가?</strong><br>
+        unit 파일의 각 설정(<code>Restart=</code>, <code>After=</code>, <code>Type=</code>)이
+        장애 상황에서 실제로 어떻게 동작하는지 예측할 수 있는지를 봅니다.
+      </li>
+      <li>
+        <strong>순서 보장과 강제 의존을 구분하는가?</strong><br>
+        <code>After=</code>와 <code>Requires=</code>/<code>Wants=</code>를 혼동하지 않고,
+        의도한 의존성 그래프를 정확히 설계할 수 있는지를 봅니다.
+      </li>
+      <li>
+        <strong>재시작 정책의 이면을 이해하는가?</strong><br>
+        <code>Restart=always</code>가 만능이 아니라 crash loop 위험이 있다는 것을 알고,
+        속도 제한 설정과 함께 써야 한다는 균형 감각이 있는지를 봅니다.
+      </li>
+      <li>
+        <strong>status 출력을 진단 도구로 쓸 수 있는가?</strong><br>
+        요약된 상태 필드 하나하나(Loaded/Active/Process)를 근거로 다음 조사 단계를
+        정할 수 있는지를 봅니다.
+      </li>
+    </ol>
+
+    <div class="callout info">
+      <span class="icon">💡</span>
+      <p>
+        본질은 "배포 자동화와 장애 복원력을 시스템 수준에서 선언할 수 있는가"입니다.
+        이 능력이 부족하면 매번 사람이 수동으로 서비스를 지켜보고 재시작해줘야 합니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 4: 실무 연결
+  ══════════════════════════════════════ -->
+  <section id="realworld">
+    <h2><span class="icon">🏭</span> 실무 연결 — 이런 상황에서 실제로 쓴다</h2>
+
+    <h3>시나리오 A: 배포 직후 서비스가 crash loop에 빠진 경우</h3>
+    <p>
+      새 버전 배포 직후 모니터링 알림이 폭주해서 <code>systemctl status myapp</code>을
+      확인하니 <code>Active: activating (auto-restart)</code>였습니다. 즉시
+      <code>journalctl -u myapp -n 50 --no-pager</code>로 마지막 실패 직전 로그를 확인해
+      새 설정 파일의 필수 환경변수 누락이 원인임을 확인했고, <code>StartLimitBurst</code>가
+      소진되어 <code>failed</code>로 전환되기 전에 롤백을 완료했습니다.
+    </p>
+
+    <h3>시나리오 B: 재부팅 후 애플리케이션이 DB 연결 실패로 죽어있던 경우</h3>
+    <p>
+      서버 패치 후 재부팅했더니 <code>myapp.service</code>가 실행되지 않았습니다.
+      unit 파일에 <code>After=postgresql.service</code>만 있고 <code>Requires=</code>가
+      없어서, PostgreSQL이 아직 초기화 중일 때 <code>myapp</code>이 먼저 연결을 시도하다
+      실패했습니다. <code>Requires=postgresql.service</code>를 추가하고, 애플리케이션
+      쪽에도 연결 재시도 로직을 보강해 이중으로 방어했습니다.
+    </p>
+
+    <h3>시나리오 C: enable을 깜빡해서 재부팅 후 서비스가 사라진 경우</h3>
+    <p>
+      긴급 핫픽스를 <code>systemctl start</code>로만 적용하고 <code>enable</code>을
+      깜빡한 채 다음 정기 점검에서 서버가 재부팅되어 서비스가 조용히 내려가 있었습니다.
+      이후 배포 체크리스트에 <code>systemctl is-enabled myapp.service</code> 확인 단계를
+      추가해 같은 실수를 재발 방지했습니다.
+    </p>
+
+    <h3>실무에서 배운 핵심 교훈</h3>
+    <ul>
+      <li><code>Active</code> 필드가 <code>activating (auto-restart)</code>로 보이면, 이미 재시작을 반복 중이라는 신호이므로 <strong>한도가 소진되기 전에</strong> 원인을 확인해야 한다.</li>
+      <li><code>After=</code>만으로는 <strong>순서만 보장</strong>될 뿐 대상이 준비됐다는 보장은 없다 — 진짜 강한 의존이 필요하면 <code>Requires=</code>와 애플리케이션 레벨 재시도를 함께 쓴다.</li>
+      <li><code>start</code>와 <code>enable</code>은 서로 다른 축이므로, 배포 체크리스트에 <strong>둘 다</strong> 확인하는 항목을 넣어야 한다.</li>
+      <li>unit 파일을 수정한 뒤 <code>daemon-reload</code>를 잊으면 이전 정의로 계속 동작하므로, 변경 → reload → restart 순서를 습관화해야 한다.</li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 5: 답변 사고 순서
+  ══════════════════════════════════════ -->
+  <section id="framework">
+    <h2><span class="icon">🧠</span> 답변 사고 순서 — systemd 서비스 장애 진단 흐름</h2>
+
+    <ul class="steps">
+      <li>
+        <div class="step-content">
+          <h3>현재 상태부터 정확히 읽는다</h3>
+          <p>
+            <code>systemctl status</code>의 <code>Active</code> 필드로 지금이 정상 실행인지,
+            재시작 반복 중인지, 이미 포기한(failed) 상태인지부터 구분합니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>enabled/실행 상태를 별개로 확인</h3>
+          <p>
+            <code>systemctl is-enabled</code>와 <code>is-active</code>를 함께 확인해서,
+            "지금 떠 있는가"와 "재부팅해도 다시 뜨는가"를 혼동하지 않습니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>실패 직전 로그로 근본 원인 확인</h3>
+          <p>
+            Day 5에서 다룬 <code>journalctl -u myapp -n 50</code>으로 애플리케이션이
+            남긴 마지막 로그를 확인해, unit 설정 문제인지 애플리케이션 버그인지 구분합니다.
+          </p>
+          <pre><code><span class="cmd">$ systemctl status myapp.service</span>
+<span class="cmd">$ systemctl is-enabled myapp.service</span>
+<span class="cmd">$ journalctl -u myapp.service -n 50 --no-pager</span></code></pre>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>unit 파일 설정을 근본 원인과 연결</h3>
+          <p>
+            의존성 순서 문제라면 <code>After=</code>/<code>Requires=</code>를, 재시작
+            정책 문제라면 <code>Restart=</code>/<code>StartLimitBurst=</code>를 점검합니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>수정 후 재적용과 재발 방지</h3>
+          <p>
+            unit 파일을 고쳤다면 <code>daemon-reload</code> 후 <code>restart</code>하고,
+            재시작 한도가 소진돼 <code>failed</code> 상태라면 <code>reset-failed</code> 후
+            재시작합니다. 마지막으로 배포 체크리스트나 알림 임계치를 재발 방지 관점에서 보완합니다.
+          </p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 6: 핵심 답변 예시
+  ══════════════════════════════════════ -->
+  <section id="model-answer">
+    <h2><span class="icon">💬</span> 핵심 답변 예시</h2>
+
+    <p>면접에서 자연스럽게 말할 수 있는 구조입니다. 외우지 말고 논리의 흐름을 이해하세요.</p>
+
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:1.5rem; box-shadow:0 1px 3px rgba(0,0,0,.06);">
+      <p style="font-size:0.88rem; color:#64748b; margin-bottom:1rem;">💬 면접관: "배포한 서비스가 몇 분 간격으로 계속 재시작되고 있습니다. 어떻게 접근하시겠습니까?"</p>
+
+      <p>
+        "먼저 <code>systemctl status myapp</code>로 <strong>Active 필드</strong>를 확인해서
+        지금이 <code>activating (auto-restart)</code>인지, 이미 재시작 한도를 소진해
+        <code>failed</code>로 넘어갔는지부터 구분합니다. 이 구분에 따라 얼마나 급하게
+        움직여야 하는지가 달라지기 때문입니다.
+      </p>
+      <p>
+        아직 재시작을 반복 중이라면, <code>journalctl -u myapp -n 50</code>으로
+        <strong>마지막으로 죽기 직전의 로그</strong>를 확인해서, 이게 unit 설정 문제(예:
+        의존 서비스가 아직 준비되지 않음)인지 애플리케이션 자체 버그인지 구분합니다.
+      </p>
+      <p>
+        원인이 애플리케이션 버그로 확인되면, 무한 재시작으로 인한 CPU 낭비를 막기 위해
+        일단 <code>Restart=</code> 정책과 <code>StartLimitBurst</code>가 적절히 설정돼
+        있는지 점검하고, 필요하면 롤백을 우선 진행합니다. 근본 원인이 unit 파일의 의존성
+        누락(<code>Requires=</code> 부재)이었다면 이를 수정한 뒤 <code>daemon-reload</code>로
+        반영하고, 배포 체크리스트에 재발 방지 항목을 추가합니다."
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 7: Senior Follow-up
+  ══════════════════════════════════════ -->
+  <section id="followup">
+    <h2><span class="icon">🔍</span> Senior-level Follow-up 질문과 모범 답변</h2>
+
+    <div class="followup-block">
+      <p class="fq">Q. "<code>After=</code>를 설정했는데도 DB가 준비되기 전에 애플리케이션이 시작해서 실패합니다. 왜 그런가요?"</p>
+      <div class="fa">
+        <p>
+          "<code>After=</code>는 systemd가 유닛을 <strong>시작하는 순서</strong>만 보장할 뿐,
+          대상 서비스가 '연결을 받을 준비가 완료됐다'는 것까지 보장하지 않습니다. 예를 들어
+          PostgreSQL의 systemd unit은 프로세스가 실행되기 시작한 시점에 이미 active로
+          표시될 수 있지만, 실제 초기화(WAL 복구 등)에는 몇 초가 더 걸릴 수 있습니다. 이
+          간극을 메우려면 <code>Requires=</code>로 강한 의존을 추가하는 것 외에도,
+          애플리케이션 레벨에서 연결 재시도(retry with backoff) 로직을 두는 것이 근본적인
+          해결책입니다. systemd의 순서 보장만으로는 애플리케이션 레벨의 '준비 완료' 신호를
+          대체할 수 없습니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: systemd 의존성의 한계를 알고 애플리케이션 레벨 방어까지 설계하는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "<code>Restart=always</code>와 <code>StartLimitBurst</code>를 함께 설정했는데도 왜 위험할 수 있나요?"</p>
+      <div class="fa">
+        <p>
+          "<code>StartLimitBurst</code>는 재시작 <strong>폭주를 막아 failed 상태로
+          전환</strong>시켜줄 뿐, 그 한도(예: 200초에 5번)에 도달하기 전까지는 여전히
+          빠르게 반복 재시작하며 CPU와 로그, 그리고 다운스트림 시스템(DB 커넥션 시도 등)에
+          부하를 줄 수 있습니다. 특히 <code>RestartSec</code>이 너무 짧으면 한도에
+          도달하기까지 걸리는 시간 동안 이미 상당한 부하가 발생합니다. 그래서
+          <code>RestartSec</code>을 적절히(수 초 이상) 설정하고, 애플리케이션 자체에도
+          '연속 실패 시 자체적으로 지연 후 재시도'하는 방어 로직을 두는 것이 더 안전합니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 속도 제한이 있어도 한도 도달 전까지의 부하를 인지하는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "<code>Type=simple</code>과 <code>Type=forking</code>의 차이가 실무에서 왜 중요한가요?"</p>
+      <div class="fa">
+        <p>
+          "<code>Type=simple</code>은 <code>ExecStart</code>로 실행한 프로세스 자체를
+          메인 프로세스로 간주하고, 그 프로세스가 시작되는 즉시(실제로 서비스 준비가
+          되었는지와 무관하게) systemd가 'active'로 표시합니다. 반면 <code>Type=forking</code>은
+          전통적인 데몬처럼 부모 프로세스가 fork 후 종료되는 방식을 다루며, PID 파일을
+          통해 실제 메인 프로세스를 추적합니다. Type을 잘못 지정하면 systemd가 프로세스
+          상태를 잘못 추적해서, 실제로는 아직 초기화 중인데 active로 잘못 보고하거나,
+          반대로 정상 동작 중인데 실패로 오판할 수 있습니다. 최신 애플리케이션 대부분은
+          <code>Type=simple</code>이나 준비 완료 신호를 명시적으로 보내는
+          <code>Type=notify</code>를 사용하는 것이 더 안전합니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: Type 설정이 상태 추적 정확성에 미치는 영향을 이해하는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "systemd unit의 자원 제한(cgroup 기반)을 활용해본 적이 있나요? 왜 필요한가요?"</p>
+      <div class="fa">
+        <p>
+          "<code>MemoryMax=</code>, <code>CPUQuota=</code>, <code>LimitNOFILE=</code> 같은
+          설정을 unit 파일에 선언하면, systemd가 cgroup을 통해 해당 서비스가 시스템 전체
+          자원을 독점하지 못하도록 제한할 수 있습니다. 예를 들어 메모리 누수가 있는
+          서비스라도 <code>MemoryMax</code>를 설정해두면 시스템 전체 OOM(Day 3에서 다룬
+          OOM Killer가 무관한 다른 프로세스까지 죽이는 상황)으로 번지기 전에 해당 서비스만
+          먼저 제한을 받게 할 수 있습니다. 이는 '장애의 영향 범위를 격리한다'는 운영
+          원칙을 systemd 레벨에서 구현하는 방법입니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: unit 파일을 프로세스 실행 그 이상의 자원 격리 도구로 활용할 줄 아는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "여러 서비스가 서로 의존하는 복잡한 시스템에서 systemd만으로 배포 순서를 관리하는 것의 한계는 무엇인가요?"</p>
+      <div class="fa">
+        <p>
+          "단일 서버 안에서의 시작 순서는 <code>After=</code>/<code>Requires=</code>로
+          충분히 표현할 수 있지만, 여러 서버·컨테이너에 걸친 서비스 의존성(예: 서비스 A가
+          다른 호스트의 서비스 B를 필요로 하는 경우)은 systemd의 범위를 벗어납니다. 이런
+          경우에는 헬스체크 기반의 오케스트레이션(Kubernetes의 readiness probe 등)이나
+          서비스 디스커버리, 그리고 애플리케이션 레벨의 재시도/서킷 브레이커 패턴이 필요합니다.
+          systemd는 '한 호스트 안에서 프로세스를 안정적으로 띄우고 유지하는 것'까지가
+          역할이고, 그 이상의 분산 시스템 조정은 상위 계층의 책임입니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: systemd의 책임 범위와 상위 오케스트레이션 계층의 경계를 구분하는가</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 8: 좋은 vs 약한 답변
+  ══════════════════════════════════════ -->
+  <section id="comparison">
+    <h2><span class="icon">⚖️</span> 좋은 답변 vs 약한 답변 분석</h2>
+
+    <div class="answer-box weak">
+      <span class="box-label">약한 답변 (Junior 수준)</span>
+      <blockquote>
+        "<code>systemctl restart myapp</code>으로 재시작해보고, 안 되면 다시 재시작해보겠습니다."
+      </blockquote>
+      <div class="analysis">
+        <strong>왜 약한 답변인가:</strong>
+        <ul>
+          <li>재시작이 반복되는 <strong>근본 원인</strong>을 확인하지 않고 증상만 반복 처리합니다.</li>
+          <li><code>Active</code> 필드나 로그를 통한 상태 진단 과정이 전혀 없습니다.</li>
+          <li>unit 파일의 설정(의존성, 재시작 정책)이 원인일 가능성을 전혀 고려하지 않습니다.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="answer-box good">
+      <span class="box-label">좋은 답변 (Senior 수준)</span>
+      <blockquote>
+        "<code>status</code>의 Active 필드로 재시작 반복 여부부터 확인하고,
+        <code>journalctl</code>로 실패 직전 로그를 확인해 unit 설정 문제인지 애플리케이션
+        버그인지 구분한 뒤, 근본 원인에 맞춰 <code>Requires=</code>나 <code>Restart=</code>
+        설정을 조정하고 재발 방지책까지 마련합니다."
+      </blockquote>
+      <div class="analysis">
+        <strong>왜 좋은 답변인가:</strong>
+        <ul>
+          <li>상태 필드를 근거로 상황의 긴급도를 먼저 판단합니다.</li>
+          <li>로그를 통해 unit 설정 문제와 애플리케이션 버그를 구분합니다.</li>
+          <li>순서 보장(<code>After=</code>)과 강제 의존(<code>Requires=</code>)의 차이를 알고 정확한 수정을 제안합니다.</li>
+          <li>재시작 정책의 trade-off(폭주 방지 vs 복구 속도)를 함께 고려합니다.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 9: 흔한 오해
+  ══════════════════════════════════════ -->
+  <section id="misconceptions">
+    <h2><span class="icon">🚫</span> 흔한 오해와 정확한 이해</h2>
+
+    <div class="misconception">
+      <p class="myth">오해 1: "systemctl start만 하면 재부팅 후에도 계속 서비스가 실행된다"</p>
+      <p class="truth">
+        <code>start</code>는 지금 당장의 실행 여부만 결정합니다. 재부팅 후에도 자동으로
+        시작되려면 별도로 <code>enable</code>을 실행해서 <code>[Install]</code> 섹션에
+        정의된 target에 연결해야 합니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 2: "After=만 설정하면 대상 서비스가 완전히 준비된 뒤에 시작된다"</p>
+      <p class="truth">
+        <code>After=</code>는 systemd가 유닛을 시작하는 <strong>순서</strong>만 보장합니다.
+        대상 프로세스가 이미 떠 있어도 내부적으로 아직 요청을 받을 준비가 안 됐을 수
+        있으므로, 진짜 필요한 경우 애플리케이션 레벨의 재시도 로직으로 이 간극을
+        메워야 합니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 3: "Restart=always를 설정하면 서비스가 절대 죽지 않는다"</p>
+      <p class="truth">
+        <code>Restart=always</code>는 프로세스가 죽었을 때 다시 실행을 시도할 뿐이며,
+        애플리케이션 자체의 버그가 원인이라면 같은 이유로 다시 죽는 crash loop이
+        반복될 뿐입니다. 속도 제한(<code>StartLimitBurst</code>) 없이는 오히려 CPU와
+        로그를 낭비하며 문제를 키울 수 있습니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 4: "unit 파일을 수정하면 바로 적용된다"</p>
+      <p class="truth">
+        systemd는 unit 파일을 처음 읽을 때 메모리에 캐시해두므로, 파일을 직접 수정한
+        뒤에는 반드시 <code>systemctl daemon-reload</code>로 새 정의를 다시 읽혀야
+        합니다. 이를 생략하면 <code>restart</code>를 해도 이전 설정으로 동작합니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 5: "systemctl status에 보이는 로그 몇 줄이 로그의 전부다"</p>
+      <p class="truth">
+        <code>status</code>는 최근 로그를 요약해서 보여줄 뿐입니다. 전체 맥락과 더 과거의
+        기록은 Day 5에서 다룬 <code>journalctl -u &lt;service&gt;</code>로 별도 확인해야
+        합니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 10: 자기 점검 Rubric
+  ══════════════════════════════════════ -->
+  <section id="rubric">
+    <h2><span class="icon">📊</span> 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변을 점검해보세요. 각 항목에서 어느 수준인지 솔직하게 평가하세요.</p>
+
+    <div style="overflow-x:auto;">
+      <table class="rubric-table">
+        <thead>
+          <tr>
+            <th>평가 항목</th>
+            <th class="score-senior">Senior (3점)</th>
+            <th class="score-mid">Mid (2점)</th>
+            <th class="score-junior">Junior (1점)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>상태 필드 해석</strong></td>
+            <td class="score-senior">Active/Loaded/Process 필드로 crash loop 여부와 긴급도를 즉시 판단</td>
+            <td class="score-mid">status는 확인하지만 필드 의미 해석이 얕음</td>
+            <td class="score-junior">status를 확인하지 않고 바로 restart 반복</td>
+          </tr>
+          <tr>
+            <td><strong>start/enable 구분</strong></td>
+            <td class="score-senior">두 축이 독립적임을 알고 배포 체크리스트에 둘 다 반영</td>
+            <td class="score-mid">차이는 알지만 실무 절차로 연결하지 못함</td>
+            <td class="score-junior">start만 하면 재부팅에도 유지된다고 오해</td>
+          </tr>
+          <tr>
+            <td><strong>의존성 설정</strong></td>
+            <td class="score-senior">After(순서)와 Requires(강제 의존)를 구분하고 애플리케이션 레벨 방어까지 설계</td>
+            <td class="score-mid">차이는 알지만 실전 적용 설명이 약함</td>
+            <td class="score-junior">After만 있으면 안전하다고 오해</td>
+          </tr>
+          <tr>
+            <td><strong>재시작 정책 trade-off</strong></td>
+            <td class="score-senior">Restart/RestartSec/StartLimitBurst의 균형과 crash loop 위험을 함께 설명</td>
+            <td class="score-mid">설정 항목은 알지만 폭주 위험 설명이 부족</td>
+            <td class="score-junior">Restart=always면 항상 안전하다고 답변</td>
+          </tr>
+          <tr>
+            <td><strong>원인 분리 절차</strong></td>
+            <td class="score-senior">journalctl 로그로 unit 설정 문제 vs 애플리케이션 버그를 구분</td>
+            <td class="score-mid">로그는 확인하지만 구분 기준이 약함</td>
+            <td class="score-junior">로그 확인 없이 재시작만 반복</td>
+          </tr>
+          <tr>
+            <td><strong>확장 시야</strong></td>
+            <td class="score-senior">systemd의 책임 범위와 분산 오케스트레이션 계층의 경계를 구분</td>
+            <td class="score-mid">단일 호스트 진단에는 능숙하지만 확장 논의는 약함</td>
+            <td class="score-junior">단일 서버 명령어 수준에서 답변 종료</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top:1rem; font-size:0.9rem; color:#64748b;">
+      <strong>점수 해석:</strong> 6개 항목 × 3점 = 최대 18점.
+      15점 이상 → Senior 수준 답변 완성.
+      11~14점 → 구조는 있지만 일부 키워드/관점 보완 필요.
+      10점 이하 → 이 레슨을 다시 읽고, 모범 답변을 소리 내어 말해보세요.
+    </p>
+
+    <div class="key-points" style="margin-top:2rem;">
+      <h3>Day 6 핵심 포인트 요약</h3>
+      <ul>
+        <li><code>start/stop</code>과 <code>enable/disable</code>은 <strong>서로 독립적인 축</strong>이다.</li>
+        <li><code>After=</code>는 <strong>순서만</strong> 보장하고, 강한 의존이 필요하면 <code>Requires=</code>와 애플리케이션 재시도가 함께 필요하다.</li>
+        <li><code>Restart=always</code>는 <strong>속도 제한(StartLimitBurst)</strong> 없이는 crash loop 위험이 있다.</li>
+        <li><code>status</code>의 <strong>Active 필드</strong>로 지금이 정상/재시작 반복/포기 상태인지 즉시 구분해야 한다.</li>
+        <li>unit 파일 수정 후에는 반드시 <code>daemon-reload</code>가 필요하다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 다음 레슨 링크 -->
+  <div style="margin-top:2.5rem; padding:1.2rem 1.5rem; background:#fff; border:1px solid #e2e8f0; border-radius:10px; text-align:center;">
+    <p style="margin:0; color:#64748b; font-size:0.9rem;">
+      다음 레슨: <strong>Day 7 — 네트워크 진단</strong> (ss -tuln, netstat, LISTEN/ESTABLISHED/TIME_WAIT, tcpdump 기초, ip route, 방화벽)
+    </p>
+    <p style="margin:0.4rem 0 0; font-size:0.82rem; color:#94a3b8;">레슨 목록으로 돌아가기: <a href="./index.html">index.html</a></p>
+  </div>
+
+</main>
+
+<footer>
+  <p>Linux 서버 운영 인터뷰 · Day 6 · 2026-07-05 |
+    <a href="../RESOURCES.md">참고 자료</a> ·
+    <a href="../PROGRESS.md">학습 진행 현황</a>
+  </p>
+  <p style="margin-top:0.3rem;">궁금한 점은 Claude에게 바로 물어보세요. 이 레슨의 개념, follow-up 질문, 모범 답변 피드백 모두 도와드립니다.</p>
+</footer>
+
+</body>
+</html>
