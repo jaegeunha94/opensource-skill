@@ -9,12 +9,12 @@
 | 3 | 2026-07-02 | Dockerfile 설계 — 레이어 최적화, 멀티스테이지, 보안 | [0003-dockerfile-design-multistage-security.html](lessons/0003-dockerfile-design-multistage-security.html) |
 | 4 | 2026-07-03 | 컨테이너 볼륨과 스토리지 — PVC/PV, StatefulSet 설계 | [0004-container-volume-storage-statefulset.html](lessons/0004-container-volume-storage-statefulset.html) |
 | 5 | 2026-07-04 | 컨테이너 네트워크 — bridge, CNI, Service DNS | [0005-container-network-cni-service-dns.html](lessons/0005-container-network-cni-service-dns.html) |
+| 6 | 2026-07-05 | Docker Compose — 로컬 개발부터 운영 경계까지 | [0006-docker-compose-local-to-production-boundary.html](lessons/0006-docker-compose-local-to-production-boundary.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | Docker Compose — 로컬 개발부터 운영 경계까지 | depends_on, network, volume, 운영 적합성 |
 | 7 | Kubernetes 컨트롤 플레인 — etcd, kube-apiserver, 스케줄러 | etcd consensus, API server, controller manager, scheduler |
 | 8 | Pod 생명주기 — 설계, health check, 재시작 정책 | liveness, readiness, startupProbe, restartPolicy |
 | 9 | Deployment와 롤아웃 전략 — RollingUpdate, 롤백, 카나리 | maxSurge, maxUnavailable, rollback, canary |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — Day 6 (Docker Compose) 예정.
+**Day 6 완료** — Day 7 (Kubernetes 컨트롤 플레인) 예정.
 
 ## 습득한 핵심 개념
 
@@ -37,7 +37,7 @@
 - [x] 멀티스테이지 빌드, non-root 컨테이너 권한 모델, 베이스 이미지 trade-off (Day 3)
 - [x] 컨테이너 쓰기 가능 레이어의 휘발성, emptyDir/hostPath/PVC 구분, PV/PVC/StorageClass 관계, StatefulSet 설계 원리 (Day 4)
 - [x] veth/bridge/CNI 기반 컨테이너·Pod 네트워크 구성, Service/kube-proxy/CoreDNS 트래픽 흐름 (Day 5)
-- [ ] Docker Compose 운영 고려사항 (예정 Day 6)
+- [x] Compose 네트워크/볼륨 자동화 원리, depends_on의 순서 vs 준비 상태 함정, healthcheck 기반 해결, Compose와 Kubernetes 운영 경계 판단 기준 (Day 6)
 - [ ] etcd와 컨트롤 플레인 장애 (예정 Day 7)
 - [ ] Pod health check 설계 (예정 Day 8)
 - [ ] RollingUpdate와 롤백 (예정 Day 9)

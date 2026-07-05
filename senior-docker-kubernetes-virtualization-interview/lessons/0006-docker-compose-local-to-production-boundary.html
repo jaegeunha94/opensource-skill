@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — Docker Compose: 로컬 개발부터 운영 경계까지</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3347;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #3ecf8e;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --code-bg: #141824;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 16px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 2rem 2rem;
+      text-align: center;
+    }
+    .hero .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .hero h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .hero p { color: var(--muted); max-width: 640px; margin: 0 auto; }
+    .container { max-width: 860px; margin: 0 auto; padding: 2rem; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--accent);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--text); }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      color: #93c5fd;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.88em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.2rem;
+    }
+    pre code { background: none; padding: 0; color: #a5f3fc; font-size: 0.85rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-accent { border-left: 4px solid var(--accent); }
+    .card-green { border-left: 4px solid var(--green); }
+    .card-red { border-left: 4px solid var(--red); }
+    .card-yellow { border-left: 4px solid var(--yellow); }
+    .card-purple { border-left: 4px solid var(--accent2); }
+
+    .question-box {
+      background: var(--surface2);
+      border: 1px solid var(--accent2);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1.5rem 0;
+    }
+    .question-box .q-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+    .question-box .q-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.4rem;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--accent);
+      text-align: left;
+      padding: 0.65rem 1rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+    }
+    td {
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0 1.4rem;
+    }
+    @media (max-width: 640px) { .answer-grid { grid-template-columns: 1fr; } }
+    .answer-good {
+      background: #0d2b1e;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-bad {
+      background: #2b0d0d;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-good .label { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .answer-bad .label { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+
+    .rubric {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-item .check { color: var(--green); font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .rubric-item .text { font-size: 0.9rem; }
+
+    .section-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+    .tag-why { background: #1a2840; color: var(--accent); }
+    .tag-concept { background: #1a1a2e; color: var(--accent2); }
+    .tag-answer { background: #0d2b1e; color: var(--green); }
+    .tag-followup { background: #2b1a00; color: var(--orange); }
+    .tag-rubric { background: #2b2000; color: var(--yellow); }
+
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+      font-size: 0.85rem;
+    }
+    .nav-bar a { color: var(--accent); text-decoration: none; }
+    .nav-bar a:hover { text-decoration: underline; }
+
+    .hl-green { color: var(--green); font-weight: 600; }
+    .hl-red { color: var(--red); font-weight: 600; }
+    .hl-yellow { color: var(--yellow); font-weight: 600; }
+    .hl-accent { color: var(--accent); font-weight: 600; }
+    .hl-orange { color: var(--orange); font-weight: 600; }
+
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem 1.6rem; margin-bottom: 2rem; }
+    .toc h3 { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.7rem; }
+    .toc ol { margin-bottom: 0; }
+    .toc li { font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="day-badge">Day 6</div>
+  <h1>Docker Compose — 로컬 개발부터 운영 경계까지</h1>
+  <p>"Compose로 배포하면 안 되나요?"라는 질문에 depends_on의 함정, 네트워크/볼륨 동작 원리, 그리고 오케스트레이션이 필요한 이유를 한 줄로 설명하기</p>
+</div>
+
+<div class="container">
+
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#recap">Day 5 복기 — 오늘 다루는 것</a></li>
+      <li><a href="#question1">면접 질문 1 — Compose는 여러 컨테이너를 어떻게 하나의 시스템으로 묶는가</a></li>
+      <li><a href="#question2">면접 질문 2 — depends_on은 왜 "애플리케이션이 준비됐다"를 보장하지 못하는가</a></li>
+      <li><a href="#question3">면접 질문 3 — Compose와 Kubernetes 사이의 운영 경계는 어디에 그어야 하는가</a></li>
+      <li><a href="#mental-model">시니어의 정신 모델 — "이걸 Compose로 계속 써도 되나" 판단 체크리스트</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- ========== SECTION 1 ========== -->
+  <h2 id="recap">1. Day 5 복기 — 오늘 다루는 것</h2>
+
+  <p>Day 5에서는 컨테이너 하나가 다른 컨테이너, 그리고 Kubernetes에서 다른 Pod와 어떻게 통신하는지를 다뤘다. 오늘은 그 통신 대상이 되는 여러 컨테이너(웹 서버, 애플리케이션, DB, 캐시)를 <strong>하나의 선언적 파일로 묶어서 로컬에서 실행하는 도구</strong>인 Docker Compose를 다룬다. Compose는 실무에서 가장 자주 쓰이면서도, "로컬 개발 도구"와 "운영 오케스트레이터"의 경계를 흐리게 착각하는 지원자가 많은 주제다.</p>
+
+  <div class="card card-accent">
+    <p>시니어 면접관이 Compose를 묻는 이유는 도구 사용법이 아니라 <strong>"이 도구가 어디까지 책임질 수 있고, 어디서부터 책임질 수 없는가"를 정확히 아는지</strong>를 확인하기 위해서다. Compose 파일 문법은 5분이면 외울 수 있지만, <code>depends_on</code>이 정확히 무엇을 보장하고 무엇을 보장하지 않는지, Compose의 기본 네트워크가 Day 5에서 배운 bridge와 어떻게 연결되는지, 그리고 왜 이 파일 하나로는 프로덕션 배포를 대체할 수 없는지를 설명하지 못하면 "로컬에서 잘 됐는데 운영에서 왜 다르게 동작하나요"라는 실제 장애를 만들어내게 된다.</p>
+  </div>
+
+  <!-- ========== SECTION 2 ========== -->
+  <h2 id="question1">2. 면접 질문 1 — Compose는 여러 컨테이너를 어떻게 하나의 시스템으로 묶는가</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"docker-compose.yml에 서비스 세 개를 정의하고 <code>docker compose up</code>을 실행하면 내부적으로 무슨 일이 일어나나요? 서비스끼리는 서로를 어떻게 찾아서 통신하나요? 볼륨은 어떻게 데이터를 유지하나요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 "compose 파일 문법을 아는가"가 아니라, <strong>Compose가 마법을 부리는 게 아니라 Day 5에서 배운 Docker 네트워크·볼륨 기본기를 자동화한 것</strong>임을 이해하는지 확인한다. Compose 명령 하나가 실제로는 여러 개의 <code>docker network create</code>, <code>docker run</code>, <code>docker volume create</code>를 순서대로 실행하는 것에 불과하다는 걸 알아야, 나중에 "Compose에서는 되는데 운영에서는 안 된다"는 문제를 근본 원인부터 진단할 수 있다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>Compose 프로젝트 네트워크 — 서비스 이름이 곧 호스트 이름이 되는 이유</h3>
+    <p><code>docker compose up</code>을 실행하면, Compose는 먼저 그 프로젝트 전용의 <strong>사용자 정의 bridge 네트워크</strong>를 하나 만든다(기본 이름은 <code>{프로젝트명}_default</code>). Day 5에서 배운 도커 기본 <code>docker0</code> bridge와 달리, 사용자 정의 bridge에는 도커의 내장 DNS가 자동으로 동작한다. 그래서 <code>web</code> 서비스 컨테이너 안에서 <code>db</code>라는 서비스 이름으로 <code>ping db</code>를 실행하면, 도커 내장 DNS가 그 이름을 <code>db</code> 컨테이너의 IP로 해석해준다. 즉 <strong>서비스 이름 자체가 호스트 이름</strong>이 되는 것이고, 이건 나중에 Kubernetes의 CoreDNS가 Service 이름을 해석해주는 것과 정확히 같은 발상이다 — 다만 Compose는 단일 호스트, Kubernetes는 클러스터 전체 규모라는 차이가 있을 뿐이다.</p>
+  </div>
+
+  <div class="card">
+    <h3>Compose 볼륨 — 로컬 반복 개발에 최적화된 구조</h3>
+    <p>Compose는 두 가지 볼륨 방식을 자주 조합한다. <strong>bind mount</strong>(<code>./src:/app/src</code>)는 호스트의 소스 코드 디렉터리를 컨테이너 안에 그대로 연결해서, 코드를 수정하면 컨테이너 재빌드 없이 바로 반영되게 한다(hot reload 개발 환경의 핵심). <strong>named volume</strong>(<code>db-data:/var/lib/postgresql/data</code>)은 Day 4에서 배운 것처럼 컨테이너 라이프사이클과 무관하게 데이터를 보존한다 — <code>docker compose down</code>으로 컨테이너를 지워도 <code>docker compose down -v</code>를 명시적으로 쓰지 않는 한 named volume의 DB 데이터는 남는다.</p>
+  </div>
+
+  <table>
+    <tr><th>요소</th><th>Compose가 실제로 하는 일</th><th>Day 5/4에서 배운 원리와의 연결</th></tr>
+    <tr><td>네트워크</td><td>프로젝트 전용 bridge 네트워크 생성 + 내장 DNS로 서비스 이름 해석</td><td>docker0 bridge의 사용자 정의 버전 + DNS 계층 추가</td></tr>
+    <tr><td>서비스 시작 순서</td><td><code>depends_on</code> 순서대로 컨테이너 시작 명령을 실행</td><td>단순 실행 순서일 뿐, 준비 상태 보장은 아님 (질문 2에서 심화)</td></tr>
+    <tr><td>볼륨</td><td>bind mount(코드 반영) + named volume(데이터 영속성) 조합</td><td>Day 4의 볼륨 개념을 로컬 개발 워크플로에 맞게 조합</td></tr>
+    <tr><td>포트 매핑</td><td>호스트 포트 → 컨테이너 포트 DNAT 규칙 자동 생성</td><td>Day 5의 <code>-p</code> 옵션과 동일한 iptables DNAT 메커니즘</td></tr>
+  </table>
+
+  <div class="card card-yellow">
+    <h3>흔한 오해 — "Compose 서비스는 하나의 프로세스처럼 동작한다"</h3>
+    <p>Compose 파일의 각 <code>services:</code> 항목은 독립된 컨테이너이고, 각 컨테이너는 Day 5에서 배운 것처럼 독자적인 network namespace를 가진 별개의 프로세스 그룹이다. "Compose가 하나의 애플리케이션을 만들어준다"는 식으로 이해하면, 컨테이너 간 장애 전파 범위나 리소스 격리 단위를 잘못 판단하게 된다. Compose는 어디까지나 <strong>여러 독립된 컨테이너의 생성·네트워크·볼륨 설정을 하나의 파일로 선언하고 순서대로 실행해주는 오케스트레이션 편의 도구</strong>일 뿐이다.</p>
+  </div>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>네트워크 자동화부터:</strong> Compose가 프로젝트 전용 bridge 네트워크를 만들고 내장 DNS로 서비스 이름을 해석해준다는 것.</li>
+    <li><strong>볼륨 조합 설명:</strong> bind mount(코드 반영)와 named volume(데이터 영속성)을 목적에 따라 구분해서 설명.</li>
+    <li><strong>Day 4/5와의 연결 고리:</strong> Compose가 새로운 개념이 아니라 기존 Docker 기본기(bridge, DNS, 볼륨, DNAT)의 자동화라는 점을 명시.</li>
+    <li><strong>독립 컨테이너라는 사실 강조:</strong> 서비스가 하나의 프로세스가 아니라 각자 격리된 컨테이너라는 것.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"<code>docker compose up</code>을 실행하면 Compose는 먼저 그 프로젝트 전용의 사용자 정의 bridge 네트워크를 만듭니다. 이 네트워크에는 도커 내장 DNS가 동작해서, 서비스 이름 자체를 호스트 이름처럼 쓸 수 있게 됩니다. 예를 들어 <code>web</code> 컨테이너 안에서 <code>db:5432</code>로 접속하면 도커 DNS가 <code>db</code> 서비스 컨테이너의 IP로 바로 해석해주는 거죠. 이건 개념적으로 나중에 Kubernetes의 CoreDNS가 Service 이름을 ClusterIP로 바꿔주는 것과 똑같은 발상인데, Compose는 단일 호스트 규모에서 동작한다는 차이가 있습니다.</p>
+    <p style="margin-top:0.6rem;">볼륨은 보통 두 가지를 목적에 따라 조합합니다. 소스 코드 디렉터리는 bind mount로 연결해서 코드를 고치면 재빌드 없이 바로 반영되게 하고, DB 데이터 디렉터리는 named volume으로 연결해서 컨테이너를 지웠다 다시 만들어도 데이터가 보존되게 합니다. 결국 Compose는 새로운 원리를 만드는 게 아니라, 제가 Day 4·5에서 배운 bridge 네트워크·DNS·볼륨·포트 매핑을 하나의 YAML로 선언하고 순서대로 자동 실행해주는 도구입니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>Compose 네트워크가 사용자 정의 bridge + 내장 DNS라는 것을 정확히 설명</li>
+        <li>bind mount와 named volume을 목적에 따라 구분</li>
+        <li>Compose를 기존 Docker 원리의 자동화로 연결해서 설명</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"Compose가 알아서 다 연결해준다"는 표면적 설명에서 멈춤</li>
+        <li>서비스 이름으로 통신되는 원리(내장 DNS)를 설명하지 못함</li>
+        <li>bind mount와 named volume의 차이를 모름</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "같은 <code>docker-compose.yml</code>을 두 개의 다른 디렉터리에서 각각 <code>docker compose up</code으로 띄우면 어떻게 되나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "Compose는 기본적으로 프로젝트 이름을 디렉터리 이름(또는 <code>-p</code> 옵션 값)에서 가져와서 네트워크·볼륨·컨테이너 이름의 접두사로 씁니다. 그래서 서로 다른 디렉터리에서 띄우면 프로젝트 이름이 달라져서 별도의 네트워크와 볼륨이 만들어지고, 완전히 독립된 두 스택이 동시에 뜨게 됩니다. 다만 호스트 포트를 고정값으로 매핑하고 있다면(예: <code>5432:5432</code>) 두 스택이 같은 호스트 포트를 두고 충돌하기 때문에, 두 번째 스택은 포트 바인딩에서 실패합니다. 이게 로컬에서 여러 프로젝트를 동시에 개발할 때 자주 마주치는 함정입니다."</p>
+  </div>
+
+  <!-- ========== SECTION 3 ========== -->
+  <h2 id="question2">3. 면접 질문 2 — depends_on은 왜 "애플리케이션이 준비됐다"를 보장하지 못하는가</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"<code>depends_on: [db]</code>을 걸어놨는데도 애플리케이션 컨테이너가 시작 직후 DB 연결 실패로 죽습니다. depends_on이 순서를 보장한다면서 왜 이런 일이 생기나요? 어떻게 고쳐야 하나요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 Compose를 다뤄본 사람 중에서도 <strong>"컨테이너가 시작됐다"와 "애플리케이션이 요청을 받을 준비가 됐다"를 구분하는지</strong>를 정확히 가려낸다. 이 구분은 Day 5의 readinessProbe follow-up에서도 다뤘던 것과 똑같은 패턴이다 — 즉 시니어는 로컬 환경의 사소해 보이는 버그도 프로덕션의 근본 원리와 같은 선상에서 이해한다는 것을 이 질문으로 확인한다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>depends_on의 기본 동작 — "프로세스가 떴다"까지만 보장</h3>
+    <p><code>depends_on</code>의 기본 동작은 딱 하나다: <strong>의존하는 서비스의 컨테이너를 먼저 생성하고 시작 명령을 실행한 뒤, 그 다음 서비스를 시작한다.</strong> 여기서 "시작한다"는 건 컨테이너 프로세스가 실행되기 시작했다는 뜻이지, <strong>그 프로세스가 실제로 요청을 받을 준비가 됐다는 뜻이 전혀 아니다.</strong> PostgreSQL 컨테이너는 시작 명령이 실행된 순간부터 초기화(데이터 디렉터리 검사, WAL 복구, 리스너 바인딩)를 거치는데 이게 수 초에서 수십 초가 걸릴 수 있고, 그 사이에 <code>depends_on</code>만 믿은 애플리케이션 컨테이너가 이미 접속을 시도하다가 실패한다.</p>
+  </div>
+
+  <div class="card card-red">
+    <h3>왜 위험한가 — "로컬에서는 잘 됐는데"의 진짜 원인</h3>
+    <p>이 문제가 팀에서 자주 재현이 안 되는 이유는 로컬 개발자의 컴퓨터가 빠르면 DB가 우연히 빨리 뜨고, CI 환경이나 리소스가 부족한 환경에서는 DB 초기화가 느려서 실패 확률이 올라가기 때문이다. "내 컴퓨터에서는 되는데요"라는 흔한 문장의 뒤에 <code>depends_on</code>의 순서 보장과 준비 상태 보장을 혼동한 설계가 숨어있는 경우가 매우 흔하다.</p>
+  </div>
+
+  <div class="card">
+    <h3>해결책 — condition: service_healthy와 healthcheck</h3>
+    <p>Compose는 이 문제를 위해 <code>depends_on</code>에 <code>condition</code>을 지정할 수 있게 해준다. <code>condition: service_healthy</code>로 설정하면, 의존 서비스에 정의된 <code>healthcheck</code>(예: <code>pg_isready</code> 명령이 성공할 때까지 재시도)가 <strong>healthy로 판정될 때까지</strong> 다음 서비스 시작을 미룬다. 이건 Kubernetes의 <code>readinessProbe</code>가 Pod를 Service의 Endpoints에 넣기 전에 준비 상태를 확인하는 것과 개념적으로 동일한 패턴이다 — <strong>"떴다"와 "쓸 수 있다"를 명시적인 헬스체크로 분리</strong>하는 것이다.</p>
+  </div>
+
+  <pre><code>services:
+  db:
+    image: postgres:16
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy   # healthy 판정 전까지 web을 시작하지 않음
+</code></pre>
+
+  <table>
+    <tr><th>depends_on 설정</th><th>실제 보장 범위</th><th>애플리케이션 자체 책임</th></tr>
+    <tr><td><code>depends_on: [db]</code> (조건 없음)</td><td>db 컨테이너의 시작 명령이 먼저 실행됨</td><td>애플리케이션 코드가 연결 재시도 로직을 스스로 가져야 함</td></tr>
+    <tr><td><code>condition: service_started</code></td><td>위와 동일 (기본값과 같음)</td><td>동일</td></tr>
+    <tr><td><code>condition: service_healthy</code></td><td>healthcheck가 healthy를 반환할 때까지 대기</td><td>healthcheck 자체를 정확히 설계할 책임은 여전히 남음</td></tr>
+    <tr><td><code>condition: service_completed_successfully</code></td><td>의존 서비스(주로 1회성 init 작업)가 종료 코드 0으로 끝날 때까지 대기</td><td>마이그레이션 같은 초기화 작업에 사용</td></tr>
+  </table>
+
+  <div class="card card-yellow">
+    <h3>흔한 오해 — "healthcheck만 걸면 완벽하게 안전하다"</h3>
+    <p><code>condition: service_healthy</code>는 <strong>시작 시점</strong>의 순서만 보장한다. 애플리케이션이 이미 실행 중인 상태에서 DB가 재시작되거나 일시적으로 연결이 끊기는 <strong>런타임 중 장애</strong>는 이 설정으로 막을 수 없다. 그래서 시니어는 <code>depends_on</code> + <code>healthcheck</code>를 시작 순서 문제의 해결책으로만 쓰고, 런타임 중 재연결은 애플리케이션 코드의 커넥션 풀 재시도 로직(exponential backoff 등)으로 별도로 다룬다.</p>
+  </div>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>depends_on의 실제 보장 범위부터 정정:</strong> "시작 명령 실행 순서"만 보장하지 "준비 상태"는 보장하지 않는다는 것.</li>
+    <li><strong>실패 재현 조건 설명:</strong> DB 초기화 시간이 환경마다 달라서 로컬에서는 재현 안 되고 CI/운영에서 터지는 이유.</li>
+    <li><strong>해결책 제시:</strong> healthcheck + condition: service_healthy로 준비 상태까지 명시적으로 확인.</li>
+    <li><strong>한계 명시:</strong> 이건 시작 시점 문제만 해결하고, 런타임 중 재연결은 애플리케이션 책임이라는 것.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"<code>depends_on</code>은 기본적으로 의존하는 컨테이너의 시작 명령을 먼저 실행하는 것만 보장하지, 그 안의 애플리케이션이 요청을 받을 준비가 됐는지는 전혀 확인하지 않습니다. PostgreSQL 같은 DB는 프로세스가 시작된 뒤에도 데이터 디렉터리 검사나 WAL 복구 같은 초기화 과정을 거치는데, 이 시간이 환경마다 달라서 리소스가 넉넉한 로컬에서는 우연히 안 걸리다가 CI나 운영 환경에서 실패로 터지는 경우가 많습니다.</p>
+    <p style="margin-top:0.6rem;">해결은 DB 서비스에 <code>healthcheck</code>를 정의하고(예: <code>pg_isready</code>), 애플리케이션 서비스의 <code>depends_on</code>에 <code>condition: service_healthy</code>를 걸어서 DB가 실제로 healthy 판정을 받을 때까지 애플리케이션 시작을 미루는 겁니다. 다만 이건 시작 시점의 순서 문제만 해결하는 거고, 이미 실행 중인 상태에서 DB가 일시적으로 끊기는 런타임 장애까지 막아주진 않기 때문에, 애플리케이션 코드 쪽에는 커넥션 재시도와 백오프 로직을 별도로 넣어둡니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>depends_on이 "시작 순서"만 보장한다는 것을 정확히 짚음</li>
+        <li>healthcheck + condition: service_healthy 해결책을 정확히 제시</li>
+        <li>이 해결책의 한계(런타임 재연결은 별도)까지 스스로 짚음</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"depends_on 순서를 바꾸면 된다"는 잘못된 진단</li>
+        <li>healthcheck의 존재나 condition 옵션을 모름</li>
+        <li>애플리케이션 자체의 재시도 로직 필요성을 언급하지 못함</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "이 문제가 Kubernetes로 넘어가면 어떻게 다르게 다뤄지나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "Kubernetes에는 애초에 Compose의 <code>depends_on</code> 같은 '서비스 간 시작 순서 보장' 개념 자체가 없습니다. Pod는 독립적으로 스케줄되고 시작되는 게 기본 철학이라서, 순서에 의존하는 대신 각 Pod가 스스로 준비될 때까지 <code>readinessProbe</code>로 자기 상태를 알리고, Service의 Endpoints에서 빠져 있는 동안은 트래픽을 받지 않도록 설계합니다. 즉 '누가 먼저 뜨느냐'를 통제하는 대신 '아직 준비 안 된 쪽은 트래픽을 받지 않는다'는 방향으로 문제를 다르게 풉니다. 그래서 애플리케이션 자체도 DB 연결 실패 시 크래시하지 않고 재시도하도록 설계하는 게 Kubernetes 환경에서는 사실상 필수입니다 — Pod가 재시작을 반복하면 CrashLoopBackOff로 이어지기 때문입니다."</p>
+  </div>
+
+  <!-- ========== SECTION 4 ========== -->
+  <h2 id="question3">4. 면접 질문 3 — Compose와 Kubernetes 사이의 운영 경계는 어디에 그어야 하는가</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"우리 팀은 Compose로 개발 환경도 잘 돌리고 있는데, 왜 운영 환경까지 Compose로 배포하면 안 되나요? Kubernetes로 넘어가야 하는 기준이 뭔가요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 도구 편향 없이 <strong>요구사항에 따라 인프라 복잡도를 선택할 수 있는지</strong>를 확인한다. "무조건 Kubernetes가 정답"이라고 답하는 지원자도, "Compose로도 충분히 운영 가능하다"고 무비판적으로 답하는 지원자도 둘 다 시니어답지 못하다. 진짜 시니어는 <strong>Compose가 구조적으로 할 수 없는 것이 무엇인지 정확히 나열</strong>하고, 그게 현재 시스템에 필요한지 아닌지로 판단한다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>Compose는 "단일 호스트 실행 도구"다</h3>
+    <p>가장 근본적인 차이는 <strong>Compose는 원칙적으로 하나의 Docker 호스트(엔진) 위에서만 동작</strong>한다는 것이다. 여러 서버로 컨테이너를 분산시키거나, 서버 한 대가 죽었을 때 다른 서버로 컨테이너를 자동으로 옮기는 기능이 Compose 자체에는 없다. 반면 Kubernetes는 애초에 <strong>여러 노드로 이루어진 클러스터</strong>를 하나의 자원 풀로 다루도록 설계된 시스템이다.</p>
+  </div>
+
+  <table>
+    <tr><th>기능</th><th>Docker Compose</th><th>Kubernetes</th></tr>
+    <tr><td>실행 범위</td><td>단일 호스트</td><td>여러 노드로 구성된 클러스터</td></tr>
+    <tr><td>장애 시 자동 복구</td><td>컨테이너가 죽으면 <code>restart</code> 정책으로 같은 호스트에서만 재시작</td><td>노드 자체가 죽어도 스케줄러가 다른 노드에 Pod를 재스케줄</td></tr>
+    <tr><td>수평 확장</td><td><code>--scale</code>로 같은 호스트 안에서만 복제 (호스트 리소스 한계에 즉시 도달)</td><td>여러 노드에 걸쳐 Pod 수를 늘리고, HPA로 메트릭 기반 자동 확장</td></tr>
+    <tr><td>무중단 배포</td><td>기본 제공 안 함 (직접 스크립트로 구현해야 함)</td><td>RollingUpdate로 maxSurge/maxUnavailable을 세밀하게 제어</td></tr>
+    <tr><td>셀프힐링</td><td>프로세스 죽음만 재시작으로 대응</td><td>livenessProbe/readinessProbe로 애플리케이션 레벨 이상까지 감지해 대응</td></tr>
+    <tr><td>선언적 리소스 제어</td><td>기본적인 <code>cpus</code>/<code>mem_limit</code>만 존재</td><td>requests/limits, QoS 클래스, ResourceQuota, LimitRange까지 세밀한 정책</td></tr>
+    <tr><td>트래픽 라우팅</td><td>포트 매핑 + 외부 리버스 프록시를 직접 구성</td><td>Service, Ingress, Gateway API로 표준화된 트래픽 제어</td></tr>
+  </table>
+
+  <div class="card card-red">
+    <h3>왜 위험한가 — Compose를 그대로 운영에 올리는 흔한 실패 패턴</h3>
+    <p>단일 서버에서 <code>docker compose up -d</code>로 운영 서비스를 돌리다가 그 서버가 하드웨어 장애나 커널 패닉으로 죽으면, <strong>대체할 노드가 없기 때문에 서비스 전체가 그대로 다운된다.</strong> restart 정책은 "같은 호스트 안에서 프로세스를 다시 띄우는 것"만 할 수 있을 뿐, 호스트 자체가 사라진 상황에는 아무 힘이 없다. 이건 도구의 결함이 아니라 <strong>Compose가 애초에 그 문제를 풀도록 설계되지 않았기 때문</strong>이다.</p>
+  </div>
+
+  <div class="card">
+    <h3>그래도 Compose가 정답인 경우 — 규모와 요구사항이 작을 때</h3>
+    <p>모든 시스템이 다중 노드 오케스트레이션을 필요로 하는 건 아니다. 트래픽이 적고 단일 서버로 충분하며, 몇 분의 다운타임이 비즈니스에 치명적이지 않은 내부 도구나 소규모 서비스라면, Kubernetes의 운영 복잡도(etcd 관리, 노드 업그레이드, RBAC, 네트워크 정책 설계)를 감당하는 비용이 오히려 손해일 수 있다. 시니어의 판단은 "Kubernetes가 항상 우월하다"가 아니라, <strong>가용성 요구사항과 운영 인력 규모 대비 오케스트레이션 복잡도가 정당화되는지</strong>를 따지는 것이다.</p>
+  </div>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>가장 근본적인 구조 차이부터:</strong> Compose는 단일 호스트, Kubernetes는 다중 노드 클러스터라는 것.</li>
+    <li><strong>이 차이가 만드는 실제 결과 나열:</strong> 노드 장애 복구, 수평 확장, 무중단 배포, 셀프힐링을 구체적으로 비교.</li>
+    <li><strong>실패 시나리오로 구체화:</strong> Compose를 운영에 그대로 올렸을 때 단일 장애점(SPOF)이 되는 상황을 예시로 제시.</li>
+    <li><strong>양쪽 다 정답이 될 수 있음을 인정:</strong> 규모와 가용성 요구사항에 따라 Compose로도 충분한 경우가 있다는 균형 잡힌 결론.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"가장 근본적인 차이는 Compose가 단일 Docker 호스트 위에서만 동작하도록 설계됐다는 점입니다. restart 정책이 있어도 그건 같은 호스트 안에서 프로세스를 다시 띄우는 것뿐이라서, 그 서버 자체가 하드웨어 장애로 죽으면 대체할 방법이 없습니다. Kubernetes는 애초에 여러 노드를 하나의 자원 풀로 다루도록 설계돼서, 노드 하나가 죽어도 스케줄러가 다른 노드에 Pod를 재배치하고, HPA로 트래픽에 따라 여러 노드에 걸쳐 자동 확장하고, RollingUpdate로 무중단 배포를 표준화된 방식으로 처리합니다.</p>
+    <p style="margin-top:0.6rem;">그렇다고 무조건 Kubernetes가 정답은 아닙니다. 트래픽이 적고 단일 서버로 충분하며 몇 분의 다운타임이 치명적이지 않은 내부 서비스라면, etcd 관리나 노드 업그레이드, RBAC 설계 같은 Kubernetes 운영 복잡도를 감당하는 비용이 오히려 손해일 수 있습니다. 저는 이걸 '가용성 요구사항과 운영 인력 대비 오케스트레이션 복잡도가 정당화되는가'로 판단합니다. 실무에서는 로컬 개발·통합 테스트는 Compose로, 실제 프로덕션 트래픽을 받는 서비스는 Kubernetes로 나누는 조합을 가장 많이 씁니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>단일 호스트 vs 다중 노드 클러스터라는 근본 차이부터 설명</li>
+        <li>노드 장애, 확장, 무중단 배포 각각을 구체적으로 비교</li>
+        <li>Compose가 여전히 정당한 선택지인 상황을 균형 있게 인정</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"Kubernetes가 더 크고 강력해서"라는 막연한 답변</li>
+        <li>단일 호스트라는 Compose의 구조적 한계를 짚지 못함</li>
+        <li>"무조건 K8s를 써야 한다" 또는 "Compose로도 다 된다" 식의 극단적 결론</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "Docker Swarm은 Compose 파일을 그대로 여러 노드에 배포할 수 있다고 들었는데, 그러면 Swarm으로 이 문제를 풀면 안 되나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "Docker Swarm은 실제로 Compose 파일(<code>docker stack deploy</code>)을 거의 그대로 써서 다중 노드 오케스트레이션을 제공하고, Day 5에서 언급한 overlay 네트워크도 원래 Swarm의 멀티호스트 클러스터링을 위해 만들어진 기능입니다. 다만 커뮤니티와 생태계, 클라우드 매니지드 서비스 지원(EKS, GKE, AKS), CNI·CSI 같은 표준 확장 포인트, 그리고 채용 시장의 기술 스택이 Kubernetes 쪽으로 압도적으로 쏠려 있어서, 신규 프로젝트에서 Swarm을 선택하는 경우는 실무에서 거의 사라졌습니다. 기존에 Swarm으로 운영 중인 레거시 시스템을 유지보수하는 상황이 아니라면, 저는 새 오케스트레이션 도입 시 생태계와 장기 유지보수성을 이유로 Kubernetes를 우선 검토합니다."</p>
+  </div>
+
+  <!-- ========== SECTION 5 ========== -->
+  <h2 id="mental-model">5. 시니어의 정신 모델 — "이걸 Compose로 계속 써도 되나" 판단 체크리스트</h2>
+
+  <p>"우리 이거 Compose로 운영해도 될까요?"라는 질문을 받았을 때, 오늘 배운 세 가지 축(네트워크/볼륨 자동화, 시작 순서의 한계, 단일 호스트 구조)을 기준으로 판단하는 것이 시니어의 방식이다.</p>
+
+  <div class="card card-purple">
+    <h3>Compose 운영 적합성 판단 체크리스트</h3>
+    <table>
+      <tr><th>확인 항목</th><th>Compose로 충분한 신호</th><th>Kubernetes가 필요한 신호</th></tr>
+      <tr><td>가용성 요구</td><td>수 분의 다운타임을 감수할 수 있는 내부 도구</td><td>SLA가 걸린 고객향 서비스</td></tr>
+      <tr><td>트래픽 규모</td><td>단일 서버로 감당 가능한 수준</td><td>여러 서버로 부하 분산이 필요한 수준</td></tr>
+      <tr><td>배포 빈도/무중단 요구</td><td>배포 시 짧은 재시작을 감수 가능</td><td>배포 중 트래픽 끊김이 허용 안 됨 (RollingUpdate 필요)</td></tr>
+      <tr><td>장애 복구</td><td>사람이 서버 재부팅/재기동으로 대응 가능한 빈도</td><td>노드 장애 시 자동 재스케줄이 필요</td></tr>
+      <tr><td>운영 인력</td><td>etcd, 컨트롤 플레인, RBAC를 관리할 별도 인력이 부족</td><td>플랫폼팀이 있거나 매니지드 K8s(EKS 등)로 관리 부담을 낮출 수 있음</td></tr>
+      <tr><td>시작 순서 의존</td><td>애플리케이션이 재시도 로직 없이도 healthcheck 기반 순서 제어로 충분</td><td>여러 서비스 간 동적인 준비 상태 관리(readinessProbe 기반 트래픽 제어)가 필요</td></tr>
+    </table>
+    <p style="margin-top:0.8rem;"><strong>흔한 오해:</strong> "로컬 개발에 Compose를 쓰니까 운영도 Compose로 통일하는 게 일관성 있다"는 생각은 도구의 일관성과 인프라 요구사항을 혼동한 것이다. 로컬 개발 환경은 "빠른 반복"이 목표고 운영 환경은 "가용성과 확장성"이 목표이기 때문에, 같은 컨테이너 이미지를 쓰더라도 오케스트레이션 계층은 목적에 맞게 다른 도구를 쓰는 것이 정상이다.</p>
+  </div>
+
+  <!-- ========== SECTION 6 ========== -->
+  <h2 id="rubric">6. 자기 점검 Rubric</h2>
+
+  <div class="rubric">
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Compose가 프로젝트 전용 bridge 네트워크와 내장 DNS로 서비스 이름 해석을 자동화한다는 것을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Compose의 bind mount와 named volume을 목적(코드 반영 vs 데이터 영속성)에 따라 구분해서 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">depends_on이 "시작 명령 실행 순서"만 보장하고 "애플리케이션 준비 상태"는 보장하지 않는다는 것을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">healthcheck와 condition: service_healthy로 시작 순서 문제를 해결하는 방법을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">healthcheck 기반 depends_on이 런타임 중 재연결 문제까지는 해결하지 못한다는 한계를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Compose(단일 호스트)와 Kubernetes(다중 노드 클러스터)의 구조적 차이를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">노드 장애 복구, 수평 확장, 무중단 배포, 셀프힐링 관점에서 Compose가 구조적으로 할 수 없는 것을 나열할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Compose를 그대로 운영에 올렸을 때 단일 장애점(SPOF)이 되는 구체적 실패 시나리오를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Kubernetes가 항상 정답이 아니라 가용성 요구사항과 운영 복잡도 비용을 따져 판단해야 한다는 균형 잡힌 시각을 제시할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">"Compose로 계속 써도 되나"를 가용성/트래픽/배포 빈도/운영 인력 기준으로 판단하는 체크리스트를 적용할 수 있다</span>
+    </div>
+  </div>
+
+  <div class="card card-accent" style="margin-top: 2rem;">
+    <h3>다음 Day 예고</h3>
+    <p><strong>Day 7 — Kubernetes 컨트롤 플레인: etcd, kube-apiserver, 스케줄러.</strong> 오늘 "왜 Kubernetes가 필요한가"를 다뤘다면, 다음은 그 Kubernetes 자체가 내부적으로 어떻게 동작하는지를 다룬다. etcd가 왜 클러스터의 유일한 진실의 원천(source of truth)인지, kube-apiserver가 왜 모든 컴포넌트의 유일한 진입점인지, 스케줄러가 Pod를 어느 노드에 배치할지 어떻게 결정하는지, 그리고 컨트롤 플레인 컴포넌트 중 하나가 장애를 겪으면 실제로 클러스터에 어떤 일이 일어나는지를 다룹니다.</p>
+  </div>
+
+</div>
+
+<div class="nav-bar">
+  <a href="./0005-container-network-cni-service-dns.html">← Day 5</a>
+  <a href="../PROGRESS.md">PROGRESS.md</a>
+  <a href="./index.html">레슨 목록</a>
+  <a href="./0007-kubernetes-control-plane-etcd-apiserver-scheduler.html">Day 7 →</a>
+</div>
+
+</body>
+</html>
