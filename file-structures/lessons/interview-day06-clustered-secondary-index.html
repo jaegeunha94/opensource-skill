@@ -1,0 +1,981 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — 클러스터링과 보조 인덱스 | 파일구조 면접 준비</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222535;
+      --border: #2e3147;
+      --accent: #5b8dee;
+      --accent2: #7c5cbf;
+      --green: #3ecf8e;
+      --red: #e25c5c;
+      --yellow: #f5a623;
+      --text: #e2e4f0;
+      --muted: #8b90a8;
+      --code-bg: #12141f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1f3c 0%, #12141f 100%);
+      border-bottom: 2px solid var(--accent2);
+      padding: 2.5rem 2rem;
+      margin: 0 -1rem 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .icon-q  { background: #2b1f4a; color: var(--accent2); }
+    .icon-pre { background: #1a2f3a; color: var(--accent); }
+    .icon-why { background: #2a2010; color: var(--yellow); }
+    .icon-real { background: #112a1f; color: var(--green); }
+    .icon-think { background: #1f2a3a; color: #a8c5f0; }
+    .icon-ans  { background: #1a2a1a; color: var(--green); }
+    .icon-trade { background: #2a1a1a; color: var(--red); }
+    .icon-myth  { background: #2a1f10; color: var(--yellow); }
+    .icon-follow { background: #1a1a2a; color: var(--accent2); }
+    .icon-diff  { background: #202020; color: #c0c0c0; }
+    .icon-rub  { background: #0e1e1a; color: var(--green); }
+
+    h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 1.25rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    li { margin-bottom: 0.35rem; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #2b1f4a 0%, #1a1d27 100%);
+      border: 1.5px solid var(--accent2);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #d4c8f5;
+      margin-bottom: 0.75rem;
+    }
+    .interview-sub {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.88rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+      font-size: 0.87rem;
+      line-height: 1.6;
+    }
+    pre code { background: none; border: none; padding: 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.85rem 0;
+      font-size: 0.92rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+    .answer-block {
+      border-left: 3px solid;
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 0.85rem 0;
+    }
+    .answer-strong { border-color: var(--green); background: rgba(62,207,142,0.06); }
+    .answer-weak   { border-color: var(--red);   background: rgba(226,92,92,0.06); }
+    .answer-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+    .label-strong { color: var(--green); }
+    .label-weak   { color: var(--red); }
+
+    .step-list { counter-reset: step; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-list li:last-child { border-bottom: none; }
+    .step-list li::before {
+      content: counter(step);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0;
+    }
+    .followup-q {
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .score-high { background: rgba(62,207,142,0.2); color: var(--green); }
+    .score-mid  { background: rgba(245,166,35,0.2); color: var(--yellow); }
+    .score-low  { background: rgba(226,92,92,0.2);  color: var(--red); }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.85rem 0;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+    .callout-info { background: rgba(91,141,238,0.08); border-left: 3px solid var(--accent); }
+    .callout-warn { background: rgba(245,166,35,0.08); border-left: 3px solid var(--yellow); }
+    .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin: 0.1rem;
+    }
+    .tag-blue { background: rgba(91,141,238,0.15); color: var(--accent); }
+    .tag-green { background: rgba(62,207,142,0.15); color: var(--green); }
+    .tag-yellow { background: rgba(245,166,35,0.15); color: var(--yellow); }
+
+    .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      color: #c9d0e8;
+      margin: 0.85rem 0;
+      white-space: pre;
+    }
+
+    nav.breadcrumb {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    nav.breadcrumb a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <nav class="breadcrumb">
+      <a href="../">파일구조 면접 준비</a> › <a href="./index.html">레슨 목록</a>
+    </nav>
+    <div class="day-badge">Interview Day 6</div>
+    <h1>클러스터링과 보조 인덱스 — Data Locality, Write Amplification, Secondary Lookup</h1>
+    <p class="subtitle">인덱스를 하나 더 만들면 조회는 빨라지는데, 왜 삽입은 느려지고 조회는 "두 번" 일어날 수 있는가</p>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-q">Q</div>
+      <h2>면접 질문</h2>
+    </div>
+    <div class="interview-q">
+      "클러스터드 인덱스는 읽기 성능을 어떻게 바꾸고, 그 대가로 어떤 비용을 만듭니까?"
+    </div>
+    <p class="interview-sub">변형 질문 유형</p>
+    <ul>
+      <li>"왜 테이블당 클러스터드 인덱스는 하나만 만들 수 있습니까?"</li>
+      <li>"보조 인덱스(secondary index)로 조회하면 왜 실제로 디스크 접근이 한 번 더 필요합니까?"</li>
+      <li>"UUID를 기본키로 쓰면 삽입 성능이 왜 나빠질 수 있습니까?"</li>
+      <li>"MySQL InnoDB와 PostgreSQL의 인덱스 구조는 왜 근본적으로 다릅니까?"</li>
+    </ul>
+  </div>
+
+  <!-- 2. 전제 개념 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">📖</div>
+      <h2>전제 개념 — 쉬운 한국어로 먼저 이해하기</h2>
+    </div>
+
+    <h3>6-1. 클러스터드 인덱스란 — "인덱스 순서 = 실제 데이터가 저장된 순서"</h3>
+    <p>
+      Day 3~4에서 다룬 B+Tree는 "정렬된 키를 따라가면 leaf에서 원하는 레코드를 찾는다"는 구조였습니다.
+      그런데 leaf에 <strong>무엇이 저장되는지</strong>는 두 가지 방식이 있습니다.
+    </p>
+    <ul>
+      <li><strong>Clustered Index (클러스터드 인덱스):</strong> leaf 노드 자체가 <strong>실제 데이터 행(row)</strong>을 담습니다. 즉 테이블의 물리적 저장 순서 자체가 인덱스 키 순서와 같습니다.</li>
+      <li><strong>Non-clustered / Secondary Index (보조 인덱스):</strong> leaf 노드는 실제 데이터가 아니라 <strong>"진짜 데이터가 어디 있는지 가리키는 포인터"</strong>만 담습니다.</li>
+    </ul>
+    <p>
+      비유하자면, 클러스터드 인덱스는 <strong>사전 자체가 알파벳 순으로 인쇄된 책</strong>입니다. 반면 보조
+      인덱스는 <strong>책 뒤의 찾아보기(색인)</strong>입니다 — 색인은 정렬돼 있지만, 실제 내용을 보려면
+      색인이 가리키는 페이지 번호로 다시 넘어가야 합니다.
+    </p>
+    <div class="diagram">[ Clustered Index — leaf = 실제 데이터 ]
+
+B+Tree leaf:  [id=10, name="Kim", ...전체 row 데이터...] → [id=11, ...] → [id=12, ...]
+              (정렬된 키 순서 == 디스크에 물리적으로 저장된 순서)
+
+id=11 조회: root → internal → leaf 도달 = 바로 전체 row 확보 (추가 I/O 없음)
+
+
+[ Secondary Index — leaf = 포인터만 ]
+
+B+Tree leaf:  [email="a@x.com" → id=11] → [email="b@x.com" → id=27] → ...
+              (leaf에는 실제 row가 아니라 "클러스터드 키(id)" 또는 "row 위치"만 있음)
+
+email="a@x.com" 조회:
+  1) secondary index B+Tree 탐색 → id=11 확보          (I/O: 트리 높이만큼)
+  2) id=11로 clustered index를 "다시" 탐색 → 실제 row 확보  (I/O: 트리 높이만큼, 추가)
+  => 총 I/O = secondary 탐색 + clustered 재탐색 (이중 조회, "bookmark lookup")</div>
+
+    <div class="divider"></div>
+    <h3>6-2. 왜 클러스터드 인덱스는 테이블당 하나뿐인가</h3>
+    <p>
+      데이터는 디스크의 물리적 페이지에 <strong>한 가지 순서로만</strong> 저장될 수 있습니다. "id 순으로
+      정렬해서 저장"하면서 동시에 "email 순으로 정렬해서 저장"할 수는 없습니다 — 물리적 저장 위치는
+      하나뿐이기 때문입니다. 그래서 <strong>클러스터드 인덱스는 테이블당 정확히 하나만 존재</strong>하고,
+      나머지 조회 조건(email, 이름 등)은 모두 보조 인덱스로 만들어 "정렬된 포인터 목록"만 유지합니다.
+    </p>
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span>
+        <strong>DBMS별 차이:</strong> MySQL InnoDB는 기본키(PK)를 자동으로 클러스터드 인덱스로 사용합니다
+        (PK가 없으면 내부적으로 숨겨진 행 ID를 만들어 클러스터링합니다). 반면 PostgreSQL은 테이블을
+        기본적으로 <strong>heap 구조(정렬 없는 삽입 순서 저장)</strong>로 두고, 모든 인덱스(PK 포함)를
+        "포인터만 가진" 구조로 취급합니다. <code>CLUSTER</code> 명령으로 한 번 물리적으로 재정렬할 수는
+        있지만, 이후 삽입에서 그 순서를 자동으로 유지해주지는 않습니다. 이 차이를 아는 것 자체가
+        "DBMS 내부 구조를 이해하고 있다"는 신호입니다.
+      </span>
+    </div>
+
+    <div class="divider"></div>
+    <h3>6-3. Secondary Index Lookup이 "두 번" 일어나는 이유</h3>
+    <p>
+      클러스터드 인덱스가 있는 테이블에서 보조 인덱스로 조회하면, 보조 인덱스의 leaf에는 실제 row가
+      아니라 <strong>클러스터드 키 값(예: id)</strong>이 들어 있습니다(MySQL InnoDB 방식). 그래서 조회는
+      "보조 인덱스에서 id 찾기" → "그 id로 클러스터드 인덱스를 다시 타고 내려가 실제 row 찾기"라는
+      <strong>두 단계</strong>를 거칩니다. 이를 <strong>bookmark lookup</strong> 또는
+      <strong>random I/O 재조회</strong>라 부릅니다. 문제는 두 번째 단계가 <strong>정렬 순서가 다른
+      곳으로 점프</strong>하는 것이라, 여러 건을 조회할 때 순차 I/O가 아니라 <strong>건마다 랜덤
+      I/O</strong>가 발생한다는 점입니다.
+    </p>
+    <div class="diagram">[ Secondary index로 100건 조회 시 I/O 패턴 ]
+
+secondary index leaf 스캔: email 순서대로 정렬 → 순차 I/O로 100개의 id를 빠르게 수집
+
+각 id로 clustered index 재조회:
+  id 값들은 secondary index 순서와 무관하게 흩어져 있음
+  → 100번의 "서로 다른 페이지로의" 랜덤 I/O 발생
+
+=> "인덱스를 탔다"고 해서 항상 빠른 것이 아니라,
+   보조 인덱스를 통한 대량 조회는 랜덤 I/O 폭증으로 이어질 수 있음
+   (이것이 옵티마이저가 "인덱스 대신 풀스캔"을 선택하는 이유 중 하나)</div>
+
+    <div class="divider"></div>
+    <h3>6-4. Write Amplification — 클러스터드 키 선택이 삽입 비용을 좌우한다</h3>
+    <p>
+      클러스터드 인덱스는 "물리적 저장 순서 = 키 순서"를 유지해야 하므로, 새 row를 삽입할 때
+      <strong>정렬 순서상 맞는 위치</strong>에 끼워 넣어야 합니다. 이때 키 값의 패턴이 성능을 크게
+      좌우합니다.
+    </p>
+    <ul>
+      <li><strong>Auto-increment(단조 증가) 키:</strong> 새 값은 항상 마지막 페이지 뒤에 추가되므로, 대부분 순차 append입니다. Page split이 거의 발생하지 않습니다.</li>
+      <li><strong>UUID v4(무작위) 키:</strong> 새 값이 트리 전체에 무작위로 흩어져 삽입되므로, 거의 매번 <strong>이미 꽉 찬 페이지 중간</strong>에 끼워 넣어야 합니다. 이는 <strong>page split</strong>(페이지를 둘로 나누는 작업)을 유발하고, split은 추가 쓰기 I/O와 디스크 단편화(fragmentation)를 만듭니다.</li>
+    </ul>
+    <div class="diagram">[ Auto-increment vs UUID v4 삽입 패턴 ]
+
+Auto-increment (1, 2, 3, 4, ...):
+  새 row는 항상 맨 끝 leaf 페이지 뒤에 추가
+  → 순차 append, page split 드묾, 디스크 단편화 최소
+
+UUID v4 (무작위, 예: 7f3a..., 2b91..., e04c...):
+  새 row가 트리 전역에 무작위 위치로 삽입됨
+  → 이미 가득 찬 중간 페이지에 끼어들어야 함 → page split 빈번
+  → split마다 추가 쓰기 I/O + 페이지 내 공간 낭비(fragmentation)
+  → 캐시 지역성도 나빠짐 (최근 삽입 데이터가 여기저기 흩어짐)</div>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span>
+        <strong>면접관이 보는 것:</strong> "UUID는 충돌 위험이 없어서 좋다"는 답만으로는 부족합니다.
+        <strong>"클러스터드 키의 삽입 패턴이 물리적 페이지 재배치 비용(write amplification)에 어떤
+        영향을 주는지"</strong>까지 연결해야 시니어 답변입니다. 이 때문에 실무에서는 UUID v7이나
+        ULID처럼 <strong>"무작위성은 유지하되 시간 순서로는 단조 증가하는"</strong> 키 설계가
+        대안으로 쓰입니다.
+      </span>
+    </div>
+  </div>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-why">?</div>
+      <h2>왜 면접에서 이 질문을 묻는가</h2>
+    </div>
+    <p>
+      "클러스터드 인덱스가 뭔지 정의를 아는가"가 아니라, <strong>"인덱스 설계 결정이 읽기와 쓰기 성능에
+      어떤 구조적 trade-off를 만드는지 인과관계로 설명할 수 있는가"</strong>를 봅니다.
+    </p>
+    <ol>
+      <li>
+        <strong>왜 클러스터드 인덱스가 하나뿐인지 물리적 근거로 설명할 수 있는가</strong><br>
+        "그렇게 정해져 있다"가 아니라, 물리적 저장 순서는 하나뿐이라는 제약에서 도출된다는 것을
+        말해야 합니다.
+      </li>
+      <li>
+        <strong>보조 인덱스 조회의 실제 비용을 구조적으로 설명할 수 있는가</strong><br>
+        "인덱스를 타면 빠르다"가 아니라, 클러스터드 키를 통한 재조회(bookmark lookup)와 그로 인한
+        랜덤 I/O를 설명해야 합니다.
+      </li>
+      <li>
+        <strong>기본키 설계가 실무 성능 이슈로 이어진다는 것을 아는가</strong><br>
+        UUID 기본키가 실제로 삽입 성능 저하와 인덱스 비대화(secondary index가 더 긴 클러스터드 키를
+        저장해야 함)를 만든다는 것을 사례로 연결할 수 있어야 합니다.
+      </li>
+    </ol>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span>
+        주니어 수준 답변: "클러스터드 인덱스는 데이터가 정렬돼 저장되는 인덱스이고, 보조 인덱스는
+        별도의 인덱스입니다."<br>
+        10년차 기대 답변: "클러스터드 인덱스는 leaf가 곧 실제 row라서 물리적 저장 순서를 결정하고,
+        그래서 테이블당 하나만 가능합니다. 보조 인덱스는 leaf에 클러스터드 키만 저장하므로 조회 시
+        secondary 탐색 후 클러스터드 인덱스를 다시 타는 이중 조회(bookmark lookup)가 필요하고, 이는
+        랜덤 I/O로 이어집니다. 또한 클러스터드 키가 UUID처럼 무작위면 삽입마다 page split이 발생해
+        write amplification이 커지므로, 저는 auto-increment나 시간 순서를 보존하는 UUID v7 같은
+        키를 우선 고려합니다."
+      </span>
+    </div>
+  </div>
+
+  <!-- 4. 실무 연결 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-real">⚙</div>
+      <h2>실무 연결</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>실무 상황</th>
+          <th>클러스터링/보조 인덱스 판단</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>MySQL InnoDB 기본키 설계</strong></td>
+          <td>
+            PK가 클러스터드 인덱스이므로, UUID v4를 PK로 쓰면 삽입마다 page split과 fragmentation이
+            누적됩니다. 실무에서는 auto-increment 서로게이트 키를 PK로 쓰고, UUID는 별도의 unique
+            secondary index로 두는 패턴이 흔합니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Covering Index (커버링 인덱스)</strong></td>
+          <td>
+            자주 조회하는 컬럼을 보조 인덱스에 함께 저장(<code>INCLUDE</code> 또는 복합 인덱스)하면,
+            클러스터드 인덱스로 재조회할 필요 없이 secondary index만으로 결과를 반환할 수 있습니다.
+            bookmark lookup 비용을 없애는 대표적인 실무 최적화입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>PostgreSQL vs MySQL 마이그레이션</strong></td>
+          <td>
+            PostgreSQL은 heap 구조라 PK도 사실상 보조 인덱스처럼 동작해, PK 조회도 heap을 한 번 더
+            찾아가는 구조입니다. MySQL 기준으로 설계된 스키마를 PostgreSQL로 옮길 때 이 구조적 차이가
+            성능 특성을 바꿀 수 있습니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>대량 삽입(bulk insert) 배치 작업</strong></td>
+          <td>
+            로그, 이벤트 데이터를 대량 삽입할 때 클러스터드 키를 시간 기반 단조 증가 값으로 설계하면
+            page split 없이 append 위주로 처리되어 처리량이 크게 개선됩니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>인덱스 비대화(bloat)와 재구성</strong></td>
+          <td>
+            무작위 키로 인한 page split이 누적되면 인덱스 크기가 필요 이상으로 커집니다. 정기적인
+            인덱스 재구성(rebuild)이나 fill factor 조정으로 완화하지만, 근본 해법은 키 설계 자체를
+            바꾸는 것입니다.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-think">→</div>
+      <h2>답변 사고 순서 — 면접에서 이렇게 생각하면서 말한다</h2>
+    </div>
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>클러스터드 인덱스의 정의부터 물리적 근거로 설명</strong><br>
+          leaf가 곧 실제 데이터이며, 그래서 물리적 저장 순서를 결정한다는 점에서 시작합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>테이블당 하나만 가능한 이유를 도출</strong><br>
+          물리적 저장 위치는 하나뿐이라는 제약에서 "왜 하나뿐인가"의 답이 자연스럽게 나온다는 것을
+          보여줍니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>보조 인덱스 조회의 이중 탐색 구조를 설명</strong><br>
+          secondary index 탐색 후 클러스터드 키로 재조회하는 bookmark lookup과, 이로 인한 랜덤 I/O를
+          설명합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>삽입 시 write amplification을 키 선택과 연결</strong><br>
+          단조 증가 키와 무작위 키의 page split 빈도 차이를 원인-결과로 설명합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>실무 대응 방안으로 마무리</strong><br>
+          covering index, 서로게이트 auto-increment 키, 시간 순서 보존 UUID(v7/ULID) 같은 완화
+          전략을 제시합니다.
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-ans">✓</div>
+      <h2>핵심 답변 예시</h2>
+    </div>
+
+    <h3>짧은 버전 (1~2분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Short)</div>
+      <p>
+        클러스터드 인덱스는 leaf 노드 자체가 실제 데이터 row라서, 인덱스 키 순서가 곧 디스크에 저장된
+        물리적 순서가 됩니다. 그래서 순차 스캔과 범위 조회가 빠르지만, 물리적 순서는 하나뿐이라
+        테이블당 하나만 만들 수 있습니다.
+      </p>
+      <p>
+        보조 인덱스는 leaf에 실제 row 대신 클러스터드 키만 저장하므로, 조회 시 secondary index를
+        먼저 탐색하고 그 키로 클러스터드 인덱스를 다시 타는 이중 조회(bookmark lookup)가 필요합니다.
+        또한 클러스터드 키가 UUID처럼 무작위면 삽입마다 페이지 중간에 끼어들며 page split이 자주
+        발생해 쓰기 비용이 커집니다.
+      </p>
+    </div>
+
+    <h3>깊이 있는 버전 (3~5분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Deep)</div>
+      <p>
+        클러스터드 인덱스와 보조 인덱스의 차이는 "B+Tree leaf에 무엇을 저장하는가"에서 시작합니다.
+        클러스터드 인덱스는 leaf가 곧 전체 row 데이터이므로, 인덱스를 통해 도달한 순간 바로 원하는
+        데이터를 얻습니다. 반면 보조 인덱스는 leaf에 클러스터드 키(또는 row 위치)만 저장하기 때문에,
+        secondary index 탐색으로 얻은 값을 가지고 클러스터드 인덱스를 다시 한번 타야 실제 row를
+        얻을 수 있습니다. 이 두 번째 탐색을 bookmark lookup이라 부르고, 여러 건을 조회할 때는 이
+        재조회가 정렬 순서와 무관한 위치로 점프하는 랜덤 I/O가 되어, "인덱스를 탔다"고 해서 항상
+        빠르지는 않은 이유가 됩니다.
+      </p>
+      <p>
+        데이터의 물리적 저장 위치는 하나뿐이므로, 클러스터드 인덱스는 테이블당 정확히 하나만 존재할
+        수 있습니다. MySQL InnoDB는 기본키를 자동으로 클러스터드 인덱스로 쓰고, PostgreSQL은 테이블을
+        기본적으로 heap 구조로 두고 PK를 포함한 모든 인덱스를 포인터 기반으로 취급한다는 점에서 DBMS별
+        구조 차이가 있습니다.
+      </p>
+      <p>
+        삽입 관점에서는 클러스터드 키의 패턴이 성능을 좌우합니다. auto-increment처럼 단조 증가하는
+        키는 새 row가 항상 마지막 페이지 뒤에 추가되어 순차 append에 가깝지만, UUID v4처럼 무작위
+        키는 매번 이미 가득 찬 중간 페이지에 끼어들어야 해서 page split이 빈번하게 발생하고, 이는
+        추가 쓰기 I/O와 디스크 단편화로 이어지는 write amplification을 만듭니다. 그래서 저는 실무에서
+        서로게이트 auto-increment 키를 클러스터드 키로 쓰고, 전역 고유성이 필요하면 UUID v7이나
+        ULID처럼 "무작위성은 유지하되 생성 시간 순으로는 단조 증가하는" 값을 사용해 write
+        amplification과 고유성 요구를 동시에 만족시키는 방향으로 판단합니다. 그리고 자주 조회하는
+        컬럼 조합은 covering index로 묶어 bookmark lookup 자체를 없애는 것도 함께 고려합니다.
+      </p>
+    </div>
+
+    <div class="answer-block answer-weak">
+      <div class="answer-label label-weak">약한 답변</div>
+      <p>
+        "클러스터드 인덱스는 데이터가 정렬돼서 저장되는 인덱스이고, 보조 인덱스는 그냥 추가로 만드는
+        인덱스입니다. PK를 클러스터드 인덱스로 씁니다."
+      </p>
+      <p>
+        <strong>왜 약한가:</strong> 왜 테이블당 하나만 가능한지 물리적 근거가 없고, 보조 인덱스
+        조회에서 이중 탐색(bookmark lookup)과 랜덤 I/O가 발생한다는 인과관계도 없습니다. 삽입 성능과
+        키 선택(auto-increment vs UUID)의 연결도 빠져 있어, 정의만 나열한 수준에 그칩니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 7. Trade-off -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-trade">⇄</div>
+      <h2>Trade-off 정리</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>Clustered Index</th>
+          <th>Secondary Index</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>단건 조회(해당 키)</td>
+          <td>leaf 도달 = row 확보, 추가 I/O 없음</td>
+          <td>secondary 탐색 + 클러스터드 재탐색 (2단계)</td>
+        </tr>
+        <tr>
+          <td>범위 스캔</td>
+          <td>물리적으로 인접, 순차 I/O로 빠름</td>
+          <td>포인터는 정렬돼도 실제 row는 흩어져 랜덤 I/O</td>
+        </tr>
+        <tr>
+          <td>테이블당 개수</td>
+          <td>정확히 1개 (물리 저장 순서는 하나뿐)</td>
+          <td>여러 개 생성 가능</td>
+        </tr>
+        <tr>
+          <td>삽입 비용(키가 무작위일 때)</td>
+          <td>page split 빈번, write amplification 큼</td>
+          <td>leaf가 작아 상대적으로 split 부담 적음</td>
+        </tr>
+        <tr>
+          <td>저장 공간</td>
+          <td>row 전체 보유</td>
+          <td>키 + 클러스터드 키(또는 포인터)만 보유, 상대적으로 작음</td>
+        </tr>
+        <tr>
+          <td>완화 전략</td>
+          <td>단조 증가 키, fill factor 여유 확보</td>
+          <td>covering index로 bookmark lookup 제거</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span>
+        클러스터드 인덱스는 "자주 범위로 조회하거나 정렬 순회가 필요한 키"에 배정하고, 나머지 조회
+        조건은 보조 인덱스로 보완하되 <strong>bookmark lookup 비용이 문제라면 covering index로
+        회피</strong>하는 것이 실무에서 반복되는 패턴입니다.
+      </span>
+    </div>
+  </div>
+
+  <!-- 8. 흔한 오해 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-myth">✗</div>
+      <h2>흔한 오해와 바로잡기</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 1: "기본키(Primary Key)는 항상 클러스터드 인덱스다"</div>
+      <p>
+        MySQL InnoDB에서는 사실이지만, PostgreSQL은 기본적으로 heap 구조를 쓰고 PK도 포인터 기반
+        인덱스로 취급합니다. "PK = 클러스터드 인덱스"는 특정 DBMS의 구현 선택이지, 일반 원리가
+        아닙니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 2: "인덱스를 타면 항상 풀스캔보다 빠르다"</div>
+      <p>
+        보조 인덱스로 많은 건수를 조회하면 bookmark lookup으로 인한 랜덤 I/O가 누적되어, 오히려
+        순차 I/O인 풀스캔보다 느릴 수 있습니다. 옵티마이저가 조회 비율(selectivity)에 따라 인덱스
+        대신 풀스캔을 선택하는 이유입니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 3: "UUID는 충돌 위험이 없으니 PK로 쓰기에 항상 좋다"</div>
+      <p>
+        전역 고유성은 장점이지만, UUID v4의 무작위성은 클러스터드 인덱스의 page split을 유발해 삽입
+        성능과 디스크 단편화에 실질적인 비용을 만듭니다. "고유성"과 "삽입 지역성"은 별개의 요구이며,
+        UUID v7/ULID처럼 두 요구를 함께 만족하는 대안을 우선 검토해야 합니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 4: "테이블에 인덱스를 여러 개 만들수록 무조건 좋다"</div>
+      <p>
+        각 보조 인덱스는 삽입/수정/삭제 시마다 함께 갱신되어야 하므로, 인덱스가 많을수록 쓰기 비용이
+        누적됩니다. 조회 이득과 쓰기 비용 사이의 trade-off이지, "많을수록 좋다"가 아닙니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- 9. Follow-up 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-follow">↓</div>
+      <h2>Senior-Level Follow-up 질문과 답변 방향</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "Covering Index는 정확히 어떻게 bookmark lookup을 없앱니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        쿼리가 필요로 하는 모든 컬럼(SELECT, WHERE, ORDER BY 등)이 보조 인덱스 자체에 포함돼 있으면,
+        클러스터드 인덱스로 재조회할 필요 없이 secondary index의 leaf만으로 결과를 완성할 수 있습니다.
+        이를 "index-only scan"이라 부르며, bookmark lookup 단계 자체를 제거해 랜덤 I/O를 없앱니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "UUID v7과 UUID v4는 클러스터드 키 관점에서 무엇이 다릅니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        UUID v4는 전체 비트가 무작위라 삽입 위치가 트리 전역에 흩어집니다. UUID v7은 앞부분에
+        타임스탬프를 포함해 생성 시간 순으로는 단조 증가하므로, 삽입이 대체로 마지막 페이지 근처에서
+        일어나 auto-increment와 비슷한 삽입 지역성을 얻으면서도 전역 고유성을 유지합니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "PostgreSQL처럼 heap 구조인 DBMS에서는 클러스터드 인덱스의 이점을 아예 못 얻습니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        <code>CLUSTER</code> 명령으로 특정 인덱스 순서에 맞춰 테이블을 한 번 물리적으로 재정렬할 수
+        있지만, 이후 삽입/갱신에서 그 순서를 자동으로 유지하지는 않습니다. 즉 "일회성 재정렬"은
+        가능해도 MySQL InnoDB처럼 "항상 유지되는 클러스터링"은 구조적으로 없다는 점을 짚어야 합니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "보조 인덱스가 여러 개 있는 테이블에서 UPDATE가 느려지는 이유는 무엇입니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        인덱싱된 컬럼 값이 바뀌면 클러스터드 인덱스뿐 아니라 관련된 모든 보조 인덱스도 함께 갱신해야
+        합니다. 보조 인덱스 수만큼 추가 쓰기 I/O가 발생하므로, 인덱스가 많을수록 쓰기 경로의 비용이
+        선형적으로 늘어난다는 것이 핵심입니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 10. 좋은 답변과 약한 답변 차이 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-diff">≠</div>
+      <h2>좋은 답변과 약한 답변의 차이</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>약한 답변 (5년차 이하)</th>
+          <th>강한 답변 (10년차 이상)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>클러스터드 인덱스 정의</td>
+          <td>"데이터가 정렬돼 저장되는 인덱스"</td>
+          <td>"leaf가 곧 실제 row라서 물리적 저장 순서를 결정하는 구조"</td>
+        </tr>
+        <tr>
+          <td>테이블당 1개인 이유</td>
+          <td>"원래 그렇게 정해져 있다"</td>
+          <td>"물리적 저장 위치는 하나뿐이라는 제약에서 도출된다"</td>
+        </tr>
+        <tr>
+          <td>보조 인덱스 조회 비용</td>
+          <td>"인덱스라서 빠르다"</td>
+          <td>"bookmark lookup으로 이중 탐색이 필요하고 랜덤 I/O가 발생한다"</td>
+        </tr>
+        <tr>
+          <td>UUID PK 이슈</td>
+          <td>언급하지 않음</td>
+          <td>"page split과 write amplification, UUID v7 같은 대안까지 연결"</td>
+        </tr>
+        <tr>
+          <td>실무 최적화</td>
+          <td>없음</td>
+          <td>covering index, fill factor, 서로게이트 키 설계 제시</td>
+        </tr>
+        <tr>
+          <td>DBMS 차이 인지</td>
+          <td>모든 DB가 동일하다고 가정</td>
+          <td>MySQL InnoDB vs PostgreSQL heap 구조 차이를 구분</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 11. Self-check Rubric -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-rub">✓</div>
+      <h2>자기 점검 Rubric</h2>
+    </div>
+    <p>답변 연습 후 아래 기준으로 자신을 평가하세요.</p>
+
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>클러스터드 인덱스가 물리적 저장 순서를 결정한다는 것을 설명했다</strong><br>
+        leaf 노드가 곧 실제 row라는 점에서 출발해 테이블당 하나뿐인 이유를 도출했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>보조 인덱스 조회의 이중 탐색(bookmark lookup)을 설명했다</strong><br>
+        secondary index 탐색 후 클러스터드 인덱스 재탐색이 필요하고, 이것이 랜덤 I/O로 이어진다는
+        점을 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>클러스터드 키 선택이 삽입 성능(write amplification)에 미치는 영향을 설명했다</strong><br>
+        auto-increment와 무작위 UUID의 page split 빈도 차이를 인과관계로 설명했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>Covering index로 bookmark lookup을 회피하는 방법을 언급했다</strong><br>
+        index-only scan 개념을 실무 최적화로 연결했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>DBMS별 구조 차이(MySQL InnoDB vs PostgreSQL heap)를 언급했다</strong><br>
+        "PK = 클러스터드 인덱스"가 일반 원리가 아니라 구현 선택이라는 것을 알았다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>UUID v7/ULID 같은 실무 대안을 제시했다</strong><br>
+        고유성과 삽입 지역성을 동시에 만족하는 키 설계 방향을 알았다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>인덱스가 많을수록 UPDATE/DELETE 비용이 커지는 이유를 설명했다</strong><br>
+        모든 보조 인덱스가 함께 갱신돼야 한다는 점을 근거로 들었다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>옵티마이저가 인덱스 대신 풀스캔을 선택하는 이유를 설명했다</strong><br>
+        selectivity가 낮을 때 랜덤 I/O 누적이 순차 스캔보다 비효율적일 수 있다는 것을 알았다.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="callout callout-info">
+      <span class="callout-icon">📊</span>
+      <span>
+        <strong>자가 평가:</strong>
+        '필수' 3개 모두 → 합격 수준 |
+        '권장' 3개 추가 → 좋은 인상 |
+        '심화' 포함 → 탑티어 후보
+      </span>
+    </div>
+  </div>
+
+  <!-- 12. 다음 레슨 예고 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">→</div>
+      <h2>다음 레슨 예고 — Day 7: 외부 정렬</h2>
+    </div>
+    <p>
+      다음 레슨에서는 "메모리보다 큰 파일을 정렬해야 한다면 어떻게 설계하겠습니까?"를 다룹니다.
+      Run generation, k-way merge, 그리고 정렬 과정에서 I/O 횟수를 어떻게 최소화하는지를 짚습니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>주제</th><th>면접 핵심 질문</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Run Generation</td>
+          <td>메모리 크기만큼 정렬된 run을 어떻게 만드는가?</td>
+        </tr>
+        <tr>
+          <td>K-way Merge</td>
+          <td>여러 개의 정렬된 run을 어떻게 하나로 병합하는가?</td>
+        </tr>
+        <tr>
+          <td>I/O Pass</td>
+          <td>정렬에 필요한 총 I/O 패스 수는 어떻게 계산되는가?</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <span class="tag tag-blue">External Sort</span>
+      <span class="tag tag-green">Run Generation</span>
+      <span class="tag tag-green">K-way Merge</span>
+      <span class="tag tag-yellow">I/O Pass</span>
+      개념이 대용량 배치 처리와 직접 연결되는 형태로 다루어집니다.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>
