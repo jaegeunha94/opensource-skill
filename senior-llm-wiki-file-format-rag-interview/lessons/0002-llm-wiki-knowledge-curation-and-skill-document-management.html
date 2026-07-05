@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 2 — LLM Wiki 지식 큐레이션과 Skill 문서 관리</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #3aa0e2;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: #e2523a; border: 1px solid #e2523a; }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 2 · LLM Wiki / File Format RAG Interview</div>
+    <h1>LLM Wiki 지식 큐레이션과 Skill 문서 관리</h1>
+    <div class="subtitle">raw/wiki/schema 3계층과 ingest/query/lint 3연산으로 "지식이 누적되는" 시스템을 설계하고, Skill/지식 문서 자체를 하나의 소프트웨어 자산처럼 버전 관리·검증·배포하는 능력</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "Karpathy의 LLM Wiki 패턴처럼, 원본 문서를 매번 다시 검색하지 않고 LLM이 구조화된
+      위키 페이지를 만들어 누적하는 시스템을 설계해달라고 요청받았습니다. 어떤 계층과
+      연산으로 구성하시겠습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "개인이 혼자 쓰던 LLM Wiki를 팀 전체, 나아가 회사 전체가 함께 쓰는 지식
+      베이스로 확장해야 합니다. 무엇이 그대로 유지되고, 무엇을 다시 설계해야 할까요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "저희 팀은 Claude Code의 Skill(SKILL.md) 형태로 사내 매뉴얼과 워크플로우를
+      관리하고 있습니다. 이 Skill 문서들이 늘어나면서 어떤 것이 최신인지, 누가
+      바꿨는지, 어디까지 신뢰해도 되는지 혼란스러워졌습니다. 어떻게 운영하시겠습니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>지식을 "그때그때 찾는 것"과 "미리 정리해서 쌓아두는 것"의 차이</h2>
+
+    <p>
+      Day 1에서 query-time RAG와 LLM Wiki를 구분했다. 오늘은 LLM Wiki 쪽을 훨씬 더
+      깊이 들어간다. 핵심 질문은 이것이다 — <strong>"LLM이 문서를 정리해서 위키 페이지를
+      만든다"는 아이디어를, 사람이 신뢰할 수 있고 회사 전체가 함께 쓸 수 있는
+      시스템으로 어떻게 구체화할 것인가?</strong>
+    </p>
+
+    <h3>Karpathy의 원형 패턴 — raw / wiki / schema 3계층</h3>
+    <p>
+      2026년 초 Andrej Karpathy가 공개한 LLM Wiki 패턴은 세 개의 폴더(계층)로
+      구성된다.
+    </p>
+    <table>
+      <tr>
+        <th>계층</th>
+        <th>역할</th>
+        <th>불변성</th>
+      </tr>
+      <tr>
+        <td><code>raw/</code></td>
+        <td>원본 자료(논문, 문서, 이미지, 데이터 파일)를 그대로 보관하는 진실 공급원(source of truth)</td>
+        <td>LLM이 절대 수정하지 않는다 — 항상 원본 그대로 남아 나중에 재검증할 수 있어야 한다</td>
+      </tr>
+      <tr>
+        <td><code>wiki/</code></td>
+        <td>LLM이 만들고 유지하는 마크다운 페이지들 — 요약, 엔티티, 개념, 비교, 종합(synthesis)</td>
+        <td>지속적으로(persistent) 누적되며, 새 자료가 들어올 때마다 갱신되는 살아있는 계층</td>
+      </tr>
+      <tr>
+        <td><code>schema</code> (예: <code>CLAUDE.md</code>)</td>
+        <td>위키의 페이지 명명 규칙, 구조, ingest/query/lint 실행 방식을 정의하는 "운영 매뉴얼"</td>
+        <td>사람이 설계하고 바꾸는 통제 계층 — 이 파일이 없으면 그냥 즉흥적인 챗봇 대화와 다르지 않다</td>
+      </tr>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>왜 3계층으로 나누는가:</strong> <code>raw</code>가 불변이기 때문에 <code>wiki</code>가
+      틀렸다는 게 나중에 밝혀져도 원본으로 돌아가 재검증할 수 있다. <code>schema</code>가
+      별도로 있기 때문에 "이 위키를 어떻게 운영할지"가 LLM의 즉흥적 판단이 아니라
+      사람이 설계하고 감사할 수 있는 규칙이 된다. 이 구조가 없으면 위키는 그냥
+      "LLM이 그때그때 알아서 요약한 파일 더미"가 되어 버리고, 시간이 지날수록
+      일관성이 무너진다.
+    </div>
+
+    <h3>3연산 — ingest / query / lint</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Ingest (반영)</strong>
+        새 자료가 들어오면 LLM이 그 내용을 읽고, 요약 페이지를 쓰고, 인덱스를
+        갱신하고, 관련된 기존 엔티티/개념 페이지까지 함께 손본다. 하나의 소스가
+        여러 페이지에 걸쳐 연쇄적으로 반영될 수 있다 — 이 "동시에 여러 파일의
+        정합성을 맞추는" 작업이 사람이 가장 귀찮아하고 가장 먼저 포기하는 일이다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Query (질의)</strong>
+        사용자가 질문하면 LLM은 원본이 아니라 이미 정제된 위키 페이지를 먼저
+        찾는다. 그리고 중요한 점 — 질의 과정에서 새롭게 발견되거나 종합된 통찰이
+        있으면 그것을 다시 위키에 새 페이지로 기록한다. 탐색 자체가 지식을
+        누적시킨다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Lint (정합성 점검)</strong>
+        주기적으로 위키 전체를 훑어 모순되는 주장, 오래된(stale) 정보, 고아
+        페이지(어디서도 링크되지 않는 페이지), 누락된 상호 참조를 찾아낸다. 이
+        점검이 없으면 위키는 시간이 지나며 조용히 썩는다(drift) — 이것이 이
+        패턴의 가장 흔한 실패 모드다.
+      </div>
+    </div>
+
+    <div class="callout callout-tip">
+      <strong>인덱스와 로그:</strong> 실무 구현에서는 보통 두 개의 특수 파일을 둔다.
+      <code>index.md</code>는 모든 위키 페이지를 카테고리별로 한 줄 요약과 함께
+      카탈로그화하고, <code>log.md</code>는 "언제 무엇이 반영/수정됐는지"를 append-only로
+      기록해 감사(audit) 추적을 가능하게 한다. 페이지 수가 수백 개를 넘어가면
+      평평한 <code>index.md</code>만으로는 부족해지고, BM25+벡터 하이브리드 검색이
+      인덱스 계층에도 필요해진다 — Day 11에서 다루는 hybrid search가 여기서도
+      그대로 재등장한다.
+    </div>
+
+    <h3>"Compounding Knowledge"란 무엇이고, 왜 진짜 어려운가</h3>
+    <p>
+      이 패턴이 매력적인 이유는 <strong>지식이 압축되어 쌓인다</strong>는 점이다. 위키
+      페이지가 수천 개의 개념을 압축해서 담고 있으면, 원본 자료 자체는 절대 답할
+      수 없었던 질문에 위키가 답할 수 있게 된다 — 이미 종합(synthesis)이 끝나
+      있기 때문이다. 하지만 이 효용은 조건부다. 페이지가 실제로 흩어진 사실들을
+      압축할 때만 가치가 있고, 이미 검색하기 쉬운 작은 원본을 그대로 옮겨 적은
+      "미러 페이지"는 오히려 유지보수 비용만 늘리는 마이너스 가치를 만든다.
+    </p>
+
+    <h3>Skill 문서 관리는 같은 문제의 다른 얼굴이다</h3>
+    <p>
+      LLM Wiki의 <code>schema</code> 계층과, 여러분이 지금 이 학습 워크스페이스를
+      만들 때 사용한 <code>.claude/skills/study-track/SKILL.md</code> 같은 <strong>Skill
+      문서</strong>는 본질적으로 같은 역할을 한다 — <strong>"LLM이 어떤 규칙과 워크플로우로
+      행동해야 하는지"를 사람이 감사 가능한 마크다운 파일로 고정</strong>하는 것이다.
+      Anthropic의 Agent Skills 아키텍처는 이를 세 단계로 나눠 로드한다.
+    </p>
+    <table>
+      <tr>
+        <th>레벨</th>
+        <th>내용</th>
+        <th>로드 시점</th>
+        <th>토큰 비용</th>
+      </tr>
+      <tr>
+        <td>Level 1 — 메타데이터</td>
+        <td>YAML frontmatter의 <code>name</code>, <code>description</code></td>
+        <td>항상(시스템 프롬프트에 상주)</td>
+        <td>Skill당 약 100토큰</td>
+      </tr>
+      <tr>
+        <td>Level 2 — 본문 지침</td>
+        <td><code>SKILL.md</code> 본문(워크플로우, 규칙)</td>
+        <td>설명(description)이 요청과 매칭되어 트리거될 때</td>
+        <td>5,000토큰 미만 권장</td>
+      </tr>
+      <tr>
+        <td>Level 3 — 리소스/코드</td>
+        <td>참조 문서, 스크립트, 템플릿(예: <code>reference/</code>, <code>assets/</code>)</td>
+        <td>본문에서 실제로 참조할 때만</td>
+        <td>사실상 무제한(참조 전까지 토큰 소비 없음)</td>
+      </tr>
+    </table>
+    <div class="callout callout-info">
+      <strong>왜 이게 "점진적 공개(progressive disclosure)"인가:</strong> Skill을 수십 개
+      설치해도 Level 1만 상시 로드되므로 컨텍스트 비용이 거의 없다. 이는 LLM Wiki의
+      <code>index.md</code>(항상 훑는 카탈로그) → 개별 위키 페이지(관련 있을 때만 열람) →
+      원본 <code>raw/</code> 자료(정말 필요할 때만 재검증)로 이어지는 계층 구조와 정확히
+      같은 설계 원칙이다. <strong>지식이든 Skill이든, "필요할 때만 더 깊은 계층을
+      연다"는 원칙이 대규모 지식 시스템을 컨텍스트 예산 안에서 운영 가능하게
+      만드는 핵심이다.</strong>
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+    <ul>
+      <li><strong>유행하는 패턴을 그대로 베끼는지, 원리를 이해해서 응용하는지</strong> —
+      "위키를 만들면 좋다더라" 수준인지, raw의 불변성과 lint의 필요성처럼 패턴이
+      성립하는 이유를 설명할 수 있는지를 본다.</li>
+      <li><strong>개인 도구와 조직 시스템의 차이를 아는지</strong> — 혼자 쓰는 위키와
+      회사 전체가 함께 쓰는 지식 베이스는 요구사항이 근본적으로 다르다. 이 차이를
+      인지하지 못하면 "장난감은 만들 수 있지만 프로덕션은 못 만드는" 사람으로
+      평가된다.</li>
+      <li><strong>지식/Skill 문서 자체를 소프트웨어 자산으로 다루는지</strong> — 버전
+      관리, 리뷰, 배포, 롤백 없이 "LLM이 알아서 파일을 고치게 둔다"는 답변은
+      운영 경험 부족 신호다.</li>
+      <li><strong>맹신하지 않고 한계를 아는지</strong> — LLM이 요약·종합한 내용이
+      틀렸을 때 어떻게 잡아낼 것인지, 그리고 이 패턴이 만능이 아니라는 것을
+      스스로 짚을 수 있는지를 확인한다.</li>
+    </ul>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>개인 → 조직으로 확장할 때 무엇이 깨지는가</h3>
+    <p>
+      Karpathy의 개인용 패턴을 조직에 그대로 옮기면 실패한다. 2026년 4월 Falconer가
+      정리한 확장 원칙은 개인 수준에서 성립하던 <strong>capture(포착) · link(연결) ·
+      compound(누적) · stay-current(최신성 유지)</strong> 네 가지 속성이 조직 규모에서는
+      운영 방식 자체를 바꿔야 한다고 지적한다.
+    </p>
+    <table>
+      <tr>
+        <th>속성</th>
+        <th>개인 수준</th>
+        <th>조직 수준에서 달라지는 점</th>
+      </tr>
+      <tr>
+        <td>Capture</td>
+        <td><code>raw/</code> 폴더에 사람이 직접 파일을 넣음</td>
+        <td>GitHub, Slack, Linear, 회의 녹취(Granola) 등 업무가 실제로 일어나는
+        도구에서 <strong>자동으로</strong> 흘러들어와야 한다 — 사람이 매번 큐레이션할
+        여유가 없다</td>
+      </tr>
+      <tr>
+        <td>Link</td>
+        <td>LLM이 관련 페이지를 알아서 상호 참조</td>
+        <td>수백 명이 동시에 기여하면 같은 개념에 대해 서로 다른 페이지가
+        중복 생성될 위험이 커진다 — 병합/중복 제거 거버넌스가 필요하다</td>
+      </tr>
+      <tr>
+        <td>Compound</td>
+        <td>한 사람의 판단으로 압축 가치를 인정</td>
+        <td>누구의 종합이 "정답"으로 채택되는지에 대한 리뷰/승인 프로세스가
+        필요하다 — 그렇지 않으면 잘못된 종합이 조용히 조직 전체의 지식으로
+        굳어진다</td>
+      </tr>
+      <tr>
+        <td>Stay-current</td>
+        <td>본인이 필요할 때 수동으로 lint</td>
+        <td>Confluence, Notion, Glean 같은 기존 엔터프라이즈 도구들은 이 네 속성 중
+        한두 개만 다루고, "유지보수 루프 자체를 자동화"하는 도구는 드물다는 것이
+        실무의 현실이다</td>
+      </tr>
+    </table>
+
+    <div class="callout callout-warn">
+      <strong>실무 함정:</strong> "위키를 만들면 지식이 저절로 compound된다"는 말은
+      개인 차원에서는 어느 정도 맞지만, 조직 차원에서는 <strong>거버넌스가 없으면
+      compound가 아니라 노이즈가 누적</strong>된다. 승인 없이 아무나 위키를 고칠 수
+      있다면, 몇 달 뒤에는 "어느 페이지가 신뢰할 만한지 아무도 모르는" 상태가 된다.
+    </div>
+
+    <h3>Skill/지식 문서 관리에서 실제로 부딪히는 문제 — 표면(surface) 간 미동기화</h3>
+    <p>
+      Anthropic Agent Skills의 실제 운영 제약을 보면 이 문제가 얼마나 현실적인지
+      드러난다. Custom Skill은 <strong>claude.ai(개인별 업로드, 조직 전체 배포 불가),
+      Claude API(워크스페이스 전체 공유), Claude Code(파일시스템 기반, 개인
+      <code>~/.claude/skills/</code> 또는 프로젝트 <code>.claude/skills/</code>)</strong> 세 표면에서
+      서로 동기화되지 않는다 — 한 표면에 업로드한 Skill은 다른 표면에 자동으로
+      나타나지 않는다. 이는 정확히 여러분이 지금 이 저장소에서 겪을 수 있는
+      문제와 같다 — <code>study-track</code>, <code>teach</code> 같은 Skill들이 프로젝트
+      <code>.claude/skills/</code>에 파일로 존재하고 git으로 버전 관리되기 때문에
+      "어떤 버전이 최신인지"는 git log가 유일한 진실 공급원이 된다.
+    </p>
+
+    <h3>왜 "누가, 언제, 무엇을 바꿨는지"가 위키/Skill 모두에서 근거 추적의 핵심인가</h3>
+    <p>
+      Day 7에서 다룰 provenance(출처 추적)는 원본 문서뿐 아니라 <strong>LLM이 스스로
+      만든 위키/Skill 문서에도 똑같이 적용돼야 한다</strong>. 위키 페이지가 "원본
+      문서 A, B를 종합해서 만들어졌다"는 이력이 없으면, 나중에 그 페이지가 틀렸을
+      때 어느 원본이 잘못 해석됐는지 되짚을 방법이 없다. <code>log.md</code>의
+      append-only 기록이나 git 커밋 히스토리가 이 역할을 한다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>3계층 + 3연산으로 기본 골격을 먼저 제시</strong>
+        "저는 raw(불변 원본) / wiki(LLM이 누적하는 정제 페이지) / schema(운영 규칙)
+        3계층과, ingest(반영) / query(질의+재기록) / lint(정합성 점검) 3연산으로
+        기본 골격을 잡습니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>개인 패턴과 조직 규모의 차이를 명시</strong>
+        "다만 이건 원래 개인용 패턴이라, 조직에 적용하려면 capture를 자동화하고,
+        link/compound 단계에 리뷰·승인 거버넌스를 추가해야 한다는 점을 먼저
+        짚습니다. 그렇지 않으면 '아무나 고칠 수 있는 위키'가 되어 신뢰도가
+        무너집니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>지식 문서와 Skill 문서를 같은 자산 클래스로 묶어 설명</strong>
+        "위키 페이지든 Skill의 SKILL.md든, LLM의 행동을 규정하는 문서는 모두
+        같은 방식으로 다룹니다 — git으로 버전 관리하고, 변경은 PR 리뷰를 거치고,
+        Level 1(메타데이터)/Level 2(본문)/Level 3(참조 자료)로 나눠 필요할 때만
+        로드해서 컨텍스트 비용을 통제합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>lint와 provenance로 신뢰도를 정량적으로 보장</strong>
+        "주기적 lint로 모순·고아 페이지·오래된 정보를 자동 탐지하고, 모든 위키/
+        Skill 변경에는 '어떤 원본/논의에서 비롯됐는지'를 기록해 나중에 틀렸을 때
+        추적 가능하게 합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>한계를 스스로 짚는다 (Senior 포인트)</strong>
+        "이 패턴이 모든 지식에 유리한 건 아닙니다. 원본이 이미 짧고 검색하기 쉬운
+        경우 위키 페이지는 미러링일 뿐 압축 가치가 없고, 유지보수 비용만 늘립니다.
+        그래서 저는 '이 페이지가 실제로 여러 사실을 압축하는가'를 위키화 여부의
+        기준으로 둡니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "저는 Karpathy가 공개한 LLM Wiki 패턴을 기본 골격으로 삼되, 조직 규모에
+        맞게 거버넌스를 더합니다. 계층은 세 개입니다 — 원본을 절대 건드리지 않는
+        <code>raw/</code>, LLM이 요약·엔티티·개념·종합 페이지를 계속 갱신하는
+        <code>wiki/</code>, 그리고 이 모든 걸 어떻게 운영할지 정의한 <code>schema</code>입니다.
+        연산은 ingest(새 자료 반영), query(질의하고 발견한 통찰을 다시 기록), lint
+        (모순·고아 페이지·오래된 정보를 주기적으로 점검)입니다.
+      </p>
+      <p>
+        다만 이건 원래 개인이 혼자 쓰던 패턴이라, 그대로 회사에 옮기면 반드시
+        문제가 생깁니다. Capture는 사람이 수동으로 raw 폴더에 파일을 넣는 방식이
+        아니라 GitHub, Slack, 회의록 같은 실제 업무 도구에서 자동으로 흘러들어와야
+        하고, link와 compound 단계에는 '누구의 종합을 정답으로 채택할지'에 대한
+        리뷰·승인 프로세스가 필요합니다. 이게 없으면 지식이 누적되는 게 아니라
+        검증 안 된 노이즈가 누적됩니다.
+      </p>
+      <p>
+        그리고 저는 이 위키 문서와, 저희가 쓰는 Skill 문서(SKILL.md류)를 같은
+        자산 클래스로 취급합니다. 둘 다 'LLM이 어떤 규칙으로 행동할지'를 규정하는
+        문서이기 때문입니다. 그래서 git으로 버전 관리하고, 변경은 PR 리뷰를 거치고,
+        컨텍스트 비용을 통제하기 위해 메타데이터(항상 로드) / 본문 지침(트리거될
+        때만 로드) / 참조 자료(실제로 필요할 때만 로드) 세 단계로 나눕니다.
+      </p>
+      <p>
+        마지막으로, 이 패턴이 만능은 아니라는 것도 분명히 말씀드립니다. 이미
+        짧고 찾기 쉬운 원본을 그대로 베낀 위키 페이지는 압축 가치가 없고 유지보수
+        비용만 늘립니다. 그래서 '이 페이지가 흩어진 사실을 실제로 압축하는가'를
+        위키화할지 판단하는 기준으로 삼고, lint와 provenance 기록으로 위키가
+        틀렸을 때 원본까지 되짚어갈 수 있게 만듭니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "LLM이 스스로 만든 위키 페이지를 사람이 어떻게 신뢰할 수 있나요?"</h3>
+    <p><strong>약한 답변:</strong> "LLM이 잘 만들었을 거라고 믿고 씁니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "신뢰는 두 가지로 만듭니다. 첫째, 모든 위키 페이지에 '어떤 원본에서
+      비롯됐는지'를 provenance로 남겨서, 답이 의심스러우면 언제든 원본까지
+      되짚어 재검증할 수 있게 합니다 — 이게 <code>raw/</code>를 불변으로 유지하는
+      이유이기도 합니다. 둘째, 조직 규모에서는 중요한 페이지(정책, 아키텍처
+      결정 같은)의 변경에는 사람 리뷰를 거치게 하고, 나머지는 lint로 이상 신호
+      (모순, 급격한 변경)를 탐지해 사후 검토 대상으로 플래그합니다. '전부 자동,
+      전부 무검증'과 '전부 사람 리뷰'의 중간 지점을 위험도 기준으로 정합니다."
+    </p>
+
+    <h3>F2. "위키 페이지 수가 수만 개로 늘어나면 무엇이 깨지나요?"</h3>
+    <p><strong>약한 답변:</strong> "벡터 검색을 붙이면 됩니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "세 가지가 순서대로 깨집니다. 먼저 평평한 <code>index.md</code> 카탈로그가
+      스캔하기엔 너무 커져서 하이브리드 검색(BM25+벡터)이 인덱스 계층 자체에도
+      필요해집니다. 다음으로 lint 비용이 페이지 수에 따라 커져서 전체 스캔 대신
+      최근 변경분 위주의 증분(incremental) lint로 바꿔야 합니다. 마지막으로
+      중복/근접 중복 페이지가 늘어나 컨텍스트 구성 시 같은 내용이 여러 번
+      들어가는 비효율이 생기므로, Day 9에서 다루는 중복 제거 로직이 위키
+      계층에도 그대로 필요해집니다."
+    </p>
+
+    <h3>F3. "Skill 문서를 여러 표면(claude.ai, API, Claude Code)에서 각각 관리해야 한다면 어떻게 하시겠습니까?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "표면 간 자동 동기화가 안 된다는 걸 전제로 설계합니다. 저는 SKILL.md 원본을
+      git 저장소를 단일 진실 공급원으로 두고, 각 표면에 배포하는 스크립트를
+      CI로 자동화합니다 — 사람이 표면마다 수동으로 복사해서 올리면 반드시
+      버전이 어긋납니다. 그리고 각 배포 시점과 버전을 로그로 남겨서, '이 표면의
+      이 Skill이 저장소의 어느 커밋에 대응하는지' 항상 추적 가능하게 합니다."
+    </p>
+
+    <h3>F4. "지식이 compound된다는 말은 항상 좋은 신호인가요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "아니요, 조건부입니다. Compound는 '흩어진 사실이 압축돼서 새로운 질문에
+      답할 수 있게 됐다'는 뜻일 때만 좋은 신호입니다. 반대로 잘못된 종합이나
+      검증 안 된 추론이 여러 페이지에 걸쳐 반복 인용되기 시작하면, 그 오류도
+      똑같이 'compound'됩니다 — 오히려 틀린 정보가 여러 곳에서 서로를 보강하는
+      것처럼 보이는 확증 편향 위험이 커집니다. 그래서 lint 단계에서 '이 주장이
+      실제로 몇 개의 독립적인 원본에서 확인되는지'를 추적하는 것이 중요합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>raw의 <strong>불변성</strong>과 schema의 <strong>통제 역할</strong>을 정확히
+          구분해서 설명한다</li>
+          <li>개인 패턴을 조직에 그대로 옮기면 안 되는 이유를 <strong>capture 자동화,
+          거버넌스 필요성</strong>으로 구체적으로 짚는다</li>
+          <li>지식 문서와 Skill 문서를 <strong>같은 자산 클래스</strong>로 보고 버전 관리·
+          리뷰·점진적 로딩 원칙을 동일하게 적용한다</li>
+          <li>lint를 "선택 사항"이 아니라 <strong>drift를 막는 필수 운영 루프</strong>로
+          설명한다</li>
+          <li>패턴의 <strong>한계와 실패 조건</strong>(미러링 페이지, 검증 안 된 종합의
+          확산)까지 스스로 짚는다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"LLM이 위키를 만들면 지식이 자동으로 쌓입니다"처럼 <strong>거버넌스
+          없이 장점만</strong> 나열한다</li>
+          <li>개인 도구와 회사 시스템을 <strong>구분 없이</strong> 같은 것으로 취급한다</li>
+          <li>Skill 문서를 "그냥 마크다운 파일"로만 보고 <strong>버전 관리/리뷰
+          필요성</strong>을 언급하지 못한다</li>
+          <li>lint를 몰라서 "위키가 오래되면 다시 만들면 된다"는 식으로 넘어간다</li>
+          <li>LLM이 만든 콘텐츠를 <strong>무조건 신뢰</strong>해도 되는 것처럼 답한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 LLM Wiki를 "신기한 자동화 트릭"이 아니라
+      <strong>"불변 원본, 통제된 스키마, 주기적 검증이라는 소프트웨어 엔지니어링 원칙이
+      적용된 지식 시스템"</strong>으로 설명한다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "LLM Wiki는 개인 생산성 도구를 회사 규모로 그냥 키우면 된다"</h3>
+    <p>
+      <strong>사실:</strong> 개인 수준의 capture(수동으로 raw에 파일 넣기)는 조직
+      규모에서 병목이 된다. 엔터프라이즈 LLM Wiki는 업무 도구에서 자동으로
+      capture하고, link/compound 단계에 승인 프로세스를 넣어야 한다 — 이 변화를
+      "규모만 키운 것"으로 착각하면 안 된다.
+    </p>
+
+    <h3>오해 2: "위키 페이지가 많을수록 더 똑똑한 지식 베이스다"</h3>
+    <p>
+      <strong>사실:</strong> 이미 짧고 검색하기 쉬운 원본을 그대로 옮긴 페이지는
+      압축 가치가 없다. 오히려 유지보수 대상만 늘려 lint 비용과 중복 위험을
+      키운다. 위키화의 기준은 페이지 수가 아니라 <strong>"흩어진 사실을 실제로
+      압축하는가"</strong>여야 한다.
+    </p>
+
+    <h3>오해 3: "Skill/지식 문서는 코드가 아니니까 버전 관리를 엄격히 안 해도 된다"</h3>
+    <p>
+      <strong>사실:</strong> Skill 문서는 LLM의 행동을 규정하는 <strong>실행 가능한
+      사양(spec)</strong>이다. 잘못된 변경이 배포되면 코드 버그와 똑같이 프로덕션
+      행동을 망가뜨린다. 특히 여러 표면(claude.ai/API/Claude Code)에 동일 Skill이
+      존재할 때는 표면 간 미동기화 자체가 하나의 운영 리스크다.
+    </p>
+
+    <h3>오해 4: "LLM이 종합한 내용이니까 사람이 쓴 것보다 이미 정확하다"</h3>
+    <p>
+      <strong>사실:</strong> LLM의 종합도 원본 해석 오류나 환각(hallucination)을 그대로
+      포함할 수 있고, 이 오류가 여러 위키 페이지에 인용되기 시작하면 오류까지
+      "compound"된다. Provenance 기록과 lint가 없으면 이 오류를 잡아낼 방법이
+      없다(Day 12의 citation grounding, Day 13의 신뢰 경계와 직접 연결된다).
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>LLM Wiki / Skill 문서 운영 전 확인 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>확인 항목</th>
+        <th>정상 신호</th>
+        <th>이상 신호 → 의심 지점</th>
+      </tr>
+      <tr>
+        <td>원본(raw)이 위키 갱신 후에도 그대로 남아있는가</td>
+        <td><span class="badge badge-green">불변 유지</span></td>
+        <td><span class="badge badge-red">덮어써짐 → 재검증 불가능한 구조</span></td>
+      </tr>
+      <tr>
+        <td>위키 페이지에 출처(provenance)가 기록돼 있는가</td>
+        <td><span class="badge badge-green">기록됨</span></td>
+        <td><span class="badge badge-red">없음 → 오류 추적 불가</span></td>
+      </tr>
+      <tr>
+        <td>lint가 정기적으로 실행되는가</td>
+        <td><span class="badge badge-green">주기적 실행</span></td>
+        <td><span class="badge badge-yellow">비정기/수동 → drift 누적 위험</span></td>
+      </tr>
+      <tr>
+        <td>Skill/위키 문서 변경이 git/리뷰 이력으로 남는가</td>
+        <td><span class="badge badge-green">추적 가능</span></td>
+        <td><span class="badge badge-red">추적 불가 → 롤백 불가능</span></td>
+      </tr>
+      <tr>
+        <td>여러 표면에 배포된 Skill 버전이 일치하는가</td>
+        <td><span class="badge badge-green">일치</span></td>
+        <td><span class="badge badge-yellow">불일치 → 표면 간 동기화 프로세스 부재</span></td>
+      </tr>
+      <tr>
+        <td>새 위키 페이지가 원본을 실제로 압축하는가</td>
+        <td><span class="badge badge-green">압축함</span></td>
+        <td><span class="badge badge-yellow">단순 미러링 → 위키화 기준 재검토 필요</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"LLM이 위키 페이지를 만들어서 저장해두면 됩니다" 정도로만 설명하고,
+      계층 구분이나 운영 연산을 언급하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>raw/wiki/schema 3계층과 ingest/query/lint 3연산을 나열할 수 있지만,
+      조직 규모에서 무엇이 달라지는지는 설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>개인 패턴과 조직 규모의 차이(capture 자동화, 거버넌스 필요성)를 설명할
+      수 있고, Skill 문서도 버전 관리가 필요하다는 것을 인식함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>3계층/3연산의 각 요소가 왜 그렇게 설계됐는지(불변성, 통제, drift 방지)
+      원리로 설명하고, capture/link/compound/stay-current가 조직 규모에서 각각
+      무엇으로 바뀌어야 하는지 구체적으로 제시하며, 위키/Skill 문서를 코드와
+      동등한 버전 관리·리뷰 대상으로 다룬다. 나아가 이 패턴이 만능이 아니라는
+      한계(미러링 페이지의 마이너스 가치, 오류의 compound 위험)까지 선제적으로
+      짚어낸다</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. raw/wiki/schema 3계층이 각각 왜 그렇게 나뉘어야 하는지 원리로 설명할
+      수 있는가?<br>
+      2. 개인용 LLM Wiki 패턴을 조직 규모로 확장할 때 capture/link/compound/
+      stay-current 각각에서 무엇이 바뀌어야 하는지 말할 수 있는가?<br>
+      3. 위키 페이지와 Skill 문서를 어떻게 같은 자산 클래스로 버전 관리할지
+      설명할 수 있는가?<br>
+      4. "지식이 compound된다"는 말이 왜 항상 좋은 신호는 아닌지 설명할 수
+      있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>LLM Wiki는 raw(불변 원본)/wiki(누적 정제 페이지)/schema(운영 규칙)
+      3계층과 ingest/query/lint 3연산</strong>으로 구성된다. 이 구조가 없으면 그냥
+      즉흥적인 요약 더미다.</li>
+      <li><strong>개인용 패턴을 조직에 그대로 옮기면 실패</strong>한다. capture는
+      자동화해야 하고, link/compound에는 리뷰·승인 거버넌스가 필요하다.</li>
+      <li><strong>위키 문서와 Skill 문서(SKILL.md)는 같은 자산 클래스</strong>다. 둘
+      다 LLM의 행동을 규정하는 실행 가능한 사양이므로, 버전 관리·리뷰·점진적
+      로딩(Level 1/2/3) 원칙을 동일하게 적용해야 한다.</li>
+      <li><strong>lint는 선택이 아니라 필수 운영 루프</strong>다. 정기 점검이 없으면
+      위키는 조용히 drift한다.</li>
+      <li><strong>Compounding knowledge는 조건부 가치</strong>다. 실제로 사실을 압축할
+      때만 좋은 신호이며, 검증 안 된 종합이 반복 인용되면 오류도 함께
+      compound된다.</li>
+      <li>지식/Skill 문서의 신뢰는 <strong>provenance(누가·언제·어떤 원본에서)</strong>
+      기록으로 확보하며, 이는 이후 Day 7(Provenance)과 Day 13(Permission-aware
+      Retrieval)로 직접 이어진다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 2 완료 · 다음: Day 3 — 이기종 문서 수집 아키텍처와 커넥터 설계</span>
+  </div>
+
+</div>
+</body>
+</html>

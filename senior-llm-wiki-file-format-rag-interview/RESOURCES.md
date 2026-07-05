@@ -63,6 +63,19 @@
 > 기준 최신 공개 정보를 반영한 것이다. 실제 벤더 선택 전에는 반드시 각 공식 문서와 자체 평가셋으로
 > 재검증해야 한다.
 
+## Day 2 최신 근거 (2026년 7월 조사 반영)
+
+- [LLM Wiki - Karpathy (Gist)](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) — raw/wiki/schema 3계층, ingest/query/lint 3연산, index.md/log.md, compounding knowledge의 조건부 가치(미러링 페이지는 마이너스 가치) 원문 상세
+- [The enterprise LLM wiki: scaling Karpathy's pattern to your org (Falconer, 2026-04)](https://falconer.com/guides/enterprise-llm-wiki-karpathy/) — 개인 패턴을 조직 규모로 확장할 때 capture/link/compound/stay-current 4대 속성이 각각 어떻게 바뀌어야 하는지, 기존 엔터프라이즈 도구(Confluence/Notion/Glean)의 한계
+- [Anthropic — Agent Skills Overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview) — SKILL.md 구조, Level 1(메타데이터)/Level 2(본문)/Level 3(리소스) 점진적 공개(progressive disclosure), 표면(claude.ai/API/Claude Code) 간 미동기화, 보안 감사 원칙, `/v1/skills` 버전 관리
+- [Anthropic Engineering — Equipping agents for the real world with Agent Skills](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills) — Skill 아키텍처 설계 배경과 실무 적용 사례
+- [An LLM Wiki Won't Compound Your Knowledge. Here's What Will. (bitsofchris)](https://bitsofchris.com/p/an-llm-wiki-wont-compound-your-knowledge) — LLM Wiki 패턴에 대한 비판적 관점: 사람의 사고 과정을 아웃소싱하면 검증되지 않은 종합이 그대로 누적될 위험이 있다는 지적. 조직 규모에서는 이 위험이 "오류의 compound"로 이어질 수 있음을 시사
+
+> 참고: LLM Wiki는 2026년 초 공개된 신생 패턴으로 아직 표준 구현체나 벤치마크가
+> 정립되지 않았다. 위 자료는 레슨 작성 시점(2026년 7월) 기준 공개된 1차 자료와
+> 실무 해설을 반영한 것이며, 패턴 자체가 계속 진화 중이므로 실제 도입 전 최신
+> 논의를 재확인해야 한다.
+
 ## 인터뷰 준비
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 검색 시스템 설계 문제와 유사한 사고 프레임
