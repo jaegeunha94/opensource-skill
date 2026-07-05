@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — 신뢰성 & 장애 대응</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #232635;
+      --border: #2e3248;
+      --text: #e2e4f0;
+      --muted: #8b8fa8;
+      --accent: #7c83f5;
+      --accent2: #56cfb2;
+      --warn: #f5a623;
+      --danger: #f56060;
+      --success: #56cf8a;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    .header {
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+    h1 { font-size: 1.9rem; font-weight: 700; line-height: 1.3; }
+    .subtitle { color: var(--muted); margin-top: 0.4rem; font-size: 0.95rem; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--accent2);
+      font-size: 0.72rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      margin: 0.2rem 0.1rem;
+      border: 1px solid var(--border);
+    }
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+      padding-left: 0.75rem;
+      margin-bottom: 1.2rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 0.6rem;
+      margin-top: 1.2rem;
+    }
+    h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--warn);
+      margin-bottom: 0.4rem;
+      margin-top: 1rem;
+    }
+    p { margin-bottom: 0.8rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.3rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card.question { border-left: 4px solid var(--warn); }
+    .card.followup  { border-left: 4px solid var(--accent); }
+    .card.good      { border-left: 4px solid var(--success); }
+    .card.weak      { border-left: 4px solid var(--danger); }
+    .card.rubric    { border-left: 4px solid var(--accent2); }
+    .card.info      { border-left: 4px solid var(--muted); }
+
+    .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .label.q { color: var(--warn); }
+    .label.f { color: var(--accent); }
+    .label.g { color: var(--success); }
+    .label.w { color: var(--danger); }
+    .label.r { color: var(--accent2); }
+    .label.i { color: var(--muted); }
+
+    .quote {
+      font-style: italic;
+      color: var(--text);
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.88rem;
+      color: var(--accent2);
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .step-body { flex: 1; }
+
+    .rubric-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score { display: flex; gap: 0.3rem; }
+    .dot {
+      width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+    }
+    .dot.filled { background: var(--accent2); border-color: var(--accent2); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--accent2);
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    td {
+      padding: 0.55rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 2rem;
+    }
+    .toc ol { margin-bottom: 0; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    .highlight-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .nav-bottom a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .nav-bottom a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ───────────── HEADER ───────────── -->
+  <div class="header">
+    <div class="day-badge">DAY 7</div>
+    <h1>신뢰성 &amp; 장애 대응</h1>
+    <p class="subtitle">10년차 이상 백엔드 엔지니어 Interview 대비 — 실무 판단력 중심</p>
+    <div style="margin-top:0.8rem;">
+      <span class="tag">서킷 브레이커</span>
+      <span class="tag">Rate Limiting</span>
+      <span class="tag">Bulkhead</span>
+      <span class="tag">타임아웃/재시도</span>
+      <span class="tag">포스트모텀</span>
+      <span class="tag">SLO/에러 예산</span>
+    </div>
+  </div>
+
+  <!-- ───────────── TOC ───────────── -->
+  <div class="toc">
+    <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.6rem;">목차</p>
+    <ol>
+      <li><a href="#section-overview">오늘 레슨 개요</a></li>
+      <li><a href="#section-circuit-breaker">서킷 브레이커 — 장애 전파를 차단하는 회로</a></li>
+      <li><a href="#section-rate-limiting">Rate Limiting — 과부하로부터 시스템을 지키는 문지기</a></li>
+      <li><a href="#section-bulkhead">Bulkhead — 하나의 장애가 전체를 침몰시키지 않게</a></li>
+      <li><a href="#section-postmortem">장애 탐지, RCA, 포스트모텀 — 같은 장애를 두 번 겪지 않는 조직</a></li>
+      <li><a href="#section-scenario">종합 시나리오 — 새벽 3시, 온콜로 걸려온 전화</a></li>
+      <li><a href="#section-rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- ───────────── 1. OVERVIEW ───────────── -->
+  <section id="section-overview">
+    <h2>1. 오늘 레슨 개요</h2>
+    <p>
+      신뢰성(Reliability)은 "장애가 절대 안 나게 만드는 것"이 아닙니다. 대규모 분산 시스템에서 장애는 확률적으로 반드시 발생합니다.
+      10년차 이상 면접에서 신뢰성을 묻는 진짜 이유는 <strong>"장애가 발생했을 때 그 피해 범위를 얼마나 좁게 가둘 수 있는가", 그리고 "같은 장애를 두 번 반복하지 않도록 조직이 학습하는가"</strong>를 확인하기 위해서입니다.
+      주니어는 "타임아웃을 걸겠습니다"에서 답이 끝나지만, 시니어는 타임아웃 이후에 벌어지는 연쇄 장애(cascading failure)까지 설계하고, 장애 이후의 조직적 재발 방지 프로세스까지 이야기합니다.
+    </p>
+    <div class="highlight-box">
+      <strong>면접관이 실제로 보는 신호</strong>
+      <ul style="margin-top:0.5rem;">
+        <li>"타임아웃/재시도를 걸겠다"는 선언 ↔ 재시도가 오히려 장애를 증폭시키는 retry storm을 인지하고 지터·예산을 설계</li>
+        <li>서킷 브레이커를 "장애를 막는 마법"으로 이해 ↔ 서킷 브레이커는 실패를 막는 게 아니라 <strong>빠르게 실패시켜 자원을 보호</strong>한다는 목적을 이해</li>
+        <li>Rate limiting을 "어뷰징 방지 기능"으로만 이해 ↔ 시스템 자기 보호와 사용자 간 공정성(fairness)까지 고려한 설계</li>
+        <li>장애 대응을 "고치면 끝"으로 이해 ↔ 포스트모텀과 액션 아이템 추적까지가 장애 대응의 완성이라는 인식</li>
+      </ul>
+    </div>
+    <p>이 레슨은 <strong>신뢰성 확보의 4개 핵심 축</strong>(서킷 브레이커, Rate Limiting, Bulkhead, 장애 대응 프로세스)을 다루며, 각 영역마다 배경 개념 → 면접 질문 → 답변 구조 → senior follow-up → 좋은/약한 답변 비교 → 자기 점검 순서로 진행합니다.</p>
+  </section>
+
+  <!-- ───────────── 2. CIRCUIT BREAKER ───────────── -->
+  <section id="section-circuit-breaker">
+    <h2>2. 서킷 브레이커 — 장애 전파를 차단하는 회로</h2>
+
+    <h3>배경 개념: 느려진 의존성 하나가 왜 전체 시스템을 무너뜨리는가</h3>
+    <p>
+      서비스 A가 서비스 B를 동기 호출한다고 가정합니다. B가 정상일 때는 응답이 50ms만에 오지만, B의 DB가 느려지면서 B의 응답이 30초까지 늘어났습니다.
+      A는 스레드마다 B의 응답을 기다리는데, A의 스레드 풀이 200개라면 30초 동안 응답을 기다리는 요청이 계속 쌓여 200개의 스레드가 전부 B를 기다리는 데 묶여버립니다.
+      그 순간 A는 B와 전혀 상관없는 다른 정상 기능의 요청조차 처리할 스레드가 없어 <strong>전체가 멈춥니다</strong>. 이것이 <strong>연쇄 장애(cascading failure)</strong>이며, 전기 회로의 <strong>차단기(circuit breaker)</strong>가 과전류를 감지하면 회로를 끊어 화재를 막듯, 소프트웨어 서킷 브레이커는 실패율이 임계치를 넘으면 <strong>더 이상 B를 호출하지 않고 즉시 실패시켜</strong> A의 자원을 보호합니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"결제 서비스가 호출하는 포인트 적립 서비스의 응답이 느려지고 있습니다. 포인트 적립은 결제의 핵심 기능이 아닌데도, 이 지연 때문에 결제 자체가 실패하기 시작했습니다. 어떻게 설계를 개선하시겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"타임아웃을 짧게 걸면 된다"는 답에서 멈추는지, 아니면 <strong>부가 기능의 장애가 핵심 기능에 전파되지 않도록 회로 자체를 끊고, 실패 시 대체 경로(fallback)까지 설계</strong>하는지를 봅니다.</p>
+
+    <h4>서킷 브레이커 상태 전이</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>상태</th>
+          <th>동작</th>
+          <th>전이 조건</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Closed (닫힘, 정상)</strong></td>
+          <td>모든 요청을 실제로 B에 전달. 실패율을 슬라이딩 윈도우로 계속 집계</td>
+          <td>최근 N개 요청 중 실패율이 임계치(예: 50%)를 초과하면 Open으로 전이</td>
+        </tr>
+        <tr>
+          <td><strong>Open (열림, 차단)</strong></td>
+          <td>B를 호출하지 않고 즉시 실패 또는 fallback 응답을 반환. B에 부하를 전혀 주지 않아 B가 복구할 시간을 벎</td>
+          <td>일정 대기 시간(예: 30초)이 지나면 Half-Open으로 전이</td>
+        </tr>
+        <tr>
+          <td><strong>Half-Open (반열림, 탐색)</strong></td>
+          <td>제한된 수(보통 1~수 개)의 프로브 요청만 B로 흘려보내 복구 여부를 확인</td>
+          <td>프로브가 성공하면 Closed로 복귀, 실패하면 다시 Open으로 전이(대기 시간은 보통 지수적으로 증가)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>이 호출이 핵심 경로인지 부가 기능인지 먼저 구분합니다.</strong> 포인트 적립처럼 실패해도 결제 자체는 성립해야 하는 부가 기능이라면, 실패를 사용자에게 노출하지 않고 흡수할 방법(비동기 큐 적재 후 나중에 재처리)을 우선 검토합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>동기 호출 자체를 짧은 타임아웃과 서킷 브레이커로 감쌉니다.</strong> 타임아웃은 "한 요청이 얼마나 기다릴지"를, 서킷 브레이커는 "실패가 반복될 때 아예 시도 자체를 멈출지"를 결정합니다. 이 둘은 대체 관계가 아니라 함께 쓰이는 다른 층의 방어입니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>회로가 열렸을 때의 fallback을 명시적으로 설계합니다.</strong> 포인트 적립이라면 "지금은 적립을 건너뛰고 결제만 완료 처리한 뒤, 적립 요청을 큐에 넣어 B가 복구되면 비동기로 재처리"하는 방식이 사용자 경험과 데이터 정합성을 동시에 지킵니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>임계치와 대기 시간은 트래픽 패턴에 맞춰 튜닝합니다.</strong> 너무 민감하면(임계치가 낮으면) 일시적 지연에도 회로가 열려 불필요하게 기능을 차단하고, 너무 둔감하면 연쇄 장애를 막지 못합니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"결제와 포인트 적립 호출을 서킷 브레이커로 감싸고, 타임아웃은 300ms로 짧게 설정합니다. 최근 20개 요청 중 실패율이 50%를 넘으면 30초간 회로를 Open시켜 포인트 서비스 호출을 아예 건너뛰고, 결제는 그대로 성공 처리한 뒤 적립 요청을 메시지 큐에 넣습니다. 회로가 Open인 동안에는 큐에 쌓인 적립 요청을 컨슈머가 나중에 처리하고, 30초 후 Half-Open 상태에서 프로브 요청 1개만 보내 B가 복구됐는지 확인합니다. 이렇게 하면 포인트 서비스 장애가 결제 실패로 전파되지 않습니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"타임아웃을 1초 정도로 짧게 걸어서 결제가 오래 걸리지 않게 하겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 타임아웃은 "한 번의 느린 요청"만 방어할 뿐, B가 계속 느리면 매 요청마다 1초씩 대기하다 실패하는 패턴이 반복되어 A의 스레드 풀이 여전히 고갈됩니다. 반복되는 실패를 감지해 호출 자체를 멈추는 장치(서킷 브레이커)와, 실패 시 사용자 경험을 지키는 대체 경로(fallback)가 빠져 있습니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"Half-Open 상태에서 여러 요청이 동시에 프로브로 나가면 어떤 문제가 생길까요? 그리고 서킷 브레이커와 재시도(retry)를 함께 쓰면 왜 위험할 수 있나요?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> Half-Open에서 동시성 제어 없이 여러 요청을 흘려보내면, 아직 완전히 회복되지 않은 B에 다시 트래픽이 몰려 <strong>회복을 방해하고 다시 실패</strong>하게 만듭니다. 그래서 Half-Open은 반드시 <strong>세마포어 등으로 동시 프로브 수를 1~수 개로 제한</strong>해야 합니다.
+        재시도와의 상호작용은 더 위험합니다. 서킷이 아직 Closed인데 클라이언트마다 실패 시 3회씩 재시도하도록 설정되어 있다면, B가 느려지는 초기 구간에 <strong>정상 요청량의 몇 배가 되는 재시도 트래픽</strong>이 B에 추가로 몰려 장애를 오히려 앞당깁니다(retry storm).
+        따라서 재시도 횟수에 상한을 두고 지수 백오프+지터를 적용하며, 서킷이 이미 Open 상태라면 <strong>재시도 자체를 시도하지 않고 즉시 fallback</strong>으로 가야 합니다. 서킷 브레이커의 상태를 재시도 로직이 인지하도록 같은 계층에서 통합 설계하는 것이 핵심입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 3. RATE LIMITING ───────────── -->
+  <section id="section-rate-limiting">
+    <h2>3. Rate Limiting — 과부하로부터 시스템을 지키는 문지기</h2>
+
+    <h3>배경 개념: 요청을 막는 것이 아니라 "속도"를 제어하는 것</h3>
+    <p>
+      Rate limiting은 단순히 "너무 많이 요청하면 차단"하는 것이 아니라, <strong>시스템이 감당할 수 있는 처리 속도를 넘는 트래픽을 걸러내 나머지 사용자에게 영향을 주지 않도록 보호</strong>하는 장치입니다.
+      목적은 두 가지입니다. 첫째는 <strong>자기 보호(self-protection)</strong>, 즉 특정 클라이언트의 폭주가 서버 리소스를 다 써버려 다른 정상 사용자까지 영향받는 것을 막는 것입니다. 둘째는 <strong>공정성(fairness)</strong>, 즉 여러 클라이언트가 같은 자원을 나눠 쓸 때 한쪽이 독식하지 못하게 하는 것입니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"공개 API에 특정 파트너사가 초당 수천 건의 요청을 보내면서 다른 사용자들의 응답 지연이 심해지고 있습니다. Rate limiting을 어떻게 설계하시겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"429를 반환하겠다"는 결론만 아는지, 아니면 <strong>알고리즘별 트레이드오프, 분산 환경에서의 정확한 카운팅, 그리고 어느 계층에서 제한할지</strong>를 근거 있게 선택하는지를 봅니다.</p>
+
+    <h4>Rate Limiting 알고리즘 비교</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>알고리즘</th>
+          <th>동작 방식</th>
+          <th>장단점</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Fixed Window Counter</strong></td>
+          <td>1초/1분 등 고정 구간마다 카운터를 두고 한도 초과 시 거부</td>
+          <td>구현이 단순하지만, 윈도우 경계에서 순간적으로 2배 트래픽이 통과하는 <strong>burst 문제</strong>가 있음 (예: 0.9초에 한도만큼, 1.1초에 다시 한도만큼)</td>
+        </tr>
+        <tr>
+          <td><strong>Sliding Window Log</strong></td>
+          <td>요청마다 타임스탬프를 기록하고, 현재로부터 윈도우 구간 내 요청 수를 정확히 계산</td>
+          <td>정확하지만 모든 요청의 타임스탬프를 저장해야 해 <strong>메모리 비용이 큼</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Sliding Window Counter</strong></td>
+          <td>이전 윈도우와 현재 윈도우의 카운트를 가중 평균해 근사적으로 계산</td>
+          <td>Fixed Window의 burst 문제를 완화하면서 Sliding Log보다 메모리 효율적. 실무에서 널리 사용</td>
+        </tr>
+        <tr>
+          <td><strong>Token Bucket</strong></td>
+          <td>일정 속도로 토큰이 버킷에 채워지고, 요청마다 토큰을 소비. 토큰이 쌓여 있으면 짧은 burst 허용</td>
+          <td><strong>일시적 버스트를 허용</strong>하면서 평균 속도를 제한. API 게이트웨이에서 가장 널리 쓰임</td>
+        </tr>
+        <tr>
+          <td><strong>Leaky Bucket</strong></td>
+          <td>요청을 큐에 넣고 일정한 속도로만 처리(새어 나가듯). 버스트를 허용하지 않고 항상 균일한 속도 유지</td>
+          <td>다운스트림 보호에는 유리하지만, 정상적인 순간 트래픽 증가도 지연시킬 수 있음</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>제한을 적용할 계층을 정합니다.</strong> API 게이트웨이/엣지에서 막으면 정상 트래픽이 애플리케이션 서버까지 도달하기 전에 걸러져 리소스를 아낄 수 있고, 애플리케이션 내부에서 막으면 사용자별/기능별로 더 세밀한 제한이 가능합니다. 보통 게이트웨이(거친 전체 방어)와 서비스 내부(세밀한 정책)를 함께 둡니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>클라이언트를 식별하는 키를 정합니다.</strong> IP, API 키, 사용자 ID, 테넌트 ID 등. 파트너사처럼 계약 기반 클라이언트라면 API 키 기준으로 테넌트별 한도를 다르게(tier 기반) 설정합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>여러 서버 인스턴스에서 카운터를 공유하는 방법을 정합니다.</strong> 인스턴스마다 로컬 카운터를 두면 전체 한도를 초과할 수 있으므로, Redis 등 중앙 저장소에 원자적 연산(<code>INCR</code> + TTL, 또는 Lua 스크립트로 검사와 증가를 원자적으로 묶음)으로 카운팅합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>한도 초과 시 응답을 설계합니다.</strong> <code>429 Too Many Requests</code>와 함께 <code>Retry-After</code> 헤더로 언제 다시 시도할지 알려주고, 남은 한도를 <code>X-RateLimit-Remaining</code> 등으로 노출해 클라이언트가 스스로 속도를 조절할 수 있게 합니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"API 게이트웨이 레벨에서 API 키 기준 Token Bucket을 적용합니다. 일반 사용자는 초당 10 토큰, 계약된 파트너사는 초당 100 토큰으로 tier를 나누고, 버킷 용량을 평균의 2배로 두어 짧은 버스트는 허용합니다. 카운터는 Redis에 Lua 스크립트로 '토큰 확인+차감'을 원자적으로 처리해 여러 게이트웨이 인스턴스 간에도 정확한 한도를 보장합니다. 한도를 초과한 요청은 <code>429</code>와 <code>Retry-After</code> 헤더를 반환해 파트너사가 클라이언트 측에서 백오프하도록 유도합니다. 이번 파트너사처럼 계약 초과 트래픽이 확인되면, 근본적으로는 비즈니스 팀과 협의해 tier 계약 자체를 조정하는 것도 함께 제안합니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"요청이 너무 많이 오면 IP를 차단하겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: "차단"은 정상적인 속도 조절이 아니라 전면 거부이며, IP 기준은 파트너사가 NAT나 여러 서버를 통해 요청하는 경우 오탐/오차단을 유발합니다. 알고리즘 선택 근거, 분산 환경에서의 정확성, 클라이언트에게 재시도 시점을 알려주는 설계가 전혀 없습니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"Redis에 매 요청마다 카운터를 갱신하면 Redis 자체가 병목이 되지 않을까요? 정확도를 조금 포기해도 되는 상황이라면 어떻게 최적화하시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 정확히 매 요청마다 중앙 Redis를 왕복하면 rate limiting 자체가 새로운 병목과 SPOF가 될 수 있습니다. 완화 방법은 <strong>근사치 허용(approximate rate limiting)</strong>입니다.
+        1) 각 게이트웨이 인스턴스가 로컬 메모리에 카운터를 두고 <strong>일정 주기(예: 1~5초)마다 Redis와 비동기로 동기화</strong>해, 정확히 한도를 지키는 대신 약간의 초과를 허용하고 Redis 부하를 줄입니다.
+        2) 완전 정확성이 필요한 결제 등 민감한 경로만 동기적 Redis 검사를 유지하고, 일반 조회 API는 근사치 방식을 적용하는 <strong>정확도와 성능의 계층적 트레이드오프</strong>를 둡니다.
+        3) Redis 자체도 클러스터링하고, rate limiter를 게이트웨이의 핵심 요청 경로와 별도 커넥션 풀로 격리해(3장에서 다룰 Bulkhead) rate limiter 장애가 전체 요청 처리를 막지 않게 합니다.
+        핵심은 "완벽한 정확도"가 항상 목표가 아니라, <strong>제한의 목적(자기 보호)에 필요한 만큼의 정확도만 확보</strong>하는 판단입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 4. BULKHEAD ───────────── -->
+  <section id="section-bulkhead">
+    <h2>4. Bulkhead — 하나의 장애가 전체를 침몰시키지 않게</h2>
+
+    <h3>배경 개념: 공용 자원 풀은 장애를 격리하지 못한다</h3>
+    <p>
+      Bulkhead(격벽)는 선박이 침수 시 배 전체가 가라앉지 않도록 선체를 여러 방수 구역으로 나누는 설계에서 따온 이름입니다.
+      소프트웨어에서는 한 서비스가 여러 외부 의존성(결제 PG, 알림 서비스, 추천 API 등)을 호출할 때, 이 호출들이 <strong>같은 스레드 풀이나 커넥션 풀을 공유</strong>하면 그중 하나가 느려질 때 그 의존성을 기다리는 스레드/커넥션이 풀을 가득 채워, 나머지 정상 의존성 호출조차 자원을 얻지 못해 지연되거나 실패합니다.
+      Bulkhead 패턴은 <strong>의존성별로 자원 풀을 분리</strong>해, 하나의 의존성 장애가 다른 의존성 호출에 영향을 주지 못하도록 격리합니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"한 서비스가 5개의 외부 API(결제, 알림, 추천, 배송조회, 리뷰)를 호출합니다. 그중 추천 API 하나가 느려지자 서비스 전체가 응답 불가 상태가 되었습니다. 원인은 무엇이고 어떻게 재발을 막으시겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"추천 API에 타임아웃을 걸겠다"는 대증 요법에서 멈추는지, 아니면 <strong>왜 관련 없는 결제·배송 기능까지 함께 죽었는지 구조적 원인(공용 자원 풀 고갈)</strong>을 짚어내는지를 봅니다.</p>
+
+    <h4>격리 전략 비교</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>전략</th>
+          <th>동작 방식</th>
+          <th>적합 상황</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Thread Pool Isolation</strong></td>
+          <td>의존성마다 별도의 스레드 풀을 할당. 해당 의존성 호출은 그 풀의 스레드만 사용</td>
+          <td>호출 지연 편차가 크거나, 타임아웃 제어(별도 스레드에서 강제 중단)가 필요한 경우. 다만 스레드 풀 수가 늘수록 컨텍스트 스위칭·메모리 비용 증가</td>
+        </tr>
+        <tr>
+          <td><strong>Semaphore Isolation</strong></td>
+          <td>스레드는 공유하되, 의존성마다 동시 호출 허용 개수만 세마포어로 제한</td>
+          <td>매우 빠르고 호출량이 많은 의존성(예: 캐시 조회)에 적합. 스레드 전환 오버헤드가 없어 가볍지만, 느린 호출을 강제로 끊어내는 타임아웃 제어는 별도로 필요</td>
+        </tr>
+        <tr>
+          <td><strong>Connection Pool Isolation</strong></td>
+          <td>DB나 외부 API 커넥션 풀을 의존성/용도별로 분리(예: 읽기 전용 쿼리와 쓰기 쿼리의 커넥션 풀 분리)</td>
+          <td>느린 리포트성 쿼리가 커넥션을 오래 점유해 핵심 트랜잭션용 커넥션까지 고갈시키는 것을 방지</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>공용 자원 풀 공유가 원인임을 먼저 확인합니다.</strong> 스레드 덤프나 커넥션 풀 모니터링에서 "대부분의 스레드가 추천 API 응답을 기다리며 BLOCKED 상태"라는 패턴이 확인되면, 이는 격리 부재가 원인입니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>핵심 경로(결제)와 비핵심 경로(추천)를 최소한 분리합니다.</strong> 추천 API 호출 전용 스레드 풀 또는 세마포어를 두어, 이 풀이 가득 차더라도 결제·배송 조회용 스레드는 영향받지 않게 합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>격리 단위를 호출 특성에 맞춥니다.</strong> 지연 편차가 크고 가끔 매우 느려지는 외부 API는 스레드 풀 격리로 타임아웃 시 강제 중단이 가능하게 하고, 매우 빈번하고 보통 빠른 내부 캐시 조회는 세마포어 격리로 가볍게 제한합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>격리된 스레드 풀 각각에도 서킷 브레이커를 결합합니다.</strong> 격리만으로는 추천 API 자체의 반복 실패를 막지 못하므로, 격리(Bulkhead)와 빠른 실패(Circuit Breaker)를 함께 적용해야 완전한 방어가 됩니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"스레드 덤프를 보니 전체 스레드의 90%가 추천 API 응답을 기다리는 상태였습니다. 원인은 5개 외부 API 호출이 공용 스레드 풀을 공유해, 추천 API가 느려지자 그 풀이 고갈되어 결제·배송조회 같은 무관한 기능까지 스레드를 못 받은 것입니다. 재발 방지로 의존성별 스레드 풀을 분리하되, 결제처럼 핵심적이고 호출량이 많지 않은 경로는 별도 스레드 풀 10개, 추천처럼 부가 기능이면서 지연 편차가 큰 경로는 별도 풀 5개로 격리합니다. 추천 API 풀에는 서킷 브레이커도 함께 적용해, 실패율이 높아지면 그 풀 자체가 빠르게 실패를 반환하고 fallback으로 기본 추천 목록을 보여주도록 합니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"추천 API 호출에 타임아웃을 짧게 걸겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 타임아웃만으로는 "왜 무관한 결제 기능까지 함께 죽었는가"라는 핵심 질문에 답하지 못합니다. 근본 원인인 공용 자원 풀 공유 구조를 진단하지 못했고, 격리라는 구조적 해법을 제시하지 못했습니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"의존성마다 스레드 풀을 다 나누면 서버의 전체 스레드 수와 메모리 사용량이 크게 늘어날 텐데, 이 비용은 어떻게 관리하시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> Bulkhead는 공짜가 아니며, 스레드 풀을 세분화할수록 <strong>컨텍스트 스위칭 비용과 스레드당 스택 메모리 비용</strong>이 누적됩니다.
+        1) 모든 의존성을 다 격리하지 않고, <strong>장애 영향도와 지연 편차가 큰 의존성 위주로 선택적으로 격리</strong>합니다. 항상 빠르고 안정적인 내부 캐시 조회까지 무거운 스레드 풀로 격리할 필요는 없습니다.
+        2) 스레드 풀 격리 대신 <strong>세마포어 격리</strong>를 우선 검토해, 스레드 자체는 공유하되 동시 호출 수만 제한하는 더 가벼운 방식으로 비용을 낮춥니다.
+        3) 반응형/논블로킹 I/O 모델(예: 이벤트 루프 기반)을 쓰는 스택이라면애초에 "스레드가 응답을 기다리며 점유"되는 문제 자체가 줄어들어, 격리의 필요성과 비용 구조가 달라집니다.
+        핵심은 격리 수준과 자원 비용 사이의 트레이드오프를 <strong>의존성의 실제 위험도에 비례해서 결정</strong>한다는 것입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 5. POSTMORTEM ───────────── -->
+  <section id="section-postmortem">
+    <h2>5. 장애 탐지, RCA, 포스트모텀 — 같은 장애를 두 번 겪지 않는 조직</h2>
+
+    <h3>배경 개념: 장애 대응은 "고치는 것"에서 끝나지 않는다</h3>
+    <p>
+      기술적으로 서비스를 복구했다고 해서 장애 대응이 끝난 것이 아닙니다. 시니어 엔지니어와 인터뷰어가 진짜 보고 싶어하는 것은 <strong>"이 장애가 다시 발생하지 않도록 조직이 무엇을 배웠는가"</strong>입니다.
+      이를 위한 표준 프로세스가 <strong>블레임리스 포스트모텀(blameless postmortem)</strong>입니다. "누가 실수했는가"를 찾는 것이 아니라 "왜 시스템과 프로세스가 이 실수를 막지 못했는가"에 초점을 맞춰야, 담당자가 다음번에 실수를 숨기지 않고 솔직하게 공유하는 문화가 만들어집니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"최근 경험한 장애 하나를 설명해주시고, 어떻게 대응했는지, 그리고 재발 방지를 위해 무엇을 했는지 말씀해주세요."</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>기술적 조치만 나열하는지, 아니면 <strong>탐지 → 완화(mitigate) → 근본 원인 분석 → 포스트모텀 → 액션 아이템 추적</strong>이라는 전체 사이클과 커뮤니케이션까지 이야기하는지를 봅니다.</p>
+
+    <h4>장애 대응 단계</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>탐지(Detect)</strong>: 알람이나 사용자 신고로 이상을 인지합니다. 좋은 답변은 "어떤 메트릭/알람이 트리거됐는지"를 구체적으로 언급합니다(에러율 급증, 레이턴시 p99 급등 등).
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>완화(Mitigate) — 근본 원인 파악보다 우선</strong>: 원인을 완전히 이해하기 전이라도 피해를 최소화하는 조치(최근 배포 롤백, 피처 플래그 off, 트래픽 일부 차단)를 먼저 취합니다. "원인을 다 알아야 조치한다"는 태도는 약한 신호입니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>커뮤니케이션</strong>: 상태 페이지 업데이트, 이해관계자(고객지원, 경영진) 공지를 병행합니다. 기술적 복구와 커뮤니케이션은 동시에 진행되어야 합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>근본 원인 분석(RCA)</strong>: 서비스가 복구된 후, <strong>5 Whys</strong> 같은 기법으로 표면적 원인 너머의 구조적 원인까지 파고듭니다. (예: "왜 실패했나" → "커넥션 풀 고갈" → "왜 고갈됐나" → "느린 쿼리가 커넥션을 오래 점유" → "왜 느려졌나" → "인덱스 없는 쿼리가 배포됨" → "왜 못 걸렀나" → "쿼리 성능 리뷰가 배포 프로세스에 없음")
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>블레임리스 포스트모텀 작성 및 공유</strong>: 타임라인, 영향 범위, 근본 원인, 실행한 조치, 액션 아이템을 문서화하고 관련자 전체에 공유합니다. 개인의 실수를 지적하는 대신 "왜 프로세스/시스템이 이를 막지 못했는가"에 집중합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>액션 아이템을 실제로 추적합니다.</strong> "쿼리 성능 리뷰를 배포 체크리스트에 추가", "커넥션 풀 격리 적용" 같은 항목에 담당자와 기한을 정해, 다른 기능 개발 우선순위에 밀려 방치되지 않도록 합니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"결제 서비스의 DB 커넥션 풀이 고갈되어 전체 요청이 타임아웃되는 장애가 있었습니다. p99 레이턴시 알람으로 5분 만에 탐지했고, 원인 파악 전에 먼저 직전 배포를 롤백해 10분 만에 서비스를 복구했습니다. 이후 RCA에서 5 Whys로 파고든 결과, 신규 배포된 리포트 쿼리가 인덱스 없이 풀스캔을 돌며 커넥션을 평균 8초씩 점유한 것이 근본 원인이었고, 더 깊게는 쿼리 성능 검토가 배포 체크리스트에 없었다는 프로세스 공백이 있었습니다. 블레임리스 포스트모텀을 작성해 전사에 공유했고, 액션 아이템으로 '무거운 쿼리는 읽기 전용 리플리카 전용 커넥션 풀로 분리'와 'PR에 쿼리 실행 계획 첨부 의무화'를 담당자와 기한을 정해 추적했습니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"서버를 재시작해서 장애를 해결했습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 무엇을 탐지했는지, 왜 재시작으로 해결됐다고 판단했는지 근거가 없고, 근본 원인 분석과 재발 방지 조치가 전혀 없습니다. "재시작"은 증상 완화일 뿐 원인 해결이 아닐 가능성이 높아, 같은 장애가 반복될 위험을 그대로 남겨둡니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"포스트모텀에서 나온 액션 아이템이 다른 기능 개발 우선순위에 밀려 몇 달째 처리되지 않고 있습니다. 이런 상황을 조직적으로 어떻게 막으시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 개별 엔지니어의 의지에 맡기면 신뢰성 작업은 항상 "급하지만 중요하지 않은" 신규 기능에 밀립니다. 이를 조직적으로 강제하는 장치가 <strong>SLO(Service Level Objective)와 에러 예산(Error Budget)</strong>입니다.
+        1) 서비스별로 가용성 목표(예: 99.9%)를 SLO로 정하고, 이번 분기에 허용 가능한 장애 시간(에러 예산)을 명시적으로 계산합니다.
+        2) <strong>에러 예산을 다 소진하면, 다음 분기 초까지 신규 기능 개발을 중단하고 신뢰성 작업(포스트모텀 액션 아이템 포함)만 진행</strong>하는 정책을 조직 차원에서 합의합니다. 이렇게 하면 신뢰성 작업이 "선의"가 아니라 "정책"에 의해 우선순위를 확보합니다.
+        3) 액션 아이템 자체를 일반 백로그가 아니라 <strong>SLA/신뢰성 전용 트래킹 보드</strong>에 두고, 정기적으로(예: 격주) 미처리 항목을 경영진에게 에스컬레이션합니다.
+        핵심은 신뢰성 개선을 "여유 있을 때 하는 일"이 아니라 <strong>측정 가능한 정책과 예산으로 강제되는 일</strong>로 만드는 조직 설계입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 6. SCENARIO ───────────── -->
+  <section id="section-scenario">
+    <h2>6. 종합 시나리오 — 새벽 3시, 온콜로 걸려온 전화</h2>
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"당신 팀이 운영하는 주문 서비스가 새벽 3시에 전체 다운되었다는 알람을 받고 온콜로 호출되었습니다. 원인을 전혀 모르는 상태에서, 지금부터 5분 단위로 무엇을 하시겠습니까?"</p>
+    </div>
+    <p>이 질문은 오늘 배운 서킷 브레이커, Rate Limiting, Bulkhead 같은 <strong>사전 방지 설계</strong>와, 장애 발생 이후의 <strong>실시간 대응 절차</strong>를 하나의 타임라인으로 종합하는 능력을 봅니다.</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>0~2분: Ack 후 대시보드부터 확인합니다.</strong> 에러율, 레이턴시, 트래픽량, 인프라 리소스(CPU/메모리/커넥션 풀) 대시보드를 먼저 보고, "전체 다운"이 정말 100% 장애인지 일부 기능만 영향받는지부터 범위를 좁힙니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>2~5분: 최근 변경 사항과의 상관관계를 확인합니다.</strong> 배포 이력, 피처 플래그 변경, 인프라 변경(스케일링, 설정 변경)이 장애 시작 시점과 겹치는지 확인합니다. 대부분의 심각한 장애는 "무언가 바뀐 직후"에 발생합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>5~10분: 원인을 완전히 알지 못해도 즉시 완화 조치를 취합니다.</strong> 최근 배포와 상관관계가 있다면 롤백을 최우선으로 실행합니다. 특정 다운스트림 의존성 장애로 보이면(예: 서드파티 결제 PG 응답 지연), 서킷 브레이커가 이미 열렸는지 확인하고, 아직 열리지 않았다면 수동으로 해당 기능을 차단(feature flag off)해 연쇄 장애를 끊습니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>병행: 상태 페이지와 이해관계자에게 상황을 공유합니다.</strong> "조사 중"이라도 침묵하지 않고, 영향 범위와 예상 업데이트 시점을 공유합니다. 이는 기술 조치와 동시에 진행되어야 하며, 혼자 조용히 고치려는 태도는 약한 신호입니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>복구 후: 즉시 포스트모텀을 예약합니다.</strong> 서비스가 정상화된 직후, 관련자 기억이 생생할 때 타임라인을 기록하고, 근무일 중 블레임리스 포스트모텀 세션을 잡습니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>사후: 재발 방지를 구조적으로 설계합니다.</strong> 이번 장애가 특정 의존성의 응답 지연에서 시작해 전체로 번진 것이었다면, 그 의존성 호출에 서킷 브레이커와 Bulkhead가 없었다는 것이 근본 원인일 수 있습니다. 액션 아이템으로 구체적인 설계 변경을 담당자·기한과 함께 등록합니다.
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <strong>시니어가 반드시 언급해야 하는 것</strong>: "원인을 다 파악한 후에 조치하겠다"가 아니라 <strong>완화(mitigate)를 근본 원인 분석보다 먼저</strong> 실행하는 우선순위 감각, 기술 조치와 <strong>이해관계자 커뮤니케이션을 동시에</strong> 진행하는 태도, 그리고 장애를 "고치고 끝"이 아니라 <strong>포스트모텀과 구조적 재발 방지(서킷 브레이커, Bulkhead 같은 사전 설계)로 이어지는 순환</strong>으로 보는 관점입니다. 이 세 가지가 없는 답변은 "불을 끌 줄은 알지만 왜 불이 났는지, 다시 안 나게 하려면 무엇을 바꿔야 하는지 모르는" 신호로 읽힙니다.
+    </div>
+  </section>
+
+  <!-- ───────────── 7. RUBRIC ───────────── -->
+  <section id="section-rubric">
+    <h2>7. 자기 점검 Rubric</h2>
+    <p>각 항목을 솔직하게 채점하세요. ●●●=잘 설명할 수 있음, ●●○=부분적으로 앎, ●○○=어렴풋이 앎, ○○○=모름</p>
+
+    <div class="card rubric">
+      <div class="rubric-item">
+        <span>연쇄 장애(cascading failure)가 발생하는 구조와, 서킷 브레이커의 Closed/Open/Half-Open 상태 전이를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>서킷 브레이커와 재시도를 함께 쓸 때 retry storm이 발생하는 이유와 방지책을 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>Token Bucket, Leaky Bucket, Sliding Window의 차이와 각각이 적합한 상황을 구분할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>분산 환경에서 rate limiting 카운터를 정확하게 공유하는 방법과, 근사치 허용의 트레이드오프를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>공용 스레드 풀/커넥션 풀 공유가 왜 무관한 기능까지 함께 장애를 일으키는지, Bulkhead로 어떻게 격리하는지 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>Thread Pool Isolation과 Semaphore Isolation의 비용/효과 차이를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>장애 대응에서 "완화가 근본 원인 분석보다 먼저"라는 우선순위와, 블레임리스 포스트모텀의 목적을 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>SLO/에러 예산이 신뢰성 작업의 우선순위를 조직적으로 강제하는 원리를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+    </div>
+
+    <h3>점수 해석</h3>
+    <ul>
+      <li><strong>7~8개 ●●●</strong>: 신뢰성 & 장애 대응 영역 시니어 수준. Day 8로 진행해도 됩니다.</li>
+      <li><strong>4~6개 ●●●</strong>: 핵심은 알지만 ●●○ 항목을 다시 읽고 자신의 프로젝트 사례로 재구성해 보세요.</li>
+      <li><strong>3개 이하 ●●●</strong>: Bulkhead와 포스트모텀 섹션을 한 번 더 읽고, 종합 시나리오 질문에 직접 소리 내어 답해보세요.</li>
+    </ul>
+
+    <h3>추천 복습 방법</h3>
+    <p>오늘 배운 내용 중 가장 자신 없는 질문 하나를 골라, 면접관 앞에서 말하듯 2~3분간 소리 내어 설명해보세요. 막히는 부분이 실제로 모르는 부분입니다.</p>
+  </section>
+
+  <!-- ───────────── NAVIGATION ───────────── -->
+  <div class="nav-bottom">
+    <a href="./0006-concurrency-and-async-processing.html">← Day 6: 동시성 &amp; 비동기 처리</a>
+    <a href="./index.html">목록으로</a>
+    <span style="color:var(--muted);font-size:0.9rem;">Day 8: 보안 →</span>
+  </div>
+
+</div>
+</body>
+</html>

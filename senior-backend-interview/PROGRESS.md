@@ -10,6 +10,7 @@
 | 4 | 2026-07-02 | 분산 시스템 & 일관성 | [0004-distributed-systems-and-consistency.html](lessons/0004-distributed-systems-and-consistency.html) |
 | 5 | 2026-07-03 | API 설계 | [0005-api-design.html](lessons/0005-api-design.html) |
 | 6 | 2026-07-04 | 동시성 & 비동기 처리 | [0006-concurrency-and-async-processing.html](lessons/0006-concurrency-and-async-processing.html) |
+| 7 | 2026-07-05 | 신뢰성 & 장애 대응 | [0007-reliability-and-incident-response.html](lessons/0007-reliability-and-incident-response.html) |
 
 ## 다음 예정 학습
 
@@ -20,7 +21,7 @@
 | ~~4~~ | ~~분산 시스템 & 일관성~~ | ~~완료~~ |
 | ~~5~~ | ~~API 설계~~ | ~~완료~~ |
 | ~~6~~ | ~~동시성 & 비동기 처리~~ | ~~완료~~ |
-| 7 | 신뢰성 & 장애 대응 | 서킷 브레이커, Rate Limiting, Bulkhead, 포스트모텀 |
+| ~~7~~ | ~~신뢰성 & 장애 대응~~ | ~~완료~~ |
 | 8 | 보안 | AuthN/AuthZ, JWT, OAuth2, OWASP Top10, 암호화 |
 | 9 | 관측성 | 로깅 전략, 메트릭, 분산 트레이싱, SLO/SLA/에러 예산 |
 | 10 | 배포 & DevOps | CI/CD, 블루-그린, 카나리, 피처 플래그, 롤백 |
@@ -29,7 +30,7 @@
 
 ## 현재 학습 위치
 
-**Day 6 완료** — Day 7 (신뢰성 & 장애 대응)가 다음 차례.
+**Day 7 완료** — Day 8 (보안)이 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -56,7 +57,10 @@
 - [x] 분산 락의 TTL, 소유자 토큰, 펜싱 토큰, 데드락 예방 (Day 6)
 - [x] 멱등키 설계와 재시도 안전성 확보 (Day 6)
 - [x] 메시지 큐 at-least-once 전달과 컨슈머 측 중복 제거 (Day 6)
-- [ ] 신뢰성 패턴 (예정 Day 7)
+- [x] 서킷 브레이커 상태 전이(Closed/Open/Half-Open)와 재시도 조합 시 retry storm 방지 (Day 7)
+- [x] Rate Limiting 알고리즘(Token/Leaky Bucket, Sliding Window) 선택 기준과 분산 카운팅 (Day 7)
+- [x] Bulkhead — Thread Pool/Semaphore/Connection Pool 격리로 연쇄 장애 차단 (Day 7)
+- [x] 장애 대응 절차(탐지→완화→RCA→포스트모텀)와 블레임리스 문화, SLO/에러 예산 (Day 7)
 - [ ] 보안 설계 (예정 Day 8)
 - [ ] 관측성 전략 (예정 Day 9)
 - [ ] 배포 전략 (예정 Day 10)
