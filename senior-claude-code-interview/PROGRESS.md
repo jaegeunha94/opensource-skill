@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-07-03 | Claude Code 기반 agentic coding 운영 프레임워크 | [0001-agentic-coding-operating-framework.html](lessons/0001-agentic-coding-operating-framework.html) |
 | 2 | 2026-07-04 | Surfaces — Terminal/IDE/Desktop/Web/CI 아키텍처와 선택 기준 | [0002-surfaces-architecture-and-selection.html](lessons/0002-surfaces-architecture-and-selection.html) |
+| 3 | 2026-07-05 | 코드베이스 컨텍스트 설계 — CLAUDE.md와 Auto Memory | [0003-codebase-context-claude-md-auto-memory.html](lessons/0003-codebase-context-claude-md-auto-memory.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | 코드베이스 컨텍스트 설계 — CLAUDE.md와 auto memory | CLAUDE.md 로드 순서, 서브디렉토리 규칙, auto memory(MEMORY.md), large codebase 전략, 컨텍스트 비용 |
 | 4 | 권한 모델 심화 — permission mode와 규칙 문법 | default/acceptEdits/plan/auto/dontAsk/bypassPermissions, allow/deny/ask 평가 순서, settings precedence |
 | 5 | 샌드박싱과 shell/file 도구 실행 경계 | OS 레벨 파일시스템/네트워크 격리, permission과 sandbox의 계층 분리, credential 보호 |
 | 6 | 보안 — 위협 모델과 prompt injection 방어 | 신뢰 경계, 프롬프트 인젝션, MCP 공급망 리스크, secure deployment 패턴 |
@@ -34,7 +34,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — Day 3: 코드베이스 컨텍스트 설계(CLAUDE.md와 auto memory)로 진행 예정.
+**Day 3 완료** — Day 4: 권한 모델 심화(permission mode와 규칙 문법)로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -46,7 +46,10 @@
 - [x] 확장 레이어(Skills/MCP/Hooks/Subagents)가 core loop 위에 있다는 아키텍처 구분 (Day 1)
 - [x] 인터페이스 vs 실행 환경(두 독립 축)으로 surface를 분해하는 프레임워크, Web(Cloud)과 Remote Control(Local+원격 제어)의 구분 (Day 2)
 - [x] "모든 surface가 동일 엔진을 공유하며 CLAUDE.md/설정/MCP가 이식된다"는 원칙과 headless(-p) 자동화가 실행 환경이 아닌 상호작용 모드의 차이라는 것, GitHub Actions(claude-code-action v1 GA) 구조 (Day 2)
-- [ ] CLAUDE.md/auto memory 설계 (예정 Day 3)
+- [x] CLAUDE.md 4단계 스코프(managed/user/project/local)와 로드 순서, 작업 디렉토리·상위는 즉시 로드되지만 서브디렉토리는 온디맨드 로드된다는 타이밍 구분 (Day 3)
+- [x] `.claude/rules/`의 path-scoped rules(`paths` frontmatter)와 per-directory CLAUDE.md의 차이, `@path` import는 정리 목적일 뿐 컨텍스트 비용을 줄이지 않는다는 것, AGENTS.md는 직접 읽지 않고 import/symlink로 연동한다는 것 (Day 3)
+- [x] Auto memory(`MEMORY.md`, 200줄/25KB 임계값)가 머신 로컬이며 CLAUDE.md와 "누가 쓰는가"로 역할이 분리된다는 것, CLAUDE.md/auto memory는 강제 계층이 아니라 컨텍스트이며 절대 규칙은 훅/권한으로 이중화해야 한다는 것, `/compact` 후 루트 CLAUDE.md는 재주입되지만 서브디렉토리 CLAUDE.md는 그렇지 않다는 것 (Day 3)
+- [x] 모노레포 전략(claudeMdExcludes, Read deny 규칙, code intelligence, sparse worktree, additionalDirectories vs --add-dir의 컨텍스트 로드 차이, 플러그인/MCP로의 중앙화) (Day 3)
 - [ ] 권한 모델 심화 (예정 Day 4)
 - [ ] 샌드박싱 (예정 Day 5)
 - [ ] 보안/위협 모델 (예정 Day 6)
