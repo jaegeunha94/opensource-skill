@@ -7,12 +7,12 @@
 | 1 | 2026-07-02 | React 렌더링 모델과 Next.js 실행 경계 답변 프레임워크 — 코드가 어디서 실행되는지 그리는 사고법 | [0001-react-rendering-model-execution-boundary-framework.html](lessons/0001-react-rendering-model-execution-boundary-framework.html) |
 | 2 | 2026-07-03 | Reconciliation과 Virtual DOM — key, diffing 알고리즘, 리스트 렌더링 시 재사용/재생성 판단 | [0002-reconciliation-virtual-dom-key-diffing.html](lessons/0002-reconciliation-virtual-dom-key-diffing.html) |
 | 3 | 2026-07-04 | Component Boundary 설계 — Server/Client 컴포넌트 경계, "use client" 전이 문제, composition pattern | [0003-component-boundary-server-client-composition.html](lessons/0003-component-boundary-server-client-composition.html) |
+| 4 | 2026-07-05 | Hooks 심화 — `useEffect`/`useMemo`/`useCallback`의 실무 함정, 의존성 배열 사고, stale closure | [0004-hooks-deep-dive-dependency-array-pitfalls.html](lessons/0004-hooks-deep-dive-dependency-array-pitfalls.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | Hooks 심화 | `useEffect`/`useMemo`/`useCallback`의 실무 함정, 의존성 배열 사고 |
 | 5 | State Management 아키텍처 | 로컬 상태 vs 서버 상태 vs 전역 상태 구분과 도구 선택 |
 | 6 | Data Fetching 패턴 | 서버 fetch vs 클라이언트 fetch, 워터폴 방지, request memoization |
 | 7 | Suspense와 동시성 렌더링 | concurrent rendering, transition, 우선순위 스케줄링 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — 다음: Day 4 — Hooks 심화
+**Day 4 완료** — 다음: Day 5 — State Management 아키텍처
 
 ## 습득한 핵심 개념
 
@@ -41,5 +41,9 @@
 - [x] Client Component가 Server Component를 import할 수 없는 이유 (Day 3)
 - [x] children을 이용한 Server/Client composition pattern (Day 3)
 - [x] Server Component → Client Component prop 직렬화 제약과 Server Action 예외 (Day 3)
-- [ ] `useEffect` 의존성 배열의 실무 함정 (예정 Day 4)
+- [x] useEffect를 "동기화 메커니즘"으로 이해하는 정신 모델 (Day 4)
+- [x] 의존성 배열의 Object.is 얕은 비교와 객체/함수 재생성으로 인한 무한 루프 원인 (Day 4)
+- [x] 무한 루프의 근본 해결책 — 의존성을 원시값으로 좁히는 설계 (Day 4)
+- [x] stale closure의 원인과 함수형 업데이트/ref 미러링을 이용한 해결 (Day 4)
+- [x] useMemo/useCallback이 정확성이 아닌 최적화 도구라는 경계 (Day 4)
 - [ ] 서버 상태 vs 클라이언트 상태 구분 기준 (예정 Day 5)

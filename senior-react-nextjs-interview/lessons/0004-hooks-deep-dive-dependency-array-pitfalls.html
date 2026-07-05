@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — Hooks 심화 | React / Next.js 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .data-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .data-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">React / Next.js 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 4
+  </nav>
+
+  <h1>Day 4 — Hooks 심화</h1>
+  <p class="subtitle"><code>useEffect</code>/<code>useMemo</code>/<code>useCallback</code>의 실무 함정과 의존성 배열 사고 · 2026-07-05</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#effect-mental-model">useEffect의 정확한 정신 모델 — "동기화"이지 "생명주기 훅"이 아니다</a></li>
+      <li><a href="#infinite-loop">의존성 배열 함정 1 — 객체/함수 재생성으로 인한 무한 루프</a></li>
+      <li><a href="#stale-closure">의존성 배열 함정 2 — Stale Closure</a></li>
+      <li><a href="#memo-callback">useMemo/useCallback — 최적화 도구이지 정확성 도구가 아니다</a></li>
+      <li><a href="#decision-table">Hooks 사용 판단표</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"<code>useEffect</code>의 의존성 배열에 함수나 객체를 넣었더니 무한 루프가 발생했습니다. 이 현상이 왜 일어나는지, 그리고 근본적으로 어떻게 해결해야 하는지 설명해 주세요."</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"팀원이 이 문제를 <code>useCallback</code>으로 함수를 감싸서 해결했다고 합니다. 이 해결책이 항상 안전한가요? 언제 문제가 재발할 수 있나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"실시간 채팅 컴포넌트에서 <code>useEffect</code> 안의 이벤트 핸들러가 오래된(stale) state 값을 참조해서, 사용자가 최근에 입력한 값이 반영되지 않는 버그가 있었습니다. 원인과 수정 방법을 설명해 주세요."</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"의존성 배열 규칙(ESLint가 시키는 대로 채우면 된다)을 아는가"가 아니라, "왜 그 규칙이 존재하고, React가 실제로 무엇을 비교해서 effect를 재실행하는지 정확한 모델을 갖고 있는가"</strong>를 테스트합니다. <code>useEffect</code>는 React 생태계에서 가장 많은 프로덕션 버그(무한 루프, stale closure, race condition, 정리(cleanup) 누락으로 인한 메모리 누수)를 유발하는 API입니다. 이 버그들은 대부분 컴파일 에러 없이 조용히 발생하고, 재현이 간헐적이라 디버깅에 오래 걸립니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>useEffect를 "생명주기 훅"이 아니라 "동기화 메커니즘"으로 이해하는가</strong> — effect가 "마운트 시 한 번, 언마운트 시 한 번" 실행되는 것이 아니라 "렌더링 결과와 외부 시스템을 동기화하는 것"이며, 매 렌더링마다 "이 동기화가 여전히 유효한가"를 의존성 배열로 판단한다는 것을 아는가.</li>
+      <li><strong>의존성 비교 방식(Object.is 얕은 비교)을 정확히 아는가</strong> — 매 렌더링마다 새로 생성되는 객체·배열·함수는 내용이 같아도 참조가 달라 "변경됨"으로 판정된다는 것을 아는가.</li>
+      <li><strong>무한 루프의 인과 관계를 추적할 수 있는가</strong> — effect 내부에서 state를 변경 → 리렌더링 → 의존성으로 넣은 함수/객체가 새로 생성 → effect 재실행 → 다시 state 변경, 이 순환 구조를 코드를 보며 짚어낼 수 있는가.</li>
+      <li><strong>stale closure를 이해하는가</strong> — effect(또는 이벤트 핸들러) 내부의 함수가 "그 함수가 생성된 시점의" state/prop 값을 캡처한 클로저이며, 이후 state가 바뀌어도 그 함수 안에서는 여전히 옛날 값을 본다는 것을 아는가.</li>
+      <li><strong>useCallback/useMemo가 "정확성 도구가 아니라 최적화 도구"라는 경계를 아는가</strong> — 이 Hook들을 없애도 로직이 틀리게 동작해서는 안 되며, 있으면 재계산/재생성을 건너뛸 뿐이라는 것을 아는가.</li>
+    </ul>
+
+    <p>10년차 이하에서 자주 나오는 답변 패턴: "ESLint가 경고하길래 <code>useCallback</code>으로 감쌌더니 해결됐어요." 이 답변은 증상을 없앴을 뿐, <em>왜</em> 그 함수가 매 렌더링마다 새로 생성되었는지, <code>useCallback</code>이 실제로 무엇을 보장하는지(그 자체로 재생성을 완전히 막는 게 아니라 의존성이 바뀌지 않으면 이전 참조를 재사용한다는 것)를 설명하지 못합니다. 시니어는 "이 effect가 진짜로 동기화해야 하는 대상이 무엇인가"부터 질문하고, 필요하다면 애초에 effect의 구조 자체를 바꿉니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>렌더링과 effect의 타이밍 차이</h3>
+    <p>Day 1에서 배운 render/commit 단계 구분을 다시 떠올려 봅시다. React는 먼저 컴포넌트 함수를 호출해서 "이번 렌더링에는 화면이 이렇게 생겨야 한다"는 결과(JSX 트리)를 계산합니다(render 단계). 그다음 그 결과를 실제 DOM에 반영합니다(commit 단계). <code>useEffect</code>로 등록한 콜백은 <strong>commit이 끝나고, 브라우저가 화면을 그린 뒤(paint 이후)</strong> 비동기적으로 실행됩니다. 즉 effect는 "렌더링의 일부"가 아니라 "렌더링이 끝난 뒤 부수효과를 처리하는 별도의 단계"입니다. 이 타이밍 차이 때문에 effect 안에서 DOM을 다시 읽거나, 외부 API를 구독하거나, 타이머를 설정하는 것이 안전합니다 — 화면은 이미 사용자에게 보여진 상태이기 때문입니다.</p>
+
+    <h3>의존성 배열이 실제로 하는 일 — "얕은 비교(shallow comparison)"</h3>
+    <p>많은 사람이 "의존성 배열에 넣은 값이 바뀌면 effect가 재실행된다"까지만 알고, <strong>"바뀜"을 어떻게 판단하는지</strong>는 정확히 모릅니다. React는 매 렌더링마다 이전 렌더링의 의존성 배열과 이번 렌더링의 의존성 배열을 <strong>배열의 각 항목을 <code>Object.is</code>로 하나씩 비교</strong>합니다. 숫자나 문자열 같은 원시값은 값이 같으면 <code>Object.is</code>도 같다고 판단하지만, <strong>객체·배열·함수는 내용이 완전히 똑같아도 매번 새로 만들어진 것이면 다른 참조</strong>로 취급됩니다. 이것이 의존성 배열 함정의 근본 원인입니다.</p>
+
+    <h3>왜 컴포넌트 함수 안에서 정의한 함수/객체는 매번 "새 것"인가</h3>
+    <p>React 컴포넌트는 그냥 자바스크립트 함수입니다. 리렌더링이 일어난다는 것은 <strong>그 함수가 처음부터 다시 호출된다</strong>는 뜻입니다. 함수 본문 안에서 <code>const options = { limit: 10 }</code>나 <code>const handleClick = () =&gt; {...}</code>를 선언하면, 함수가 다시 호출될 때마다 자바스크립트 엔진은 <strong>매번 새로운 객체/함수 인스턴스를 메모리에 만듭니다</strong>. 내용(속성 값, 로직)이 이전 렌더링과 완전히 동일해도, 참조 주소는 다릅니다. 이것을 모르고 이런 객체나 함수를 의존성 배열에 넣으면, React 입장에서는 "매 렌더링마다 의존성이 바뀌었다"고 판단해 effect를 매번 재실행합니다.</p>
+  </section>
+
+  <!-- 4. useEffect 정신 모델 -->
+  <section id="effect-mental-model">
+    <h2>4. useEffect의 정확한 정신 모델 — "동기화"이지 "생명주기 훅"이 아니다</h2>
+
+    <p>클래스 컴포넌트 시절의 <code>componentDidMount</code>/<code>componentDidUpdate</code>/<code>componentWillUnmount</code>에 익숙한 사람들은 <code>useEffect</code>를 "마운트할 때 한 번, 업데이트할 때마다, 언마운트할 때 한 번 실행되는 훅"으로 이해하는 경우가 많습니다. 이 모델은 틀린 것은 아니지만, <strong>왜 의존성 배열이 필요한지, 왜 그 배열을 임의로 조작하면 안 되는지</strong>를 설명하지 못합니다.</p>
+
+    <p>더 정확한 모델은 다음과 같습니다: <strong>useEffect는 "렌더링 결과(props, state)를 외부 시스템(DOM, 네트워크 구독, 타이머, 브라우저 API)과 동기화하는 함수"</strong>이고, 의존성 배열은 "이 동기화 로직이 사용하는 렌더링 결과값이 무엇인가"를 React에게 선언하는 것입니다. 매 렌더링 이후 React는 "지난번에 동기화했던 값들과 이번 렌더링의 값들이 같은가"를 확인하고, <strong>다르면 지난 동기화를 정리(cleanup)하고 새 값으로 다시 동기화</strong>합니다.</p>
+
+    <div class="card">
+      <h4>이 모델이 왜 실무에 중요한가</h4>
+      <p>"생명주기 훅"으로 이해하면 의존성 배열을 "이 effect를 언제 실행할지 제어하는 트리거 목록"으로 오해하게 됩니다. 그래서 "마운트할 때만 실행하고 싶으니 의존성 배열을 <code>[]</code>로 비워두자"처럼, <strong>effect가 실제로 참조하는 값을 숨기고 배열을 임의로 조작하는 습관</strong>이 생깁니다. 반면 "동기화" 모델로 이해하면, 의존성 배열은 조작 대상이 아니라 <strong>effect 본문이 실제로 읽는 값을 정직하게 나열한 목록</strong>이어야 하고, "언제 실행할지"는 그 결과로 자연스럽게 따라오는 것임을 알게 됩니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. 무한 루프 함정 -->
+  <section id="infinite-loop">
+    <h2>5. 의존성 배열 함정 1 — 객체/함수 재생성으로 인한 무한 루프</h2>
+
+    <pre><code>function ChatRoom({ roomId }) {
+  const [messages, setMessages] = useState([]);
+
+  // 매 렌더링마다 새로 생성되는 객체
+  const options = { roomId, serverUrl: "https://chat.example.com" };
+
+  useEffect(() => {
+    const connection = createConnection(options);
+    connection.on("message", (msg) => {
+      setMessages((prev) => [...prev, msg]); // state 변경 → 리렌더링 유발
+    });
+    connection.connect();
+    return () => connection.disconnect();
+  }, [options]); // options는 매 렌더링마다 새 참조 → 매번 "바뀜"으로 판정
+}</code></pre>
+
+    <p>이 코드의 순환 구조는 다음과 같습니다:</p>
+
+    <ol class="step-block">
+      <li><span class="step-num">1</span><div>컴포넌트가 렌더링되면서 <code>options</code>라는 새 객체가 생성된다.</div></li>
+      <li><span class="step-num">2</span><div>이전 렌더링의 <code>options</code>와 이번 <code>options</code>는 내용이 같아도 참조가 다르므로, React는 의존성이 "바뀌었다"고 판단해 effect를 재실행한다.</div></li>
+      <li><span class="step-num">3</span><div>effect 안에서 새 connection을 만들고 메시지를 받을 때마다 <code>setMessages</code>로 state를 바꾼다.</div></li>
+      <li><span class="step-num">4</span><div>state가 바뀌면 컴포넌트가 다시 렌더링되고, 그 과정에서 <code>options</code>가 다시 새로 생성된다 → 1번으로 돌아감.</div></li>
+    </ol>
+
+    <p>메시지가 실제로 자주 도착하는 상황이라면 이 순환은 사실상 "연결을 계속 새로 맺고 끊는" 무한 루프에 가까운 동작으로 이어집니다. 근본 원인은 <strong>"매 렌더링마다 새로 생성되는 값을 의존성으로 사용하면서, effect 내부가 결과적으로 그 렌더링을 다시 유발한다"</strong>는 구조입니다.</p>
+
+    <h3>근본적인 해결 — 의존성을 원시값으로 좁히기</h3>
+    <p>가장 좋은 해결책은 <code>useCallback</code>/<code>useMemo</code>로 객체를 감싸는 것이 아니라, <strong>애초에 effect가 원시값(문자열, 숫자)만 의존하도록 effect 내부에서 필요한 객체를 새로 만드는 것</strong>입니다.</p>
+
+    <pre><code>function ChatRoom({ roomId }) {
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    // options를 effect 내부에서 생성 — 컴포넌트 렌더링과 무관하게
+    // 이 effect가 재실행될 때만 새로 만들어진다.
+    const options = { roomId, serverUrl: "https://chat.example.com" };
+    const connection = createConnection(options);
+    connection.on("message", (msg) => {
+      setMessages((prev) => [...prev, msg]);
+    });
+    connection.connect();
+    return () => connection.disconnect();
+  }, [roomId]); // roomId는 원시값 — 실제로 값이 바뀔 때만 재실행
+}</code></pre>
+
+    <p>이렇게 하면 <code>roomId</code>라는 문자열/숫자만 비교하므로, <code>roomId</code>가 실제로 바뀔 때만 effect가 재실행됩니다. <code>setMessages</code>로 인한 리렌더링은 더 이상 effect 재실행을 유발하지 않습니다.</p>
+  </section>
+
+  <!-- 6. Stale Closure -->
+  <section id="stale-closure">
+    <h2>6. 의존성 배열 함정 2 — Stale Closure</h2>
+
+    <h3>클로저(closure)란 무엇인가 — 쉬운 설명</h3>
+    <p>자바스크립트에서 함수는 자신이 정의될 때 주변에 있던 변수들을 "기억"합니다. 이것을 클로저라고 부릅니다. React 컴포넌트 함수는 렌더링될 때마다 처음부터 다시 실행되므로, <strong>매 렌더링마다 그 안에서 정의되는 이벤트 핸들러나 effect 콜백은 "그 렌더링 시점의" props와 state 값을 클로저로 캡처한 별개의 함수 인스턴스</strong>입니다.</p>
+
+    <pre><code>function Timer() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      // 이 콜백은 effect가 "처음 실행될 때"의 count(0)를 캡처했다.
+      console.log(count); // 항상 0만 출력됨
+      setCount(count + 1); // 항상 0 + 1 = 1로만 계산됨
+    }, 1000);
+    return () => clearInterval(id);
+  }, []); // 빈 배열 — effect가 최초 한 번만 실행되고, 그때의 count(0)를 영원히 참조
+}</code></pre>
+
+    <p>여기서 버그는 <code>setInterval</code>의 콜백이 <strong>effect가 최초로 실행되었을 때의 <code>count</code>(즉 0)를 클로저로 영원히 붙잡고 있다</strong>는 것입니다. 의존성 배열이 <code>[]</code>이므로 effect는 다시 실행되지 않고, 따라서 새 클로저(최신 <code>count</code>를 캡처한 새 콜백)도 만들어지지 않습니다. 결과적으로 1초마다 항상 "0 + 1 = 1"만 계산되어 화면에는 count가 1에서 멈춰 있게 됩니다.</p>
+
+    <h3>해결책 1 — 함수형 업데이트로 최신 state 값 문제를 우회</h3>
+    <pre><code>useEffect(() => {
+  const id = setInterval(() => {
+    // 이전 state를 인자로 받는 함수형 업데이트는
+    // React가 "커밋 직전의 최신 state"를 넣어 호출해준다.
+    setCount((prev) => prev + 1);
+  }, 1000);
+  return () => clearInterval(id);
+}, []);</code></pre>
+
+    <p>이 방법은 <strong>"다음 state가 이전 state로부터 계산되는 경우"</strong>에 stale closure 문제를 우회하는 정석적인 해법입니다. 하지만 이것도 만능은 아닙니다 — <code>count</code>를 콘솔에 출력하거나, 다른 값을 계산하는 데 써야 한다면 여전히 stale 값 문제가 남습니다.</p>
+
+    <h3>해결책 2 — 의존성 배열에 정직하게 값을 채우기</h3>
+    <pre><code>useEffect(() => {
+  const id = setInterval(() => {
+    console.log(count); // 이제 항상 최신 count를 출력
+    setCount(count + 1);
+  }, 1000);
+  return () => clearInterval(id);
+}, [count]); // count가 바뀔 때마다 effect가 정리되고 새로 실행됨</code></pre>
+
+    <p>이 방법은 매초 count가 바뀔 때마다 이전 <code>setInterval</code>을 정리(clear)하고 새 <code>setInterval</code>을 등록합니다. 타이머 하나만 다루는 예제에서는 비용이 적지만, <strong>무거운 구독/연결을 매번 재생성</strong>해야 하는 상황이라면 성능 문제가 될 수 있습니다. 이런 경우 <code>useRef</code>로 최신 값을 "참조"만 하고 effect 재실행을 유발하지 않는 패턴(ref를 이용한 최신 값 접근)을 함께 검토합니다.</p>
+  </section>
+
+  <!-- 7. useMemo/useCallback -->
+  <section id="memo-callback">
+    <h2>7. useMemo/useCallback — 최적화 도구이지 정확성 도구가 아니다</h2>
+
+    <p>많은 주니어 개발자가 "리렌더링이 많으니까 <code>useMemo</code>/<code>useCallback</code>을 여기저기 붙이면 빨라진다"고 생각합니다. 정확한 모델은 다릅니다.</p>
+
+    <div class="why-box">
+      <p><strong><code>useMemo</code>는 "계산 결과를, <code>useCallback</code>은 "함수 참조"를, 의존성이 바뀌지 않는 한 이전 렌더링의 것을 그대로 재사용하게 해주는 캐싱 도구입니다.</strong> 이 Hook들을 걷어내도 애플리케이션이 계산하는 값이나 함수의 동작 자체는 똑같아야 합니다. 즉 이것은 <strong>"더 빠르게 만드는" 도구이지 "정확하게 만드는" 도구가 아닙니다.</strong> 만약 <code>useMemo</code>를 지웠더니 로직이 깨진다면, 그것은 애초에 설계가 그 최적화에 의존하고 있었다는 뜻이며 버그의 징후입니다.</p>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>상황</th>
+          <th>사용 여부</th>
+          <th>이유</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>비용이 큰 계산(대량 배열 필터링/정렬, 복잡한 파생 데이터)을 매 렌더링마다 반복하고 싶지 않을 때</td>
+          <td><code>useMemo</code> 사용 권장</td>
+          <td>실제 측정 가능한 계산 비용 절감 효과가 있음</td>
+        </tr>
+        <tr>
+          <td>단순한 산술 연산, 문자열 결합처럼 계산 비용이 거의 없는 값</td>
+          <td>사용하지 않음</td>
+          <td><code>useMemo</code> 자체의 비교/캐시 관리 비용이 계산 비용보다 클 수 있음</td>
+        </tr>
+        <tr>
+          <td>자식 컴포넌트가 <code>React.memo</code>로 감싸져 있고, 그 자식에게 함수를 prop으로 넘겨 불필요한 리렌더링을 막고 싶을 때</td>
+          <td><code>useCallback</code> 사용 권장</td>
+          <td>함수 참조가 안정적이어야 <code>React.memo</code>의 얕은 비교가 의미를 가짐</td>
+        </tr>
+        <tr>
+          <td>함수를 자식에게 넘기지 않고 이 컴포넌트 안에서만 쓰는 경우</td>
+          <td>대부분 불필요</td>
+          <td><code>React.memo</code> 비교 대상이 아니므로 참조 안정성의 이점이 없음</td>
+        </tr>
+        <tr>
+          <td>객체/함수를 <code>useEffect</code>의 의존성으로 넣어야 하는데 무한 루프를 막고 싶을 때</td>
+          <td>임시방편으로는 동작하지만, 우선 effect 구조 자체를 재검토</td>
+          <td>Section 5에서 본 것처럼, 근본 해법은 의존성을 원시값으로 좁히는 것 — <code>useCallback</code>은 "고쳤다는 착각"을 줄 뿐, 그 함수의 의존성 배열도 정확히 관리해야 하므로 문제를 한 단계 미룰 뿐인 경우가 많음</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 8. 판단표 -->
+  <section id="decision-table">
+    <h2>8. Hooks 사용 판단표</h2>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>증상</th>
+          <th>의심할 원인</th>
+          <th>확인 방법</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>네트워크 탭에 같은 요청이 계속 반복되거나, 화면이 깜빡이며 무한 로딩됨</td>
+          <td>effect 의존성에 매 렌더링마다 새로 생성되는 객체/배열/함수가 있고, effect 내부가 리렌더링을 유발함</td>
+          <td>React DevTools Profiler로 어떤 컴포넌트가 계속 리렌더링되는지 확인 → 해당 effect의 의존성 배열 검사</td>
+        </tr>
+        <tr>
+          <td>이벤트 핸들러나 setInterval 콜백이 "예전 값"만 참조하는 것처럼 보임</td>
+          <td>stale closure — effect/콜백이 오래된 렌더링의 값을 캡처</td>
+          <td>의존성 배열이 비어 있거나 불완전한지 확인, 함수형 업데이트 적용 가능 여부 검토</td>
+        </tr>
+        <tr>
+          <td>리스트가 커질수록 타이핑/스크롤이 버벅임</td>
+          <td>비용이 큰 계산이 매 렌더링마다 반복 실행됨</td>
+          <td>Profiler로 렌더링당 소요 시간 측정 → 실제로 비용이 크면 <code>useMemo</code> 적용, 아니면 다른 병목(리렌더링 범위 자체)을 의심</td>
+        </tr>
+        <tr>
+          <td>구독/타이머를 정리하지 않아 컴포넌트가 언마운트된 후에도 콘솔 경고나 메모리 누수 발생</td>
+          <td>cleanup 함수 누락 또는 조건부 return으로 cleanup이 실행되지 않는 경로 존재</td>
+          <td>effect가 등록한 모든 리소스(구독, 타이머, 이벤트 리스너)에 대응하는 cleanup이 있는지 코드 리뷰</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 9. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>9. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>useEffect의 정확한 모델을 먼저 말합니다.</strong> "useEffect는 생명주기 훅이 아니라, 렌더링 결과와 외부 시스템을 동기화하는 메커니즘이고, 의존성 배열은 이 동기화가 사용하는 값을 선언한 것이다."</li>
+      <li><strong>무한 루프의 인과 관계를 짚습니다.</strong> "의존성에 넣은 객체/함수가 컴포넌트 함수 내부에서 매 렌더링마다 새로 생성되므로, React가 얕은 비교(Object.is)로 매번 '바뀌었다'고 판단해 effect를 재실행하고, effect 내부가 state를 바꿔 다시 렌더링을 유발하는 순환이 생긴다."</li>
+      <li><strong>근본 해결책을 제시합니다.</strong> "임시방편으로 useCallback을 쓰기보다, effect가 실제로 필요한 값이 원시값(예: roomId)뿐이라면 객체를 effect 내부에서 생성하도록 구조를 바꿔 의존성을 원시값으로 좁힌다."</li>
+      <li><strong>useCallback을 쓸 때의 한계를 짚습니다.</strong> "useCallback으로 감싸도 그 자체의 의존성 배열을 정확히 관리하지 않으면 문제가 재발할 수 있고, 근본적으로는 최적화 도구이지 정확성을 보장하는 도구가 아니다."</li>
+      <li><strong>실무 연결로 마무리합니다.</strong> "이런 종류의 버그는 컴파일 에러 없이 조용히 나타나기 때문에, 실무에서는 ESLint의 react-hooks/exhaustive-deps 규칙을 신뢰하고 임의로 의존성을 제거하지 않는 것이 1차 방어선이다."</li>
+    </ol>
+  </section>
+
+  <!-- 10. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>10. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "<code>useEffect</code>의 의존성 배열에 함수나 객체를 넣었더니 무한 루프가 발생했습니다. 이 현상이 왜 일어나는지, 그리고 근본적으로 어떻게 해결해야 하는지 설명해 주세요."</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>이 문제는 React가 의존성 배열을 비교하는 방식(Object.is를 이용한 얕은 비교)과, 자바스크립트 함수가 리렌더링마다 처음부터 다시 실행된다는 두 가지 사실이 결합해서 생깁니다. 컴포넌트 함수 본문 안에서 <code>const options = {`{ ... }`}</code>처럼 객체를 선언하면, 컴포넌트가 리렌더링될 때마다 이 객체는 내용이 같아도 매번 새로운 참조로 생성됩니다. 이 객체를 <code>useEffect</code>의 의존성 배열에 넣으면, React는 이전 렌더링의 참조와 이번 참조가 다르므로 '의존성이 바뀌었다'고 판단해 effect를 재실행합니다.</p>
+      <br>
+      <p>여기서 그 effect 내부가 <code>setState</code>로 state를 변경하는 로직을 포함하고 있다면 순환이 생깁니다. effect 실행 → state 변경 → 리렌더링 → 객체가 새로 생성됨 → 의존성이 '바뀜'으로 판정 → effect 재실행, 이 흐름이 계속 반복되는 것입니다.</p>
+      <br>
+      <p>임시방편으로 그 객체를 <code>useMemo</code>로, 함수를 <code>useCallback</code>으로 감싸면 증상이 완화될 수 있지만, 이는 근본 해결이 아닙니다. 저라면 먼저 'effect가 실제로 필요로 하는 값이 무엇인가'를 다시 확인합니다. 대부분의 경우 필요한 것은 <code>roomId</code>같은 원시값 하나뿐이고, <code>options</code> 객체 자체는 effect 내부에서 그 원시값으로부터 새로 만들면 충분합니다. 이렇게 하면 의존성 배열에는 원시값만 남고, 그 원시값이 실제로 바뀔 때만 effect가 재실행되어 순환이 끊깁니다. 즉 이 문제의 진짜 해법은 'memoization으로 참조를 안정시키는 것'이 아니라 '애초에 effect의 의존성 표면을 원시값으로 좁히는 설계'입니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>React의 의존성 비교 방식(얕은 비교)과 자바스크립트 함수 재실행이라는 두 가지 원인을 결합해서 인과 관계를 정확히 설명함</li>
+      <li>무한 루프의 순환 구조를 단계별로 짚어냄</li>
+      <li>useCallback/useMemo가 "임시방편"이라는 것을 명시하고, 그 이유(그 자체의 의존성 관리 문제가 남음)까지 설명함</li>
+      <li>근본 해결책(의존성 표면을 원시값으로 좁히는 설계 변경)을 구체적으로 제시함</li>
+    </ul>
+  </section>
+
+  <!-- 11. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>11. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"함수를 <code>useCallback</code>으로, 객체를 <code>useMemo</code>로 감싸면 참조가 유지돼서 무한 루프가 해결됩니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"왜" 무한 루프가 발생했는지(의존성 비교 방식, 리렌더링마다 새 참조 생성) 설명하지 않고 해결 도구 이름만 말합니다.</li>
+        <li><code>useCallback</code>도 결국 그 함수 내부가 참조하는 값들을 의존성 배열에 정확히 넣어야 하는데, 이 관리가 소홀하면 문제가 재발할 수 있다는 한계를 짚지 못했습니다.</li>
+        <li>면접관이 "그 useCallback의 의존성 배열은 어떻게 관리하나요?"라고 물으면 순환 논리에 빠질 가능성이 높습니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"의존성 배열을 비워두면(<code>[]</code>) 무한 루프가 생기지 않으니, 웬만하면 빈 배열을 쓰는 게 안전합니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>의존성 배열을 임의로 비우는 것은 "effect가 실제로 참조하는 최신 값을 무시하겠다"는 뜻이며, 이는 무한 루프 대신 stale closure 버그를 만듭니다 — 문제를 해결한 것이 아니라 다른 문제로 바꾼 것입니다.</li>
+        <li>ESLint의 <code>react-hooks/exhaustive-deps</code> 규칙이 왜 존재하는지, 그리고 그 규칙을 임의로 무시하는 것이 왜 위험한지에 대한 인식이 없습니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>의존성 배열 비교가 Object.is 기반 얕은 비교라는 것을 명시한다</li>
+        <li>컴포넌트 함수가 리렌더링마다 처음부터 재실행되어 객체/함수가 매번 새로 생성된다는 것을 설명한다</li>
+        <li>state 변경 → 리렌더링 → 재생성 → effect 재실행이라는 순환 구조를 단계별로 짚는다</li>
+        <li>useCallback/useMemo를 "임시방편"으로 정확히 위치시키고, 근본 해결(의존성을 원시값으로 좁히는 설계)을 제시한다</li>
+        <li>exhaustive-deps 규칙을 신뢰해야 하는 이유를 언급한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 12. Follow-up -->
+  <section id="followups">
+    <h2>12. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: ESLint의 <code>react-hooks/exhaustive-deps</code> 규칙이 경고하는 의존성을 일부러 배열에서 빼도 되는 경우가 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 원칙적으로는 거의 없어야 합니다. 하지만 "그 값이 절대 바뀌지 않는다는 것을 구조적으로 보장할 수 있는 경우"(예: <code>useState</code>의 setter 함수 자체, <code>useRef</code>로 만든 ref 객체)는 React가 참조 안정성을 보장하는 값이므로 배열에서 빼도 안전하다고 알려져 있습니다. 이런 특수한 경우가 아니라면, 규칙을 끄는 대신 effect의 구조 자체(값을 ref로 옮기거나, effect를 원시값 의존성만 갖도록 재설계)를 먼저 검토해야 합니다. "경고가 귀찮아서 끈다"는 것은 항상 잘못된 이유입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: useMemo/useCallback을 습관적으로 모든 곳에 붙이는 것이 왜 항상 좋은 것은 아닌가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> <code>useMemo</code>/<code>useCallback</code> 자체도 매 렌더링마다 의존성 배열을 비교하고 이전 값을 저장/조회하는 비용이 있습니다. 계산 비용이 거의 없는 값(단순 문자열 결합, 간단한 산술)에 이 Hook을 붙이면, 캐싱에 드는 비용이 원래 계산 비용보다 커질 수 있습니다. 또한 이 Hook들을 남발하면 의존성 배열을 관리해야 할 지점이 늘어나 코드가 복잡해지고, 오히려 의존성 배열 실수(stale closure, 무한 루프)의 발생 지점이 늘어나는 역효과가 생길 수 있습니다. 실제로 측정했을 때 리렌더링 비용이 유의미한 지점에만 선택적으로 적용하는 것이 원칙입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: effect 안에서 최신 state 값은 참조하고 싶지만, 그 값이 바뀔 때마다 effect가 재실행되는 것은 원하지 않는 경우 어떻게 하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> <code>useRef</code>를 이용해 최신 값을 "미러링"하는 패턴을 씁니다. 별도의 effect(또는 렌더링 중)에서 <code>latestValueRef.current = value</code>로 매 렌더링마다 ref를 최신 값으로 갱신하고, 원래 effect 안에서는 <code>latestValueRef.current</code>를 읽습니다. ref를 읽고 쓰는 것은 렌더링을 유발하지 않고 의존성 배열 비교 대상도 아니므로, effect는 재실행되지 않으면서도 항상 최신 값을 참조할 수 있습니다. 다만 이 패턴은 남용하면 '의존성 배열이 왜 이렇게 생겼는지' 코드만 봐서는 알기 어려워지므로, 꼭 필요한 곳(예: 이벤트 핸들러 등록/해제 비용이 매우 큰 경우)에만 신중하게 적용해야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: React 19의 컴파일러(React Compiler)가 useMemo/useCallback을 자동으로 처리해준다고 들었습니다. 그러면 이 Hook들을 더 이상 몰라도 되나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> React Compiler는 컴파일 타임에 코드를 분석해서 필요한 memoization을 자동으로 삽입해주는 도구이지만, 이것이 "의존성 배열 개념 자체를 몰라도 된다"는 뜻은 아닙니다. 첫째, 컴파일러가 적용되지 않는 레거시 코드베이스나 컴파일러 규칙을 위반하는 코드(예: 순수하지 않은 렌더링 로직)에서는 여전히 수동 관리가 필요합니다. 둘째, <code>useEffect</code>의 의존성 배열(외부 시스템과의 동기화)은 컴파일러가 대신 판단해줄 수 있는 영역이 아니라 개발자가 '이 effect가 무엇에 의존하는가'를 직접 선언해야 하는 영역입니다. 컴파일러는 useMemo/useCallback 같은 렌더링 최적화 영역을 자동화하는 것이지, useEffect의 동기화 로직 자체를 대신 설계해주지 않습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 두 개의 effect가 있는데, 하나는 데이터를 fetch하고 다른 하나는 그 데이터를 가공합니다. 이렇게 effect를 체이닝하는 것이 좋은 패턴인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 좋은 패턴이 아닙니다. effect가 다른 effect의 결과(state)에 의존해서 또 다른 state를 계산하는 체이닝 구조는, 렌더링이 여러 번 연쇄적으로 일어나게 만들고 디버깅을 어렵게 만듭니다. 이런 경우 대부분은 "파생 상태(derived state)"이므로, 별도 effect를 만들 필요 없이 렌더링 중에 직접 계산하거나(필요하면 <code>useMemo</code>로 감싸서), 데이터 fetch 로직 안에서 가공까지 마쳐서 state를 한 번만 갱신하도록 구조를 바꾸는 것이 원칙입니다. 'state가 바뀌면 또 다른 state를 갱신해야 한다'는 요구가 보이면, 먼저 '이것이 정말 effect가 필요한 동기화인가, 아니면 그냥 렌더링 중 계산으로 대체 가능한가'를 질문해야 합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>13. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"useEffect는 componentDidMount/componentDidUpdate/componentWillUnmount를 합친 것이다"</strong></p>
+      <p>동작 결과가 비슷해 보일 때가 많아 흔히 이렇게 설명하지만, 이 모델로는 "왜 의존성 배열이 필요한지"를 설명할 수 없습니다. 정확한 모델은 "렌더링 결과를 외부 시스템과 동기화하는 함수"이며, 의존성 배열은 그 동기화가 참조하는 값의 목록입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"의존성 배열은 그냥 effect를 언제 다시 실행할지 트리거하는 조건 목록이다"</strong></p>
+      <p>의존성 배열을 "트리거 조건"으로 보면 "원하는 시점에만 실행되게 배열을 조작해도 된다"는 오해로 이어집니다. 실제로는 "effect 본문이 실제로 읽는 값을 정직하게 선언"하는 것이며, 실행 시점은 그 선언의 자연스러운 결과일 뿐입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"useCallback/useMemo를 쓰면 항상 성능이 좋아진다"</strong></p>
+      <p>이 Hook들 자체도 비교와 캐시 관리 비용이 있습니다. 계산 비용이 낮은 값에 붙이면 오히려 손해일 수 있고, 실제 이득은 "비용이 큰 계산을 반복하지 않을 때" 또는 "React.memo로 감싼 자식에게 안정적인 참조를 넘겨야 할 때"에만 발생합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"stale closure는 드문 엣지 케이스이니 신경 쓰지 않아도 된다"</strong></p>
+      <p>타이머, 이벤트 리스너, 웹소켓 구독, 디바운스/스로틀 처리된 콜백처럼 "한 번 등록되면 한동안 유지되는" 모든 비동기 패턴에서 stale closure는 매우 흔하게 발생합니다. 실무에서 "최근에 입력한 값이 반영되지 않는다", "몇 초 전 상태로 동작하는 것 같다" 같은 버그 리포트의 상당수가 이 원인입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"cleanup 함수는 언마운트될 때만 실행된다"</strong></p>
+      <p>cleanup 함수는 언마운트 시뿐 아니라, <strong>의존성이 바뀌어 effect가 재실행되기 직전에도 매번 실행</strong>됩니다. "이전 동기화를 정리하고 새로 동기화한다"는 모델을 생각하면 당연한 동작이지만, 이를 모르면 "effect가 여러 번 실행되는데 cleanup은 마지막에만 한 번 실행될 것"이라고 착각해 리소스 누수나 중복 구독 버그를 만들 수 있습니다.</p>
+    </div>
+  </section>
+
+  <!-- 14. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>14. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 4를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>useEffect를 "생명주기 훅"이 아니라 "렌더링 결과와 외부 시스템의 동기화 메커니즘"으로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>의존성 배열 비교가 Object.is 기반 얕은 비교이며, 객체/배열/함수는 내용이 같아도 참조가 다르면 "바뀜"으로 판정된다는 것을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>객체/함수 재생성으로 인한 무한 루프의 순환 구조(재생성 → 재비교 → effect 재실행 → state 변경 → 리렌더링 → 재생성)를 코드를 보며 짚어낼 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>무한 루프의 근본 해결책이 "의존성을 원시값으로 좁히는 설계 변경"이며, useCallback/useMemo는 임시방편에 가깝다는 것을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>stale closure가 무엇이고, 왜 빈 의존성 배열이 이 문제를 만드는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>함수형 업데이트(setState(prev => ...))와 ref 미러링 패턴이 각각 어떤 stale closure 상황에 적합한지 구분할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>useMemo/useCallback이 정확성이 아니라 최적화를 위한 도구이며, 언제 실제로 필요한지(비용이 큰 계산, React.memo 자식으로의 안정적 참조 전달) 구분할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>cleanup 함수가 언마운트 시뿐 아니라 의존성 변경으로 인한 재실행 직전에도 매번 호출된다는 것을 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 5</h3>
+      <p><strong>State Management 아키텍처</strong></p>
+      <p>Day 4에서 useEffect/useMemo/useCallback의 함정을 다뤘다면, Day 5에서는 한 단계 위인 아키텍처 관점으로 올라가 "이 데이터를 로컬 상태로 둘지, 서버 상태로 둘지, 전역 상태로 둘지"를 판단하는 기준과, 그 판단이 상태 관리 도구 선택으로 이어지는 논리를 다룹니다.</p>
+      <p>면접 질문 예고: "우리 팀은 Redux를 쓰다가 최근 서버 상태는 React Query로, 전역 UI 상태는 Zustand로 분리했습니다. 이 결정의 근거를 어떻게 설명하시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    React / Next.js 시니어 인터뷰 · Day 4 of 20 · 2026-07-05
+  </p>
+
+</div>
+</body>
+</html>
