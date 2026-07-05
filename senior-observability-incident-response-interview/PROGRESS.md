@@ -9,12 +9,12 @@
 | 3 | 2026-07-02 | 메트릭과 알림 설계 | [0003-metrics-and-alerting-design.html](lessons/0003-metrics-and-alerting-design.html) |
 | 4 | 2026-07-03 | 분산 트레이싱 심화 | [0004-distributed-tracing-deep-dive.html](lessons/0004-distributed-tracing-deep-dive.html) |
 | 5 | 2026-07-04 | 장애 원인 분석 (RCA) | [0005-root-cause-analysis.html](lessons/0005-root-cause-analysis.html) |
+| 6 | 2026-07-05 | 대시보드 설계 원칙 | [0006-dashboard-design-principles.html](lessons/0006-dashboard-design-principles.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | 대시보드 설계 원칙 | 역할별 대시보드, Golden Signal, 지표 선택 |
 | 7 | SLO / SLI / SLA 와 Error Budget | SLO 정의, Error Budget 소진율, Burn Rate 알림 |
 | 8 | Postmortem 작성과 재발 방지 | 비난 없는 postmortem, 액션 아이템 추적 |
 | 9 | 장애 커뮤니케이션 | 이해관계자 보고, 에스컬레이션, 장애 브리핑 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — Day 6 (대시보드 설계 원칙) 예정.
+**Day 6 완료** — Day 7 (SLO / SLI / SLA와 Error Budget) 예정.
 
 ## 습득한 핵심 개념
 
@@ -43,6 +43,9 @@
 - [x] 5 Whys 적용과 한계(선형 사슬 vs 나무 구조) (Day 5)
 - [x] 타임라인 재구성과 가설 검증(Correlation vs Causation) (Day 5)
 - [x] Contributing Factors / Swiss Cheese Model (Day 5)
-- [ ] 역할별 대시보드 설계 (예정 Day 6)
+- [x] Golden Signals(Latency/Traffic/Errors/Saturation) (Day 6)
+- [x] Signal vs Noise, Drill-down 계층 구조 (Day 6)
+- [x] 역할별 대시보드 설계와 대시보드/알림 역할 구분 (Day 6)
+- [x] Dashboard as Code와 카디널리티/실시간성 trade-off (Day 6)
 - [ ] Error Budget 소진율 알림 (예정 Day 7)
 - [ ] 비난 없는 postmortem 작성 (예정 Day 8)
