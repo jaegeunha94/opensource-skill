@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — JavaScript 실행 모델, 클로저와 메모리 누수 | 프론트엔드 10년차 이상 개발자 Interview</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">프론트엔드 10년차 이상 개발자 Interview</a> › <a href="./">레슨 목록</a> › Day 4
+  </nav>
+
+  <h1>Day 4 — JavaScript 실행 모델, 클로저와 메모리 누수</h1>
+  <p class="subtitle">콜스택, 이벤트 루프, 마이크로/매크로태스크, 클로저 기반 메모리 누수, 프로덕션 진단 · 2026-07-05</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#execution-model">JavaScript 실행 모델 — 콜스택, 큐, 이벤트 루프</a></li>
+      <li><a href="#closures-leaks">클로저가 메모리 누수로 이어지는 경로</a></li>
+      <li><a href="#diagnosis">프로덕션 메모리 누수 진단 절차</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"장시간 켜둔 SPA 탭의 메모리 사용량이 계속 늘어난다는 사용자 제보가 들어왔습니다. 어떻게 원인을 좁혀나가시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"<code>setTimeout(fn, 0)</code>과 <code>Promise.resolve().then(fn)</code>을 동시에 호출하면 어느 것이 먼저 실행되나요? 그 이유는요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"컴포넌트를 언마운트했는데도 이전 컴포넌트 인스턴스가 GC(가비지 컬렉션)되지 않고 계속 메모리에 남아 있습니다. 원인이 될 수 있는 코드 패턴을 아는 대로 말씀해 주세요."</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"클로저가 뭔지 정의할 수 있는가"가 아니라, 클로저가 만드는 참조 관계가 왜 가비지 컬렉터의 판단을 바꾸고, 그 결과가 왜 몇 시간 뒤에야 눈에 보이는 메모리 누수로 나타나는지 설명할 수 있는가</strong>를 테스트합니다. 클로저는 프론트엔드 인터뷰에서 가장 자주 나오는 개념이지만, 대부분은 "함수가 자신이 선언된 스코프의 변수를 기억한다"는 정의까지만 말하고 멈춥니다. 시니어는 그 "기억"이 곧 <em>참조를 유지시켜 GC 대상에서 제외시키는 행위</em>라는 것까지 연결해야 합니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>실행 모델을 콜스택 하나로만 이해하지 않는가</strong> — 동기 코드, Web API, 매크로태스크 큐, 마이크로태스크 큐가 어떻게 상호작용하는지, 그리고 그 순서가 왜 화면 갱신 타이밍에도 영향을 주는지 아는가.</li>
+      <li><strong>"메모리 누수"를 막연한 공포가 아니라 참조 그래프 문제로 설명</strong> — 가비지 컬렉터가 "도달 가능성(reachability)"만 본다는 것, 그리고 의도치 않은 참조 하나가 거대한 객체 그래프 전체를 살려둘 수 있다는 것을 아는가.</li>
+      <li><strong>모호한 증상을 재현 가능한 절차로 좁히는 능력</strong> — "메모리가 는다"는 제보를 받았을 때 추측이 아니라 힙 스냅샷 비교라는 구체적 절차로 원인을 특정할 수 있는가.</li>
+      <li><strong>장수명 SPA 특유의 문제를 인지</strong> — 페이지를 새로고침하지 않고 몇 시간, 며칠씩 켜두는 대시보드형 SPA에서는 짧은 페이지 전환에서는 드러나지 않던 누수가 누적되어 치명적인 문제가 된다는 것을 아는가.</li>
+    </ul>
+
+    <p>주니어~중니어에서 자주 나오는 답변 패턴: "클로저는 외부 함수의 변수에 접근할 수 있는 함수입니다"처럼 교과서적 정의만 반복하거나, "메모리 누수가 나면 새로고침하면 됩니다"처럼 증상 회피를 해결책으로 제시하는 경우입니다. 시니어는 정의가 아니라 "그 정의가 만드는 참조 관계가 실제 프로덕션에서 어떤 사고로 이어지는지"부터 짚습니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>콜스택(Call Stack)이란 무엇인가</h3>
+    <p>지금 실행 중인 함수들이 차곡차곡 쌓이는 접시 더미입니다. 함수 A 안에서 함수 B를 호출하면 B가 A 위에 쌓이고, B가 끝나면 다시 벗겨져서 A로 돌아갑니다. JavaScript는 이 접시 더미를 <strong>한 번에 하나씩만</strong> 처리할 수 있는 단일 스레드입니다 — 즉, 접시 더미가 비워지기 전까지는 다른 어떤 작업(클릭 이벤트 처리, 화면 갱신 등)도 끼어들 수 없습니다.</p>
+
+    <h3>Web API와 태스크 큐란 무엇인가</h3>
+    <p><code>setTimeout</code>, <code>fetch</code>, DOM 이벤트처럼 시간이 걸리거나 외부 신호를 기다리는 작업은 JavaScript 엔진이 아니라 브라우저(Web API)가 대신 처리합니다. 이 작업이 끝나면 결과를 곧바로 콜스택에 넣지 않고, <strong>대기실(큐)</strong>에 순서대로 줄을 세워둡니다. 식당에 비유하면, 주방(콜스택)이 한 번에 한 요리만 만들 수 있어서, 주문(비동기 작업 결과)이 들어와도 완성되는 대로 대기 줄(큐)에 세워두고 주방이 비면 하나씩 처리하는 것과 같습니다.</p>
+
+    <h3>이벤트 루프(Event Loop)란 무엇인가</h3>
+    <p>콜스택이 완전히 비었는지 계속 확인하다가, 비어 있으면 큐에서 대기 중인 작업을 꺼내 콜스택에 넣어 실행시키는 감독관입니다. 이 감독관 덕분에 "동시에 여러 일을 처리하는 것처럼 보이는" 비동기 동작이 사실은 "한 번에 하나씩, 순서대로" 처리되는 단일 스레드 위에서 구현됩니다.</p>
+
+    <h3>마이크로태스크와 매크로태스크는 왜 다른 줄에 서는가</h3>
+    <p>대기실(큐)은 사실 하나가 아니라 <strong>여러 개</strong>입니다. <code>Promise.then</code>, <code>queueMicrotask</code>는 "우선 처리 줄"(마이크로태스크 큐)에 서고, <code>setTimeout</code>, <code>setInterval</code>, DOM 이벤트는 "일반 줄"(매크로태스크 큐, task queue)에 섭니다. 이벤트 루프는 매크로태스크를 하나 처리할 때마다, 다음 매크로태스크로 넘어가기 <em>전에</em> 우선 처리 줄(마이크로태스크 큐)을 <strong>완전히 빌 때까지</strong> 먼저 처리합니다. 그래서 <code>setTimeout(fn, 0)</code>보다 <code>Promise.resolve().then(fn)</code>이 항상 먼저 실행됩니다.</p>
+
+    <h3>클로저(Closure)란 무엇인가</h3>
+    <p>함수가 자신이 <strong>선언될 당시의 스코프(변수 환경)</strong>를 계속 손에 쥐고 있는 현상입니다. 외부 함수가 이미 실행을 끝내고 반환되어도, 그 안에서 만들어진 내부 함수가 살아있는 한 외부 함수의 변수들은 사라지지 않고 유지됩니다. 여행 가방에 비유하면, 여행(외부 함수 실행)이 끝나도 가방(스코프) 안에 넣어둔 물건(변수)을 계속 들고 다니는 사람(내부 함수)이 있는 것과 같습니다.</p>
+
+    <h3>가비지 컬렉션(GC)이 판단하는 단 하나의 기준 — 도달 가능성</h3>
+    <p>JavaScript 엔진은 "이 변수를 얼마나 오래 안 썼는가"가 아니라, <strong>"루트(전역 객체, 현재 실행 중인 스코프)에서부터 참조를 따라가서 이 객체에 도달할 수 있는가"</strong>만 봅니다. 도달할 수 있으면 절대 회수하지 않고, 도달할 수 없어야만 회수 대상이 됩니다. 이것이 메모리 누수의 본질입니다 — 개발자는 "이 객체는 이제 안 쓴다"고 생각하지만, 어딘가에 남아있는 참조 하나 때문에 엔진 입장에서는 여전히 "도달 가능"하므로 절대 회수되지 않습니다.</p>
+  </section>
+
+  <!-- 4. 실행 모델 심화 -->
+  <section id="execution-model">
+    <h2>4. JavaScript 실행 모델 — 콜스택, 큐, 이벤트 루프</h2>
+
+    <p>한 번의 이벤트 루프 반복(tick)은 다음 순서를 따릅니다.</p>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>콜스택에서 동기 코드 실행</strong>
+          <p style="margin-top:0.3rem">현재 실행 중인 스크립트나 콜백이 콜스택을 완전히 비울 때까지 실행됩니다. 이 동안에는 클릭, 스크롤, 타이머 콜백 그 무엇도 끼어들 수 없습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>콜스택이 비면 마이크로태스크 큐를 끝까지 비운다</strong>
+          <p style="margin-top:0.3rem"><code>Promise.then/catch/finally</code>, <code>queueMicrotask</code>, <code>MutationObserver</code> 콜백이 여기에 쌓입니다. 처리 도중 새로운 마이크로태스크가 추가되어도(예: <code>then</code> 안에서 또 <code>then</code>) <strong>같은 tick 안에서 계속</strong> 처리합니다 — 큐가 완전히 빌 때까지 다음 단계로 넘어가지 않습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>필요하면 렌더링(화면 갱신) 기회</strong>
+          <p style="margin-top:0.3rem">브라우저는 마이크로태스크 큐가 빈 시점에 "지금 화면을 다시 그릴 필요가 있는지" 확인합니다. 이 타이밍 덕분에, 마이크로태스크 안에서 여러 번 상태를 바꿔도 중간 상태가 화면에 깜빡이지 않고 최종 상태만 반영될 수 있습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>매크로태스크 큐에서 하나만 꺼내 실행</strong>
+          <p style="margin-top:0.3rem"><code>setTimeout</code>, <code>setInterval</code>, DOM 이벤트, <code>MessageChannel</code> 콜백 중 대기 순서상 가장 앞선 것 <strong>딱 하나만</strong> 꺼내 콜스택에 넣고 실행합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>1번으로 돌아가 반복</strong>
+          <p style="margin-top:0.3rem">매크로태스크 하나가 끝나면 다시 마이크로태스크 큐 전체를 비우고, 그다음 매크로태스크 하나만 꺼내는 과정을 반복합니다.</p>
+        </div>
+      </li>
+    </ul>
+
+    <div class="card">
+      <h4>왜 <code>setTimeout(fn, 0)</code>이 "즉시 실행"이 아닌가</h4>
+      <p><code>setTimeout</code>의 두 번째 인자는 "몇 ms 뒤에 실행하라"가 아니라 "몇 ms 뒤에 매크로태스크 큐에 넣어달라"는 뜻입니다. 큐에 들어간 뒤에도 현재 실행 중인 동기 코드와 마이크로태스크 큐가 전부 끝나야 차례가 옵니다. 그래서 <code>setTimeout(fn, 0)</code>과 <code>Promise.resolve().then(fn)</code>을 나란히 호출하면, 마이크로태스크가 항상 매크로태스크보다 먼저 실행되어 <code>then</code>이 먼저 실행됩니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>실무에서 이게 왜 중요한가</h4>
+      <p>마이크로태스크 안에서 계속 새로운 마이크로태스크를 만들어내면(예: 재귀적으로 <code>then</code>을 거는 코드), 이벤트 루프는 매크로태스크나 렌더링으로 절대 넘어가지 못하고 마이크로태스크 큐만 무한히 처리하게 됩니다. 이 경우 화면이 완전히 멈춘 것처럼 보이는데, 이는 콜스택이 막힌 게 아니라 <strong>마이크로태스크 큐가 절대 비워지지 않아서</strong> 발생하는 것입니다. "느리다"와 "멈췄다"를 구분할 때 이 지식이 실제 원인 진단에 쓰입니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. 클로저와 메모리 누수 -->
+  <section id="closures-leaks">
+    <h2>5. 클로저가 메모리 누수로 이어지는 경로</h2>
+
+    <p>클로저 자체는 버그가 아니라 JavaScript의 핵심 기능입니다. 문제는 클로저가 <strong>의도한 것보다 훨씬 큰 범위의 참조</strong>를 붙잡아 두는 경우입니다. 실무에서 가장 흔한 4가지 패턴은 다음과 같습니다.</p>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>패턴</th>
+          <th>참조가 유지되는 이유</th>
+          <th>실무 증상</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>이벤트 리스너 미해제</td>
+          <td><code>addEventListener</code>에 등록된 클로저가 컴포넌트의 상태·DOM을 캡처한 채, 컴포넌트가 언마운트돼도 리스너가 남아 있음</td>
+          <td>SPA 페이지를 계속 이동할수록 메모리가 계단식으로 증가</td>
+        </tr>
+        <tr>
+          <td><code>setInterval</code> 미정리</td>
+          <td>타이머 콜백(클로저)이 살아있는 한 그 안에서 참조하는 객체 전체가 도달 가능 상태로 유지됨</td>
+          <td>탭을 오래 켜둘수록 CPU·메모리 사용량이 동시에 상승</td>
+        </tr>
+        <tr>
+          <td>Detached DOM 노드</td>
+          <td>DOM 트리에서는 제거됐지만 JavaScript 변수(클로저 포함)가 여전히 그 노드를 참조 중</td>
+          <td>DevTools Heap Snapshot에서 "Detached" 노드 수가 계속 증가</td>
+        </tr>
+        <tr>
+          <td>전역 캐시/구독 목록에 계속 추가만 함</td>
+          <td>맵이나 배열에 콜백·객체를 추가만 하고 제거 로직이 없어 계속 누적</td>
+          <td>특정 기능(검색, 필터)을 반복 사용할수록 느려짐</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>Detached DOM 노드가 생기는 대표 코드</h4>
+      <pre><code>// 문제: 리스너 안의 클로저가 큰 데이터(largeData)와 removedNode를 함께 캡처
+function attachHandler(largeData) {
+  const node = document.getElementById('item');
+  node.addEventListener('click', function handler() {
+    console.log(largeData.length); // largeData 전체가 클로저에 캡처됨
+  });
+  // 이후 이 node를 DOM에서 제거해도(node.remove())
+  // handler가 여전히 어딘가(예: 전역 배열)에 남아 참조하고 있다면
+  // node와 largeData 모두 GC 대상에서 제외된다.
+}
+
+// 개선: 컴포넌트/기능이 종료될 때 반드시 해제
+function attachHandler(largeData) {
+  const node = document.getElementById('item');
+  function handler() {
+    console.log(largeData.length);
+  }
+  node.addEventListener('click', handler);
+  return () => node.removeEventListener('click', handler); // cleanup 반환
+}</code></pre>
+      <p>핵심은 "클로저를 쓰지 마라"가 아니라, <strong>클로저가 캡처한 참조의 수명이 실제로 필요한 수명보다 길어지지 않도록 정리(cleanup) 로직을 반드시 짝지어 두는 것</strong>입니다. React라면 <code>useEffect</code>의 cleanup 함수, Vue라면 <code>onUnmounted</code>, 순수 DOM이라면 명시적인 <code>removeEventListener</code>/<code>clearInterval</code>이 그 짝입니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>왜 대시보드형 장수명 SPA에서 특히 치명적인가</h4>
+      <p>페이지 전체를 새로고침하는 전통적인 웹사이트는 페이지 전환마다 브라우저가 메모리를 통째로 회수하기 때문에 이런 누수가 누적되지 않습니다. 하지만 클라이언트 사이드 라우팅만으로 화면을 전환하는 SPA는 탭을 닫기 전까지 하나의 JavaScript 실행 컨텍스트가 계속 유지됩니다. 사용자가 탭을 하루 종일 켜두는 대시보드·모니터링·오피스 툴에서는 페이지 전환 한 번당 수 KB씩만 새는 누수도 수백 번 반복되면 GB 단위로 누적되어 결국 탭이 강제 종료(OOM)됩니다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 진단 절차 -->
+  <section id="diagnosis">
+    <h2>6. 프로덕션 메모리 누수 진단 절차</h2>
+
+    <p>"메모리가 늘어난다"는 제보는 추측이 아니라 재현 가능한 절차로 좁혀야 합니다. Chrome DevTools의 Memory 패널을 기준으로 한 표준 절차는 다음과 같습니다.</p>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>기준선(baseline) 힙 스냅샷을 찍는다</strong>
+          <p style="margin-top:0.3rem">앱을 초기 상태로 로드한 직후 Heap Snapshot을 하나 찍어 기준으로 삼습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>의심되는 동작을 여러 번 반복한다</strong>
+          <p style="margin-top:0.3rem">사용자가 누수를 겪었다고 보고한 동작(특정 페이지 진입·이탈, 모달 열기·닫기)을 10~20회 반복합니다. 한 번만 반복하면 정상적인 캐싱과 실제 누수를 구분하기 어렵습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>강제 GC 후 두 번째 스냅샷을 찍는다</strong>
+          <p style="margin-top:0.3rem">Memory 패널의 "Collect garbage" 버튼으로 회수 가능한 객체를 먼저 정리한 뒤 스냅샷을 찍어야, 아직 회수 대기 중인 정상 객체를 누수로 오판하지 않습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>"Comparison" 뷰로 두 스냅샷을 비교한다</strong>
+          <p style="margin-top:0.3rem">반복 횟수만큼 객체 수(<code># New</code>)가 정확히 비례해서 늘어난 생성자(constructor)를 찾습니다. 예를 들어 20번 반복했는데 특정 컴포넌트 클래스 인스턴스가 정확히 20개 늘어나 있다면, 그 컴포넌트가 언마운트돼도 회수되지 않는다는 강력한 증거입니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>Retainers(유지 경로)를 추적한다</strong>
+          <p style="margin-top:0.3rem">의심 객체를 선택하고 하단 "Retainers" 패널에서 "이 객체를 누가 참조하고 있는가"를 루트까지 거슬러 올라갑니다. 여기서 클로저, 이벤트 리스너, 전역 배열/맵 중 어느 것이 실제 원인인지 정확히 특정됩니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div>
+          <strong>Detached 노드를 별도로 확인한다</strong>
+          <p style="margin-top:0.3rem">Heap Snapshot에서 "Detached"로 필터링하면 DOM 트리에서는 제거됐지만 여전히 참조가 남아있는 노드를 바로 볼 수 있습니다. 이 목록에 있는 노드는 100% 누수 후보입니다.</p>
+        </div>
+      </li>
+    </ul>
+
+    <div class="card">
+      <h4>Allocation instrumentation timeline — "언제" 새는지 보기</h4>
+      <p>어떤 코드 경로가 누수를 만드는지 모를 때는 Heap Snapshot 대신 "Allocation instrumentation on timeline"을 켜고 반복 동작을 수행합니다. 타임라인의 파란 막대가 시간이 지나도 회색으로 바뀌지 않고(회수되지 않고) 계속 파란색으로 남아 있다면, 그 시점에 할당된 객체가 회수되지 않고 있다는 뜻이며 해당 시점 전후의 코드를 좁혀서 볼 수 있습니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>프로덕션(로컬 재현이 안 될 때)에서는 어떻게 하는가</h4>
+      <p>사용자 환경에서만 재현되고 로컬에서 재현이 안 되면, <code>performance.memory</code>(Chrome 한정, 근사치) 또는 RUM(Real User Monitoring) 도구로 세션 지속 시간과 JS 힙 사용량의 상관관계를 수집해 "누수가 실재하는지"부터 데이터로 확인합니다. 그다음 사용자 행동 로그(어떤 페이지를 몇 번 오갔는지)와 대조해 재현 시나리오를 역으로 좁혀서 로컬 재현으로 연결합니다.</p>
+    </div>
+  </section>
+
+  <!-- 7. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>7. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>증상을 "메모리가 는다"에서 "회수되지 않는 특정 객체가 있다"로 재정의합니다.</strong> 정상적인 캐싱 증가와 진짜 누수를 구분하는 것이 첫 단계입니다.</li>
+      <li><strong>재현 절차를 설계합니다.</strong> 의심 동작을 여러 번 반복해야 정상 변동과 선형 증가를 구분할 수 있다는 것을 전제로 둡니다.</li>
+      <li><strong>힙 스냅샷 비교로 후보를 좁힙니다.</strong> 반복 횟수와 정확히 비례해서 늘어나는 생성자를 찾아 "감(gut feeling)"이 아닌 데이터로 후보를 특정합니다.</li>
+      <li><strong>Retainers로 참조 경로를 추적해 근본 원인을 밝힙니다.</strong> 이벤트 리스너, 타이머, 클로저, 전역 컬렉션 중 무엇이 실제 원인인지 참조 그래프로 증명합니다.</li>
+      <li><strong>cleanup 로직을 짝지어 수정하고, 재발 방지 장치를 제안합니다.</strong> 단순히 이번 버그만 고치지 않고, 같은 패턴(리스너/타이머 등록 시 해제 로직 누락)이 재발하지 않도록 린트 규칙이나 코드 리뷰 체크리스트 도입까지 언급합니다.</li>
+    </ol>
+  </section>
+
+  <!-- 8. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>8. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "장시간 켜둔 SPA 탭의 메모리 사용량이 계속 늘어난다는 사용자 제보가 들어왔습니다. 어떻게 원인을 좁혀나가시겠어요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>가장 먼저 확인하는 것은 이것이 정상적인 캐시 증가인지, 아니면 회수되지 않는 특정 객체가 계속 누적되는 진짜 누수인지입니다. 이를 구분하기 위해 Chrome DevTools Memory 패널에서 앱 초기 상태의 힙 스냅샷을 기준으로 찍어두고, 사용자가 겪었다고 보고한 동작 — 예를 들어 특정 페이지를 열고 닫는 흐름 — 을 10~20회 반복합니다.</p>
+      <br>
+      <p>그 다음 강제로 GC를 실행해 회수 가능한 객체를 먼저 정리한 뒤 두 번째 스냅샷을 찍고, Comparison 뷰로 두 스냅샷을 비교합니다. 여기서 반복 횟수와 정확히 비례해서 인스턴스 수가 늘어난 생성자가 있는지 확인합니다. 예를 들어 20번 반복했는데 특정 컴포넌트 클래스가 정확히 20개 늘어나 있다면, 그 컴포넌트가 언마운트돼도 메모리에서 회수되지 않고 있다는 강력한 증거입니다.</p>
+      <br>
+      <p>후보 객체를 찾으면 Retainers 패널로 이 객체를 누가 참조하고 있는지 루트까지 추적합니다. 실무에서 가장 흔한 원인은 컴포넌트가 언마운트될 때 해제되지 않은 이벤트 리스너나 <code>setInterval</code>이고, 이 콜백(클로저)이 컴포넌트의 상태나 DOM 노드 전체를 캡처하고 있어서 결과적으로 큰 객체 그래프 전체가 도달 가능 상태로 남아있게 됩니다. Detached 필터로 DOM 트리에서는 제거됐지만 여전히 참조가 남은 노드가 있는지도 함께 확인합니다.</p>
+      <br>
+      <p>원인을 특정하면 등록된 리스너·타이머를 컴포넌트 정리(cleanup) 시점에 반드시 해제하도록 수정하고, 같은 패턴이 재발하지 않도록 리스너 등록 시 해제 로직이 짝을 이루는지 코드 리뷰에서 체크하는 규칙을 팀에 제안합니다. 로컬에서 재현이 안 되는 경우라면 RUM으로 세션 지속 시간과 JS 힙 사용량의 상관관계부터 수집해 누수의 실재 여부를 데이터로 먼저 확인한 뒤 같은 절차로 좁혀 나갑니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>"메모리가 는다"는 모호한 증상을 "특정 객체가 도달 가능 상태로 남아있다"는 구체적 메커니즘으로 재정의함</li>
+      <li>추측이 아니라 힙 스냅샷 비교라는 재현 가능한 절차로 후보를 좁힘</li>
+      <li>Retainers 추적으로 근본 원인(리스너/타이머 미해제)까지 증명하는 절차를 포함함</li>
+      <li>1회성 수정에 그치지 않고 재발 방지(코드 리뷰 규칙) 및 프로덕션 관측(RUM) 관점까지 확장함</li>
+    </ul>
+  </section>
+
+  <!-- 9. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>9. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"클로저 때문에 메모리 누수가 생길 수 있으니 클로저 사용을 줄이겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>클로저 자체가 문제가 아니라 클로저가 캡처한 참조의 수명 관리가 문제라는 핵심을 놓칩니다.</li>
+        <li>"클로저를 줄인다"는 것은 실무에서 실행 가능한 해결책이 아니며, 실제로는 리스너/타이머 해제 같은 구체적 조치가 필요합니다.</li>
+        <li>재현하거나 증명하는 절차가 전혀 없이 원인을 단정합니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"개발자 도구 Memory 탭을 열어서 늘어나는 걸 보고 고치겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>구체적으로 무엇을 몇 번 반복하고, 어떻게 비교하며, GC를 언제 강제 실행하는지에 대한 절차가 없습니다.</li>
+        <li>Retainers 추적처럼 근본 원인을 증명하는 단계가 빠져 있어 "보인다"에서 그칠 위험이 있습니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>정상적인 캐시 증가와 진짜 누수를 구분하는 기준을 먼저 언급한다</li>
+        <li>기준선 스냅샷 → 반복 → 강제 GC → 비교라는 구체적 절차를 제시한다</li>
+        <li>Retainers 추적으로 참조 그래프상의 근본 원인을 증명하는 단계를 포함한다</li>
+        <li>수정뿐 아니라 재발 방지(리뷰 규칙, RUM 관측)까지 확장한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. Follow-up -->
+  <section id="followups">
+    <h2>10. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: <code>WeakMap</code>과 <code>WeakRef</code>는 이런 문제를 어떻게 도와주나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 일반 <code>Map</code>이나 배열에 키/값을 담으면 그 참조가 "강한 참조(strong reference)"가 되어 GC가 절대 회수하지 못합니다. <code>WeakMap</code>은 키에 대한 참조를 "약한 참조(weak reference)"로 취급해서, 그 키를 가리키는 다른 강한 참조가 전혀 없으면 GC가 자유롭게 회수할 수 있습니다. 예를 들어 DOM 노드를 키로 메타데이터를 저장할 때 <code>Map</code> 대신 <code>WeakMap</code>을 쓰면, 그 노드가 DOM에서 제거되고 다른 곳에서도 참조하지 않는 순간 메타데이터까지 함께 회수되어 수동으로 정리할 필요가 없어집니다. 다만 이는 "누수 방지 마법"이 아니라 도구일 뿐이며, 여전히 다른 강한 참조(이벤트 리스너 등)가 남아있다면 회수되지 않습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: React의 <code>useEffect</code> cleanup 함수를 깜빡했을 때, 실제로 어떤 참조 경로로 누수가 생기나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> <code>useEffect</code> 안에서 등록한 이벤트 리스너나 구독(subscription) 콜백은 클로저이기 때문에 그 컴포넌트의 state, props, 그리고 렌더링 시점의 DOM 참조를 캡처합니다. 컴포넌트가 언마운트되어 React 트리에서는 제거돼도, 그 리스너가 등록된 대상(예: <code>window</code>, 전역 이벤트 버스)이 여전히 살아있는 리스너 목록을 갖고 있다면, 이벤트 버스 → 콜백(클로저) → 컴포넌트 인스턴스 전체로 이어지는 참조 경로가 유지되어 컴포넌트 전체가 도달 가능 상태로 남습니다. cleanup 함수에서 <code>removeEventListener</code>나 구독 해제를 호출해야 이 참조 경로를 끊을 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 힙 스냅샷 비교에서 특정 생성자의 인스턴스 수가 반복 횟수만큼 늘어나긴 하는데, 결국 몇 분 뒤에는 줄어듭니다. 이것도 누수인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 아닐 가능성이 높습니다. 그것은 메이저 GC 사이클이 늦게 도는 것일 수 있습니다 — V8 같은 엔진은 성능을 위해 GC를 즉시 실행하지 않고 유휴 시간이나 메모리 압박이 커질 때까지 지연시킵니다. 진짜 누수인지 확인하려면 "Collect garbage" 버튼으로 강제 GC를 실행한 직후에도 인스턴스 수가 줄지 않고 남아있는지를 봐야 합니다. 강제 GC 이후에도 남아있다면 도달 가능한 강한 참조가 실제로 존재하는 것이고, 시간이 지나 자연스럽게 줄어든다면 GC 스케줄링 지연일 뿐입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q (비기술적): PM이 "메모리 누수 버그는 사용자가 자주 겪는 것도 아닌데 왜 이번 스프린트에 우선순위로 넣어야 하나요?"라고 묻습니다. 어떻게 설득하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 재현 빈도가 아니라 <strong>영향을 받는 사용자군의 특성</strong>으로 설명합니다. 이 문제는 아무 사용자에게나 무작위로 발생하는 게 아니라, 하루 종일 탭을 켜두고 쓰는 파워유저(대시보드를 계속 모니터링하는 운영팀 등)에게 결정적으로 나타납니다. 즉 발생 빈도는 낮아 보여도 영향을 받는 사용자는 제품에 가장 의존도가 높은 핵심 고객층이라는 점, 그리고 문제가 누적형이라 시간이 지날수록 반드시 악화된다는 점(자연 완화되지 않는 버그)을 근거로, 힙 스냅샷 비교로 확인한 구체적 증가율(예: "페이지 전환 1회당 약 XMB")을 함께 제시해 우선순위를 정량적으로 설득합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>11. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"클로저를 사용하는 것 자체가 메모리 누수의 원인이다"</strong></p>
+      <p>클로저는 JavaScript의 정상적이고 필수적인 기능입니다. 문제는 클로저가 캡처한 참조의 수명이 실제로 필요한 기간보다 길게 유지되도록 정리(cleanup) 로직을 짝지어 두지 않은 것입니다. 클로저를 없애는 것이 아니라 "언제 이 참조를 끊을 것인가"를 설계하는 것이 해결책입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"가비지 컬렉터는 오래된 변수를 알아서 정리해준다"</strong></p>
+      <p>GC는 시간이나 사용 빈도를 전혀 고려하지 않습니다. 오직 "루트에서부터 참조를 따라가 도달 가능한가"만 판단합니다. 10분 전에 마지막으로 쓰인 변수라도 어딘가에서 참조되고 있다면 절대 회수되지 않고, 방금 만든 변수라도 참조가 전혀 없으면 즉시 회수 대상이 될 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"<code>setTimeout(fn, 0)</code>은 즉시(0ms) 실행된다"</strong></p>
+      <p><code>setTimeout</code>의 지연 시간은 "그 시점에 매크로태스크 큐에 넣어달라"는 요청일 뿐입니다. 큐에 들어간 뒤에도 현재 실행 중인 동기 코드와 마이크로태스크 큐가 완전히 비워져야 실행되므로, 마이크로태스크(예: <code>Promise.then</code>)보다 항상 나중에 실행됩니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"메모리 사용량이 올라갔다가 잠시 후 내려가면 무조건 정상이다"</strong></p>
+      <p>단순히 시간이 지나 수치가 내려간 것만으로는 판단할 수 없습니다. V8 등 엔진은 GC를 지연시켜 실행하기 때문에, 실제로는 도달 불가능한 객체가 아직 회수되지 않고 있을 뿐인 경우와, 강제 GC 이후에도 여전히 남아있는 진짜 누수를 반드시 구분해야 합니다. 강제 GC 버튼을 누른 직후의 값만 신뢰할 수 있는 기준입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"페이지를 새로고침하면 메모리 문제가 해결되니 SPA에서는 중요하지 않다"</strong></p>
+      <p>전통적인 다중 페이지 사이트에서는 사실이지만, 클라이언트 사이드 라우팅만으로 화면을 전환하는 SPA는 탭을 닫기 전까지 하나의 실행 컨텍스트가 유지됩니다. 특히 하루 종일 탭을 켜두는 대시보드형 제품에서는 작은 누수도 페이지 전환 횟수만큼 누적되어 결국 탭이 강제 종료되는 심각한 문제로 이어집니다.</p>
+    </div>
+  </section>
+
+  <!-- 12. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>12. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 4를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>콜스택, Web API, 매크로태스크 큐, 마이크로태스크 큐가 각각 무엇을 담당하는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>왜 마이크로태스크가 항상 다음 매크로태스크보다 먼저 실행되는지, 그리고 마이크로태스크 큐가 "완전히 빌 때까지" 처리된다는 규칙까지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>가비지 컬렉터가 "도달 가능성"만 판단 기준으로 삼는다는 것을 설명하고, 이것이 왜 메모리 누수의 본질인지 연결할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>이벤트 리스너 미해제, 타이머 미정리, Detached DOM, 무한 누적 컬렉션 4가지 누수 패턴을 각각 코드 예시로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>힙 스냅샷 비교 절차(기준선 → 반복 → 강제 GC → 비교 → Retainers 추적)를 순서대로 재현할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>정상적인 GC 지연과 진짜 메모리 누수를 구분하는 기준(강제 GC 이후에도 남는가)을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>WeakMap</code>/<code>WeakRef</code>가 무엇을 "약하게" 만들어주는지, 그리고 이것이 만능 해결책이 아닌 이유를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>왜 장수명 SPA(대시보드형 제품)에서 작은 누수도 치명적인 문제가 되는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>로컬에서 재현이 안 되는 프로덕션 누수를 RUM 데이터로 먼저 검증하는 접근을 제시할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>낮은 재현 빈도의 메모리 버그를 비즈니스 우선순위 언어(핵심 사용자군, 누적성)로 설득하는 대화를 예로 들 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 5</h3>
+      <p><strong>웹 접근성(A11y) 심화 — WAI-ARIA, 키보드 내비게이션, 스크린리더 대응, 접근성 감사 프로세스</strong></p>
+      <p>Day 4에서 JavaScript 엔진 내부의 실행 순서와 메모리 관리를 다뤘다면, Day 5에서는 그 위에서 만들어지는 UI가 보조 기술(스크린리더, 키보드만 사용하는 사용자)에게도 동일하게 동작하도록 만드는 접근성 아키텍처를 다룹니다.</p>
+      <p>면접 질문 예고: "커스텀 드롭다운 컴포넌트를 만들었는데, 스크린리더 사용자가 이 컴포넌트를 전혀 조작할 수 없다는 피드백을 받았습니다. 어떤 부분부터 점검하시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    프론트엔드 10년차 이상 개발자 Interview · Day 4 of 17 · 2026-07-05
+  </p>
+
+</div>
+</body>
+</html>
