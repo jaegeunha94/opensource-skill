@@ -7,12 +7,12 @@
 | 1 | 2026-07-02 | Semantic HTML과 CSS 렌더링/접근성 답변 프레임워크 — 시니어가 마크업을 리뷰하는 사고법 | [0001-semantic-html-css-rendering-a11y-framework.html](lessons/0001-semantic-html-css-rendering-a11y-framework.html) |
 | 2 | 2026-07-03 | Document 구조와 Semantic HTML 심화 — `header`/`nav`/`main`/`article`/`section`/`aside`/`footer` 구분, `div` 남용의 실무 비용 | [0002-document-structure-semantic-html-deep-dive.html](lessons/0002-document-structure-semantic-html-deep-dive.html) |
 | 3 | 2026-07-04 | Forms 심화 — 네이티브 검증, label 연결, 접근성 있는 폼 설계 | [0003-forms-native-validation-accessible-design.html](lessons/0003-forms-native-validation-accessible-design.html) |
+| 4 | 2026-07-05 | ARIA와 Accessibility Tree — role/name/state, First Rule of ARIA, aria-hidden 함정 | [0004-aria-accessibility-tree.html](lessons/0004-aria-accessibility-tree.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | ARIA와 Accessibility Tree | role/name/state, ARIA 사용 원칙, 스크린 리더 실제 동작 |
 | 5 | SEO 기본 판단 | 시맨틱 마크업과 크롤러 파싱, CSR/SSR이 SEO에 미치는 영향 |
 | 6 | CSS Cascade 심화 | Cascade Layers, `!important`의 실무 함정 |
 | 7 | Specificity 심화 | 계산법, 유지보수 가능한 selector 전략 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — 다음: Day 4 — ARIA와 Accessibility Tree
+**Day 4 완료** — 다음: Day 5 — SEO 기본 판단
 
 ## 습득한 핵심 개념
 
@@ -43,6 +43,11 @@
 - [x] `aria-invalid`/`aria-describedby`로 에러 상태와 메시지를 연결하는 방법 (Day 3)
 - [x] `role="alert"`/`aria-live`로 동적 에러를 스크린 리더에 즉시 통지하는 방법 (Day 3)
 - [x] `fieldset`/`legend`로 라디오·체크박스 그룹을 의미적으로 묶는 이유 (Day 3)
-- [ ] ARIA 패턴별 공식 구현 가이드 적용 (예정 Day 4)
+- [x] Accessibility Tree와 DOM Tree의 구조적 차이 (Day 4)
+- [x] role/name/state 세 축으로 컴포넌트를 분해하는 방법 (Day 4)
+- [x] Accessible Name Computation의 우선순위 (Day 4)
+- [x] First Rule of ARIA — 네이티브 요소 우선 원칙 (Day 4)
+- [x] ARIA 선언과 키보드 상호작용 구현이 별개라는 원칙 (Day 4)
+- [x] `aria-hidden`이 포커스 가능 여부에 영향을 주지 않아 생기는 함정 (Day 4)
 - [ ] SEO 관점의 CSR/SSR 판단 기준 (예정 Day 5)
 - [ ] Cascade Layers(`@layer`)를 이용한 우선순위 통제 (예정 Day 6)
