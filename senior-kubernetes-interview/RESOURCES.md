@@ -50,6 +50,8 @@
 - **멀티 클러스터/플릿 관리**: Cluster API(클러스터 생명주기), Karmada/Rancher(멀티 클러스터 오케스트레이션), Argo CD/Flux(GitOps 일관성)로 무게중심 이동.
 - **PodDisruptionBudget과 Deployment rollout의 경계 (Day 3 조사, 2026-07)**: 공식 문서 기준으로 Deployment/StatefulSet 같은 워크로드 컨트롤러가 실행하는 rolling update는 PDB의 제한을 받지 않는다 — rollout 중 동시 축소 규모는 오직 Deployment 자체의 `maxUnavailable`/`maxSurge`가 결정한다. PDB는 노드 drain, cluster-autoscaler/Karpenter 축소 같은 자발적 축출(voluntary eviction)에만 적용된다. `unhealthyPodEvictionPolicy`(v1.27부터 stable, 기본 `IfHealthyBudget`)를 `AlwaysAllow`로 설정하면 unhealthy Pod가 PDB 조건과 무관하게 항상 축출되어, 이미 망가진 Pod가 노드 drain을 막는 교착을 방지할 수 있다.
   https://kubernetes.io/docs/concepts/workloads/pods/disruptions/ , https://kubernetes.io/docs/tasks/run-application/configure-pdb/ , https://kubernetes.io/blog/2023/01/06/unhealthy-pod-eviction-policy-for-pdbs/
+- **StatefulSet 관련 최신 사실 (Day 4 조사, 2026-07)**: `spec.persistentVolumeClaimRetentionPolicy`(`whenDeleted`/`whenScaled`, Retain 기본값 vs Delete)는 v1.32부터 GA. `spec.ordinals.start`(0이 아닌 순번부터 시작, 블루/그린 마이그레이션용)는 v1.31 GA. StatefulSet의 `maxUnavailable` 롤링 업데이트(여러 순번 동시 업데이트)는 2026-07 기준 여전히 베타이며 기본 비활성화 — GA로 착각하지 않도록 주의. v1.36에서는 `.status.availableReplicas` 계산 타이밍 버그가 수정되어 StatefulSet rollout 진행 상태가 더 정확해졌고, 컨트롤러의 informer cache staleness 감지 기능이 추가돼 StatefulSet 등 핵심 워크로드 컨트롤러의 신뢰성이 개선되었다.
+  https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/ , https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/961-maxunavailable-for-statefulset/README.md , https://kubernetes.io/blog/2023/04/28/statefulset-start-ordinal/ , https://kubernetes.io/blog/2026/04/22/kubernetes-v1-36-release/
 
 ## 심화 학습
 

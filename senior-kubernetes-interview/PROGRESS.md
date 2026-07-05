@@ -7,12 +7,12 @@
 | 1 | 2026-07-03 | Kubernetes 클러스터 운영과 장애 대응 프레임워크 | [0001-cluster-architecture-incident-response-framework.html](lessons/0001-cluster-architecture-incident-response-framework.html) |
 | 2 | 2026-07-03 | Pod 설계, Probe, Resource Request/Limit | [0002-pod-probe-resource-request-limit.html](lessons/0002-pod-probe-resource-request-limit.html) |
 | 3 | 2026-07-04 | Deployment Rollout/Rollback과 배포 안정성 | [0003-deployment-rollout-rollback-stability.html](lessons/0003-deployment-rollout-rollback-stability.html) |
+| 4 | 2026-07-05 | StatefulSet과 상태 유지 워크로드 설계 | [0004-statefulset-stateful-workload-design.html](lessons/0004-statefulset-stateful-workload-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | StatefulSet과 상태 유지 워크로드 설계 | Ordinal index, Headless Service, PVC 템플릿, 순서 보장의 함정, StatefulSet vs Deployment 선택 기준 |
 | 5 | DaemonSet과 노드 레벨 운영 | 노드당 1개 보장, 업그레이드 롤아웃, 로그/모니터링 에이전트 배치 패턴, 리소스 경합 |
 | 6 | Service, CoreDNS, 서비스 디스커버리 | ClusterIP/NodePort/LoadBalancer/Headless, kube-proxy 동작(iptables vs nftables), CoreDNS 캐싱/장애 패턴 |
 | 7 | Ingress vs Gateway API — 트래픽 라우팅 설계 | Ingress Controller 구조, Gateway API 역할 분리(GatewayClass/Gateway/HTTPRoute), 마이그레이션 판단 |
@@ -31,7 +31,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — Day 4: StatefulSet과 상태 유지 워크로드 설계로 진행 예정.
+**Day 4 완료** — Day 5: DaemonSet과 노드 레벨 운영으로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -48,7 +48,11 @@
 - [x] Deployment의 ReplicaSet 세대 관리와 revisionHistoryLimit, maxSurge/maxUnavailable, progressDeadlineSeconds/Proportional Scaling (Day 3)
 - [x] PodDisruptionBudget은 워크로드 컨트롤러의 rolling update를 제한하지 않는다는 것(voluntary eviction 전용), unhealthyPodEvictionPolicy(AlwaysAllow, v1.27 stable) (Day 3)
 - [x] 롤백이 항상 안전하지 않은 이유(데이터 마이그레이션 동반 배포, expand/contract 패턴) (Day 3)
-- [ ] StatefulSet 설계 (예정 Day 4)
+- [x] Ordinal identity, Headless Service, volumeClaimTemplates로 구성되는 StatefulSet의 안정적 정체성 3요소 (Day 4)
+- [x] OrderedReady vs Parallel podManagementPolicy 선택 기준과 애플리케이션의 부팅 순서 의존성 (Day 4)
+- [x] RollingUpdate 역순 진행과 partition을 이용한 순번 단위 canary 검증 (Day 4)
+- [x] PersistentVolumeClaimRetentionPolicy(GA, v1.32~)의 whenDeleted/whenScaled Retain vs Delete 트레이드오프 (Day 4)
+- [x] PV 토폴로지 제약(존/노드 바인딩)이 StatefulSet Pod 재스케줄을 막을 수 있다는 것과 StatefulSet이 클러스터링 로직 자체를 대신하지 않는다는 경계 (Day 4)
 - [ ] DaemonSet 운영 (예정 Day 5)
 - [ ] Service/CoreDNS (예정 Day 6)
 - [ ] Ingress vs Gateway API (예정 Day 7)

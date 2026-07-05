@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — StatefulSet과 상태 유지 워크로드 설계</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #222538;
+      --border: #2e3150;
+      --accent: #7c83ff;
+      --accent2: #50e3c2;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #e2e4f0;
+      --text2: #9da3c8;
+      --text3: #6b7099;
+      --good: #50e3c2;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card { border-left: 4px solid var(--accent); }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card { border-left: 4px solid var(--accent2); background: #1a2430; }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card { border-left: 4px solid var(--warn); background: #1f1d10; }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card { border-left: 4px solid #a07bff; background: #1a1828; }
+    .answer-card .card-label { color: #a07bff; }
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.2rem; }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box { background: #0f2420; border: 1px solid var(--good); border-radius: 8px; padding: 1.1rem 1.3rem; }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box { background: #28100f; border: 1px solid var(--weak); border-radius: 8px; padding: 1.1rem 1.3rem; }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1.1rem 1.4rem; margin-bottom: 0.9rem; }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table { width: 100%; border-collapse: collapse; font-size: 0.91rem; margin-top: 0.5rem; }
+    .rubric-table th { background: var(--surface2); color: var(--text2); font-weight: 700; padding: 0.6rem 0.8rem; text-align: left; border: 1px solid var(--border); }
+    .rubric-table td { padding: 0.6rem 0.8rem; border: 1px solid var(--border); vertical-align: top; }
+    .rubric-table tr:nth-child(odd) td { background: #15182a; }
+    .rubric-table tr:nth-child(even) td { background: #1a1d2e; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .pillar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.9rem; margin-bottom: 1.2rem; }
+    .pillar-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; }
+    .pillar-name { font-weight: 700; color: var(--accent); margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .pillar-key { font-size: 0.83rem; color: var(--text2); }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li { counter-increment: step; position: relative; padding-left: 2.2rem; margin-bottom: 0.7rem; }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute; left: 0; top: 0.1rem;
+      background: var(--accent); color: #fff; font-weight: 700; font-size: 0.78rem;
+      width: 1.5rem; height: 1.5rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .misconception { background: #1f1520; border: 1px solid #6e3880; border-radius: 8px; padding: 1rem 1.3rem; margin-bottom: 0.9rem; }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 0.88rem; }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag { display: inline-block; background: var(--surface2); color: var(--text2); font-size: 0.75rem; padding: 0.2em 0.6em; border-radius: 4px; margin: 0.15rem 0.15rem 0.15rem 0; }
+    .source-note { font-size: 0.82rem; color: var(--text3); margin-top: 0.4rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 4 · Kubernetes 인터뷰 대비</div>
+    <h1>StatefulSet과 상태 유지 워크로드 설계</h1>
+    <p class="subtitle">
+      Ordinal identity · Headless Service · volumeClaimTemplates · OrderedReady vs Parallel · partition 기반 canary · PersistentVolumeClaimRetentionPolicy(2026-07 기준)
+    </p>
+  </header>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "3-replica로 운영 중인 StatefulSet 기반 분산 스토어(예: Kafka, Cassandra류)에서 노드 하나가 죽었는데, 해당 Pod가 다른 노드로 옮겨가지 못하고 계속 <code>Pending</code>입니다. Deployment였다면 겪지 않았을 문제일까요? StatefulSet을 쓰는 근본적인 이유부터 설명해 주세요."
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"StatefulSet의 Pod 이름이 <code>web-0</code>, <code>web-1</code>처럼 고정되는 게 실제로 어떤 문제를 해결합니까?"</li>
+        <li>"<code>podManagementPolicy</code>를 <code>Parallel</code>로 바꾸면 어떤 상황에 유리하고, 어떤 위험이 있습니까?"</li>
+        <li>"StatefulSet을 스케일 다운했을 때 PVC는 어떻게 됩니까? <code>persistentVolumeClaimRetentionPolicy</code>를 <code>Delete</code>로 바꾸면 어떤 트레이드오프가 생깁니까?"</li>
+        <li>"StatefulSet의 롤링 업데이트에서 <code>partition</code> 필드는 왜 필요합니까?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">Ordinal Index</span>
+      <span class="tag">Headless Service</span>
+      <span class="tag">volumeClaimTemplates</span>
+      <span class="tag">OrderedReady/Parallel</span>
+      <span class="tag">RollingUpdate partition</span>
+      <span class="tag">PVC Retention Policy</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Deployment의 Pod는 "교체 가능한 부품"이지만, StatefulSet의 Pod는 "고유한 개체"다</h3>
+    <p>
+      Deployment가 관리하는 Pod는 이름이 <code>web-7f8d9c-x2z1p</code>처럼 무작위이고, 아무 Pod나 죽으면 아무 이름의 새 Pod로 대체돼도 상관없다. 애플리케이션이 어떤 Pod인지 신경 쓰지 않는, <strong>완전히 대체 가능한(interchangeable)</strong> 워크로드에 맞는 모델이다.
+    </p>
+    <p>
+      반면 분산 데이터베이스나 메시지 큐 같은 시스템은 "나는 3번 노드이고, 1·2번 노드와 함께 쿼럼을 이룬다"처럼 <strong>개별 인스턴스가 고유한 정체성(identity)</strong>을 가져야 동작한다. StatefulSet은 이런 워크로드를 위해 세 가지를 고정한다.
+    </p>
+    <div class="pillar-grid">
+      <div class="pillar-box">
+        <div class="pillar-name">1. 안정적인 이름 — Ordinal Index</div>
+        <div class="pillar-key">Pod 이름이 <code>&lt;statefulset명&gt;-0</code>, <code>-1</code>, <code>-2</code>처럼 0부터 순번이 매겨지고, Pod가 재시작되거나 재스케줄돼도 <strong>같은 순번을 그대로 다시 받는다.</strong> (v1.31부터 GA인 <code>spec.ordinals.start</code>로 0이 아닌 임의의 숫자부터 시작하도록 바꿀 수도 있다 — 블루/그린 마이그레이션에 유용하다.)</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">2. 안정적인 네트워크 정체성 — Headless Service</div>
+        <div class="pillar-key"><code>clusterIP: None</code>인 Headless Service를 함께 만들면, 각 Pod가 <code>&lt;pod명&gt;.&lt;service명&gt;.&lt;ns&gt;.svc.cluster.local</code>이라는 <strong>고유하고 예측 가능한 DNS 이름</strong>을 갖는다. Pod가 다른 노드로 재스케줄돼 IP가 바뀌어도 이 DNS 이름은 그대로다 — 클러스터 멤버들이 서로를 이름으로 찾을 수 있는 이유다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">3. 안정적인 스토리지 — volumeClaimTemplates</div>
+        <div class="pillar-key">Deployment의 모든 Pod가 볼륨을 공유하거나 매번 새 볼륨을 받는 것과 달리, StatefulSet은 <code>volumeClaimTemplates</code>로 <strong>순번마다 전용 PVC</strong>를 만든다. <code>web-1</code>이 재시작되면 새로 만들어진 Pod도 항상 <code>www-web-1</code>이라는 같은 PVC에 다시 연결된다 — 데이터가 그대로 이어진다.</div>
+      </div>
+    </div>
+
+    <h3>OrderedReady(기본값)와 Parallel — 순서를 지킬 것인가, 동시에 처리할 것인가</h3>
+    <p>
+      기본 <code>podManagementPolicy: OrderedReady</code>는 생성/스케일업 시 <code>0</code>번부터 순서대로 하나씩 만들고, <strong>각 Pod가 Running + Ready 상태(그리고 <code>minReadySeconds</code>가 있다면 그 시간까지 경과)가 되어야 다음 순번을 시작</strong>한다. 삭제/스케일다운은 반대로 가장 높은 순번부터 하나씩 줄인다. 이 방식은 "0번이 리더 선출을 마쳐야 1번이 join할 수 있는" 초기 부트스트랩 순서에 안전하지만, 그만큼 스케일업/다운 속도가 느리고 <strong>중간 순번이 막히면 그 뒤 모든 Pod의 생성이 함께 멈춘다.</strong>
+    </p>
+    <p>
+      <code>podManagementPolicy: Parallel</code>은 순번과 무관하게 모든 Pod를 동시에 생성/삭제한다. 애플리케이션이 자체적으로 피어 디스커버리와 join 프로토콜을 갖고 있어(예: Cassandra의 gossip, 자체 컨센서스 알고리즘) 부팅 순서에 의존하지 않는 시스템이라면, Parallel로 바꿔 스케일링 속도를 크게 개선할 수 있다. <strong>StatefulSet을 쓴다고 해서 항상 OrderedReady가 필요한 것은 아니다</strong> — 이건 실무에서 자주 놓치는 최적화 지점이다.
+    </p>
+
+    <h3>RollingUpdate와 partition — 업데이트도 순서(역순)와 부분 적용을 지원한다</h3>
+    <p>
+      기본 업데이트 전략인 <code>RollingUpdate</code>는 <strong>가장 높은 순번부터 역순으로</strong> 하나씩 업데이트한다(<code>web-2</code> → <code>web-1</code> → <code>web-0</code>). <code>updateStrategy.rollingUpdate.partition</code>을 설정하면, <strong>그 값 이상의 순번만 업데이트</strong>되고 그 미만은 그대로 남는다. 예를 들어 replica가 5개인데 <code>partition: 3</code>이면 <code>web-3</code>, <code>web-4</code>만 새 버전으로 바뀌고 <code>web-0~2</code>는 구버전에 머문다. 이는 StatefulSet 안에서 <strong>수동 canary</strong>를 구현하는 표준적인 방법이다 — 리더/코디네이터 역할의 순번(보통 0번)을 마지막에 업데이트하도록 설계하는 데도 쓰인다.
+    </p>
+    <p>
+      v1.24부터 베타로 존재하는 <code>maxUnavailable</code>(2026-07 기준 여전히 베타, 기본 비활성화)을 켜면 한 번에 하나가 아니라 <strong>여러 순번을 동시에</strong> 업데이트할 수 있어, replica 수가 많은 StatefulSet의 업데이트 시간을 단축할 수 있다. 다만 이는 "한 번에 하나씩만 바뀐다"는 기본 안전 가정을 깨므로, 쿼럼을 유지해야 하는 워크로드에는 신중하게 적용해야 한다.
+    </p>
+
+    <div class="card concept-card">
+      <div class="card-label">2026-07 기준 확인 사항 — PersistentVolumeClaimRetentionPolicy는 GA(v1.32~)</div>
+      <p>
+        예전에는 StatefulSet을 스케일다운하거나 삭제해도 <code>volumeClaimTemplates</code>로 만들어진 PVC는 <strong>항상 그대로 남았다</strong>(안전을 위한 기본 동작). v1.32부터 GA된 <code>spec.persistentVolumeClaimRetentionPolicy</code>는 <code>whenDeleted</code>(StatefulSet 자체가 삭제될 때)와 <code>whenScaled</code>(replica 수가 줄 때)를 각각 <code>Retain</code>(기본값, 그대로 보존) 또는 <code>Delete</code>(자동 삭제)로 지정할 수 있게 했다. <code>Delete</code>는 임시 replica가 많은 워크로드(예: 캐시 클러스터)에서 불필요한 PVC가 쌓여 비용이 새는 것을 막지만, <strong>실수로 인한 scale-down이나 오토스케일러 오작동 시 데이터가 영구히 사라질 위험</strong>과 맞바꾸는 결정이다.
+      </p>
+      <p class="source-note">https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/ , https://github.com/kubernetes/enhancements/blob/master/keps/sig-apps/961-maxunavailable-for-statefulset/README.md , https://kubernetes.io/blog/2023/04/28/statefulset-start-ordinal/</p>
+    </div>
+
+    <h3>StatefulSet이 "안 해주는" 것 — 클러스터링 로직 자체는 애플리케이션의 몫이다</h3>
+    <p>
+      StatefulSet은 안정적인 이름·네트워크·스토리지라는 <strong>"기반"</strong>만 제공한다. 리더 선출, 쿼럼 합의, 데이터 리밸런싱, split-brain 방지 같은 <strong>실제 분산 시스템 로직은 애플리케이션(또는 Operator)이 구현</strong>해야 한다. StatefulSet 자체는 etcd나 Kafka의 컨센서스 프로토콜을 대신 실행해주지 않는다 — 이 경계를 모르면 "StatefulSet만 쓰면 분산 시스템이 안전해진다"는 잘못된 기대를 하게 된다.
+    </p>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>워크로드 선택 기준:</strong> "상태가 있으면 무조건 StatefulSet"이 아니라, 정체성·순서·전용 스토리지가 실제로 필요한지 구분할 수 있는가.</li>
+        <li><strong>스토리지-스케줄링 상호작용 이해:</strong> PVC가 특정 토폴로지(AZ/노드)에 바인딩되면 Pod 재스케줄링에 어떤 제약이 생기는지 아는가.</li>
+        <li><strong>운영 리스크 판단:</strong> PVC retention policy를 <code>Delete</code>로 바꾸는 것이 비용 절감과 데이터 손실 위험 사이의 트레이드오프라는 것을 인지하는가.</li>
+        <li><strong>StatefulSet의 한계 인지:</strong> Kubernetes가 클러스터링 로직 자체를 대신해주지 않는다는 경계를 명확히 아는가.</li>
+      </ul>
+    </div>
+
+    <p>
+      이 주제가 나오는 이유는, <strong>상태를 가진 워크로드의 장애는 무상태 워크로드보다 훨씬 복구가 까다롭고 데이터 손실로 이어질 수 있기 때문</strong>이다. Deployment 장애는 "다시 띄우면" 대부분 해결되지만, StatefulSet 장애는 "어느 볼륨이 어느 순번에 물려 있었는지, 스케일다운이 데이터를 지웠는지"까지 추적해야 하는 경우가 많다. 이 복잡성을 다뤄본 적이 있는지가 시니어와 미드레벨을 가른다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 1 — PVC 토폴로지 제약으로 Pod가 영구히 Pending</div>
+      <p>
+        3-AZ 클러스터에서 StatefulSet 기반 스토어를 운영 중, <code>ap-northeast-2a</code>의 노드가 장애로 사라졌다. <code>web-1</code> Pod가 다른 AZ의 노드로 재스케줄되려 했지만, 이 Pod의 PVC가 바인딩된 EBS 볼륨은 <strong>2a 존에 물리적으로 존재</strong>했고, 다른 존의 노드에는 attach될 수 없었다(<code>WaitForFirstConsumer</code> + 토폴로지 인식 스토리지 클래스 사용 중이었음). 결과적으로 Pod는 새 노드에서 <code>Pending</code>인 채로 멈췄고, 2a에 노드가 다시 생길 때까지 기다려야 했다.
+      </p>
+      <p>
+        이 사례가 주는 교훈은, <strong>StatefulSet은 Pod를 재스케줄할 수는 있어도 PVC의 물리적 위치까지 옮겨주지는 못한다</strong>는 것이다. 진짜 고가용성이 필요하다면 애플리케이션 레벨 복제(각 replica가 자체 복제본을 갖는 분산 스토어)로 존 장애를 흡수하거나, 크로스존 복제가 가능한 스토리지(EFS, 분산 블록 스토리지)를 검토해야 한다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 2 — 스케일다운 후 PVC가 남아 비용이 새던 사례</div>
+      <p>
+        피크 트래픽에 맞춰 캐시 클러스터를 StatefulSet replica 10 → 20으로 늘렸다가 트래픽이 줄자 다시 10으로 줄였다. <code>persistentVolumeClaimRetentionPolicy</code>를 설정하지 않아 기본값(Retain)이 적용됐고, <strong>스케일다운으로 사라진 10개 Pod의 PVC 10개가 그대로 남아</strong> 몇 달간 사용되지 않는 스토리지 비용이 청구됐다. 뒤늦게 발견 후 수동으로 PVC를 정리했다.
+      </p>
+      <p>
+        이후 이 팀은 재시작 가능한 캐시성 워크로드에는 <code>whenScaled: Delete</code>를 명시적으로 설정하되, 진짜 영구 데이터를 다루는 StatefulSet에는 <code>Retain</code>을 유지하는 정책을 문서화했다. "PVC 자동 삭제는 워크로드 성격에 따라 선택하는 것이지, 기본값에 맡길 사안이 아니다"가 결론이었다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 3 — OrderedReady 때문에 전체 롤아웃이 한 Pod에 막힌 사례</div>
+      <p>
+        5-replica StatefulSet을 새 이미지로 업데이트하는데, 역순으로 진행되던 롤링 업데이트가 <code>web-2</code>에서 readiness probe 실패로 멈췄다. 기본 <code>OrderedReady</code> 동작 때문에 <code>web-1</code>, <code>web-0</code>은 업데이트 시도조차 되지 않은 채 대기 상태였다. 처음엔 "왜 나머지가 안 바뀌지"라고 당황했지만, 이는 <strong>설계된 안전장치</strong>였다 — 만약 Parallel 업데이트였다면 전체 5개가 동시에 문제 버전으로 바뀌어 훨씬 큰 장애가 됐을 상황이었다.
+      </p>
+      <p>
+        이 경험 이후, StatefulSet 업데이트 전에는 항상 <code>partition</code>을 이용해 가장 높은 순번 1개만 먼저 카나리로 검증하고, 문제가 없을 때만 <code>partition</code>을 0으로 낮춰 전체를 진행하는 절차를 표준화했다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>"Pod가 Pending에서 멈춰 있습니다"라는 질문을 받으면 아래 순서로 답하라. 워크로드 성격 확인 → 스케줄링 실패 원인 분류 → 스토리지 제약 확인 → 즉시 완화 → 근본 설계 재검토 순서다.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>이 워크로드가 왜 StatefulSet인지부터 확인한다</strong>
+        <p>정체성/순서/전용 스토리지가 실제로 필요한 워크로드인지, 아니면 관성적으로 StatefulSet을 썼는지 짚는다. 이 판단이 이후 대응 방향(재스케줄을 기다릴지, 구조를 바꿀지)을 좌우한다.</p>
+      </li>
+      <li>
+        <strong><code>kubectl describe pod</code>의 이벤트로 Pending 원인을 좁힌다</strong>
+        <p>스케줄러가 배치할 노드를 못 찾는 것(리소스 부족, taint/affinity 불일치)인지, 아니면 노드는 있는데 <strong>볼륨을 attach 못하는 것</strong>(<code>FailedAttachVolume</code>, 토폴로지 불일치)인지 구분한다.</p>
+      </li>
+      <li>
+        <strong>PVC와 PV의 토폴로지 제약을 확인한다</strong>
+        <p><code>kubectl get pv -o yaml</code>로 <code>nodeAffinity</code>를 보고, 해당 볼륨이 특정 존/노드에 묶여 있는지 확인한다. 묶여 있다면 그 존에 노드가 다시 생기지 않는 한 이 Pod는 스케줄될 수 없다는 것이 근본 제약이다.</p>
+      </li>
+      <li>
+        <strong>애플리케이션 레벨 가용성으로 즉시 영향을 완화한다</strong>
+        <p>분산 스토어라면 나머지 replica로 쿼럼이 유지되는지, 클라이언트가 자동으로 살아있는 replica로 라우팅되는지 확인해 "1개 Pod Pending"이 곧바로 서비스 장애로 이어지지 않게 한다.</p>
+      </li>
+      <li>
+        <strong>근본 설계를 재검토한다</strong>
+        <p>존 장애가 반복될 리스크가 있다면 스토리지를 크로스존 복제 가능한 것으로 바꾸거나, 애플리케이션 레벨 복제로 존 하나가 사라져도 서비스는 유지되도록 replica를 여러 존에 분산 배치(topology spread)하는 설계를 제안한다.</p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — "StatefulSet Pod가 노드 장애 후 Pending에서 멈췄습니다. Deployment였다면 안 그랬을까요?"</div>
+      <p>
+        "먼저 StatefulSet을 쓴 이유부터 짚겠습니다. 이 워크로드는 각 replica가 고유한 순번(ordinal)과 그에 딸린 전용 PVC를 가져야 하는 분산 스토어라고 가정하겠습니다. Deployment였다면 애초에 이런 안정적 정체성이나 순번별 전용 볼륨 자체가 없었을 테니 비교 자체가 성립하지 않습니다 — 대신 상태를 어딘가 외부(예: 관리형 DB)에 뒀겠죠.
+      </p>
+      <p>
+        Pending의 원인은 <code>kubectl describe pod</code>의 이벤트로 확인합니다. 스케줄링 자체가 안 되는 것(자원 부족)인지, <code>FailedAttachVolume</code>처럼 볼륨 attach가 안 되는 것인지를 구분합니다. StatefulSet은 이 Pod의 PVC를 그대로 유지한 채 재스케줄을 시도하는데, 만약 해당 PV가 특정 존에 물리적으로 묶여 있다면(<code>nodeAffinity</code>), 그 존에 노드가 없는 한 Pod는 계속 Pending일 수밖에 없습니다. 이건 버그가 아니라 <strong>스토리지의 물리적 제약</strong>입니다.
+      </p>
+      <p>
+        즉시 대응으로는 나머지 replica로 쿼럼/가용성이 유지되는지 확인해 사용자 영향을 우선 차단하고, 근본적으로는 존 장애가 반복될 위험이 있다면 애플리케이션 레벨 복제로 존 하나가 없어져도 서비스가 유지되도록 topology spread 설계를 재검토하겠습니다. 단순히 '재스케줄되길 기다린다'가 아니라 스토리지 토폴로지 제약을 이해하고 설명하는 것이 핵심이라고 생각합니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① StatefulSet 선택 이유를 먼저 확인해 질문의 전제를 검증 ② Pending의 원인을 스케줄링 vs 볼륨 attach로 정확히 분류 ③ PV의 토폴로지 제약이라는 근본 원인까지 짚음 ④ 즉시 완화와 근본 설계 개선을 구분해서 제시
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "podManagementPolicy를 Parallel로 바꾸면 항상 더 좋은 선택 아닌가요?"</div>
+      <div class="followup-a">
+        <p>아닙니다. Parallel은 순번과 무관하게 모든 Pod를 동시에 만들고 삭제하므로 속도는 빠르지만, <strong>애플리케이션이 부팅 순서에 의존한다면 위험</strong>합니다. 예를 들어 0번이 먼저 초기화를 마치고 1·2번이 그걸 참조해 join하는 구조라면, Parallel에서는 세 Pod가 동시에 뜨면서 0번의 초기화가 끝나기 전에 1·2번이 join을 시도해 실패하거나 잘못된 상태로 시작할 수 있습니다. 애플리케이션이 자체 피어 디스커버리/합의 프로토콜로 순서 없이도 안전하게 join할 수 있을 때만 Parallel을 선택해야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "StatefulSet의 PVC를 whenScaled: Delete로 설정하면 스케일다운이 항상 안전해지나요?"</div>
+      <div class="followup-a">
+        <p>안전해지는 것은 "PVC가 안 남아서 비용이 새는 문제"뿐입니다. 오히려 <strong>새로운 위험이 생깁니다</strong> — 실수로 replica 수를 잘못 줄이거나, 오토스케일러가 오작동해 순간적으로 replica를 줄였다가 다시 늘릴 때, 원래 있던 PVC가 이미 삭제돼 데이터가 사라진 상태로 새 PVC가 만들어질 수 있습니다. 진짜 영구 데이터를 다루는 워크로드라면 <code>Retain</code>을 유지하고, 정말 재시작 가능한 캐시성 데이터에만 <code>Delete</code>를 쓰는 것이 안전한 기준입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "partition 필드로 하는 canary와 별도의 Argo Rollouts/Flagger canary는 뭐가 다른가요?"</div>
+      <div class="followup-a">
+        <p><code>partition</code>은 <strong>"몇 개의 replica가 새 버전인가"만 제어</strong>합니다. 트래픽 비율을 나누는 기능은 없습니다 — StatefulSet의 각 Pod는 보통 개별 식별자로 접근되므로(Headless Service를 통한 직접 접근), 애초에 "5% 트래픽만 새 버전으로"라는 개념이 Deployment의 canary와는 다르게 적용됩니다. 오히려 StatefulSet의 <code>partition</code>은 "특정 순번(주로 리더가 아닌 노드)부터 먼저 업데이트해서 클러스터가 깨지지 않는지 검증한다"는, 상태를 가진 클러스터 멤버 단위의 순차 검증에 가깝습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "왜 StatefulSet의 Pod 이름에 순번이 필요한가요? UUID 같은 걸로 대체하면 안 되나요?"</div>
+      <div class="followup-a">
+        <p>순번은 애플리케이션이 <strong>"내가 몇 번째 멤버인가"를 예측 가능하게 알아야 하는 로직</strong>(예: 순번 기반 파티션 할당, 순번 0을 기본 리더 후보로 취급하는 관례)을 구현할 때 유용합니다. UUID는 매번 무작위라 이런 결정적 매핑을 만들 수 없습니다. 다만 애플리케이션이 순번에 의미를 두지 않고 완전히 동적인 멤버십 프로토콜(gossip 등)을 쓴다면, 순번 자체의 이점은 크지 않고 이때는 안정적 스토리지/네트워크 정체성만으로 충분할 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "Operator(예: 각 데이터베이스 전용 Kubernetes Operator)를 쓰면 StatefulSet 지식이 필요 없어지나요?"</div>
+      <div class="followup-a">
+        <p>Operator는 대부분 내부적으로 StatefulSet(또는 유사한 순번 기반 컨트롤러)을 감싸서 백업, 장애 조치, 버전 업그레이드 같은 운영 로직을 자동화한 것입니다. Operator를 쓰더라도 <strong>기반이 되는 StatefulSet의 동작(Pending의 원인, PVC 정책, 롤링 업데이트 순서)을 모르면 Operator가 이상하게 동작할 때 원인을 추적할 수 없습니다.</strong> 시니어 역할일수록 Operator 뒤에 숨겨진 이 기반 메커니즘을 알고 있어야 장애 시 Operator 로그와 StatefulSet 상태를 함께 해석할 수 있습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>StatefulSet이 필요한 이유(정체성/순서/전용 스토리지)를 먼저 검증하고 답을 시작한다</li>
+          <li>Pending의 원인을 스케줄링 실패와 볼륨 attach 실패로 구분해서 진단한다</li>
+          <li>PV의 토폴로지 제약이 Pod 재스케줄을 막을 수 있다는 것을 안다</li>
+          <li>PVC retention policy를 Retain/Delete 트레이드오프로 설명하고, 워크로드 성격에 맞게 선택 기준을 제시한다</li>
+          <li>StatefulSet이 클러스터링 로직 자체를 대신해주지 않는다는 경계를 명확히 안다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"상태가 있으니까 StatefulSet"이라고만 답하고 왜 필요한지 설명하지 못한다</li>
+          <li>Pending을 무조건 "리소스 부족"으로만 진단하고 볼륨 토폴로지 가능성을 놓친다</li>
+          <li>PVC가 스케일다운 후에도 남는다는 것 자체를 모른다</li>
+          <li>StatefulSet만 쓰면 분산 시스템의 일관성/쿼럼이 자동으로 보장된다고 착각한다</li>
+          <li><code>OrderedReady</code>가 왜 기본값인지, <code>Parallel</code>이 언제 유리한지 구분하지 못한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        "상태가 있으니까 StatefulSet"은 도구 선택의 이유를 설명하지 못하는 결론일 뿐이다. 실제로는 Deployment에 외부 관리형 스토리지를 붙이는 편이 더 적합한 경우도 많다. 또한 Pending을 리소스 부족으로만 진단하면 볼륨 토폴로지라는 훨씬 흔한 프로덕션 원인을 놓쳐 잘못된 조치(노드 추가 등)로 시간을 낭비하게 된다. StatefulSet이 클러스터링을 대신 해준다는 착각은 실제 장애(split-brain, 데이터 불일치) 상황에서 엉뚱한 곳에서 원인을 찾게 만든다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"StatefulSet을 쓰면 Kubernetes가 리더 선출이나 쿼럼 합의를 대신 처리해준다."</p>
+      <div class="mc-right">실제</div>
+      <p>StatefulSet은 안정적인 이름·네트워크·스토리지라는 <strong>기반</strong>만 제공한다. 리더 선출, 컨센서스, split-brain 방지 같은 실제 분산 시스템 로직은 애플리케이션(또는 그 위의 Operator)이 구현해야 한다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"StatefulSet Pod가 죽으면 다른 노드로 알아서 옮겨가서 계속 잘 동작한다."</p>
+      <div class="mc-right">실제</div>
+      <p>Pod는 재스케줄될 수 있지만 <strong>PVC는 물리적 위치(존/노드)에 묶여 있을 수 있다.</strong> 토폴로지 인식 스토리지를 쓰면 같은 존에 노드가 없는 한 재스케줄이 막혀 Pending 상태로 남을 수 있다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"StatefulSet을 스케일다운하면 관련 데이터(PVC)도 함께 정리된다."</p>
+      <div class="mc-right">실제</div>
+      <p>기본 <code>persistentVolumeClaimRetentionPolicy</code>는 <code>Retain</code>이다. 스케일다운·삭제 후에도 PVC는 그대로 남아 스토리지 비용이 계속 청구된다. GA된 정책 필드로 <code>Delete</code>를 명시해야 자동 정리되며, 이는 데이터 손실 위험과 맞바꾸는 선택이다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"StatefulSet은 항상 OrderedReady로, 하나씩 순서대로만 배포/스케일링해야 한다."</p>
+      <div class="mc-right">실제</div>
+      <p>애플리케이션이 순서에 의존하지 않는다면 <code>podManagementPolicy: Parallel</code>로 바꿔 스케일링 속도를 크게 높일 수 있다. OrderedReady는 기본값일 뿐, 모든 상태 유지 워크로드에 필수인 것은 아니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"Pod 이름이 web-0, web-1처럼 고정되는 건 그냥 보기 좋으라고 있는 기능이다."</p>
+      <div class="mc-right">실제</div>
+      <p>순번은 Headless Service를 통한 안정적 DNS 이름, 그리고 순번별 전용 PVC 매핑의 기준이 되는 핵심 메커니즘이다. 순번 기반 파티션 할당이나 결정적 멤버십 로직을 구현하는 애플리케이션에는 필수적인 정보다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>StatefulSet 선택 근거</strong></td>
+          <td>정체성/순서/전용 스토리지가 실제로 필요한지부터 검증하고, 필요 없다면 Deployment도 대안이라는 것을 안다</td>
+          <td>StatefulSet의 정의는 알지만 선택 기준을 설명 못한다</td>
+          <td>"상태가 있으면 무조건 StatefulSet"이라고만 답한다</td>
+        </tr>
+        <tr>
+          <td><strong>Pending 원인 진단</strong></td>
+          <td>스케줄링 실패와 볼륨 attach/토폴로지 제약을 구분해서 진단한다</td>
+          <td>Pending을 리소스 부족으로만 판단한다</td>
+          <td>원인 분류 없이 재시작부터 시도한다</td>
+        </tr>
+        <tr>
+          <td><strong>PVC 라이프사이클</strong></td>
+          <td>retention policy의 Retain/Delete 트레이드오프와 워크로드별 선택 기준을 설명한다</td>
+          <td>PVC가 남는다는 것은 알지만 정책 필드는 모른다</td>
+          <td>스케일다운 시 PVC가 자동 정리된다고 착각한다</td>
+        </tr>
+        <tr>
+          <td><strong>OrderedReady/Parallel 판단</strong></td>
+          <td>애플리케이션의 부팅 순서 의존성에 따라 정책을 선택하는 기준을 제시한다</td>
+          <td>두 옵션의 존재는 알지만 선택 기준은 없다</td>
+          <td>OrderedReady만 있다고 알고 있다</td>
+        </tr>
+        <tr>
+          <td><strong>클러스터링 경계 이해</strong></td>
+          <td>StatefulSet과 애플리케이션 자체 클러스터링 로직의 역할 분담을 명확히 구분한다</td>
+          <td>구분은 어렴풋이 알지만 구체적 예시를 못 든다</td>
+          <td>StatefulSet이 쿼럼/합의까지 보장한다고 착각한다</td>
+        </tr>
+        <tr>
+          <td><strong>롤링 업데이트/partition</strong></td>
+          <td>역순 업데이트와 partition을 이용한 순번 단위 canary 검증을 설명한다</td>
+          <td>롤링 업데이트가 순서대로 진행된다는 것만 안다</td>
+          <td>partition의 존재를 모른다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면, Day 5(DaemonSet)에서 노드 단위 운영 관점을 이어보고, Day 9(Storage/Volume)에서 PV 토폴로지와 CSI 장애 패턴을 더 깊이 확인한다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./0003-deployment-rollout-rollback-stability.html">← Day 3</a>
+    <a href="./index.html">목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>
