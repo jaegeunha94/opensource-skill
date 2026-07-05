@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — Closure 심화 | JavaScript 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">JavaScript 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 4
+  </nav>
+
+  <h1>Day 4 — Closure 심화</h1>
+  <p class="subtitle">클로저는 마법이 아니라 "함수가 스코프 체인에 대한 참조를 실행이 끝난 뒤에도 붙잡고 있는 것" — 실제 메모리 모델, 반복문 버그, 실무 패턴 · 2026-07-05</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#memory-model">클로저의 실제 메모리 모델</a></li>
+      <li><a href="#loop-bug">반복문 클로저 버그 — 왜 항상 마지막 값만 찍히는가</a></li>
+      <li><a href="#patterns">실무 활용 패턴 — 모듈, 프라이빗 상태, 메모이제이션</a></li>
+      <li><a href="#leak-preview">클로저와 메모리 누수 — 다음 학습 예고</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"다음 코드를 실행하면 콘솔에 무엇이 찍힐까요? 그리고 의도한 대로(0, 1, 2) 찍히게 하려면 어떻게 고쳐야 하나요? 왜 그 방법이 효과가 있나요?"</p>
+      <pre style="margin-top:0.8rem"><code>for (var i = 0; i < 3; i++) {
+  setTimeout(function () {
+    console.log(i);
+  }, 0);
+}
+// 예상: 0, 1, 2
+// 실제: ?</code></pre>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"클로저가 정확히 무엇인가요? '함수가 자신이 선언된 스코프의 변수를 기억한다'는 말을 엔진 관점에서 더 정확하게 설명해주세요."</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"클로저를 많이 만드는 코드가 메모리 사용량을 늘릴 수 있다고 들었는데, 정확히 어떤 상황에서 그런가요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 3</div>
+      <p>"프라이빗 상태를 만들 때 클로저를 쓰는 방식과 <code>class</code>의 private 필드(<code>#field</code>)를 쓰는 방식의 실무적 차이는 무엇인가요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>클로저 질문은 자바스크립트 인터뷰에서 가장 흔하지만, 동시에 <strong>가장 얕은 답변으로도 넘어갈 수 있는 질문</strong>입니다. "클로저는 함수가 자기 스코프 밖의 변수를 기억하는 것"이라는 문장은 누구나 외워서 말할 수 있습니다. 시니어 인터뷰가 실제로 평가하는 것은 <strong>그 "기억"이 정확히 무엇을 참조 형태로 붙잡고 있는지, 그래서 반복문에서 왜 종종 예상과 다른 값이 나오는지, 그리고 그 참조가 메모리에서 언제까지 살아있는지</strong>를 원리로 설명할 수 있는가입니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>클로저가 "값의 복사"가 아니라 "변수 자체(바인딩)에 대한 참조"라는 것을 아는가</strong> — 클로저가 캡처하는 것은 코드 작성 시점의 값이 아니라, Day 3에서 다룬 스코프 체인 위의 살아있는 변수 자리(바인딩) 그 자체라는 것.</li>
+      <li><strong>Day 2~3과 연결해 설명할 수 있는가</strong> — 클로저는 새로운 개념이 아니라, "함수 실행이 끝나 Call Stack에서 제거된 뒤에도, 그 함수의 Lexical Environment가 GC 대상이 되지 않고 계속 참조되는 현상"이라는 것을 실행 컨텍스트/스코프 체인 모델로 설명할 수 있는가.</li>
+      <li><strong><code>var</code>와 <code>let</code>의 반복문 클로저 차이를 원리로 설명하는가</strong> — 단순히 "<code>let</code>을 쓰면 해결된다"가 아니라, <strong>왜</strong> 해결되는지(매 반복마다 새로운 바인딩이 생성되기 때문)를 설명할 수 있는가.</li>
+      <li><strong>클로저의 메모리 함의를 판단할 수 있는가</strong> — 클로저 하나가 큰 객체를 캡처한 채 오래 살아있을 때, 그 큰 객체가 GC되지 않고 계속 메모리에 남는다는 것을 실무 시나리오(이벤트 핸들러, 캐시, 타이머)로 설명할 수 있는가.</li>
+      <li><strong>클로저를 "의도적으로" 쓰는 실무 패턴을 아는가</strong> — 프라이빗 상태, 메모이제이션, 팩토리 함수, 디바운스/스로틀 등에서 클로저가 왜 적합한 도구인지, 그리고 <code>class</code>의 private 필드 같은 대안과 무엇이 다른지 판단할 수 있는가.</li>
+    </ul>
+
+    <p>10년차 이하에서 자주 나오는 답변 패턴: 반복문 예제에서 "<code>let</code>을 쓰면 된다"는 결론만 말하고 멈추는 답변입니다. 이는 정답이지만 절반입니다 — 시니어는 여기에 "왜"와 "이게 실제 어떤 실무 코드에서 문제가 되는지", "메모리 관점에서 클로저가 무엇을 붙잡고 있는지"까지 이어서 설명합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>클로저(Closure)란 무엇인가 — 도서관 비유의 연장</h3>
+    <p>Day 3에서 스코프 체인을 "책을 찾아 나가는 서가 경로"에 비유했습니다. 클로저는 이 비유를 이렇게 확장합니다: <strong>보통은 한 함수의 실행이 끝나면 그 함수가 쓰던 "서가"(Lexical Environment, 지역 변수들이 놓인 자리)는 더 이상 쓸모가 없어져 치워집니다(가비지 컬렉션 대상이 됩니다).</strong> 그런데 만약 그 함수 안에서 만들어진 <strong>또 다른 함수</strong>가 바깥으로 반환되거나, 이벤트 핸들러·타이머 콜백처럼 나중에 호출될 곳에 전달되어 계속 살아있다면 어떻게 될까요? 그 안쪽 함수는 자신이 정의될 때 참조하고 있던 서가(바깥 함수의 지역 변수 자리)를 계속 붙잡고 있으므로, 그 서가는 치워지지 않고 계속 남습니다. 이 현상 — <strong>함수가 자신이 정의된 렉시컬 스코프에 대한 참조를 실행 종료 이후에도 계속 유지하는 것</strong> — 이 클로저입니다.</p>
+
+    <div class="card">
+      <h4>중요: 클로저는 "복사본을 저장"하는 게 아니다</h4>
+      <p>많은 사람이 "클로저가 변수의 <strong>값을 스냅샷처럼 저장</strong>한다"고 오해합니다. 실제로는 값이 아니라 <strong>변수가 놓인 자리(바인딩) 자체에 대한 참조</strong>를 유지합니다. 그래서 클로저가 캡처한 변수가 나중에 바뀌면, 클로저 안에서 그 변수를 읽을 때도 <strong>바뀐 최신 값</strong>이 보입니다. 이것이 바로 Section 5에서 다룰 반복문 클로저 버그의 근본 원인입니다.</p>
+    </div>
+
+    <h3>왜 이 개념이 Day 2~3 다음에 필요한가</h3>
+    <p>Day 2에서 "실행 컨텍스트 하나가 어떻게 만들어지고 사라지는가"를, Day 3에서 "여러 실행 컨텍스트의 스코프가 어떤 경로로 연결되는가"를 다뤘습니다. 클로저는 이 두 개념의 자연스러운 귀결입니다: <strong>보통 함수가 반환되면(Call Stack에서 pop되면) 그 실행 컨텍스트의 Lexical Environment는 더 이상 참조되지 않아 GC됩니다. 그러나 안쪽 함수가 그 Lexical Environment에 대한 참조를 여전히 들고 있다면, 엔진은 그것을 치울 수 없습니다.</strong> 즉 클로저는 별도의 새로운 자료구조가 아니라, "Lexical Environment의 생존 기간이 그 함수를 만든 바깥 함수의 실행 기간보다 길어지는 상황"입니다.</p>
+
+    <div class="card">
+      <h4>실무 연결 — 이 개념이 왜 프로덕션에서 중요한가</h4>
+      <p>클로저는 자바스크립트에서 프라이빗 상태, 콜백, 이벤트 핸들러, 커링, 메모이제이션의 기반이 되는 핵심 메커니즘입니다. 동시에 대규모 SPA에서 "페이지를 오래 쓸수록 느려진다"는 리포트의 상당수는 <strong>더 이상 필요 없는 클로저가 큰 객체(DOM 노드, 대용량 배열, 캐시)를 계속 붙잡고 있어 GC가 회수하지 못하는 것</strong>이 원인입니다. 클로저의 메모리 모델을 정확히 알아야 이런 누수를 코드만 보고 예측할 수 있습니다.</p>
+    </div>
+  </section>
+
+  <!-- 4. 클로저의 실제 메모리 모델 -->
+  <section id="memory-model">
+    <h2>4. 클로저의 실제 메모리 모델</h2>
+
+    <pre><code>function createCounter() {
+  let count = 0; // createCounter의 Lexical Environment에 자리잡은 변수
+
+  return function increment() {
+    count += 1;
+    return count;
+  };
+}
+
+const counter1 = createCounter();
+const counter2 = createCounter();
+
+console.log(counter1()); // 1
+console.log(counter1()); // 2
+console.log(counter2()); // 1 (counter1과 완전히 별개의 count)</code></pre>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>단계</th>
+          <th>메모리 관점에서 무슨 일이 일어나는가</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1. <code>createCounter()</code> 호출 시 새 실행 컨텍스트 생성</td>
+          <td>Day 2에서 배운 대로 Call Stack에 새 프레임이 쌓이고, 그 프레임 안에 <code>count</code>라는 변수가 놓일 Lexical Environment가 새로 만들어집니다. <code>createCounter</code>를 호출할 때마다 <strong>완전히 새로운</strong> Lexical Environment가 생성됩니다.</td>
+        </tr>
+        <tr>
+          <td>2. 내부 함수 <code>increment</code>가 이 Lexical Environment를 렉시컬로 참조</td>
+          <td><code>increment</code>는 <code>createCounter</code> 내부에 정의되어 있으므로(Day 3의 렉시컬 스코프 규칙), 자신의 스코프 체인에 <code>createCounter</code>의 Lexical Environment에 대한 참조를 갖고 태어납니다.</td>
+        </tr>
+        <tr>
+          <td>3. <code>createCounter()</code>가 <code>increment</code>를 반환하고 종료</td>
+          <td>보통이라면 <code>createCounter</code>의 실행 컨텍스트는 Call Stack에서 pop되고 그 Lexical Environment는 참조하는 곳이 없어 GC 대상이 됩니다. 그러나 반환된 <code>increment</code> 함수(= <code>counter1</code>)가 그 Lexical Environment에 대한 참조를 여전히 갖고 있으므로, <strong>GC는 이것을 회수하지 못합니다.</strong></td>
+        </tr>
+        <tr>
+          <td>4. <code>counter1()</code>, <code>counter2()</code>는 서로 다른 <code>count</code>를 참조</td>
+          <td><code>createCounter()</code>를 두 번 호출했으므로 <strong>서로 다른 두 개의 Lexical Environment</strong>가 각각 만들어졌고, <code>counter1</code>과 <code>counter2</code>는 각자 자신이 태어날 때 참조한 Lexical Environment만 붙잡고 있습니다. 이것이 클로저가 "인스턴스별로 독립된 상태"를 만드는 원리입니다.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>핵심 원리 — 클로저는 "함수 + 그 함수가 정의된 Lexical Environment에 대한 참조"의 쌍이다</h4>
+      <p>엔진 관점에서 함수 값(function value)은 사실 코드(어떻게 실행할지)와 <strong>그 코드가 정의된 시점의 Lexical Environment에 대한 참조</strong>를 함께 갖고 있는 하나의 쌍입니다. 이 참조 때문에, 함수가 자신을 만든 바깥 함수의 실행이 끝난 뒤에도 그 바깥 스코프의 변수에 계속 접근할 수 있는 것입니다. "클로저를 만든다"는 것은 특별한 문법이 아니라, <strong>중첩 함수를 어떤 형태로든 바깥으로 내보내는(반환·콜백 전달·이벤트 핸들러 등록) 모든 경우</strong>에 자동으로 일어나는 현상입니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. 반복문 클로저 버그 -->
+  <section id="loop-bug">
+    <h2>5. 반복문 클로저 버그 — 왜 항상 마지막 값만 찍히는가</h2>
+
+    <p>Primary Question 코드를 다시 봅시다.</p>
+
+    <pre><code>for (var i = 0; i < 3; i++) {
+  setTimeout(function () {
+    console.log(i);
+  }, 0);
+}
+// 실제 출력: 3, 3, 3</code></pre>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>단계</th>
+          <th>무슨 일이 일어나는가</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1. <code>var i</code>는 함수(또는 전역) 스코프 하나만 만든다</td>
+          <td>Day 3에서 배운 대로 <code>var</code>는 블록 스코프를 만들지 않습니다. <code>for</code> 반복 3번 전체가 <strong>단 하나의 <code>i</code> 바인딩</strong>을 공유합니다.</td>
+        </tr>
+        <tr>
+          <td>2. 3개의 콜백 함수 모두 같은 <code>i</code> 바인딩을 클로저로 캡처</td>
+          <td><code>setTimeout</code>에 전달된 익명 함수 3개는 모두 같은 스코프에 정의되었으므로, 모두 <strong>같은 하나의 <code>i</code> 자리</strong>에 대한 참조를 클로저로 붙잡습니다. Section 3에서 강조했듯 클로저는 "값의 복사"가 아니라 "자리 자체의 참조"이기 때문입니다.</td>
+        </tr>
+        <tr>
+          <td>3. 반복문은 즉시 3번 다 돌고 <code>i</code>는 3이 된다</td>
+          <td><code>setTimeout</code>의 콜백은 즉시 실행되지 않고 Task Queue에 등록만 됩니다(Day 1의 Event Loop 모델). 동기 코드인 <code>for</code> 루프는 콜백이 실행되기 훨씬 전에 이미 끝까지 다 돌아, 공유된 <code>i</code>는 최종값인 <code>3</code>이 되어 있습니다.</td>
+        </tr>
+        <tr>
+          <td>4. Call Stack이 비고 나서야 콜백들이 하나씩 실행</td>
+          <td>세 콜백이 실행될 시점에는 이미 <code>i</code>가 <code>3</code>으로 확정된 뒤이므로, 모두 같은 자리를 읽어 <strong>3, 3, 3</strong>이 출력됩니다.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>해결책 1 — <code>let</code>으로 바꾸기 (가장 관용적인 해법)</h3>
+    <pre><code>for (let i = 0; i < 3; i++) {
+  setTimeout(function () {
+    console.log(i);
+  }, 0);
+}
+// 출력: 0, 1, 2</code></pre>
+    <p>Day 3의 follow-up에서 다룬 대로, <code>for (let i = ...)</code>는 스펙상 <strong>매 반복마다 새로운 렉시컬 환경(새 <code>i</code> 바인딩)</strong>을 만들도록 정의되어 있습니다. 따라서 각 콜백은 서로 다른 <code>i</code> 자리를 클로저로 캡처하게 되고, 각자 생성 당시의 값을 독립적으로 기억합니다.</p>
+
+    <h3>해결책 2 — IIFE로 매 반복마다 새 스코프를 수동으로 만들기 (<code>let</code> 이전 시대의 레거시 해법)</h3>
+    <pre><code>for (var i = 0; i < 3; i++) {
+  (function (capturedI) {
+    setTimeout(function () {
+      console.log(capturedI);
+    }, 0);
+  })(i);
+}
+// 출력: 0, 1, 2</code></pre>
+    <p>즉시 실행 함수(IIFE)를 매 반복마다 호출해 <code>i</code>의 <strong>현재 값을 인자로 복사</strong>해 넘기면, 그 IIFE 실행마다 새로운 <code>capturedI</code>라는 별개의 지역 변수가 생겨 각 콜백이 서로 다른 자리를 캡처하게 됩니다. <code>let</code>이 없던 ES5 시절의 표준 우회법이며, 지금도 "왜 <code>let</code>이 근본적으로 같은 문제를 해결하는지" 설명할 때 비교 대상으로 자주 등장합니다.</p>
+
+    <div class="card">
+      <h4>실무 연결 — 이 버그가 실제로 나타나는 곳</h4>
+      <p>이 패턴은 <code>setTimeout</code> 장난감 예제로만 그치지 않습니다. 리스트를 순회하며 각 항목에 이벤트 리스너를 등록하거나, 여러 API 요청을 반복문으로 발사하고 각각의 응답 콜백에서 "몇 번째 요청이었는지"를 참조하는 코드에서 <strong>동일한 원리로</strong> 등장합니다. 레거시 코드베이스에서 <code>var</code>가 아직 남아있는 반복문 + 비동기 콜백 조합은 이 버그의 단골 발생 지점입니다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 실무 활용 패턴 -->
+  <section id="patterns">
+    <h2>6. 실무 활용 패턴 — 모듈, 프라이빗 상태, 메모이제이션</h2>
+
+    <h3>패턴 1 — 모듈 패턴 / 프라이빗 상태</h3>
+    <pre><code>function createBankAccount(initialBalance) {
+  let balance = initialBalance; // 바깥에서 직접 접근 불가능한 "프라이빗" 변수
+
+  return {
+    deposit(amount) {
+      balance += amount;
+      return balance;
+    },
+    withdraw(amount) {
+      if (amount > balance) throw new Error('잔액 부족');
+      balance -= amount;
+      return balance;
+    },
+    getBalance() {
+      return balance;
+    },
+  };
+}
+
+const account = createBankAccount(1000);
+account.deposit(500);
+console.log(account.getBalance()); // 1500
+console.log(account.balance);      // undefined — 직접 접근 불가</code></pre>
+    <p><code>balance</code>는 <code>createBankAccount</code>의 Lexical Environment에만 존재하고, 반환된 객체의 메서드들만 클로저로 그 자리에 접근할 수 있습니다. 바깥 코드는 <code>account.balance</code>로 직접 값을 조작할 방법이 구조적으로 없습니다 — 이것이 클로저 기반 캡슐화입니다.</p>
+
+    <h3>패턴 2 — 메모이제이션</h3>
+    <pre><code>function memoize(fn) {
+  const cache = new Map(); // 클로저로 유지되는 캐시 저장소
+
+  return function (...args) {
+    const key = JSON.stringify(args);
+    if (cache.has(key)) return cache.get(key);
+    const result = fn(...args);
+    cache.set(key, result);
+    return result;
+  };
+}
+
+const expensiveCalc = memoize((n) => {
+  console.log('실제 계산 실행');
+  return n * n;
+});
+
+expensiveCalc(5); // "실제 계산 실행" 출력, 25
+expensiveCalc(5); // 캐시 히트, 아무 로그 없이 25</code></pre>
+    <p><code>cache</code>는 <code>memoize</code>가 반환하는 함수가 호출될 때마다 초기화되는 것이 아니라, <code>memoize</code>가 <strong>한 번</strong> 호출될 때 만들어진 하나의 Lexical Environment에 계속 살아있는 상태입니다. 반환된 함수가 여러 번 호출되어도 같은 <code>cache</code>를 계속 참조합니다.</p>
+
+    <h3>패턴 3 — 디바운스/스로틀 (상태를 갖는 함수 팩토리)</h3>
+    <pre><code>function debounce(fn, delay) {
+  let timerId = null; // 클로저로 유지되는 타이머 상태
+
+  return function (...args) {
+    clearTimeout(timerId);
+    timerId = setTimeout(() => fn(...args), delay);
+  };
+}
+
+const debouncedSearch = debounce((query) => fetchSearchResults(query), 300);
+input.addEventListener('input', (e) => debouncedSearch(e.target.value));</code></pre>
+    <p>연속된 입력 이벤트마다 <code>debouncedSearch</code>가 호출되지만, 모두 <strong>같은 클로저</strong>(같은 <code>timerId</code> 자리)를 공유하므로 이전 타이머를 취소하고 새로 예약하는 상태 관리가 가능합니다. 이 패턴은 실무에서 검색창 입력, 윈도우 리사이즈, 스크롤 이벤트 최적화에 표준적으로 쓰입니다.</p>
+
+    <div class="card">
+      <h4>클로저 vs <code>class</code>의 <code>#private</code> 필드 — 언제 무엇을 쓰는가</h4>
+      <p>둘 다 "바깥에서 직접 접근 불가능한 상태"를 만들지만 성격이 다릅니다. 클로저 기반 모듈 패턴은 <strong>인스턴스마다 독립된 함수 객체를 새로 생성</strong>하므로(메서드가 프로토타입에 공유되지 않고 매번 새로 만들어짐) 메모리 오버헤드가 있고, 다수의 인스턴스를 만드는 경우 <code>class</code> + <code>#private</code> 필드가 프로토타입 메서드 공유(Day 5에서 다룰 내용)를 통해 더 효율적입니다. 반면 클로저는 <code>class</code> 문법 없이 가벼운 팩토리 함수나 훅(hook) 스타일 API를 만들 때, 혹은 상태를 가진 콜백 하나만 필요할 때(디바운스처럼) 더 간결합니다.</p>
+    </div>
+  </section>
+
+  <!-- 7. 메모리 누수 예고 -->
+  <section id="leak-preview">
+    <h2>7. 클로저와 메모리 누수 — 다음 학습 예고</h2>
+
+    <p>클로저가 "필요한 변수만 딱 붙잡는다"고 생각하기 쉽지만, 실제로는 <strong>클로저가 참조하는 Lexical Environment 전체가 계속 살아있습니다.</strong> 즉 클로저 안에서 실제로 쓰이지 않는 변수라도, 같은 스코프에 있다면(엔진의 최적화에 따라 다르지만) 함께 메모리에 남을 수 있습니다.</p>
+
+    <pre><code>function setupHandler() {
+  const hugeData = new Array(1_000_000).fill('x'); // 매우 큰 배열
+  const smallFlag = true;
+
+  element.addEventListener('click', function handler() {
+    // hugeData는 전혀 쓰지 않지만, 같은 스코프 체인에 있으므로
+    // handler가 살아있는 한 hugeData도 GC되지 못할 수 있다
+    console.log(smallFlag);
+  });
+}</code></pre>
+
+    <p>이 <code>handler</code>가 이벤트 리스너로 계속 등록되어 있는 한, 그 클로저가 참조하는 Lexical Environment도 계속 살아있고, 그 안의 <code>hugeData</code> 역시 회수되지 않을 수 있습니다. 이것이 대규모 SPA에서 "페이지를 오래 켜두면 메모리가 계속 늘어난다"는 리포트의 대표적인 원인 중 하나이며, <strong>Day 15(메모리 누수 진단)</strong>에서 힙 스냅샷으로 이런 패턴을 실제로 찾아내는 절차를 다룹니다.</p>
+  </section>
+
+  <!-- 8. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>8. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>클로저의 정의를 "참조" 관점으로 먼저 명시합니다.</strong> "값의 복사"가 아니라 "정의 시점 Lexical Environment에 대한 참조를 계속 유지하는 것"이라고 말합니다.</li>
+      <li><strong>문제 코드에서 몇 개의 함수(클로저)가 만들어지는지 세어봅니다.</strong> 반복문이라면 반복 횟수만큼 함수가 만들어지는지, 그 함수들이 같은 스코프를 공유하는지 다른 스코프를 갖는지 구분합니다.</li>
+      <li><strong>공유되는 바인딩인지, 반복마다 새로 생기는 바인딩인지 판단합니다.</strong> <code>var</code>(공유) vs <code>let</code>(반복마다 새 바인딩)의 차이를 여기서 적용합니다.</li>
+      <li><strong>비동기 콜백이라면 "언제 실행되는가"를 Event Loop 모델(Day 1)로 확인합니다.</strong> 콜백이 실행되는 시점에 캡처된 바인딩의 값이 무엇인지 역산합니다.</li>
+      <li><strong>필요하다면 이 상황이 메모리에 어떤 영향을 주는지까지 확장합니다.</strong> 클로저가 오래 살아있는 구조라면 무엇이 함께 계속 메모리에 남는지 짚습니다.</li>
+    </ol>
+  </section>
+
+  <!-- 9. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>9. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "다음 코드를 실행하면 콘솔에 무엇이 찍히나요? 의도한 대로 고치려면 어떻게 해야 하나요?"</p>
+      <pre><code>for (var i = 0; i < 3; i++) {
+  setTimeout(function () {
+    console.log(i);
+  }, 0);
+}</code></pre>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>이 코드는 <strong>3, 3, 3</strong>을 출력합니다. 이유는 클로저가 값을 복사해서 저장하는 게 아니라, 변수가 놓인 <strong>자리(바인딩) 자체에 대한 참조</strong>를 유지하기 때문입니다. <code>var</code>는 함수(또는 전역) 스코프만 만들기 때문에, 이 <code>for</code> 루프의 3번 반복 전체가 <strong>단 하나의 <code>i</code> 바인딩</strong>을 공유합니다. <code>setTimeout</code>에 전달된 세 개의 콜백 함수 모두 이 하나의 <code>i</code> 바인딩을 클로저로 캡처합니다.</p>
+      <br>
+      <p><code>setTimeout</code>은 콜백을 즉시 실행하지 않고 Web API를 거쳐 Task Queue에 등록만 하므로(Day 1의 Event Loop 모델), 동기 코드인 <code>for</code> 루프가 먼저 세 번 다 돈 뒤 <code>i</code>는 최종값인 <code>3</code>이 됩니다. Call Stack이 비고 나서야 Task Queue의 콜백들이 하나씩 실행되는데, 이 시점에는 세 콜백 모두 같은 <code>i</code> 자리를 읽으므로 전부 <code>3</code>을 출력합니다.</p>
+      <br>
+      <p>고치는 방법은 <code>var i</code>를 <code>let i</code>로 바꾸는 것입니다. <code>for (let i = ...)</code>는 스펙상 <strong>매 반복마다 새로운 렉시컬 환경(새 <code>i</code> 바인딩)</strong>을 생성하도록 정의되어 있어서, 세 콜백이 각각 서로 다른 <code>i</code> 자리를 클로저로 캡처하게 됩니다. 그래서 각 콜백이 자신이 생성된 시점의 값을 독립적으로 기억해 <code>0, 1, 2</code>가 출력됩니다. <code>let</code>이 없던 시절에는 IIFE로 반복마다 <code>i</code>의 현재 값을 인자로 복사해 넘겨 동일한 효과를 냈습니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>클로저를 "값 복사"가 아닌 "바인딩 참조"로 정확히 정의함</li>
+      <li>Day 1(Event Loop)과 Day 3(스코프 체인)을 자연스럽게 연결해 근거를 댐</li>
+      <li>해결책을 결론만 말하지 않고 "왜" 효과가 있는지 원리로 설명함</li>
+      <li>레거시 대안(IIFE)까지 언급해 폭넓은 이해를 보여줌</li>
+    </ul>
+  </section>
+
+  <!-- 10. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>10. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"0, 1, 2가 찍힐 것 같은데... 아, <code>let</code>을 쓰면 해결된다고 알고 있어요."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>실제 출력 결과(3, 3, 3)조차 예측하지 못하고 있어, 클로저가 값이 아니라 바인딩을 참조한다는 핵심 원리를 모른다는 신호를 줍니다.</li>
+        <li>"<code>let</code>을 쓰면 된다"는 것을 암기했을 뿐, <strong>왜</strong> 그것이 문제를 해결하는지 설명하지 못하면 변형 질문(예: <code>let</code>이 없던 시절엔 어떻게 해결했나)에 막힙니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"클로저 때문에 <code>i</code>의 값이 각 함수 안에 저장돼서 이런 문제가 생겨요."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"값이 저장된다"는 표현 자체가 오개념입니다. 클로저는 값을 저장하는 것이 아니라 <strong>변수가 놓인 자리(바인딩)에 대한 참조</strong>를 유지합니다. 이 차이를 구분하지 못하면 왜 세 콜백이 모두 "같은" 최종값을 보는지 설명할 수 없습니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>클로저를 "값 복사"가 아니라 "바인딩에 대한 참조 유지"로 정의한다</li>
+        <li><code>var</code>가 만드는 단일 공유 바인딩과 <code>let</code>이 반복마다 만드는 새 바인딩의 차이를 구분한다</li>
+        <li>비동기 콜백의 실행 시점을 Event Loop 모델로 설명해 "왜 최종값이 보이는지" 근거를 댄다</li>
+        <li>해결책의 결론뿐 아니라 원리, 그리고 가능하면 레거시 대안까지 언급한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11. Follow-up -->
+  <section id="followups">
+    <h2>11. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: 클로저를 많이 만들면 항상 메모리 누수로 이어지나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 아닙니다. 클로저 자체는 자바스크립트의 정상적이고 필수적인 메커니즘이며, 클로저가 참조하는 Lexical Environment는 그 클로저(함수)가 더 이상 어디서도 참조되지 않으면 정상적으로 GC됩니다. 문제가 되는 것은 <strong>클로저(주로 이벤트 핸들러나 타이머 콜백)가 필요 이상으로 오래 살아있으면서, 그 스코프에 큰 데이터(대용량 배열, DOM 참조 등)가 함께 있는 경우</strong>입니다. "클로저 = 누수"가 아니라 "클로저의 생존 기간을 관리하지 않는 것 = 누수 가능성"이라고 구분해야 합니다. 이 진단 절차는 Day 15에서 다룹니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 화살표 함수로 만든 콜백도 일반 함수와 같은 방식으로 클로저를 형성하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 클로저를 형성하는 방식(바깥 스코프의 바인딩에 대한 참조를 유지하는 것) 자체는 화살표 함수와 일반 함수가 동일합니다. Day 3의 follow-up에서 다룬 대로 화살표 함수의 차이는 오직 <code>this</code>/<code>arguments</code>를 자기 것으로 만들지 않고 렉시컬로 가져온다는 점뿐이며, 일반 변수에 대한 클로저 캡처 규칙은 함수 종류와 무관하게 동일합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 클로저 기반 모듈 패턴과 ES 모듈(<code>import</code>/<code>export</code>)의 private 상태는 어떤 차이가 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 클로저 기반 모듈 패턴(Section 6)은 <strong>함수를 호출할 때마다</strong> 새로운 독립된 상태(Lexical Environment)를 만들 수 있어, 여러 개의 독립된 인스턴스가 필요할 때(예: <code>createBankAccount</code>를 여러 계좌에 각각 호출) 적합합니다. 반면 ES 모듈은 <strong>파일당 하나의 모듈 인스턴스</strong>만 존재하는 싱글턴 구조이고, 모듈 스코프의 최상위 변수가 그 모듈의 "프라이빗 상태" 역할을 합니다(모듈 스코프도 결국 클로저와 동일한 원리로 각 export된 함수가 그 스코프를 참조하는 구조입니다). 이 차이는 Day 7(모듈 시스템)에서 더 자세히 다룹니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: <code>forEach</code>나 <code>map</code> 같은 배열 메서드의 콜백에서도 <code>var</code> 반복문과 같은 문제가 생기나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 아닙니다. <code>[0, 1, 2].forEach(function (i) { setTimeout(() => console.log(i), 0); })</code>처럼 콜백 함수가 매 순회마다 새로 호출되는 구조에서는, 콜백의 매개변수 <code>i</code>가 <strong>매 호출마다 새로운 함수 실행 컨텍스트의 새로운 지역 변수</strong>로 만들어집니다. 이는 Section 5의 IIFE 해결책과 본질적으로 같은 구조입니다 — <code>for</code> 문 자체가 매번 새 함수 호출을 만드는 것이 아니라 하나의 스코프를 재사용하는 반면, 배열 메서드의 콜백은 원래부터 순회마다 새 함수 호출이 일어나기 때문입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>12. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"클로저는 변수의 값을 그 시점 그대로 복사해서 저장한다"</strong></p>
+      <p>클로저는 값을 복사하지 않고 <strong>변수가 놓인 자리(바인딩)에 대한 참조</strong>를 유지합니다. 그래서 클로저가 캡처한 뒤에도 바깥에서 그 변수 값이 바뀌면, 클로저 안에서 읽을 때도 바뀐 최신 값이 보입니다. 이것이 반복문 클로저 버그의 근본 원인입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"클로저는 특별한 문법(예: 함수를 반환하는 함수)을 써야만 만들어진다"</strong></p>
+      <p>클로저는 <strong>중첩 함수가 바깥으로 어떤 형태로든 나가는 모든 경우</strong>에 자동으로 형성됩니다 — 함수를 반환할 때뿐 아니라, 이벤트 리스너에 콜백을 등록하거나, <code>setTimeout</code>에 함수를 넘기거나, 배열의 콜백 안에서 바깥 변수를 참조할 때도 전부 클로저입니다. "클로저를 만든다"는 것을 의식적으로 선택하는 특별한 경우로 오해하면, 실무 코드 곳곳에서 이미 클로저가 형성되고 있다는 것을 놓칩니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"<code>let</code>을 쓰면 반복문의 클로저 문제가 '항상' 저절로 해결된다"</strong></p>
+      <p><code>for (let i = ...)</code> 형태에서만 스펙상 매 반복 새 바인딩이 보장됩니다. 만약 <code>let i</code>를 루프 <strong>바깥</strong>에 선언하고 <code>for</code> 안에서는 값만 바꾸는 형태로 쓰면(<code>let i = 0; for (; i < 3; i++) { ... }</code>) 여전히 하나의 바인딩을 공유하므로 <code>var</code>와 같은 문제가 재현됩니다. "<code>let</code> 자체"가 아니라 "<code>for</code> 헤드에서 <code>let</code>으로 선언하는 것"이 매 반복 새 바인딩을 만든다는 점을 정확히 알아야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"클로저가 참조하는 스코프에는 실제로 쓰는 변수만 메모리에 남는다"</strong></p>
+      <p>엔진 최적화에 따라 다르지만, 일반적으로는 <strong>클로저가 참조하는 Lexical Environment 전체</strong>가 GC 대상에서 제외됩니다. 즉 콜백 안에서 실제로 읽지 않는 변수라도 같은 스코프에 있다면 함께 메모리에 남을 수 있습니다(V8 등 일부 엔진은 실제 사용 여부를 분석해 최적화를 시도하지만, 이를 "항상 그렇다"고 가정하고 설계하면 안 됩니다). Day 15에서 이 부분을 힙 스냅샷으로 직접 확인하는 절차를 다룹니다.</p>
+    </div>
+  </section>
+
+  <!-- 13. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>13. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 4를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>클로저가 "값의 복사"가 아니라 "변수 바인딩에 대한 참조 유지"라는 것을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>클로저를 Day 2(실행 컨텍스트)·Day 3(스코프 체인) 개념과 연결해, "왜 바깥 함수 종료 후에도 변수가 살아있는지" 원리로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>var</code>와 <code>let</code>을 쓴 반복문의 클로저 캡처 차이를 원리(공유 바인딩 vs 반복마다 새 바인딩)로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>모듈 패턴, 메모이제이션, 디바운스 등 최소 두 가지 실무 클로저 패턴을 코드로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>클로저가 큰 데이터와 함께 오래 살아있을 때 메모리에 어떤 영향을 주는지 시나리오로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"클로저를 쓰면 항상 누수"라는 식의 과잉 일반화 없이, 언제 실제로 문제가 되는지 조건을 구분해 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 5</h3>
+      <p><strong>Prototype과 객체 모델</strong></p>
+      <p>Day 4에서 "함수가 스코프를 어떻게 오래 붙잡는가"를 다뤘다면, Day 5에서는 관점을 옮겨 "객체는 서로 어떻게 속성을 물려받는가" — Prototype chain, <code>class</code> 문법이 실제로는 무엇의 syntactic sugar인지, <code>Object.create</code>로 프로토타입 체인을 직접 다루는 방법을 살펴봅니다.</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    JavaScript 시니어 인터뷰 · Day 4 of 20 · 2026-07-05
+  </p>
+
+</div>
+</body>
+</html>
