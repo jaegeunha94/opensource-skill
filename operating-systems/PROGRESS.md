@@ -15,12 +15,12 @@
 | 3 | 2026-07-02 | Context Switch와 스케줄링 | [0013-day3-context-switch-and-scheduling.html](lessons/0013-day3-context-switch-and-scheduling.html) |
 | 4 | 2026-07-03 | 동시성 제어와 Race Condition | [0014-day4-race-condition-and-concurrency-control.html](lessons/0014-day4-race-condition-and-concurrency-control.html) |
 | 5 | 2026-07-04 | Deadlock과 Lock Contention | [0015-day5-deadlock-and-lock-contention.html](lessons/0015-day5-deadlock-and-lock-contention.html) |
+| 6 | 2026-07-05 | 가상 메모리와 Page Fault | [0016-day6-virtual-memory-and-page-fault.html](lessons/0016-day6-virtual-memory-and-page-fault.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 6 | 가상 메모리와 Page Fault | "메모리가 충분해 보여도 성능이 느릴 수 있는 이유를 설명해보세요." | paging, TLB, swap, major/minor fault |
 | 7 | 파일 시스템과 I/O | "로그 쓰기가 전체 서비스 latency를 올릴 수 있는 이유는 무엇입니까?" | buffer, fsync, page cache, blocking I/O |
 | 8 | 비동기 I/O와 이벤트 루프 | "thread-per-request와 event-driven 방식을 어떻게 선택합니까?" | latency, throughput, backpressure, 디버깅 trade-off |
 | 9 | 컨테이너와 OS 격리 | "컨테이너는 VM과 무엇이 다르고, 운영상 어떤 문제가 생길 수 있습니까?" | namespace, cgroup, resource limit, noisy neighbor |
@@ -28,8 +28,8 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** (2026-07-04) — Deadlock과 Lock Contention
-**다음**: Day 6 — 가상 메모리와 Page Fault
+**Day 6 완료** (2026-07-05) — 가상 메모리와 Page Fault
+**다음**: Day 7 — 파일 시스템과 I/O
 
 ## Interview 답변 체크리스트
 
@@ -53,7 +53,7 @@
 - [x] context switch 비용 측정과 스케줄러/캐시/Little's Law 기반 용량 산정 — Day 3
 - [x] race condition 탐지와 예방 (critical section, mutex/atomic/CAS, 비관적/낙관적 락, 분산 락) — Day 4
 - [x] deadlock RCA와 대응 (Coffman conditions, thread dump 분석, lock ordering, timeout) — Day 5
-- [ ] virtual memory, TLB, major/minor page fault (예정 Day 6)
+- [x] virtual memory, TLB, major/minor page fault, swap/thrashing 진단 (available memory, vmstat, cgroup 메모리 한도) — Day 6
 - [ ] fsync, buffer cache, blocking I/O (예정 Day 7)
 - [ ] async I/O, 이벤트 루프, epoll (예정 Day 8)
 - [ ] namespace, cgroup, noisy neighbor (예정 Day 9)

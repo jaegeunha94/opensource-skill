@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — 가상 메모리와 Page Fault | 운영체제 시니어 인터뷰</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .interview-q {
+      background: #1a7a4a;
+      color: white;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+      font-family: var(--font-sans);
+    }
+    .interview-q .q-label {
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.8;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q .q-text {
+      font-size: 1.1rem;
+      line-height: 1.55;
+      font-style: italic;
+    }
+    .answer-box {
+      background: #f8f8f4;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-family: var(--font-sans);
+      font-size: 0.93rem;
+    }
+    .answer-box.strong {
+      border-left: 5px solid #2d7a2d;
+      background: #f0f9f0;
+    }
+    .answer-box.weak {
+      border-left: 5px solid #c0392b;
+      background: #fdecea;
+    }
+    .answer-label {
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.4rem;
+    }
+    .strong .answer-label { color: #2d7a2d; }
+    .weak .answer-label { color: #c0392b; }
+    .step-flow {
+      counter-reset: step-counter;
+      list-style: none;
+      margin: 0.5rem 0 1.25rem;
+    }
+    .step-flow li {
+      counter-increment: step-counter;
+      position: relative;
+      padding: 0.75rem 0.75rem 0.75rem 3rem;
+      border-left: 2px solid #ddd;
+      margin-bottom: 0.5rem;
+      margin-left: 1rem;
+    }
+    .step-flow li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: -1.1rem;
+      top: 0.65rem;
+      background: var(--accent);
+      color: white;
+      width: 1.8rem;
+      height: 1.8rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    .followup-item {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin: 0.75rem 0;
+      overflow: hidden;
+    }
+    .followup-q {
+      background: #f4f4f0;
+      padding: 0.6rem 1rem;
+      font-weight: bold;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .followup-q:hover { background: #ebebde; }
+    .followup-a {
+      padding: 0.75rem 1rem;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      display: none;
+      border-top: 1px solid #ddd;
+      background: #fafafa;
+    }
+    .rubric-table td:first-child {
+      font-weight: bold;
+      white-space: nowrap;
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+    }
+    .rubric-table td:last-child {
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+    }
+    .metric-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    .metric-item {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+    }
+    .metric-name {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--accent);
+      margin-bottom: 0.3rem;
+    }
+    .metric-desc {
+      font-family: var(--font-sans);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.85rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+      white-space: pre;
+    }
+    @media (max-width: 500px) {
+      .metric-card { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 6</span>
+  <span>가상 메모리와 Page Fault</span>
+  <span class="lesson-date"> · 2026-07-05</span>
+  <span> · <a href="./index.html">목록으로</a></span>
+</div>
+
+<h1>가상 메모리와 Page Fault</h1>
+<p>
+  "메모리 사용량은 여유가 있는데 왜 이렇게 느리지?"는 경력자들이 실제로 자주 겪는 혼란입니다.
+  이 레슨은 <strong>가상 메모리, 페이지 테이블, TLB, page fault를 하나의 인과 사슬로 연결해서
+  메모리는 남는데 성능이 떨어지는 상황을 진단</strong>하는 사고 과정을 훈련합니다.
+</p>
+
+<!-- ============================================================ -->
+<h2>오늘의 면접 질문</h2>
+
+<div class="interview-q">
+  <div class="q-label">Senior Interview Question</div>
+  <div class="q-text">
+    "모니터링 대시보드를 보니 서버의 free memory가 충분히 남아 있는데도, 특정 배치 작업 시작 직후
+    응답 지연이 튑니다. 메모리가 남아 있는데 왜 성능이 느려질 수 있는지, 운영체제 관점에서 어떤
+    지표를 확인하고 어떻게 원인을 좁혀가시겠습니까?"
+  </div>
+</div>
+
+<p>
+  이 질문은 "메모리 여유 = 문제 없음"이라는 얕은 등식을 깨는지 봅니다. 면접관은
+  <strong>물리 메모리 여유량과 실제 메모리 접근 성능이 별개일 수 있다는 것을 아는지, 그리고
+  page fault·TLB miss·swap 같은 하위 지표로 내려가서 근거를 대는지</strong>를 확인합니다.
+</p>
+
+<!-- ============================================================ -->
+<h2>전제 개념: 이것부터 알고 있어야 합니다</h2>
+
+<h3>1. 가상 메모리(Virtual Memory)란 무엇인가</h3>
+<p>
+  프로세스가 사용하는 메모리 주소는 <strong>실제 물리 메모리(RAM) 주소가 아니라, 각 프로세스마다
+  독립적으로 부여받은 "가짜 주소 공간"</strong>입니다. 이를 가상 메모리라고 합니다. 프로세스 A가
+  "주소 0x1000"을 읽는다고 해도, B가 읽는 "주소 0x1000"과 실제 RAM 상의 위치는 전혀 다를 수 있습니다.
+  이렇게 분리하는 이유는 두 가지입니다: 첫째, <strong>프로세스 간 메모리 격리</strong> — A가 B의
+  실제 메모리 주소를 몰라야 실수나 악의적 접근으로 서로를 침범할 수 없습니다. 둘째,
+  <strong>물리 메모리보다 큰 프로그램 실행 허용</strong> — 필요한 부분만 RAM에 올리고 나머지는
+  디스크에 남겨둘 수 있습니다.
+</p>
+
+<h3>2. 페이지(Page)와 페이지 테이블(Page Table)</h3>
+<p>
+  가상 메모리와 물리 메모리는 둘 다 <strong>고정 크기 블록(보통 4KB)</strong>으로 쪼개 관리하는데,
+  가상 쪽 블록을 페이지(page), 물리 쪽 블록을 프레임(frame)이라 부릅니다. 이 둘을 연결하는
+  매핑 정보가 <strong>페이지 테이블</strong>입니다. CPU가 가상 주소를 읽으면, MMU(Memory
+  Management Unit, 하드웨어)가 페이지 테이블을 참조해 "이 가상 페이지가 실제로 어느 물리 프레임에
+  있는지"를 찾아 실제 메모리 접근으로 변환합니다.
+</p>
+
+<h3>3. TLB(Translation Lookaside Buffer) — 주소 변환의 캐시</h3>
+<p>
+  페이지 테이블은 메모리(RAM)에 있는 자료구조이므로, 가상 주소 하나를 변환하려고 매번 페이지
+  테이블을 읽으면 그 자체가 메모리 접근 한 번을 더 추가하는 셈입니다(심하면 다단계 페이지 테이블
+  때문에 여러 번). 이를 피하려고 CPU 안에 <strong>최근 자주 쓰인 가상→물리 주소 매핑을 캐싱하는
+  전용 하드웨어 캐시</strong>가 TLB입니다. TLB에 매핑이 있으면(TLB hit) 즉시 변환되고, 없으면
+  (TLB miss) 페이지 테이블을 직접 뒤져야 해서 느려집니다. 문맥 전환(context switch)이 잦거나
+  프로세스가 접근하는 메모리 범위(working set)가 넓으면 TLB miss가 늘어 체감 성능이 떨어집니다.
+</p>
+
+<h3>4. Page Fault — "그 페이지가 지금 물리 메모리에 없다"는 신호</h3>
+<p>
+  CPU가 가상 주소를 참조했는데, 페이지 테이블을 찾아보니 <strong>해당 페이지가 지금 물리 메모리에
+  올라와 있지 않은 상태</strong>라면 CPU는 예외(page fault)를 발생시켜 커널에 처리를 넘깁니다.
+  이름 때문에 "결함(fault)=에러"라고 오해하기 쉽지만, page fault의 상당수는 <strong>정상적인
+  프로그램 실행 과정</strong>입니다. 커널이 개입해 필요한 데이터를 준비하고 페이지 테이블을 갱신한
+  뒤 실행을 재개시킵니다.
+</p>
+
+<div class="metric-card">
+  <div class="metric-item">
+    <div class="metric-name">Minor Page Fault</div>
+    <div class="metric-desc">데이터가 이미 물리 메모리 어딘가(예: 다른 프로세스와 공유 중인 페이지, 파일 캐시)에 있지만, 현재 프로세스의 페이지 테이블에 아직 매핑만 안 돼 있는 경우. 디스크 I/O 없이 매핑만 연결하면 되므로 매우 빠름(마이크로초 단위). 프로그램 시작 직후 공유 라이브러리를 처음 참조할 때 흔히 발생.</div>
+  </div>
+  <div class="metric-item">
+    <div class="metric-name">Major Page Fault</div>
+    <div class="metric-desc">데이터가 물리 메모리 어디에도 없어서, 디스크(파일 또는 swap 영역)에서 실제로 읽어와야 하는 경우. 디스크 I/O가 개입하므로 밀리초 단위로 훨씬 느리고, 이 시간 동안 해당 스레드는 대기(D 상태)합니다. 성능 문제와 직결되는 것은 대부분 이 major fault입니다.</div>
+  </div>
+</div>
+
+<div class="callout warning">
+  <div class="callout-title">흔한 오해</div>
+  "메모리가 남으면 page fault는 문제가 안 된다"는 절반만 맞는 말입니다. Minor fault는 free
+  memory가 넉넉해도 자연스럽게 계속 발생하며 문제가 아닙니다. 하지만 <strong>major fault는
+  free memory 여유와 무관하게, 그 프로세스가 필요로 하는 특정 데이터가 아직 한 번도 RAM에
+  올라온 적이 없거나(콜드 스타트, 매핑된 파일의 첫 접근) swap out 되어 디스크로 밀려났을 때</strong>
+  발생합니다. "free memory가 충분한데 느리다"는 증상은, 오히려 그 여유 메모리가 파일 캐시로
+  쓰이고 있어서 실제 애플리케이션 데이터의 콜드 스타트 major fault가 발생 중임을 가리키는 경우가
+  흔합니다.
+</div>
+
+<h3>5. Swapping과 Page Fault의 관계</h3>
+<p>
+  물리 메모리가 부족해지면 커널은 당장 안 쓰는 페이지를 디스크의 swap 영역으로 밀어내(swap out)
+  RAM을 확보합니다. 이후 그 페이지를 다시 참조하면 major page fault가 발생해 디스크에서 다시
+  읽어옵니다(swap in). Swap 자체는 "물리 메모리보다 큰 작업을 허용"하기 위한 정상 기능이지만,
+  <strong>swap in/out이 반복적으로 빈번히 일어나는 상태(thrashing)</strong>가 되면 CPU가
+  실제 연산보다 페이지를 디스크에 내리고 올리는 데 더 많은 시간을 쓰게 되어 시스템 전체가
+  급격히 느려집니다.
+</p>
+
+<!-- ============================================================ -->
+<h2>왜 면접에서 이 질문을 묻는가</h2>
+<ol>
+  <li>
+    <strong>지표를 표면적으로만 읽지 않는지 확인</strong> — "free memory 충분 = 메모리 문제 아님"이라는
+    성급한 결론을 내리지 않고, minor/major fault, swap, 파일 캐시까지 내려가서 판단하는지를 봅니다.
+  </li>
+  <li>
+    <strong>커널이 메모리를 "쓰는" 방식을 이해하는지 확인</strong> — Linux 등 현대 OS는 남는 물리
+    메모리를 파일 캐시로 적극 활용하므로, "free"가 낮아 보이는 것 자체가 문제가 아니라는 것과,
+    반대로 "available"이 낮아지는 것이 진짜 신호라는 것을 구분하는지 봅니다.
+  </li>
+  <li>
+    <strong>콜드 스타트/배치 워크로드 특성을 실무 경험으로 설명하는지 확인</strong> — 배치 작업이
+    시작 직후 새로운 메모리 영역과 파일을 대량으로 처음 접근하면 major fault가 몰릴 수 있다는
+    실전 패턴을 아는지 확인합니다.
+  </li>
+</ol>
+
+<!-- ============================================================ -->
+<h2>실무 연결</h2>
+<ul>
+  <li>
+    <strong>배치 작업 시작 직후 지연 스파이크</strong>: 대량의 신규 파일이나 큰 배열을 처음
+    참조하는 배치 프로세스는 시작 초반에 major fault가 몰려서 발생합니다. 워밍업(warm-up)
+    구간을 두거나, 사전에 필요한 파일을 <code>readahead</code>/<code>mmap</code> + 프리페치로
+    미리 캐시에 올려두면 완화됩니다.
+  </li>
+  <li>
+    <strong>컨테이너 메모리 제한(cgroup limit)과 OOM 이전의 성능 저하</strong>: 컨테이너에 설정된
+    메모리 한도에 가까워지면 커널이 페이지 캐시를 줄이거나 swap을 쓰기 시작하면서, OOM으로 죽기
+    전에 이미 major fault 증가로 서서히 느려지는 구간이 생깁니다.
+  </li>
+  <li>
+    <strong>JVM/GC와 가상 메모리</strong>: Heap이 크고 오래 쓰지 않은 영역이 swap out되면, GC가
+    그 영역을 스캔하려는 순간 major fault가 발생해 GC pause가 예상보다 길어질 수 있습니다.
+    그래서 JVM 운영에서는 종종 swap을 아예 끄거나 최소화(<code>vm.swappiness</code> 조정)합니다.
+  </li>
+  <li>
+    <strong>공유 라이브러리와 컨테이너 다중 배포</strong>: 같은 이미지를 쓰는 여러 컨테이너/프로세스가
+    같은 공유 라이브러리(so 파일)를 매핑하면, 물리 메모리상에는 한 벌만 있고 각 프로세스는 minor
+    fault로 매핑만 연결합니다. 이는 메모리 절약의 근거이자, "여러 프로세스인데 실제 RSS 합이 왜
+    이렇게 적어 보이지"를 설명하는 지식이기도 합니다.
+  </li>
+  <li>
+    <strong>메모리 매핑 파일(mmap)을 이용한 대용량 파일 처리</strong>: 로그 분석기나 DB 엔진이
+    큰 파일을 <code>mmap</code>으로 열면 파일 접근 자체가 page fault 메커니즘을 타므로, 처음
+    접근하는 구간은 느리고 이후 캐시에 남아 있으면 빨라지는 패턴을 예측할 수 있어야 합니다.
+  </li>
+</ul>
+
+<!-- ============================================================ -->
+<h2>답변 사고 순서</h2>
+<ol class="step-flow">
+  <li>
+    <strong>free memory가 아니라 available memory와 캐시 구성을 확인</strong><br>
+    <code>free -h</code>의 <code>free</code> 값이 아니라 <code>available</code> 값을 보고,
+    <code>buff/cache</code>가 큰 비중을 차지하는지 확인합니다. Free가 낮아 보여도 대부분이
+    캐시라면 커널이 필요시 즉시 회수 가능하므로 문제가 아닙니다.
+  </li>
+  <li>
+    <strong>Page fault 지표를 minor/major로 분리해서 확인</strong><br>
+    <code>vmstat</code>의 <code>si</code>/<code>so</code>(swap in/out), 또는
+    <code>/proc/[pid]/stat</code>의 <code>majflt</code> 값을 시간에 따라 관찰해 major fault
+    급증 구간과 응답 지연 구간이 겹치는지 대조합니다.
+  </li>
+  <li>
+    <strong>Swap 활동 여부 확인</strong><br>
+    <code>si</code>/<code>so</code>가 0이 아니고 지속적으로 발생 중이면 swapping이 진행 중이라는
+    뜻이며, thrashing 여부(swap 활동이 CPU 사용 패턴을 지배하는지)를 함께 봅니다.
+  </li>
+  <li>
+    <strong>워크로드 패턴과 시간 축 대조</strong><br>
+    배치 작업 시작 시각, 새로 배포된 프로세스 시작 시각과 major fault 스파이크 시각을 맞춰봐서
+    "콜드 스타트로 인한 일시적 현상"인지 "지속적인 메모리 압박"인지 구분합니다.
+  </li>
+  <li>
+    <strong>가설 검증: 콜드 스타트 vs 메모리 압박 vs cgroup 제한</strong><br>
+    콜드 스타트라면 워밍업/프리페치로, 메모리 압박이면 인스턴스 증설이나 캐시 크기 조정으로,
+    컨테이너 cgroup 한도 문제라면 limit 상향이나 요청 값 재산정으로 대응 방향이 달라집니다.
+  </li>
+  <li>
+    <strong>해결안 적용과 재발 방지 지표화</strong><br>
+    major fault율, swap in/out량을 대시보드에 상시 노출시켜, 다음에는 "느려요"라는 보고보다
+    먼저 지표 이상으로 탐지되도록 알람 임계치를 설정합니다.
+  </li>
+</ol>
+
+<!-- ============================================================ -->
+<h2>핵심 답변 예시</h2>
+
+<h3>짧은 버전 (30초 답변)</h3>
+<div class="answer-box strong">
+  <div class="answer-label">강한 답변 (짧은 버전)</div>
+  <p>
+    "free memory만으로는 판단하지 않고, available memory와 caching 비중을 먼저 보겠습니다.
+    그 다음 minor가 아니라 major page fault와 swap in/out 지표를 시간축으로 배치 시작 시각과
+    맞춰보겠습니다. Major fault가 배치 시작 직후 몰린다면 새 데이터를 처음 읽는 콜드 스타트
+    현상일 가능성이 높으니 워밍업이나 프리페치로 완화하고, 지속적으로 swap이 발생 중이라면
+    실제 메모리 압박이므로 증설이나 워크로드 분리를 검토하겠습니다."
+  </p>
+</div>
+
+<h3>깊이 있는 버전 (2분 답변)</h3>
+<div class="answer-box strong">
+  <div class="answer-label">강한 답변 (깊이 있는 버전)</div>
+  <p>
+    "먼저 'free memory가 충분하다'는 전제 자체를 다시 확인하겠습니다. Linux는 남는 물리 메모리를
+    적극적으로 파일 캐시로 활용하기 때문에 <code>free</code> 명령의 free 컬럼만 보면 실제 여유량을
+    오판하기 쉽습니다. 대신 <code>available</code> 값과 <code>buff/cache</code> 비중을 보고,
+    캐시가 필요시 회수 가능한 정상적인 여유인지부터 판단하겠습니다.
+  </p>
+  <p>
+    그 다음 진짜 신호인 page fault로 내려갑니다. Minor fault는 이미 물리 메모리에 있는 페이지를
+    현재 프로세스의 페이지 테이블에 매핑만 하면 되는 가벼운 이벤트라 상시 발생해도 문제가 아니지만,
+    major fault는 디스크에서 실제로 데이터를 읽어와야 해서 밀리초 단위로 느려지고 해당 스레드가
+    대기 상태가 됩니다. <code>/proc/[pid]/stat</code>의 majflt 누적치나 <code>vmstat</code>의
+    si/so(swap in/out)를 시간에 따라 관찰해서, 응답 지연이 튄 시점과 major fault·swap 활동이
+    급증한 시점이 겹치는지 대조합니다.
+  </p>
+  <p>
+    겹친다면 두 가지 가설을 나눠 검증합니다. 첫째, 배치 작업이 새로운 대용량 파일이나 메모리
+    영역을 처음 참조하는 콜드 스타트라면, 이는 swap과 무관하게 '처음이라 캐시에 없어서' 생기는
+    일시적 major fault 몰림입니다 — 사전 워밍업이나 mmap 기반 프리페치로 완화합니다. 둘째,
+    swap in/out이 지속적으로 발생 중이라면 실제 물리 메모리가 워크로드 대비 부족하다는 뜻이므로,
+    인스턴스 증설, 워크로드 분리, 또는 컨테이너라면 cgroup 메모리 limit을 재산정하는 방향으로
+    갑니다. 마지막으로 재발 방지를 위해 major fault율과 swap 활동량을 상시 지표화하고 임계치
+    알람을 걸어, 다음에는 '느리다는 보고'가 아니라 지표 이상으로 먼저 감지되도록 만들겠습니다."
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<h2>좋은 답변과 약한 답변의 차이</h2>
+
+<div class="answer-box weak">
+  <div class="answer-label">약한 답변</div>
+  <p>"메모리가 남아 있다고 하셨으니 메모리 문제는 아니고, 다른 원인(네트워크나 DB)을 찾아보겠습니다."</p>
+</div>
+<p><strong>왜 약한가:</strong>
+  "free memory 여유 = 메모리 무관"이라는 성급한 결론입니다. free 값만으로는 major fault, swap,
+  캐시 구성을 전혀 알 수 없는데도 메모리 계층을 통째로 배제해버려서, 실제 원인을 놓칠 위험이 큽니다.
+</p>
+
+<div class="answer-box weak">
+  <div class="answer-label">약한 답변</div>
+  <p>"page fault가 발생하고 있다면 메모리를 늘리면 해결됩니다."</p>
+</div>
+<p><strong>왜 약한가:</strong>
+  Minor fault인지 major fault인지, 콜드 스타트로 인한 일시적 현상인지 지속적 압박인지를
+  구분하지 않은 채 바로 증설로 건너뜁니다. 콜드 스타트가 원인이라면 메모리를 늘려도 배치 시작
+  직후 지연은 그대로 재발합니다.
+</p>
+
+<div class="answer-box strong">
+  <div class="answer-label">강한 답변의 패턴</div>
+  <p>
+    ① free가 아닌 available/캐시 비중으로 여유 재확인 → ② minor/major page fault 분리 관찰 →
+    ③ swap in/out 지속 여부로 압박 여부 판단 → ④ 워크로드 시작 시각과 스파이크 시각 대조로
+    콜드 스타트/압박 가설 분리 → ⑤ 가설별로 다른 해결안(워밍업 vs 증설/limit 재산정) 적용 →
+    ⑥ major fault율·swap 지표 상시화로 조기 탐지 체계 구축
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<h2>Senior-level Follow-up 질문</h2>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "TLB miss가 많다는 것이 실제로 어떤 실무 상황에서 성능 문제로 나타납니까?"
+  </div>
+  <div class="followup-a">
+    가장 흔한 경우는 <strong>working set(자주 접근하는 메모리 범위)이 TLB가 캐싱할 수 있는 매핑
+    개수보다 훨씬 클 때</strong>입니다. 예를 들어 대용량 인메모리 캐시나 큰 해시맵을 랜덤하게
+    순회하는 워크로드는 매번 다른 페이지를 건드리므로 TLB hit率이 떨어지고, 주소 변환마다 페이지
+    테이블을 직접 뒤지는 비용이 누적돼 CPU 사용률은 그대로인데 실질 처리량이 떨어집니다. 두 번째는
+    <strong>빈번한 context switch</strong>입니다 — 프로세스(또는 커널이 주소 공간을 분리하는 경우)가
+    바뀔 때마다 TLB 항목이 무효화되면 새로 스케줄된 프로세스는 초반에 TLB miss가 몰립니다. 실무
+    대응으로는 huge page(2MB/1GB 단위 페이지)를 사용해 같은 물리 메모리 범위를 더 적은 TLB
+    엔트리로 커버하는 방법이 널리 쓰이며, 특히 DB나 JVM 힙처럼 큰 연속 메모리 영역에 효과적입니다.
+  </div>
+</div>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "Copy-on-Write(COW)는 page fault와 어떤 관계가 있습니까?"
+  </div>
+  <div class="followup-a">
+    <code>fork()</code>로 자식 프로세스를 만들 때, 부모의 메모리를 통째로 복사하면 비용이 크므로
+    커널은 처음엔 <strong>부모와 자식이 같은 물리 페이지를 읽기 전용으로 공유</strong>하도록 매핑만
+    복제합니다. 이후 둘 중 하나가 그 페이지에 쓰기를 시도하면, 읽기 전용 매핑이라 CPU가 page fault를
+    발생시키고, 커널이 그 순간에야 실제로 페이지를 복제해 쓰기 권한을 부여합니다(그래서 이름이
+    "쓸 때 복사"). 이는 major fault가 아니라 protection fault에 가까운 형태로, 디스크 I/O 없이
+    메모리 내에서 복사가 일어나므로 상대적으로 빠릅니다. 실무적으로는 <code>fork()</code> 직후 자식이
+    바로 <code>exec()</code>하는 패턴(대부분의 프로세스 생성)에서 불필요한 복사를 피하게 해주는
+    핵심 최적화이며, Redis의 <code>BGSAVE</code>가 fork로 스냅샷을 뜨면서도 메모리를 두 배로
+    안 쓰는 이유도 바로 이 COW 덕분입니다.
+  </div>
+</div>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "swappiness 값을 낮추거나 swap을 아예 끄는 것이 항상 좋은 선택입니까?"
+  </div>
+  <div class="followup-a">
+    아닙니다. <code>vm.swappiness</code>는 커널이 "파일 캐시를 줄일지 익명 페이지(프로세스 힙/스택
+    데이터)를 swap out할지"의 성향을 조절하는 값입니다. Swap을 완전히 끄면, 물리 메모리가 부족해질 때
+    커널이 선택할 수 있는 유일한 수단이 페이지 캐시 축소나 최악의 경우 OOM killer 호출뿐이라, 오히려
+    갑작스러운 프로세스 강제 종료 위험이 커질 수 있습니다. 반대로 swap이 활성화돼 있으면 완만하게
+    성능이 저하되며 여유 시간을 벌 수 있습니다. 그래서 지연시간에 극도로 민감하고 메모리 크기를
+    보수적으로 산정한 서비스(예: 실시간 매칭 엔진)는 swap을 끄고 대신 OOM 발생 자체를 알람과 자동
+    스케일링으로 예방하는 전략을 택하고, 반대로 배치성 워크로드는 swap을 적당히 열어 두어 급격한
+    실패보다 완만한 저하를 택하는 경우가 많습니다. 즉 "무조건 끈다"가 아니라 워크로드의 지연시간
+        민감도와 장애 허용 정책에 따라 결정할 사안입니다.
+  </div>
+</div>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "컨테이너 환경에서 가상 메모리와 page fault를 볼 때 호스트와 다르게 신경 써야 할 점은?"
+  </div>
+  <div class="followup-a">
+    컨테이너는 자체 페이지 테이블을 갖는 별도 주소 공간이 아니라, <strong>호스트 커널의 페이지
+    테이블/페이지 캐시를 cgroup으로 사용량만 나눠 쓰는 구조</strong>입니다. 따라서 컨테이너 안에서
+    <code>free -h</code>를 보면 호스트 전체의 메모리 정보가 보여 컨테이너 자신의 실제 가용 메모리를
+    오판하기 쉽습니다 — 반드시 <code>cgroup</code>의 <code>memory.current</code>,
+    <code>memory.max</code> 같은 컨테이너 스코프 지표를 봐야 합니다. 또한 cgroup 메모리 한도에
+    가까워지면 커널이 그 컨테이너의 페이지 캐시부터 우선 회수하므로, 호스트 전체는 여유로워 보여도
+    특정 컨테이너만 major fault가 급증하는 상황이 흔합니다. 이 때문에 "호스트 free memory"가
+    아니라 "해당 컨테이너의 cgroup 메모리 사용량 대비 limit"과 "컨테이너별 major fault/swap
+    지표"를 함께 모니터링해야 노이즈 없이 정확히 진단할 수 있습니다.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>자기 점검 Rubric</h2>
+
+<table class="rubric-table">
+  <thead>
+    <tr>
+      <th>점검 항목</th>
+      <th>강한 답변 기준</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>지표 재확인</td>
+      <td>free가 아니라 available/캐시 비중으로 실제 메모리 여유를 재해석했는가</td>
+    </tr>
+    <tr>
+      <td>fault 분류</td>
+      <td>minor fault와 major fault를 구분하고, 성능 문제와 직결되는 것이 major fault임을 설명했는가</td>
+    </tr>
+    <tr>
+      <td>swap 해석</td>
+      <td>swap in/out 지표로 지속적 압박 여부(thrashing 가능성)를 판단했는가</td>
+    </tr>
+    <tr>
+      <td>가설 분리</td>
+      <td>콜드 스타트(일시적)와 메모리 압박(지속적)을 시간축 대조로 구분했는가</td>
+    </tr>
+    <tr>
+      <td>해결안 적합성</td>
+      <td>가설에 따라 워밍업/프리페치와 증설/limit 재산정을 다르게 선택했는가</td>
+    </tr>
+    <tr>
+      <td>재발 방지</td>
+      <td>major fault율, swap 활동량을 상시 지표화하고 알람 임계치를 제안했는가</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2>확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <div class="quiz-question">
+    Q1. "free memory는 충분한데 응답이 느리다"는 증상을 진단할 때 가장 먼저 재확인해야 할 것은?
+  </div>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> free 값이 정말 정확한지 재부팅해서 확인한다</label></li>
+    <li><label><input type="radio" name="q1" value="1"> available memory와 buff/cache 비중, 그리고 minor가 아닌 major page fault·swap 활동 지표를 확인한다</label></li>
+    <li><label><input type="radio" name="q1" value="2"> CPU 사용률만 다시 확인한다</label></li>
+    <li><label><input type="radio" name="q1" value="3"> 디스크 파티션 개수를 확인한다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <div class="quiz-question">
+    Q2. Minor page fault와 major page fault의 결정적 차이는?
+  </div>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> Minor는 CPU 예외이고 major는 소프트웨어 인터럽트다</label></li>
+    <li><label><input type="radio" name="q2" value="1"> Minor는 이미 물리 메모리에 있는 페이지를 매핑만 연결하면 되고, major는 디스크에서 실제로 읽어와야 해서 훨씬 느리다</label></li>
+    <li><label><input type="radio" name="q2" value="2"> Minor는 읽기 전용 페이지에서만 발생하고 major는 쓰기 페이지에서만 발생한다</label></li>
+    <li><label><input type="radio" name="q2" value="3"> Minor는 커널 스레드에서만 발생하고 major는 사용자 스레드에서만 발생한다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <div class="quiz-question">
+    Q3. TLB(Translation Lookaside Buffer)의 역할로 가장 정확한 것은?
+  </div>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> 디스크 I/O를 캐싱해 파일 읽기를 빠르게 한다</label></li>
+    <li><label><input type="radio" name="q3" value="1"> 최근 사용된 가상→물리 주소 변환 결과를 캐싱해 페이지 테이블을 매번 뒤지지 않게 한다</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 스레드 간 락 경합을 줄여주는 하드웨어 큐이다</label></li>
+    <li><label><input type="radio" name="q3" value="3"> 프로세스 스케줄링 순서를 결정하는 테이블이다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">추천 1차 자료</div>
+  <p>
+    <strong>OSTEP (Operating Systems: Three Easy Pieces)</strong> — "Paging" 및 "Beyond Physical
+    Memory: Mechanisms/Policies" 챕터에서 페이지 테이블, TLB, swap 메커니즘을 다룹니다.
+  </p>
+  <p style="margin-top:0.5rem">
+    <strong>Operating System Concepts (Silberschatz)</strong> — Virtual Memory 챕터에서 demand
+    paging, page fault 처리 절차, copy-on-write, thrashing을 체계적으로 다룹니다.
+  </p>
+</div>
+
+<div class="ask-teacher">
+  이해가 안 되는 부분이 있으면 Claude에게 바로 물어보세요. "우리 서버의 vmstat 출력을 같이 보고
+  major fault가 문제인지 판단해줘", "huge page를 적용하면 우리 워크로드에 실제로 도움이 될지
+  같이 따져줘"처럼 구체적으로 질문하면 더 깊이 답변해드립니다.
+</div>
+
+<!-- ============================================================ -->
+<div class="progress-section">
+  <h3>이 레슨의 커리큘럼 위치</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 60%"></div>
+  </div>
+  <div class="progress-label">Day 6 / 10 완료 — 다음: Day 7 파일 시스템과 I/O</div>
+</div>
+
+<div class="lesson-footer">
+  <div>운영체제 10년차 이상 개발자 Interview · Day 6</div>
+  <div class="lesson-nav">
+    <a href="./0015-day5-deadlock-and-lock-contention.html">← Day 5</a>
+    <a href="./index.html">목록</a>
+    <a href="./0008-virtual-memory-and-paging.html">기존 가상 메모리 기초 →</a>
+  </div>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1,
+    'Linux는 남는 물리 메모리를 파일 캐시로 적극 활용하므로 free 값만으로는 실제 여유를 알 수 ' +
+    '없습니다. available memory와 buff/cache 비중으로 회수 가능한 여유인지 먼저 판단하고, ' +
+    'minor가 아닌 major page fault와 swap 활동으로 실제 디스크 I/O를 동반하는 병목이 있는지 ' +
+    '확인해야 합니다. 재부팅이나 CPU/디스크 파티션 확인은 이 증상의 근본 원인 파악과 무관합니다.'
+  );
+
+  initQuiz('q2', 1,
+    'Minor fault는 데이터가 이미 물리 메모리 어딘가에 있어 페이지 테이블 매핑만 연결하면 되므로 ' +
+    '마이크로초 단위로 빠릅니다. Major fault는 디스크(파일 또는 swap)에서 실제로 데이터를 읽어와야 ' +
+    '해서 밀리초 단위로 느리고 스레드가 대기 상태가 됩니다. 두 fault 모두 하드웨어 예외로 시작되며, ' +
+    '읽기/쓰기 여부나 커널/사용자 스레드 여부로 구분되지 않습니다.'
+  );
+
+  initQuiz('q3', 1,
+    'TLB는 CPU 내부의 전용 캐시로, 최근 사용된 가상 주소 -> 물리 주소 변환 결과를 저장해 매번 ' +
+    '메모리에 있는 페이지 테이블을 뒤지는 비용을 없애줍니다. TLB miss가 잦으면 주소 변환 비용이 ' +
+    '누적돼 체감 성능이 떨어집니다. 디스크 I/O 캐싱, 락 경합 완화, 스케줄링과는 무관한 개념입니다.'
+  );
+</script>
+</body>
+</html>
