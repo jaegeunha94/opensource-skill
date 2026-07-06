@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — 파일 시스템과 I/O | 운영체제 시니어 인터뷰</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <style>
+    .interview-q {
+      background: #1a7a4a;
+      color: white;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+      font-family: var(--font-sans);
+    }
+    .interview-q .q-label {
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      opacity: 0.8;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q .q-text {
+      font-size: 1.1rem;
+      line-height: 1.55;
+      font-style: italic;
+    }
+    .answer-box {
+      background: #f8f8f4;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-family: var(--font-sans);
+      font-size: 0.93rem;
+    }
+    .answer-box.strong {
+      border-left: 5px solid #2d7a2d;
+      background: #f0f9f0;
+    }
+    .answer-box.weak {
+      border-left: 5px solid #c0392b;
+      background: #fdecea;
+    }
+    .answer-label {
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.4rem;
+    }
+    .strong .answer-label { color: #2d7a2d; }
+    .weak .answer-label { color: #c0392b; }
+    .step-flow {
+      counter-reset: step-counter;
+      list-style: none;
+      margin: 0.5rem 0 1.25rem;
+    }
+    .step-flow li {
+      counter-increment: step-counter;
+      position: relative;
+      padding: 0.75rem 0.75rem 0.75rem 3rem;
+      border-left: 2px solid #ddd;
+      margin-bottom: 0.5rem;
+      margin-left: 1rem;
+    }
+    .step-flow li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: -1.1rem;
+      top: 0.65rem;
+      background: var(--accent);
+      color: white;
+      width: 1.8rem;
+      height: 1.8rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    .followup-item {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin: 0.75rem 0;
+      overflow: hidden;
+    }
+    .followup-q {
+      background: #f4f4f0;
+      padding: 0.6rem 1rem;
+      font-weight: bold;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .followup-q:hover { background: #ebebde; }
+    .followup-a {
+      padding: 0.75rem 1rem;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      display: none;
+      border-top: 1px solid #ddd;
+      background: #fafafa;
+    }
+    .rubric-table td:first-child {
+      font-weight: bold;
+      white-space: nowrap;
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+    }
+    .rubric-table td:last-child {
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+    }
+    .metric-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    .metric-item {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+    }
+    .metric-name {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--accent);
+      margin-bottom: 0.3rem;
+    }
+    .metric-desc {
+      font-family: var(--font-sans);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.85rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+      white-space: pre;
+    }
+    @media (max-width: 500px) {
+      .metric-card { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="lesson-meta">
+  <span class="day-badge">Day 7</span>
+  <span>파일 시스템과 I/O</span>
+  <span class="lesson-date"> · 2026-07-06</span>
+  <span> · <a href="./index.html">목록으로</a></span>
+</div>
+
+<h1>파일 시스템과 I/O</h1>
+<p>
+  "로그를 파일에 append만 했을 뿐인데 왜 응답 latency가 튀지?"는 경력자도 정확히 설명하기 어려운
+  질문입니다. 이 레슨은 <strong>write() 시스템 콜이 실제로 디스크에 쓰는 것이 아니라는 사실부터
+  시작해서, page cache, dirty page, fsync, 커널 flush 스레드까지 하나의 인과 사슬로 연결</strong>해서
+  "빠른 쓰기가 갑자기 느려지는" 상황을 진단하는 사고 과정을 훈련합니다.
+</p>
+
+<!-- ============================================================ -->
+<h2>오늘의 면접 질문</h2>
+
+<div class="interview-q">
+  <div class="q-label">Senior Interview Question</div>
+  <div class="q-text">
+    "서비스가 요청마다 로그 한 줄을 파일에 append하고 있습니다. 평소엔 이 로그 쓰기가 거의 즉시
+    끝나는데, 특정 시점마다 주기적으로 요청 처리 latency 전체가 수십~수백 ms씩 튑니다. 로그 쓰기가
+    어떻게 전체 서비스 latency에 영향을 줄 수 있는지, 운영체제 관점에서 원인을 어떻게 좁혀
+    가시겠습니까?"
+  </div>
+</div>
+
+<p>
+  이 질문은 "파일 쓰기는 디스크에 즉시 반영된다"는 순진한 모델을 깨는지 봅니다. 면접관은
+  <strong>write()가 커널 page cache에만 쓰고 즉시 반환된다는 것, 그리고 그 dirty page가 언젠가
+  일괄적으로 디스크에 flush될 때 I/O가 몰리면서 그 순간 다른 요청까지 지연시킬 수 있다는 인과
+  관계</strong>를 설명할 수 있는지를 확인합니다.
+</p>
+
+<!-- ============================================================ -->
+<h2>전제 개념: 이것부터 알고 있어야 합니다</h2>
+
+<h3>1. write()는 디스크에 쓰는 것이 아니라 메모리에 쓰는 것이다</h3>
+<p>
+  애플리케이션이 <code>write()</code> 시스템 콜을 호출하면, 기본적으로(버퍼드 I/O) 커널은 그
+  데이터를 <strong>page cache</strong>라는 메모리 영역에 복사해 넣고 즉시 반환합니다. 실제 디스크
+  기록은 그 순간 일어나지 않습니다. 이 페이지는 "메모리 상의 내용과 디스크 상의 내용이 아직 다르다"는
+  뜻에서 <strong>dirty page</strong>라고 부릅니다. 이렇게 설계된 이유는 명확합니다 — 디스크(특히
+  HDD)는 메모리보다 수천 배 느리므로, 매 write마다 디스크까지 기다리면 애플리케이션 처리량이
+  급격히 떨어지기 때문입니다.
+</p>
+
+<h3>2. Page Cache — 읽기와 쓰기를 모두 커버하는 통합 캐시</h3>
+<p>
+  Linux는 파일을 읽을 때도(page cache에 없으면 디스크에서 읽어 캐시에 저장) 쓸 때도(dirty page로
+  캐시에 먼저 반영) <strong>같은 page cache</strong>를 사용합니다. Day 6에서 다룬 "free memory가
+  적어 보여도 대부분 캐시라 문제가 아니다"라는 원리와 동일한 메커니즘입니다. 다만 쓰기 경로에서는
+  캐시가 "아직 디스크에 못 내려간 데이터"를 들고 있는 dirty 상태가 될 수 있다는 점이 다릅니다.
+</p>
+
+<h3>3. Dirty Page는 결국 디스크로 내려가야 한다 (Write-back)</h3>
+<p>
+  Dirty page를 무한정 메모리에만 두면 두 가지 위험이 생깁니다: 정전이나 크래시 시 데이터 유실,
+  그리고 dirty page가 쌓여 free 메모리를 잠식하는 것. 그래서 커널은 <strong>flusher 스레드
+  (kworker)</strong>를 통해 주기적으로, 또는 dirty page 비율이 임계치를 넘으면 대량으로 디스크에
+  내려보냅니다(write-back). 이때 <code>vm.dirty_background_ratio</code>를 넘으면 백그라운드로
+  조용히 flush를 시작하고, <code>vm.dirty_ratio</code>를 넘으면 <strong>write()를 호출한 프로세스
+  자신을 블로킹시켜서라도 강제로 flush를 진행</strong>합니다. 바로 이 순간이, 평소엔 즉시 반환되던
+  write()가 갑자기 느려지고, 그 지연이 다른 요청 처리까지 늦추는 지점입니다.
+</p>
+
+<div class="callout warning">
+  <div class="callout-title">흔한 오해</div>
+  "로그를 파일에 쓰는 건 메모리 연산이라 항상 빠르다"는 절반만 맞는 말입니다. 평소에는 dirty page
+  비율이 낮아 write()가 메모리 복사만 하고 즉시 반환되지만, 쓰기 양이 몰려 dirty 비율이
+  <code>dirty_ratio</code>를 넘으면 커널이 write() 호출 스레드를 붙잡아 두고 강제로 디스크
+  flush를 완료시킵니다. "메모리에만 쓰니 항상 빠르다"고 가정하면, 로그량이 급증하는 트래픽
+  피크에 정확히 write() 자체가 느려지는 현상을 설명할 수 없습니다.
+</div>
+
+<h3>4. fsync / fdatasync — "지금 당장 디스크에 반영하라"는 강제 지시</h3>
+<p>
+  <code>write()</code>가 반환됐다고 해서 데이터가 디스크에 안전하게 저장됐다는 보장은 없습니다.
+  그 순간 서버가 죽으면 아직 디스크에 못 내려간 dirty page는 사라집니다. 그래서 데이터베이스의
+  커밋(commit), 로그의 durability가 중요한 시스템은 <code>fsync()</code>를 호출해
+  <strong>해당 파일의 dirty page를 지금 즉시, 동기적으로 디스크까지 내려보내고 반환</strong>하도록
+  강제합니다. fsync는 디스크 I/O가 실제로 끝날 때까지 호출 스레드를 블로킹시키므로,
+  <code>write()</code>보다 훨씬 느리고 예측하기 어려운 지연을 만듭니다(특히 HDD의 seek, 또는
+  네트워크 스토리지의 왕복 지연).
+</p>
+
+<div class="metric-card">
+  <div class="metric-item">
+    <div class="metric-name">write() (buffered)</div>
+    <div class="metric-desc">page cache에 복사만 하고 즉시 반환. 매우 빠르지만(마이크로초 단위), dirty page 누적 상태에 따라 커널이 프로세스를 블로킹할 수 있음. durability 보장 없음.</div>
+  </div>
+  <div class="metric-item">
+    <div class="metric-name">fsync() / fdatasync()</div>
+    <div class="metric-desc">해당 파일(또는 데이터 블록)의 dirty page를 지금 즉시 디스크까지 내려보내고 반환. 디스크 I/O 완료까지 블로킹되어 밀리초~수십 밀리초 소요. durability 보장.</div>
+  </div>
+</div>
+
+<h3>5. 파일 시스템 저널링(Journaling)이 fsync를 더 느리게 만들 수 있다</h3>
+<p>
+  ext4 같은 저널링 파일 시스템은 메타데이터(때로는 데이터까지)를 저널에 먼저 기록해 크래시 후에도
+  일관성을 복구할 수 있게 합니다. <code>data=ordered</code>(기본값)에서는 데이터 블록을 메타데이터
+  저널보다 먼저 디스크에 쓰도록 순서를 강제하는데, 이는 <code>fsync()</code> 호출이 단순히 "이
+  파일의 데이터"만 내려보내는 게 아니라 <strong>관련된 저널 커밋까지 동반</strong>할 수 있다는
+  뜻입니다. 즉, fsync 지연은 디스크 속도뿐 아니라 파일 시스템의 저널링 모드에도 영향을 받습니다.
+</p>
+
+<!-- ============================================================ -->
+<h2>왜 면접에서 이 질문을 묻는가</h2>
+<ol>
+  <li>
+    <strong>write()의 비동기적 본질을 이해하는지 확인</strong> — "쓰기는 항상 디스크 반영을
+    의미한다"는 오해 없이, page cache와 dirty page 개념으로 왜 평소엔 빠르고 가끔 느린지를
+    설명할 수 있는지 봅니다.
+  </li>
+  <li>
+    <strong>durability와 latency의 trade-off를 아는지 확인</strong> — fsync를 얼마나 자주
+    호출할지가 "데이터 안전성"과 "처리 속도" 사이의 명시적 선택이라는 것을 이해하는지 봅니다.
+  </li>
+  <li>
+    <strong>트래픽 급증과 I/O 지연의 인과관계를 실무 경험으로 설명하는지 확인</strong> — 로그량,
+    쓰기량이 몰리는 피크 시간대에 dirty page 비율이 임계치를 넘으면서 정확히 그 시점에 write()
+    자체가 블로킹되는 패턴을 실전에서 겪어봤는지를 봅니다.
+  </li>
+</ol>
+
+<!-- ============================================================ -->
+<h2>실무 연결</h2>
+<ul>
+  <li>
+    <strong>DB 커밋 latency와 fsync</strong>: PostgreSQL의 <code>synchronous_commit</code>,
+    MySQL InnoDB의 <code>innodb_flush_log_at_trx_commit</code>은 결국 "매 커밋마다 fsync를
+    호출할지, 몇 개를 모아서 호출할지"를 결정하는 설정입니다. fsync 빈도를 낮추면 처리량은
+    늘지만 크래시 시 최근 커밋 일부를 잃을 위험이 생깁니다.
+  </li>
+  <li>
+    <strong>애플리케이션 로그 라이브러리의 버퍼링 전략</strong>: 로그 라이브러리가 매 줄마다
+    flush하는지, 버퍼에 모았다가 주기적으로 flush하는지에 따라 애플리케이션 스레드가 로그
+    I/O에 블로킹되는 빈도가 크게 달라집니다. 트래픽 피크에 로그량이 급증하면 dirty page 누적
+    → write() 블로킹 → 요청 처리 스레드 지연으로 이어질 수 있습니다.
+  </li>
+  <li>
+    <strong>Write-Ahead Log(WAL)와 메시지 큐</strong>: Kafka의 로그 세그먼트, DB의 WAL은
+    "순차 쓰기(sequential write)는 빠르다"는 전제를 적극 활용하도록 설계되어 있습니다. 같은
+    총 쓰기량이라도 랜덤 쓰기 패턴은 디스크(특히 HDD)에서 훨씬 느립니다.
+  </li>
+  <li>
+    <strong>컨테이너 오버레이 파일 시스템의 쓰기 오버헤드</strong>: Docker의 overlay2 같은
+    union filesystem에 잦은 쓰기가 몰리면 copy-up 오버헤드가 추가됩니다. 로그나 임시 데이터는
+    컨테이너 레이어가 아니라 볼륨 마운트로 분리하는 것이 I/O 성능과 예측 가능성 면에서
+    유리한 이유입니다.
+  </li>
+  <li>
+    <strong>클라우드 블록 스토리지의 IOPS/처리량 제한</strong>: EBS gp3 같은 네트워크 스토리지는
+    프로비저닝된 IOPS나 처리량을 넘으면 큐잉이 발생해 fsync 지연이 갑자기 커집니다. "로컬
+    디스크였으면 괜찮았을 fsync"가 클라우드 환경에서는 스토리지 계층의 throttling 문제로
+    나타날 수 있습니다.
+  </li>
+</ul>
+
+<!-- ============================================================ -->
+<h2>답변 사고 순서</h2>
+<ol class="step-flow">
+  <li>
+    <strong>증상이 어떤 시스템 콜 경로에서 발생하는지 구분</strong><br>
+    로그 코드가 매 줄 <code>write()</code>만 호출하는지, 아니면 라이브러리 내부에서 주기적으로
+    <code>fsync()</code>/<code>flush()</code>를 호출하는지 먼저 코드/설정에서 확인합니다. 이
+    구분이 "메모리 복사 지연"과 "디스크 I/O 지연"을 가르는 첫 갈림길입니다.
+  </li>
+  <li>
+    <strong>Dirty page 관련 커널 지표 확인</strong><br>
+    <code>/proc/meminfo</code>의 <code>Dirty</code>, <code>Writeback</code> 값과
+    <code>vm.dirty_ratio</code>/<code>vm.dirty_background_ratio</code> 설정을 확인해, dirty
+    page가 write 블로킹을 유발할 임계치에 근접하는지 봅니다.
+  </li>
+  <li>
+    <strong>실제 디스크 I/O 지표와 시간축 대조</strong><br>
+    <code>iostat -x</code>의 <code>await</code>, <code>%util</code>을 관찰해 latency 스파이크
+    시각과 디스크 큐잉/포화 시각이 겹치는지 확인합니다. strace로 write/fsync 호출의 실제 소요
+    시간을 재보는 것도 유효합니다.
+  </li>
+  <li>
+    <strong>트래픽 패턴과 쓰기량 대조</strong><br>
+    로그량이 트래픽 피크와 함께 급증하는지, 그 시점에 dirty page 누적이 임계치를 넘어 write()가
+    강제 flush를 동반하는지 인과관계를 확인합니다.
+  </li>
+  <li>
+    <strong>가설 검증: 버퍼링 전략 vs 디스크/스토리지 한계 vs 저널링 모드</strong><br>
+    애플리케이션 버퍼링이 문제면 로그 flush 주기 조정이나 비동기 로깅으로, 디스크/스토리지가
+    포화 상태면 더 빠른 스토리지나 IOPS 프로비저닝 상향으로, 저널링 오버헤드가 크면 파일
+    시스템 마운트 옵션 재검토로 대응 방향이 달라집니다.
+  </li>
+  <li>
+    <strong>해결안 적용과 재발 방지 지표화</strong><br>
+    dirty page 비율, fsync 소요 시간, 디스크 await를 상시 지표화해서 다음번 트래픽 피크에서
+    같은 문제가 재발하기 전에 조기 경보를 받을 수 있게 합니다.
+  </li>
+</ol>
+
+<!-- ============================================================ -->
+<h2>핵심 답변 예시</h2>
+
+<h3>짧은 버전 (30초 답변)</h3>
+<div class="answer-box strong">
+  <div class="answer-label">강한 답변 (짧은 버전)</div>
+  <p>
+    "write()는 디스크가 아니라 page cache에 쓰고 즉시 반환되는 것이라서, 평소엔 로그 쓰기가
+    거의 공짜에 가깝습니다. 하지만 dirty page가 쌓여 dirty_ratio 임계치를 넘으면 커널이 write()
+    호출 스레드를 블로킹시켜 강제로 flush를 시키기 때문에, 트래픽이 몰려 쓰기량이 급증하는
+    시점에 정확히 write()가 느려질 수 있습니다. /proc/meminfo의 Dirty 값과 iostat의 await를
+    latency 스파이크 시점과 대조해서 확인하겠습니다."
+  </p>
+</div>
+
+<h3>깊이 있는 버전 (2분 답변)</h3>
+<div class="answer-box strong">
+  <div class="answer-label">강한 답변 (깊이 있는 버전)</div>
+  <p>
+    "먼저 '로그 쓰기'가 정확히 어떤 시스템 콜 경로를 타는지 확인하겠습니다. 애플리케이션이
+    <code>write()</code>만 호출한다면, 커널은 그 데이터를 page cache에 복사만 하고 즉시
+    반환합니다. 이 단계는 디스크 I/O가 아니라 메모리 연산이라 평소엔 마이크로초 단위로
+    끝납니다.
+  </p>
+  <p>
+    문제는 그 데이터가 <strong>dirty page</strong>로 메모리에 쌓인다는 점입니다. 커널은
+    <code>dirty_background_ratio</code>를 넘으면 백그라운드 flusher 스레드로 조용히
+    write-back을 시작하지만, 쓰기 속도가 flush 속도를 앞질러 <code>dirty_ratio</code>까지
+    넘으면 write()를 호출한 프로세스 자신을 블로킹시켜서 강제로 디스크에 내려보냅니다. 트래픽
+    피크에 로그량이 급증하는 순간과, 바로 이 강제 flush가 걸리는 순간이 겹치면 평소 즉시
+    반환되던 로그 write()가 갑자기 수십~수백 ms까지 늘어나고, 그 지연이 요청을 처리하는
+    스레드 자체를 붙잡아 서비스 전체 latency로 번집니다.
+  </p>
+  <p>
+    이를 검증하기 위해 <code>/proc/meminfo</code>의 <code>Dirty</code>/<code>Writeback</code>
+    값을 시간에 따라 관찰하고, <code>iostat -x</code>의 <code>await</code>/<code>%util</code>을
+    latency 스파이크 시점과 대조합니다. 겹친다면 원인을 세 갈래로 나눕니다: 애플리케이션의
+    로그 버퍼링 전략이 문제인지(예: 매 줄 flush), 디스크/스토리지 자체가 그 시점에 포화
+        상태인지(클라우드 블록 스토리지의 IOPS 제한 포함), 또는 파일 시스템 저널링 모드가
+    추가 오버헤드를 유발하는지입니다. 각 원인에 따라 비동기 로깅 큐 도입, 스토리지 IOPS
+    상향, 마운트 옵션 재검토로 대응하고, 이후 dirty page 비율과 fsync/디스크 await를 상시
+    지표화해 트래픽 피크마다 같은 문제가 재발하지 않도록 조기 경보 체계를 만들겠습니다."
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<h2>좋은 답변과 약한 답변의 차이</h2>
+
+<div class="answer-box weak">
+  <div class="answer-label">약한 답변</div>
+  <p>"파일 쓰기는 디스크 I/O라서 원래 느립니다. 로그를 줄이거나 다른 서버로 옮기면 해결됩니다."</p>
+</div>
+<p><strong>왜 약한가:</strong>
+  "쓰기 = 항상 느린 디스크 I/O"라는 잘못된 전제에서 출발합니다. write()는 평소 메모리 연산에
+  가깝다는 것과, 특정 조건(dirty page 임계치 초과)에서만 블로킹된다는 인과관계를 설명하지
+  못해서, "왜 평소엔 빠르다가 특정 시점에만 느려지는지"를 전혀 설명하지 못합니다.
+</p>
+
+<div class="answer-box weak">
+  <div class="answer-label">약한 답변</div>
+  <p>"fsync를 호출하고 있다면 없애면 됩니다."</p>
+</div>
+<p><strong>왜 약한가:</strong>
+  fsync가 durability를 위해 의도적으로 존재한다는 점을 무시한 채 성능만을 위해 제거를
+  제안합니다. durability 요구사항(크래시 시 데이터 유실 허용 범위)을 먼저 확인하지 않고
+  trade-off 없이 결론부터 내립니다.
+</p>
+
+<div class="answer-box strong">
+  <div class="answer-label">강한 답변의 패턴</div>
+  <p>
+    ① write()가 page cache에만 쓰고 즉시 반환된다는 비동기적 본질 이해 → ② dirty page 누적과
+    dirty_ratio 초과 시 강제 blocking 메커니즘 설명 → ③ Dirty/Writeback, iostat await를
+    latency 스파이크와 시간축 대조 → ④ 버퍼링 전략/스토리지 포화/저널링 오버헤드로 원인 분리 →
+    ⑤ durability 요구사항을 먼저 확인한 뒤 trade-off에 맞는 해결책 선택 → ⑥ dirty page·fsync
+    지표 상시화로 조기 탐지 체계 구축
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<h2>Senior-level Follow-up 질문</h2>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "fsync()와 fdatasync()의 차이는 무엇이고, 언제 fdatasync가 더 유리합니까?"
+  </div>
+  <div class="followup-a">
+    <code>fsync()</code>는 파일의 데이터 블록과 함께 <strong>메타데이터(수정 시각, 파일 크기 등)</strong>까지
+    모두 디스크에 강제로 반영합니다. <code>fdatasync()</code>는 파일을 다시 읽는 데 필요한 데이터에만
+    집중하고, 파일 크기 변경처럼 무결성에 직접 영향을 주지 않는 메타데이터 갱신은 생략할 수 있어
+    상대적으로 더 적은 I/O로 끝납니다. 예를 들어 로그 파일에 계속 append만 하고(파일 크기는 매번
+    바뀌지만 그 자체가 중요한 메타데이터는 아닌 경우) 데이터 내용의 durability만 중요하다면
+    fdatasync가 fsync보다 가벼운 선택입니다. 다만 파일 크기 변경 자체가 다음 읽기에 영향을 주는
+    경우(예: 파일이 늘어난 것을 다른 프로세스가 알아야 하는 구조)라면 fsync가 안전합니다.
+  </div>
+</div>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "O_DIRECT 플래그로 page cache를 우회하는 것이 항상 더 빠릅니까?"
+  </div>
+  <div class="followup-a">
+    아닙니다. <code>O_DIRECT</code>는 page cache를 거치지 않고 애플리케이션 버퍼와 디스크 사이에
+    직접 I/O를 수행합니다. 이는 커널의 이중 버퍼링 오버헤드를 없애고, 자체 캐싱 전략을 가진
+    시스템(대형 DB 엔진처럼 자기만의 버퍼 풀을 운영하는 경우)에게는 유리할 수 있습니다. 하지만
+    대부분의 일반 애플리케이션에는 오히려 손해입니다 — page cache가 제공하는 자동 readahead,
+    반복 읽기 가속, 여러 프로세스 간 캐시 공유 효과를 모두 포기하게 되고, I/O 정렬(alignment)
+    제약도 직접 관리해야 합니다. 따라서 O_DIRECT는 "커널 캐싱보다 내가 더 잘 캐싱/스케줄링할
+    자신이 있는 특수 워크로드(DB 엔진 등)"에 한정된 선택이지, 일반적인 성능 개선 수단이
+    아닙니다.
+  </div>
+</div>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "동기 로깅이 요청 스레드를 블로킹하는 것을 막으려면 어떻게 설계합니까?"
+  </div>
+  <div class="followup-a">
+    가장 흔한 패턴은 <strong>애플리케이션 스레드와 실제 디스크 쓰기를 분리</strong>하는 것입니다.
+    요청 처리 스레드는 로그 메시지를 메모리 큐(ring buffer 등)에만 넣고 즉시 리턴하고, 별도의
+    전용 로그 writer 스레드(또는 별도 프로세스)가 그 큐를 배치로 모아 파일에 씁니다. 이렇게 하면
+    dirty page 강제 flush나 fsync 지연이 발생해도 그 영향은 로그 writer 스레드에 국한되고, 요청
+    처리 스레드는 큐에 넣는 짧은 시간만 소비합니다. 다만 이 구조는 큐가 가득 찼을 때의 동작
+    (드롭할지, 블로킹할지)과 프로세스가 비정상 종료될 때 큐에 남은 로그의 유실 가능성을
+    trade-off로 반드시 함께 설계해야 합니다.
+  </div>
+</div>
+
+<div class="followup-item">
+  <div class="followup-q" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+    ▶ "컨테이너 환경에서 파일 I/O 성능을 볼 때 호스트와 다르게 신경 써야 할 점은?"
+  </div>
+  <div class="followup-a">
+    컨테이너의 쓰기 가능 레이어(overlay2 등 union filesystem)에 잦은 쓰기가 몰리면
+    <strong>copy-up 오버헤드</strong>(하위 read-only 레이어의 파일을 수정하려 할 때 전체를
+    쓰기 가능 레이어로 복사하는 과정)가 추가로 발생할 수 있습니다. 또한 컨테이너의 page cache는
+    호스트 커널과 공유되므로, 호스트 전체의 dirty page 상황이나 다른 컨테이너의 I/O 부하가
+    "noisy neighbor"로 작용해 특정 컨테이너의 fsync 지연에 영향을 줄 수 있습니다. 실무적으로는
+    로그나 임시 데이터처럼 쓰기가 잦은 파일은 컨테이너 레이어가 아니라 <strong>볼륨 마운트</strong>로
+    분리하고, cgroup의 <code>io</code> 컨트롤러(blkio)로 컨테이너별 I/O 대역폭을 제한해
+    noisy neighbor 영향을 줄이는 방식을 함께 검토해야 합니다.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>자기 점검 Rubric</h2>
+
+<table class="rubric-table">
+  <thead>
+    <tr>
+      <th>점검 항목</th>
+      <th>강한 답변 기준</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>write() 모델 이해</td>
+      <td>write()가 디스크가 아니라 page cache에 쓰고 즉시 반환된다는 비동기적 본질을 설명했는가</td>
+    </tr>
+    <tr>
+      <td>Dirty page 인과관계</td>
+      <td>dirty_ratio 초과 시 write()가 강제로 블로킹된다는 메커니즘으로 "평소 빠르다가 가끔
+      느려지는" 현상을 설명했는가</td>
+    </tr>
+    <tr>
+      <td>durability trade-off</td>
+      <td>fsync 제거를 성급히 제안하지 않고 durability 요구사항을 먼저 확인했는가</td>
+    </tr>
+    <tr>
+      <td>지표 기반 검증</td>
+      <td>Dirty/Writeback, iostat await 등 구체적 지표를 latency 스파이크와 시간축으로 대조했는가</td>
+    </tr>
+    <tr>
+      <td>원인 분리</td>
+      <td>버퍼링 전략, 스토리지 포화, 저널링 오버헤드를 서로 다른 가설로 나눠 검증했는가</td>
+    </tr>
+    <tr>
+      <td>재발 방지</td>
+      <td>dirty page 비율, fsync/디스크 latency를 상시 지표화하는 방안을 제시했는가</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2>확인 퀴즈</h2>
+
+<div class="quiz" id="q1">
+  <div class="quiz-question">
+    Q1. 애플리케이션이 write()를 호출했을 때, 기본적인 버퍼드 I/O에서 실제로 일어나는 일은?
+  </div>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q1" value="0"> 데이터가 즉시 디스크에 물리적으로 기록된 뒤 반환된다</label></li>
+    <li><label><input type="radio" name="q1" value="1"> 데이터가 page cache(dirty page)에 복사되고 즉시 반환되며, 디스크 반영은 이후 write-back으로 처리된다</label></li>
+    <li><label><input type="radio" name="q1" value="2"> 커널이 데이터를 압축한 뒤 네트워크로 전송한다</label></li>
+    <li><label><input type="radio" name="q1" value="3"> 반드시 별도 스레드가 생성되어 비동기로 처리된다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q2">
+  <div class="quiz-question">
+    Q2. 평소엔 빠르던 로그 write()가 트래픽 피크에 갑자기 느려지는 대표적인 이유는?
+  </div>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q2" value="0"> 디스크 파티션 개수가 부족해서</label></li>
+    <li><label><input type="radio" name="q2" value="1"> dirty page 비율이 dirty_ratio 임계치를 넘어 커널이 write() 호출 스레드를 블로킹시켜 강제로 flush하기 때문</label></li>
+    <li><label><input type="radio" name="q2" value="2"> CPU 코어 수가 줄어들어서</label></li>
+    <li><label><input type="radio" name="q2" value="3"> TLB miss가 늘어나서</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<div class="quiz" id="q3">
+  <div class="quiz-question">
+    Q3. fsync()의 역할로 가장 정확한 것은?
+  </div>
+  <ul class="quiz-options">
+    <li><label><input type="radio" name="q3" value="0"> 파일을 압축해 디스크 사용량을 줄인다</label></li>
+    <li><label><input type="radio" name="q3" value="1"> 해당 파일의 dirty page를 지금 즉시 디스크까지 동기적으로 내려보내 durability를 보장한다</label></li>
+    <li><label><input type="radio" name="q3" value="2"> 여러 프로세스 간 파일 락을 자동으로 해제한다</label></li>
+    <li><label><input type="radio" name="q3" value="3"> page cache를 완전히 비활성화한다</label></li>
+  </ul>
+  <button class="quiz-submit">제출</button>
+  <div class="quiz-feedback"></div>
+</div>
+
+<!-- ============================================================ -->
+<div class="primary-source">
+  <div class="ps-label">추천 1차 자료</div>
+  <p>
+    <strong>OSTEP (Operating Systems: Three Easy Pieces)</strong> — "File System Implementation" 및
+    "Crash Consistency: FSCK and Journaling" 챕터에서 page cache, write-back, journaling을 다룹니다.
+  </p>
+  <p style="margin-top:0.5rem">
+    <strong>The Linux Programming Interface (TLPI)</strong> — "File I/O Buffering" 챕터에서
+    buffered I/O, fsync/fdatasync, O_DIRECT의 동작을 시스템 콜 수준에서 설명합니다.
+  </p>
+</div>
+
+<div class="ask-teacher">
+  이해가 안 되는 부분이 있으면 Claude에게 바로 물어보세요. "우리 서비스의 iostat 출력을 같이 보고
+  fsync 지연이 문제인지 판단해줘", "로그 버퍼링을 비동기 큐로 바꾸면 실제로 얼마나 도움이 될지
+  같이 따져줘"처럼 구체적으로 질문하면 더 깊이 답변해드립니다.
+</div>
+
+<!-- ============================================================ -->
+<div class="progress-section">
+  <h3>이 레슨의 커리큘럼 위치</h3>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" style="width: 70%"></div>
+  </div>
+  <div class="progress-label">Day 7 / 10 완료 — 다음: Day 8 비동기 I/O와 이벤트 루프</div>
+</div>
+
+<div class="lesson-footer">
+  <div>운영체제 10년차 이상 개발자 Interview · Day 7</div>
+  <div class="lesson-nav">
+    <a href="./0016-day6-virtual-memory-and-page-fault.html">← Day 6</a>
+    <a href="./index.html">목록</a>
+    <a href="./0010-file-system.html">기존 파일 시스템 기초 →</a>
+  </div>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+  initQuiz('q1', 1,
+    '버퍼드 I/O에서 write()는 데이터를 page cache(dirty page)에 복사만 하고 즉시 반환합니다. ' +
+    '실제 디스크 반영은 이후 커널의 write-back 메커니즘이 별도로 처리합니다. 압축이나 네트워크 ' +
+    '전송, 별도 스레드 생성은 기본 write() 동작과 무관합니다.'
+  );
+
+  initQuiz('q2', 1,
+    'dirty page가 쌓여 dirty_ratio 임계치를 넘으면, 커널은 write()를 호출한 프로세스 자신을 ' +
+    '블로킹시켜서라도 강제로 디스크에 flush를 진행시킵니다. 트래픽 피크에 쓰기량이 급증하면 ' +
+    '정확히 이 시점에 write()가 느려집니다. 디스크 파티션 개수, CPU 코어 수, TLB miss는 이 ' +
+    '현상의 직접적 원인이 아닙니다.'
+  );
+
+  initQuiz('q3', 1,
+    'fsync()는 해당 파일의 dirty page를 지금 즉시, 동기적으로 디스크까지 내려보내고 반환해 ' +
+    'durability를 보장합니다. 디스크 I/O가 실제로 끝날 때까지 호출 스레드를 블로킹시키므로 ' +
+    'write()보다 느립니다. 압축, 파일 락 해제, page cache 비활성화와는 무관한 기능입니다.'
+  );
+</script>
+</body>
+</html>
