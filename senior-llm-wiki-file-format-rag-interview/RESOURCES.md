@@ -76,6 +76,21 @@
 > 실무 해설을 반영한 것이며, 패턴 자체가 계속 진화 중이므로 실제 도입 전 최신
 > 논의를 재확인해야 한다.
 
+## Day 3 최신 근거 (2026년 7월 조사 반영)
+
+- [How connectors power the Glean experience](https://docs.glean.com/connectors/connectors-power-glean) — 초기 전체 동기화 이후 웹훅+주기적 증분 크롤을 병행하는 steady-state 커넥터 운영, 권한 맵을 색인에 동봉하는 구조
+- [About connectors — Glean](https://docs.glean.com/connectors/about) — 커넥터가 콘텐츠 인덱싱뿐 아니라 소스 권한을 미러링하고 최신성을 유지하는 책임을 진다는 아키텍처 설명
+- [Top 10 Enterprise Content Connectors for RAG: Features, Pros, Cons & Comparison](https://www.devopsschool.com/blog/top-10-enterprise-content-connectors-for-rag-features-pros-cons-comparison/) — Airbyte(범용 데이터 통합, CDC)와 Unstructured(비정형 문서 파싱) 등 커넥터 계층별 역할 비교
+- [What is RAG Architecture? — Airbyte](https://airbyte.com/agentic-data/what-is-rag-architecture) — Agent Engine의 거버넌스형 커넥터, 자동 스키마 처리, 증분 동기화/CDC 아키텍처
+- [RAG Pipeline Orchestration: Production Guide — Kestra](https://kestra.io/resources/ai/rag-pipeline) — Airflow/Prefect/Dagster/Kestra 등 오케스트레이터가 트리거·재시도·관측성·알림을 통합 관리하는 2026년 프로덕션 패턴
+- [RAG and LLM Platform at Scale: Ingestion, Retrieval, Generation, and Evaluation for 10M Queries/Day (CrackingWalnuts)](https://crackingwalnuts.com/post/rag-llm-platform-design) — Dead Letter Queue, 고정 재시도, 컴포넌트 격리(벡터 DB/LLM 교체 가능성)를 포함한 대규모 RAG 운영 아키텍처
+- [MIME Type Lookup: A Reference and Magic-Bytes Sniffer for Uploads](https://zerotool.dev/blog/mime-type-lookup-guide/) — 매직 바이트 기반 포맷 검증이 확장자/클라이언트 MIME보다 신뢰도가 높은 이유, DOCX/PPTX/XLSX/EPUB/JAR가 동일 ZIP 시그니처(`50 4B 03 04`)를 공유해 컨테이너 내부(`[Content_Types].xml`, `META-INF/MANIFEST.MF`, `mimetype`)까지 확인해야 하는 이유
+- [What Is MIME Type & Why It Matters for Developers and Upload Validation](https://thetexttool.com/blog/what-is-mime-type-why-it-matters-developers-upload-validation-2025) — 확장자 기반/매직 바이트 기반/콘텐츠 기반 포맷 감지 3분류와 보안 검증 우선순위
+
+> 참고: 커넥터 플랫폼과 오케스트레이션 도구의 기능은 벤더가 자주 갱신하므로, 위 자료는
+> 레슨 작성 시점(2026년 7월) 기준 공개 정보를 반영한 것이다. 실제 벤더/도구 선택 전에는
+> 각 공식 문서로 재검증해야 한다.
+
 ## 인터뷰 준비
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 검색 시스템 설계 문제와 유사한 사고 프레임

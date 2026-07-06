@@ -6,12 +6,12 @@
 |-----|------|------|-----------|
 | 1 | 2026-07-04 | LLM Wiki와 파일 형식 RAG 시스템 설계/운영 프레임워크 | [0001-llm-wiki-file-format-rag-architecture-operations-framework.html](lessons/0001-llm-wiki-file-format-rag-architecture-operations-framework.html) |
 | 2 | 2026-07-05 | LLM Wiki 지식 큐레이션과 Skill 문서 관리 | [0002-llm-wiki-knowledge-curation-and-skill-document-management.html](lessons/0002-llm-wiki-knowledge-curation-and-skill-document-management.html) |
+| 3 | 2026-07-06 | 이기종 문서 수집 아키텍처와 커넥터 설계 | [0003-heterogeneous-document-ingestion-connector-architecture.html](lessons/0003-heterogeneous-document-ingestion-connector-architecture.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 3 | 이기종 문서 수집 아키텍처와 커넥터 설계 | Connector, 포맷 감지, 파이프라인 오케스트레이션, 실패 격리 |
 | 4 | PDF/DOCX/PPTX/XLSX 파싱 전략 | 레이아웃 분석, 구조 보존, Docling/Unstructured/LlamaParse/Reducto 선택 기준 |
 | 5 | HTML/Markdown/코드/CSV/JSON/YAML 파싱과 구조화 데이터 처리 | 시맨틱 태그 활용, AST 기반 코드 파싱, 스키마 인식 |
 | 6 | OCR과 Table/Image Extraction | 레이아웃 인식 모델, 병합 셀 표, 멀티모달 추출, 품질 검증 |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 2 완료** — 다음: Day 3 — 이기종 문서 수집 아키텍처와 커넥터 설계
+**Day 3 완료** — 다음: Day 4 — PDF/DOCX/PPTX/XLSX 파싱 전략
 
 ## 습득한 핵심 개념
 
@@ -39,7 +39,9 @@
 - [x] 개인용 LLM Wiki 패턴을 조직 규모로 확장할 때 capture/link/compound/stay-current가 각각 어떻게 바뀌어야 하는지 (Day 2)
 - [x] Skill 문서(SKILL.md)의 Level 1/2/3 점진적 공개 구조와 위키 계층 구조의 대응 관계 (Day 2)
 - [x] 지식/Skill 문서를 코드와 동등하게 버전 관리·리뷰하고, compounding knowledge의 조건부 가치와 오류 확산 위험을 판단하는 능력 (Day 2)
-- [ ] 이기종 문서 수집 아키텍처와 커넥터 설계 (예정 Day 3)
+- [x] Extract-Stage-Transform 분리로 파싱 실패와 수집 실패를 격리하는 아키텍처 원칙 (Day 3)
+- [x] 확장자/클라이언트 MIME을 신뢰하지 않는 내용 기반 포맷 감지와 ZIP 기반 컨테이너 포맷(DOCX/PPTX/XLSX/EPUB/JAR)의 매직 바이트 모호성 (Day 3)
+- [x] Push(웹훅)/Pull(폴링) 하이브리드 증분 동기화 설계와 커넥터 단위 실패 격리(bulkhead, 서킷 브레이커, DLQ) (Day 3)
 - [ ] PDF/DOCX/PPTX/XLSX 파싱 전략 (예정 Day 4)
 - [ ] HTML/Markdown/코드/CSV/JSON/YAML 파싱 (예정 Day 5)
 - [ ] OCR과 Table/Image Extraction (예정 Day 6)
