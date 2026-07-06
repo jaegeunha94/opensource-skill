@@ -85,6 +85,20 @@
 - [OpenClaw 4.26 release — migrate tool introduction — openclaws.io](https://openclaws.io/blog/openclaw-4-26-release)
 - [OpenClaw upgrade & maintenance guide — LumaDock](https://lumadock.com/tutorials/openclaw-upgrade-maintenance)
 
+## Model Provider / Auth Profile / Failover (Day 4 핵심 출처)
+
+- [GitHub raw — docs/concepts/model-providers.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/model-providers.md), [docs/concepts/model-failover.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/model-failover.md), [docs/concepts/models.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/models.md) — `docs.openclaw.ai`가 자동화 접근에 403을 반환해, 이 레슨은 GitHub raw 경로의 문서 원문으로 교차 검증했다
+- [GitHub — src/agents/auth-profiles/order.ts](https://github.com/openclaw/openclaw/blob/main/src/agents/auth-profiles) — 프로필 정렬 로직(타입 우선순위 + lastUsed 라운드로빈, lastGood 의도적 배제) 원본 소스
+- [GitHub issue #100067 — 2026.6.x JSON→SQLite auth 저장소 마이그레이션이 기존 프로필을 경고 없이 유실시키는 사고 (open)](https://github.com/openclaw/openclaw/issues/100067)
+- [GitHub issue #48623 — lastGood 우선순위 기능 요청(not_planned) + failover 시도 간 타임아웃 예산 공유 버그](https://github.com/openclaw/openclaw/issues/48623)
+- [GitHub issue #99809 — subscription_limit 차단이 모델 단위가 아니라 프로필 전체에 적용되는 버그 (open)](https://github.com/openclaw/openclaw/issues/99809)
+- [GitHub issue #99993 — DeepSeek 401 인증 오류를 일시적 오류로 오분류해 정상 키를 오래 막는 버그 (closed)](https://github.com/openclaw/openclaw/issues/99993)
+- [GitHub issue #92864 — 세션 모델 오버라이드가 compaction 이후에도 조용히 유지되어 하루 $300 청구된 사고 (closed)](https://github.com/openclaw/openclaw/issues/92864)
+- [GitHub issue #74395 — 업그레이드 자동 마이그레이션이 기본 모델을 조용히 유료 preview 변형으로 전환 (open)](https://github.com/openclaw/openclaw/issues/74395)
+- [GitHub issue #73182 — Claude 계열 reasoning 기본값이 조용히 켜져 비용 2배 + thinking 블록 노출 (open)](https://github.com/openclaw/openclaw/issues/73182)
+- [GitHub issue #92674 — thinking 레벨 "adaptive" 폴백으로 토큰 사용량 4~5배 증가 (open)](https://github.com/openclaw/openclaw/issues/92674)
+- [GitHub issue #88371 — Windows 온보딩 첫 채팅이 크레딧 경고 없이 유료 모델로 시작 (open)](https://github.com/openclaw/openclaw/issues/88371)
+
 ## 사용 시 주의사항
 
 - `docs.openclaw.ai` 도메인은 자동화 접근(WebFetch)에 403을 반환하는 경우가 있었다. 이 트랙의 공식 문서 인용은
@@ -93,6 +107,10 @@
 - 이 트랙에 등장하는 포트 번호(`18789`), 설정 키 경로, 명령어 플래그, 사고 통계(악성 스킬 개수 등)는
   레슨 작성 시점(2026-07) 기준 리서치 결과이며 빠르게 바뀔 수 있다. 실제 면접 전 공식 문서/최신 보안 리포트로
   최종 확인해야 한다.
+- Day 4의 쿨다운 백오프 수치(1분/5분/25분/1시간, 5시간/24시간)는 문서 요약 기반으로 확정도가 중간이다.
+  GitHub 이슈 번호(#100067 등)는 리서치 시점(2026-07) 기준 open/closed 상태이며, 면접 전 최신 상태로
+  재확인한다. auth 저장소가 `auth-profiles.json`(JSON)에서 SQLite로 전환 중이라는 사실 자체는 소스 코드/
+  이슈로 직접 확인했지만, 전환이 최종적으로 어떻게 안정화될지는 계속 지켜봐야 한다.
 - ClawHub 관련 보안 사고 수치는 서로 다른 리서치 기관(Unit 42, Bitdefender, Koi Security)이 각기 다른 시점·기준으로
   집계한 것이므로, 절대적인 수치보다 **"마켓플레이스형 스킬 배포는 구조적으로 공급망 리스크를 가진다"는 패턴**에
   집중해서 이해한다.

@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — Model Provider 설정과 Auth Profile Rotation/Failover</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 4 · OpenClaw Interview</div>
+    <h1>Model Provider 설정과 Auth Profile Rotation/Failover</h1>
+    <div class="subtitle">"failover가 있으니 안전하다"가 왜 절반만 맞는 말인지 — 라운드로빈 설계의 의도와, 그 설계가 실제로 만들어내는 비용/신뢰성 사고를 구조적으로 설명하는 능력</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전/시점 기준:</strong> 이 레슨은 2026-07 기준 OpenClaw 공식 문서(<code>docs/concepts/model-providers.md</code>,
+    <code>docs/concepts/model-failover.md</code>, <code>docs/concepts/models.md</code>)와 소스 코드
+    (<code>src/agents/auth-profiles/order.ts</code> 등), 그리고 GitHub 이슈(#100067, #48623, #99809, #99993,
+    #92864, #74395, #73182, #92674, #88371)를 직접 조사해 작성했다. <code>docs.openclaw.ai</code> 도메인은
+    자동화 접근에 403을 반환해, 이 레슨은 <code>raw.githubusercontent.com</code> 경로의 문서 원문과 GitHub 코드/이슈
+    검색으로 교차 검증했다. 정확한 쿨다운 시간 수치(1분/5분/25분/1시간, 5시간/24시간)는 문서 요약 기반이라
+    <strong>중간 확정도</strong>로 표시하며, 나머지(2단계 failover 구조, 프로필 정렬 로직, SQLite 마이그레이션 이슈,
+    실제 사고 사례)는 소스 코드/이슈 원문으로 직접 확인한 <strong>높은 확정도</strong>다.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "OpenClaw에서 사용 중인 모델 provider나 API 키에 장애(rate limit, 인증 실패, 서버 오류)가 발생하면, 실제로
+      어떤 순서로 복구를 시도합니까? 이 구조를 설계 관점에서 설명해주세요."
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "같은 provider에 API 키(auth profile)를 여러 개 등록해두면 어떤 순서로 사용됩니까? 방금 성공적으로 응답한
+      프로필을 우선적으로 계속 쓰지 않는 이유가 있을까요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "모델 failover 체인이 있으면 비용이 자동으로 안전하게 관리된다고 볼 수 있을까요? 실제로 어떤 함정이
+      있을 수 있습니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Provider 설정, Auth Profile, 그리고 "2단계 failover"</h2>
+
+    <h3>1) 모델 참조 문법과 config 계층 — "어떤 모델을 쓸지"는 세 겹으로 정해진다</h3>
+    <p>
+      OpenClaw는 모델을 <code>provider/model</code> 형태로 참조한다 — 예를 들어
+      <code>anthropic/claude-opus-4-6</code>, <code>openai/gpt-5.5</code>, <code>google/gemini-3.1-pro-preview</code>,
+      <code>xai/grok-4.3</code>. 이 참조는 세 계층의 config로 조립된다.
+    </p>
+    <table>
+      <tr><th>계층</th><th>설정 키</th><th>역할</th></tr>
+      <tr><td>기본 모델</td><td><code>agents.defaults.model.primary</code></td><td>평소에 실제로 쓰는 모델</td></tr>
+      <tr><td>모델별 오버라이드</td><td><code>agents.defaults.models["provider/model"]</code></td><td>특정 모델에만 적용할 메타데이터(예: reasoning 강도, context 제한)</td></tr>
+      <tr><td>장애 대응 체인</td><td><code>agents.defaults.model.fallbacks</code></td><td>기본 모델이 계속 실패할 때 순서대로 시도할 다음 모델 목록</td></tr>
+      <tr><td>커스텀/프록시 provider</td><td><code>models.providers.&lt;id&gt;</code> (또는 <code>models.json</code>)</td><td>OpenAI/Anthropic 호환 커스텀 엔드포인트(baseUrl, 모델 목록) 등록</td></tr>
+    </table>
+    <p>
+      API 키는 환경변수로도 주입할 수 있는데, 같은 provider에 여러 방식이 동시에 있으면 우선순위가 있다:
+      <code>OPENCLAW_LIVE_&lt;PROVIDER&gt;_KEY</code> &gt; <code>&lt;PROVIDER&gt;_API_KEYS</code>(목록) &gt;
+      <code>&lt;PROVIDER&gt;_API_KEY</code> &gt; <code>&lt;PROVIDER&gt;_API_KEY_*</code>(번호가 붙은 여러 개).
+      이 우선순위를 모르면, "분명 새 키를 export했는데 왜 예전 키가 계속 쓰이지?" 같은 디버깅에서 헤맨다.
+    </p>
+
+    <h3>2) auth-profiles — "같은 provider 안에 여러 자격 증명을 어떻게 관리하는가"</h3>
+    <p>
+      한 provider(예: Anthropic)에 API 키가 여러 개, 또는 API 키와 OAuth 로그인이 함께 등록될 수 있다. 이걸
+      관리하는 게 <strong>auth profile</strong>이다. 각 프로필은 <code>id</code>, <code>type</code>
+      (<code>oauth</code> / <code>token</code> / <code>api-key</code>), <code>provider</code>, 실제 자격 증명,
+      그리고 <code>usageStats</code>(프로필별 사용 통계)를 갖는다. <code>usageStats</code>는
+      <code>provider:profileId</code> 단위로 <code>lastUsed</code>, <code>cooldownUntil</code>,
+      <code>cooldownReason</code>, <code>cooldownModel</code>, <code>blockedUntil</code>, <code>blockedReason</code>,
+      <code>blockedModel</code>, <code>disabledUntil</code>, <code>errorCount</code>, <code>failureCounts</code>를
+      기록한다 — 즉 "이 프로필이 최근에 무엇 때문에 얼마나 실패했는가"를 프로필 단위로 추적한다.
+    </p>
+    <div class="callout callout-warn">
+      <strong>저장 위치가 2026년 중 바뀌는 중이다:</strong> 전통적으로 이 정보는
+      <code>~/.openclaw/agents/&lt;agentId&gt;/agent/auth-profiles.json</code>에 저장됐다. 그런데
+      <strong>2026.6.x 릴리스</strong>부터 이 저장소가 <strong>SQLite</strong>(<code>openclaw-agent.sqlite</code>)로
+      옮겨가는 중이며, 이 마이그레이션 자체가 아직 불안정하다(아래 GitHub #100067 참고). 이 트랙의 이전 레슨/자료가
+      "auth-profiles.json"만 언급했다면, 그건 2026.5.x 이하 기준이고 2026.6.x 이후는 SQLite 전환 리스크까지
+      함께 알아야 한다 — OpenClaw는 이렇게 <strong>저장 계층 자체가 마이그레이션 도중인 소프트웨어</strong>라는
+      전제를 인터뷰에서 보여줄 수 있으면 좋은 신호가 된다.
+    </div>
+
+    <h3>3) 프로필 정렬 로직 — "왜 방금 성공한 프로필을 계속 쓰지 않는가"</h3>
+    <p>
+      여러 프로필 중 어떤 걸 다음에 쓸지 정하는 순서(<code>order.ts</code> 기준)는 다음과 같다.
+    </p>
+    <ol>
+      <li><strong>명시적 오버라이드가 최우선</strong> — <code>auth.order[provider]</code> config, 또는 사용자가
+      채팅에서 직접 <code>/model openai/gpt-5.4@&lt;profileId&gt;</code>처럼 프로필을 지정한 경우, 무조건 그
+      선택을 따른다.</li>
+      <li><strong>그 외에는 타입 우선순위</strong> — <code>oauth &gt; token &gt; api-key</code> 순으로 먼저
+      그룹을 나눈다.</li>
+      <li><strong>같은 타입 안에서는 라운드로빈</strong> — <code>lastUsed</code>가 가장 오래된 프로필부터
+      순서대로 쓴다.</li>
+      <li><strong>쿨다운 중인 프로필은 뒤로 밀림</strong> — 제외되는 게 아니라, <code>cooldownUntil</code>이
+      가장 빨리 끝나는 순서로 뒤쪽에 재배치된다.</li>
+    </ol>
+    <div class="callout callout-danger">
+      <strong>설계 의도가 명시적으로 코드 주석에 남아있다:</strong> "<code>lastGood</code>(마지막으로 성공한
+      프로필)는 의도적으로 무시한다 — 이걸 우선하면 다른 정상 프로필들이 굶주리기(starve) 때문이다." 실제로
+      한 사용자가 "가장 최근에 성공한 프로필을 우선해달라"고 요청한 이슈(<strong>#48623</strong>, 2026-03 제출)는
+      "not_planned"로 종료됐다. 즉 <strong>이건 버그가 아니라, "공정성(fairness)"을 "직전 성공 이력"보다
+      우선하기로 한 의도적인 트레이드오프</strong>다.
+    </div>
+
+    <h3>4) 2단계 failover — "프로필 로테이션"과 "모델 폴백"은 다른 층위다</h3>
+    <p>
+      모델 호출이 실패했을 때 OpenClaw의 대응은 두 단계로 나뉜다.
+    </p>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>같은 provider, 같은 모델 안에서 auth profile 로테이션</strong>
+        예를 들어 Anthropic 키 3개가 등록돼 있는데 지금 쓰던 키가 rate limit(429)에 걸렸다면, 먼저 같은
+        <code>anthropic/claude-opus-4-6</code> 모델을 유지한 채 다음 순번의 auth profile로 재시도한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>그래도 실패하면 모델 자체를 전환</strong>
+        같은 provider의 모든 프로필이 소진되거나(쿨다운/차단),애초에 대체 프로필이 없다면
+        <code>agents.defaults.model.fallbacks</code>에 정의된 다음 모델(다른 provider일 수도 있음)로 전환한다.
+      </div>
+    </div>
+    <p>
+      여기에 중요한 비대칭이 하나 더 있다 — <strong>사용자가 채팅에서 직접 <code>/model</code>로 모델을 명시적으로
+      지정한 경우, 실패해도 자동으로 fallback 체인을 타지 않고 그 모델로 그대로 실패한다.</strong> 자동 폴백은
+      "설정된 기본 모델" 경로에서만 전체 체인을 순회하며, 그 과정에서 주기적으로(문서 기준 약 5분 간격) 원래
+      모델이 복구됐는지 재시도(re-probe)한다.
+    </p>
+
+    <h3>5) 세션 단위 pinning — 왜 매 요청마다 로테이션하지 않는가</h3>
+    <p>
+      한번 선택된 auth profile은 <strong>세션 단위로 고정(pin)</strong>된다. 매 요청마다 프로필을 바꾸면
+      provider 쪽의 prompt caching이 매번 깨져서 비용과 지연이 늘어나기 때문에, 실패가 없는 한 같은 프로필을
+      계속 쓴다. 이 pin은 세션 리셋, 컨텍스트 compaction, 또는 pin된 프로필이 쿨다운에 들어갈 때 풀린다.
+    </p>
+
+    <h3>6) 에러 분류 — retryable vs terminal</h3>
+    <table>
+      <tr><th>분류</th><th>예시</th><th>대응</th></tr>
+      <tr><td><span class="badge badge-yellow">재시도 가능(retryable)</span></td>
+        <td>인증 실패, rate limit(429), overloaded 신호, 타임아웃, billing 비활성화, 후보가 남아있는 미분류 오류</td>
+        <td>프로필 쿨다운 처리 후 다음 후보로 로테이션/폴백</td></tr>
+      <tr><td><span class="badge badge-red">종결(terminal)</span></td>
+        <td>명시적 abort, context length 초과(<code>request_too_large</code>), 모든 후보 소진</td>
+        <td>더 이상 재시도하지 않고 사용자에게 실패로 반환</td></tr>
+    </table>
+    <p>
+      쿨다운 백오프는(문서 요약 기준, 중간 확정도) rate limit류는 <strong>1분 → 5분 → 25분 → 1시간</strong>으로
+      상한까지 점점 길어지고, billing 관련 비활성화는 <strong>5시간부터 시작해 2배씩 증가, 최대 24시간</strong>까지
+      늘어난다.
+    </p>
+    <div class="callout callout-danger">
+      <strong>이 분류 자체가 실무에서 틀릴 수 있다:</strong> GitHub <strong>#99993</strong>(closed) 사례는,
+      DeepSeek의 401 인증 오류(원래는 종결에 가까운 오류)를 시스템이 "일시적 실패"로 잘못 분류해
+      <code>cooldownUntil</code>/<code>disabledUntil</code>을 걸어버린 버그였다 — 그 결과, 사용자가 키를 이미
+      고쳤는데도 오래된 쿨다운 상태 때문에 정상 키가 계속 뒤로 밀렸다. 그리고 <strong>#99809</strong>(open,
+      2026-07-04 제출)는, <code>subscription_limit</code> 차단이 원래 모델 단위(<code>blockedModel</code> 필드가
+      존재)로 스코프돼야 하는데 실제로는 <strong>프로필 전체</strong>에 적용되어, 그 프로필로 쓸 수 있는 다른
+      정상 모델까지 함께 막히는 문제다.
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+    <p>
+      이 질문은 "failover 기능이 있다"를 아는지가 아니라, <strong>"자동화된 안전장치가 새로운 실패 모드를
+      만들어낼 수 있다는 것을 이해하는가"</strong>를 본다. 시니어는 "failover가 있으니 안전하다"에서 멈추지
+      않고, "failover의 설계 선택(라운드로빈, 세션 pin, 에러 분류)이 어떤 상황에서 역효과를 내는지"까지
+      설명할 수 있어야 한다.
+    </p>
+    <ul>
+      <li><strong>설계 트레이드오프를 이해하는가</strong> — lastGood을 의도적으로 무시하는 게 왜 "버그"가
+      아니라 "선택"인지 설명할 수 있는가</li>
+      <li><strong>로테이션과 폴백을 다른 층위로 구분하는가</strong> — "프로필 교체"와 "모델 교체"를 뭉뚱그리지
+      않는가</li>
+      <li><strong>숨겨진 비용 리스크를 인지하는가</strong> — 폴백/오버라이드가 조용히 더 비싼 모델로 전환되거나
+      유지될 수 있다는 것을 아는가</li>
+      <li><strong>에러 분류 실패의 실무 영향을 설명할 수 있는가</strong> — 잘못된 재시도 가능성 판단이 정상
+      자격 증명을 오래 막아버릴 수 있다는 것을 아는가</li>
+    </ul>
+    <div class="callout callout-warn">
+      Senior 개발자는 "auth profile rotation과 model fallback이 있다"를 나열하지 않는다. <strong>"이 자동화가
+      어떤 가정 위에서 동작하고, 그 가정이 깨지면 어떤 사고로 이어지는지, 그리고 그걸 어떻게 모니터링/제어할지"</strong>
+      까지 설명한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 팀에서 같은 provider 키를 여러 개 등록해 rate limit을 분산한다</h3>
+    <p>
+      이건 auth profile 라운드로빈의 정석적인 활용이다. 다만 "직전에 성공한 키를 계속 쓰겠지"라고 기대하면
+      안 된다 — <code>lastUsed</code> 기준으로 오래 쉰 프로필부터 균등하게 순환하도록 설계돼 있다. 이건
+      의도적으로 "한 키에 몰빵되어 그 키만 rate limit에 몰리는 상황"을 막기 위한 설계다.
+    </p>
+
+    <h3>상황 2: 세션 중 비싼 모델로 잠깐 바꿨는데, 하루 만에 예상보다 훨씬 큰 비용이 청구됐다</h3>
+    <p>
+      실제 GitHub 사례(<strong>#92864</strong>, closed)에서, 사용자가 <code>/model</code>로 더 비싼 모델
+      (<code>claude-opus-4-8</code>)을 잠깐 시도했는데, 그날 밤 컨텍스트 compaction이 일어나면서 새 세션이
+      "원래 기본 모델로 돌아가지 않고" 그 비싼 모델을 그대로 물려받아 하루 만에 $300가 청구된 사고가 있었다.
+      이건 <strong>failover/오버라이드 로직 자체의 버그라기보다, "명시적 오버라이드의 생명주기가 세션 경계를
+      넘어 조용히 이어질 수 있다"는 걸 몰랐던 운영 공백</strong>이다.
+    </p>
+
+    <h3>상황 3: 업그레이드/온보딩 이후 비용이 조용히 늘었다</h3>
+    <p>
+      비슷한 패턴의 사고가 여러 건 보고돼 있다. 업그레이드 시 자동 마이그레이션이 기본 모델을 유료
+      <code>-preview</code> 변형으로 조용히 바꾼 사례(<strong>#74395</strong>, open), Claude 계열 모델의
+      reasoning(thinking) 기본값이 조용히 "on"으로 바뀌어 Anthropic 비용이 두 배가 되고 thinking 블록까지
+      채팅에 노출된 사례(<strong>#73182</strong>, open), thinking 레벨이 "adaptive"로 폴백되면서 토큰 사용량이
+      4~5배로 뛴 사례(<strong>#92674</strong>, open), Windows 온보딩에서 첫 채팅이 크레딧 경고 없이 유료
+      Anthropic 모델로 시작되는 사례(<strong>#88371</strong>, open). <strong>공통 패턴은, 모델/설정 전환이
+      "조용히(silently)" 일어난다는 것</strong>이다 — 즉 이 트랙 Day 3에서 다룬 "조용한 config 변경" 문제가
+      비용 영역에서도 똑같이 반복된다.
+    </p>
+
+    <h3>상황 4: 여러 provider가 걸린 failover 체인에서, 첫 시도가 타임아웃 예산을 다 써버린다</h3>
+    <p>
+      GitHub <strong>#48623</strong>에는 lastGood 요청과 별개로 두 번째 버그가 함께 보고돼 있다 — 경량 실행
+      경로에서는 <strong>모든 failover 시도가 하나의 타임아웃 예산을 공유</strong>해서, 첫 시도가 rate limit으로
+      지연되면 그 시간을 다 써버려 정작 정상적으로 동작하는 백업 프로필까지 시도하지 못하고 전체가 실패하는
+      경우가 있었다. "failover 체인에 백업이 있다"는 것과 "그 백업이 실제로 시도될 시간이 남아있다"는 것은
+      별개의 문제다.
+    </p>
+
+    <h3>상황 5: 버전 업그레이드 중 auth 저장소 자체가 마이그레이션된다</h3>
+    <p>
+      <strong>#100067</strong>(open, 2026-07-04)은 2026.6.x의 JSON→SQLite 저장소 전환에서, 기존
+      <code>auth-profiles.json</code>의 프로필들이 새 저장소로 옮겨지지 않고 경고도 없이 "버려지는" 사고를
+      보고한다 — 그 결과 OAuth/토큰 기반 provider의 인증이 전부 끊기고, 폴백 체인도 조용히 무력화된다. 이건
+      Day 3에서 다룬 "버전 간 스키마 변경에 proactive diff 도구가 없다"는 공백이, <strong>이번엔 auth 계층에서도
+      반복</strong>되고 있다는 실제 사례다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>2단계 구조를 먼저 말하기</strong>
+        "같은 provider·같은 모델 안에서의 auth profile 로테이션이 1차, 그래도 실패하면 모델 자체를 fallback
+        체인으로 전환하는 게 2차입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>정렬 로직과 그 설계 의도를 설명하기</strong>
+        "타입(oauth&gt;token&gt;api-key) 우선 후 lastUsed 기준 라운드로빈이고, lastGood은 의도적으로 무시합니다
+        — 특정 프로필에 트래픽이 몰려 다른 정상 프로필이 굶주리는 걸 막기 위한 설계입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>세션 pin과 그 이유 짚기</strong>
+        "매 요청 로테이션은 provider caching을 깨서 비용/지연을 늘리므로, 실패가 없으면 세션 동안 같은 프로필을
+        고정합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>실제 실패 모드를 근거와 함께 짚기 (Senior 포인트)</strong>
+        "다만 이 자동화가 항상 안전한 건 아닙니다. 모델 오버라이드가 세션 경계를 넘어 조용히 유지돼 하루
+        만에 $300가 청구된 사례, 업그레이드 후 기본 모델이 조용히 유료 preview로 바뀐 사례, 에러 분류가
+        틀려서 정상 키가 오래 막힌 사례가 실제로 보고돼 있습니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>운영 대응책 제시로 마무리하기</strong>
+        "그래서 저는 failover를 '있으니 안전한 기능'이 아니라 '모니터링이 필요한 자동화'로 취급합니다 — 모델별
+        비용 알림, 세션 오버라이드의 만료/원복 정책, 업그레이드 전후 auth profile 상태 점검을 팀 프로세스에
+        넣습니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+    <div class="callout callout-tip">
+      <p>
+        "OpenClaw의 장애 대응은 두 단계로 구성됩니다. 첫 단계는 같은 provider, 같은 모델 안에서의 auth profile
+        로테이션입니다 — 예를 들어 Anthropic 키가 여러 개 등록돼 있고 지금 쓰던 키가 rate limit에 걸리면, 같은
+        모델을 유지한 채 다음 순번의 키로 재시도합니다. 이때 순서는 타입(oauth, token, api-key 순)으로 먼저
+        나뉘고, 같은 타입 안에서는 가장 오래 쉰 프로필부터 쓰는 라운드로빈입니다. 흥미로운 점은, 방금 성공한
+        프로필을 우선하는 'lastGood' 방식이 아니라는 겁니다 — 이건 실수가 아니라, 특정 프로필에 트래픽이
+        몰려서 다른 정상 프로필들이 굶주리는 걸 막기 위한 의도적인 설계 선택입니다.
+      </p>
+      <p>
+        두 번째 단계는, 같은 provider의 모든 프로필이 소진되거나 대체 프로필 자체가 없을 때, 설정된
+        fallback 체인을 따라 다른 모델(다른 provider일 수도 있습니다)로 전환하는 겁니다. 여기서 한 가지
+        비대칭이 있는데, 사용자가 채팅에서 직접 모델을 지정한 경우는 실패해도 자동으로 이 체인을 타지
+        않고 그 모델로 그대로 실패합니다 — 자동 폴백은 '설정된 기본 모델' 경로에서만 동작합니다. 그리고
+        한번 선택된 프로필은 provider 쪽 캐싱을 따뜻하게 유지하기 위해 세션 단위로 고정되고, 실패가 없으면
+        계속 그 프로필을 씁니다.
+      </p>
+      <p>
+        다만 저는 이 자동화가 있다고 해서 안전이 자동으로 보장된다고 생각하지 않습니다. 실제로 GitHub에
+        보고된 사례들을 보면, 세션 중 잠깐 비싼 모델로 바꿨는데 그 설정이 세션 경계를 넘어 조용히 유지돼
+        하루 만에 300달러가 청구된 경우, 업그레이드 후 기본 모델이 경고 없이 유료 preview 모델로 바뀐 경우,
+        reasoning 기본값이 조용히 켜져서 비용이 두 배가 된 경우가 있습니다. 그리고 에러 분류 자체가 틀리는
+        버그도 있었습니다 — 인증 오류를 일시적 오류로 잘못 판단해서, 이미 고친 키가 오래된 쿨다운 상태 때문에
+        계속 뒤로 밀리는 경우입니다.
+      </p>
+      <p>
+        그래서 저는 이 failover 체계를 '설정만 해두면 끝'이 아니라 '지속적인 모니터링이 필요한 자동화'로
+        취급합니다. 모델별/프로필별 비용에 알림을 걸고, 세션에서의 명시적 모델 오버라이드는 유효기간이나
+        원복 정책을 팀 규칙으로 명시하고, 버전 업그레이드 전후에는 auth profile 상태와 실제 사용 중인 모델이
+        기대한 것과 같은지 확인하는 걸 표준 절차에 넣습니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "lastGood 대신 라운드로빈을 쓰는 게 정말 더 나은 설계일까요? 단점은 없나요?"</h3>
+    <p><strong>약한 답변:</strong> "공정하니까 더 좋은 설계입니다."</p>
+    <p>
+      <strong>강한 답변:</strong> "공정성 관점에서는 맞지만 공짜는 아닙니다. 예를 들어 프로필 A는 방금 성공했고
+      프로필 B는 사실 이미 문제가 있는 키인데 단순히 오래 쉬었다는 이유로 다음 순번이 되면, B가 다시 실패할
+      때까지 한 번의 왕복(요청)을 낭비하게 됩니다. 즉 '트래픽 분산의 공정성'과 '최근 성공 이력을 활용한
+      효율성' 사이의 트레이드오프이고, OpenClaw는 전자를 선택한 겁니다. 이걸 보완하려면, 애플리케이션
+      레이어에서 명백히 죽은 프로필은 아예 <code>auth.order</code>에서 제외하거나 비활성화하는 운영 개입이
+      필요합니다."
+    </p>
+
+    <h3>F2. "세션 pin이 있는데, failover가 어떻게 그 pin을 깨고 다른 프로필로 넘어가나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong> "pin은 '실패가 없는 한' 유지되는 기본값이지, 절대적인 고정이 아닙니다. pin된
+      프로필이 실제로 쿨다운/차단 상태에 들어가면 그 시점에 pin이 풀리고 다음 순번 프로필이 새로 pin됩니다.
+      즉 pin의 목적은 '평상시 캐싱 효율'이고, failover의 목적은 '장애 시 가용성'이라 서로 다른 층위의 관심사
+      이며, 장애가 실제로 감지된 순간에만 pin이 재계산됩니다."
+    </p>
+
+    <h3>F3. "이 실패 사례들(#92864, #73182, #92674 등)이 공통적으로 보여주는 패턴은 무엇인가요?"</h3>
+    <p>
+      <strong>강한 답변:</strong> "공통점은 '모델/설정 전환이 사용자에게 보이지 않는 곳에서 일어난다'는 겁니다.
+      세션 오버라이드가 세션 경계를 넘어 이어지거나, 업그레이드 마이그레이션이 기본값을 바꾸거나, thinking
+      레벨이 폴백되는 것 모두 시스템이 '더 나은 판단'을 자동으로 내린 결과인데, 그 판단이 비용에 미치는
+      영향은 로그를 보지 않는 한 알기 어렵습니다. 그래서 이런 종류의 자동화에는 항상 '무엇이 바뀌었는지
+      사용자가 확인할 수 있는 가시성(observability)'이 같이 설계돼야 한다고 생각합니다."
+    </p>
+
+    <h3>F4. "여러분 팀이라면 이런 실패 모드를 어떻게 모니터링/알림으로 잡겠어요?"</h3>
+    <p>
+      <strong>강한 답변:</strong> "세 가지를 두겠습니다. 첫째, 모델/프로필별 호출 수와 비용을 대시보드로
+      분리해서, 기대하지 않은 모델(예: preview, 고가 모델)로 트래픽이 몰리면 알림이 오게 합니다. 둘째, 세션에서
+      명시적으로 모델을 오버라이드하면 그 사실과 예상 비용 배수를 로그에 명확히 남기고, 일정 시간/세션 이후
+      자동으로 기본값에 원복하는 정책을 둡니다. 셋째, 업그레이드 직후에는 <code>openclaw models status</code>와
+      auth profile 상태를 스모크 테스트 체크리스트에 포함해서, 기본 모델이나 인증 상태가 조용히 바뀌지
+      않았는지 확인합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li><strong>auth profile 로테이션과 model fallback을 서로 다른 층위</strong>로 명확히 구분한다</li>
+          <li>라운드로빈이 lastGood을 <strong>의도적으로</strong> 무시한다는 설계 배경(공정성 vs 효율성
+          트레이드오프)을 설명한다</li>
+          <li>사용자 명시적 오버라이드와 자동 폴백의 <strong>비대칭</strong>(오버라이드는 fallback 없이 그대로
+          실패)을 안다</li>
+          <li><strong>실제 비용/신뢰성 사고 사례</strong>를 근거로 "failover = 안전"이 아니라는 걸 설명한다</li>
+          <li>에러 분류(retryable vs terminal) 자체가 틀릴 수 있다는 것과, 그게 실무에 미치는 영향(정상 키가
+          오래 막힘)을 안다</li>
+          <li>모니터링/알림/원복 정책 같은 <strong>구체적인 운영 대응책</strong>을 제시한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"auth profile이 여러 개면 로테이션되고, 실패하면 fallback 모델로 넘어간다"까지만 말하고 끝낸다</li>
+          <li>라운드로빈이 왜 lastGood을 안 쓰는지 모르거나 "버그 같다"고 단정한다</li>
+          <li>세션 오버라이드나 마이그레이션이 조용히 비용을 늘릴 수 있다는 리스크를 전혀 언급하지 않는다</li>
+          <li>에러 분류가 절대 틀리지 않는다고 전제한다</li>
+          <li>"failover가 있으니 안전하다"로 결론짓고 운영 대응책을 제시하지 못한다</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 "로테이션과 폴백이 있다"에서 멈추지 않는다. <strong>"이 자동화가
+      어떤 트레이드오프 위에 설계됐고, 그 트레이드오프가 실제로 어떤 사고를 만들어냈는지, 그리고 그걸 어떻게
+      모니터링할지"</strong>까지 설명한다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "여러 키를 등록하면 가장 최근에 성공한 키를 계속 쓸 것이다"</h3>
+    <p>
+      <strong>사실:</strong> lastGood 기준이 아니라, 타입 우선순위 후 <code>lastUsed</code> 기준 라운드로빈이다.
+      이건 특정 프로필에 트래픽이 몰려 다른 정상 프로필이 굶주리는 걸 막기 위한 <strong>의도적</strong> 선택이다
+      (관련 기능 요청 이슈는 not_planned로 종료됨).
+    </p>
+
+    <h3>오해 2: "model fallback 체인이 있으면 비용은 자동으로 안전하게 관리된다"</h3>
+    <p>
+      <strong>사실:</strong> 실제로는 세션 오버라이드가 조용히 세션 경계를 넘어 유지되거나, 업그레이드가 기본
+      모델을 조용히 유료 변형으로 바꾸거나, reasoning/thinking 설정이 조용히 바뀌어 비용이 몇 배로 뛴 사례가
+      보고돼 있다. 폴백/오버라이드 시스템은 <strong>가용성</strong>을 위한 설계이지 <strong>비용 통제</strong>를
+      위한 설계가 아니다.
+    </p>
+
+    <h3>오해 3: "인증 실패든 rate limit이든 서버 오류든, 다 같은 재시도 로직을 탄다"</h3>
+    <p>
+      <strong>사실:</strong> retryable(인증 실패, rate limit, 타임아웃 등)과 terminal(context length 초과,
+      명시적 abort)이 구분돼 있고, 이 분류 자체가 항상 정확한 것도 아니다 — 실제로 인증 오류를 일시적 오류로
+      잘못 분류해 정상 키를 오래 막아버린 버그 사례가 있다.
+    </p>
+
+    <h3>오해 4: "auth-profiles.json이 유일한 저장 방식이고 앞으로도 그럴 것이다"</h3>
+    <p>
+      <strong>사실:</strong> 2026.6.x부터 SQLite 저장소로의 전환이 진행 중이며, 이 전환 자체가 기존 프로필을
+      경고 없이 유실시키는 버그를 아직 안고 있다. OpenClaw는 저장 계층까지도 빠르게 바뀌는 프로젝트라는 걸
+      전제해야 한다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Model Provider/Auth 운영 시 확인할 것</h2>
+    <table>
+      <tr>
+        <th>단계</th>
+        <th>확인 사항</th>
+        <th>생략 시 위험</th>
+      </tr>
+      <tr>
+        <td>평상시</td>
+        <td><span class="badge badge-green">모델/프로필별 호출 수·비용을 분리해서 모니터링</span></td>
+        <td><span class="badge badge-red">조용한 모델 전환/비용 급증을 뒤늦게 발견</span></td>
+      </tr>
+      <tr>
+        <td>평상시</td>
+        <td><span class="badge badge-green">세션 <code>/model</code> 오버라이드의 원복/만료 정책 수립</span></td>
+        <td><span class="badge badge-red">compaction 이후에도 비싼 모델이 조용히 유지</span></td>
+      </tr>
+      <tr>
+        <td>업그레이드 전후</td>
+        <td><span class="badge badge-green"><code>openclaw models status</code>/auth profile 상태 스모크 테스트</span></td>
+        <td><span class="badge badge-yellow">기본 모델·인증 상태가 조용히 바뀐 채 방치</span></td>
+      </tr>
+      <tr>
+        <td>2026.6.x 이후 업그레이드</td>
+        <td><span class="badge badge-green">SQLite 마이그레이션 후 기존 auth profile이 실제로 이전됐는지 확인</span></td>
+        <td><span class="badge badge-red">OAuth/토큰 인증 전체가 조용히 끊기고 폴백도 무력화</span></td>
+      </tr>
+      <tr>
+        <td>장애 대응</td>
+        <td><span class="badge badge-green">에러가 잘못 분류돼 정상 키가 막혔을 가능성을 의심하고 수동 확인</span></td>
+        <td><span class="badge badge-yellow">이미 고친 키가 쿨다운 때문에 계속 밀림</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>auth profile과 model fallback을 구분하지 못하고 "장애가 나면 다른 모델로 바뀐다"로만 설명</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>2단계 구조(프로필 로테이션 → 모델 폴백)는 알지만, 정렬 로직이나 세션 pin의 이유는 설명 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>라운드로빈/타입 우선순위, 세션 pin의 목적, retryable/terminal 구분까지 설명할 수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>lastGood을 의도적으로 배제한 트레이드오프, 사용자 오버라이드와 자동 폴백의 비대칭, 실제 비용/신뢰성
+      사고 사례(세션 오버라이드 잔존, 조용한 모델 전환, 에러 오분류)를 근거로 들며, 이를 모니터링·원복 정책·
+      업그레이드 스모크 테스트 같은 구체적 운영 설계로 방어하는 방법까지 즉시 제시함</span>
+    </div>
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. auth profile 로테이션과 model fallback이 왜 서로 다른 층위의 대응인지 설명할 수 있는가?<br>
+      2. 라운드로빈이 lastGood을 의도적으로 무시하는 이유와 그 트레이드오프를 말할 수 있는가?<br>
+      3. 사용자 명시적 <code>/model</code> 오버라이드와 자동 폴백 경로가 실패 시 왜 다르게 동작하는지 아는가?<br>
+      4. 실제 GitHub에 보고된 비용/신뢰성 사고 사례를 최소 두 가지 이상 근거로 들 수 있는가?<br>
+      5. 이런 자동화를 안전하게 운영하기 위한 모니터링/정책을 스스로 설계해 말할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>장애 대응은 2단계다</strong> — 같은 provider·같은 모델 안의 auth profile 로테이션이 먼저,
+      그래도 실패하면 <code>agents.defaults.model.fallbacks</code>의 다음 모델로 전환한다.</li>
+      <li><strong>프로필 정렬은 타입 우선순위 + lastUsed 라운드로빈이고, lastGood은 의도적으로 무시</strong>한다
+      — 공정성을 최근 성공 이력보다 우선한 설계 선택이다.</li>
+      <li><strong>세션 pin은 provider 캐싱 효율을 위한 것</strong>이고, 실제 실패가 감지될 때만 풀린다.</li>
+      <li><strong>사용자 명시적 오버라이드는 자동 폴백을 타지 않는다</strong> — 자동 폴백은 설정된 기본 모델
+      경로에서만 전체 체인을 순회한다.</li>
+      <li><strong>failover는 비용 안전망이 아니다</strong> — 세션 오버라이드 잔존, 조용한 기본 모델 전환,
+      reasoning 기본값 변경으로 인한 실제 과금 사고가 GitHub 이슈로 보고돼 있다.</li>
+      <li><strong>에러 분류(retryable/terminal) 자체가 틀릴 수 있다</strong> — 인증 오류를 일시적 오류로
+      오분류해 정상 키가 오래 막힌 버그 사례가 있다.</li>
+      <li><strong>auth 저장소 자체도 2026.6.x부터 SQLite로 전환 중</strong>이며, 이 전환이 기존 프로필을
+      경고 없이 유실시킬 수 있다는 미해결 이슈가 있다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 4 완료 · 다음: Day 5 — Tools와 Tool Dispatch 보안</span>
+  </div>
+
+</div>
+</body>
+</html>

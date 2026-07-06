@@ -7,12 +7,12 @@
 | 1 | 2026-07-03 | OpenClaw Gateway와 local-first agent 운영 프레임워크 | [0001-openclaw-gateway-local-first-operating-framework.html](lessons/0001-openclaw-gateway-local-first-operating-framework.html) |
 | 2 | 2026-07-04 | 멀티채널 통합과 메시지 라우팅 | [0002-multichannel-integration-message-routing.html](lessons/0002-multichannel-integration-message-routing.html) |
 | 3 | 2026-07-05 | 온보딩과 업데이트/마이그레이션 흐름 | [0003-onboarding-update-migration-flow.html](lessons/0003-onboarding-update-migration-flow.html) |
+| 4 | 2026-07-06 | Model Provider 설정과 Auth Profile Rotation/Failover | [0004-model-provider-auth-profile-rotation-failover.html](lessons/0004-model-provider-auth-profile-rotation-failover.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | Model Provider 설정과 Auth Profile Rotation/Failover | auth-profiles.json, profile pinning(auto vs user), 라운드로빈 순서, cooldown/backoff, 에러 분류 |
 | 5 | Tools와 Tool Dispatch 보안 | tool router, 실행 정책(approve/deny), exec/browser/read tool 권한 스코핑, least-privilege 설계 |
 | 6 | Sessions, Prompt/Memory 파일 | SOUL.md/AGENTS.md/USER.md, agentDir 격리, daily memory, 부트스트랩 주입, 컨텍스트 예산 |
 | 7 | Skills와 ClawHub | SKILL.md 구조, skill install/update, clawhub CLI, 벡터 검색, moderation hook |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — 다음: Day 4 — Model Provider 설정과 Auth Profile Rotation/Failover
+**Day 4 완료** — 다음: Day 5 — Tools와 Tool Dispatch 보안
 
 ## 습득한 핵심 개념
 
@@ -37,7 +37,7 @@
 - [x] 8-tier 바인딩 우선순위(구체성 기준: peer → parent peer → guild+roles → guild → team → account → channel → default) (Day 2)
 - [x] 세션 키 스코핑(DM 합침 vs 그룹/스레드 쪼갬), 채널 config 네임스페이스(`channels.<channel>.accounts.<id>`)와 `defaultAccount` 리스크 (Day 2)
 - [x] `onboard`(quickstart/manual/import) vs `migrate`(타 도구 import 전용 dry-run/backup) vs `doctor --fix`(사후 복구)의 경계, 버전 간 config 스키마 변경에 대한 proactive diff 도구 공백(GitHub #35957/#38249) (Day 3)
-- [ ] Model provider 설정, auth profile rotation/failover (예정 Day 4)
+- [x] 2단계 failover 구조(auth profile 로테이션 → model fallback), 정렬 로직(타입 우선순위 + lastUsed 라운드로빈, lastGood 의도적 배제), 세션 pin, retryable/terminal 에러 분류, 2026.6.x JSON→SQLite auth 저장소 마이그레이션 리스크, 실제 비용/신뢰성 사고 사례(GitHub #100067/#48623/#99809/#99993/#92864/#74395/#73182/#92674/#88371) (Day 4)
 - [ ] Tool dispatch 보안 (예정 Day 5)
 - [ ] Sessions, prompt/memory 파일 (예정 Day 6)
 - [ ] Skills, ClawHub (예정 Day 7)
