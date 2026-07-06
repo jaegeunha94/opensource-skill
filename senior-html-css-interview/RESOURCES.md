@@ -51,6 +51,8 @@
 | **WAVE (WebAIM)** | 접근성 위반을 페이지 위에 시각적으로 표시 |
 | **VoiceOver(macOS/iOS) / NVDA(Windows)** | 실제 스크린 리더 사용자 경험 재현 |
 | **Can I Use** — https://caniuse.com | 브라우저별 CSS/HTML 기능 지원 여부 확인 |
+| **Google Search Console — URL 검사 도구** | 구글이 실제로 색인한 렌더링 결과와 색인 가능 여부 확인 |
+| **Rich Results Test (Google)** | JSON-LD 구조화 데이터의 rich result 노출 가능 여부 검증 |
 
 ## 핵심 개념 사전 이해용
 
@@ -62,3 +64,4 @@
 | Cascade Layers (`@layer`) | MDN — "@layer" + web.dev 소개 글 |
 | Container Query | MDN — "CSS container queries" |
 | Design Token 개념 | Design Tokens Community Group — https://design-tokens.github.io/community-group/format/ |
+| JavaScript SEO / 크롤러 렌더링 | Google Search Central — "JavaScript SEO basics" |
