@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — CDN 캐시 전략과 Cache Rules</title>
+  <style>
+    :root {
+      --bg: #14100c;
+      --surface: #211a13;
+      --surface2: #2b221a;
+      --border: #4a3a26;
+      --accent: #f6821f;
+      --accent2: #4fd1c5;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #f2e9de;
+      --text2: #c9b8a3;
+      --text3: #8f8071;
+      --good: #4fd1c5;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    a.source { color: var(--accent2); }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card { border-left: 4px solid var(--accent); }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card {
+      border-left: 4px solid var(--accent2);
+      background: #142523;
+    }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card {
+      border-left: 4px solid var(--warn);
+      background: #201c10;
+    }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card {
+      border-left: 4px solid #c99bff;
+      background: #1e1828;
+    }
+    .answer-card .card-label { color: #c99bff; }
+    .incident-card {
+      border-left: 4px solid var(--weak);
+      background: #2a1512;
+    }
+    .incident-card .card-label { color: var(--weak); }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box {
+      background: #12241f;
+      border: 1px solid var(--good);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box {
+      background: #2a1512;
+      border: 1px solid var(--weak);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.91rem;
+      margin-top: 0.5rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:nth-child(odd) td { background: #1a140e; }
+    .rubric-table tr:nth-child(even) td { background: #211a13; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .layer-stack { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.2rem; }
+    .layer-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent2);
+      border-radius: 8px;
+      padding: 0.85rem 1.1rem;
+    }
+    .layer-name { font-weight: 700; color: var(--accent2); font-size: 0.95rem; }
+    .layer-desc { font-size: 0.85rem; color: var(--text2); margin-top: 0.2rem; }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.2rem;
+      margin-bottom: 0.7rem;
+    }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.1rem;
+      background: var(--accent);
+      color: #1a1408;
+      font-weight: 700;
+      font-size: 0.78rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .misconception {
+      background: #201530;
+      border: 1px solid #6e3880;
+      border-radius: 8px;
+      padding: 1rem 1.3rem;
+      margin-bottom: 0.9rem;
+    }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 0.75rem;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      margin: 0.15rem 0.15rem 0.15rem 0;
+    }
+    .freshness-note {
+      background: #142523;
+      border: 1px dashed var(--accent2);
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      font-size: 0.87rem;
+      color: var(--text2);
+      margin-bottom: 2rem;
+    }
+    .freshness-note strong { color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 3 · Cloudflare 구성 인터뷰 대비</div>
+    <h1>CDN 캐시 전략과 Cache Rules</h1>
+    <p class="subtitle">
+      Cache Rules 세부 설계 · Cache Key 커스터마이징 · Edge TTL vs Browser TTL · Tiered Cache(Smart Shield) · 캐시 스탬피드 방지의 2026년 변화
+    </p>
+  </header>
+
+  <div class="freshness-note">
+    <strong>커리큘럼 최신성 안내 (2026-07-06 기준 확인)</strong> — 이 레슨은 Cloudflare 공식 문서(Cache Rules settings, Edge/Browser Cache TTL, Cache Key customization, default cache behavior, Tiered Cache)와 공식 changelog/블로그를 다시 확인해 작성했다.
+    Day 1~2 이후 새로 확인한 핵심 변화 두 가지: ① <strong>Tiered Cache(Argo Smart Routing, Regional Tiered Cache, Cache Reserve, Connection Reuse)는 2026년 기준 "Smart Shield"라는 하나의 origin 보호 상품 우산 아래로 재편</strong>됐다 — 예전에는 각각 별도 토글이었다.
+    ② <strong>stale-while-revalidate가 2026-02부터 비동기(asynchronous) 방식으로 전환</strong>됐다 — 과거에는 캐시 만료 후 첫 요청이 origin 응답을 기다려야 했지만, 지금은 첫 요청도 즉시 stale 콘텐츠를 받고 백그라운드에서 갱신이 일어난다(<code>UPDATING</code> 상태). 대용량/스트리밍 파일에는 "Concurrent Streaming Acceleration"으로 캐시 락 자체를 제거해 origin에서 받아오는 도중에도 여러 클라이언트가 동시에 읽을 수 있다. 이 변화는 "캐시 스탬피드" 답변의 핵심 최신 근거이므로 이 레슨에서 비중 있게 다룬다.
+  </div>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "트래픽이 많은 서비스에서 캐시 히트율을 최대한 끌어올리면서도, 캐시 만료 순간 origin이 폭주하는 캐시 스탬피드(cache stampede)를 막고, 사용자별로 다른 콘텐츠가 서로 뒤섞여 노출되는 사고 없이 캐시를 설계한다면 어떻게 하시겠습니까? Cache Rules는 레거시 Page Rules의 캐시 설정을 정확히 어떻게 대체하나요?"
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"Edge TTL과 Browser TTL은 뭐가 다르고, 왜 둘을 다르게 설정해야 하는 경우가 있나요?"</li>
+        <li>"Cache Key를 커스터마이징한다는 게 무슨 뜻이고, 잘못 설계하면 어떤 사고가 나나요?"</li>
+        <li>"Tiered Cache는 origin 부하를 어떻게 줄이나요? 지리적으로 흩어진 origin에서는 뭐가 다른가요?"</li>
+        <li>"캐시가 만료되는 순간 수만 건의 요청이 동시에 들어오면 무슨 일이 벌어지나요? Cloudflare는 이걸 어떻게 막나요?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">Cache Rules 3가지 Edge TTL 모드</span>
+      <span class="tag">Cache Key 커스터마이징</span>
+      <span class="tag">Tiered Cache / Smart Shield</span>
+      <span class="tag">캐시 스탬피드</span>
+      <span class="tag">비동기 stale-while-revalidate(2026)</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>CDN 캐시의 본질 — "origin에게 같은 질문을 두 번 안 하기"</h3>
+    <p>
+      CDN 캐시는 결국 "이미 답을 알고 있는 질문에 origin이 매번 다시 대답하지 않게 하는" 장치다. 방문자가 이미지, CSS, HTML 같은 응답을 요청하면, Cloudflare는 그 응답을 자기 엣지 서버(전 세계 데이터센터, PoP)에 저장해두고 다음 방문자에게는 origin을 거치지 않고 바로 돌려준다.
+      이게 잘 되면 origin 서버 부하와 지연시간이 동시에 줄어든다. 문제는 <strong>"얼마나 오래 저장할지(TTL)", "무엇을 기준으로 같은 응답인지 구분할지(Cache Key)", "저장소를 어떻게 계층화할지(Tiered Cache)", "만료 순간 몰리는 요청을 어떻게 처리할지(스탬피드 방지)"</strong>를 잘못 설계하면 캐시가 오히려 장애의 원인이 된다는 점이다.
+    </p>
+
+    <h3>기본 캐시 동작 — 무엇이 기본으로 캐싱되는가</h3>
+    <p>
+      Cloudflare는 기본적으로 <strong>확장자 기반</strong>으로 캐시 여부를 정한다. 이미지, CSS, JS, 폰트 같은 정적 파일 확장자는 기본적으로 캐싱되지만, <code>.html</code>이나 API 응답(JSON)은 <strong>기본적으로 캐싱되지 않는다</strong> — 로그인 상태, 개인화된 콘텐츠가 섞여 있을 가능성이 높기 때문이다.
+      또한 origin 응답에 <code>Set-Cookie</code> 헤더가 있으면 그 응답은 기본적으로 캐싱에서 제외된다(개인 세션 정보가 다른 사용자에게 새어나가는 것을 막기 위한 안전장치).
+    </p>
+
+    <h3>Edge TTL vs Browser TTL — "누구의 캐시를 얼마나 신뢰할 것인가"</h3>
+    <p>
+      이 둘을 혼동하는 게 실무에서 제일 흔한 실수다. <strong>Edge TTL</strong>은 Cloudflare의 엣지 서버(우리가 아직 통제할 수 있는 인프라)에 응답을 얼마나 오래 저장할지를 정한다. <strong>Browser TTL</strong>은 방문자의 브라우저(우리가 전혀 통제할 수 없는 클라이언트 로컬 캐시)에 얼마나 오래 저장할지를 정한다.
+    </p>
+    <div class="card why-card">
+      <div class="card-label">왜 둘을 다르게 설정해야 하는가</div>
+      <p>
+        Edge TTL이 만료되면 Cloudflare가 다시 origin에 물어봐서 최신 콘텐츠로 갱신할 수 있다. 하지만 Browser TTL이 만료되기 전에는, <strong>Cloudflare가 아무리 최신 콘텐츠를 갖고 있어도 그 사용자의 브라우저는 자기 로컬 캐시에 있는 옛날 응답을 계속 쓴다</strong> — 강제로 갱신시킬 방법이 없다(캐시 무효화를 브라우저에 원격으로 지시할 수 없다).
+        그래서 자주 바뀔 수 있는 리소스는 Browser TTL을 짧게(또는 0에 가깝게), Edge TTL은 상대적으로 길게 잡아서 "origin 부하는 줄이되, 사용자에게 옛날 콘텐츠가 오래 고정되는 리스크는 낮추는" 조합을 쓴다. 반대로 버전 해시가 파일명에 박혀 있는 정적 자산(예: <code>app.a1b2c3.js</code>)은 내용이 바뀌면 파일명 자체가 바뀌므로 Browser TTL을 아주 길게 잡아도 안전하다.
+      </p>
+    </div>
+
+    <h3>Cache Rules — Edge TTL을 결정하는 3가지 모드</h3>
+    <p>
+      Cache Rules에서 Edge TTL을 설정하는 방식은 세 갈래로 나뉜다. 이 선택이 곧 "누구를 신뢰의 기준으로 삼을지"를 정하는 결정이다.
+    </p>
+    <div class="layer-stack">
+      <div class="layer-box">
+        <div class="layer-name">1. Cache-Control 있으면 따르고, 없으면 캐시하지 않음(bypass)</div>
+        <div class="layer-desc">origin이 명시적으로 캐시 지침을 준 경우에만 캐싱한다. 가장 보수적 — origin 개발자가 캐시 정책의 최종 결정권을 갖는다.</div>
+      </div>
+      <div class="layer-box">
+        <div class="layer-name">2. Cache-Control 있으면 따르고, 없으면 Cloudflare 기본 동작 사용</div>
+        <div class="layer-desc">origin이 지침을 안 주면 Cloudflare의 기본 캐시 규칙(확장자 기반)으로 대체한다. 실무에서 가장 널리 쓰이는 절충안.</div>
+      </div>
+      <div class="layer-box" style="border-left-color: var(--good);">
+        <div class="layer-name" style="color:var(--good);">3. Cache-Control을 무시하고 지정한 TTL을 강제</div>
+        <div class="layer-desc">origin이 뭐라고 하든 Cloudflare가 정한 시간만큼 캐싱한다. origin 코드를 못 건드리는 legacy 시스템이나, "이 경로는 무조건 이 정책"을 강제해야 하는 상황에 쓴다. 잘못 쓰면 origin이 의도한 캐시 무효화 신호를 무시하게 되는 위험이 있다.</div>
+      </div>
+    </div>
+
+    <h3>Cache Key 커스터마이징 — "무엇을 기준으로 같은 응답이라고 볼 것인가"</h3>
+    <p>
+      기본 Cache Key는 <strong>host + path + query string</strong>이다. 즉 쿼리 스트링이 한 글자만 달라도 Cloudflare는 다른 응답으로 취급해서 별도로 캐싱한다. 이게 문제가 되는 대표 사례가 <code>?utm_source=</code>, <code>?v=</code> 같은 <strong>캐시 버스터/트래킹 파라미터</strong>다 — 실제 콘텐츠는 완전히 동일한데, 파라미터 조합 수만큼 캐시 항목이 쪼개져서 히트율이 급락한다.
+    </p>
+    <div class="card concept-card">
+      <div class="card-label">커스터마이징 방향 두 가지</div>
+      <p>
+        ① <strong>쿼리 스트링을 무시하거나 특정 파라미터만 포함</strong>: 정적 자산처럼 쿼리 스트링이 콘텐츠에 영향을 주지 않으면 아예 무시하고, <code>id</code>나 <code>lang</code>처럼 실제로 다른 콘텐츠를 만드는 파라미터만 선택적으로 포함한다.
+      </p>
+      <p>
+        ② <strong>특정 헤더/쿠키를 Cache Key에 포함</strong>: <code>Accept-Language</code>를 포함하면 언어별로 다른 HTML을 올바르게 구분해서 캐싱할 수 있고, <code>CF-Device-Type</code>을 포함하면 모바일/데스크톱 버전을 구분할 수 있다. 쿠키를 Cache Key에 포함하는 건 드물게 쓰이는데, 대부분의 경우 "쿠키 기반으로 캐시를 나눈다"보다는 "그 요청 자체를 캐시에서 제외(bypass)한다"는 신호로 쓰는 게 더 안전하다.
+      </p>
+    </div>
+    <div class="card why-card">
+      <div class="card-label">Cache Key 설계 실수가 만드는 두 가지 사고</div>
+      <p>
+        ① <strong>히트율 붕괴</strong>: 트래킹 파라미터를 Cache Key에서 빼지 않으면 사실상 캐싱이 거의 작동하지 않는 것과 같은 효과가 난다.
+        ② <strong>캐시 오염(cache poisoning)/개인정보 노출</strong>: 반대로 <strong>사용자를 구분해야 하는 신호(예: 로그인 세션을 나타내는 헤더나 쿠키)를 Cache Key에서 빠뜨리면</strong>, A라는 사용자에게 만들어진 개인화 응답이 캐싱된 뒤 B라는 사용자에게 그대로 재사용되는 심각한 사고로 이어진다. Cache Key 설계는 "히트율을 올리는 작업"이자 동시에 "누구의 응답과 누구의 응답을 절대 섞으면 안 되는지를 정의하는 보안 경계 작업"이다.
+      </p>
+    </div>
+
+    <h3>Tiered Cache — 엣지를 계층화해서 origin 요청 자체를 줄이기</h3>
+    <p>
+      Cloudflare PoP은 전 세계 수백 곳에 있다. Tiered Cache가 없으면, 캐시가 만료될 때마다 <strong>각 PoP이 각자 독립적으로 origin에 재검증 요청을 보낸다</strong> — PoP 수만큼 origin이 두들겨 맞는 구조다.
+      Tiered Cache는 PoP을 <strong>lower-tier(방문자와 가까운 엣지)와 upper-tier(origin과 가까운 상위 계층)</strong>로 나눠서, <strong>upper-tier만 origin에 직접 요청</strong>하도록 강제한다. lower-tier는 캐시가 없으면 origin이 아니라 upper-tier에게 먼저 물어본다.
+    </p>
+    <div class="card concept-card">
+      <div class="card-label">Smart Tiered Cache — 그리고 2026년의 "Smart Shield" 재편</div>
+      <p>
+        Smart Tiered Cache는 지연시간 데이터를 기반으로 <strong>origin마다 가장 가까운 upper-tier를 자동으로 선택</strong>한다(수동 토폴로지 설정 불필요). 클라우드에 호스팅된 origin처럼 anycast/리전 네트워킹 때문에 지연시간만으로 위치 추정이 어려운 경우, <strong>cloud region hint</strong>를 지정해 정확도를 높일 수 있다.
+        2026년 기준 공식 문서 구조가 바뀌어, Smart Tiered Cache·Regional Tiered Cache·Cache Reserve·Connection Reuse·Argo Smart Routing이 <strong>"Smart Shield"라는 하나의 origin 보호 상품군</strong>으로 재편됐다. 개념 자체(계층화로 origin 요청을 줄인다)는 그대로지만, 인터뷰에서 "Tiered Cache가 정확히 어떤 상품 이름 아래 있느냐"를 물으면 이 재편을 아는지로 최신성을 가늠할 수 있다.
+      </p>
+    </div>
+
+    <h3>캐시 스탬피드(cache stampede) — 그리고 2026년의 핵심 변화</h3>
+    <p>
+      캐시 스탬피드(thundering herd)는 <strong>인기 있는 캐시 항목이 만료되는 바로 그 순간, 동시에 도착한 수많은 요청이 전부 "캐시 미스"로 판정돼 origin으로 그대로 몰리는 현상</strong>이다. 평소엔 캐시가 origin을 보호하다가, 만료 순간에는 오히려 "동시에 재검증하려는 요청들"이 origin에 순간적인 과부하를 만든다.
+    </p>
+    <div class="card concept-card">
+      <div class="card-label">Cloudflare의 기본 방어 — request collapsing(cache lock)</div>
+      <p>
+        Cloudflare 엣지는 기본적으로 <strong>같은 자산에 대해 동시에 여러 요청이 캐시 미스/만료를 겪으면, 그중 딱 하나만 origin으로 실제 요청을 보내고 나머지는 그 응답을 기다렸다가 함께 받는다</strong>(요청 병합, per-asset cache lock). origin 입장에서는 수천 개의 동시 요청이 아니라 요청 1건만 보이므로, 스탬피드가 origin까지 전파되지 않는다.
+      </p>
+    </div>
+    <div class="card why-card">
+      <div class="card-label">2026-02 변화 — stale-while-revalidate의 비동기 전환</div>
+      <p>
+        기존에는 캐시가 만료된 뒤 "가장 먼저 도착한 요청"이 origin 응답이 돌아올 때까지 <strong>기다려야 했다</strong>(그 방문자는 REVALIDATED/EXPIRED 상태를 최종적으로 받았다). 즉 request collapsing이 origin 부하는 막아줬지만, 그 대표 요청을 보낸 방문자 한 명은 여전히 origin 지연시간을 그대로 체감했다.
+        2026-02부터 Cloudflare는 이 과정을 <strong>완전히 비동기로</strong> 바꿨다. 만료 직후 도착한 요청은 <strong>origin을 기다리지 않고 즉시 기존 stale 콘텐츠를 <code>UPDATING</code> 상태로 받고</strong>, 갱신은 백그라운드에서 별도로 진행된다. 결과적으로 <strong>모든 방문자가 항상 캐시에서(즉시) 응답을 받고</strong>, origin 지연이나 일시적 오류가 방문자 체감 지연으로 전혀 전파되지 않는다.
+      </p>
+    </div>
+    <div class="card concept-card">
+      <div class="card-label">대용량/스트리밍 파일 특수 케이스 — Concurrent Streaming Acceleration</div>
+      <p>
+        라이브 스트리밍이나 대용량 파일처럼 "응답을 origin에서 아직 받는 중"인 상태가 오래 지속되는 경우, 과거의 cache lock 방식은 그 응답이 완전히 끝날 때까지 다른 클라이언트를 대기시켰다(실측 사례: OTT 고객의 캐시 락 대기시간이 P99 기준 1.5초).
+        Cloudflare는 이 케이스를 위해 <strong>캐시 락 자체를 제거</strong>하고, origin에서 파일을 받아오는 도중에도 <strong>여러 클라이언트가 이미 받은 부분부터 동시에 읽을 수 있게</strong> 만들었다(단일 origin fetch + 다중 동시 read). 스탬피드 방지의 목표(origin에는 요청 1건만 가도록)는 유지하면서, 방문자 체감 대기시간을 사실상 제거한 것이다.
+      </p>
+    </div>
+
+    <h3>Cache Rules와 레거시 Page Rules의 경계 (Day 1/2 복습 + 캐시 세부 매핑)</h3>
+    <p>
+      Day 1~2에서 다뤘듯 Page Rules는 공식적으로 deprecated고 신규 생성이 전 플랜에서 차단됐다. 캐시 관점에서 구체적으로 매핑하면: 과거 Page Rules의 <code>Cache Level</code>, <code>Edge Cache TTL</code>, <code>Browser Cache TTL</code>, <code>Bypass Cache on Cookie</code> 설정은 각각 Cache Rules의 <strong>Cache Eligibility, Edge TTL, Browser TTL, Cache Key(쿠키 조건)/Bypass 액션</strong>으로 대체된다.
+      가장 중요한 실무 차이는 <strong>평가 방식</strong>이다 — Page Rules는 URL 패턴 매치 시 "가장 먼저 매치된 규칙"이 우선했지만, Cache Rules(다른 Rules 제품군과 동일)는 <strong>목록 순서대로 평가하되 나중에 실행된 규칙이 같은 필드를 덮어쓸 수 있는</strong> 방식이라, 규칙 순서를 Page Rules 시절의 직관대로 짜면 의도와 다르게 동작할 수 있다.
+    </p>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>캐시를 "히트율 지표" 하나로만 보지 않는가:</strong> 히트율을 올리는 선택(쿼리 스트링 무시, 긴 TTL)이 신선도·개인정보 격리와 어떻게 충돌하는지 균형을 잡을 수 있는가</li>
+        <li><strong>캐시 오염/개인정보 노출을 보안 경계 문제로 인식하는가:</strong> Cache Key 설계 실수가 곧 "다른 사용자의 데이터가 섞이는 사고"로 이어질 수 있음을 아는가</li>
+        <li><strong>대규모 트래픽 하의 실패 모드를 예측하는가:</strong> 캐시가 만료되는 "그 순간"에 무슨 일이 벌어지는지(스탬피드) 구조적으로 설명할 수 있는가</li>
+        <li><strong>최신 운영 표준을 따라가고 있는가:</strong> Cloudflare가 스탬피드 대응을 어떻게 발전시켜왔는지(request collapsing → 비동기 SWR → 캐시 락 제거) 아는 사람은 실제로 최신 문서/changelog를 챙겨보는 습관이 있다는 신호다</li>
+      </ul>
+    </div>
+
+    <p>
+      이 질문은 "TTL을 설정할 줄 아는가"를 넘어, <strong>"캐시가 성능 최적화 도구인 동시에 보안 경계이자 장애 원인이 될 수 있다는 걸 아는가"</strong>를 검증한다. 대규모 트래픽 서비스를 실제로 운영해본 사람만 스탬피드와 캐시 오염을 자연스럽게 같이 언급한다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <div class="card incident-card">
+      <div class="card-label">시나리오 1 — 개인화 응답이 다른 사용자에게 노출된 캐시 오염 사고</div>
+      <p>
+        마이페이지 API가 사용자별로 다른 데이터를 응답하는데, 이 응답 헤더에 <code>Set-Cookie</code>가 없어서 기본 캐시 예외 대상이 아니었고, 팀이 성능 개선을 위해 이 경로에 Cache Rules로 강제 캐싱을 걸었다. 문제는 사용자 식별이 URL이나 쿼리 스트링이 아니라 <strong>인증 헤더(Authorization)</strong>로만 이뤄졌는데, Cache Key에는 이 헤더를 포함하지 않았다는 점이다.
+        결과적으로 첫 번째 사용자의 응답이 캐싱된 뒤, 같은 URL로 요청한 다른 사용자들이 첫 번째 사용자의 개인 데이터를 그대로 받는 사고가 발생했다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: "캐싱해도 되는 경로인가"를 URL 패턴만으로 판단하면 안 되고, 그 응답이 요청자에 따라 달라지는 근거(헤더/쿠키/세션)가 Cache Key에 반영돼 있는지까지 확인해야 한다.</p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">시나리오 2 — 이벤트 시작 순간 캐시 스탬피드로 origin 다운</div>
+      <p>
+        선착순 이벤트 페이지의 캐시 TTL을 60초로 짧게 잡아 "최신성"을 유지하려 했는데, 이벤트 시작 정각에 수만 명이 동시 접속했다. 마침 그 순간이 60초 TTL의 만료 시점과 겹치면서, request collapsing이 없었다면(또는 이 기능이 적용되기 전 구성이었다면) 수만 건의 요청이 동시에 캐시 미스로 판정돼 origin에 그대로 몰릴 뻔한 상황이었다.
+        사후 분석에서 팀은 "TTL을 짧게 잡을수록 신선하다"는 생각만 했지, <strong>다수 요청이 동시에 만료 순간과 겹칠 확률</strong>은 고려하지 않았다는 걸 확인했다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: TTL은 "신선도"만의 문제가 아니라 "만료 시점에 트래픽이 몰릴 가능성"까지 함께 설계해야 하는 값이다. 트래픽 급증이 예정된 이벤트라면 TTL을 이벤트 시작 시점과 정렬되지 않도록 지터(jitter)를 주거나, 사전 워밍(pre-warming)으로 만료 자체를 피하는 전략이 필요하다.</p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">시나리오 3 — 쿼리 스트링 트래킹 파라미터로 인한 히트율 붕괴</div>
+      <p>
+        마케팅팀이 모든 랜딩 페이지 링크에 <code>utm_source</code>, <code>utm_campaign</code> 등 트래킹 파라미터를 붙이기 시작한 뒤, 같은 콘텐츠임에도 캐시 히트율이 급격히 떨어지고 origin 트래픽이 눈에 띄게 늘었다. 원인은 기본 Cache Key가 쿼리 스트링 전체를 포함해서, 파라미터 조합 수만큼 캐시 항목이 쪼개진 것이었다.
+        Cache Key에서 트래킹 파라미터를 제외하도록 Cache Rules를 조정한 뒤 히트율이 정상으로 돌아왔다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: 캐시 성능 저하의 원인이 "인프라 문제"가 아니라 "다른 팀이 붙인 쿼리 파라미터"인 경우가 실무에서 매우 흔하다. Cache Key 설계는 마케팅/프론트엔드 팀의 URL 관행까지 감안해야 한다.</p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">시나리오 4 — Page Rules → Cache Rules 마이그레이션 중 규칙 순서 오해</div>
+      <p>
+        팀이 기존 Page Rules 여러 개를 Cache Rules로 전환하면서, "먼저 매치되는 규칙이 이긴다"는 Page Rules 시절의 습관대로 규칙을 나열했다. 하지만 Cache Rules는 목록을 순서대로 평가하며 이후 규칙이 같은 필드를 덮어쓸 수 있는 방식이라, 의도했던 것과 반대로 마지막 규칙의 설정이 최종 반영되면서 특정 경로의 캐시 정책이 예상과 다르게 동작했다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: 마이그레이션은 "같은 설정을 새 UI에 옮기는 작업"이 아니라 "평가 모델 자체가 다르다는 것을 이해하고 순서를 재설계하는 작업"이다.</p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>"대규모 트래픽 서비스의 캐시를 어떻게 설계하시겠습니까"라는 질문에는 아래 순서로 답한다.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>캐시 대상과 신선도 요구사항 정의</strong>
+        <p>어떤 응답이 사용자별로 달라지는지(개인화 여부)부터 구분한다. 정적 자산/공용 콘텐츠와 개인화 응답을 먼저 분리하지 않으면 이후 모든 설계가 흔들린다.</p>
+      </li>
+      <li>
+        <strong>Edge TTL / Browser TTL을 분리해서 설계</strong>
+        <p>origin 부하 감소는 Edge TTL로, 클라이언트 체감 최신성은 Browser TTL로 각각 목표를 정한다. 버전 해시가 있는 정적 자산과 그렇지 않은 자산을 다르게 취급한다.</p>
+      </li>
+      <li>
+        <strong>Cache Key를 "히트율"과 "격리 경계" 두 기준으로 설계</strong>
+        <p>트래킹 파라미터는 제외해 히트율을 지키고, 언어/디바이스처럼 실제 콘텐츠를 가르는 신호는 포함한다. 동시에 사용자를 구분해야 하는 인증 신호가 캐시 대상 응답에 존재하는지 반드시 확인한다.</p>
+      </li>
+      <li>
+        <strong>Tiered Cache로 origin 요청 자체를 줄인다</strong>
+        <p>Smart Tiered Cache(현재 Smart Shield 산하)를 활성화해 PoP별 개별 origin 요청을 상위 계층으로 집약한다. origin이 특정 클라우드 리전에 있다면 cloud region hint로 정확도를 높인다.</p>
+      </li>
+      <li>
+        <strong>만료 순간의 동시성(스탬피드)까지 설계에 포함</strong>
+        <p>request collapsing과 비동기 stale-while-revalidate가 기본으로 동작한다는 걸 인지하고, 트래픽 급증이 예정된 이벤트성 콘텐츠는 TTL 만료 시점에 지터를 주거나 사전 워밍으로 "동시 만료"를 피한다.</p>
+      </li>
+      <li>
+        <strong>레거시 Page Rules와의 경계 확인(마이그레이션 상황이라면)</strong>
+        <p>Cache Level/Edge TTL/Browser TTL/Bypass on Cookie가 Cache Rules의 어떤 필드로 매핑되는지 확인하고, 평가 순서 모델이 다르다는 것을 감안해 규칙 순서를 재설계한다.</p>
+      </li>
+    </ol>
+
+    <div class="card why-card">
+      <div class="card-label">핵심 팁</div>
+      <p>이 순서에서 <strong>"개인화 여부를 먼저 나눴는가"와 "만료 순간의 동시성을 고려했는가"</strong> 두 가지를 스스로 먼저 언급하는 것이 시니어 답변의 핵심이다. 둘 다 놓치면 각각 개인정보 사고와 장애로 직결된다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — 대규모 트래픽 캐시 설계</div>
+      <p>
+        "가장 먼저 하는 건 응답을 개인화 여부로 나누는 겁니다. 정적 자산과 공용 콘텐츠는 적극적으로 캐싱 대상으로 삼고, 사용자별로 달라지는 응답은 원칙적으로 캐싱하지 않거나, 캐싱하더라도 Cache Key에 사용자를 구분하는 헤더나 쿠키를 반드시 포함시킵니다. Cache Key 설계 실수는 단순한 성능 문제가 아니라 다른 사용자의 데이터가 섞여 노출되는 보안 사고로 이어질 수 있다고 생각하기 때문입니다.
+      </p>
+      <p>
+        TTL은 Edge TTL과 Browser TTL을 분리해서 설계합니다. origin 부하를 줄이는 건 Edge TTL의 역할이고, 클라이언트가 옛 콘텐츠를 얼마나 오래 들고 있을지는 Browser TTL의 역할이라, 버전 해시가 없는 자원은 Browser TTL을 짧게 잡아 강제 갱신이 안 된다는 리스크를 관리합니다.
+      </p>
+      <p>
+        Cache Key는 쿼리 스트링 전체를 그대로 두지 않고, 트래킹 파라미터처럼 콘텐츠에 영향을 주지 않는 값은 제외해서 히트율을 지킵니다. 지리적으로 흩어진 origin이라면 Tiered Cache(현재는 Smart Shield 산하의 Smart Tiered Cache)로 각 PoP의 개별 origin 요청을 상위 계층으로 모아 origin 요청 수 자체를 줄입니다.
+      </p>
+      <p>
+        마지막으로 캐시 만료 순간의 동시성을 별도로 고려합니다. Cloudflare는 기본적으로 요청 병합(request collapsing)으로 동시 요청을 origin 요청 1건으로 줄이고, 2026년부터는 stale-while-revalidate가 비동기로 동작해서 만료 직후 도착한 요청도 origin을 기다리지 않고 즉시 기존 콘텐츠를 받습니다. 다만 이벤트처럼 트래픽 급증 시점이 예측 가능한 경우에는, TTL 만료 시점에 지터를 주거나 사전 워밍을 걸어서 애초에 대량 동시 만료 자체를 피하는 전략을 추가로 씁니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① 개인화 여부 구분을 캐시 설계의 첫 단계로 제시 ② Edge/Browser TTL을 목적에 따라 분리 ③ Cache Key를 히트율과 보안 경계 양쪽 관점에서 설명 ④ 스탬피드 대응의 최신 변화(비동기 SWR)까지 인지 ⑤ "기본 방어 + 예측 가능한 상황에 대한 추가 전략"을 구분해서 설명
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "Cache-Control 헤더를 origin이 이미 잘 내려주고 있다면, Cache Rules로 TTL을 따로 강제할 필요가 있나요?"</div>
+      <div class="followup-a">
+        <p>origin 코드를 직접 통제할 수 있고 Cache-Control이 신뢰할 만하다면, 첫 번째 모드("Cache-Control 있으면 따르고 없으면 bypass")로 두고 origin에 결정권을 주는 게 원칙적으로 더 안전하다. Cache Rules로 TTL을 강제하는 건 origin을 못 바꾸는 legacy 시스템, 서드파티 오리진, 혹은 "이 경로만큼은 origin 설정과 무관하게 반드시 이 정책"이라는 조직적 요구가 있을 때로 한정하는 게 맞다. 강제 TTL은 origin이 나중에 내리는 캐시 무효화 신호(예: 콘텐츠 삭제 시 즉시 반영)를 무시하게 만들 수 있다는 트레이드오프를 감안해야 한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "비동기 stale-while-revalidate 덕분에 request collapsing이 이제 필요 없어진 건가요?"</div>
+      <div class="followup-a">
+        <p>아니다. 둘은 다른 문제를 푼다. request collapsing은 "origin에 몇 건의 요청이 가는가"를 줄이는 메커니즘이고, 비동기 SWR은 "그 대표 요청을 만든 방문자가 응답을 얼마나 기다리는가"를 없애는 메커니즘이다. 두 개가 같이 있어야 "origin 부하도 낮고, 방문자 체감 지연도 없는" 상태가 된다. 비동기 SWR이 없던 시절에는 request collapsing이 origin은 지켰지만, 대표 요청을 만든 방문자 한 명은 여전히 origin 지연을 그대로 느꼈다는 점을 구분해서 설명할 수 있어야 한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "Cache Key에 언어 헤더(Accept-Language)를 포함시켰더니 캐시 항목 수가 너무 많아졌습니다. 어떻게 대응하나요?"</div>
+      <div class="followup-a">
+        <p>Accept-Language 헤더는 값의 조합이 매우 다양해서(브라우저마다 미묘하게 다른 우선순위 문자열 등) 원본 그대로 Cache Key에 넣으면 쿼리 스트링 문제와 똑같은 히트율 붕괴가 난다. 실무 대응은 origin/Workers 단에서 Accept-Language를 지원하는 언어 목록(예: ko, en, ja)으로 정규화한 뒤, 그 정규화된 값을 별도 헤더(예: <code>CF-Normalized-Lang</code>)로 만들어 Cache Key에는 그 정규화 헤더만 포함시키는 방식이다. "원본 신호 그대로 Cache Key에 넣지 않고, 콘텐츠를 실제로 가르는 최소 단위로 정규화한 뒤 넣는다"는 원칙은 언어 외의 다른 헤더에도 동일하게 적용된다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "Tiered Cache를 켜면 무조건 좋은 건가요? 단점은 없나요?"</div>
+      <div class="followup-a">
+        <p>대부분의 상황에서 origin 요청 감소 효과가 크지만, upper-tier를 한 단계 거치는 구조라 <strong>캐시 미스가 발생하는 첫 요청의 지연시간이 이론적으로 소폭 늘어날 수 있다</strong>(lower-tier가 origin에 직접 가는 대신 upper-tier를 거쳐야 하므로). 대부분의 서비스는 이 트레이드오프가 origin 부하 감소 이득보다 훨씬 작아서 문제가 되지 않지만, "왜 무조건 켜는 게 이득인지"를 origin 요청 수 감소와 왕복 지연 증가라는 두 축으로 설명할 수 있어야 시니어 답변이다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "이벤트 시작 시점에 트래픽이 몰릴 걸 미리 아는 상황이라면, TTL을 어떻게 설계해야 하나요?"</div>
+      <div class="followup-a">
+        <p>두 가지를 함께 쓴다. 첫째, 이벤트 시작 몇 분 전에 캐시를 미리 워밍(prefetch/조회를 미리 발생시켜 캐시를 채워둠)해서, 실제 몰리는 트래픽이 도착했을 때는 이미 캐시가 채워진 상태로 맞이한다. 둘째, TTL을 이벤트 시작 시각과 정확히 겹치지 않도록 설계한다(예: 정각이 아니라 이벤트 시작 몇 분 전에 이미 만료되도록 역산). request collapsing과 비동기 SWR이 있다고 해서 "아무 대비 없이 TTL만 짧게 잡아도 된다"고 생각하는 건 안전장치를 과신하는 것이다 — 예측 가능한 트래픽 급증은 애초에 스탬피드 상황 자체를 피하도록 설계하는 게 우선이다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>캐시 설계를 시작하기 전에 응답의 개인화 여부부터 구분한다</li>
+          <li>Edge TTL과 Browser TTL을 서로 다른 목적(origin 부하 vs 클라이언트 신선도)으로 분리해 설명한다</li>
+          <li>Cache Key를 히트율과 보안 격리 경계 양쪽 관점에서 함께 설계한다</li>
+          <li>캐시 스탬피드의 기본 방어(request collapsing)와 2026년 비동기 SWR 변화를 구분해서 설명한다</li>
+          <li>예측 가능한 트래픽 급증에는 사전 워밍/TTL 지터 같은 능동적 대비를 추가로 언급한다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"TTL을 늘리면 캐시 효율이 좋아진다" 정도로만 답한다</li>
+          <li>Cache Key를 히트율 관점으로만 보고 개인정보 격리 위험은 언급하지 않는다</li>
+          <li>캐시 스탬피드를 아예 모르거나, "TTL을 짧게 하면 된다"고 반대로 답한다</li>
+          <li>Tiered Cache를 "그냥 켜는 옵션" 정도로만 알고 원리를 설명하지 못한다</li>
+          <li>Page Rules와 Cache Rules를 "이름만 바뀐 같은 기능"이라고 단순화한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        캐시는 "빠르게 만드는 기능"이 아니라 <strong>"무엇을 얼마나 오래, 누구의 기준으로, 누구와 격리해서 저장할 것인가를 정하는 설계"</strong>다. 이 관점이 없으면 히트율은 오르지만 개인정보가 새거나, 평소엔 멀쩡하다가 트래픽이 몰리는 정확히 그 순간에만 장애가 나는 패턴을 만든다.
+        시니어 면접에서는 "캐시를 켤 줄 아는가"가 아니라 "캐시가 깨지는 정확한 순간과 이유를 예측할 수 있는가"를 본다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"TTL은 길게 잡을수록 무조건 성능에 좋다."</p>
+      <div class="mc-right">실제</div>
+      <p>Edge TTL을 길게 잡으면 origin 부하는 줄지만 콘텐츠 최신성이 떨어지고, Browser TTL을 길게 잡으면 origin/Edge가 아무리 최신 콘텐츠를 가져도 <strong>클라이언트에 강제로 갱신시킬 방법이 없어</strong> 사용자 체감 최신성이 훨씬 나빠질 수 있다. TTL은 "길수록 좋다"가 아니라 콘텐츠의 변경 빈도와 원하는 최신성 수준에 맞춰 정하는 값이다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"캐시 스탬피드는 TTL을 짧게 잡아서 자주 갱신하면 생기지 않는다."</p>
+      <div class="mc-right">실제</div>
+      <p>정반대다. TTL을 짧게 잡을수록 만료가 자주 일어나고, 그 만료 순간에 다수 요청이 겹칠 기회 자체가 늘어난다. 스탬피드는 "얼마나 자주 만료되는가"가 아니라 "만료되는 순간에 동시 요청이 몰리는가"의 문제이며, 방어책은 TTL 조정이 아니라 request collapsing·비동기 SWR·사전 워밍 같은 별도 메커니즘이다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"Cache Key는 히트율을 높이기 위한 성능 설정일 뿐이다."</p>
+      <div class="mc-right">실제</div>
+      <p>Cache Key는 동시에 "어떤 응답과 어떤 응답을 절대 섞으면 안 되는가"를 정의하는 격리 경계다. 사용자를 구분하는 신호(인증 헤더, 세션 쿠키)가 응답 내용에 영향을 주는데 그 신호가 Cache Key에 빠져 있으면, 최적화를 시도하다가 개인정보가 다른 사용자에게 노출되는 사고로 이어질 수 있다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"stale-while-revalidate는 오래된 콘텐츠를 계속 보여주는 위험한 기능이다."</p>
+      <div class="mc-right">실제</div>
+      <p>stale-while-revalidate는 "잠깐 오래된 콘텐츠를 보여주는 대신, 모든 방문자가 즉시 응답을 받고 origin 부하와 지연 전파를 막는" 의도적인 트레이드오프다. 특히 2026년 비동기 전환 이후로는 이 트레이드오프가 훨씬 유리해졌다 — 방문자는 지연 없이 응답을 받고, 갱신은 보이지 않는 곳에서 짧은 시간 안에 끝난다. 콘텐츠가 초 단위로 정확해야 하는 극히 일부 사례(예: 실시간 재고 수량)를 제외하면 대부분의 서비스에 이득이 더 크다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"Page Rules에서 쓰던 캐시 설정을 그대로 Cache Rules로 옮기기만 하면 마이그레이션이 끝난다."</p>
+      <div class="mc-right">실제</div>
+      <p>설정값을 그대로 옮겨도 <strong>평가 모델 자체가 다르다</strong> — Page Rules는 첫 매치 우선, Cache Rules는 순서대로 평가하며 나중 규칙이 같은 필드를 덮어쓸 수 있다. 값만 옮기고 순서를 재검토하지 않으면 의도와 다른 캐시 정책이 조용히 적용될 수 있다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Edge TTL vs Browser TTL</strong></td>
+          <td>둘의 통제 주체 차이(엣지 vs 클라이언트)와 강제 갱신 불가능성까지 설명한다</td>
+          <td>두 TTL이 다르다는 건 알지만 목적 차이를 뭉뚱그린다</td>
+          <td>TTL을 하나로 뭉뚱그려 설명한다</td>
+        </tr>
+        <tr>
+          <td><strong>Cache Key 설계</strong></td>
+          <td>히트율과 보안 격리 경계 양쪽 관점에서 설계 근거를 설명한다</td>
+          <td>쿼리 스트링/헤더 포함 여부 정도만 안다</td>
+          <td>Cache Key 개념 자체를 모른다</td>
+        </tr>
+        <tr>
+          <td><strong>캐시 스탬피드 이해</strong></td>
+          <td>request collapsing과 비동기 SWR(2026)을 구분해 설명하고 대응 전략까지 제시한다</td>
+          <td>스탬피드 개념은 알지만 Cloudflare의 구체적 대응은 모른다</td>
+          <td>스탬피드 개념 자체를 모르거나 반대로 답한다</td>
+        </tr>
+        <tr>
+          <td><strong>Tiered Cache 원리</strong></td>
+          <td>lower/upper-tier 구조와 origin 요청 감소 메커니즘을 설명한다</td>
+          <td>"origin 부하를 줄여주는 옵션" 정도로만 안다</td>
+          <td>Tiered Cache를 모른다</td>
+        </tr>
+        <tr>
+          <td><strong>Page Rules → Cache Rules 경계</strong></td>
+          <td>필드 매핑과 평가 모델(순서/덮어쓰기) 차이까지 설명한다</td>
+          <td>Page Rules가 deprecated라는 것만 안다</td>
+          <td>둘의 차이를 모른다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면 계속 복습하라. 다음 Day 4에서는 SSL/TLS 모드와 Origin 보호(Flexible/Full/Full strict, Origin CA, Authenticated Origin Pulls, mTLS, 리다이렉트 루프 장애)를 다룬다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./0002-dns-deep-dive-cname-flattening-dnssec.html">← Day 2</a>
+    <a href="./index.html">목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>
