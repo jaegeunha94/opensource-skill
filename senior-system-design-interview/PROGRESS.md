@@ -10,12 +10,12 @@
 | 4 | 2026-07-03 | 캐시 전략과 CDN — Cache-aside vs Write-through, 캐시 무효화, Cache Stampede | [0004-caching-strategy-cdn.html](lessons/0004-caching-strategy-cdn.html) |
 | 5 | 2026-07-04 | 데이터베이스 확장 — 복제와 샤딩, Hot Shard 문제 | [0005-database-replication-sharding.html](lessons/0005-database-replication-sharding.html) |
 | 6 | 2026-07-05 | 메시지 큐와 비동기 처리 — Kafka vs RabbitMQ, 이벤트 드리븐 아키텍처, Backpressure | [0006-message-queue-async-processing.html](lessons/0006-message-queue-async-processing.html) |
+| 7 | 2026-07-06 | 장애 격리와 고가용성 — Circuit Breaker, Bulkhead, Retry with Backoff, 다중 AZ | [0007-fault-isolation-high-availability.html](lessons/0007-fault-isolation-high-availability.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | 장애 격리와 고가용성 | Circuit Breaker, Bulkhead, Retry with backoff, 다중 AZ |
 | 8 | 분산 시스템과 일관성 | CAP Theorem, BASE vs ACID, Eventual Consistency, 분산 트랜잭션 |
 | 9 | 실전 설계 — URL 단축 서비스 | Hash 전략, Collision 처리, 분산 ID 생성 |
 | 10 | 실전 설계 — 뉴스 피드 / 타임라인 | Fanout on Write vs Read, 소셜 그래프 DB 선택 |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 6 완료** — Day 7: 장애 격리와 고가용성으로 이어짐.
+**Day 7 완료** — Day 8: 분산 시스템과 일관성(CAP Theorem)으로 이어짐.
 
 ## 습득한 핵심 개념
 
@@ -41,5 +41,5 @@
 - [x] Cache-aside/Write-through/Write-behind, 캐시 무효화, Cache Stampede 방지, CDN 전략 (Day 4)
 - [x] 복제(Read Replica)와 샤딩의 목적 차이, 복제 지연/read-your-writes, 샤딩 키 선택, Hot Shard, Cross-shard Saga (Day 5)
 - [x] 동기 vs 비동기 판단 기준, at-least-once/멱등성, Backpressure, Kafka vs RabbitMQ, DLQ, 파티션 키 기반 순서 보장 (Day 6)
-- [ ] 장애 격리 / 고가용성 (예정 Day 7)
+- [x] 장애 전파 메커니즘, Circuit Breaker(Closed/Open/Half-Open), Bulkhead, Retry with Backoff+Jitter, Fallback, 다중 AZ와 가용성 SLA (Day 7)
 - [ ] CAP Theorem / 분산 일관성 (예정 Day 8)
