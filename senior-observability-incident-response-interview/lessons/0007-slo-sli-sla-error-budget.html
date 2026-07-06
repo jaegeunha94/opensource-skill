@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — SLO / SLI / SLA와 Error Budget</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #6c8aff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    .day-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #3b4fd8, #6c8aff);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #f1f5f9;
+      line-height: 1.3;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-icon { font-size: 1.25rem; }
+    h2 { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; }
+    h3 { font-size: 1rem; font-weight: 700; color: var(--accent); margin: 1.25rem 0 0.5rem; }
+    h4 { font-size: 0.9rem; font-weight: 700; color: var(--accent2); margin: 1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    p:last-child { margin-bottom: 0; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #1a2040, #1e2a4a);
+      border: 1px solid #3b4fd8;
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .interview-q .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .interview-q .question {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    .callout { border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0; }
+    .callout.info { background: #0f2744; border-left: 3px solid #3b82f6; }
+    .callout.warning { background: #2d1f00; border-left: 3px solid var(--yellow); }
+    .callout.success { background: #052e1a; border-left: 3px solid var(--green); }
+    .callout.danger { background: #2d0f0f; border-left: 3px solid var(--red); }
+    .callout-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .callout.info .callout-title { color: #60a5fa; }
+    .callout.warning .callout-title { color: var(--yellow); }
+    .callout.success .callout-title { color: var(--green); }
+    .callout.danger .callout-title { color: var(--red); }
+
+    code {
+      background: var(--code-bg);
+      color: #a5f3fc;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.88em;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      border: 1px solid #1e2a3a;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid #1e2a3a;
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+    }
+    pre code { background: none; border: none; padding: 0; color: inherit; }
+
+    ul, ol { padding-left: 1.4rem; margin: 0.6rem 0; }
+    li { margin-bottom: 0.4rem; color: var(--text); }
+    li::marker { color: var(--accent); }
+
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .compare-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+    .compare-box.good { border-top: 3px solid var(--green); }
+    .compare-box.bad { border-top: 3px solid var(--red); }
+    .compare-box .compare-label {
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 0.75rem;
+    }
+    .compare-box.good .compare-label { color: var(--green); }
+    .compare-box.bad .compare-label { color: var(--red); }
+    .compare-box p { font-size: 0.9rem; color: var(--text-muted); }
+    .compare-box .quote {
+      font-style: italic; color: var(--text); background: var(--bg);
+      padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; margin-bottom: 0.5rem;
+    }
+
+    .steps { counter-reset: step-counter; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step-counter;
+      display: flex; gap: 1rem; margin-bottom: 1rem; align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step-counter);
+      background: var(--accent); color: white; font-size: 0.8rem; font-weight: 700;
+      min-width: 1.6rem; height: 1.6rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 0.1rem;
+    }
+    .steps li div { flex: 1; }
+    .steps li strong { color: #f1f5f9; display: block; margin-bottom: 0.2rem; }
+
+    .pillar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+    .pillar { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; text-align: center; }
+    .pillar-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .pillar-name { font-size: 1rem; font-weight: 700; color: #f1f5f9; margin-bottom: 0.5rem; }
+    .pillar-desc { font-size: 0.85rem; color: var(--text-muted); }
+
+    .tag {
+      display: inline-block; font-size: 0.72rem; font-weight: 600;
+      padding: 0.2rem 0.6rem; border-radius: 20px; margin: 0.15rem;
+    }
+    .tag.blue { background: #1e3a6e; color: #93c5fd; }
+    .tag.purple { background: #2d1f5e; color: #c4b5fd; }
+    .tag.green { background: #0f3326; color: #6ee7b7; }
+    .tag.orange { background: #3d2000; color: #fdba74; }
+
+    .rubric-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+    .rubric-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+    .rubric-title { font-weight: 600; font-size: 0.95rem; }
+    .rubric-badge { font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 20px; }
+    .badge-must { background: #7c3aed; color: #ede9fe; }
+    .badge-strong { background: #1d4ed8; color: #dbeafe; }
+    .badge-bonus { background: #065f46; color: #d1fae5; }
+    .rubric-item p { font-size: 0.88rem; color: var(--text-muted); margin: 0; }
+
+    .followup { background: #1a1030; border: 1px solid #4c1d95; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+    .followup .fq { font-weight: 600; color: #c4b5fd; margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .followup .fa { font-size: 0.9rem; color: var(--text-muted); }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th {
+      background: var(--surface2); color: var(--text-muted); font-size: 0.8rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em; padding: 0.75rem 1rem;
+      border: 1px solid var(--border); text-align: left;
+    }
+    td { padding: 0.75rem 1rem; border: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    tr:nth-child(even) td { background: #141720; }
+
+    .nav { display: flex; justify-content: space-between; margin-top: 2rem; gap: 1rem; }
+    .nav a {
+      display: inline-block; background: var(--surface); border: 1px solid var(--border);
+      color: var(--accent); text-decoration: none; padding: 0.6rem 1.2rem;
+      border-radius: 8px; font-size: 0.9rem; transition: border-color 0.2s;
+    }
+    .nav a:hover { border-color: var(--accent); }
+
+    .budget-bar { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin: 1rem 0; }
+    .budget-track { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; height: 1.6rem; overflow: hidden; margin: 0.6rem 0; position: relative; }
+    .budget-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--yellow)); display: flex; align-items: center; justify-content: flex-end; padding-right: 0.6rem; font-size: 0.7rem; font-weight: 700; color: #0f1117; }
+    .budget-caption { font-size: 0.82rem; color: var(--text-muted); }
+
+    .burn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin: 1rem 0; }
+    .burn-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+    .burn-card.crit { border-top: 3px solid var(--red); }
+    .burn-card.warn { border-top: 3px solid var(--yellow); }
+    .burn-card.ticket { border-top: 3px solid var(--accent); }
+    .burn-card .burn-title { font-weight: 700; font-size: 0.9rem; color: #f1f5f9; margin-bottom: 0.4rem; }
+    .burn-card .burn-detail { font-size: 0.8rem; color: var(--text-muted); }
+
+    @media (max-width: 640px) {
+      .compare-grid, .pillar-grid, .burn-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="day-badge">DAY 7 · Observability / 장애 대응 인터뷰</div>
+  <h1>SLO / SLI / SLA와 Error Budget</h1>
+  <p class="subtitle">"100% 가용성이 목표가 아니다"라는 말의 진짜 의미 — SLI/SLO/SLA를 구분하지 못하면 Error Budget이 왜 필요한지 설명할 수 없고, Multi-window Multi-burn-rate 알림 없이는 "빠른 탐지"와 "잡음 없는 알림" 중 하나를 포기해야 한다</p>
+
+  <!-- ===================== INTERVIEW QUESTIONS ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🎯</span>
+      <h2>오늘의 핵심 면접 질문</h2>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">질문 1 — 거의 항상 출제 (기본 개념)</div>
+      <div class="question">"SLI, SLO, SLA의 차이를 설명해주시고, 실제로 서비스의 SLO를 정의한다면 어떤 절차로 진행하시겠습니까?"</div>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">질문 2 — 자주 출제 (실무 판단)</div>
+      <div class="question">"Error Budget이 이번 달에 다 소진됐습니다. 이 상황에서 실무적으로 어떤 결정을 내려야 하나요?"</div>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">질문 3 — 시니어 추가 질문 (알림 설계 심화)</div>
+      <div class="question">"단순히 '에러율이 SLO 임계값을 넘으면 알림'이라는 방식 대신, 왜 Multi-window Multi-burn-rate 알림을 쓰나요?"</div>
+    </div>
+  </div>
+
+  <!-- ===================== WHY ASK ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🔍</span>
+      <h2>왜 인터뷰에서 묻는가</h2>
+    </div>
+
+    <p>Day 3에서 알림 임계값과 False Positive/Negative trade-off를 다뤘고, Day 6에서 대시보드의 "Overview 층에 SLO 소진율을 놓는다"는 이야기가 나왔다. SLO/Error Budget은 그 두 가지를 하나로 묶는 <strong>"신뢰성 목표를 숫자로 정하고, 그 숫자로 조직의 의사결정을 통제하는 프레임워크"</strong>다. 인터뷰어가 이 주제를 깊게 파는 이유는 단순 정의 암기가 아니라 다음을 확인하기 위해서다.</p>
+
+    <h3>1. "가용성 목표는 100%여야 한다"는 순진한 사고를 벗어났는가</h3>
+    <p>주니어 레벨은 종종 "장애가 없는 것이 최선"이라고 생각한다. 하지만 시니어는 100% 가용성을 추구하는 비용(중복 인프라, 배포 속도 저하, 기능 개발 중단)이 그로 인해 얻는 사용자 가치보다 훨씬 클 수 있다는 것을 안다. <strong>SLO는 "충분히 좋음(good enough)"을 숫자로 정의하고, 그 이상의 신뢰성 투자는 낭비라고 명시적으로 선언하는 도구</strong>다.</p>
+
+    <h3>2. 신뢰성과 개발 속도 사이의 갈등을 "숫자"로 해결할 수 있는가</h3>
+    <p>SRE 조직과 제품 개발 조직은 태생적으로 목표가 충돌한다. SRE는 안정성을 원하고, 제품 팀은 빠른 배포를 원한다. Error Budget은 이 갈등을 사람 대 사람의 논쟁이 아니라 <strong>"이번 분기 예산이 남아있는가"라는 객관적 숫자의 문제</strong>로 바꾼다. 이걸 설계하고 운영해본 경험이 있는지가 시니어와 주니어를 가르는 지점이다.</p>
+
+    <h3>3. 알림 설계에서 "빠른 탐지"와 "잡음 최소화"를 동시에 만족시키는 방법을 아는가</h3>
+    <p>Day 3에서 배운 것처럼 임계값을 낮추면 빨리 알지만 잡음(False Positive)이 늘고, 높이면 잡음은 줄지만 탐지가 늦는다(False Negative). Multi-window Multi-burn-rate 알림은 이 트레이드오프를 <strong>"둘 중 하나를 포기"하지 않고 여러 창(window)을 조합해서 완화</strong>하는 구체적인 엔지니어링 기법이다. 이걸 설명할 수 있으면 알림 설계에 대한 이해가 이론을 넘어 실전 수준이라는 신호가 된다.</p>
+
+    <div class="callout info">
+      <div class="callout-title">인터뷰어가 듣고 싶어하는 신호</div>
+      "저는 SLO를 사용자 경험 기준으로 먼저 정의하고, 그 SLO에서 역산해서 Error Budget을 계산합니다. Error Budget 소진율(Burn Rate)을 기준으로 여러 시간창을 조합한 알림을 설계해서, 진짜 심각한 장애는 몇 분 안에 페이지로 알리고, 완만한 저하는 티켓으로만 기록되게 했습니다. Error Budget이 소진되면 자동으로 배포 정책이 바뀌도록 release gating과 연결했습니다."
+    </div>
+  </div>
+
+  <!-- ===================== PREREQUISITE ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📚</span>
+      <h2>전제 개념 — 쉬운 언어로 먼저 이해하기</h2>
+    </div>
+
+    <h3>SLI (Service Level Indicator) — "실제로 측정한 숫자"란?</h3>
+    <p>SLI는 <strong>실제로 관측한 서비스 품질의 측정값</strong>이다. 예를 들어 "지난 5분간 성공한 요청의 비율은 99.95%였다"거나 "p99 지연이 320ms였다"는 것이 SLI다. Day 3에서 다룬 RED 메트릭(특히 Errors, Duration)이 SLI의 원재료가 되는 경우가 많다. <strong>SLI는 목표가 아니라 관측된 사실(fact)</strong>이라는 점이 핵심이다.</p>
+
+    <h3>SLO (Service Level Objective) — "우리가 내부적으로 지키기로 한 목표"란?</h3>
+    <p>SLO는 <strong>이 SLI가 어느 수준 이상이어야 한다는 내부 목표</strong>다. 예: "30일 rolling window 기준으로 요청 성공률 SLI는 99.9% 이상이어야 한다." SLO는 팀이 스스로 정하는 목표이며, 위반해도 외부에 법적/금전적 책임이 발생하지는 않는다. 하지만 SLO 위반은 조직 내부적으로 "이번 분기는 신뢰성에 투자해야 한다"는 신호로 작동한다.</p>
+
+    <h3>SLA (Service Level Agreement) — "고객과 맺은 계약"이란?</h3>
+    <p>SLA는 <strong>외부 고객과 맺은 계약이며, 위반 시 환불이나 크레딧 등 금전적/법적 책임이 따른다.</strong> 중요한 점은, SLA는 보통 SLO보다 <strong>느슨하게</strong> 설정한다는 것이다. 내부 SLO가 99.9%라면 SLA는 보통 99.5% 같은 여유(buffer)를 두고 계약한다. 이렇게 하는 이유는, SLO를 살짝 위반하는 정도로는 고객에게 계약 위반의 책임을 지지 않도록 완충 지대를 만들기 위해서다.</p>
+
+    <table>
+      <thead>
+        <tr><th>구분</th><th>정의</th><th>예시</th><th>위반 시 결과</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>SLI</strong></td>
+          <td>실제 측정값</td>
+          <td>"지난 30일간 성공률 99.92%"</td>
+          <td>-</td>
+        </tr>
+        <tr>
+          <td><strong>SLO</strong></td>
+          <td>내부 목표치</td>
+          <td>"30일 성공률 ≥ 99.9%"</td>
+          <td>내부 프로세스 변경(배포 정책 등)</td>
+        </tr>
+        <tr>
+          <td><strong>SLA</strong></td>
+          <td>고객과의 계약</td>
+          <td>"월간 가용성 ≥ 99.5%, 미달 시 크레딧 환불"</td>
+          <td>금전적/법적 책임</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warning">
+      <div class="callout-title">흔한 오해 — SLO와 SLA는 같은 것이다</div>
+      SLO가 내부 관리 목표라면, SLA는 그 목표에 여유를 둔 대외 계약이다. 이 둘을 같은 숫자로 설정하면, SLO를 아주 조금만 넘겨도 바로 고객에게 계약 위반 책임을 지게 되어 조직이 과도하게 방어적으로 행동하게 된다. <strong>SLA는 항상 SLO보다 느슨해야 한다.</strong>
+    </div>
+
+    <h3>Error Budget(에러 예산)이란?</h3>
+    <p>Error Budget은 <strong>"SLO를 만족하기 위해 허용되는 실패의 양"</strong>이다. 수식으로는 <code>Error Budget = 1 - SLO</code>다. SLO가 99.9%라면 Error Budget은 0.1%이고, 이는 30일(약 43,200분) 기준으로 약 <strong>43.2분의 다운타임(또는 그에 상응하는 실패 요청 비율)</strong>을 의미한다.</p>
+
+    <div class="budget-bar">
+      <div class="budget-caption">예: SLO 99.9% (30일 rolling window) — 이번 달 Error Budget 소진 현황</div>
+      <div class="budget-track">
+        <div class="budget-fill" style="width: 62%;">62% 소진</div>
+      </div>
+      <div class="budget-caption">남은 예산: 약 16.4분(전체 43.2분 중) — 이 예산이 0이 되면 배포 정책이 바뀐다</div>
+    </div>
+
+    <p>Error Budget의 핵심 통찰은, 이것이 <strong>"실패를 허용하는 상한선"인 동시에 "혁신과 리스크를 감수할 수 있는 자원"</strong>이라는 점이다. 예산이 남아있다는 것은 새로운 기능을 배포하거나, 실험적인 인프라 변경을 시도할 여유가 있다는 뜻이다. 예산이 소진되면, 그 여유가 사라졌으니 신뢰성 확보에 집중해야 한다는 신호다.</p>
+
+    <h3>Burn Rate(소진율)란?</h3>
+    <p>Burn Rate는 <strong>Error Budget이 소진되는 속도를, "정상 속도"를 1로 놓고 비율로 나타낸 값</strong>이다. Burn Rate가 1이라는 것은 "지금 속도로 계속 실패하면 정확히 SLO 기간(예: 30일)이 끝나는 시점에 예산이 딱 0이 된다"는 뜻이다. Burn Rate가 10이면 같은 기간의 예산을 <strong>10배 빠르게</strong> 소진하고 있다는 뜻이므로, 30일 치 예산을 3일 만에 다 쓰게 된다.</p>
+
+    <div class="callout info">
+      <div class="callout-title">계산 감각 잡기</div>
+      SLO 99.9%(30일), Error Budget 43.2분. 만약 현재 에러율이 순간적으로 10%라면, 이는 정상 허용 에러율(0.1%)의 100배이므로 Burn Rate는 100이다. 이 속도로 계속되면 30일 치 예산을 <strong>30일 ÷ 100 = 7.2시간</strong> 만에 소진한다. 이렇게 Burn Rate가 높을수록 "지금 당장 사람이 개입해야 하는 심각도"라는 것을 직관적으로 알 수 있다.
+    </div>
+  </div>
+
+  <!-- ===================== FRAMEWORK ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🧩</span>
+      <h2>실무 프레임워크 — SLO를 정의하고 운영하는 절차</h2>
+    </div>
+
+    <h3>1. 사용자 관점에서 SLI를 먼저 고른다</h3>
+    <p>내부 시스템 지표(CPU 사용률 등)가 아니라, <strong>사용자가 실제로 경험하는 품질</strong>을 SLI로 삼는다. 일반적으로 request-based SLI(요청 성공률)와 window-based SLI(특정 시간 동안 정상 작동했는지)로 나뉜다. API 서비스라면 "성공한 요청 비율", "p99 지연이 임계값 이하인 요청 비율"이 대표적이다.</p>
+
+    <h3>2. 비즈니스 맥락에서 SLO 목표치를 정한다</h3>
+    <p>SLO는 "기술적으로 가능한 최댓값"이 아니라 <strong>"사용자가 실제로 불만을 느끼기 시작하는 지점" 바로 위</strong>로 정한다. 결제처럼 신뢰가 중요한 서비스는 99.95~99.99%, 내부 배치 작업은 99%로도 충분할 수 있다. <strong>더 높은 SLO를 고르는 것이 항상 더 좋은 선택이 아니다</strong> — 뒤에서 다룰 trade-off를 반드시 함께 설명해야 한다.</p>
+
+    <h3>3. SLO에서 Error Budget을 역산하고, 소진 추이를 대시보드에 노출한다(Day 6 연결)</h3>
+    <p>Day 6에서 다룬 Overview 대시보드의 최상단에는 Golden Signals와 함께 <strong>이번 rolling window의 Error Budget 소진율</strong>이 항상 보여야 한다. 이는 팀이 매일 "우리가 얼마나 위험을 감수할 여유가 있는지"를 인지하게 만든다.</p>
+
+    <h3>4. Burn Rate 기반 Multi-window Multi-burn-rate 알림을 설계한다</h3>
+    <p>단일 임계값(예: "에러율 1% 넘으면 알림") 방식은 Day 3에서 다룬 것처럼 짧은 창을 쓰면 노이즈가 많고, 긴 창을 쓰면 탐지가 늦다. Google SRE Workbook이 제시한 해법은 <strong>서로 다른 길이의 시간창과 서로 다른 Burn Rate 임계값을 조합</strong>해서, 심각도별로 다른 알림 채널(페이지 vs 티켓)로 라우팅하는 것이다.</p>
+
+    <div class="burn-grid">
+      <div class="burn-card crit">
+        <div class="burn-title">🔴 즉시 페이지 (Critical)</div>
+        <div class="burn-detail">1시간 창에서 Burn Rate ≥ 14.4 <strong>AND</strong> 5분 창에서도 지속 확인 → 이 속도면 2일치 예산을 하루 안에 소진. 사람이 지금 당장 봐야 한다.</div>
+      </div>
+      <div class="burn-card warn">
+        <div class="burn-title">🟡 페이지, 덜 긴급 (Warning)</div>
+        <div class="burn-detail">6시간 창에서 Burn Rate ≥ 6 → 완만하지만 무시할 수 없는 소진 속도. 근무 시간 내 대응이면 충분.</div>
+      </div>
+      <div class="burn-card ticket">
+        <div class="burn-title">🔵 티켓만 생성 (Low urgency)</div>
+        <div class="burn-detail">3일 창에서 Burn Rate ≥ 1 → 정상 소진 속도 근처. 사람을 깨울 필요 없이 다음 스프린트에서 검토.</div>
+      </div>
+    </div>
+
+    <p><strong>왜 "AND" 조건으로 짧은 창과 긴 창을 함께 쓰는가?</strong> 긴 창(예: 1시간)만 보면 순간적인 스파이크에도 반응해서 잡음이 생긴다. 짧은 창(예: 5분)으로 "지금도 여전히 나쁜 상태인가"를 재확인하면, 이미 끝난 일시적 스파이크에 뒤늦게 페이지가 울리는 것을 방지한다. 이 이중 창 구조가 Day 3의 False Positive 문제를 실질적으로 줄이는 핵심 장치다.</p>
+
+    <h3>5. Error Budget 정책을 배포 프로세스(Release Gating)와 연결한다</h3>
+    <p>Error Budget이 소진되면 자동 또는 정책적으로 <strong>기능 배포를 제한하고 신뢰성 작업에 우선순위를 준다.</strong> 이것이 SLO를 "그냥 숫자"가 아니라 "조직의 행동을 바꾸는 계약"으로 만드는 지점이다.</p>
+
+    <div class="callout success">
+      <div class="callout-title">시니어 답변에서 나와야 하는 내용</div>
+      "저는 SLO를 정할 때 항상 사용자가 실제로 불만을 느끼는 지점을 먼저 조사하고, 그 위에 약간의 여유를 둔 목표를 잡았습니다. Error Budget 소진율을 Multi-window Multi-burn-rate 방식으로 알림에 연결해서, 급격한 소진은 즉시 페이지로, 완만한 소진은 티켓으로 라우팅했습니다. 그리고 Error Budget이 0에 가까워지면 자동으로 배포 승인 프로세스가 강화되도록(risky 배포는 리뷰 추가 필요) release gating 정책과 연결해서, 신뢰성이 실제 조직의 우선순위에 반영되도록 만들었습니다."
+    </div>
+  </div>
+
+  <!-- ===================== ANSWER REASONING ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🧠</span>
+      <h2>답변 사고 순서 — 면접장에서 어떻게 풀어나가는가</h2>
+    </div>
+
+    <h3>질문 2: "Error Budget이 이번 달에 다 소진됐습니다. 실무적으로 어떤 결정을 내려야 하나요?"</h3>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>현재 상태부터 확인 (10초)</strong>
+          "먼저 이게 일시적 스파이크로 인한 소진인지, 아니면 지속적으로 나빠지는 추세인지를 최근 Burn Rate 그래프로 확인합니다. 원인이 이미 해결됐는지도 함께 봅니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>정책에 따라 배포 제한을 적용 (15초)</strong>
+          "예산이 0이 되면 사전에 합의된 정책대로, 위험도가 높은 배포(새 기능, 대규모 리팩터링)는 보류하고 버그 수정과 신뢰성 개선 작업만 허용합니다. 이건 제가 임의로 정하는 게 아니라 팀이 사전에 합의한 규칙을 실행하는 것입니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>이해관계자에게 투명하게 공유 (15초)</strong>
+          "제품 팀에게는 '이번 스프린트 배포 계획 중 일부가 신뢰성 정책 때문에 다음 사이클로 밀린다'는 것을 데이터(Burn Rate, 예산 소진 원인)와 함께 공유합니다. 숫자 기반이라 감정적 논쟁이 아니라 사전에 합의한 규칙의 실행으로 받아들여집니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>근본 원인 해결에 우선순위 부여 (10초)</strong>
+          "동시에 예산을 소진시킨 근본 원인(Day 5의 RCA)을 최우선 작업으로 올려서, 다음 rolling window에서 예산이 회복되고 정상적인 배포 속도로 돌아갈 수 있게 합니다."
+        </div>
+      </li>
+    </ol>
+
+    <h3>질문 3: "왜 Multi-window Multi-burn-rate 알림을 쓰나요?"</h3>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>단일 임계값 알림의 한계 지적 (10초)</strong>
+          "짧은 창만 쓰면 순간 스파이크에도 알림이 울려 잡음이 많고, 긴 창만 쓰면 실제 심각한 장애도 늦게 알게 됩니다. 이건 Day 3에서 다룬 False Positive/Negative 트레이드오프의 연장선입니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Burn Rate라는 공통 단위 도입 (15초)</strong>
+          "그래서 저는 절대적인 에러율 대신 'SLO 대비 얼마나 빠르게 예산을 쓰고 있는가'라는 Burn Rate를 기준으로 삼습니다. 이건 SLO가 다른 서비스끼리도 같은 기준으로 심각도를 비교할 수 있게 해줍니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>여러 창을 조합해 심각도별로 라우팅 (15초)</strong>
+          "짧은 창과 긴 창을 AND 조건으로 묶어서, 급격하고 지속되는 소진만 즉시 페이지로 보내고, 완만한 소진은 티켓으로만 기록되게 설계합니다. 이렇게 하면 온콜 엔지니어가 진짜 심각한 상황에만 깨어나게 됩니다."
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ===================== MODEL ANSWERS ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">💬</span>
+      <h2>핵심 답변 예시</h2>
+    </div>
+
+    <h3>질문 1 모범 답변: "SLI/SLO/SLA 차이와 SLO 정의 절차"</h3>
+    <div class="callout success">
+      <div class="callout-title">강한 답변</div>
+      <p>"SLI는 실제로 관측한 숫자, 예를 들면 '지난 30일간 성공률 99.92%'이고, SLO는 그 SLI가 만족해야 할 내부 목표(예: 99.9% 이상)입니다. SLA는 그 목표를 외부 고객과 계약으로 맺은 것으로, 위반 시 크레딧 환불 같은 금전적 책임이 따르며, 보통 SLO보다 여유를 두고 더 느슨하게 설정합니다.</p>
+      <p>SLO를 정의할 때는 먼저 사용자 관점에서 어떤 지표가 실제 만족도와 상관관계가 있는지 조사하고, '사용자가 실제로 불만을 느끼기 시작하는 지점'을 파악한 뒤 그보다 약간 높은 목표를 잡습니다. 100%를 목표로 하지 않는 이유는, 마지막 0.01%를 개선하는 비용이 그로 인한 사용자 가치 증가보다 훨씬 크기 때문입니다. 정의 후에는 Error Budget으로 환산해서 팀이 매일 확인할 수 있게 대시보드에 노출합니다."</p>
+    </div>
+  </div>
+
+  <!-- ===================== STRONG VS WEAK ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">⚖️</span>
+      <h2>좋은 답변 vs 약한 답변의 차이</h2>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-box good">
+        <div class="compare-label">강한 답변 — Error Budget 소진 시 대응</div>
+        <div class="quote">"사전에 합의된 정책대로 위험도 높은 배포를 제한하고, 근본 원인 해결을 최우선으로 올리며, 이 결정을 데이터와 함께 이해관계자에게 투명하게 공유합니다."</div>
+        <p>정책 → 실행 → 커뮤니케이션 → 근본 해결까지 이어지는 절차가 있다.</p>
+      </div>
+      <div class="compare-box bad">
+        <div class="compare-label">약한 답변 — Error Budget 소진 시 대응</div>
+        <div class="quote">"일단 모니터링을 더 자세히 보고, 문제가 생기면 그때 대응하겠습니다."</div>
+        <p>Error Budget이라는 개념 자체가 사전에 행동 규칙을 정하기 위한 도구라는 것을 이해하지 못했다.</p>
+      </div>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-box good">
+        <div class="compare-label">강한 답변 — SLO 목표치 설정 근거</div>
+        <div class="quote">"사용자가 실제로 불만을 느끼는 지점을 조사한 뒤 그 위에 목표를 잡았고, 100%를 목표로 하지 않은 이유는 마지막 단위 개선의 비용이 기하급수적으로 늘기 때문입니다."</div>
+        <p>비용-가치 trade-off를 근거로 한 명시적 판단이 있다.</p>
+      </div>
+      <div class="compare-box bad">
+        <div class="compare-label">약한 답변 — SLO 목표치 설정 근거</div>
+        <div class="quote">"가능한 한 가용성을 높게 잡는 게 좋다고 생각해서 99.999%로 정했습니다."</div>
+        <p>목표치를 높일수록 좋다는 근거 없는 가정에 기반해, 실현 비용과 트레이드오프를 고려하지 않았다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== FOLLOW-UP ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🎓</span>
+      <h2>Senior-level Follow-up 질문과 답변 방향</h2>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "여러 마이크로서비스로 구성된 시스템에서, 개별 서비스 SLO와 전체 사용자 여정(user journey) SLO는 어떻게 다르게 다뤄야 하나요?"</div>
+      <div class="fa">
+        핵심 논리: 각 서비스가 개별적으로 99.9%를 만족해도, 사용자 요청이 5개 서비스를 순차적으로 거치면 전체 성공률은 곱셈으로 줄어들어(0.999^5 ≈ 99.5%) 사용자 체감 SLO는 더 나빠진다. 개별 서비스 SLO만 관리하면 이 합성 효과를 놓친다.
+        <br><br>
+        실무 답변 방향: "저는 개별 서비스 SLO 외에 핵심 사용자 여정(예: 로그인→결제) 단위로 별도의 end-to-end SLO를 정의하고, 여정에 포함된 서비스 수가 늘어날수록 개별 서비스의 목표치를 더 타이트하게 설정하거나, critical path에 있지 않은 의존성은 실패해도 전체 여정에 영향이 없도록 격리(fallback, graceful degradation)했습니다."
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "Error Budget이 남아있다는 이유로 팀이 리스크가 큰 변경을 몰아서 하려고 합니다. 이걸 어떻게 관리하나요?"</div>
+      <div class="fa">
+        핵심 논리: Error Budget은 "리스크를 감수할 여유"를 의미하지만, 예산을 다 쓰는 방식이 통제되지 않으면 짧은 기간에 여러 위험한 변경이 몰려 원인 규명이 어려운 복합 장애로 이어질 수 있다.
+        <br><br>
+        실무 답변 방향: "예산이 있다고 해서 무제한 리스크를 허용하지 않고, 변경 단위별로 카나리 배포와 자동 롤백(Day 3~4에서 다룬 관측 신호 기반)을 강제해서 한 번에 하나의 변경만 예산에 영향을 주도록 격리했습니다. 이렇게 하면 예산을 쓰더라도 원인 추적이 가능한 방식으로 씁니다."
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "SLO를 정의했는데 SLI 측정 방식 자체가 신뢰할 수 없다면 어떻게 하나요?"</div>
+      <div class="fa">
+        핵심 논리: SLI가 클라이언트 관점이 아니라 서버 관점에서만 측정되면, 로드밸런서 앞단이나 네트워크 구간의 실패를 놓친다. 예를 들어 서버는 정상 응답을 했지만 클라이언트에 도달하지 못한 요청은 서버 측 SLI에는 성공으로 잡힌다.
+        <br><br>
+        실무 답변 방향: "저는 가능하면 SLI를 사용자에게 가장 가까운 지점(CDN/엣지, 클라이언트 RUM)에서 측정하도록 우선순위를 두고, 서버 측 지표와 비교해서 차이가 크면 그 구간(네트워크, 프록시)에 별도의 관측을 추가했습니다. SLI 측정 지점 자체도 검증 대상이라는 것을 인지하고 있어야 합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== COMMON MISCONCEPTIONS ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">⚠️</span>
+      <h2>흔한 오해와 Trade-off</h2>
+    </div>
+
+    <h3>오해 1: "SLO는 높을수록 좋다"</h3>
+    <p><strong>현실:</strong> SLO를 99.9%에서 99.99%로 한 단계 올리는 것은 산술적으로 10배 개선처럼 보이지만, 실제로는 중복 인프라, 아키텍처 복잡도, 배포 신중함(느린 릴리스)까지 요구해서 비용이 기하급수적으로 늘어난다. 반면 사용자가 99.9%와 99.99%의 차이를 체감하지 못하는 경우도 많다.</p>
+    <p><strong>올바른 접근:</strong> SLO는 사용자 가치와 실현 비용이 만나는 지점에서 정하고, "왜 이 숫자인가"를 항상 설명할 수 있어야 한다.</p>
+
+    <h3>오해 2: "Error Budget이 소진되면 무조건 모든 배포를 중단한다"</h3>
+    <p><strong>현실:</strong> 무조건적인 배포 전면 중단은 팀의 신뢰를 잃고, 오히려 버그 수정처럼 신뢰성을 높이는 배포까지 막아버리는 역효과를 낸다.</p>
+    <p><strong>올바른 접근:</strong> 정책을 세분화해서, 신뢰성 향상/버그 수정 배포는 계속 허용하고, 새로운 리스크를 추가하는 기능 배포만 제한하는 것이 실무적으로 더 합리적이다.</p>
+
+    <h3>오해 3: "SLA를 지켰으니 SLO도 문제없다"</h3>
+    <p><strong>현실:</strong> SLA는 SLO보다 느슨하게 설정되기 때문에, SLA는 지켰지만 SLO는 이미 위반된 상태(내부적으로는 이미 위험 신호)인 경우가 흔하다.</p>
+    <p><strong>올바른 접근:</strong> SLA 준수 여부만으로 안심하지 말고, 항상 더 엄격한 내부 SLO를 기준으로 조기에 대응한다.</p>
+
+    <h3>Trade-off: 알림 민감도(빠른 탐지) vs 잡음(온콜 피로)</h3>
+    <p>짧은 시간창과 낮은 Burn Rate 임계값을 쓰면 문제를 더 빨리 알 수 있지만, 일시적 스파이크에도 반응해서 온콜 피로(Alert Fatigue, Day 3)를 유발한다. 반대로 긴 창과 높은 임계값은 잡음은 줄지만 탐지가 늦어 예산을 이미 많이 소진한 뒤에야 알게 된다. Multi-window Multi-burn-rate는 이 트레이드오프를 없애는 것이 아니라, <strong>심각도별로 다른 지점에서 균형을 잡도록 세분화</strong>하는 방법이라는 점을 명확히 해야 한다.</p>
+  </div>
+
+  <!-- ===================== RUBRIC ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">✅</span>
+      <h2>자기 점검 Rubric</h2>
+    </div>
+    <p>이 답변들을 자신있게 말할 수 있으면 Day 7을 완료한 것이다.</p>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">SLI/SLO/SLA를 정의와 관계(SLA는 SLO보다 느슨해야 하는 이유 포함)로 설명할 수 있다</span>
+        <span class="rubric-badge badge-must">필수</span>
+      </div>
+      <p>세 용어를 예시 숫자와 함께 구분해서 말할 수 있어야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">Error Budget 계산식과 그 의미(실패 허용치이자 리스크 예산)를 설명할 수 있다</span>
+        <span class="rubric-badge badge-must">필수</span>
+      </div>
+      <p>단순 정의를 넘어, 왜 이것이 조직의 행동을 바꾸는 도구인지까지 말해야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">Error Budget 소진 시 실무적으로 어떤 결정을 내리는지 구체적으로 설명할 수 있다</span>
+        <span class="rubric-badge badge-must">필수</span>
+      </div>
+      <p>"모니터링 강화"처럼 막연한 답이 아니라 배포 정책 변경, 커뮤니케이션까지 이어져야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">Burn Rate 개념과 Multi-window Multi-burn-rate 알림 구조를 설계할 수 있다</span>
+        <span class="rubric-badge badge-strong">강함</span>
+      </div>
+      <p>왜 짧은 창과 긴 창을 AND로 묶는지까지 설명해야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">100% SLO를 목표로 하지 않는 이유를 비용-가치 trade-off로 설명할 수 있다</span>
+        <span class="rubric-badge badge-strong">강함</span>
+      </div>
+      <p>더 높은 SLO가 항상 더 좋은 선택이 아니라는 것을 근거와 함께 말해야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">사용자 여정(user journey) SLO와 개별 서비스 SLO의 합성 효과를 설명할 수 있다</span>
+        <span class="rubric-badge badge-bonus">보너스</span>
+      </div>
+      <p>마이크로서비스 환경에서 개별 SLO를 곱하면 체감 SLO가 나빠진다는 것을 계산할 수 있으면 시니어급 답변이 된다.</p>
+    </div>
+  </div>
+
+  <!-- ===================== REAL WORLD ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🏭</span>
+      <h2>실무 연결 — 이 개념이 실제 어디에 쓰이는가</h2>
+    </div>
+
+    <h3>스타트업 (소규모 팀)</h3>
+    <p>공식적인 SLO 문서 없이도, "이 정도 장애면 심각한 것"이라는 암묵적 기준이 있다. 이 단계에서는 핵심 API 1~2개에 대해서만이라도 명시적인 SLO(예: "성공률 99.5%")를 문서화하는 것이 시작점이 된다.</p>
+
+    <h3>성장기 회사 (수백만 사용자)</h3>
+    <p>여러 팀이 서로 다른 서비스를 소유하면서, "왜 우리 팀 배포만 자주 막히냐"는 갈등이 생기기 시작한다. 이때 Error Budget과 release gating을 공식화하면, 배포 제한이 특정 관리자의 자의적 판단이 아니라 <strong>모두에게 동일하게 적용되는 객관적 규칙</strong>이 되어 갈등이 줄어든다.</p>
+
+    <h3>대형 플랫폼 (수천만 사용자)</h3>
+    <p>수백 개의 서비스마다 SLO가 정의되고, 사용자 여정 단위의 합성 SLO까지 관리한다. Multi-window Multi-burn-rate 알림이 표준 템플릿으로 모든 서비스에 자동 적용되고, Error Budget 소진 현황이 조직 전체의 신뢰성 리뷰(분기별 SLO 리뷰 미팅)의 핵심 자료로 쓰인다. 경영진 대시보드(Day 6)에는 핵심 사용자 여정의 SLO 준수 현황이 실시간으로 반영된다.</p>
+  </div>
+
+  <!-- ===================== NEXT ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">➡️</span>
+      <h2>다음 학습 예고 — Day 8</h2>
+    </div>
+    <p><strong>Postmortem 작성과 재발 방지</strong></p>
+    <p>비난 없는(blameless) postmortem 문화의 이유, 장애 보고서의 구조(타임라인, 임팩트, 근본 원인, 액션 아이템), 그리고 액션 아이템이 실행되지 않고 방치되는 문제를 어떻게 추적/관리하는지 다룬다. 면접에서 "가장 인상 깊었던 장애의 postmortem을 어떻게 작성했는지" 설명하는 방법을 익힌다.</p>
+    <div style="margin-top:0.75rem;">
+      <span class="tag blue">Blameless Postmortem</span>
+      <span class="tag blue">장애 보고서 구조</span>
+      <span class="tag purple">Action Item 추적</span>
+      <span class="tag green">재발 방지 설계</span>
+    </div>
+  </div>
+
+  <div class="nav">
+    <a href="./0006-dashboard-design-principles.html">← Day 6</a>
+    <a href="./index.html">목록으로 →</a>
+  </div>
+
+</div>
+</body>
+</html>
