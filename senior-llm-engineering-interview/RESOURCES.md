@@ -42,8 +42,11 @@
 | 자료 | 설명 |
 |------|------|
 | Anthropic — Prompt Engineering 공식 가이드 | 시스템 프롬프트 설계, few-shot, chain-of-thought 공식 권장 패턴 |
-| OpenAI — Prompt Engineering Guide | 프롬프트 구조화, 구조화 출력(JSON mode/schema) 가이드 |
+| Anthropic — "Effective context engineering for AI agents" | 적정 고도(right altitude), 5대 고효율 기법(XML 구조화, 근거 우선, 역할 부여, 단계별 추론, 예시 제시) |
+| OpenAI — Prompt Engineering Guide / GPT-5 프롬프팅 가이드 | 프롬프트 구조화, 캐싱 친화적 레이아웃(정적 내용 앞·변동 내용 뒤), 구조화 출력(JSON mode/schema) 가이드 |
 | JSON Schema 공식 스펙 | 구조화 출력 검증의 표준 |
+| 프롬프트 버전 관리·회귀 테스트 생태계 (Braintrust, MLflow prompt registry, Confident AI/DeepEval 등) | 프롬프트 레지스트리, CI/CD 통합 회귀 테스트, 배포 후 관측 패턴 — 구체 도구명은 계속 바뀌므로 파이프라인 구조 자체를 참고 |
+| xAI — Grok 미승인 시스템 프롬프트 변경 사고 공개 설명 (2025-05) | 프롬프트 변경 리뷰 프로세스 우회로 인한 실제 공개 사고 사례, 재발 방지 조치(공개 프롬프트, 승인 절차, 24시간 모니터링) |
 
 ## Fine-tuning, RFT & Embedding
 
@@ -80,6 +83,7 @@
 | Character.AI 관련 소송/합의 | AI 출력물을 "제품"으로 보는 책임 프레임 변화 논의 |
 | 법률 AI 환각으로 인한 제재 사례들 | hallucination의 실질적 비용(신뢰·법적 리스크) 논의 |
 | EchoLeak (CVE-2025-32711) | 간접 prompt injection의 구체적 공격 경로와 방어 설계 논의 |
+| xAI Grok 미승인 시스템 프롬프트 변경 사고 (2025-05) | 프롬프트를 코드처럼 버전 관리·리뷰·회귀 테스트해야 하는 이유의 실제 공개 사례 — Prompt Engineering/변경 관리 논의에 활용 |
 
 ## 커뮤니티 & 업계 사례
 
