@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — Kubernetes 컨트롤 플레인: etcd, kube-apiserver, 스케줄러</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3347;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #3ecf8e;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --code-bg: #141824;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 16px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 2rem 2rem;
+      text-align: center;
+    }
+    .hero .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .hero h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .hero p { color: var(--muted); max-width: 640px; margin: 0 auto; }
+    .container { max-width: 860px; margin: 0 auto; padding: 2rem; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--accent);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--text); }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      color: #93c5fd;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.88em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.2rem;
+    }
+    pre code { background: none; padding: 0; color: #a5f3fc; font-size: 0.85rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-accent { border-left: 4px solid var(--accent); }
+    .card-green { border-left: 4px solid var(--green); }
+    .card-red { border-left: 4px solid var(--red); }
+    .card-yellow { border-left: 4px solid var(--yellow); }
+    .card-purple { border-left: 4px solid var(--accent2); }
+
+    .question-box {
+      background: var(--surface2);
+      border: 1px solid var(--accent2);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1.5rem 0;
+    }
+    .question-box .q-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+    .question-box .q-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.4rem;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--accent);
+      text-align: left;
+      padding: 0.65rem 1rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+    }
+    td {
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0 1.4rem;
+    }
+    @media (max-width: 640px) { .answer-grid { grid-template-columns: 1fr; } }
+    .answer-good {
+      background: #0d2b1e;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-bad {
+      background: #2b0d0d;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .answer-good .label { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .answer-bad .label { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+
+    .rubric {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-item .check { color: var(--green); font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .rubric-item .text { font-size: 0.9rem; }
+
+    .section-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+    .tag-why { background: #1a2840; color: var(--accent); }
+    .tag-concept { background: #1a1a2e; color: var(--accent2); }
+    .tag-answer { background: #0d2b1e; color: var(--green); }
+    .tag-followup { background: #2b1a00; color: var(--orange); }
+    .tag-rubric { background: #2b2000; color: var(--yellow); }
+
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+      font-size: 0.85rem;
+    }
+    .nav-bar a { color: var(--accent); text-decoration: none; }
+    .nav-bar a:hover { text-decoration: underline; }
+
+    .hl-green { color: var(--green); font-weight: 600; }
+    .hl-red { color: var(--red); font-weight: 600; }
+    .hl-yellow { color: var(--yellow); font-weight: 600; }
+    .hl-accent { color: var(--accent); font-weight: 600; }
+    .hl-orange { color: var(--orange); font-weight: 600; }
+
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem 1.6rem; margin-bottom: 2rem; }
+    .toc h3 { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.7rem; }
+    .toc ol { margin-bottom: 0; }
+    .toc li { font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="day-badge">Day 7</div>
+  <h1>Kubernetes 컨트롤 플레인 — etcd, kube-apiserver, 스케줄러</h1>
+  <p>"컨트롤 플레인이 죽으면 지금 떠 있는 서비스도 같이 죽나요?"라는 질문에, 각 컴포넌트의 역할과 장애 시 정확한 영향 범위로 답하기</p>
+</div>
+
+<div class="container">
+
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#recap">Day 6 복기 — 오늘 다루는 것</a></li>
+      <li><a href="#question1">면접 질문 1 — etcd는 왜 클러스터의 유일한 source of truth인가</a></li>
+      <li><a href="#question2">면접 질문 2 — kube-apiserver가 왜 모든 컴포넌트의 유일한 진입점인가</a></li>
+      <li><a href="#question3">면접 질문 3 — 스케줄러는 Pod를 어느 노드에 배치할지 어떻게 결정하는가</a></li>
+      <li><a href="#mental-model">시니어의 정신 모델 — 컨트롤 플레인 컴포넌트별 장애 영향 범위 체크리스트</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- ========== SECTION 1 ========== -->
+  <h2 id="recap">1. Day 6 복기 — 오늘 다루는 것</h2>
+
+  <p>Day 6에서는 "왜 Kubernetes가 필요한가"를 Compose와 비교하며 다뤘다. 오늘은 그 대답 속에서 반복해서 등장했던 <strong>"스케줄러가 노드에 재배치한다", "클러스터가 원하는 상태를 계속 유지한다"</strong>는 문장들이 실제로 어떤 컴포넌트가 어떻게 수행하는지를 뜯어본다. Kubernetes 컨트롤 플레인은 <code>etcd</code>, <code>kube-apiserver</code>, <code>kube-scheduler</code>, <code>kube-controller-manager</code> 네 가지 핵심 컴포넌트로 구성되고, 이 네 컴포넌트의 역할 분리와 상호작용 방식을 이해하지 못하면 "클러스터가 이상하다"는 장애를 어디서부터 봐야 할지조차 판단할 수 없다.</p>
+
+  <div class="card card-accent">
+    <p>시니어 면접관이 컨트롤 플레인을 묻는 이유는 컴포넌트 이름을 나열할 수 있는지가 아니라, <strong>"이 컴포넌트가 지금 죽으면 이미 실행 중인 워크로드에 무슨 일이 일어나는가"를 컴포넌트별로 다르게 대답할 수 있는지</strong>를 확인하기 위해서다. kube-apiserver가 잠깐 멈추는 것과 etcd 쿼럼이 깨지는 것은 클러스터에 완전히 다른 결과를 만든다. 이 차이를 설명하지 못하면, 실제 운영 중인 매니지드 Kubernetes(EKS, GKE 등)에서 컨트롤 플레인 경고가 떴을 때 "지금 당장 트래픽이 끊기는가, 아니면 새 배포만 못하는가"를 구분하지 못해 잘못된 우선순위로 대응하게 된다.</p>
+  </div>
+
+  <!-- ========== SECTION 2 ========== -->
+  <h2 id="question1">2. 면접 질문 1 — etcd는 왜 클러스터의 유일한 source of truth인가</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"Kubernetes 클러스터의 모든 상태는 결국 etcd에 저장된다고 하는데, 왜 etcd 하나만 그런 특별한 역할을 맡나요? etcd 노드 3대 중 1대가 죽으면 클러스터는 어떻게 되나요? 왜 짝수가 아니라 홀수 개로 구성하나요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 etcd 사용법이 아니라 <strong>Kubernetes 전체가 "선언적 상태 저장소 + 이를 실제 상태로 수렴시키는 컨트롤 루프들"이라는 아키텍처 위에 서 있다는 것</strong>을 이해하는지 확인한다. 이 구조를 모르면 "Deployment YAML을 apply했는데 왜 바로 반영 안 되고 시간이 걸리나요"라는 다음 질문에 답할 수 없고, etcd 장애가 실제로는 "새로운 변경이 막히는 것"이지 "지금 도는 Pod가 즉시 죽는 것"이 아니라는 핵심 구분도 못 하게 된다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>etcd — Kubernetes의 유일한 "기억 장치"</h3>
+    <p>Kubernetes의 모든 리소스(Pod, Deployment, Service, ConfigMap 등)는 사실 YAML로 표현되는 하나의 <strong>키-값 데이터</strong>일 뿐이다. 이 데이터를 실제로 디스크에 저장하는 곳이 <code>etcd</code>다. 중요한 건 <strong>kube-scheduler도, kubelet도, kube-controller-manager도 etcd에 직접 접근하지 않는다</strong>는 점이다 — 모든 컴포넌트는 반드시 kube-apiserver를 거쳐서만 etcd의 데이터를 읽고 쓴다. 즉 etcd는 클러스터의 유일한 "진실"이고, 나머지 모든 컴포넌트는 그 진실을 다양한 각도에서 읽고 자기 역할만큼만 실제 상태를 진실에 맞게 바꾸려고 노력하는 일꾼들이다.</p>
+  </div>
+
+  <div class="card">
+    <h3>Raft 컨센서스 — 왜 홀수 개 노드가 필요한가</h3>
+    <p>etcd는 여러 대(보통 3대 또는 5대)로 클러스터를 구성해서 한 대가 죽어도 데이터가 사라지지 않게 한다. 이때 여러 대의 etcd가 "지금 진짜 값이 무엇인지"에 합의하는 알고리즘이 <strong>Raft 컨센서스</strong>다. Raft는 전체 노드 중 <strong>과반수(quorum)</strong>가 동의해야 값을 확정한다. 노드가 3대면 과반수는 2대, 5대면 3대가 필요하다. 여기서 홀수를 쓰는 이유는 <strong>같은 대수로는 과반수 계산에서 아무 이득이 없기 때문</strong>이다 — 4대의 과반수는 3대인데, 이건 5대의 과반수(3대)와 똑같은 장애 허용치(1대 손실)를 가지면서 노드 1대를 더 운영하는 비용만 늘어난다. 즉 <strong>짝수는 가용성 이득 없이 비용만 커지는 구성</strong>이라서 실무에서는 항상 홀수(1, 3, 5)를 쓴다.</p>
+  </div>
+
+  <table>
+    <tr><th>etcd 노드 수</th><th>과반수(quorum)</th><th>허용 가능한 장애 노드 수</th></tr>
+    <tr><td>1</td><td>1</td><td>0 (장애 허용 불가)</td></tr>
+    <tr><td>3</td><td>2</td><td>1</td></tr>
+    <tr><td>4</td><td>3</td><td>1 (3과 동일한데 노드만 하나 더 씀)</td></tr>
+    <tr><td>5</td><td>3</td><td>2</td></tr>
+  </table>
+
+  <div class="card card-red">
+    <h3>왜 위험한가 — 쿼럼이 깨졌을 때 실제로 일어나는 일</h3>
+    <p>etcd 노드 3대 중 1대만 죽으면 과반수(2대)가 살아있으므로 클러스터는 정상 동작한다. 하지만 <strong>2대가 죽어서 과반수가 무너지면</strong>, etcd는 "지금 값이 확정된 값인지 확신할 수 없는" 상태가 되어 <strong>쓰기(write)를 전부 거부</strong>한다. 이 순간 kube-apiserver로 들어오는 <code>kubectl apply</code>, 새 Pod 생성, Deployment 수정 같은 모든 변경 요청이 실패한다. 하지만 여기서 반드시 짚어야 하는 것은, <strong>이미 각 노드에서 실행 중인 컨테이너는 즉시 영향을 받지 않는다</strong>는 점이다 — kubelet은 이미 받은 Pod 스펙을 로컬에서 계속 실행하고 있고, etcd 장애로 당장 죽는 건 아니다. 즉 etcd 쿼럼 손실은 "새로운 배포와 스케줄링이 멈추는 정지 상태"이지 "서비스 다운"이 아니다 — 다만 이 상태가 길어지면 노드 장애로 재스케줄링이 필요한 상황에서 대응이 불가능해지므로 사실상 시한폭탄이다.</p>
+  </div>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>etcd의 역할부터 명확히:</strong> Kubernetes 전체 상태가 저장되는 유일한 키-값 저장소이고, 다른 컴포넌트는 반드시 kube-apiserver를 거쳐 접근한다는 것.</li>
+    <li><strong>Raft와 쿼럼 설명:</strong> 과반수 합의로 데이터 정합성을 보장하고, 홀수 구성이 짝수 대비 비용 대비 이득이 크다는 것.</li>
+    <li><strong>장애 시나리오 구체화:</strong> 쿼럼 붕괴 시 쓰기가 막힌다는 것과, 이미 떠 있는 워크로드는 즉시 영향받지 않는다는 구분.</li>
+    <li><strong>장기적 위험 언급:</strong> 쓰기가 막힌 상태가 길어지면 실제 장애 대응(재스케줄링 등)이 불가능해진다는 것.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"Kubernetes의 모든 리소스 상태는 etcd라는 분산 키-값 저장소 하나에만 저장됩니다. 스케줄러나 kubelet 같은 다른 컴포넌트는 etcd에 직접 붙지 않고 반드시 kube-apiserver를 거쳐서 읽고 쓰기 때문에, etcd가 유일한 진실의 원천 역할을 합니다. 이 etcd는 보통 3대나 5대로 클러스터를 구성하고, Raft 컨센서스로 과반수가 동의해야 값을 확정합니다. 홀수를 쓰는 이유는 4대와 5대가 똑같이 3표의 과반수를 요구하면서 허용 가능한 장애 노드 수는 4대가 1대, 5대가 2대로 5대가 더 유리한데, 4대는 노드 하나를 더 운영하는 비용만 늘고 이득은 없기 때문입니다.</p>
+    <p style="margin-top:0.6rem;">3대 중 1대가 죽으면 과반수(2대)가 살아있어 정상 동작하지만, 2대가 죽어 과반수가 무너지면 etcd는 쓰기를 전부 거부합니다. 이때 새로운 <code>kubectl apply</code>나 스케줄링은 멈추지만, 이미 각 노드에서 실행 중인 Pod는 kubelet이 로컬 상태를 계속 유지하기 때문에 즉시 죽지는 않습니다. 다만 이 상태가 오래 지속되면 노드 장애가 발생해도 재스케줄링을 할 수 없기 때문에, 서비스가 당장 죽지 않았다고 안심할 상황은 아니라고 판단합니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>etcd가 유일한 상태 저장소이고 다른 컴포넌트는 apiserver를 거친다는 구조를 정확히 설명</li>
+        <li>Raft 쿼럼과 홀수 구성의 비용/이득 계산을 정확히 제시</li>
+        <li>"쓰기 중단"과 "실행 중 워크로드 다운"을 명확히 구분</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"etcd가 죽으면 클러스터가 전부 멈춘다"는 부정확한 일반화</li>
+        <li>홀수 구성의 이유를 "안정성을 위해"처럼 막연하게만 설명</li>
+        <li>쿼럼 붕괴가 이미 떠 있는 Pod에 즉시 영향을 준다고 오답</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "etcd 쿼럼이 살아있어도 노드 하나가 응답이 느려지면 클러스터 성능에 영향이 있나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "네, Raft는 리더 노드가 모든 쓰기 요청을 받아서 팔로워들에게 복제하고 과반수의 확인(ack)을 받아야 커밋을 완료하는 구조라서, 팔로워 중 하나라도 디스크 I/O나 네트워크 지연이 심하면 그 노드의 응답을 기다리는 요청의 지연이 늘어날 수 있습니다. etcd는 디스크 쓰기 지연(fsync latency)에 특히 민감해서, 클라우드에서 저성능 스토리지에 etcd를 올리면 쿼럼 자체는 살아있어도 전체 API 서버 응답 속도가 눈에 띄게 느려지는 경우를 실무에서 종종 봅니다. 그래서 etcd는 보통 SSD 기반의 저지연 스토리지에 별도로 격리해서 운영하는 것이 권장됩니다."</p>
+  </div>
+
+  <!-- ========== SECTION 3 ========== -->
+  <h2 id="question2">3. 면접 질문 2 — kube-apiserver가 왜 모든 컴포넌트의 유일한 진입점인가</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"kubectl apply로 Deployment를 배포하면 실제로 kube-apiserver, kube-controller-manager, kube-scheduler, kubelet 사이에서 무슨 일이 순서대로 일어나나요? 왜 이 컴포넌트들은 서로 직접 통신하지 않고 전부 apiserver를 거치나요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 Kubernetes 아키텍처에서 가장 자주 오해되는 지점을 정확히 겨냥한다. 많은 지원자가 "스케줄러가 kubelet에게 직접 명령을 내린다"처럼 생각하지만, 실제로는 <strong>모든 컴포넌트가 서로를 전혀 모르고, 오직 kube-apiserver가 들고 있는 공유된 상태만 각자 지켜보다가(watch) 자기 역할에 맞는 변화가 생기면 반응하는 구조</strong>다. 이 구조를 정확히 이해해야 "apiserver가 일시적으로 죽어도 컴포넌트들이 서로 직접 통신하지 않기 때문에 이미 진행 중인 작업은 계속된다"는 장애 내성의 이유까지 설명할 수 있다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>kube-apiserver — 유일한 대문이자 검문소</h3>
+    <p>kube-apiserver는 클러스터의 <strong>유일한 REST API 진입점</strong>이다. <code>kubectl</code>, 각 노드의 <code>kubelet</code>, <code>kube-scheduler</code>, <code>kube-controller-manager</code> 모두 오직 이 apiserver의 HTTP(S) API를 통해서만 etcd의 데이터를 읽고 쓸 수 있다. 요청이 들어오면 apiserver는 인증(authentication) → 인가(authorization, 주로 RBAC) → 승인 제어(admission control, 예를 들어 리소스 기본값 주입이나 정책 검증) 단계를 거친 뒤에야 etcd에 반영한다. 즉 apiserver는 단순 저장 창구가 아니라 <strong>모든 변경이 반드시 통과해야 하는 검문소</strong> 역할을 한다.</p>
+  </div>
+
+  <div class="card">
+    <h3>Watch 메커니즘 — 컨트롤 루프의 핵심 동작 원리</h3>
+    <p>kube-scheduler와 kube-controller-manager는 apiserver에 <strong>polling(주기적으로 물어보기)</strong>을 하는 게 아니라 <strong>watch(변경 사항을 구독)</strong>한다. 즉 "새로운 Pod가 생성됨" 같은 이벤트가 etcd에 기록되면, apiserver가 이 변경 사항을 구독 중인 컴포넌트들에게 즉시 스트리밍으로 전달한다. 이 패턴을 <strong>컨트롤 루프(control loop)</strong> 또는 <strong>reconciliation loop</strong>라고 부르는데, 각 컨트롤러는 "지금 상태(actual state)"와 "원하는 상태(desired state)"를 비교하고, 차이가 있으면 그 차이를 좁히는 액션만 취한 뒤 다시 관찰하는 무한 루프로 동작한다.</p>
+  </div>
+
+  <table>
+    <tr><th>단계</th><th>컴포넌트</th><th>실제로 하는 일</th></tr>
+    <tr><td>1</td><td>kubectl → kube-apiserver</td><td>Deployment 리소스 생성 요청 (인증/인가/admission 통과 후 etcd에 저장)</td></tr>
+    <tr><td>2</td><td>kube-controller-manager (Deployment controller)</td><td>새 Deployment를 watch로 감지 → 원하는 ReplicaSet을 생성하도록 apiserver에 요청</td></tr>
+    <tr><td>3</td><td>kube-controller-manager (ReplicaSet controller)</td><td>새 ReplicaSet을 watch로 감지 → 원하는 개수만큼 Pod 오브젝트(아직 노드 미배정)를 생성 요청</td></tr>
+    <tr><td>4</td><td>kube-scheduler</td><td>노드가 배정되지 않은(unscheduled) Pod를 watch로 감지 → 적합한 노드를 계산해 Pod의 <code>nodeName</code> 필드를 apiserver에 업데이트 요청</td></tr>
+    <tr><td>5</td><td>kubelet (해당 노드)</td><td>자신에게 배정된 Pod를 watch로 감지 → 실제로 컨테이너 런타임에게 컨테이너 생성을 지시</td></tr>
+    <tr><td>6</td><td>kubelet → kube-apiserver</td><td>Pod 상태(Running 등)를 다시 apiserver에 보고 → etcd에 반영</td></tr>
+  </table>
+
+  <div class="card card-yellow">
+    <h3>흔한 오해 — "스케줄러가 kubelet에게 명령을 내린다"</h3>
+    <p>스케줄러는 kubelet이 어느 노드에서 도는지조차 직접 알지 못하고, kubelet에게 직접 네트워크 요청을 보내지도 않는다. 스케줄러가 하는 일은 오직 <strong>"이 Pod는 이 노드에서 돌아야 한다"는 결정을 apiserver를 통해 etcd에 기록하는 것</strong>뿐이다. 그 다음은 해당 노드의 kubelet이 스스로 watch하다가 자기 노드 이름이 적힌 Pod를 발견하고 알아서 실행한다. 이 <strong>"서로 모르고, 공유된 상태만 보고 각자 반응한다"</strong>는 구조가 Kubernetes 전체를 관통하는 설계 철학이고, 이 덕분에 apiserver가 잠깐 죽어도 이미 배정된 작업은 각 컴포넌트가 로컬에서 계속 진행할 수 있다.</p>
+  </div>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>apiserver의 검문소 역할부터:</strong> 인증/인가/admission을 거쳐야 etcd에 반영된다는 것.</li>
+    <li><strong>watch 기반 컨트롤 루프 설명:</strong> polling이 아니라 이벤트 구독이고, desired state와 actual state를 비교해 차이를 좁히는 방식이라는 것.</li>
+    <li><strong>단계별 흐름 나열:</strong> Deployment → ReplicaSet → Pod → 스케줄링 → kubelet 실행까지 순서대로.</li>
+    <li><strong>핵심 오해 정정:</strong> 컴포넌트들이 서로 직접 통신하지 않고 공유 상태만 본다는 설계 철학과 그 장점(apiserver 순간 장애에 대한 내성).</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"kube-apiserver는 클러스터의 유일한 REST API 진입점이라서, kubectl이든 스케줄러든 kubelet이든 전부 apiserver를 거쳐야만 etcd 데이터를 읽고 쓸 수 있습니다. 이때 요청은 인증, RBAC 인가, admission control을 순서대로 통과해야 반영됩니다. 그 다음부터가 핵심인데, 각 컴포넌트는 서로 직접 통신하지 않고 apiserver의 변경 사항을 watch로 구독만 합니다. Deployment를 생성하면 controller-manager 안의 Deployment 컨트롤러가 이를 감지해서 ReplicaSet을 만들고, ReplicaSet 컨트롤러가 다시 이를 감지해서 노드가 정해지지 않은 Pod들을 만듭니다. 스케줄러는 이 노드 미배정 Pod를 watch하다가 적합한 노드를 계산해서 그 Pod의 nodeName 필드만 apiserver에 업데이트합니다. 마지막으로 해당 노드의 kubelet이 자기 이름이 적힌 Pod를 watch로 발견하고 실제 컨테이너를 띄웁니다.</p>
+    <p style="margin-top:0.6rem;">중요한 건 스케줄러가 kubelet에게 직접 명령을 내리는 게 아니라는 겁니다. 서로 존재를 모르고 오직 apiserver가 들고 있는 공유 상태만 보고 각자 반응하는 구조라서, apiserver가 순간적으로 장애가 나도 이미 각 컴포넌트에 배정된 작업은 로컬에서 계속 진행될 수 있는 장애 내성을 갖게 됩니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>apiserver의 인증/인가/admission 검문소 역할을 정확히 짚음</li>
+        <li>watch 기반 컨트롤 루프와 desired/actual state 비교 원리를 설명</li>
+        <li>컴포넌트가 서로 직접 통신하지 않는다는 설계 철학과 장애 내성을 연결</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"스케줄러가 kubelet에게 Pod를 배정해준다"는 식으로 직접 통신을 가정</li>
+        <li>watch와 polling의 차이를 모르고 "주기적으로 확인한다"고만 설명</li>
+        <li>Deployment → ReplicaSet → Pod의 계층 흐름을 생략하고 뭉뚱그림</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "kube-apiserver가 여러 개 떠 있는 이유는 뭔가요? 이것도 etcd처럼 컨센서스가 필요한가요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "아니요, kube-apiserver는 그 자체로는 상태를 갖지 않는(stateless) 컴포넌트입니다. 모든 상태는 etcd에만 있고, apiserver는 요청을 받아서 검증하고 etcd에 전달하는 역할만 하기 때문에, 여러 대를 로드밸런서 뒤에 두고 수평 확장할 수 있습니다. 컨센서스가 필요한 건 상태를 가진 etcd뿐이고, apiserver는 여러 인스턴스가 동시에 떠 있어도 서로 조율할 필요 없이 각자 독립적으로 요청을 처리한 뒤 etcd에만 정합성 있게 반영하면 됩니다. 그래서 매니지드 Kubernetes(EKS 등)에서는 보통 apiserver를 여러 대로 이중화하고 앞단에 로드밸런서를 둬서 가용성을 높입니다."</p>
+  </div>
+
+  <!-- ========== SECTION 4 ========== -->
+  <h2 id="question3">4. 면접 질문 3 — 스케줄러는 Pod를 어느 노드에 배치할지 어떻게 결정하는가</h2>
+
+  <div class="question-box">
+    <div class="q-label">핵심 면접 질문</div>
+    <div class="q-text">"클러스터에 노드가 10대 있는데, 새로 만든 Pod가 그중 특정 한 대에 배치됐습니다. 스케줄러는 이 노드를 어떻게 골랐나요? 만약 적합한 노드가 하나도 없으면 Pod는 어떤 상태가 되나요?"</div>
+  </div>
+
+  <h3><span class="section-tag tag-why">왜 면접에서 묻는가</span></h3>
+  <p>이 질문은 스케줄링 알고리즘 세부 구현을 외웠는지가 아니라, <strong>스케줄링이 "무작위 배치"나 "라운드로빈"이 아니라 제약 조건을 만족하는 후보를 걸러낸 뒤 최적을 점수로 고르는 2단계 과정</strong>이라는 걸 이해하는지 확인한다. 이걸 모르면 실무에서 자주 겪는 "Pod가 Pending 상태에서 안 넘어간다"는 장애를 <code>kubectl describe pod</code>의 Events를 봐도 원인을 못 찾고 헤매게 된다.</p>
+
+  <h3><span class="section-tag tag-concept">전제 개념 — 쉬운 한국어로</span></h3>
+
+  <div class="card">
+    <h3>Filtering(걸러내기) — "이 노드는 애초에 후보가 될 수 없다"</h3>
+    <p>스케줄러는 먼저 클러스터의 모든 노드를 대상으로 <strong>이 Pod가 절대 뜰 수 없는 노드를 제외</strong>하는 필터링 단계를 거친다. 예를 들어 Pod가 요청한 CPU/메모리(<code>requests</code>)를 감당할 여유 자원이 없는 노드, <code>nodeSelector</code>나 <code>nodeAffinity</code> 조건에 맞지 않는 노드, 노드에 걸린 <code>taint</code>를 Pod의 <code>toleration</code>이 감내하지 못하는 노드는 이 단계에서 후보 목록에서 완전히 제외된다.</p>
+  </div>
+
+  <div class="card">
+    <h3>Scoring(점수 매기기) — "남은 후보 중 가장 나은 곳은 어디인가"</h3>
+    <p>필터링을 통과한 노드들은 이제 여러 기준으로 <strong>점수</strong>가 매겨진다. 대표적으로 자원을 얼마나 여유 있게 남길 수 있는지(리소스 균형 배치), 같은 Pod의 다른 복제본들과 얼마나 떨어뜨려 배치할지(<code>podAntiAffinity</code>로 가용 영역 분산), 이미 필요한 이미지를 캐싱해둔 노드인지 같은 요소가 반영된다. 이 점수를 종합해서 <strong>가장 높은 점수를 받은 노드 하나</strong>에 Pod가 배정된다.</p>
+  </div>
+
+  <table>
+    <tr><th>단계</th><th>대표 기준</th><th>결과</th></tr>
+    <tr><td>Filtering</td><td>requests 대비 가용 자원, nodeSelector/nodeAffinity, taint/toleration, 포트 충돌 여부</td><td>부적합 노드를 후보에서 완전히 제외</td></tr>
+    <tr><td>Scoring</td><td>자원 여유도 균형, podAntiAffinity 기반 분산, 이미지 로컬리티</td><td>남은 후보 중 최고 점수 노드 1개 선정</td></tr>
+  </table>
+
+  <div class="card card-red">
+    <h3>왜 위험한가 — 적합한 노드가 하나도 없을 때 (Pending)</h3>
+    <p>필터링 단계에서 <strong>모든 노드가 제외</strong>되면, 스케줄러는 이 Pod에 노드를 배정하지 못한 채로 남겨둔다. 이 상태가 바로 <code>kubectl get pod</code>에서 보이는 <strong>Pending</strong> 상태다. Pending은 컨테이너가 시작을 시도하다 실패한 게 아니라, <strong>애초에 스케줄링 자체가 되지 않아 어느 노드에서도 실행이 시작되지 않은 상태</strong>다. <code>kubectl describe pod</code>의 Events에 <code>0/10 nodes are available: 3 Insufficient cpu, 7 node(s) didn't match Pod's node affinity</code> 같은 메시지가 이 필터링 실패 이유를 그대로 보여준다.</p>
+  </div>
+
+  <div class="card card-yellow">
+    <h3>흔한 오해 — "Pending이면 일단 재시작하면 된다"</h3>
+    <p>Pending은 <strong>restartPolicy로 해결되는 문제가 아니다</strong>. 재시작은 이미 스케줄링되어 노드에서 실행되던 컨테이너가 죽었을 때 적용되는 정책인데, Pending 상태의 Pod는 애초에 노드 배정조차 안 됐기 때문에 재시작할 대상 자체가 없다. Pending을 해결하려면 리소스 요청량을 낮추거나, 노드를 스케일 아웃하거나(Cluster Autoscaler), affinity/taint 설정 자체를 다시 검토해야 한다 — 즉 <strong>스케줄링 제약 조건과 실제 클러스터 자원 사이의 불일치를 고치는 것</strong>이 근본 해결책이다.</p>
+  </div>
+
+  <h3><span class="section-tag tag-answer">답변 사고 순서</span></h3>
+  <ol>
+    <li><strong>2단계 구조부터 명시:</strong> Filtering으로 후보를 걸러내고, Scoring으로 최적 하나를 고르는 순서.</li>
+    <li><strong>각 단계의 대표 기준 나열:</strong> 자원 요청량, affinity/taint(필터링) vs 자원 균형, 이미지 로컬리티(스코어링).</li>
+    <li><strong>실패 상황 연결:</strong> 모든 노드가 필터링에서 제외되면 Pending 상태가 된다는 것.</li>
+    <li><strong>잘못된 대응과 올바른 대응 구분:</strong> restartPolicy로 못 고치고, 리소스/노드 확장/affinity 재검토가 필요하다는 것.</li>
+  </ol>
+
+  <h3><span class="section-tag tag-answer">핵심 답변 예시</span></h3>
+  <div class="card card-green">
+    <p>"스케줄러는 두 단계로 노드를 고릅니다. 먼저 Filtering 단계에서 Pod가 요청한 CPU/메모리를 감당할 자원이 없는 노드, nodeAffinity 조건에 안 맞는 노드, taint를 toleration으로 감내하지 못하는 노드를 후보에서 완전히 제외합니다. 그다음 Scoring 단계에서 남은 후보들에 자원 여유도, podAntiAffinity 기반 분산, 이미지 캐시 여부 같은 기준으로 점수를 매겨서 가장 높은 점수를 받은 노드 하나에 최종 배정합니다.</p>
+    <p style="margin-top:0.6rem;">만약 Filtering 단계에서 모든 노드가 제외되면 Pod는 Pending 상태로 남습니다. 이건 컨테이너 실행이 실패한 게 아니라 애초에 스케줄링 자체가 안 된 상태라서, restartPolicy로는 절대 해결되지 않습니다. kubectl describe pod의 Events에 몇 개 노드가 왜 제외됐는지 이유가 나오기 때문에, 저는 이 메시지를 보고 리소스 요청량을 낮출지, 노드를 늘릴지, affinity 설정을 재검토할지를 판단합니다."</p>
+  </div>
+
+  <div class="answer-grid">
+    <div class="answer-good">
+      <div class="label">✓ 강한 답변</div>
+      <ul>
+        <li>Filtering과 Scoring 2단계 구조를 명확히 구분해서 설명</li>
+        <li>각 단계의 구체적 기준(자원, affinity, taint, 이미지 로컬리티)을 제시</li>
+        <li>Pending의 원인과 restartPolicy로 해결되지 않는 이유를 정확히 짚음</li>
+      </ul>
+    </div>
+    <div class="answer-bad">
+      <div class="label">✗ 약한 답변</div>
+      <ul>
+        <li>"스케줄러가 알아서 적당한 노드에 배치해준다"는 뭉뚱그린 설명</li>
+        <li>Filtering과 Scoring을 구분하지 못하고 하나의 기준으로 섞어 설명</li>
+        <li>Pending 상태를 "일단 기다리면 된다" 또는 "재시작하면 된다"고 오답</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3><span class="section-tag tag-followup">Senior-level Follow-up</span></h3>
+  <div class="card card-yellow">
+    <p><strong>면접관:</strong> "특정 노드에 이미 중요한 시스템 Pod만 돌게 하고, 일반 애플리케이션 Pod는 못 뜨게 막고 싶다면 어떻게 설정하나요?"</p>
+    <p style="margin-top:0.6rem;"><strong>시니어 답변 방향:</strong> "해당 노드에 taint를 걸어서(예: <code>kubectl taint nodes node1 dedicated=system:NoSchedule</code>) 기본적으로 그 노드에는 어떤 Pod도 스케줄링되지 못하게 막습니다. 그리고 그 노드에 꼭 떠야 하는 시스템 Pod에만 동일한 key/value를 갖는 toleration을 부여해서 그 Pod만 예외적으로 필터링을 통과하게 합니다. 여기서 흔한 오해가, toleration은 '이 노드에 강제로 배치하겠다'는 뜻이 아니라 '이 노드에 배치되는 것을 막지 않겠다'는 허용일 뿐이라는 겁니다. 실제로 특정 노드에 반드시 배치하고 싶다면 taint/toleration과 별개로 nodeAffinity를 함께 설정해야 합니다."</p>
+  </div>
+
+  <!-- ========== SECTION 5 ========== -->
+  <h2 id="mental-model">5. 시니어의 정신 모델 — 컨트롤 플레인 컴포넌트별 장애 영향 범위 체크리스트</h2>
+
+  <p>"컨트롤 플레인에 문제가 생겼다"는 알림을 받았을 때, 시니어는 어느 컴포넌트가 문제인지에 따라 <strong>지금 당장 트래픽이 끊기는 문제인지, 새 배포만 막히는 문제인지</strong>를 즉시 구분해서 대응 우선순위를 정한다.</p>
+
+  <div class="card card-purple">
+    <h3>컨트롤 플레인 컴포넌트 장애 영향 범위</h3>
+    <table>
+      <tr><th>장애 컴포넌트</th><th>이미 실행 중인 워크로드</th><th>새로운 배포/스케줄링</th><th>서비스 트래픽(Service/kube-proxy)</th></tr>
+      <tr><td>etcd 쿼럼 붕괴</td><td>영향 없음 (kubelet이 로컬 상태 유지)</td><td>전면 중단 (쓰기 거부)</td><td>영향 없음 (kube-proxy는 이미 받은 규칙으로 계속 동작)</td></tr>
+      <tr><td>kube-apiserver 전체 다운</td><td>영향 없음</td><td>전면 중단 (모든 요청의 유일한 진입점이 사라짐)</td><td>영향 없음</td></tr>
+      <tr><td>kube-scheduler 다운</td><td>영향 없음</td><td>신규 Pod만 Pending으로 계속 대기 (기존 재배치도 안 됨)</td><td>영향 없음</td></tr>
+      <tr><td>kube-controller-manager 다운</td><td>영향 없음</td><td>ReplicaSet 복구, 노드 장애 시 Pod 재생성 등 자동 복구가 멈춤</td><td>영향 없음</td></tr>
+      <tr><td>kubelet 다운 (노드 1대)</td><td>해당 노드의 Pod는 노드가 NotReady로 표시된 뒤 재스케줄 대상이 됨</td><td>해당 노드는 스케줄링 후보에서 제외</td><td>해당 노드의 Pod가 Endpoints에서 빠짐 (트래픽 재분배)</td></tr>
+    </table>
+    <p style="margin-top:0.8rem;"><strong>흔한 오해:</strong> "컨트롤 플레인 장애 = 서비스 다운"이라는 등식은 대부분 틀리다. etcd, apiserver, scheduler, controller-manager는 모두 <strong>"클러스터의 원하는 상태를 계산하고 수렴시키는" 역할</strong>이지, 실제 트래픽을 처리하는 데이터 플레인(각 노드의 kubelet, kube-proxy, 컨테이너 런타임)과는 분리되어 있다. 그래서 컨트롤 플레인이 통째로 잠깐 마비돼도 이미 떠 있는 서비스는 계속 트래픽을 받을 수 있다 — 다만 그 상태에서 노드 장애 같은 추가 이벤트가 겹치면 복구 불가능한 상황으로 이어질 수 있다는 것이 진짜 위험이다.</p>
+  </div>
+
+  <!-- ========== SECTION 6 ========== -->
+  <h2 id="rubric">6. 자기 점검 Rubric</h2>
+
+  <div class="rubric">
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">etcd가 클러스터의 유일한 상태 저장소이고, 다른 모든 컴포넌트는 kube-apiserver를 거쳐야만 접근한다는 것을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Raft 쿼럼 개념과, 홀수 개 노드가 짝수 대비 비용/이득 면에서 유리한 이유를 계산해서 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">etcd 쿼럼 붕괴 시 "쓰기 중단"과 "이미 실행 중인 워크로드는 즉시 영향받지 않음"을 구분해서 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">kube-apiserver의 인증/인가/admission control 검문소 역할을 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">watch 기반 컨트롤 루프가 polling과 다르다는 것과, desired state/actual state 수렴 원리를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Deployment 생성부터 kubelet의 컨테이너 실행까지 컴포넌트 간 순서를 단계별로 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">스케줄러가 kubelet에 직접 명령하지 않고, 서로 공유 상태만 watch한다는 설계 철학과 장애 내성을 연결해서 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">스케줄링의 Filtering과 Scoring 2단계 구조와 각 단계의 대표 기준을 구분해서 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">Pending 상태의 원인이 스케줄링 실패이며, restartPolicy로 해결되지 않는 이유를 설명할 수 있다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="check">□</span>
+      <span class="text">컨트롤 플레인 컴포넌트별 장애가 "새 배포/스케줄링 중단"과 "서비스 트래픽 중단"에 각각 어떻게 다르게 영향을 주는지 표로 구분해서 설명할 수 있다</span>
+    </div>
+  </div>
+
+  <div class="card card-accent" style="margin-top: 2rem;">
+    <h3>다음 Day 예고</h3>
+    <p><strong>Day 8 — Pod 생명주기: 설계, health check, 재시작 정책.</strong> 오늘 컨트롤 플레인이 어떻게 Pod를 노드에 배정하는지를 다뤘다면, 다음은 그 Pod가 노드 안에서 시작부터 종료까지 어떤 상태를 거치는지, livenessProbe/readinessProbe/startupProbe가 각각 무엇을 보장하고 무엇을 보장하지 않는지, restartPolicy가 CrashLoopBackOff와 어떻게 연결되는지를 다룹니다.</p>
+  </div>
+
+</div>
+
+<div class="nav-bar">
+  <a href="./0006-docker-compose-local-to-production-boundary.html">← Day 6</a>
+  <a href="../PROGRESS.md">PROGRESS.md</a>
+  <a href="./index.html">레슨 목록</a>
+  <a href="./0008-pod-lifecycle-health-check-restart-policy.html">Day 8 →</a>
+</div>
+
+</body>
+</html>
