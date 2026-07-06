@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 3 — Entity·Slot 추출 설계와 검증</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #2dd4bf;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #123230; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #0f1117;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .src-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+    .src-note a { color: var(--blue); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 3 · 챗봇 서비스 Interview</div>
+    <h1>Entity·Slot 추출 설계와 검증</h1>
+    <div class="subtitle">발화에서 필요한 값을 정확하게 뽑아내고, 여러 개의 값·모호한 값을 안전하게
+    처리하며, 규칙 기반 NER과 LLM 기반 구조화 추출 중 언제 무엇을 선택할지, 그리고 추출된 값을
+    어떻게 검증해야 하는지 판단하는 능력</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "Slot filling을 설계할 때 필수 슬롯과 선택 슬롯을 어떻게 구분하고, 슬롯이 채워지지
+      않았을 때 시스템이 어떻게 동작해야 한다고 생각하시나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "전통적인 NER(개체명 인식) 모델과 LLM 기반 entity 추출 중 어떤 상황에서 어떤 것을
+      선택하시겠습니까? 그 판단 기준은 무엇인가요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "사용자가 한 발화에서 여러 개의 값을 동시에 말하는 경우(multi-value entity)는 어떻게
+      설계하고, LLM이 추출한 entity 값을 실제로 신뢰할 수 있는지는 어떻게 검증하시나요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Entity와 Slot은 같은 말이 아니다</h2>
+
+    <p>
+      Day 1에서 Entity를 "발화에서 추출되는 구체적인 값"이라고 정의했다. 여기서 한 단계 더
+      들어가면, <strong>entity는 발화라는 텍스트에서 뽑아낸 원시 값이고, slot은 그 값이
+      최종적으로 채워져야 하는 대화 상태(dialogue state)의 변수 자리</strong>다. 예를 들어
+      "내일 3시에 예약해줘"라는 발화에서 <code>date</code>, <code>time</code>이라는
+      entity가 추출되고, 이 값들이 "예약하기" intent가 필요로 하는 <code>reservation_date</code>,
+      <code>reservation_time</code>이라는 slot에 채워진다.
+    </p>
+
+    <div class="callout callout-info">
+      <strong>왜 이 구분이 중요한가:</strong> entity 추출이 실패하는 것(값을 못 뽑음)과
+      slot이 채워지지 않는 것(값은 뽑았지만 어느 slot에 넣을지 매핑이 안 됨, 혹은 검증에
+      실패해 거부됨)은 <strong>원인 위치가 다르다</strong>. 전자는 NLU/추출 모델의 문제이고,
+      후자는 매핑·검증 로직의 문제다. 이 둘을 구분하지 못하면 장애 원인 분석이 엉뚱한
+      곳으로 향한다.
+    </div>
+
+    <h3>① 추출 방법의 스펙트럼 — 규칙 기반부터 LLM 구조화 추출까지</h3>
+    <p>
+      Entity 추출 방법은 하나로 고정된 것이 아니라 <strong>정확도, 지연시간, 비용,
+      설명가능성(explainability)이라는 축 위의 스펙트럼</strong>이다.
+    </p>
+
+    <table>
+      <tr>
+        <th>방법</th>
+        <th>적합한 상황</th>
+        <th>한계</th>
+      </tr>
+      <tr>
+        <td><strong>규칙 기반(정규식·사전 lookup)</strong></td>
+        <td>전화번호, 주문번호, 코드 값처럼 <strong>형식이 고정된 값</strong></td>
+        <td>표현이 조금만 달라져도(오탈자, 구어체) 실패. 상대 시간 표현("다음주 화요일")
+        같은 자연어 해석에는 취약</td>
+      </tr>
+      <tr>
+        <td><strong>통계적 NER(CRF, BiLSTM-CRF, transformer 기반)</strong></td>
+        <td>사람 이름, 지명처럼 <strong>도메인 내 반복 패턴이 있는 개방형 값</strong></td>
+        <td>학습 데이터가 필요하고, 신규 카테고리 추가 시 재학습 비용 발생. 문맥 의존적
+        모호성 처리는 제한적</td>
+      </tr>
+      <tr>
+        <td><strong>LLM 기반 구조화 추출(structured output / tool calling)</strong></td>
+        <td>문맥 의존적 해석이 필요한 값(상대 시간, 복합 조건, 자유 서술형 요청)</td>
+        <td>지연시간·비용이 높고, <strong>값이 없는데도 지어내는(hallucination) 실패
+        모드</strong>가 있음</td>
+      </tr>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>2026년 실무 기준:</strong> 순수 JSON 모드(자유 텍스트 생성 후 파싱)나 정규식
+      기반 후처리로 LLM 출력을 파싱하던 방식은 legacy로 간주된다. OpenAI의 Structured
+      Outputs(<code>strict: true</code>)나 Anthropic Claude의 Structured Outputs(Claude
+      Sonnet 4.5/Opus 4.1 대상 public beta, <code>structured-outputs-2025-11-13</code>
+      베타 헤더)처럼, <strong>JSON Schema를 문법(grammar) 수준에서 강제해 스키마를 벗어난
+      출력 자체가 생성되지 않도록 하는 constrained decoding</strong>이 프로덕션 추출의
+      기본값이 됐다. 다만 이 기술은 "형식이 스키마를 따르는가"만 보장하며, "값이 실제로
+      맞는가"는 별도로 검증해야 한다는 점이 자주 간과된다.
+    </div>
+    <div class="src-note">
+      근거: OpenAI Structured Outputs 공식 문서 및 도입 발표; Anthropic Claude Platform
+      Docs — Structured Outputs(상세 URL은 <code>RESOURCES.md</code> 참고)
+    </div>
+
+    <h3>② LLM 추출 특유의 실패 모드 — "없는 값을 지어낸다"</h3>
+    <p>
+      LLM 기반 추출에서 실무자들이 가장 자주 놓치는 문제는 <strong>추출할 값이 정말 없을 때
+      빈 결과를 정직하게 반환하지 못하고, 그럴듯한 값을 지어내는(hallucination) 경향</strong>이다.
+      예를 들어 "그냥 문의만 하려고요"라는 발화에 상품 entity를 추출하도록 시키면, LLM이
+      맥락상 아무 상품도 없는데 이전 대화에서 언급된 상품명을 다시 채워 넣는 식의 오류가
+      발생할 수 있다.
+    </p>
+
+    <div class="callout callout-warn">
+      <strong>대응 원칙 — Span Grounding:</strong> 추출된 entity 값이 <strong>원문 발화의
+      실제 부분 문자열(span)과 일치하는지</strong>를 후처리에서 검증한다. LLM이 반환한 값이
+      원문에 존재하지 않으면 그 값은 즉시 폐기하고 재추출하거나 빈 값으로 처리한다. 이는
+      "모델이 사실에 충실한가(faithfulness)"를 강제하는 가장 실용적인 방법이며, 프롬프트에
+      "원문에 없는 값은 만들지 말고 빈 배열을 반환하라"는 명시적 지시와 부정 예시(negative
+      few-shot example)를 함께 넣는 것이 표준적인 완화책이다.
+    </div>
+    <div class="src-note">
+      근거: hallucination detection/grounding 관련 다수 연구 — span 근거 검증이 entity
+      추출 hallucination의 핵심 완화책으로 반복 확인됨(상세 URL은 <code>RESOURCES.md</code> 참고)
+    </div>
+
+    <h3>③ 검증(Validation)은 한 겹이 아니라 세 겹이다</h3>
+    <p>
+      "타입만 맞으면 검증 끝"이라는 생각이 실무에서 가장 흔한 함정이다. 실제로는 세 층의
+      검증이 순서대로 필요하다.
+    </p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>스키마 검증(Schema Validation)</strong>
+        값의 타입·포맷이 맞는가? (날짜가 날짜 형식인가, 숫자가 숫자인가) — constrained
+        decoding이 상당 부분 자동으로 보장해준다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>비즈니스 규칙 검증(Business Rule Validation)</strong>
+        값이 도메인 규칙상 유효한가? (예약 날짜가 과거는 아닌지, 주문 수량이 재고 범위
+        안인지) — 스키마 검증을 통과해도 이 층에서 실패할 수 있다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>사용자 확인(Confirmation)</strong>
+        값이 유효해도, 되돌리기 어렵거나(irreversible) 비용이 큰 행동(결제, 취소, 개인정보
+        변경)과 연결된 slot은 <strong>실행 전에 사용자에게 다시 확인</strong>시킨다.
+      </div>
+    </div>
+
+    <div class="callout callout-danger">
+      스키마 검증만 통과시키고 곧바로 실행하는 설계는, "형식은 맞지만 실제로는 사용자
+      의도와 다른 값"이 그대로 실행되는 사고로 이어진다. 특히 결제 금액, 배송지 변경처럼
+      되돌리기 어려운 slot은 반드시 confirmation 층을 거쳐야 한다.
+    </div>
+
+    <h3>④ Multi-value Entity — 한 발화, 여러 개의 값</h3>
+    <p>
+      "사과 3개랑 바나나 2개 주문해줘"처럼 하나의 발화에 <strong>같은 타입의 entity가 여러
+      개 등장</strong>하는 경우가 있다. 이를 단일 값 slot으로만 설계하면 마지막에 언급된
+      값만 남고 나머지는 소실된다.
+    </p>
+
+    <div class="callout callout-warn">
+      <strong>플랫폼 한계를 알아야 한다:</strong> Dialogflow CX의 폼 채우기(form filling)는
+      기본적으로 한 턴에서 여러 값이 들어와도 보통 하나의 form parameter만 채워지는 구조적
+      한계가 있다(같은 파라미터가 동일 플로우의 intent parameter로도 정의된 특수한 경우는
+      예외). Rasa는 슬롯 매핑을 딕셔너리 형태로 정의해 entity·intent 값·전체 메시지 등
+      여러 소스 중 첫 매치를 사용하는 방식으로 유연성을 확보한다. 따라서 multi-value가
+      필요한 slot은 <strong>처음부터 리스트(list) 타입으로 모델링</strong>하고, "값이 여러
+      개 들어올 수 있다"는 전제하에 파싱·검증 로직을 설계해야 하며, 프레임워크의 기본
+      동작에 의존하면 안 된다.
+    </div>
+    <div class="src-note">
+      근거: Google Cloud Dialogflow CX — Parameters 공식 문서; Rasa — Slot Filling 공식
+      문서(상세 URL은 <code>RESOURCES.md</code> 참고)
+    </div>
+
+    <h3>⑤ 채워지지 않은/모호한 Slot — Reask 설계</h3>
+    <p>
+      Slot이 비어있거나, 검증에 실패하거나, 여러 후보 값이 동시에 감지돼 모호한 경우
+      시스템은 무작정 fallback으로 넘기지 말고 <strong>좁혀진 재질문(reask)</strong>을
+      먼저 시도해야 한다. "언제로 예약하시겠어요?"라는 열린 질문보다 "이번 주 화요일과
+      목요일 중 어느 쪽인가요?"처럼 <strong>이미 알고 있는 정보로 후보를 좁힌 질문</strong>이
+      슬롯을 채울 확률을 높인다. 그리고 재질문에도 반복 실패하면(보통 2~3회 임계치) 더
+      이상 자동화로 해결하려 하지 말고 Day 7에서 다룰 fallback/human handoff로 넘겨야 한다.
+    </p>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <ul>
+      <li>
+        <strong>추출 방법을 상황에 맞게 선택하는가:</strong> "무조건 LLM"이나 "무조건
+        규칙 기반"이 아니라, 값의 형식·모호성·비용 제약에 따라 근거 있게 방법을 고르는가
+      </li>
+      <li>
+        <strong>검증을 단일 층으로 뭉뚱그리지 않는가:</strong> 스키마·비즈니스 규칙·사용자
+        확인이라는 서로 다른 층위를 구분해서 설계하는가
+      </li>
+      <li>
+        <strong>LLM 추출의 실패 모드를 실제로 아는가:</strong> "LLM이 구조화된 출력을
+        내니까 믿을 수 있다"는 얕은 이해가 아니라, hallucination 같은 구체적 위험과
+        완화책(span grounding)을 아는가
+      </li>
+      <li>
+        <strong>multi-value·모호성 같은 엣지 케이스를 설계 초기에 고려하는가:</strong>
+        "나중에 예외 처리하면 된다"는 사후 대응이 아니라 처음부터 리스트 타입·재질문
+        흐름을 설계에 포함하는가
+      </li>
+      <li>
+        <strong>운영 리스크에 비례해 확인 절차를 다르게 두는가:</strong> 모든 slot을
+        똑같이 취급하지 않고, 되돌리기 어려운 행동일수록 더 강한 확인 절차를 두는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      Senior 엔지니어는 entity 추출을 "정확도 숫자를 올리는 모델링 문제"로만 보지 않고,
+      <strong>"틀렸을 때 사용자와 시스템에 미치는 피해 규모에 따라 검증 강도를 차등화하는
+      설계 문제"</strong>로 접근한다는 것을 보여줘야 한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: "다음주 화요일"을 인식하지 못하는 정규식 기반 날짜 파서</h3>
+    <p>
+      배포 초기에는 "3월 5일", "2026-03-05" 같은 명시적 날짜만 정규식으로 처리했는데,
+      실제 사용자의 상당수가 "다음주 화요일", "내일모레"처럼 상대 시간 표현을 사용해
+      예약 실패가 반복됐다. → <strong>형식이 고정된 값은 규칙 기반이 유리하지만, 문맥
+      해석이 필요한 값(상대 시간)은 규칙 기반의 한계를 인정하고 LLM 기반 추출이나 전용
+      시간 정규화 로직으로 전환</strong>해야 하는 전형적 사례다.
+    </p>
+
+    <h3>상황 2: 언급하지 않은 상품이 주문에 들어간 경우</h3>
+    <p>
+      이전 턴에서 "A 상품 재고 있나요?"라고 물었던 사용자가 다음 턴에 "그냥 결제할게요"라고
+      말했는데, LLM이 이전 맥락의 A 상품명을 그대로 끌어와 "지금 발화에 없는 값"을
+      entity로 채워 넣어 결제가 잘못 진행됐다. → <strong>span grounding 검증(추출값이
+      현재 턴의 원문에 실제로 존재하는지 확인)</strong>이 없어서 발생한 hallucination
+      사고다.
+    </p>
+
+    <h3>상황 3: "사과 3개랑 바나나 2개" 중 하나만 처리된 주문</h3>
+    <p>
+      상품 slot을 단일 값으로 설계해서, 한 발화에 여러 상품이 언급되면 마지막에 언급된
+      상품만 slot에 남고 나머지는 조용히 소실됐다. 사용자는 두 상품 모두 주문됐다고
+      생각했지만 실제로는 하나만 처리된 채였다. → <strong>multi-value가 필요한 slot을
+      처음부터 리스트 타입으로 모델링하지 않은 것</strong>이 근본 원인이며, 이런 소실은
+      로그를 보기 전까지 잘 드러나지 않아 더 위험하다.
+    </p>
+
+    <h3>상황 4: 금액 slot을 확인 없이 바로 결제에 사용한 경우</h3>
+    <p>
+      금액 entity가 스키마 검증(숫자 형식)은 통과했지만, 사용자가 실제로 말한 금액과
+      OCR/음성 인식 과정에서 발생한 오류로 추출된 값이 달라 잘못된 금액이 결제로 이어질
+      뻔했다. → <strong>스키마 검증만으로 충분하다고 판단하고, 되돌리기 어려운 slot에
+      대한 confirmation 층을 생략</strong>했던 것이 원인이다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Entity와 Slot을 먼저 구분해서 설명</strong>
+        "저는 entity 추출(텍스트에서 값을 뽑는 것)과 slot filling(그 값을 대화 상태
+        변수에 채우는 것)을 먼저 구분합니다. 실패했을 때 원인 위치가 다르기 때문입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>값의 성격에 따라 추출 방법을 선택</strong>
+        "형식이 고정된 값(전화번호, 코드)은 규칙 기반으로 저비용·저지연으로 처리하고,
+        문맥 해석이 필요한 값(상대 시간, 복합 조건)은 LLM 기반 구조화 추출을 사용합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>LLM 추출은 constrained decoding + span grounding으로 이중 방어</strong>
+        "구조화 출력 기능으로 스키마 위반을 원천 차단하고, 추출값이 원문 발화에 실제로
+        존재하는지 검증해 hallucination을 걸러냅니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Multi-value slot은 처음부터 리스트 타입으로 설계</strong>
+        "한 발화에 여러 값이 등장할 가능성이 있는 slot은 프레임워크의 기본 동작에
+        의존하지 않고, 리스트 타입으로 명시적으로 모델링합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>검증을 스키마·비즈니스 규칙·확인 3단계로 분리</strong>
+        "값의 형식만 보는 게 아니라 도메인 규칙 위반 여부를 확인하고, 되돌리기 어려운
+        행동에 연결된 slot은 실행 전 사용자 확인을 반드시 거치게 합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>실패 시 좁혀진 재질문 → fallback 순서로 에스컬레이션 (Senior 포인트)</strong>
+        "slot이 비어있거나 모호하면 바로 포기하지 않고 후보를 좁힌 재질문을 먼저
+        시도하며, 일정 횟수 이상 반복 실패하면 human handoff로 넘기는 임계치를
+        설계 단계에서부터 정의합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "저는 먼저 entity 추출과 slot filling을 구분해서 접근합니다. Entity 추출은
+        발화에서 값을 뽑는 단계이고, slot filling은 그 값을 대화 상태의 변수에 채우는
+        단계인데, 둘 중 어디서 문제가 생겼는지에 따라 디버깅 방향이 완전히 달라지기
+        때문입니다.
+      </p>
+      <p>
+        추출 방법은 값의 성격에 따라 다르게 선택합니다. 전화번호나 주문번호처럼 형식이
+        고정된 값은 정규식이나 사전 기반으로 저비용·저지연으로 처리하고, 상대 시간
+        표현이나 복합적인 조건처럼 문맥 해석이 필요한 값은 LLM 기반 구조화 추출을
+        사용합니다. 이때 OpenAI나 Anthropic이 제공하는 구조화 출력 기능으로 스키마를
+        벗어난 형식 자체를 원천 차단하지만, 그것만으로는 부족하다고 생각합니다. LLM은
+        추출할 값이 실제로 없을 때도 그럴듯한 값을 지어내는 경향이 있기 때문에, 추출된
+        값이 실제 발화 원문에 존재하는지 확인하는 span grounding 검증을 후처리에
+        반드시 넣습니다.
+      </p>
+      <p>
+        한 발화에 여러 값이 등장할 수 있는 slot, 예를 들어 여러 상품을 한 번에 주문하는
+        경우는 처음부터 리스트 타입으로 모델링합니다. 프레임워크의 기본 폼 채우기 동작에
+        의존하면 값이 조용히 소실될 수 있기 때문에, 값이 여러 개 들어올 수 있다는 전제로
+        파싱과 검증 로직을 따로 설계합니다.
+      </p>
+      <p>
+        검증은 스키마 검증, 비즈니스 규칙 검증, 사용자 확인이라는 세 층으로 나눕니다.
+        형식이 맞아도 도메인 규칙에 어긋나는 값은 걸러내고, 결제나 배송지 변경처럼
+        되돌리기 어려운 행동과 연결된 slot은 실행 전에 반드시 사용자에게 다시 확인시켜서
+        위험이 큰 slot일수록 검증을 더 두껍게 둡니다.
+      </p>
+      <p>
+        마지막으로, slot이 비어있거나 모호할 때 곧바로 실패 처리하지 않고 이미 알고
+        있는 정보로 후보를 좁힌 재질문을 먼저 시도합니다. 다만 이 재질문도 일정 횟수
+        이상 반복 실패하면 자동화로 계속 밀어붙이지 않고 human handoff로 넘기는 임계치를
+        설계 초기부터 정의해 둡니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "LLM이 구조화된 출력을 강제해도 왜 별도 검증 계층이 필요한가요?"</h3>
+    <p><strong>약한 답변:</strong> "구조화 출력을 쓰면 형식이 항상 맞으니까 검증은 크게
+    필요 없습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "구조화 출력(strict mode, JSON Schema 강제)은 '출력이 스키마 형식을 따르는가'만
+      보장합니다. '그 값이 실제로 사실인가'는 전혀 다른 문제입니다. 예를 들어 스키마가
+      요구하는 문자열 타입은 만족하지만 원문에 없는 상품명을 지어낼 수 있습니다. 그래서
+      형식 검증과는 별개로, 값이 원문 발화의 실제 부분 문자열과 일치하는지 확인하는
+      grounding 검증, 그리고 도메인 규칙에 맞는지 확인하는 비즈니스 검증을 반드시
+      추가로 둡니다."
+    </p>
+
+    <h3>F2. "Multi-value entity를 복잡한 발화에서 어떻게 안정적으로 파싱하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "slot 정의 단계에서부터 해당 slot이 단일 값인지 리스트인지를 명시적으로 태그하고,
+      추출 프롬프트나 스키마에도 배열(array) 타입으로 반영합니다. 그리고 프레임워크의
+      기본 폼 채우기 동작이 한 턴에 하나의 값만 채우는 경향이 있다는 걸 알고 있기 때문에,
+      해당 동작에 의존하지 않고 별도의 다중값 파싱 로직과 테스트 케이스(발화 하나에 값
+      2~3개가 섞인 케이스)를 명시적으로 확보합니다."
+    </p>
+
+    <h3>F3. "Slot 값 검증에 실패했을 때 재질문을 몇 번까지 허용하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "고정된 숫자보다는 실패 유형에 따라 다르게 설계합니다. 값이 아예 비어있으면 한 번
+      더 명확한 질문으로 좁혀서 묻고, 값은 있지만 검증에 반복 실패하면(보통 2~3회) 더
+      끌지 않고 사람에게 넘깁니다. 매번 같은 방식으로 되묻기만 하면 사용자가 대화가
+      끊겼다고 느끼기 때문에, 재질문 문구도 매 시도마다 달라지도록 설계합니다."
+    </p>
+
+    <h3>F4. "고위험 slot과 저위험 slot을 confirmation 여부로 어떻게 구분하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "되돌리기 어려운가(irreversibility)와 잘못됐을 때의 비용(cost of error)이라는 두
+      기준으로 판단합니다. 조회성 slot(배송 조회 날짜 범위 등)은 틀려도 다시 조회하면
+      되므로 확인 없이 바로 처리하고, 결제 금액·배송지 변경·계정 정보 변경처럼 되돌리기
+      어렵거나 금전적/개인정보 리스크가 있는 slot은 반드시 실행 전에 값을 다시 보여주고
+      명시적 확인을 받습니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>Entity 추출과 slot filling의 <strong>실패 원인 위치를 구분</strong>한다</li>
+          <li>값의 성격에 따라 <strong>추출 방법을 근거 있게 선택</strong>한다
+          (규칙 기반 vs LLM)</li>
+          <li>구조화 출력만으로는 부족하다는 것을 알고 <strong>span grounding
+          검증</strong>을 별도로 설계한다</li>
+          <li>Multi-value slot을 <strong>처음부터 리스트 타입</strong>으로 모델링한다</li>
+          <li>검증을 <strong>스키마·비즈니스 규칙·확인 3단계</strong>로 나누고, 위험도에
+          따라 강도를 차등화한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>Entity 추출 실패와 slot 미충족을 <strong>같은 문제로 뭉뚱그린다</strong></li>
+          <li>"요즘은 다 LLM으로 하면 된다"는 식으로 <strong>추출 방법을 하나로만
+          단정</strong>한다</li>
+          <li>구조화 출력이 형식뿐 아니라 <strong>정확성까지 보장한다고 착각</strong>한다</li>
+          <li>Multi-value 케이스를 "예외 상황이라 나중에 처리"로 미룬다</li>
+          <li>검증을 <strong>타입 체크 한 번으로 끝내고</strong> 확인 절차를 두지 않는다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 entity/slot 처리를 <strong>"틀렸을 때의
+      피해 규모에 비례해 검증 강도를 설계하는 문제"</strong>로 다루고, 약한 답변은
+      "값을 뽑아서 형식만 맞으면 끝나는 파싱 문제"로 다룬다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "LLM 구조화 출력이면 entity 추출은 항상 정확하다"</h3>
+    <p>
+      <strong>사실:</strong> 구조화 출력(strict JSON Schema)은 출력 형식이 스키마를
+      따르는지만 보장한다. 값이 원문에 실제로 존재하는지, 사실에 부합하는지는 별도로
+      검증해야 한다. LLM은 값이 없을 때도 그럴듯한 값을 지어내는 경향이 있으며, 이는
+      형식 검증으로 걸러지지 않는다.
+    </p>
+
+    <h3>오해 2: "정규식/사전 기반 추출은 구식이라 전부 LLM으로 대체해야 한다"</h3>
+    <p>
+      <strong>사실:</strong> 전화번호, 코드값처럼 형식이 고정된 값은 규칙 기반이 여전히
+      더 빠르고 저렴하며 예측 가능하다. LLM 기반 추출은 문맥 해석이 필요한 값에서
+      우위가 있는 것이지, 모든 추출을 대체하는 만능 해법이 아니다.
+    </p>
+
+    <h3>오해 3: "Multi-value entity는 예외 케이스라 나중에 처리해도 된다"</h3>
+    <p>
+      <strong>사실:</strong> 다수 사용자가 실제로 한 발화에 여러 값을 담아 말하는 것은
+      흔한 패턴이며, 단일 값 slot으로 설계하면 값이 조용히 소실되는 사고로 이어진다.
+      이런 소실은 에러 로그에 남지 않아 발견이 늦어지기 때문에 처음부터 설계에 반영해야
+      한다.
+    </p>
+
+    <h3>오해 4: "Slot 검증은 타입만 맞으면 끝이다"</h3>
+    <p>
+      <strong>사실:</strong> 타입이 맞아도 도메인 규칙에 위배되거나(과거 날짜, 재고
+      초과), 사용자의 실제 의도와 다른 값일 수 있다. 되돌리기 어려운 행동과 연결된
+      slot은 타입 검증을 통과했더라도 반드시 사용자 확인 절차를 거쳐야 한다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Entity·Slot 설계 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>확인 항목</th>
+        <th>점검 질문</th>
+      </tr>
+      <tr>
+        <td>추출 방법 선택</td>
+        <td>이 값은 <span class="badge badge-green">형식이 고정</span>됐는가, 아니면
+        <span class="badge badge-yellow">문맥 해석</span>이 필요한가?</td>
+      </tr>
+      <tr>
+        <td>Hallucination 방어</td>
+        <td>LLM 추출값이 <span class="badge badge-green">원문 span과 일치</span>하는지
+        검증하는가?</td>
+      </tr>
+      <tr>
+        <td>Multi-value 대응</td>
+        <td>한 발화에 값이 여럿 등장할 수 있는 slot을 <span class="badge badge-green">리스트
+        타입</span>으로 모델링했는가?</td>
+      </tr>
+      <tr>
+        <td>3단계 검증</td>
+        <td>스키마·<span class="badge badge-green">비즈니스 규칙</span>·확인 단계가
+        모두 있는가?</td>
+      </tr>
+      <tr>
+        <td>위험도 차등화</td>
+        <td>되돌리기 어려운 slot에는 <span class="badge badge-green">실행 전 확인</span>
+        절차가 있는가?</td>
+      </tr>
+      <tr>
+        <td>재질문 임계치</td>
+        <td>반복 실패 시 <span class="badge badge-green">human handoff로 넘기는
+        기준</span>이 정의되어 있는가?</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>Entity 추출과 slot filling을 구분하지 못하고, 검증을 타입 체크 한 번으로만
+      설명하며 multi-value 케이스를 언급하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>Entity/slot 개념과 규칙 기반/LLM 추출의 차이는 설명할 수 있으나, hallucination
+      방어책이나 검증 계층 구분까지는 다루지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>추출 방법 선택 기준과 스키마/비즈니스 검증을 설명할 수 있음. 다만 multi-value
+      설계나 위험도에 따른 확인 절차 차등화까지는 다루지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>추출 방법 선택, span grounding 기반 hallucination 방어, 3단계 검증, multi-value
+      설계, 재질문/handoff 임계치를 모두 위험도 기반으로 일관되게 설계하고 근거를 설명함</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. Entity 추출 실패와 slot 미충족의 원인 위치 차이를 설명할 수 있는가?<br>
+      2. LLM 기반 추출의 hallucination을 막는 구체적인 검증 방법을 말할 수 있는가?<br>
+      3. Multi-value entity를 왜 처음부터 리스트 타입으로 설계해야 하는지 설명할 수 있는가?<br>
+      4. 검증의 세 층(스키마·비즈니스 규칙·확인)을 각각의 목적과 함께 구분할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>Entity 추출(값을 뽑는 것)과 slot filling(값을 상태 변수에 채우는
+      것)</strong>은 서로 다른 층이며, 실패 원인 위치도 다르다.</li>
+      <li>추출 방법은 값의 성격(형식 고정 vs 문맥 해석)에 따라 <strong>규칙 기반과 LLM
+      기반을 근거 있게 선택</strong>한다.</li>
+      <li>LLM 기반 추출은 <strong>구조화 출력(형식 검증) + span grounding(사실 검증)</strong>을
+      함께 써야 hallucination을 막을 수 있다.</li>
+      <li>Multi-value가 필요한 slot은 <strong>처음부터 리스트 타입</strong>으로 모델링해야
+      값 소실을 막는다.</li>
+      <li>검증은 <strong>스키마 → 비즈니스 규칙 → 사용자 확인</strong>의 3단계이며, 되돌리기
+      어려운 slot일수록 강도를 높인다.</li>
+      <li>Slot 실패 시 곧바로 포기하지 않고 <strong>좁혀진 재질문 → human handoff</strong>
+      순서로 에스컬레이션한다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 3 완료 · 다음: Day 4 — NLU-LLM Hybrid Routing 아키텍처</span>
+  </div>
+
+</div>
+</body>
+</html>

@@ -28,6 +28,16 @@
 - [Rasa — Entities and Synonyms](https://rasa.com/docs) (Rasa 공식 문서, entity synonym 매핑) — 동의어는 intent가 아니라 entity 값을 canonical value로 정규화하는 메커니즘임을 명시.
 - **정리**: LLM 기반 분류로 넘어가도 intent taxonomy·utterance 데이터 설계·동의어 사전의 역할 자체는 사라지지 않으며, "결정론적 분류기를 학습시키는 용도"에서 "LLM 프롬프트/tool 스키마의 후보 정의 및 평가 기준선" 용도로 재배치되었다. Day 1의 하이브리드 라우팅 프레이밍과 일관된 결론이므로 기존 커리큘럼 방향을 유지함.
 
+## Entity/Slot 추출과 검증 (Day 3 보강, 2026-07-06 확인)
+
+- [OpenAI — Structured model outputs](https://developers.openai.com/api/docs/guides/structured-outputs) — `strict: true` 기반 JSON Schema 강제(context-free grammar 변환)가 2026년 기준 프로덕션 표준. 기존 `json_object`(JSON mode)는 형식 유효성만 보장하는 legacy로 취급됨.
+- [Anthropic — Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs) — Claude Sonnet 4.5/Opus 4.1 대상 public beta(`structured-outputs-2025-11-13` 베타 헤더). JSON 출력 강제(`output_config.format`)와 strict tool use(`tools[].strict`) 두 모드 제공.
+- [Anthropic Cookbook — Extracting structured JSON](https://github.com/anthropics/anthropic-cookbook/blob/main/tool_use/extracting_structured_json.ipynb) — entity 추출 실전 예시.
+- [Google Cloud — Dialogflow CX Parameters](https://docs.cloud.google.com/dialogflow/cx/docs/concept/parameter) — 폼 채우기(form filling) 시 한 턴에 보통 하나의 parameter만 채워지는 구조적 한계 명시.
+- [Rasa — Slot Filling](https://legacy-docs.rasa.com/docs/core/slotfilling/) — slot mapping을 딕셔너리로 정의해 entity/intent/전체 메시지 등 여러 소스 중 첫 매치를 사용하는 방식.
+- LLM 기반 entity 추출의 hallucination(값이 없을 때도 지어내는 경향) 및 span grounding(추출값이 원문 부분 문자열과 일치하는지 검증) 완화책 — 다수 hallucination detection/grounding 연구에서 반복 확인되는 논지(arXiv 계열, 상세 논문 링크는 검색 스니펫 기반이라 원문 재확인 필요로 표시).
+- **정리**: 순수 정규식 기반 후처리나 자유 텍스트 생성 후 JSON 파싱은 outdated 방향이며, constrained decoding 기반 구조화 출력이 "형식 검증"의 기본값이 됐다. 다만 이는 "값이 사실에 부합하는가"는 보장하지 않으므로, span grounding·비즈니스 규칙 검증·고위험 slot에 대한 사용자 확인이라는 별도 계층이 여전히 필요하다는 것이 2026년 실무 결론이다.
+
 ## Dialogue State / Session / Context 관리
 
 - [LangGraph Persistence — Checkpointer/Store](https://docs.langchain.com/oss/python/langgraph/persistence) — 그래프 기반 상태 저장(MemorySaver/SqliteSaver/PostgresSaver), human-in-the-loop `interrupt_before`, time-travel.
