@@ -97,6 +97,24 @@
 > 인용되는 내용이며, 벤더별 아키텍처·가격 정책은 자주 갱신되므로 실제 도입 전에는 각 제공사의
 > 최신 공식 문서로 재검증해야 한다.
 
+## Hybrid Search 최신 근거 (Day 6, 2026년 7월 조사 반영)
+
+- [Hybrid Search: BM25, Vector & Reranking Reference 2026 — Digital Applied](https://www.digitalapplied.com/blog/hybrid-search-bm25-vector-reranking-reference-2026) — BM25/dense/reranking 결합 실무 레퍼런스
+- [Hybrid Search Done Right: Fixing RAG Retrieval Failures using BM25 + HNSW + RRF in Elasticsearch — Medium](https://ashutoshkumars1ngh.medium.com/hybrid-search-done-right-fixing-rag-retrieval-failures-using-bm25-hnsw-reciprocal-rank-fusion-a73596652d22) — RRF가 WANDS 벤치마크에서 BM25/KNN 단독보다 우수한 NDCG 사례
+- [Hybrid RAG: Dense and Sparse Retrieval for Better AI Answers — Atlan](https://atlan.com/know/hybrid-rag/) — dense/sparse 결합의 실무 동기
+- [Reciprocal Rank Fusion (RRF): How It Works and When to Use It — BigData Boutique](https://bigdataboutique.com/blog/reciprocal-rank-fusion-how-it-works-and-when-to-use-it) — RRF 원리와 적용 시점
+- [Advanced RAG — Understanding Reciprocal Rank Fusion in Hybrid Search — Guillaume Laforge (2026)](https://glaforge.dev/posts/2026/02/10/advanced-rag-understanding-reciprocal-rank-fusion-in-hybrid-search/) — RRF k 상수 튜닝 실무 가이드
+- [Hybrid retrieval with reciprocal rank fusion: solving the score normalization problem — Andrey Chauzov](https://avchauzov.github.io/blog/2025/hybrid-retrieval-rrf-rank-fusion/) — score incompatibility 문제와 RRF의 해법
+- [Introducing reciprocal rank fusion for hybrid search — OpenSearch](https://opensearch.org/blog/introducing-reciprocal-rank-fusion-hybrid-search/) — OpenSearch 네이티브 RRF 구현
+- [Hybrid Search Scoring (RRF) — Azure AI Search, Microsoft Learn](https://learn.microsoft.com/en-us/azure/search/hybrid-search-ranking) — 매니지드 서비스의 RRF 기반 하이브리드 스코어링
+- [SPLADE vs BM25: Learned Sparse Retrieval for Production Search — Suhas Bhairav](https://suhasbhairav.com/blog/splade-vs-bm25-learned-sparse-retrieval-vs-traditional-keyword-scoring) — learned sparse와 lexical의 강약점 비교
+- [Lexical vs Learned Sparse Retrieval: BM25 vs SPLADE at Scale — Cosdata](https://www.cosdata.io/blog/lexical-versus-learned-sparse-retrieval-bm25-vs-splade-at-scale) — 대규모 환경에서의 BM25/SPLADE 비교
+- [Production Retrievers in RAG That Work: Hybrid Search + Re-Ranking (ColBERT, SPLADE, e5/BGE) — Medium](https://machine-mind-ml.medium.com/production-rag-that-works-hybrid-search-re-ranking-colbert-splade-e5-bge-624e9703fa2b) — BM25+dense+RRF를 종착점으로 보는 2026년 실무 컨센서스
+
+> 참고: Qdrant `Fusion.RRF`/`Fusion.DBSF`, Weaviate 기본 alpha=0.75 fusion, Elasticsearch/OpenSearch `rrf` retriever
+> 등 벤더별 구현 세부사항은 위 자료들을 종합한 것이며, 파라미터 기본값과 라이선스 정책은 자주 갱신되므로
+> 실제 도입 전 각 제공사의 최신 공식 문서로 재검증해야 한다.
+
 ## 인터뷰 준비
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 검색 시스템 설계 문제와 유사한 사고 프레임
