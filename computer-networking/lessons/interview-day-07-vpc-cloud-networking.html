@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interview Day 7 — 클라우드 네트워킹(VPC)</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.72; color: #1a1d23; background: #fff; }
+    h1 { margin: 0 0 8px; font-size: 2rem; line-height: 1.25; }
+    .subtitle { color: #57606a; margin: 0 0 32px; font-size: 1.05rem; }
+    h2 { margin-top: 48px; padding-top: 12px; border-top: 2px solid #e5e7eb; font-size: 1.4rem; }
+    h3 { margin-top: 32px; color: #1a1d23; }
+    h4 { margin-top: 20px; color: #444; font-size: 1rem; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.93rem; }
+    th, td { border: 1px solid #d8dee4; padding: 9px 12px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 18px; background: #0d1117; color: #e6edf3; border-radius: 8px; font-size: 0.88rem; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.35em; border-radius: 4px; border: 1px solid #d8dee4; }
+    blockquote { margin: 20px 0; padding: 4px 20px; border-left: 4px solid #0b57d0; background: #f0f4ff; color: #2d3748; }
+    blockquote.warn { border-left-color: #e3a008; background: #fffbeb; }
+    blockquote.good { border-left-color: #16a34a; background: #f0fdf4; }
+    blockquote.bad  { border-left-color: #dc2626; background: #fef2f2; }
+    details { margin: 20px 0; padding: 14px 18px; border: 1px solid #d8dee4; border-radius: 8px; background: #fafafa; }
+    summary { cursor: pointer; font-weight: 600; font-size: 1rem; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 36px 0; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-right: 6px; }
+    .badge-senior { background: #dbeafe; color: #1d4ed8; }
+    .badge-tool   { background: #fce7f3; color: #9d174d; }
+    .badge-trap   { background: #fee2e2; color: #991b1b; }
+    .badge-tip    { background: #dcfce7; color: #15803d; }
+    .back { margin-bottom: 32px; font-size: 0.95rem; }
+    .rubric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+    .rubric-col { padding: 16px; border-radius: 8px; }
+    .rubric-col.weak  { background: #fef2f2; border: 1px solid #fca5a5; }
+    .rubric-col.strong { background: #f0fdf4; border: 1px solid #86efac; }
+    .rubric-col h4 { margin-top: 0; }
+    @media (max-width: 640px) { .rubric-grid { grid-template-columns: 1fr; } }
+    .step-list { counter-reset: step; padding: 0; list-style: none; }
+    .step-list li { counter-increment: step; padding: 10px 0 10px 52px; position: relative; border-bottom: 1px solid #f0f0f0; }
+    .step-list li::before { content: counter(step); position: absolute; left: 0; top: 10px; width: 32px; height: 32px; background: #0b57d0; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+    .interview-q { background: #1a1d23; color: #e6edf3; padding: 20px 24px; border-radius: 8px; margin: 20px 0; font-size: 1.05rem; font-style: italic; }
+    .interview-q::before { content: "💬 면접 질문"; display: block; font-size: 0.78rem; font-style: normal; font-weight: 700; color: #8b949e; margin-bottom: 8px; letter-spacing: 0.05em; }
+    .toc { background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 8px; padding: 20px 24px; margin: 24px 0 40px; }
+    .toc h3 { margin-top: 0; font-size: 1rem; }
+    .toc ol { margin: 0; padding-left: 20px; }
+    .toc li { margin: 4px 0; font-size: 0.93rem; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+
+  <h1>Interview Day 7</h1>
+  <p class="subtitle">클라우드 네트워킹(VPC) — "패킷이 서브넷 경계를 넘을 때 무엇을 통과해야 하는가"</p>
+
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#interview-q">면접 질문</a></li>
+      <li><a href="#prerequisite">전제 개념 — 알아야 할 기초</a></li>
+      <li><a href="#why-asked">왜 면접에서 이걸 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#thinking-order">답변 사고 순서</a></li>
+      <li><a href="#answer-example">핵심 답변 예시</a></li>
+      <li><a href="#tradeoff">Trade-off</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#followup">Senior-level Follow-up 질문</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <h2 id="interview-q">1. 면접 질문</h2>
+
+  <div class="interview-q">
+    "Private subnet에 있는 백엔드 서버가 외부 결제 API(HTTPS)를 호출하는데 갑자기 타임아웃이 발생하기 시작했습니다. 같은 VPC의 다른 public subnet 서버에서는 같은 API 호출이 정상 동작합니다. 보안 그룹, NACL, 라우트 테이블, NAT Gateway 중 어디서부터, 어떤 순서로 원인을 좁혀가시겠습니까? 그리고 이 구조에서 NAT Gateway 자체가 장애 지점이 되지 않도록 하려면 무엇을 대비해야 합니까?"
+  </div>
+
+  <p>이 질문이 어려운 이유는 "인터넷이 안 되면 방화벽부터 본다"는 상식만으로는 클라우드 VPC 환경에서 <strong>어느 컴포넌트가 상태를 갖고(stateful) 어느 컴포넌트가 상태를 갖지 않는지(stateless)</strong>, 그리고 <strong>같은 VPC 안에서도 subnet 위치에 따라 아웃바운드 경로 자체가 다르다</strong>는 점을 설명하지 못하기 때문이다. 면접관은 지원자가 "인터넷 안 됨 = 방화벽 문제"라는 평면적 사고에서 벗어나, VPC를 subnet · route table · gateway · security group · NACL이라는 계층 구조로 분해해 순차적으로 원인을 좁혀낼 수 있는지, 그리고 NAT Gateway 같은 관리형 컴포넌트도 결국 하나의 장애 지점이 될 수 있다는 인프라 설계 감각이 있는지를 확인하려 한다.</p>
+
+  <hr>
+
+  <!-- 2. 전제 개념 -->
+  <h2 id="prerequisite">2. 전제 개념 — 알아야 할 기초</h2>
+
+  <h3>2-1. VPC — "클라우드 안에 그려 넣은 나만의 사설 네트워크"</h3>
+  <p>VPC(Virtual Private Cloud)는 클라우드 제공자의 물리 네트워크 위에, 논리적으로 격리된 나만의 사설 네트워크 공간을 그려 넣은 것이다. 아파트 단지 전체 부지(리전의 물리 네트워크) 안에 <strong>내 소유의 담장 친 구역(VPC)</strong>을 하나 배정받는 것과 비슷하다. 이 구역 안에서는 내가 IP 대역(CIDR)을 정하고, 그 안을 다시 여러 구역(subnet)으로 나누고, 구역 사이·바깥과의 출입 규칙(route table, security group, NACL)을 직접 설계한다.</p>
+
+  <h3>2-2. Subnet — "VPC를 더 작은 구역으로 쪼갠 것", Public vs Private</h3>
+  <p>Subnet은 VPC의 IP 대역을 더 작게 나눈 구역이다. 어떤 subnet이 "public"인지 "private"인지는 클라우드가 태그를 붙여주는 것이 아니라, <strong>그 subnet의 라우트 테이블이 인터넷 게이트웨이(IGW)로 가는 경로(0.0.0.0/0 → IGW)를 갖고 있는지</strong>로 결정된다. 즉 public/private은 subnet 자체의 속성이 아니라 <strong>연결된 라우트 테이블의 속성</strong>이라는 점이 핵심이다.</p>
+
+  <table>
+    <thead>
+      <tr><th>구분</th><th>Public Subnet</th><th>Private Subnet</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>아웃바운드 인터넷 경로</td><td>Internet Gateway(IGW)로 직접</td><td>IGW로 직접 갈 수 없음, NAT를 거쳐야 함</td></tr>
+      <tr><td>인바운드(외부→내부)</td><td>퍼블릭 IP가 있으면 외부에서 직접 접근 가능</td><td>외부에서 직접 접근 불가 (별도 경로 필요)</td></tr>
+      <tr><td>대표 배치</td><td>로드밸런서, NAT Gateway, bastion host</td><td>애플리케이션 서버, DB, 내부 서비스</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2-3. Route Table — "이 목적지로 가려면 이 문으로 나가라"는 이정표</h3>
+  <p>Route table은 특정 목적지 대역으로 가는 트래픽이 어느 게이트웨이/디바이스를 거쳐야 하는지 정의한 이정표다. 예를 들어 <code>10.0.0.0/16 → local</code>은 "같은 VPC 안이면 그냥 로컬로 전달", <code>0.0.0.0/0 → igw-xxxx</code>는 "그 외 모든 목적지는 인터넷 게이트웨이로"라는 뜻이다. Subnet은 정확히 하나의 route table과 연결되며, <strong>어떤 subnet이 어떤 route table을 쓰느냐가 그 subnet의 인터넷 도달 가능성을 결정</strong>한다.</p>
+
+  <h3>2-4. Internet Gateway vs NAT Gateway — "내가 나가서 받는 것" vs "내 대신 나가서 받아다 주는 것"</h3>
+  <p>Internet Gateway(IGW)는 VPC와 인터넷 사이의 양방향 통로로, public subnet의 인스턴스가 퍼블릭 IP로 직접 나가고 들어올 수 있게 한다. 반면 NAT Gateway는 <strong>private subnet의 인스턴스가 자신의 사설 IP를 노출하지 않고 인터넷으로 나갈(outbound-only) 수 있도록 대리 요청</strong>을 해주는 장치다. 우편함이 없는 사람이 관리사무소(NAT)에 편지를 맡기면, 관리사무소가 자기 이름(NAT의 퍼블릭 IP)으로 대신 발송하고 답장을 받아 원래 사람에게 전달해주는 것과 비슷하다 — 다만 <strong>외부에서 먼저 이 사람에게 편지를 보낼 수는 없다(인바운드 시작 불가)</strong>.</p>
+
+  <table>
+    <thead>
+      <tr><th>구분</th><th>Internet Gateway</th><th>NAT Gateway</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>방향</td><td>양방향 (인바운드/아웃바운드 모두 가능)</td><td>아웃바운드 전용 (외부가 먼저 연결 시작 불가)</td></tr>
+      <tr><td>사용 대상</td><td>Public subnet, 퍼블릭 IP를 가진 인스턴스</td><td>Private subnet의 인스턴스가 인터넷에 나갈 때</td></tr>
+      <tr><td>과금/가용성</td><td>기본 제공, 별도 과금 거의 없음</td><td>시간당 요금 + 처리 데이터량 과금, 단일 AZ에 종속</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2-5. Security Group vs NACL — "상태를 기억하는 문지기" vs "매번 새로 확인하는 검문소"</h3>
+  <p>이 둘을 구분하지 못하는 것이 인터뷰에서 가장 흔한 실수다. Security Group(SG)은 <strong>인스턴스(ENI) 단위</strong>로 붙는 stateful 방화벽으로, 인바운드 요청을 허용했다면 그에 대한 응답 트래픽은 별도 아웃바운드 규칙 없이도 자동으로 통과된다("이 사람이 나갈 때 봤으니 돌아올 때는 안 물어본다"). 반면 NACL(Network ACL)은 <strong>subnet 단위</strong>로 걸리는 stateless 방화벽으로, 인바운드를 허용해도 그에 대한 응답이 나가려면 <strong>아웃바운드 규칙도 별도로 명시</strong>해야 한다("들어올 때 봤어도 나갈 때 또 신분증을 요구한다"). 이 stateless 특성 때문에 NACL에서 아웃바운드에 ephemeral port(임시 포트, 보통 1024~65535) 범위를 열어두지 않으면 인바운드는 되는데 응답이 못 나가는 미묘한 장애가 생긴다.</p>
+
+  <table>
+    <thead>
+      <tr><th>구분</th><th>Security Group</th><th>NACL</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>적용 단위</td><td>인스턴스(ENI)</td><td>Subnet</td></tr>
+      <tr><td>상태 추적</td><td>Stateful — 응답은 자동 허용</td><td>Stateless — 인/아웃바운드 각각 명시 필요</td></tr>
+      <tr><td>규칙 종류</td><td>Allow만 가능</td><td>Allow와 Deny 모두 가능</td></tr>
+      <tr><td>규칙 평가</td><td>모든 규칙을 함께 평가(순서 무관)</td><td>번호 순서대로 첫 매치 적용</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2-6. VPC Peering / Transit Gateway — VPC 간 통신 확장</h3>
+  <p>서로 다른 VPC(같은 계정이든 다른 계정이든)를 연결해야 할 때, 소규모라면 1:1로 연결하는 VPC Peering을, VPC 수가 많아지면 허브 역할을 하는 Transit Gateway를 쓴다. Peering은 라우트 테이블에 상대 VPC 대역을 추가해줘야 트래픽이 흐르고, <strong>전이적(transitive) 라우팅이 되지 않는다</strong> — A-B, B-C가 연결돼 있어도 A가 B를 거쳐 C로 자동으로 갈 수는 없다는 점이 흔한 실수 포인트다.</p>
+
+  <blockquote class="warn">
+    <strong>핵심:</strong> "인터넷이 안 된다"는 증상 하나에 대해, VPC 환경에서는 최소 5개 계층(라우트 테이블, IGW/NAT, Security Group, NACL, DNS/방화벽 정책)이 각각 독립적으로 원인이 될 수 있다. 이걸 한 번에 뭉뚱그려 "방화벽 문제"라고 답하면 진단 능력이 없다는 신호로 읽힌다.
+  </blockquote>
+
+  <hr>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <h2 id="why-asked">3. 왜 면접에서 이걸 묻는가</h2>
+
+  <ol>
+    <li><strong>1단계 필터 (구성요소 나열 vs 구조적 이해)</strong> — VPC, subnet, IGW, NAT, SG, NACL을 각각 정의만 아는지, 아니면 이들이 트래픽 경로상에서 <strong>어떤 순서로</strong> 관여하는지 구조를 그릴 수 있는지 확인한다.</li>
+    <li><strong>2단계 필터 (지식 vs 진단 능력)</strong> — "private subnet만 실패"라는 단서에서 "public subnet과 무엇이 다른가"를 역으로 추론해, NAT 경로 문제로 좁혀낼 수 있는지 확인한다. 이는 실제 장애 대응에서 가장 중요한 사고 패턴이다.</li>
+    <li><strong>3단계 필터 (진단 vs 아키텍처 설계 경험)</strong> — NAT Gateway가 단일 AZ에 종속된 리소스라는 것을 알고, 이를 어떻게 이중화(AZ별 NAT Gateway)하는지, 비용/가용성 trade-off를 판단해본 경험이 있는지 follow-up으로 확인한다.</li>
+  </ol>
+
+  <blockquote class="warn">
+    <strong>면접관이 피하고 싶은 답변:</strong> "보안 그룹 인바운드 규칙을 확인하겠습니다." 아웃바운드 호출 실패인데 인바운드 규칙만 보는 것은, 이 장애가 <strong>"나가는 트래픽"</strong>의 문제라는 것을 인식하지 못했다는 신호다. Security Group은 stateful이라 아웃바운드가 기본 all-allow인 경우가 많으므로, 진짜 원인은 대개 라우트 테이블이나 NAT Gateway 쪽에 있다.
+  </blockquote>
+
+  <hr>
+
+  <!-- 4. 실무 연결 -->
+  <h2 id="real-world">4. 실무 연결</h2>
+
+  <h3>실제 장애 시나리오 A — NAT Gateway가 있는 AZ 전체 장애</h3>
+  <p>비용 절감을 위해 3개 AZ의 private subnet이 모두 하나의 NAT Gateway(단일 AZ에 위치)를 공유하도록 구성되어 있었다. 해당 NAT Gateway가 있는 AZ에 장애가 발생하자, 다른 AZ의 서버들까지 포함해 전체 outbound API 호출이 동시에 실패했다. AZ마다 NAT Gateway를 하나씩 두고, 각 AZ의 private subnet 라우트 테이블이 "같은 AZ의 NAT Gateway"를 가리키도록 재구성해 AZ 단위 장애 격리를 확보했다.</p>
+
+  <h3>실제 장애 시나리오 B — NACL 아웃바운드 ephemeral port 미설정</h3>
+  <p>보안 강화를 위해 NACL을 커스텀으로 설정하면서 인바운드 443(HTTPS)만 열고, 아웃바운드는 필요한 포트(80, 443)만 열어뒀다. 그 결과 외부에서 들어오는 요청은 잘 받아지는데, 그 요청에 대한 <strong>응답 패킷</strong>이 클라이언트의 임시 포트(예: 54321)로 나가려 할 때 NACL 아웃바운드 규칙에 막혀 응답이 도달하지 못하는 상황이 발생했다. NACL이 stateless라는 특성을 놓친 전형적인 사례로, 아웃바운드에 ephemeral port 범위(1024–65535)를 열어 해결했다.</p>
+
+  <h3>실제 장애 시나리오 C — VPC Peering의 전이적 라우팅 오해</h3>
+  <p>운영팀이 VPC A와 VPC B를, 그리고 VPC B와 VPC C를 각각 Peering으로 연결한 뒤, "이제 A에서 C로도 갈 수 있겠지"라고 가정하고 배포했다. 하지만 VPC Peering은 전이적이지 않아 A→C 트래픽은 라우트 테이블에 경로 자체가 없어 즉시 드롭됐다. Transit Gateway로 구조를 바꾸거나, A-C 간 직접 Peering을 추가로 맺어야 한다는 것을 배포 이후에야 확인했다.</p>
+
+  <hr>
+
+  <!-- 5. 답변 사고 순서 -->
+  <h2 id="thinking-order">5. 답변 사고 순서</h2>
+
+  <ol class="step-list">
+    <li>
+      <strong>"어디서 시작된 트래픽인가"를 먼저 규정한다</strong>
+      <br>이 장애는 private subnet에서 <strong>나가는(outbound)</strong> HTTPS 호출의 실패다. 인바운드 문제가 아니라는 것을 먼저 명확히 해 SG 인바운드 규칙 같은 엉뚱한 곳부터 보지 않는다.
+    </li>
+    <li>
+      <strong>Public subnet은 되는데 private subnet만 실패한다는 단서에 집중한다</strong>
+      <br>같은 VPC, 같은 보안 그룹 정책을 공유할 가능성이 높은데 private만 실패한다면, 원인은 SG보다는 <strong>subnet별로 다른 라우팅 경로(NAT vs IGW)</strong> 쪽에 있을 가능성이 크다는 가설을 세운다.
+    </li>
+    <li>
+      <strong>Route Table을 확인한다</strong>
+      <br>Private subnet의 route table에 <code>0.0.0.0/0 → nat-xxxx</code> 경로가 살아있는지, NAT Gateway ID가 유효한지(삭제되거나 재생성되어 ID가 바뀌지 않았는지) 확인한다.
+    </li>
+    <li>
+      <strong>NAT Gateway 자체의 상태와 용량을 확인한다</strong>
+      <br>NAT Gateway가 속한 AZ 장애 여부, 처리 대역폭/포트 할당 한계(포트 소진, connection tracking 한계) 초과 여부를 CloudWatch 지표로 확인한다.
+    </li>
+    <li>
+      <strong>Security Group과 NACL을 stateful/stateless 구분해서 각각 점검한다</strong>
+      <br>SG는 아웃바운드 규칙(기본 all-allow인지, 커스텀으로 제한했는지)을 확인하고, NACL은 인바운드뿐 아니라 <strong>아웃바운드에 ephemeral port까지 열려 있는지</strong>를 반드시 함께 확인한다.
+    </li>
+    <li>
+      <strong>DNS/방화벽 정책 등 애플리케이션 레벨 원인도 배제한다</strong>
+      <br>VPC DNS resolver 문제, 외부 API 쪽 방화벽이 특정 NAT의 퍼블릭 IP를 차단했을 가능성(NAT IP가 바뀌었는데 상대방 allowlist가 옛 IP를 참조)까지 점검한다.
+    </li>
+    <li>
+      <strong>재발 방지: NAT를 AZ별로 이중화하고 모니터링을 추가한다</strong>
+      <br>단일 NAT Gateway 공유 구조를 AZ별 NAT Gateway로 바꾸고, NAT의 포트 사용률/에러율 알람을 추가해 장애를 사전에 감지하도록 한다.
+    </li>
+  </ol>
+
+  <hr>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <h2 id="answer-example">6. 핵심 답변 예시</h2>
+
+  <h3>짧은 답변 (60초 버전)</h3>
+  <blockquote class="good">
+    "이건 private subnet에서 나가는 아웃바운드 호출의 실패이므로, 인바운드 규칙이 아니라 나가는 경로부터 봅니다. Public subnet은 되고 private subnet만 안 된다는 점에서, 두 subnet의 차이인 라우팅 경로 — 즉 NAT Gateway 쪽을 먼저 의심합니다. Private subnet의 route table에 NAT Gateway로 가는 기본 경로(0.0.0.0/0)가 살아있는지, NAT Gateway 자체가 정상 상태이고 포트/대역폭 한계에 걸리지 않았는지 확인합니다. 그다음 Security Group의 아웃바운드 규칙, 그리고 NACL은 stateless라서 인바운드뿐 아니라 아웃바운드에 ephemeral port까지 열려 있는지 별도로 확인합니다. NAT Gateway는 단일 AZ 리소스이기 때문에, 재발 방지를 위해서는 AZ마다 별도의 NAT Gateway를 두고 각 AZ의 private subnet이 같은 AZ의 NAT를 쓰도록 구성해 AZ 장애가 전체 아웃바운드 장애로 번지지 않게 하겠습니다."
+  </blockquote>
+
+  <h3>깊이 있는 답변 (면접관이 "더 자세히"라고 물을 때)</h3>
+  <blockquote class="good">
+    "조금 더 구조적으로 보면, VPC 안에서 트래픽이 실패할 수 있는 지점은 최소 다섯 군데입니다. 라우트 테이블(경로가 있는가), 게이트웨이(IGW/NAT 자체가 정상인가), Security Group(stateful, 인스턴스 단위), NACL(stateless, subnet 단위), 그리고 애플리케이션 레벨의 DNS나 상대방 방화벽 정책입니다. 이번 케이스는 public은 되고 private만 안 된다는 단서가 결정적인데, 이 둘의 유일한 구조적 차이가 아웃바운드 경로(IGW 직결 vs NAT 경유)이기 때문에 저는 SG보다 라우트 테이블과 NAT 상태를 먼저 봅니다.
+
+    NAT Gateway를 볼 때는 단순히 '떠 있다/안 떠 있다'만 보지 않고, 포트 소진(하나의 NAT Gateway는 목적지당 사용 가능한 포트 수에 한계가 있어 커넥션이 몰리면 새 아웃바운드 연결이 실패할 수 있음)이나 대역폭 한계까지 CloudWatch 지표로 확인합니다. Security Group은 stateful이라 아웃바운드가 기본 all-allow인 경우가 많아 우선순위가 낮지만, 커스텀으로 제한된 환경이면 반드시 확인 대상에 넣습니다. NACL은 stateless라는 게 핵심 함정인데, 인바운드만 확인하고 '설정했으니 됐다'고 넘어가면 응답 트래픽이 나가는 아웃바운드 ephemeral port 규칙을 놓치기 쉽습니다.
+
+    구조적 재발 방지책으로는 NAT Gateway를 AZ별로 분리해 한 AZ의 장애가 전체로 번지지 않도록 하고, 이렇게 하면 AZ당 NAT Gateway 비용이 늘어나는 trade-off가 생기므로 트래픽 규모와 SLA 요구사항에 맞춰 비용과 가용성 사이에서 판단해야 한다고 설명하겠습니다."
+  </blockquote>
+
+  <hr>
+
+  <!-- 7. Trade-off -->
+  <h2 id="tradeoff">7. Trade-off</h2>
+
+  <table>
+    <thead>
+      <tr><th>선택</th><th>장점</th><th>단점 / 주의사항</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>NAT Gateway를 리전 단위로 1개만 공유</strong></td>
+        <td>비용 절감(NAT Gateway 시간당 요금 최소화)</td>
+        <td>해당 AZ 장애 시 모든 AZ의 아웃바운드가 동시에 실패하는 단일 장애점(SPOF)</td>
+      </tr>
+      <tr>
+        <td><strong>NAT Gateway를 AZ별로 이중화</strong></td>
+        <td>AZ 단위 장애 격리, 각 AZ가 독립적으로 아웃바운드 유지</td>
+        <td>NAT Gateway 개수만큼 비용 증가</td>
+      </tr>
+      <tr>
+        <td><strong>NACL을 세밀하게 커스터마이징</strong></td>
+        <td>subnet 단위의 추가 방어선(defense in depth), SG가 뚫려도 2차 방어</td>
+        <td>stateless 특성 때문에 설정 실수(아웃바운드 ephemeral port 누락)로 인한 장애 위험 증가, 운영 복잡도 상승</td>
+      </tr>
+      <tr>
+        <td><strong>NACL을 기본값(all-allow)으로 유지하고 SG만 사용</strong></td>
+        <td>설정 단순, stateless 관련 장애 위험 감소</td>
+        <td>SG가 인스턴스 단위이므로, subnet 전체를 한 번에 차단해야 하는 광범위 차단(예: 특정 IP 대역 긴급 차단) 대응이 느려짐</td>
+      </tr>
+      <tr>
+        <td><strong>VPC Peering으로 다중 VPC 연결</strong></td>
+        <td>구현이 단순하고 VPC당 개별 요금 없음(트래픽 요금만 발생)</td>
+        <td>전이적 라우팅 불가로 VPC 수가 늘어날수록 N:N 연결 관리가 기하급수적으로 복잡해짐</td>
+      </tr>
+      <tr>
+        <td><strong>Transit Gateway 사용</strong></td>
+        <td>허브-스포크 구조로 다중 VPC 연결을 단순화, 중앙 집중 라우팅 관리</td>
+        <td>Transit Gateway 자체의 시간당/데이터 처리 요금 발생, 허브 자체가 새로운 중요 컴포넌트가 됨</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 8. 흔한 오해 -->
+  <h2 id="misconceptions">8. 흔한 오해</h2>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 1</span> "인터넷이 안 되면 무조건 방화벽(보안 그룹) 문제다"</summary>
+    <p>Security Group은 stateful이라 아웃바운드가 기본적으로 전체 허용인 경우가 많아, 실제로는 라우트 테이블이나 NAT Gateway, DNS 문제인 경우가 더 흔하다. "방화벽"이라는 한 단어로 뭉뚱그리기 전에 라우팅 경로부터 확인해야 한다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 2</span> "Public subnet과 private subnet은 클라우드가 정해주는 고정된 속성이다"</summary>
+    <p>Public/private은 subnet 자체의 속성이 아니라 <strong>연결된 라우트 테이블이 IGW로 가는 경로를 갖고 있는지</strong>에 의해 결정되는 논리적 구분이다. 라우트 테이블을 잘못 바꾸면 의도치 않게 private subnet이 사실상 public이 되거나 그 반대가 될 수 있다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 3</span> "NACL을 인바운드만 잘 설정하면 안전하다"</summary>
+    <p>NACL은 stateless이므로 인바운드를 허용해도 그에 대한 응답이 나가려면 아웃바운드 규칙(특히 ephemeral port 범위)을 별도로 열어야 한다. 인바운드만 확인하고 넘어가면 "요청은 들어오는데 응답이 안 나가는" 미묘한 장애를 진단하지 못한다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 4</span> "VPC Peering으로 연결된 VPC들은 서로 전이적으로 통신할 수 있다"</summary>
+    <p>A-B, B-C가 Peering으로 연결돼 있어도 A와 C는 자동으로 통신할 수 없다. VPC Peering은 전이적이지 않으며, A-C 통신이 필요하면 별도 Peering을 맺거나 Transit Gateway 같은 허브 구조로 전환해야 한다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 5</span> "NAT Gateway는 관리형 서비스이므로 장애가 나지 않는다"</summary>
+    <p>NAT Gateway는 관리형이지만 특정 AZ에 종속된 리소스이며, 해당 AZ 장애나 포트/대역폭 한계에 영향을 받는다. 여러 AZ의 private subnet이 하나의 NAT Gateway를 공유하면, 그 AZ의 장애가 전체 아웃바운드 장애로 확산되는 단일 장애점이 될 수 있다.</p>
+  </details>
+
+  <hr>
+
+  <!-- 9. Follow-up 질문 -->
+  <h2 id="followup">9. Senior-level Follow-up 질문</h2>
+
+  <table>
+    <thead>
+      <tr><th>Follow-up 질문</th><th>면접관의 의도</th><th>답변 포인트</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>"NAT Gateway와 NAT Instance의 차이는 무엇이고, 언제 NAT Instance를 선택합니까?"</td>
+        <td>관리형 서비스와 자체 관리 인프라의 trade-off 이해</td>
+        <td>NAT Gateway는 관리형이라 운영 부담이 적고 대역폭이 자동 확장되지만 비용이 더 들고 세밀한 제어(포트포워딩, 커스텀 보안 정책)가 어렵다. NAT Instance는 EC2 기반이라 비용을 낮추고 세밀한 제어가 가능하지만 직접 이중화/패치/스케일링을 관리해야 한다는 점을 설명한다.</td>
+      </tr>
+      <tr>
+        <td>"Private subnet의 서버가 인터넷 없이도 AWS S3나 다른 관리형 서비스에 접근해야 한다면 어떻게 설계합니까?"</td>
+        <td>VPC Endpoint(PrivateLink)에 대한 이해</td>
+        <td>NAT Gateway를 거쳐 인터넷으로 나가는 대신, VPC Endpoint를 사용해 트래픽이 AWS 백본 안에서만 오가도록 구성하면 NAT 비용과 인터넷 경유에 따른 노출면을 줄일 수 있다는 점을 설명한다.</td>
+      </tr>
+      <tr>
+        <td>"Security Group과 NACL을 둘 다 쓰는 이유는 무엇입니까? 하나만 써도 되지 않습니까?"</td>
+        <td>defense in depth(다층 방어) 개념 이해</td>
+        <td>SG만으로도 대부분의 접근 제어가 가능하지만, NACL은 subnet 단위로 즉시 광범위 차단(예: 침해 발생 시 특정 IP 대역 긴급 차단)이 가능해 SG가 우회되거나 잘못 설정됐을 때의 2차 방어선 역할을 한다는 점을 설명한다.</td>
+      </tr>
+      <tr>
+        <td>"온프레미스 데이터센터와 VPC를 연결하는 방법에는 무엇이 있고 어떻게 선택합니까?"</td>
+        <td>하이브리드 네트워크 설계 경험</td>
+        <td>Site-to-Site VPN(빠른 구축, 인터넷 경유, 대역폭/지연 변동성)과 Direct Connect(전용 회선, 안정적 대역폭/지연, 구축 기간과 비용이 큼)의 trade-off를 설명하고, 트래픽 규모와 SLA에 따라 선택 기준이 달라진다는 점을 짚는다.</td>
+      </tr>
+      <tr>
+        <td>"멀티 리전 아키텍처에서 VPC 간 통신은 어떻게 설계합니까?"</td>
+        <td>글로벌 네트워크 설계와 지연/장애 격리 감각</td>
+        <td>리전 간 VPC Peering이나 Transit Gateway의 리전 간 연동을 사용하되, 리전 간 지연(latency)과 리전 장애 시 격리를 함께 고려해 리전 간 의존성을 최소화하는 방향(예: 리전별 자체 완결적 구조)을 우선한다는 점을 설명한다.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 10. Rubric -->
+  <h2 id="rubric">10. 자기 점검 Rubric</h2>
+
+  <div class="rubric-grid">
+    <div class="rubric-col weak">
+      <h4>약한 답변 (Junior 수준)</h4>
+      <ul>
+        <li>"방화벽"이라는 한 단어로 뭉뚱그리고 Security Group/NACL을 구분하지 못함</li>
+        <li>Public/private subnet의 구분 기준(라우트 테이블의 IGW 경로)을 설명하지 못함</li>
+        <li>NAT Gateway가 아웃바운드 전용이라는 것과 단일 AZ 종속 리소스라는 것을 모름</li>
+        <li>NACL의 stateless 특성과 ephemeral port 아웃바운드 규칙의 필요성을 모름</li>
+        <li>VPC Peering이 전이적이지 않다는 것을 모르고 자동 연결을 가정함</li>
+        <li>인바운드/아웃바운드 문제를 구분하지 않고 무작정 "보안 그룹부터 확인"이라고만 답함</li>
+      </ul>
+    </div>
+    <div class="rubric-col strong">
+      <h4>강한 답변 (Senior 수준)</h4>
+      <ul>
+        <li>트래픽 방향(인바운드 vs 아웃바운드)을 먼저 규정하고 그에 맞는 확인 순서를 세움</li>
+        <li>Public/private 차이가 라우트 테이블의 IGW 경로 유무라는 점을 정확히 짚음</li>
+        <li>라우트 테이블 → NAT Gateway 상태 → SG(stateful) → NACL(stateless, ephemeral port) 순서로 구조적으로 좁혀감</li>
+        <li>NAT Gateway의 AZ 종속성과 포트/대역폭 한계를 인지하고 이중화 설계를 제시</li>
+        <li>VPC Peering의 비전이성과 Transit Gateway/VPC Endpoint 같은 대안을 알고 있음</li>
+        <li>비용/가용성/운영 복잡도 trade-off를 함께 설명</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>자기 점검 체크리스트</h3>
+  <ul>
+    <li>☐ 이 장애가 인바운드가 아니라 아웃바운드 문제라는 것을 먼저 규정했는가?</li>
+    <li>☐ Public/private subnet의 차이가 라우트 테이블의 IGW 경로 유무라는 것을 설명했는가?</li>
+    <li>☐ 라우트 테이블 → NAT Gateway → Security Group → NACL의 순서로 구조적으로 원인을 좁혔는가?</li>
+    <li>☐ NACL의 stateless 특성과 아웃바운드 ephemeral port 규칙의 필요성을 짚었는가?</li>
+    <li>☐ NAT Gateway의 AZ 종속성을 인지하고 AZ별 이중화 방안을 제시했는가?</li>
+    <li>☐ VPC Peering의 비전이성, VPC Endpoint 같은 대안 아키텍처를 언급했는가?</li>
+  </ul>
+
+  <hr>
+
+  <h2>다음 레슨 예고</h2>
+  <blockquote>
+    <strong>Interview Day 8</strong> — 네트워크 보안(방화벽 / NAT / VPN / Zero Trust)
+    <br>핵심 질문: "방화벽, NAT, VPN, zero trust를 실무 관점에서 비교해보세요."
+    <br>경계 보안(perimeter security)과 identity 기반 보안의 차이를 실무 판단 기준으로 다룬다.
+  </blockquote>
+
+  <nav class="back" style="margin-top:48px;"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+</body>
+</html>

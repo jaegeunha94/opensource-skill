@@ -16,26 +16,26 @@
 | 4 | 2026-07-03 | DNS와 서비스 발견 | `lessons/interview-day-04-dns-service-discovery.html` |
 | 5 | 2026-07-04 | HTTP/HTTPS와 TLS 핸드셰이크 | `lessons/interview-day-05-https-tls-handshake.html` |
 | 6 | 2026-07-05 | 로드밸런싱과 프록시 | `lessons/interview-day-06-load-balancing-and-proxy.html` |
+| 7 | 2026-07-06 | 클라우드 네트워킹(VPC) | `lessons/interview-day-07-vpc-cloud-networking.html` |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 7 | 클라우드 네트워킹 | "VPC 안에서 외부 API 호출이 실패하면 어떤 순서로 확인합니까?" | subnet, route table, NAT, security group, NACL |
 | 8 | 네트워크 보안 | "방화벽, NAT, VPN, zero trust를 실무 관점에서 비교해보세요." | 경계 보안 vs identity 기반 보안 |
 | 9 | 성능 최적화 | "RTT가 큰 환경에서 API 성능을 어떻게 개선합니까?" | keep-alive, batching, compression, CDN, protocol 선택 |
 | 10 | 종합 모의 면접 | "실제 장애 시나리오를 받아 네트워크 관점 RCA를 수행해보세요." | 구조화된 답변, follow-up 대응, 재발 방지 |
 
 ## 현재 학습 위치
 
-**Day 6 완료, Day 7 예정** — 클라우드 네트워킹(VPC).
+**Day 7 완료, Day 8 예정** — 네트워크 보안(방화벽/NAT/VPN/Zero Trust).
 
 ## Interview 답변 체크리스트
 
-- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1~6 적용)
-- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1~6 적용)
-- [x] 실제 운영 상황과 연결한다. (Day 1~6 적용)
-- [x] 답변 순서를 단계적으로 제시한다. (Day 1~6 적용)
-- [x] trade-off를 최소 2개 이상 비교한다. (Day 1~6 적용)
-- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1~6 적용)
-- [x] follow-up 질문까지 대비한다. (Day 1~6 적용)
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1~7 적용)
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1~7 적용)
+- [x] 실제 운영 상황과 연결한다. (Day 1~7 적용)
+- [x] 답변 순서를 단계적으로 제시한다. (Day 1~7 적용)
+- [x] trade-off를 최소 2개 이상 비교한다. (Day 1~7 적용)
+- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1~7 적용)
+- [x] follow-up 질문까지 대비한다. (Day 1~7 적용)
