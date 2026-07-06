@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 15 — 알림 & 피드백 UI 컴포넌트 용어</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; font-size: 16px; line-height: 1.7; color: #1a1a2e; background: #f8f9fc; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+    /* header */
+    header { background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%); color: #fff; border-radius: 12px; padding: 2rem 2rem 1.75rem; margin-bottom: 2rem; }
+    header .day-badge { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-bottom: 0.5rem; }
+    header h1 { font-size: 1.7rem; font-weight: 700; line-height: 1.3; }
+    header p.subtitle { margin-top: 0.6rem; opacity: 0.9; font-size: 0.95rem; }
+
+    /* nav breadcrumb */
+    .breadcrumb { font-size: 0.82rem; color: #6c757d; margin-bottom: 1.5rem; }
+    .breadcrumb a { color: #3a7bd5; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* section */
+    section { background: #fff; border-radius: 10px; padding: 1.75rem 2rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    section h2 { font-size: 1.15rem; font-weight: 700; color: #3a7bd5; margin-bottom: 1rem; border-left: 4px solid #3a7bd5; padding-left: 0.75rem; }
+    section h3 { font-size: 1rem; font-weight: 700; color: #2d3436; margin: 1.4rem 0 0.5rem; }
+    section p { margin-bottom: 0.85rem; }
+    section ul, section ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    section ul li, section ol li { margin-bottom: 0.4rem; }
+
+    /* term card */
+    .term-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+    .term-card .term-title { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.25rem; }
+    .term-card .term-eng { font-size: 0.82rem; color: #6c757d; margin-bottom: 0.5rem; font-style: italic; }
+    .term-card .term-body { font-size: 0.93rem; }
+
+    /* table */
+    .table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+    th { background: #f0f4ff; color: #3a7bd5; font-weight: 700; text-align: left; padding: 0.6rem 0.9rem; border-bottom: 2px solid #d0d9f5; }
+    td { padding: 0.55rem 0.9rem; border-bottom: 1px solid #eee; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fbff; }
+
+    /* callout */
+    .callout { border-left: 4px solid #00d2ff; background: #f0faff; border-radius: 0 8px 8px 0; padding: 0.9rem 1.1rem; margin: 1rem 0; font-size: 0.9rem; }
+    .callout.warn { border-color: #f39c12; background: #fffbf0; }
+    .callout.tip  { border-color: #27ae60; background: #f0fff4; }
+
+    /* code */
+    code { background: #f4f4f8; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.85em; font-family: 'Fira Code', monospace; }
+    pre { background: #1e1e2e; color: #cdd6f4; border-radius: 8px; padding: 1.1rem 1.3rem; overflow-x: auto; font-size: 0.85rem; margin: 0.75rem 0; }
+    pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+
+    /* copy compare */
+    .compare-row { display: flex; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .compare-col { flex: 1 1 240px; border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.9rem; }
+    .compare-col.bad { background: #fff4f4; border-left: 4px solid #e74c3c; }
+    .compare-col.good { background: #f0fff4; border-left: 4px solid #27ae60; }
+    .compare-col .label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+    .compare-col.bad .label { color: #e74c3c; }
+    .compare-col.good .label { color: #27ae60; }
+
+    /* quiz */
+    .quiz { background: #fafbfe; border: 1px solid #d0d9f5; border-radius: 8px; padding: 1.25rem 1.4rem; margin-top: 1.5rem; }
+    .quiz h3 { font-size: 1rem; color: #3a7bd5; margin-bottom: 0.75rem; }
+    .quiz .q { font-weight: 600; margin-bottom: 0.6rem; }
+    .quiz .options li { margin-bottom: 0.3rem; cursor: pointer; padding: 0.3rem 0.5rem; border-radius: 4px; transition: background 0.15s; }
+    .quiz .options li:hover { background: #e8f0ff; }
+    .quiz details { margin-top: 0.75rem; }
+    .quiz details summary { cursor: pointer; color: #3a7bd5; font-size: 0.9rem; }
+    .quiz details p { margin-top: 0.5rem; font-size: 0.9rem; background: #f0fff4; border-left: 3px solid #27ae60; padding: 0.6rem 0.8rem; border-radius: 0 6px 6px 0; }
+
+    /* footer */
+    footer { text-align: center; font-size: 0.82rem; color: #aaa; margin-top: 2.5rem; }
+    footer a { color: #3a7bd5; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="breadcrumb">
+    <a href="./index.html">← UI/UX 용어 학습 목록</a>
+  </div>
+
+  <header>
+    <div class="day-badge">Day 15 · UI/UX 용어</div>
+    <h1>알림 & 피드백 UI 컴포넌트 용어</h1>
+    <p class="subtitle">Toast · Snackbar · Banner · Modal vs Non-modal Dialog · Alert Dialog · Badge</p>
+  </header>
+
+  <!-- ───────────────── 1. 왜 이 용어가 중요한가 ───────────────── -->
+  <section>
+    <h2>1. 왜 이 용어들이 중요한가</h2>
+    <p>
+      "저장됐다는 거 잠깐 보여주고 사라지게 해주세요" 같은 요청은 실무에서 정말 흔하지만,
+      정확히 어떤 컴포넌트를 말하는지는 사람마다 다르게 이해한다. 화면 하단에 잠깐
+      떴다 사라지는 것인지(<strong>Toast</strong>), 액션 버튼이 붙어 있는지
+      (<strong>Snackbar</strong>), 아예 다른 작업을 못 하게 막고 응답을 기다려야
+      하는지(<strong>Modal Dialog</strong>)에 따라 컴포넌트 구현과 접근성 처리
+      방식이 완전히 달라진다.
+    </p>
+    <p>
+      알림·피드백 UI 용어를 정확히 쓰면 "이건 Toast로 처리하고, 삭제 확인은
+      Alert Dialog로 막아야 한다"처럼 디자이너·개발자·PM이 화면 하나 없이도 구현
+      방식에 합의할 수 있다. 용어가 뒤섞이면 "가벼운 알림"이라고 요청했는데 개발자가
+      화면을 가로막는 모달을 만들어버리는 식의 재작업이 반복된다.
+    </p>
+  </section>
+
+  <!-- ───────────────── 2. 핵심 용어 카드 ───────────────── -->
+  <section>
+    <h2>2. 핵심 용어 카드</h2>
+
+    <div class="term-card">
+      <div class="term-title">토스트</div>
+      <div class="term-eng">Toast</div>
+      <div class="term-body">
+        화면 한쪽에 잠깐 나타났다가 <strong>일정 시간이 지나면 자동으로 사라지는</strong>
+        비침해적(non-intrusive) 알림. 사용자의 현재 작업을 막지 않으며, 보통 액션
+        버튼 없이 상태만 전달한다. 예: "저장되었습니다" 문구가 2~3초간 화면 하단에
+        떴다 사라지는 것.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">스낵바</div>
+      <div class="term-eng">Snackbar</div>
+      <div class="term-body">
+        Toast와 형태는 비슷하지만 <strong>"실행 취소(Undo)" 같은 액션 버튼을 포함할
+        수 있다</strong>는 점이 다르다. Material Design에서 정식으로 정의한 용어로,
+        "메일을 삭제했습니다 · 실행 취소"처럼 방금 한 행동을 되돌릴 짧은 시간을
+        준다. 실무에서는 Toast와 Snackbar를 같은 컴포넌트로 통칭해 쓰는 팀도
+        많으므로, 팀 컨벤션을 먼저 확인하는 것이 중요하다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">배너</div>
+      <div class="term-eng">Banner</div>
+      <div class="term-body">
+        Toast처럼 자동으로 사라지지 않고, <strong>사용자가 직접 닫거나 조건이
+        해소될 때까지 화면 상단(또는 특정 영역)에 지속적으로 노출</strong>되는
+        알림. 시스템 점검 공지, 네트워크 끊김 경고, 결제 수단 만료 안내처럼
+        페이지를 이동해도 계속 인지시켜야 하는 정보에 쓴다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">모달 다이얼로그</div>
+      <div class="term-eng">Modal Dialog</div>
+      <div class="term-body">
+        화면 뒤를 어둡게 딤(dim) 처리하고 <strong>다이얼로그를 닫기 전까지 배경의
+        다른 요소와 상호작용을 못 하게 막는</strong> 팝업. 포커스가 다이얼로그
+        내부에 갇히는 <strong>포커스 트랩(Focus Trap)</strong> 처리가 필수이며,
+        사용자의 즉각적인 결정이 꼭 필요한 흐름(결제 확인, 삭제 확인)에만 제한적으로
+        써야 한다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">논모달 다이얼로그</div>
+      <div class="term-eng">Non-modal Dialog</div>
+      <div class="term-body">
+        다이얼로그가 떠 있어도 <strong>배경의 다른 요소와 계속 상호작용할 수
+        있는</strong> 팝업. 예: 채팅 위젯을 열어둔 채로 다른 화면을 스크롤하는 경우.
+        Modal보다 사용자의 흐름을 덜 방해하지만, 다이얼로그의 존재를 놓치기 쉬워
+        중요한 결정에는 적합하지 않다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">얼럿 다이얼로그</div>
+      <div class="term-eng">Alert Dialog</div>
+      <div class="term-body">
+        Modal Dialog 중에서도 <strong>되돌리기 어려운 결정을 확인받기 위한</strong>
+        특수한 형태. "이 항목을 삭제하시겠습니까?"처럼 확인/취소 버튼만 제공하며,
+        일반 Modal Dialog보다 접근성 규격(<code>role="alertdialog"</code>)이
+        더 엄격하게 요구된다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">배지</div>
+      <div class="term-eng">Badge</div>
+      <div class="term-body">
+        알림 아이콘이나 메뉴 항목 위에 붙어 <strong>읽지 않은 개수나 상태를
+        숫자·점(dot)으로 표시</strong>하는 작은 인디케이터. Toast·Banner처럼
+        메시지를 직접 전달하지 않고, "확인할 것이 있다"는 신호만 준다는 점에서
+        구분된다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────── 3. 헷갈리기 쉬운 개념 비교 ───────────────── -->
+  <section>
+    <h2>3. 헷갈리기 쉬운 개념 비교</h2>
+
+    <h3>① Toast vs Snackbar vs Banner</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>구분</th><th>지속 시간</th><th>액션 버튼</th><th>대표 용도</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Toast</td><td>몇 초 후 자동 소멸</td><td>보통 없음</td><td>단순 상태 알림 ("저장됨")</td></tr>
+          <tr><td>Snackbar</td><td>몇 초 후 자동 소멸(액션 시 연장 가능)</td><td>있음 (실행 취소 등)</td><td>되돌릴 수 있는 행동 직후 알림</td></tr>
+          <tr><td>Banner</td><td>사용자가 닫거나 조건 해소까지 지속</td><td>있을 수 있음</td><td>지속적 시스템 공지, 경고</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d;">
+      실무 팁: Toast/Snackbar는 <strong>몇 초 만에 사라지므로 스크린 리더 사용자가
+      놓치기 쉽다</strong>. 중요한 정보는 자동 소멸형 알림 하나에만 의존하지 말고,
+      필요하다면 별도 상태 페이지나 알림 센터에도 함께 기록해야 한다.
+    </p>
+
+    <h3>② Modal vs Non-modal vs Alert Dialog</h3>
+    <div class="compare-row">
+      <div class="compare-col good">
+        <div class="label">써야 할 때</div>
+        결제 확인, 삭제 확인처럼 사용자의 즉각적인 결정이 없으면 다음 단계로 진행할 수 없는 경우 → Modal / Alert Dialog
+      </div>
+      <div class="compare-col bad">
+        <div class="label">피해야 할 때</div>
+        단순 안내나 부가 정보를 위해 배경 상호작용을 막는 경우 → Non-modal이나 Toast로 충분
+      </div>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d; margin-top:-0.5rem;">
+      Modal Dialog를 남용하면 사용자가 "닫기"만 반복해서 누르는 습관이 생겨,
+      정작 중요한 Alert Dialog도 제대로 읽지 않고 닫아버리는 <strong>경고 피로
+      (Alert Fatigue)</strong>가 발생한다.
+    </p>
+
+    <h3>③ Banner vs Badge</h3>
+    <div class="compare-row">
+      <div class="compare-col bad">
+        <div class="label">Badge</div>
+        "알림이 3개 있다"는 신호만 주고, 내용은 클릭해야 확인 가능
+      </div>
+      <div class="compare-col good">
+        <div class="label">Banner</div>
+        클릭하지 않아도 메시지 내용 자체가 바로 화면에 노출됨
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────── 4. 실전 체크리스트 ───────────────── -->
+  <section>
+    <h2>4. 알림 컴포넌트 리뷰 실전 체크리스트</h2>
+    <p>디자인 리뷰나 개발 착수 전, 알림·피드백 화면에서 아래 항목을 팀과 함께 확인한다.</p>
+    <ol>
+      <li><strong>차단 여부</strong> — 사용자의 다른 작업을 막아야 하는가(Modal), 막지 않아도 되는가(Toast/Banner/Non-modal)?</li>
+      <li><strong>지속 시간</strong> — 자동으로 사라져야 하는가, 사용자가 직접 닫아야 하는가?</li>
+      <li><strong>되돌리기</strong> — 방금 한 행동을 취소할 수단(Snackbar의 Undo)이 필요한가?</li>
+      <li><strong>접근성</strong> — 자동 소멸형 알림의 내용을 스크린 리더가 놓치지 않도록 <code>aria-live</code> 영역으로 처리했는가? Modal은 포커스 트랩과 <code>Esc</code> 닫기가 구현되어 있는가?</li>
+      <li><strong>중복 노출</strong> — 같은 정보를 Toast와 Banner로 동시에 띄워 사용자를 헷갈리게 하지 않는가?</li>
+      <li><strong>경고 피로</strong> — Modal/Alert Dialog를 꼭 필요한 결정에만 쓰고 있는가, 남용하고 있지 않은가?</li>
+    </ol>
+    <div class="callout tip">
+      <strong>Tip — 자동 소멸형 알림은 보조 수단일 뿐:</strong>
+      Toast/Snackbar는 몇 초 만에 사라지므로, 사용자가 놓쳐도 문제없는 정보에만
+      쓰고 중요한 정보는 알림 센터나 상태 화면에도 남겨야 한다.
+    </div>
+    <div class="callout warn">
+      <strong>주의 — Modal 남용:</strong>
+      단순 안내를 위해 Modal Dialog를 쓰면 배경 상호작용이 막혀 사용자 흐름이
+      끊기고, 반복되면 경고 피로로 이어져 정작 중요한 Alert Dialog도 대충
+      닫아버리게 된다.
+    </div>
+  </section>
+
+  <!-- ───────────────── 5. 용어 요약 ───────────────── -->
+  <section>
+    <h2>5. 용어 요약</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>용어</th><th>한국어</th><th>한 줄 설명</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Toast</td><td>토스트</td><td>잠깐 떴다 자동으로 사라지는 비침해적 알림</td></tr>
+          <tr><td>Snackbar</td><td>스낵바</td><td>실행 취소 등 액션 버튼을 포함할 수 있는 Toast 유형</td></tr>
+          <tr><td>Banner</td><td>배너</td><td>닫거나 조건이 해소될 때까지 지속되는 알림</td></tr>
+          <tr><td>Modal Dialog</td><td>모달 다이얼로그</td><td>배경 상호작용을 막고 응답을 기다리는 팝업</td></tr>
+          <tr><td>Non-modal Dialog</td><td>논모달 다이얼로그</td><td>배경 상호작용을 막지 않는 팝업</td></tr>
+          <tr><td>Alert Dialog</td><td>얼럿 다이얼로그</td><td>되돌리기 어려운 결정을 확인받는 Modal 특수형</td></tr>
+          <tr><td>Badge</td><td>배지</td><td>읽지 않은 개수나 상태를 표시하는 작은 인디케이터</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───────────────── 6. 셀프 체크 퀴즈 ───────────────── -->
+  <section>
+    <h2>6. 셀프 체크 퀴즈</h2>
+
+    <div class="quiz">
+      <h3>Q1</h3>
+      <p class="q">이메일을 삭제한 직후 화면 하단에 "메일을 삭제했습니다 · 실행 취소" 문구가 잠깐 나타나는 컴포넌트는?</p>
+      <ol class="options" type="A">
+        <li>A. Banner</li>
+        <li>B. Snackbar</li>
+        <li>C. Modal Dialog</li>
+        <li>D. Badge</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — Snackbar</strong><br>
+          실행 취소 같은 액션 버튼을 포함하며 잠깐 떴다 사라지는 것이 Snackbar다.
+          A(Banner)는 자동으로 사라지지 않고 지속 노출되는 알림, C(Modal Dialog)는
+          배경 상호작용을 막는 팝업, D(Badge)는 개수·상태만 표시하는 인디케이터라
+          이 상황과 맞지 않는다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q2</h3>
+      <p class="q">결제 취소처럼 되돌리기 어려운 작업을 실행하기 전, 사용자의 확인 없이는 다음 단계로 진행할 수 없게 만드는 컴포넌트는?</p>
+      <ol class="options" type="A">
+        <li>A. Toast</li>
+        <li>B. Non-modal Dialog</li>
+        <li>C. Alert Dialog</li>
+        <li>D. Banner</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: C — Alert Dialog</strong><br>
+          되돌리기 어려운 결정을 확인받기 위해 배경 상호작용을 막고 응답을
+          기다리는 것이 Alert Dialog다. A(Toast)는 자동 소멸형 알림, B(Non-modal
+          Dialog)는 배경 상호작용을 막지 않아 이런 결정에 부적합, D(Banner)는
+          지속 노출형 안내라 확인 절차를 강제하지 않는다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q3</h3>
+      <p class="q">네트워크 연결이 끊긴 상태를 사용자가 직접 닫거나 연결이 복구될 때까지 화면 상단에 계속 보여주는 것이 적절한 컴포넌트는?</p>
+      <ol class="options" type="A">
+        <li>A. Toast</li>
+        <li>B. Badge</li>
+        <li>C. Banner</li>
+        <li>D. Alert Dialog</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: C — Banner</strong><br>
+          조건이 해소되거나 사용자가 닫을 때까지 지속적으로 노출되어야 하는
+          정보는 Banner가 적합하다. A(Toast)는 몇 초 만에 사라져 지속 경고에
+          부적합, B(Badge)는 내용을 직접 보여주지 않고 개수·상태만 표시,
+          D(Alert Dialog)는 배경 작업을 막아버려 네트워크 복구를 기다리는
+          동안 다른 작업도 못 하게 되므로 과하다.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ───────────────── 7. 다음 학습 예고 ───────────────── -->
+  <section>
+    <h2>7. 다음 학습 예고</h2>
+    <p>
+      다음 Day에서는 지금까지 다룬 기초 개념, 정보 구조, 컴포넌트 시스템, 인터랙션,
+      접근성, 협업 툴, 사용자 조사, 프로토타이핑, 사용성 테스트, 반응형/모바일,
+      UX 라이팅, 다크 패턴, 디자인 리뷰 프로세스, 폼/인풋 UX, 알림/피드백 UI를
+      바탕으로 실무 심화 주제나 인접 영역으로 계속 확장할 예정이다.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      <a href="./index.html">← 전체 목록</a> &nbsp;|&nbsp;
+      UI/UX 용어 학습 워크스페이스 · Day 15 · 2026-07-06
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>
