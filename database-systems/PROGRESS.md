@@ -16,29 +16,29 @@
 | 4 | 2026-07-03 | 트랜잭션과 격리 수준 | [interview-day-004-transactions-isolation.html](lessons/interview-day-004-transactions-isolation.html) |
 | 5 | 2026-07-04 | Lock과 Deadlock | [interview-day-005-lock-deadlock.html](lessons/interview-day-005-lock-deadlock.html) |
 | 6 | 2026-07-05 | 쿼리 튜닝 | [interview-day-006-query-tuning.html](lessons/interview-day-006-query-tuning.html) |
+| 7 | 2026-07-06 | 복제와 고가용성 | [interview-day-007-replication-ha.html](lessons/interview-day-007-replication-ha.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 7 | 복제와 고가용성 | "Primary-Replica 구조에서 read-after-write 문제를 어떻게 다룹니까?" | replication lag, consistency, failover |
 | 8 | 파티셔닝과 샤딩 | "샤딩은 언제 필요하고 어떤 비용을 치릅니까?" | 라우팅, rebalancing, cross-shard query, 운영 복잡도 |
 | 9 | RDB vs NoSQL | "Document DB를 선택할 때 어떤 위험을 감수합니까?" | 모델 유연성, 트랜잭션, 쿼리 패턴, 확장성 |
 | 10 | 종합 모의 면접 | "주문 시스템 DB 장애 시나리오를 분석하고 개선안을 제시해보세요." | 데이터 정합성, 성능, 복구, 재발 방지 |
 
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음: Day 7 복제와 고가용성
+**Day 7 완료** — 다음: Day 8 파티셔닝과 샤딩
 
 ## Interview 답변 체크리스트
 
-- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓)
-- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓)
-- [x] 실제 운영 상황과 연결한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓)
-- [x] 답변 순서를 단계적으로 제시한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓)
-- [x] trade-off를 최소 2개 이상 비교한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓)
-- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓)
-- [x] follow-up 질문까지 대비한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓)
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓)
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓)
+- [x] 실제 운영 상황과 연결한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓)
+- [x] 답변 순서를 단계적으로 제시한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓)
+- [x] trade-off를 최소 2개 이상 비교한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓)
+- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓)
+- [x] follow-up 질문까지 대비한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓)
 
 ## 습득한 핵심 개념
 
@@ -55,3 +55,6 @@
 - [x] Cardinality/Selectivity가 인덱스 효용에 미치는 영향 (Day 6)
 - [x] Sargable 쿼리 작성과 대표적인 인덱스 무력화 패턴 (Day 6)
 - [x] OFFSET vs Keyset 페이지네이션의 성능 특성 차이 (Day 6)
+- [x] 동기/비동기/준동기 복제와 replication lag 발생 원인 (Day 7)
+- [x] Read-after-write 문제와 라우팅/토큰 기반 해결 전략 (Day 7)
+- [x] Failover 시 데이터 유실 가능성과 split-brain, fencing/쿼럼 방어 (Day 7)
