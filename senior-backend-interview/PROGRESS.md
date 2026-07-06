@@ -11,6 +11,7 @@
 | 5 | 2026-07-03 | API 설계 | [0005-api-design.html](lessons/0005-api-design.html) |
 | 6 | 2026-07-04 | 동시성 & 비동기 처리 | [0006-concurrency-and-async-processing.html](lessons/0006-concurrency-and-async-processing.html) |
 | 7 | 2026-07-05 | 신뢰성 & 장애 대응 | [0007-reliability-and-incident-response.html](lessons/0007-reliability-and-incident-response.html) |
+| 8 | 2026-07-06 | 보안 | [0008-security.html](lessons/0008-security.html) |
 
 ## 다음 예정 학습
 
@@ -22,7 +23,7 @@
 | ~~5~~ | ~~API 설계~~ | ~~완료~~ |
 | ~~6~~ | ~~동시성 & 비동기 처리~~ | ~~완료~~ |
 | ~~7~~ | ~~신뢰성 & 장애 대응~~ | ~~완료~~ |
-| 8 | 보안 | AuthN/AuthZ, JWT, OAuth2, OWASP Top10, 암호화 |
+| ~~8~~ | ~~보안~~ | ~~완료~~ |
 | 9 | 관측성 | 로깅 전략, 메트릭, 분산 트레이싱, SLO/SLA/에러 예산 |
 | 10 | 배포 & DevOps | CI/CD, 블루-그린, 카나리, 피처 플래그, 롤백 |
 | 11 | 기술 리딩 | 설계 리뷰, 기술 부채 관리, RFC 프로세스, 멘토링 |
@@ -30,7 +31,7 @@
 
 ## 현재 학습 위치
 
-**Day 7 완료** — Day 8 (보안)이 다음 차례.
+**Day 8 완료** — Day 9 (관측성)이 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -61,7 +62,10 @@
 - [x] Rate Limiting 알고리즘(Token/Leaky Bucket, Sliding Window) 선택 기준과 분산 카운팅 (Day 7)
 - [x] Bulkhead — Thread Pool/Semaphore/Connection Pool 격리로 연쇄 장애 차단 (Day 7)
 - [x] 장애 대응 절차(탐지→완화→RCA→포스트모텀)와 블레임리스 문화, SLO/에러 예산 (Day 7)
-- [ ] 보안 설계 (예정 Day 8)
+- [x] 인증(AuthN)/인가(AuthZ) 분리, 세션 vs JWT, OAuth2/OIDC 역할 구분과 PKCE (Day 8)
+- [x] JWT alg confusion, 즉시 무효화 한계와 블랙리스트/Refresh Token 전략, 저장 위치 딜레마 (Day 8)
+- [x] OWASP Top 10 실전 식별(SQL Injection, IDOR/BOLA, 저장형 XSS, SSRF, CSRF)과 코드 수정 (Day 8)
+- [x] 비밀번호 해싱(bcrypt/Argon2), 지연 마이그레이션, 시크릿 관리(KMS/Vault), 전송/저장 암호화 (Day 8)
 - [ ] 관측성 전략 (예정 Day 9)
 - [ ] 배포 전략 (예정 Day 10)
 - [ ] 기술 리딩 역량 (예정 Day 11)
