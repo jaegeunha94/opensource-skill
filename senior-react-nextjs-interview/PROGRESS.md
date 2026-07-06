@@ -8,12 +8,12 @@
 | 2 | 2026-07-03 | Reconciliation과 Virtual DOM — key, diffing 알고리즘, 리스트 렌더링 시 재사용/재생성 판단 | [0002-reconciliation-virtual-dom-key-diffing.html](lessons/0002-reconciliation-virtual-dom-key-diffing.html) |
 | 3 | 2026-07-04 | Component Boundary 설계 — Server/Client 컴포넌트 경계, "use client" 전이 문제, composition pattern | [0003-component-boundary-server-client-composition.html](lessons/0003-component-boundary-server-client-composition.html) |
 | 4 | 2026-07-05 | Hooks 심화 — `useEffect`/`useMemo`/`useCallback`의 실무 함정, 의존성 배열 사고, stale closure | [0004-hooks-deep-dive-dependency-array-pitfalls.html](lessons/0004-hooks-deep-dive-dependency-array-pitfalls.html) |
+| 5 | 2026-07-06 | State Management 아키텍처 — 로컬 상태 vs 서버 상태 vs 전역 상태 vs URL 상태 구분과 도구 선택 | [0005-state-management-architecture-local-server-global.html](lessons/0005-state-management-architecture-local-server-global.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | State Management 아키텍처 | 로컬 상태 vs 서버 상태 vs 전역 상태 구분과 도구 선택 |
 | 6 | Data Fetching 패턴 | 서버 fetch vs 클라이언트 fetch, 워터폴 방지, request memoization |
 | 7 | Suspense와 동시성 렌더링 | concurrent rendering, transition, 우선순위 스케줄링 |
 | 8 | Error Boundary와 장애 격리 | 컴포넌트 트리 단위 장애 격리 설계 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — 다음: Day 5 — State Management 아키텍처
+**Day 5 완료** — 다음: Day 6 — Data Fetching 패턴
 
 ## 습득한 핵심 개념
 
@@ -46,4 +46,9 @@
 - [x] 무한 루프의 근본 해결책 — 의존성을 원시값으로 좁히는 설계 (Day 4)
 - [x] stale closure의 원인과 함수형 업데이트/ref 미러링을 이용한 해결 (Day 4)
 - [x] useMemo/useCallback이 정확성이 아닌 최적화 도구라는 경계 (Day 4)
-- [ ] 서버 상태 vs 클라이언트 상태 구분 기준 (예정 Day 5)
+- [x] 상태를 로컬 UI / 서버 / 전역 클라이언트 / URL / 파생 상태로 분류하는 프레임워크 (Day 5)
+- [x] 서버 상태 고유의 문제(staleness, 중복 요청, 재검증, 캐시 무효화, 경쟁 상태) (Day 5)
+- [x] 서버 상태를 Redux/Context로 관리할 때 생기는 구조적 누락 (Day 5)
+- [x] Context API의 리렌더링 전파 원리와 관심사 분리 원칙 (Day 5)
+- [x] URL 상태 판단 기준(북마크/공유/새로고침 재현성)과 파생 상태를 별도 저장하지 않는 원칙 (Day 5)
+- [ ] 서버 fetch vs 클라이언트 fetch 판단 기준과 워터폴 방지 (예정 Day 6)
