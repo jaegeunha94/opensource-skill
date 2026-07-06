@@ -103,6 +103,23 @@
 - [OpenAI Agents SDK — Sessions](https://openai.github.io/openai-agents-python/sessions/)
 - [Mem0 — Architecture (ADD/UPDATE/DELETE/NOOP)](https://docs.mem0.ai/)
 
+## Control-Flow / 루프 안정성 (Day 4)
+
+- [How the agent loop works — Claude Agent SDK (turn 정의, max_turns/max_budget_usd, 결과 subtype)](https://code.claude.com/docs/en/agent-sdk/agent-loop)
+- [OpenAI Agents SDK — Running agents (max_turns, MaxTurnsExceeded, error_handlers)](https://openai.github.io/openai-agents-python/running_agents/)
+- [OpenAI Agents SDK — Runner 레퍼런스](https://openai.github.io/openai-agents-python/ref/run/)
+- [LangGraph — GRAPH_RECURSION_LIMIT 에러 문서 (recursion_limit 기본값 25)](https://docs.langchain.com/oss/python/langgraph/errors/GRAPH_RECURSION_LIMIT)
+- [OWASP Top 10 for Agentic Applications 2026 — LLM10 Unbounded Consumption](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html)
+- [AI Agent Budget Guards: How to Stop Runaway API Costs in 2026](https://www.nexgismo.com/blog/ai-agent-budget-guards-stop-runaway-api-costs)
+- [Agent Cost Circuit Breakers: How to Prevent Your AI Agent from Bankrupting You](https://auxot.com/blog/agent-cost-circuit-breakers)
+- [The Cost Circuit Breaker: Financial Controls for Production AI Agents](https://fountaincity.tech/resources/blog/ai-agent-cost-circuit-breaker/)
+- [AI Agent Timeout & Circuit Breaker Patterns — 2026 Guide](https://www.buildmvpfast.com/blog/agent-timeout-circuit-breaker-patterns-runaway-ai-workflows-2026)
+- [The Agent Loop Problem: When "Smart" Won't Stop (Loop Drift)](https://medium.com/@Modexa/the-agent-loop-problem-when-smart-wont-stop-ccbf8489180f)
+- [Agentic Loops: From ReAct to Loop Engineering (2026 Guide)](https://datasciencedojo.com/blog/agentic-loops-explained-from-react-to-loop-engineering-2026-guide/)
+- [Rearchitecting Letta's Agent Loop: Lessons from ReAct, MemGPT, & Claude Code](https://www.letta.com/blog/letta-v1-agent)
+- [anthropics/claude-code Issue #27281 — 텍스트 반복 루프로 context window 소진 사례](https://github.com/anthropics/claude-code/issues/27281)
+- [bytedance/deer-flow Issue #1055 — 반복적 tool call 루프로 recursion limit 도달](https://github.com/bytedance/deer-flow/issues/1055)
+
 ## Provider 추상화 레이어 (Day 2)
 
 - [Vercel AI SDK](https://ai-sdk.dev/docs/introduction) / [AI SDK 6 — ToolLoopAgent](https://vercel.com/blog/ai-sdk-6)
@@ -119,3 +136,4 @@
 - **MCP 2026-07-28 개정판(RC)**은 이 레슨 작성 시점 기준 아직 최종본이 아니다(발행 예정). Sampling/Roots/Logging deprecation 등은 RC 내용이므로 실제 적용 여부를 재확인한다.
 - Day 2의 Vercel d0(80% tool 삭감) 수치와 Anthropic "Writing effective tools" 원칙은 원문 접근(403)이 안 되어 벤더 공식 소셜 포스트 + 다수의 독립적 2차 인용으로 교차검증했다. 핵심 수치(성공률 80%→100%, 응답시간 274초→77초/3.5배, 토큰/스텝 40% 감소)는 3개 이상 출처에서 일치했으나, 정확한 원문 인용이 필요하면 실제 브라우저로 재확인한다.
 - Day 3의 `platform.claude.com`(compaction/context-editing/memory-tool) 문서는 직접 접근해 확인한 1차 출처다. 반면 Anthropic "Effective context engineering" 블로그와 Chroma의 "Context Rot" 연구는 원문 접근(403)이 안 되어 검색 스니펫과 다수의 2차 출처(요약 블로그, 커뮤니티 글)로 교차검증했다 — 특히 Context Rot의 정확한 수치(30%p, 7.9% 등)와 MINJA/멀티에이전트 오염 통계(95% 이상, 4시간 87%)는 정확한 원문 인용이 필요하면 실제 브라우저로 재확인한다.
+- Day 4의 `code.claude.com/docs/en/agent-sdk/agent-loop`는 직접 접근해 확인한 1차 출처이며, `max_turns`/`max_budget_usd`/에러 subtype 설명은 이 문서를 근거로 한다. 반면 `anthropic.com`(Effective harnesses for long-running agents)과 `letta.com` 블로그는 403으로 막혀 검색 스니펫으로만 교차검증했다. 2026년 비용 폭주 사례(DN42 $6,531, CRM 6시간 $4,200, 멀티에이전트 순환호출 $30,000)는 여러 2차 블로그 출처에서 유사하게 인용되지만 1차 인시던트 리포트는 확인하지 못했으므로, 정확한 금액·날짜가 필요하면 실제 브라우저로 원문을 재확인해야 한다.

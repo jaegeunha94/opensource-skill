@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — Control-Flow Scaffolding과 루프 안정성</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 4 · AI Harness / Agent Harness Interview</div>
+    <h1>Control-Flow Scaffolding과 루프 안정성</h1>
+    <div class="subtitle">Agent loop는 스스로 멈추지 않는다 — step cap, budget cap, repeated-state 감지, circuit breaker로 종료를 하네스가 강제하는 법</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전/시점 기준:</strong> 이 레슨은 2026-07 기준 <strong>Claude Agent SDK</strong>의
+    <code>max_turns</code>/<code>max_budget_usd</code>(<code>code.claude.com/docs/en/agent-sdk/agent-loop</code>
+    문서를 직접 접근해 확인한 1차 출처), <strong>OpenAI Agents SDK</strong>의 <code>max_turns</code> /
+    <code>MaxTurnsExceeded</code> / <code>error_handlers</code> / guardrail tripwire, <strong>LangGraph</strong>의
+    <code>recursion_limit</code>(기본값 25, <code>GraphRecursionError</code>) 비교 참고 자료, 그리고
+    <strong>OWASP Top 10 for Agentic Applications 2026</strong>의 LLM10 Unbounded Consumption 항목을 기준으로
+    작성됐다. 2026년 실제 비용 폭주 사례(DN42 AWS 요금 $6,531, 고객지원 CRM 무한 재시도 $4,200, 멀티에이전트
+    순환호출 $30,000)와 anthropics/claude-code GitHub 저장소의 실제 이슈 리포트는 검색 스니펫과 다수의 2차
+    출처로 교차검증했다 — 정확한 수치와 원문 인용이 필요하면 실제 브라우저로 재확인해야 한다. 파라미터명과
+    기본값은 SDK 버전에 따라 바뀔 수 있으므로 면접 전 공식 changelog로 재확인한다.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "Agent loop을 설계할 때 무한 루프와 비용 폭주를 어떻게 방지하나요? step cap과 budget cap을 각각 어떻게
+      설계하고, 왜 둘 다 필요한가요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "Agent가 같은 행동을 반복하며 진전 없이 맴도는 상태(repeated state)를 어떻게 탐지하고 끊어내나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "Circuit breaker 패턴을 agent harness에 어떻게 적용하나요? 마이크로서비스에서 쓰는 일반적인 circuit
+      breaker와 무엇이 다른가요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q4 — 변형</span>
+      "종료 조건(termination condition)을 설계할 때 실무에서 흔히 저지르는 실수는 무엇인가요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 1: ReAct 루프와 종료 미보장 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Agent loop의 원형 — ReAct, 그리고 "종료는 보장되지 않는다"는 사실</h2>
+
+    <h3>ReAct: Reason + Act를 번갈아 반복하는 구조</h3>
+    <p>
+      2022년 제안된 <strong>ReAct(Reason + Act)</strong> 패턴은 LLM이 "생각(reasoning trace)"과 "행동(action,
+      즉 tool 호출)"을 번갈아 만들어내고, 행동의 결과(observation)를 다시 다음 생각의 입력으로 되먹임하는
+      구조다. Day 1에서 다룬 Claude Agent SDK의 공식 루프 — <strong>gather context → take action → verify →
+      repeat</strong> — 는 이 ReAct 아이디어의 2026년 프로덕션 버전이라고 볼 수 있다. Claude Agent SDK 문서는
+      이 한 바퀴를 <strong>turn</strong>이라고 부른다: Claude가 tool 호출을 포함한 응답을 만들고, SDK가 그
+      tool을 실행하고, 결과가 다시 Claude에게 돌아가는 왕복 한 번이 1턴이다. Tool 호출이 없는 텍스트 응답이
+      나오는 순간 루프가 끝난다.
+    </p>
+    <h3>왜 "루프가 알아서 끝난다"고 가정하면 안 되는가</h3>
+    <p>
+      여기서 핵심 전제를 짚어야 한다 — <strong>기본 아키텍처 자체는 루프가 끝난다는 것을 아무것도
+      보장하지 않는다.</strong> 모델은 매 턴 "다음에 뭘 할지"를 그 순간의 컨텍스트만 보고 결정하는데, 이전에
+      같은 행동을 몇 번 반복했는지, 지금까지 총 비용이 얼마나 들었는지는 모델이 자연스럽게 추적하는 정보가
+      아니다. 즉 <strong>"이 작업은 언제 끝나야 하는가"라는 질문에 대한 답은 모델의 창발적 판단력이 아니라
+      harness가 구조적으로 강제해야 하는 제어 로직</strong>이라는 것이 이 레슨 전체를 관통하는 원칙이다.
+    </p>
+    <p>
+      실제로 이 가정이 깨지는 사례는 최신 프로덕션 코딩 에이전트에서도 보고된다. anthropics/claude-code
+      저장소의 한 이슈는 멀티에이전트 리서치 작업 중 에이전트가 "이제 문서를 작성하겠습니다"라는 말만
+      반복하며 실제로는 <strong>Write tool을 한 번도 호출하지 않은 채</strong> context window 전체를 소진할
+      때까지 같은 문장을 되풀이한 사례를 보고한다. 이 사례가 중요한 이유는, 이게 "같은 tool을 같은 인자로
+      반복 호출"하는 흔한 루프 패턴이 아니라 <strong>tool 호출조차 없는 텍스트 반복</strong>이었다는 점이다
+      — 즉 "tool 호출 여부"만 감시하는 순진한 루프 감지로는 이런 정체를 못 잡는다.
+    </p>
+  </div>
+
+  <!-- 전제 개념 2: step cap -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Step Cap — "몇 바퀴까지 돌 수 있는가"를 구조적으로 못박기</h2>
+
+    <h3>Claude Agent SDK: max_turns</h3>
+    <p>
+      Claude Agent SDK는 <code>max_turns</code>(Python) / <code>maxTurns</code>(TypeScript) 옵션으로
+      <strong>tool 호출이 있는 turn만</strong> 카운트해 상한을 건다. 기본값은 <strong>무제한</strong>이다 —
+      즉 아무 설정도 하지 않으면 잘 정의된 작업에는 문제가 없지만, "이 코드베이스를 개선해줘" 같은 열린
+      프롬프트에서는 얼마든지 길게 돌 수 있다는 뜻이다. 상한에 도달하면 루프가 조용히 멈추는 게 아니라
+      <code>ResultMessage</code>가 <code>subtype: "error_max_turns"</code>로 명시적으로 반환돼, 호출자가
+      "성공적으로 끝났는지" "한도 때문에 끊겼는지"를 반드시 분기해서 처리하도록 강제한다. 공식 가이드는
+      프로덕션에서 무인 실행(unattended run)할 때 <strong>절대 생략하면 안 되는 두 옵션</strong>으로
+      <code>max_turns</code>와 명시적 권한 정책을 꼽고, 처음에는 보수적으로 15~20턴 정도로 시작해서
+      실제 데이터로 필요성이 확인될 때만 늘리라고 권한다.
+    </p>
+    <h3>OpenAI Agents SDK: max_turns와 MaxTurnsExceeded</h3>
+    <p>
+      OpenAI Agents SDK도 같은 문제를 <code>max_turns</code> 파라미터로 다루지만 기본값이 <strong>유한한 수
+      (수십 턴 이내)</strong>로 설정돼 있어 별도 설정 없이도 무한 루프를 막는 안전망이 기본으로 켜져 있다.
+      한도에 도달하면 <code>Runner</code>가 <code>MaxTurnsExceeded</code> 예외를 던진다. 다만 예외를 그냥
+      던지고 끝나면 사용자 입장에서는 "에러로 실패"한 것처럼 보이므로, SDK는 <code>error_handlers</code>라는
+      딕셔너리를 지원해 <code>"max_turns"</code> 키에 콜백을 등록하면 예외 대신 <strong>통제된 최종
+      응답</strong>("한도에 도달해 여기까지만 처리했습니다" 같은)을 돌려줄 수 있게 한다. Guardrail의
+      tripwire가 걸렸을 때도 비슷하게 <code>InputGuardrailTripwireTriggered</code> /
+      <code>OutputGuardrailTripwireTriggered</code> 예외로 즉시 실행을 중단시킨다 — 즉 이 SDK는 "turn 수
+      상한"과 "guardrail 위반"을 같은 계열의 강제 종료 메커니즘으로 다룬다.
+    </p>
+    <h3>비교 참고: LangGraph의 recursion_limit</h3>
+    <p>
+      이 트랙의 범위 밖인 LangGraph도 같은 문제를 <code>recursion_limit</code>(기본값 <strong>25</strong>)으로
+      다룬다는 점만 비교 삼아 짚어둔다. 그래프가 25스텝 안에 정지 조건에 도달하지 못하면
+      <code>GraphRecursionError</code>가 발생한다. 이름은 <code>max_turns</code>, <code>recursion_limit</code>
+      등으로 프레임워크마다 다르지만, <strong>원리는 동일하다</strong> — "루프가 스스로 끝나길 기대하지
+      않고, 정수 상한을 하드코딩해 강제로 끊는다."
+    </p>
+    <div class="callout callout-warn">
+      Step cap 하나만으로는 충분하지 않다. 매 턴 tool 결과가 거대하거나(예: 로그 파일 전체를 반환하는 tool),
+      매 턴 extended thinking을 최대치로 쓰는 상황이라면, turn 수는 적어도 비용은 이미 크게 나갈 수 있다.
+      그래서 다음 절의 budget cap이 별도로 필요하다.
+    </div>
+  </div>
+
+  <!-- 전제 개념 3: budget cap과 비용 폭주 사례 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Budget Cap — 턴 수가 아니라 "돈"을 상한으로 잡기</h2>
+
+    <h3>Claude Agent SDK: max_budget_usd</h3>
+    <p>
+      Claude Agent SDK는 <code>max_budget_usd</code> / <code>maxBudgetUsd</code> 옵션으로 지출 임계값을
+      직접 캡으로 걸 수 있다. 한도에 도달하면 <code>ResultMessage</code>가
+      <code>subtype: "error_max_budget_usd"</code>로 반환된다. 공식 문서는 이를 "별도로 켜야 하는 선택적
+      캡"으로 설명하는데, 바꿔 말하면 <strong>아무 설정도 하지 않은 프로덕션 agent는 turn 수든 비용이든
+      기본적으로 회로차단기가 없는 상태</strong>라는 뜻이다 — 이 사실 자체가 이 레슨의 핵심 시그널이다.
+    </p>
+    <h3>2026년 실제 비용 폭주 사례들</h3>
+    <p>
+      왜 이게 이론이 아니라 실무 문제인지는 최근 보고된 사고들이 잘 보여준다. 실제 원문 인용이 필요하면
+      재검증이 필요하지만, 여러 독립 출처가 공통적으로 다음과 같은 유형의 사고를 보고한다:
+    </p>
+    <ul>
+      <li>
+        <strong>중복 리소스 생성형 폭주:</strong> 한 개발자가 DN42(취미용 네트워크)에 등록하는 작업을 맡긴
+        agent가, 에러가 날 때마다 <strong>새 CloudFormation 스택을 계속 새로 만들어 내며</strong> 약
+        $6,531의 AWS 요금을 발생시켰다. 실패 처리 로직이 "다시 시도"가 아니라 "처음부터 새로 만들기"였다는
+        게 원인이다.
+      </li>
+      <li>
+        <strong>무한 재시도형 폭주:</strong> 고객지원 agent가 CRM tool 호출에서 계속 같은 오류를 만나는데도
+        <strong>동일한 실패 행동을 6시간 동안 반복</strong>하며 개발자가 잠든 사이 약 $4,200의 API 비용을
+        발생시켰다.
+      </li>
+      <li>
+        <strong>순환 호출형 폭주:</strong> 멀티에이전트 시스템에서 Agent A가 Agent B에게 데이터를 요청하고,
+        B가 Agent C를 호출하고, C가 다시 A를 호출하는 <strong>순환 호출 경로(cycle)</strong>가 우연히
+        만들어지며 약 $30,000 규모의 비용이 발생한 사례도 보고됐다.
+      </li>
+    </ul>
+    <p>
+      이 세 사례의 공통점은 <strong>"에이전트가 매 스텝 그 자체로는 그럴듯하게 행동하고 있었다"</strong>는
+      것이다 — 각 턴만 보면 "재시도한다", "다른 agent에게 위임한다"처럼 합리적인 행동처럼 보이지만, 전체
+      루프는 수렴하지 않고 있었다. 이런 패턴은 모델의 판단력 문제가 아니라 <strong>구조적으로 종료 조건이
+      없었다는 설계 문제</strong>다.
+    </p>
+    <h3>OWASP: LLM10 Unbounded Consumption</h3>
+    <p>
+      OWASP Top 10 for Agentic Applications 2026은 이 문제를 <strong>LLM10: Unbounded Consumption</strong>
+      (재정적 DoS / Model Denial of Service)이라는 독립 항목으로 분류한다. 권장 완화책은
+      "엄격한 rate limit, 하드 비용 상한(hard cost ceiling), 자동화된 circuit breaker"로 요약된다 — 즉
+      비용 폭주는 "운이 나쁜 사고"가 아니라 <strong>agentic 애플리케이션이라면 반드시 설계 단계에서
+      대응해야 하는 표준 위협 항목</strong>으로 이미 업계 표준 목록에 올라 있다.
+    </p>
+  </div>
+
+  <!-- 전제 개념 4: repeated-state detection -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Repeated-State Detection — "정체"를 행동 수준에서 탐지하기</h2>
+
+    <h3>Loop Drift: 진전한다고 착각하며 맴도는 문제</h3>
+    <p>
+      Step cap과 budget cap은 "얼마나 오래/얼마나 비싸게" 돌 수 있는지를 제한하지만, <strong>"애초에 정체된
+      루프를 더 일찍 끊어낼 수는 없는가"</strong>라는 질문에는 답하지 못한다. 실무자들이 <strong>Loop
+      Drift</strong>라고 부르는 현상은, agent가 자신은 진전하고 있다고 "생각"하며 같은 행동을 반복하는
+      상태를 말한다 — 매 턴의 추론은 그럴듯해 보이지만, 실제 상태(파일 내용, 외부 시스템 상태, 목표까지의
+      거리)는 바뀌지 않는다.
+    </p>
+    <h3>가장 널리 쓰이는 세 가지 실무 감지 기법</h3>
+    <ol>
+      <li>
+        <strong>행동 중복 제거(action deduplication):</strong> 각 <code>(tool, 인자)</code> 쌍을 해시로
+        묶어서, 동일한 호출이 <em>k</em>번(흔히 3번) 연속으로 나타나면 루프를 끊는다. 구현이 가장 단순하고
+        harness 레벨의 hook(예: Claude Agent SDK의 <code>PreToolUse</code>)에서 tool이 실제로 실행되기
+        전에 가로챌 수 있다는 장점이 있다.
+      </li>
+      <li>
+        <strong>하드 한도(step/time cap)와의 결합:</strong> 대부분의 프로덕션 시스템은 "LLM 호출 25회를
+        넘기면 종료", "전체 프로세스가 5분을 넘기면 강제 종료" 같은 시간·횟수 기반 한도를 dedup과 함께
+        겹쳐서 쓴다. 하나만으로는 늦게 걸리거나 너무 일찍 걸릴 수 있기 때문이다.
+      </li>
+      <li>
+        <strong>진행률(progress) 감지:</strong> 단순히 "행동이 같은가"가 아니라 <strong>"관측 가능한 상태가
+        k 스텝 동안 전혀 바뀌지 않았는가"</strong>를 본다. 이 기법이 중요한 이유는 앞서 본 Claude Code의
+        "let me write the document" 반복 사례처럼, <strong>tool 호출조차 없는 텍스트만의 정체</strong>도
+        잡아낼 수 있기 때문이다 — 행동 자체가 매번 조금씩 다른 문장이라도, "파일이 실제로 쓰였는가"라는
+        진행 지표는 계속 "아니오"로 남아 있다.
+      </li>
+    </ol>
+    <div class="callout callout-danger">
+      근본 원인을 다시 강조하면: <strong>기본 아키텍처에는 루프가 종료된다는 것을 보장하는 장치가 아무것도
+      없다.</strong> 모델이 스스로 "나 지금 같은 행동을 반복하고 있네, 멈춰야겠다"고 알아채는 데 의존하는
+      설계는 근본적으로 취약하다. 감지·차단 로직은 모델의 출력을 <em>해석</em>하는 게 아니라, harness가
+      모델과 무관하게 독립적으로 관측·집계하는 통제 로직이어야 한다.
+    </div>
+  </div>
+
+  <!-- 전제 개념 5: circuit breaker -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Circuit Breaker — Agent Harness에서는 무엇을 감시하는가</h2>
+
+    <h3>전통적인 circuit breaker와 무엇이 다른가</h3>
+    <p>
+      마이크로서비스에서 익숙한 circuit breaker(예: Hystrix 계열)는 <strong>하류 의존성 호출의 실패율/지연
+      시간</strong>을 감시하다가 임계값을 넘으면 회로를 열어(open) 더 이상의 호출을 즉시 실패시키고,
+      호출하는 쪽을 보호한다. Agent harness의 circuit breaker는 목적이 다르다 — 개별 tool 호출 하나하나는
+      "성공"하고 있을 수 있다(CRM API가 200 OK를 정상적으로 돌려주고 있을 수도 있다). 문제는 그 성공한
+      호출들이 <strong>전체적으로 수렴하지 않고 있다는 것</strong>이다. 그래서 agent circuit breaker는
+      <strong>토큰 소비 속도(token velocity)나 지출 속도(spend rate)</strong> 같은, 개별 호출의 성패와는
+      다른 차원의 지표를 감시하다가, 그 속도가 임계값을 넘으면 <strong>루프 실행 자체를 일시 정지</strong>
+      시킨다.
+    </p>
+    <h3>계층적 방어 — 하나가 아니라 여러 겹으로</h3>
+    <p>
+      실무에서는 이 네 가지 메커니즘을 <strong>독립적인 층</strong>으로 겹쳐 쓴다. 하나가 뚫려도 다른 층이
+      막아준다는 전제가 있어야 "half-day 정도의 엔지니어링이 5자리 숫자짜리 비용 사고를 막아준다"는 실무
+      격언이 성립한다.
+    </p>
+    <table>
+      <tr>
+        <th>레이어</th>
+        <th>감시 대상</th>
+        <th>대표 메커니즘</th>
+      </tr>
+      <tr>
+        <td>1. Step cap</td>
+        <td>몇 턴/스텝을 돌았는가</td>
+        <td><code>max_turns</code>, <code>recursion_limit</code></td>
+      </tr>
+      <tr>
+        <td>2. Budget cap</td>
+        <td>지금까지 얼마를 썼는가</td>
+        <td><code>max_budget_usd</code>, 토큰/비용 상한</td>
+      </tr>
+      <tr>
+        <td>3. Repeated-state / progress 감지</td>
+        <td>행동·상태가 실제로 바뀌고 있는가</td>
+        <td>action dedup, stuck handler, <code>PreToolUse</code> hook</td>
+      </tr>
+      <tr>
+        <td>4. Circuit breaker(외부 모니터링)</td>
+        <td>소비 <em>속도</em>가 비정상적인가</td>
+        <td>token-velocity 감시, 별도 프로세스/서비스의 강제 중단</td>
+      </tr>
+      <tr>
+        <td>5. 사람에게 에스컬레이션</td>
+        <td>자동 판단이 불가능한 상황인가</td>
+        <td>한도 도달 시 세션을 종료가 아니라 승인 대기로 전환 (Day 12에서 심화)</td>
+      </tr>
+    </table>
+    <p>
+      마지막 층이 중요한 이유는, 한도에 도달했다고 항상 "그냥 실패"로 끝내는 게 최선은 아니기 때문이다.
+      Claude Agent SDK가 <code>error_max_turns</code>를 반환할 때 세션 ID를 함께 돌려주는 것도 이 때문이다
+      — 호출자는 이걸 "실패"로 처리할 수도 있고, 사용자에게 "한도에 도달했는데 이어서 진행할까요?"라고
+      물어본 뒤 더 높은 한도로 <strong>같은 세션을 resume</strong>할 수도 있다. 종료 조건 설계는 "멈추는
+      법"만이 아니라 "멈춘 뒤 무엇을 하는가"까지 포함해야 한다.
+    </p>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+    <ul>
+      <li>
+        <strong>종료를 모델에 맡기지 않는가:</strong> "모델이 알아서 멈출 것"이라는 순진한 전제 대신,
+        종료 조건을 harness가 구조적으로 강제해야 하는 설계 문제로 다루는가.
+      </li>
+      <li>
+        <strong>서로 다른 실패 모드를 구분하는가:</strong> "턴이 너무 많다"(step), "돈을 너무 썼다"(budget),
+        "진전 없이 맴돈다"(repeated-state)를 뭉뚱그리지 않고 각각 다른 지표·메커니즘으로 다룰 수 있는가.
+      </li>
+      <li>
+        <strong>프레임워크 하나의 파라미터명을 외운 게 아니라 원리로 이해하는가:</strong>
+        <code>max_turns</code>, <code>recursion_limit</code> 같은 이름이 프레임워크마다 달라도 "왜 이런
+        장치가 필요한가"를 provider-agnostic하게 설명할 수 있는가.
+      </li>
+      <li>
+        <strong>구체적 비용 근거로 설득할 수 있는가:</strong> "위험하다"는 추상적 주장이 아니라 실제 사고
+        사례(중복 리소스 생성, 무한 재시도, 순환 호출)를 근거로 왜 방어가 필요한지 설명하는가.
+      </li>
+      <li>
+        <strong>단일 방어에 의존하지 않는가:</strong> "한도 하나만 걸면 끝"이 아니라 여러 겹의 독립적인
+        방어(step/budget/repeated-state/circuit breaker/에스컬레이션)를 설계하는 defense-in-depth 사고를
+        하는가.
+      </li>
+    </ul>
+    <div class="callout callout-warn">
+      이 주제는 "장애가 난 뒤에야 배우는 교훈"을 면접 전에 미리 갖고 있는지를 보는 질문이다. 실제 프로덕션
+      사고(DN42 $6,531, CRM $4,200, 멀티에이전트 $30,000)를 들 수 있는 후보는, 이 문제를 이론이 아니라
+      실무에서 이미 마주친 적 있거나 최소한 진지하게 조사해본 사람이라는 신호를 준다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 고객지원 agent가 밤새 같은 오류를 반복하며 재시도하는 문제</h3>
+    <p>
+      CRM tool 호출이 특정 입력값에서 계속 같은 오류를 돌려주는데, agent는 "다시 시도하면 될 것"이라고
+      판단해 동일한 실패 행동을 몇 시간이고 반복한다. → 재시도 로직에 <strong>exponential backoff와
+      최대 시도 횟수</strong>를 두는 것만으로는 부족하다. <code>(tool, 인자)</code> 해시가 짧은 시간
+      안에 반복되는 것을 <code>PreToolUse</code> hook에서 감지해 즉시 차단하고, 실패가 계속되면 "이 tool은
+      지금 신뢰할 수 없다"는 신호를 컨텍스트에 명시적으로 주입해 다른 접근을 시도하도록 유도하거나 사람에게
+      넘긴다.
+    </p>
+
+    <h3>상황 2: 멀티에이전트 오케스트레이션에서 순환 호출로 비용이 폭주하는 문제</h3>
+    <p>
+      Agent A → B → C → A처럼 핸드오프 그래프에 의도치 않은 사이클이 생기면, 각 서브에이전트가 자기
+      <code>max_turns</code>만 지키더라도 <strong>전체 시스템은 여전히 무한히 순환</strong>할 수 있다
+      (A가 3턴 안에 끝나도, A→B→C→A가 계속 새로 시작되면 전역적으로는 끝나지 않는다). → step/budget 상한은
+      서브에이전트 각자가 아니라 <strong>오케스트레이터가 전역(global) 단위로 소유</strong>해야 하고,
+      핸드오프 그래프 자체에 방문한 에이전트 집합을 추적해 사이클을 구조적으로 차단하는 설계가 필요하다
+      (Day 8에서 handoff/multi-agent coordination을 심화한다).
+    </p>
+
+    <h3>상황 3: 코딩 agent가 "작성하겠다"는 말만 반복하며 실제 작업은 하지 않는 문제</h3>
+    <p>
+      Tool을 호출하지 않고 텍스트로만 "이제 문서를 작성하겠습니다"를 반복하는 정체는, tool 호출 패턴만
+      감시하는 순진한 루프 감지로는 잡히지 않는다. → 진행률 감지는 "tool을 호출했는가"가 아니라
+      <strong>"관측 가능한 산출물(파일 diff, 커밋, 테스트 통과 여부)이 k턴 동안 바뀌었는가"</strong>를
+      기준으로 삼아야 한다. Day 3에서 다룬 <code>claude-progress.txt</code> 패턴처럼 진행 상황을 외부
+      아티팩트로 남기게 하면, 그 아티팩트의 변화 여부 자체가 좋은 진행률 신호가 된다.
+    </p>
+
+    <h3>상황 4: 배포 자동화 agent가 오류마다 새 인프라를 중복 생성하는 문제</h3>
+    <p>
+      배포 스크립트가 실패할 때마다 agent가 "처음부터 다시 만들기"를 기본 행동으로 선택하면, 실패할 때마다
+      리소스가 누적되며 비용이 기하급수적으로 늘어난다. → tool 자체를 <strong>idempotent</strong>하게
+      설계해(같은 요청을 여러 번 보내도 리소스가 중복 생성되지 않도록) 실패의 "폭발 반경"을 원천적으로
+      줄이고, 그 위에 step cap과 지출 속도 기반 circuit breaker를 겹쳐서 이중으로 방어한다. Idempotency는
+      Day 2에서 다룬 tool 설계 원칙과 이 레슨의 루프 안정성이 만나는 지점이다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>루프의 본질을 정의하기</strong>
+        "Agent loop의 기본 아키텍처는 종료를 아무것도 보장하지 않습니다. 모델은 매 턴 그 순간의 컨텍스트만
+        보고 판단하기 때문에, 언제 멈춰야 하는가는 모델의 창발적 판단이 아니라 harness가 구조적으로 강제해야
+        하는 제어 로직이라고 생각합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>서로 다른 실패 모드를 계층으로 나누기</strong>
+        "저는 이 문제를 네 개의 독립적인 층으로 나눕니다. Step cap(몇 턴을 돌았는가), budget cap(얼마를
+        썼는가), repeated-state 감지(진전이 있는가), 그리고 지출 속도를 감시하는 circuit breaker입니다.
+        하나만으로는 서로 다른 실패 유형을 놓칠 수 있어서 겹쳐서 씁니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>구체적 메커니즘으로 근거 대기</strong>
+        "예를 들어 Claude Agent SDK는 <code>max_turns</code>와 <code>max_budget_usd</code>를 별도 옵션으로
+        분리해두는데, 이건 턴 수와 비용이 항상 비례하지 않기 때문입니다 — 매 턴 tool 출력이 거대하면
+        턴 수는 적어도 비용은 이미 클 수 있습니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>실제 사고 사례로 무게를 더하기</strong>
+        "이건 이론적인 우려가 아닙니다. 2026년에 보고된 사례들만 봐도, 에러가 날 때마다 새 인프라를 만들며
+        6천 달러 넘게 청구된 사례, 6시간 동안 같은 실패를 반복한 고객지원 agent가 4천 달러 넘게 쓴 사례,
+        멀티에이전트 순환 호출로 3만 달러가 발생한 사례가 있습니다. OWASP도 이걸 LLM10 Unbounded
+        Consumption으로 표준 위협 목록에 올렸습니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>"멈춘 뒤"까지 설계하는 senior 마무리</strong>
+        "마지막으로 한도에 도달했을 때를 단순 실패로 끝내지 않고, 세션을 재개하거나 사람에게 승인을
+        요청하는 경로까지 함께 설계해야 한다고 생각합니다. 강제 종료 자체가 목적이 아니라, 통제되지 않은
+        비용/행동을 막는 게 목적이기 때문입니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+    <div class="callout callout-tip">
+      <p>
+        "Agent loop을 설계할 때 가장 먼저 인정해야 하는 전제는, 기본 아키텍처 자체가 루프의 종료를
+        아무것도 보장하지 않는다는 겁니다. 모델은 매 턴 그 순간의 컨텍스트만 보고 다음 행동을 결정하기
+        때문에, '언제 멈춰야 하는가'는 모델의 판단력에 기대는 게 아니라 harness가 구조적으로 강제해야
+        하는 제어 로직이라고 생각합니다. 실제로 최신 코딩 agent에서도, tool을 한 번도 호출하지 않고
+        '문서를 작성하겠습니다'라는 텍스트만 반복하며 context window 전체를 소진한 사례가 보고된 적이
+        있는데, 이건 모델의 자기 교정에만 의존하는 설계가 얼마나 취약한지를 잘 보여줍니다.
+      </p>
+      <p>
+        그래서 저는 이 문제를 네 개의 독립적인 방어 층으로 나눠서 설계합니다. 첫째는 step cap으로, 몇
+        턴까지 돌 수 있는지를 하드코딩합니다. Claude Agent SDK의 <code>max_turns</code>나 LangGraph의
+        <code>recursion_limit</code>이 대표적입니다. 둘째는 budget cap으로, 턴 수와 별개로 실제 지출
+        상한을 겁니다 — 매 턴 tool 출력이 크면 턴 수는 적어도 비용은 이미 클 수 있기 때문에 이 둘을
+        분리해야 합니다. 셋째는 repeated-state 감지로, 같은 tool 호출이 반복되는지, 혹은 tool 호출 여부와
+        무관하게 관측 가능한 상태(파일 diff, 테스트 통과 여부)가 여러 턴 동안 전혀 바뀌지 않는지를 봅니다.
+        넷째는 개별 tool 호출의 성패가 아니라 토큰 소비 <em>속도</em> 자체를 감시하는 circuit breaker인데,
+        이건 일반적인 마이크로서비스 circuit breaker와는 감시 대상이 다릅니다 — 마이크로서비스는 하류
+        의존성의 실패율을 보지만, agent circuit breaker는 개별 호출이 다 성공하고 있어도 전체적으로
+        수렴하지 않는 상황을 잡아야 하기 때문입니다.
+      </p>
+      <p>
+        이게 이론적인 우려가 아니라는 근거로, 2026년에 실제로 보고된 사고들을 듭니다. 에러가 날 때마다
+        새 CloudFormation 스택을 만들며 6천 5백 달러 넘게 청구된 사례, 고객지원 agent가 6시간 동안 같은
+        실패를 반복하며 4천 2백 달러를 쓴 사례, 멀티에이전트 시스템의 순환 호출로 3만 달러가 발생한
+        사례가 있습니다. OWASP Top 10 for Agentic Applications도 이걸 LLM10 Unbounded Consumption이라는
+        독립 위협 항목으로 분류하고, 완화책으로 rate limit, 하드 비용 상한, 자동화된 circuit breaker를
+        명시합니다.
+      </p>
+      <p>
+        마지막으로 한도에 도달했을 때를 단순히 '실패'로 처리하지 않는 것도 중요하다고 봅니다. 세션 ID를
+        보존해서 사용자에게 '한도에 도달했는데 이어서 진행할까요'라고 물어보고 더 높은 한도로 재개하거나,
+        사람의 승인을 받는 경로로 넘기는 설계까지 포함해야, 강제 종료가 아니라 통제된 종료가 된다고
+        생각합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "step cap을 몇으로 잡아야 하나요? 근거는 무엇인가요?"</h3>
+    <p><strong>약한 답변:</strong> "그냥 20 정도면 안전할 것 같아서요."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "정해진 정답은 없고, 작업 복잡도에 따라 데이터 기반으로 정해야 한다고 생각합니다. Claude Agent SDK
+      공식 가이드도 처음에는 15~20턴 정도로 보수적으로 시작해서, 실제로 그 작업이 일관되게 더 많은 턴을
+      필요로 한다는 데이터가 쌓였을 때만 늘리라고 권합니다. 중요한 건 숫자 자체보다, 한도에 도달했을 때
+      단순히 실패시키지 않고 세션을 재개할 수 있는 구조로 만들어서, 한도를 너무 낮게 잡는 리스크를
+      완화하는 겁니다."
+    </p>
+
+    <h3>F2. "repeated-state 감지가 false positive로 정상적인 반복 작업(예: 여러 파일을 순회하며 비슷한
+    편집을 반복하는 것)까지 차단하면 어떻게 하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "감지 기준을 '행동이 같은가'가 아니라 '행동과 그 결과가 모두 같은가'로 정교화해야 한다고 봅니다.
+      여러 파일을 순회하는 작업은 tool은 같아도(예: Edit) 인자(파일 경로)가 매번 달라지기 때문에
+      <code>(tool, 인자)</code> 해시 기준으로는 자연히 걸리지 않습니다. 진짜 위험한 패턴은 '완전히 동일한
+      인자로 동일한 호출'이 반복되는 경우이므로, 인자까지 포함한 해시 비교와, 그 호출의 관측 가능한 결과가
+      매번 동일한지(즉 아무 진전이 없는지)를 함께 보는 게 핵심이라고 생각합니다."
+    </p>
+
+    <h3>F3. "circuit breaker를 언제 trip시켜야 하나요? trip된 뒤에는 어떻게 복구시키나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "트립 기준은 절대적인 지출액보다 <em>속도</em>로 잡는 게 낫다고 봅니다 — 예를 들어 '지난 1분간 토큰
+      소비량이 평소 대비 몇 배 이상'처럼요. 절대액 기준만 쓰면 정상적으로 오래 걸리는 대형 작업까지
+      잘못 차단할 수 있습니다. Trip된 뒤에는 자동으로 재시도하게 두면 안 되고, 사람에게 상황(무엇을
+      반복했는지, 얼마를 썼는지)을 요약해서 보여주고 명시적인 승인을 받은 뒤에만 재개하도록 설계해야
+      한다고 생각합니다 — 이게 일반 서비스 circuit breaker의 자동 half-open 재시도와 다른 지점입니다."
+    </p>
+
+    <h3>F4. "멀티에이전트 구조에서 각 서브에이전트가 자기 <code>max_turns</code>만 지키면 왜 전체 시스템은
+    여전히 폭주할 수 있나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "로컬 한도의 합이 전역 한도를 보장하지 않기 때문입니다. A, B, C가 각자 3턴 안에 끝나더라도, A→B→C→A
+      호출이 계속 새로운 '3턴짜리 사이클'로 재시작되면 전체 시스템은 무한히 돌 수 있습니다. 그래서 step과
+      budget은 서브에이전트 각자가 아니라 오케스트레이터가 전역 단위로 소유하고 추적해야 하고, 핸드오프
+      그래프에 방문 이력을 남겨 사이클 자체를 구조적으로 차단하는 설계가 필요하다고 봅니다. 이건 Day 8의
+      multi-agent coordination과도 직접 연결되는 지점입니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>루프 종료를 <strong>모델의 판단이 아니라 harness의 구조적 책임</strong>으로 정의한다</li>
+          <li>Step cap / budget cap / repeated-state 감지 / circuit breaker를
+          <strong>서로 다른 실패 모드에 대응하는 독립 층</strong>으로 구분한다</li>
+          <li><strong>구체적 파라미터(max_turns, max_budget_usd, recursion_limit)</strong>와 함께,
+          왜 이름이 달라도 원리가 같은지 설명한다</li>
+          <li>실제 <strong>비용 폭주 사례</strong>를 근거로 위험을 구체화한다</li>
+          <li>한도 도달 이후를 <strong>단순 실패가 아니라 재개/에스컬레이션까지</strong> 설계한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"모델이 똑똑해지면 알아서 멈출 것"이라는 <strong>근거 없는 낙관</strong>에 의존한다</li>
+          <li><code>max_turns</code> 하나만 걸면 충분하다고 생각하고 budget/repeated-state를 구분하지
+          못한다</li>
+          <li>특정 SDK 파라미터 이름만 나열하고 <strong>다른 프레임워크로 원리를 옮겨 설명하지 못한다</strong></li>
+          <li>"위험할 수 있다"는 <strong>추상적 우려</strong>만 말하고 구체적 사례·수치를 못 든다</li>
+          <li>한도 도달 = <strong>그냥 종료</strong>로만 생각하고 재개/에스컬레이션 설계를 고려하지 않는다</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "모델이 충분히 똑똑해지면 스스로 루프를 알아채고 멈출 것이다"</h3>
+    <p>
+      <strong>사실:</strong> 최신 프로덕션 코딩 agent에서도 tool 호출 없이 텍스트만 반복하며 context
+      window를 소진한 사례가 보고됐다. 모델의 자기 교정은 신뢰할 수 있는 안전장치가 아니며, 종료 판단은
+      harness가 모델과 독립적으로 강제해야 한다.
+    </p>
+
+    <h3>오해 2: "max_turns 하나만 걸어두면 충분하다"</h3>
+    <p>
+      <strong>사실:</strong> 턴 수 상한은 "턴마다 비용이 크게 드는" 패턴(거대한 tool 출력, 높은 reasoning
+      effort)을 놓칠 수 있다. Claude Agent SDK가 <code>max_turns</code>와 <code>max_budget_usd</code>를
+      별도 옵션으로 분리해둔 것도 이 때문이다 — 턴 수와 비용은 독립적으로 폭주할 수 있다.
+    </p>
+
+    <h3>오해 3: "circuit breaker는 일반 마이크로서비스 패턴을 그대로 가져오면 된다"</h3>
+    <p>
+      <strong>사실:</strong> 전통적인 circuit breaker는 하류 의존성의 <strong>실패율/지연</strong>을 감시하지만,
+      agent circuit breaker는 개별 호출이 모두 성공하고 있어도 전체가 수렴하지 않는 상황을 잡아야 하므로
+      <strong>토큰 소비 속도/지출 속도</strong>라는 다른 차원의 지표를 감시해야 한다.
+    </p>
+
+    <h3>오해 4: "repeated-state 감지는 완전히 동일한 tool 호출만 잡으면 된다"</h3>
+    <p>
+      <strong>사실:</strong> tool을 아예 호출하지 않고 텍스트만 반복하는 정체도 존재한다. 감지 로직은
+      "tool 호출 패턴"뿐 아니라 "관측 가능한 산출물이 실제로 바뀌고 있는가"라는 진행률 신호까지 함께
+      봐야 한다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Control-Flow / 루프 안정성 설계 체크리스트</h2>
+    <table>
+      <tr>
+        <th>항목</th>
+        <th>확인할 질문</th>
+      </tr>
+      <tr>
+        <td>Step cap</td>
+        <td>무인 실행되는 모든 agent에 <code>max_turns</code> 류의 상한이 예외 없이 걸려 있는가?</td>
+      </tr>
+      <tr>
+        <td>Budget cap</td>
+        <td>턴 수와 별개로 지출 상한이 걸려 있고, 이 둘이 독립적으로 폭주할 수 있음을 인지하고 있는가?</td>
+      </tr>
+      <tr>
+        <td>Repeated-state 감지</td>
+        <td><code>(tool, 인자)</code> 반복뿐 아니라 tool 호출 없는 텍스트 정체까지 감지 대상에 포함했는가?</td>
+      </tr>
+      <tr>
+        <td>Circuit breaker</td>
+        <td>절대 지출액이 아니라 소비 <em>속도</em> 기준의 트립 조건을 별도 프로세스가 감시하는가?</td>
+      </tr>
+      <tr>
+        <td>전역 예산 소유권</td>
+        <td>멀티에이전트 구조에서 서브에이전트 각자가 아니라 오케스트레이터가 전역 한도를 소유하는가?</td>
+      </tr>
+      <tr>
+        <td>사이클 방지</td>
+        <td>핸드오프 그래프에 방문 이력을 추적해 순환 호출을 구조적으로 차단하는가?</td>
+      </tr>
+      <tr>
+        <td>Idempotency</td>
+        <td>실패 후 재시도가 리소스를 중복 생성하지 않도록 tool이 idempotent하게 설계됐는가?</td>
+      </tr>
+      <tr>
+        <td>한도 도달 이후 경로</td>
+        <td>한도 도달 시 단순 실패가 아니라 세션 재개 또는 사람에게 승인 요청으로 이어지는가?</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"모델이 알아서 멈출 것"이라고 가정하고, step cap/budget cap 같은 구조적 방어 개념을 떠올리지
+      못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span><code>max_turns</code> 같은 턴 상한은 알지만, budget cap과의 차이나 repeated-state 감지,
+      circuit breaker는 설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>Step cap과 budget cap을 구분해서 설명할 수 있고 반복 tool 호출 감지도 언급하지만, tool 호출
+      없는 텍스트 정체나 멀티에이전트 전역 예산 문제까지는 확장하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>Step/budget/repeated-state/circuit breaker를 독립적인 방어 층으로 구분하고, 실제 비용 폭주
+      사례와 OWASP LLM10을 근거로 들며, 멀티에이전트 전역 예산 소유권과 한도 도달 이후의 재개/에스컬레이션
+      설계까지 하나의 일관된 그림으로 연결해서 설명함</span>
+    </div>
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. "루프가 종료를 보장하지 않는다"는 게 왜 아키텍처의 근본 속성인지, 실제 사례(텍스트만 반복하며
+      context window를 소진한 사례)로 설명할 수 있는가?<br>
+      2. Step cap과 budget cap이 서로 다른 실패 모드를 잡는 이유를 즉시 구분해서 말할 수 있는가?<br>
+      3. Repeated-state 감지가 "동일 tool 호출"만이 아니라 "tool 호출 없는 정체"까지 포함해야 하는 이유를
+      설명할 수 있는가?<br>
+      4. 일반 마이크로서비스 circuit breaker와 agent circuit breaker가 감시하는 지표가 왜 다른지 설명할
+      수 있는가?<br>
+      5. 멀티에이전트 구조에서 서브에이전트 각자의 <code>max_turns</code> 준수가 왜 전역 폭주를 막지
+      못하는지, 그래서 예산을 누가 소유해야 하는지 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>루프는 스스로 끝나지 않는다.</strong> 종료 조건은 모델의 창발적 판단이 아니라 harness가
+      구조적으로 강제해야 하는 제어 로직이다.</li>
+      <li><strong>Step cap과 budget cap은 서로 다른 문제를 푼다.</strong> 턴 수와 비용은 독립적으로 폭주할
+      수 있어 둘 다 별도로 캡을 걸어야 한다.</li>
+      <li><strong>Repeated-state 감지는 tool 호출 반복만이 아니라 진행률 자체를 봐야 한다.</strong> 텍스트만
+      반복하며 아무 tool도 호출하지 않는 정체도 실제로 보고된 실패 모드다.</li>
+      <li><strong>Agent circuit breaker는 소비 속도를 감시한다.</strong> 개별 호출의 성패가 아니라, 성공한
+      호출들이 전체적으로 수렴하지 않는 상황을 잡아야 하기 때문이다.</li>
+      <li><strong>멀티에이전트에서는 예산을 오케스트레이터가 전역으로 소유해야 한다.</strong> 서브에이전트
+      각자의 로컬 준수만으로는 순환 호출형 폭주를 막지 못한다.</li>
+      <li><strong>한도 도달은 종료가 아니라 분기점이다.</strong> 세션 재개나 사람에게 승인 요청 같은 경로를
+      함께 설계해야 통제된 종료가 된다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 4 완료 · 다음: Day 5 — Guardrail과 Prompt Injection 방어</span>
+  </div>
+
+</div>
+</body>
+</html>
