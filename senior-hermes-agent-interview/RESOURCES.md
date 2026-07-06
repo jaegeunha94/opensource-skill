@@ -35,6 +35,34 @@
 - [Security Boulevard — 8 Self-Evolving Skills Hermes Agent Writes on Its Own](https://securityboulevard.com/2026/06/8-self-evolving-skills-hermes-agent-writes-on-its-own/) —
   자기수정형 스킬의 보안 리스크 3계열: 자격증명 응고(credential hardening), 스킬 위장 prompt injection, `.env`/SSH 키 유출 경로화 — 2차 출처
 
+## Day 4 리서치 — Model/Tool/Runtime 경계, Provider 추상화 (1차 출처 우선, 2026-07-06 확인)
+
+- [AI Providers 공식 문서](https://hermes-agent.nousresearch.com/docs/integrations/providers) 및 GitHub 미러
+  [`website/docs/integrations/providers.md`](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/integrations/providers.md) —
+  provider 4개 티어(Nous Portal/OpenRouter/direct 1st-class provider/custom OpenAI-호환 엔드포인트),
+  Nous Tool Gateway(웹검색/이미지생성/TTS/브라우저), Vertex AI 서비스 계정 OAuth2 토큰 발급, credential pool
+  로테이션 전략(`fill_first`/`round_robin`/`least_used`/`random`), `fallback_providers` 체인 — WebFetch로
+  GitHub raw 미러 원문 확인
+- [Configuration 공식 문서](https://hermes-agent.nousresearch.com/docs/user-guide/configuration) — 설정
+  계층(CLI 인자 > `config.yaml` > `.env` > 기본값), secret과 비-secret 분리 원칙, auxiliary 모델
+  라우팅(`provider: "auto"` 기본값), 프로바이더/모델별 timeout 설정 — WebFetch로 확인
+- [Tools Runtime 개발자 문서](https://hermes-agent.nousresearch.com/docs/developer-guide/tools-runtime) 및
+  GitHub 미러 `website/docs/developer-guide/tools-runtime.md` — tool dispatch 파이프라인(`run_agent.py`→
+  `model_tools.handle_function_call`→agent-loop 툴(`todo`/`memory`/`session_search`/`delegate_task`) 직접
+  처리 vs `registry.dispatch`→`ToolEntry`), `ToolEntry` 필드(name/toolset/schema/handler/check_fn/
+  requires_env/is_async/emoji), pre-tool/post-tool hook, 이중 에러 래핑, native tool calling vs 텍스트
+  fallback(vLLM `--enable-auto-tool-choice --tool-call-parser hermes`, llama.cpp `--jinja`) — WebFetch로
+  GitHub raw 미러 원문 확인
+- [Code Execution (Programmatic Tool Calling) 공식 문서](https://hermes-agent.nousresearch.com/docs/user-guide/features/code-execution)
+  및 GitHub 미러 `website/docs/user-guide/features/code-execution.md` — `execute_code` Unix domain socket
+  RPC 아키텍처, `hermes_tools.py` stub 생성, 자식 프로세스 격리, credential stripping(`KEY`/`TOKEN`/`SECRET`
+  등 패턴 제거), 리소스 제한(5분 타임아웃/stdout 50KB/stderr 10KB/tool call 50회), Linux/macOS 전용(Windows
+  자동 비활성화) — WebFetch로 GitHub raw 미러 원문 확인
+- [GitHub Releases — v0.18.0 "The Judgment Release"](https://github.com/NousResearch/hermes-agent/releases/tag/v2026.7.1) —
+  2026-07-06 기준 재확인해도 최신 릴리스 동일. Mixture-of-Agents(MoA)가 "이름 붙은 앙상블"로 1st-class
+  모델 선택지에 승격, Google Vertex AI가 Gemini용 1st-class provider로 추가(서비스 계정 기반 무정적-키
+  인증) — 이번 Day의 핵심 최신 근거로 채택
+
 ## 보안 감사 / CVE
 
 - 독립 보안 감사(연구자 @Anic888, 2026-04-11) — 기본 설정 기준 Critical 4건 + High 9건: 무제한 셸 실행, 컨테이너 승인 우회, 지속적인 skill-injection 벡터
