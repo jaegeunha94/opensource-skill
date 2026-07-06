@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — 외부 정렬 | 파일구조 면접 준비</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222535;
+      --border: #2e3147;
+      --accent: #5b8dee;
+      --accent2: #7c5cbf;
+      --green: #3ecf8e;
+      --red: #e25c5c;
+      --yellow: #f5a623;
+      --text: #e2e4f0;
+      --muted: #8b90a8;
+      --code-bg: #12141f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1f3c 0%, #12141f 100%);
+      border-bottom: 2px solid var(--accent2);
+      padding: 2.5rem 2rem;
+      margin: 0 -1rem 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .icon-q  { background: #2b1f4a; color: var(--accent2); }
+    .icon-pre { background: #1a2f3a; color: var(--accent); }
+    .icon-why { background: #2a2010; color: var(--yellow); }
+    .icon-real { background: #112a1f; color: var(--green); }
+    .icon-think { background: #1f2a3a; color: #a8c5f0; }
+    .icon-ans  { background: #1a2a1a; color: var(--green); }
+    .icon-trade { background: #2a1a1a; color: var(--red); }
+    .icon-myth  { background: #2a1f10; color: var(--yellow); }
+    .icon-follow { background: #1a1a2a; color: var(--accent2); }
+    .icon-diff  { background: #202020; color: #c0c0c0; }
+    .icon-rub  { background: #0e1e1a; color: var(--green); }
+
+    h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 1.25rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    li { margin-bottom: 0.35rem; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #2b1f4a 0%, #1a1d27 100%);
+      border: 1.5px solid var(--accent2);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #d4c8f5;
+      margin-bottom: 0.75rem;
+    }
+    .interview-sub {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.88rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+      font-size: 0.87rem;
+      line-height: 1.6;
+    }
+    pre code { background: none; border: none; padding: 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.85rem 0;
+      font-size: 0.92rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+    .answer-block {
+      border-left: 3px solid;
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 0.85rem 0;
+    }
+    .answer-strong { border-color: var(--green); background: rgba(62,207,142,0.06); }
+    .answer-weak   { border-color: var(--red);   background: rgba(226,92,92,0.06); }
+    .answer-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+    .label-strong { color: var(--green); }
+    .label-weak   { color: var(--red); }
+
+    .step-list { counter-reset: step; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-list li:last-child { border-bottom: none; }
+    .step-list li::before {
+      content: counter(step);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0;
+    }
+    .followup-q {
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .score-high { background: rgba(62,207,142,0.2); color: var(--green); }
+    .score-mid  { background: rgba(245,166,35,0.2); color: var(--yellow); }
+    .score-low  { background: rgba(226,92,92,0.2);  color: var(--red); }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.85rem 0;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+    .callout-info { background: rgba(91,141,238,0.08); border-left: 3px solid var(--accent); }
+    .callout-warn { background: rgba(245,166,35,0.08); border-left: 3px solid var(--yellow); }
+    .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin: 0.1rem;
+    }
+    .tag-blue { background: rgba(91,141,238,0.15); color: var(--accent); }
+    .tag-green { background: rgba(62,207,142,0.15); color: var(--green); }
+    .tag-yellow { background: rgba(245,166,35,0.15); color: var(--yellow); }
+
+    .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      color: #c9d0e8;
+      margin: 0.85rem 0;
+      white-space: pre;
+    }
+
+    nav.breadcrumb {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    nav.breadcrumb a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <nav class="breadcrumb">
+      <a href="../">파일구조 면접 준비</a> › <a href="./index.html">레슨 목록</a>
+    </nav>
+    <div class="day-badge">Interview Day 7</div>
+    <h1>외부 정렬 — Run Generation, K-way Merge, I/O Pass 비용</h1>
+    <p class="subtitle">메모리에 다 못 올라가는 데이터를 정렬할 때, "비교 횟수"가 아니라 "디스크를 몇 번 왕복하는가"로 설계가 갈린다</p>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-q">Q</div>
+      <h2>면접 질문</h2>
+    </div>
+    <div class="interview-q">
+      "메모리보다 큰 파일을 정렬해야 한다면 어떻게 설계하겠습니까?"
+    </div>
+    <p class="interview-sub">변형 질문 유형</p>
+    <ul>
+      <li>"quicksort나 mergesort를 그대로 디스크 파일에 적용하면 왜 안 됩니까?"</li>
+      <li>"PostgreSQL에서 <code>ORDER BY</code>가 <code>work_mem</code>을 초과하면 내부적으로 무슨 일이 일어납니까?"</li>
+      <li>"정렬에 필요한 총 I/O 횟수를 어떻게 계산합니까?"</li>
+      <li>"merge 시 몇 개의 run을 한 번에 합칠지(fan-in)는 무엇으로 제한됩니까?"</li>
+    </ul>
+  </div>
+
+  <!-- 2. 전제 개념 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">📖</div>
+      <h2>전제 개념 — 쉬운 한국어로 먼저 이해하기</h2>
+    </div>
+
+    <h3>7-1. 왜 메모리 정렬 알고리즘을 디스크에 그대로 못 쓰는가</h3>
+    <p>
+      quicksort, mergesort, heapsort 같은 알고리즘은 <strong>전체 데이터가 메모리(RAM)에 다 올라와 있다는
+      전제</strong>로 설계됩니다. 임의의 두 원소를 비교하거나 교환하는 비용이 "거의 공짜"라고 가정하는
+      것입니다. 그런데 파일 크기가 메모리보다 크면(예: 100GB 로그 파일을 8GB 메모리로 정렬), 정렬 도중
+      임의 위치의 데이터에 접근할 때마다 <strong>디스크 랜덤 I/O</strong>가 발생합니다. Day 1에서 다뤘듯
+      랜덤 I/O는 순차 I/O보다 수천~수만 배 느릴 수 있으므로, "메모리 정렬 알고리즘을 그대로 디스크에
+      적용"하는 것은 사실상 사용 불가능한 성능을 만듭니다. 그래서 <strong>외부 정렬(External Sort)</strong>은
+      "메모리에 들어가는 만큼만 한 번에 정렬하고, 나머지는 순차 I/O로 병합"하는 완전히 다른 전략을
+      씁니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>7-2. Phase 1 — Run Generation (메모리 크기만큼 정렬된 조각 만들기)</h3>
+    <p>
+      메모리 버퍼 크기를 <code>M</code>이라 하면, 파일을 <code>M</code> 크기의 청크로 나눠 하나씩
+      메모리에 읽어와 <strong>메모리 내 정렬 알고리즘(quicksort 등)</strong>으로 정렬한 뒤, 정렬된
+      결과를 디스크에 다시 씁니다. 이렇게 만들어진 "정렬된 조각"을 <strong>run</strong>이라 부릅니다.
+      이 단계는 파일 전체를 한 번 읽고 한 번 쓰는 순차 I/O이므로 비용이 예측 가능합니다.
+    </p>
+    <div class="diagram">[ Run Generation ]
+
+파일 크기 = 1,000,000 레코드, 메모리 M = 100,000 레코드 수용 가능
+
+Chunk 1 (레코드 1~100,000) 읽기 → 메모리 내 정렬 → Run 1 로 디스크에 쓰기
+Chunk 2 (레코드 100,001~200,000) 읽기 → 메모리 내 정렬 → Run 2 로 디스크에 쓰기
+...
+Chunk 10 → Run 10
+
+결과: 정렬된 Run이 10개 생성됨 (각 Run 내부는 정렬돼 있지만, Run 간에는 아직 정렬 안 됨)</div>
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span>
+        <strong>Replacement Selection:</strong> 단순히 청크 단위로 자르는 대신, 힙(min-heap)을 이용한
+        "replacement selection" 기법을 쓰면 평균적으로 <strong>메모리 크기의 약 2배</strong>인 run을
+        만들 수 있습니다. 힙에서 최소값을 출력한 뒤, 방금 출력한 값보다 큰 새 레코드를 계속 같은
+        run에 편입시키는 방식이라, "이미 출력된 값보다 작은 값이 들어오는 순간"까지 하나의 run을
+        확장할 수 있기 때문입니다. Run이 길어질수록 이후 병합 단계의 부담이 줄어듭니다.
+      </span>
+    </div>
+
+    <div class="divider"></div>
+    <h3>7-3. Phase 2 — K-way Merge (여러 run을 하나로 합치기)</h3>
+    <p>
+      Run이 여러 개 생겼으면, 이제 이들을 정렬 순서를 유지하며 하나로 합쳐야 합니다. 이때 2개씩만
+      합치는 것(2-way merge)이 아니라, <strong>버퍼가 허용하는 만큼 여러 run을 동시에 합치는 것</strong>
+      (k-way merge)이 핵심입니다. 각 run에서 다음에 내보낼 후보 레코드들을 <strong>min-heap(우선순위
+      큐)</strong>에 올려두고, 매번 최소값을 꺼내 출력 버퍼에 쓰고, 그 레코드가 있던 run에서 다음
+      레코드를 힙에 채워 넣는 방식으로 동작합니다.
+    </p>
+    <div class="diagram">[ K-way Merge, k=3 예시 ]
+
+입력 버퍼 3개 (Run A, Run B, Run C 각각에서 한 페이지씩 읽어둠) + 출력 버퍼 1개
+
+min-heap: {A의 현재 최솟값, B의 현재 최솟값, C의 현재 최솟값}
+
+반복:
+  1) heap에서 전체 최솟값 pop → 출력 버퍼에 기록
+  2) 그 값이 나온 run(A/B/C 중 하나)에서 다음 레코드를 heap에 push
+  3) 출력 버퍼가 가득 차면 디스크에 flush (순차 쓰기)
+  4) 입력 버퍼가 비면 해당 run의 다음 페이지를 디스크에서 읽음 (순차 읽기)
+
+=> Run A, B, C가 한 번의 "패스"로 정렬된 하나의 더 큰 run으로 합쳐짐</div>
+    <p>
+      여기서 <strong>fan-in(한 번에 합칠 수 있는 run의 개수)은 버퍼 페이지 수로 제한</strong>됩니다.
+      전체 버퍼가 <code>B</code>페이지라면, 출력 버퍼로 1페이지를 쓰고 나머지 <code>B-1</code>페이지를
+      입력 버퍼로 나눠 씁니다. 즉 한 번에 최대 <code>B-1</code>개의 run을 병합할 수 있습니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>7-4. 총 I/O 패스 수 계산 — 왜 이 공식을 알아야 하는가</h3>
+    <p>
+      외부 정렬의 성능은 "총 몇 번 디스크를 순차로 훑는가(pass 수)"로 결정됩니다. 파일 전체 블록 수를
+      <code>N</code>, 메모리 버퍼가 담을 수 있는 블록 수를 <code>M</code>, 병합 시 fan-in을 <code>B-1</code>
+      이라 하면:
+    </p>
+    <div class="diagram">1) 초기 run 개수  =  ⌈N / M⌉
+
+2) 병합 패스 수  =  ⌈ log_(B-1) ( 초기 run 개수 ) ⌉
+   (run 개수가 fan-in 이하로 줄어들 때까지, run 개수를 매 패스마다 (B-1)배씩 줄여나감)
+
+3) 총 패스 수  =  1(run generation) + 병합 패스 수
+
+4) 총 I/O 비용 (블록 단위, 읽기+쓰기)  =  2 × N × 총 패스 수
+   (각 패스는 전체 데이터를 한 번 읽고 한 번 쓰므로 2N)</div>
+    <p>
+      예를 들어 <code>N = 1,000,000</code>블록, <code>M = 100</code>(초기 run 100만/100=10,000개
+      가정은 과장이니 실제로는 M=100,000블록 같은 큰 값을 가정), fan-in <code>B-1 = 50</code>이라면
+      병합 패스 수는 <code>⌈log_50(초기 run 개수)⌉</code>로, run 개수가 커도 <strong>로그 스케일로만
+      늘어난다</strong>는 점이 핵심입니다. 이 공식을 이해하면 "메모리를 늘리면 왜 성능이 선형이 아니라
+      로그로 개선되는지", "fan-in을 늘리는 것이 왜 패스 수를 크게 줄이는지"를 정량적으로 설명할 수
+      있습니다.
+    </p>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span>
+        <strong>면접관이 보는 것:</strong> "정렬을 여러 번에 나눠서 한다"는 정성적 설명만으로는 부족합니다.
+        <strong>run 개수와 fan-in이 패스 수를 어떻게 결정하는지, 그리고 패스 수가 전체 I/O 비용에
+        어떻게 곱해지는지</strong>를 수식 수준으로 설명할 수 있어야 시니어 답변입니다.
+      </span>
+    </div>
+  </div>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-why">?</div>
+      <h2>왜 면접에서 이 질문을 묻는가</h2>
+    </div>
+    <p>
+      "merge sort를 아는가"가 아니라, <strong>"메모리 제약이라는 현실적 제약 아래에서 I/O 비용을
+      최소화하는 알고리즘을 설계할 수 있는가"</strong>를 봅니다. 이는 대용량 배치 처리, DB 인덱스 생성,
+      분산 정렬(shuffle) 설계와 직결되는 역량입니다.
+    </p>
+    <ol>
+      <li>
+        <strong>왜 메모리 알고리즘을 그대로 못 쓰는지 I/O 비용으로 설명할 수 있는가</strong><br>
+        "느려서"가 아니라, 랜덤 I/O가 순차 I/O보다 수천 배 느리다는 Day 1의 비용 모델과 연결해야
+        합니다.
+      </li>
+      <li>
+        <strong>run generation과 merge를 단계로 분리해 설명할 수 있는가</strong><br>
+        두 단계 각각이 왜 "순차 I/O 위주"로 설계되는지 이해하고 있는지 봅니다.
+      </li>
+      <li>
+        <strong>버퍼 크기(메모리)와 fan-in이 패스 수에 미치는 영향을 정량적으로 설명할 수 있는가</strong><br>
+        "메모리를 늘리면 빨라진다"가 아니라, 로그 스케일 개선이라는 것과 그 한계를 말할 수 있어야
+        합니다.
+      </li>
+    </ol>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span>
+        주니어 수준 답변: "메모리에 다 안 들어가면 나눠서 정렬하고 합치면 됩니다. Merge sort 같은
+        방식입니다."<br>
+        10년차 기대 답변: "먼저 메모리 크기만큼 청크를 정렬해 run으로 디스크에 씁니다. 이후 버퍼가
+        허용하는 fan-in만큼 run들을 min-heap 기반 k-way merge로 합치는데, 전체 패스 수는
+        ⌈log_(B-1)(run 개수)⌉로 결정되고 총 I/O는 2N × 패스 수입니다. 그래서 메모리를 늘리거나
+        merge fan-in을 키우면 패스 수가 로그 단위로 줄어 I/O가 크게 감소한다는 것이 설계의 핵심입니다."
+      </span>
+    </div>
+  </div>
+
+  <!-- 4. 실무 연결 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-real">⚙</div>
+      <h2>실무 연결</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>실무 상황</th>
+          <th>외부 정렬 판단</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>PostgreSQL <code>ORDER BY</code> / <code>work_mem</code> 초과</strong></td>
+          <td>
+            정렬 대상이 <code>work_mem</code>을 넘으면 PostgreSQL은 자동으로 "external merge" 방식으로
+            전환해 임시 디스크 파일에 run을 만들고 병합합니다. <code>EXPLAIN ANALYZE</code>에서
+            "Sort Method: external merge Disk"로 표시되면, 이 경로가 실행됐다는 뜻이고 이는 종종
+            <code>work_mem</code> 튜닝의 신호입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>MySQL filesort</strong></td>
+          <td>
+            <code>sort_buffer_size</code>를 초과하는 정렬은 임시 파일 기반 외부 정렬로 처리됩니다.
+            대량 결과를 정렬하는 쿼리에서 filesort가 느리다면 버퍼 크기나 인덱스로 정렬을 회피하는
+            전략(정렬된 인덱스로 스캔)을 함께 고려합니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>대용량 인덱스 생성 (<code>CREATE INDEX</code>)</strong></td>
+          <td>
+            B+Tree 인덱스를 만들 때 데이터가 미리 정렬돼 있으면 leaf를 순차로 채워 넣을 수 있어 훨씬
+            빠릅니다. DBMS 내부적으로 인덱스 빌드 전 외부 정렬을 수행하는 경우가 많습니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Hadoop MapReduce / Spark shuffle</strong></td>
+          <td>
+            Map 단계 출력은 각 파티션 내에서 외부 정렬로 run을 만들고, shuffle 후 reduce 단계에서
+            여러 partition의 run을 k-way merge로 합칩니다. "Terasort" 벤치마크가 바로 대규모 분산
+            외부 정렬 성능을 측정하는 표준 테스트입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>대용량 로그 정렬/중복 제거 배치</strong></td>
+          <td>
+            수백 GB 로그를 타임스탬프로 정렬하거나 dedup할 때, 메모리에 맞는 청크로 나눠 정렬 후
+            병합하는 것이 표준 패턴입니다. Unix <code>sort</code> 커맨드 자체도 내부적으로 외부 정렬을
+            구현하고 있습니다(<code>sort --buffer-size</code>로 조정 가능).
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-think">→</div>
+      <h2>답변 사고 순서 — 면접에서 이렇게 생각하면서 말한다</h2>
+    </div>
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>왜 메모리 정렬 알고리즘을 그대로 못 쓰는지 짚는다</strong><br>
+          랜덤 I/O 비용이 폭증한다는 것을 Day 1의 저장장치 비용 모델과 연결합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Run generation 단계를 설명한다</strong><br>
+          메모리 크기만큼 읽어 정렬 후 디스크에 쓰는 과정이 순차 I/O임을 강조합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>K-way merge 단계와 fan-in 제약을 설명한다</strong><br>
+          min-heap 기반 병합과, 버퍼 페이지 수가 fan-in을 결정한다는 점을 말합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>총 패스 수와 I/O 비용 공식을 제시한다</strong><br>
+          ⌈log_(B-1)(run 개수)⌉ 패스, 총 I/O는 2N × 패스 수라는 정량적 근거를 댑니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>실무 대응(버퍼 튜닝, fan-in 확대, replacement selection)으로 마무리</strong><br>
+          work_mem/sort_buffer 조정이나 더 긴 run 생성 기법으로 패스 수를 줄이는 방향을 제시합니다.
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-ans">✓</div>
+      <h2>핵심 답변 예시</h2>
+    </div>
+
+    <h3>짧은 버전 (1~2분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Short)</div>
+      <p>
+        메모리보다 큰 파일은 2단계로 정렬합니다. 먼저 메모리 크기만큼 읽어 내부 정렬 후 run으로 디스크에
+        쓰는 run generation을 수행하고, 이후 버퍼가 허용하는 만큼 여러 run을 min-heap 기반 k-way
+        merge로 합칩니다. 전체 I/O 비용은 패스 수에 비례하고, 패스 수는 run 개수를 fan-in만큼씩
+        줄여나가는 로그 스케일로 결정됩니다.
+      </p>
+    </div>
+
+    <h3>깊이 있는 버전 (3~5분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Deep)</div>
+      <p>
+        메모리 정렬 알고리즘은 임의 위치 접근이 거의 공짜라는 전제로 설계되지만, 디스크 파일에서 임의
+        접근은 랜덤 I/O를 유발해 수천 배 느려질 수 있습니다. 그래서 외부 정렬은 순차 I/O만 쓰도록 두
+        단계로 나눕니다.
+      </p>
+      <p>
+        1단계는 run generation입니다. 메모리 버퍼 크기(M블록)만큼 파일을 읽어 quicksort 같은 내부 정렬
+        알고리즘으로 정렬한 뒤 디스크에 순차로 씁니다. 단순 청크 분할 대신 min-heap 기반
+        replacement selection을 쓰면 평균적으로 메모리 크기의 약 2배인 run을 만들 수 있어, 이후 병합
+        부담이 줄어듭니다.
+      </p>
+      <p>
+        2단계는 k-way merge입니다. 버퍼가 B페이지라면 출력 버퍼 1개를 제외한 B-1개의 run을 동시에
+        병합할 수 있고, 각 run의 현재 최솟값을 min-heap에 올려두고 매번 전체 최솟값을 꺼내 출력하는
+        방식으로 진행합니다. Run 개수가 fan-in(B-1)보다 많으면 여러 패스로 나눠 병합해야 하고, 총
+        병합 패스 수는 ⌈log_(B-1)(초기 run 개수)⌉로 계산됩니다. 전체 정렬의 총 I/O 비용은 run
+        generation 1패스를 포함해 2N × (1 + 병합 패스 수)가 됩니다.
+      </p>
+      <p>
+        이 공식에서 중요한 것은, 메모리(M)를 늘리면 초기 run 개수가 줄고, fan-in(B-1)을 늘리면 병합
+        패스 수가 로그 스케일로 줄어든다는 점입니다. 즉 자원을 늘렸을 때의 효과가 선형이 아니라
+        로그적이라는 것을 이해하고 있어야, "메모리를 2배로 늘렸는데 왜 성능이 2배가 안 되는가" 같은
+        실무 질문에 답할 수 있습니다. 실제로 PostgreSQL의 work_mem, MySQL의 sort_buffer_size가 이
+        M에 해당하고, 이 값이 부족하면 external merge(디스크 기반 정렬)로 전환되며 실행 계획에서
+        경고 신호로 나타납니다.
+      </p>
+    </div>
+
+    <div class="answer-block answer-weak">
+      <div class="answer-label label-weak">약한 답변</div>
+      <p>
+        "파일을 나눠서 각각 정렬하고 merge sort처럼 합치면 됩니다."
+      </p>
+      <p>
+        <strong>왜 약한가:</strong> 왜 메모리 알고리즘을 그대로 못 쓰는지(랜덤 I/O 비용)에 대한 근거가
+        없고, run generation과 merge를 구체적 단계로 분리하지 못했습니다. fan-in, 패스 수, I/O 비용
+        공식이 전혀 없어 "설계"가 아니라 "이름만 아는" 수준에 그칩니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 7. Trade-off -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-trade">⇄</div>
+      <h2>Trade-off 정리</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>선택 A</th>
+          <th>선택 B</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>메모리 버퍼 크기(M) 크게 vs 작게</td>
+          <td>크게: run 개수 감소, 패스 수 감소, 전체 I/O 감소</td>
+          <td>작게: 다른 쿼리/프로세스와 메모리 경합, 동시성 저하 위험</td>
+        </tr>
+        <tr>
+          <td>Merge fan-in(B-1) 크게 vs 작게</td>
+          <td>크게: 병합 패스 수 로그 스케일로 감소</td>
+          <td>작게: heap 비교 비용은 줄지만 패스 수 증가로 I/O 총량 증가</td>
+        </tr>
+        <tr>
+          <td>단순 청크 분할 vs Replacement Selection</td>
+          <td>단순 분할: 구현 간단, run 길이 = M</td>
+          <td>Replacement Selection: 구현 복잡, 평균 run 길이 ≈ 2M, 패스 수 추가 감소</td>
+        </tr>
+        <tr>
+          <td>내부 정렬 알고리즘 선택(run 내부)</td>
+          <td>Quicksort: 평균적으로 빠름, worst-case O(n²) 위험</td>
+          <td>Heapsort: worst-case O(n log n) 보장, 상수 계수는 다소 큼</td>
+        </tr>
+        <tr>
+          <td>병렬 처리 여부</td>
+          <td>단일 스레드: 구현 단순, CPU 활용 낮음</td>
+          <td>병렬 run generation/merge: 처리량 향상, 구현·동기화 복잡도 증가</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span>
+        실무에서는 "메모리를 무한정 늘릴 수 없다"는 전제 위에서, fan-in을 최대한 키우고
+        replacement selection으로 run 길이를 늘려 <strong>병합 패스 수를 1~2회로 제한</strong>하는
+        것이 목표입니다. 대부분의 실무 데이터셋은 패스 수 1~2회로 끝나도록 설계됩니다.
+      </span>
+    </div>
+  </div>
+
+  <!-- 8. 흔한 오해 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-myth">✗</div>
+      <h2>흔한 오해와 바로잡기</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 1: "메모리 정렬 알고리즘의 복잡도(O(n log n))가 그대로 디스크 정렬 성능을 결정한다"</div>
+      <p>
+        외부 정렬의 성능은 비교 횟수가 아니라 <strong>디스크 I/O 패스 수</strong>로 결정됩니다. 같은
+        O(n log n) 알고리즘이라도 순차 I/O로 설계됐는지, 랜덤 I/O를 유발하는지에 따라 실제 소요 시간이
+        수백 배 차이 날 수 있습니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 2: "메모리를 늘리면 정렬 성능이 그만큼 선형으로 좋아진다"</div>
+      <p>
+        메모리(M)를 늘리면 초기 run 개수가 줄고, 이는 병합 패스 수를 <strong>로그 스케일</strong>로만
+        줄입니다. 어느 시점부터는 메모리를 늘려도 이미 패스 수가 1~2회로 수렴해 있어 추가 이득이
+        미미할 수 있습니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 3: "Merge는 항상 2-way(두 개씩)로 해야 한다"</div>
+      <p>
+        2-way merge는 개념 설명에는 쉽지만, 실무 시스템은 <strong>버퍼가 허용하는 한 fan-in을
+        최대화</strong>해 패스 수 자체를 줄입니다. I/O가 병목인 환경에서는 fan-in을 키우는 것이 항상
+        유리합니다(단, heap 비교 비용이 O(log k)로 늘어나는 CPU 트레이드오프는 있습니다).
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 4: "정렬된 결과가 필요하면 무조건 전체를 정렬해야 한다"</div>
+      <p>
+        상위 K개만 필요한 경우(top-K), 전체 외부 정렬 대신 <strong>우선순위 큐(min/max-heap) 기반
+        top-K 선택</strong>으로 메모리에 K개만 유지하며 한 번의 순차 스캔으로 끝낼 수 있어 훨씬
+        저렴합니다. "정렬"이 목적이 아니라 "정렬된 결과의 일부"가 목적이라면 문제를 다시 정의해야
+        합니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- 9. Follow-up 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-follow">↓</div>
+      <h2>Senior-Level Follow-up 질문과 답변 방향</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "Replacement Selection은 정확히 어떻게 평균 2배 길이의 run을 만듭니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        min-heap에서 최솟값을 출력한 직후, 디스크에서 새로 읽은 레코드가 방금 출력한 값보다 크면 같은
+        run에 포함시켜 heap에 넣고, 작으면 "다음 run"을 위해 별도로 보관합니다. 입력 데이터가 부분적으로
+        이미 정렬돼 있을수록(예: 시간순 로그) run이 훨씬 더 길어질 수 있고, 완전 무작위 데이터에서는
+        평균적으로 메모리 크기의 약 2배가 된다는 것이 이론적 결과입니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "Merge fan-in을 무한정 늘리지 못하는 이유는 무엇입니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        fan-in은 사용 가능한 버퍼 페이지 수(B-1)로 제한되고, 버퍼는 유한한 메모리 자원입니다. 또한
+        fan-in이 커질수록 min-heap의 크기가 커져 레코드당 비교 비용이 O(log k)로 늘어나므로, I/O 이득과
+        CPU 비용 사이의 트레이드오프가 존재합니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "PostgreSQL에서 <code>work_mem</code>이 부족하면 어떤 일이 벌어집니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        정렬 대상이 work_mem을 초과하면 PostgreSQL은 in-memory quicksort 대신 external merge sort로
+        전환해 임시 디스크 파일에 run을 만들고 병합합니다. <code>EXPLAIN ANALYZE</code>의
+        "Sort Method: external merge Disk"가 이 신호이며, 반복적으로 발생한다면 work_mem 상향이나
+        쿼리 재설계(불필요한 정렬 제거, 인덱스 활용)를 검토해야 합니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "분산 환경(Hadoop/Spark)에서 대규모 정렬은 단일 머신 외부 정렬과 무엇이 다릅니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        분산 정렬은 먼저 샘플링으로 데이터 분포를 추정해 <strong>범위 기반 파티셔닝</strong>을 수행하고
+        (예: A~F는 노드1, G~M은 노드2), 각 노드가 자신의 파티션을 로컬에서 외부 정렬한 뒤 결과를
+        이어붙이면 전체가 정렬된 상태가 됩니다. 이때 파티션 간 경계를 잘못 추정하면 특정 노드에 데이터가
+        쏠리는 "data skew" 문제가 생겨 전체 처리 시간이 늘어날 수 있습니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 10. 좋은 답변과 약한 답변 차이 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-diff">≠</div>
+      <h2>좋은 답변과 약한 답변의 차이</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>약한 답변 (5년차 이하)</th>
+          <th>강한 답변 (10년차 이상)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>메모리 알고리즘을 못 쓰는 이유</td>
+          <td>"느리니까"</td>
+          <td>"랜덤 I/O 비용이 순차 I/O보다 수천 배 커지기 때문"</td>
+        </tr>
+        <tr>
+          <td>정렬 단계 구조</td>
+          <td>"나눠서 정렬하고 합친다"</td>
+          <td>"run generation(순차 I/O) → k-way merge(min-heap, fan-in 제한)로 명확히 분리"</td>
+        </tr>
+        <tr>
+          <td>I/O 비용 계산</td>
+          <td>없음</td>
+          <td>"패스 수 = ⌈log_(B-1)(run 개수)⌉, 총 I/O = 2N × 패스 수"</td>
+        </tr>
+        <tr>
+          <td>메모리 증설 효과</td>
+          <td>"메모리 늘리면 선형으로 빨라진다"</td>
+          <td>"run 개수 감소를 통해 로그 스케일로만 개선된다"</td>
+        </tr>
+        <tr>
+          <td>실무 연결</td>
+          <td>없음</td>
+          <td>work_mem/sort_buffer_size, external merge, Terasort/shuffle까지 연결</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 11. Self-check Rubric -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-rub">✓</div>
+      <h2>자기 점검 Rubric</h2>
+    </div>
+    <p>답변 연습 후 아래 기준으로 자신을 평가하세요.</p>
+
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>메모리 알고리즘을 그대로 못 쓰는 이유를 I/O 비용으로 설명했다</strong><br>
+        랜덤 접근이 순차 접근보다 훨씬 비싸다는 것을 근거로 들었다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>Run generation과 k-way merge를 단계로 분리해 설명했다</strong><br>
+        각 단계가 순차 I/O로 설계된 이유와 merge 시 min-heap의 역할을 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>패스 수와 총 I/O 비용을 정량적으로 설명했다</strong><br>
+        fan-in과 run 개수가 패스 수를 어떻게 결정하는지 수식 수준으로 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>Replacement Selection을 언급했다</strong><br>
+        평균 run 길이가 메모리 크기의 약 2배로 늘어나는 원리를 설명했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>실무 사례(work_mem, filesort, 인덱스 빌드)로 연결했다</strong><br>
+        DBMS의 실행 계획에서 외부 정렬 신호를 읽을 수 있다는 것을 알았다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>메모리 증설 효과가 로그 스케일이라는 한계를 설명했다</strong><br>
+        "무조건 메모리를 늘리면 좋다"는 오해를 스스로 교정했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>분산 정렬(샘플링 기반 파티셔닝, data skew)을 설명했다</strong><br>
+        단일 머신 외부 정렬과 분산 정렬의 차이를 구분했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>top-K 문제는 전체 정렬 없이 heap으로 해결할 수 있다는 것을 알았다</strong><br>
+        문제를 "정렬"이 아니라 "필요한 결과"로 재정의할 수 있음을 보였다.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="callout callout-info">
+      <span class="callout-icon">📊</span>
+      <span>
+        <strong>자가 평가:</strong>
+        '필수' 3개 모두 → 합격 수준 |
+        '권장' 3개 추가 → 좋은 인상 |
+        '심화' 포함 → 탑티어 후보
+      </span>
+    </div>
+  </div>
+
+  <!-- 12. 다음 레슨 예고 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">→</div>
+      <h2>다음 레슨 예고 — Day 8: 파일 시스템 구조</h2>
+    </div>
+    <p>
+      다음 레슨에서는 "inode와 FAT 방식은 어떤 trade-off가 있습니까?"를 다룹니다. 메타데이터 구조,
+      랜덤 접근 효율, 손상 복구, 단편화 관점에서 두 방식을 비교합니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>주제</th><th>면접 핵심 질문</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>inode 구조</td>
+          <td>파일 메타데이터와 블록 포인터를 어떻게 분리해 관리하는가?</td>
+        </tr>
+        <tr>
+          <td>FAT 구조</td>
+          <td>연결 리스트 기반 블록 체이닝은 왜 랜덤 접근에 불리한가?</td>
+        </tr>
+        <tr>
+          <td>복구/단편화</td>
+          <td>두 방식이 장애 복구와 단편화에서 어떻게 다르게 동작하는가?</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <span class="tag tag-blue">inode</span>
+      <span class="tag tag-blue">FAT</span>
+      <span class="tag tag-green">Metadata</span>
+      <span class="tag tag-yellow">Fragmentation</span>
+      개념이 실제 파일 시스템 설계와 직접 연결되는 형태로 다루어집니다.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>
