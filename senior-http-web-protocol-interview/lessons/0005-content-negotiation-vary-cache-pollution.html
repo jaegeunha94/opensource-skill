@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — Content Negotiation과 Vary 캐시 오염 | HTTP / Web Protocol & API Traffic 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">HTTP / Web Protocol & API Traffic 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 5
+  </nav>
+
+  <h1>Day 5 — Content Negotiation과 Vary 캐시 오염</h1>
+  <p class="subtitle">Accept/Accept-Encoding/Accept-Language와 Vary 헤더가 캐시 계층에서 만드는 사고 · 2026-07-06</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#negotiation-table">협상 헤더 판단표</a></li>
+      <li><a href="#vary-mechanism">Vary 헤더의 동작 원리</a></li>
+      <li><a href="#pollution-case">캐시 오염 사고 재현 — 실제로 무슨 일이 일어나는가</a></li>
+      <li><a href="#defense">방어 설계 — CDN/캐시 계층별 대응</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"같은 URL인데 사용자마다 다른 응답(다른 언어, 다른 압축 형식)을 캐시 서버가 잘못 재사용해서 다른 사용자에게 내려주는 사고가 났습니다. 원인이 뭐라고 생각하시고, 어떻게 진단·복구하시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"Content negotiation이 무엇이고, 이게 캐시와 무슨 관계가 있나요? Vary 헤더는 왜 필요한가요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"Vary: User-Agent를 캐시 헤더에 넣으면 어떤 문제가 생길 수 있나요? 실무에서 왜 이 헤더 사용을 조심스러워하나요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"Accept 헤더가 뭔지 아는가"가 아니라 "같은 URL이 여러 개의 서로 다른 응답 버전을 가질 수 있다는 사실이 캐시 계층에 어떤 문제를 일으키는지 추론할 수 있는가"</strong>를 테스트합니다. "Accept 헤더로 클라이언트가 원하는 형식을 요청합니다"는 신입도 말합니다. 시니어를 가르는 지점은 <strong>캐시는 기본적으로 URL만으로 응답을 저장·재사용하는데, 협상 결과가 사용자마다 다르면 이 전제가 깨진다는 것을 알고, 그 깨짐을 Vary로 어떻게 메꾸는지 설계할 수 있는가</strong>입니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>캐시의 기본 전제에 대한 이해</strong> — 캐시는 원래 "같은 URL = 같은 응답"을 가정하고 만들어진 메커니즘입니다. Content negotiation은 이 전제를 정면으로 위반하는 기능이라는 걸 아는가.</li>
+      <li><strong>Day 1~4에서 그린 트래픽 경로 위에서의 캐시 계층 감각</strong> — 브라우저 캐시, CDN 엣지 캐시, 리버스 프록시 캐시가 각각 독립적으로 존재하고, 이 계층들이 <code>Vary</code>를 서로 다르게(혹은 아예 무시하고) 처리할 수 있다는 걸 아는가.</li>
+      <li><strong>실제 장애를 재현·격리하는 능력</strong> — "사용자 A의 개인정보가 담긴 응답이 사용자 B에게 캐시되어 전달된" 것과 같은 심각한 사고를, 헤더 조합만 보고 원인을 특정할 수 있는가.</li>
+      <li><strong>Trade-off 판단</strong> — <code>Vary</code>를 넓게 쓰면 캐시 적중률이 떨어지고, 좁게 쓰면 오염 위험이 생기는 이 긴장 관계를 실무 기준으로 판단할 수 있는가.</li>
+    </ul>
+
+    <p>10년차 이하에서 자주 나오는 답변 패턴: "Accept-Language로 언어를 협상하고, Accept-Encoding으로 압축 방식을 협상합니다." 정의로는 맞지만 <strong>이 협상 결과가 캐시에 저장될 때 URL만으로는 구분되지 않는다는 문제</strong>를 전혀 언급하지 않습니다. 시니어는 "협상이 일어나는 순간, 캐시는 이 요청 헤더 조합까지 알아야 한다"는 인과관계를 먼저 세우고, 그다음에 <code>Vary</code>의 동작을 설명합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Content Negotiation이란 — "같은 주소, 다른 내용물"을 만드는 절차</h3>
+    <p>하나의 URL(예: <code>/products/123</code>)이 항상 정확히 똑같은 응답을 줘야 하는 건 아닙니다. 브라우저는 자신이 이해할 수 있는 언어, 압축 방식, 데이터 형식을 요청 헤더에 담아 보내고, 서버는 그 요청에 맞춰 <strong>같은 리소스를 여러 버전 중 하나로 골라 응답</strong>합니다. 이 "고르는 절차"를 content negotiation이라고 부릅니다. 식당에 비유하면, 메뉴판의 "오늘의 스테이크"라는 같은 항목(URL)이지만, 손님이 "굽기 정도는 미디엄으로, 소스는 빼주세요"(Accept 계열 헤더)라고 주문하면 주방은 그 주문에 맞춰 다른 결과물을 냅니다 — 메뉴 이름은 같지만 실제로 나오는 접시는 다릅니다.</p>
+
+    <h3>캐시의 기본 전제 — "같은 URL이면 같은 응답을 저장해도 된다"</h3>
+    <p>Day 1~4에서 다룬 트래픽 경로 위에는 여러 캐시 계층이 있습니다: 브라우저 캐시, CDN 엣지 캐시, 리버스 프록시 캐시. 이 캐시들은 기본적으로 <strong>URL(정확히는 캐시 키)</strong>을 기준으로 응답을 저장하고, 다음에 같은 URL로 요청이 오면 서버에 묻지 않고 저장해둔 응답을 그대로 돌려줍니다. 이 방식이 성립하려면 "같은 URL은 항상 같은 응답을 낸다"는 전제가 필요합니다. 도서관 사서가 "제목이 같은 책은 항상 같은 내용"이라고 믿고 한 권만 서가에 꽂아두는 것과 같습니다.</p>
+
+    <h3>왜 Content Negotiation이 이 전제를 깨는가</h3>
+    <p>Content negotiation은 정확히 이 전제를 위반합니다 — 같은 URL <code>/products/123</code>이 어떤 요청에는 한국어 JSON을, 어떤 요청에는 영어 JSON을, 어떤 요청에는 gzip으로 압축된 응답을 냅니다. 캐시가 이 사실을 모른 채 "URL만" 캐시 키로 쓴다면, 한국어 사용자의 요청에 대한 응답을 캐시해뒀다가 영어 사용자의 요청에 그 한국어 응답을 그대로 돌려주는 사고가 납니다. 도서관 비유를 이어가면, 실제로는 같은 제목에 "한국어판"과 "영어판"이라는 서로 다른 책 두 권이 있는데, 사서가 이를 모르고 한 권만 서가에 꽂아뒀다가 엉뚱한 판을 빌려주는 상황입니다.</p>
+
+    <h3>Vary 헤더 — "이 URL의 캐시 키에 이 요청 헤더도 포함시켜라"라는 서버의 지시</h3>
+    <p><code>Vary</code>는 서버가 캐시에게 보내는 지시문입니다: "이 응답은 URL만으로 결정된 게 아니라, 요청의 이런 헤더 값에 따라서도 달라졌다. 그러니 캐시할 때 URL뿐 아니라 이 헤더 값도 캐시 키에 포함시켜라." 도서관 비유로는, 서가에 책을 꽂을 때 "제목"만 라벨에 적지 말고 "제목 + 언어"를 라벨에 함께 적어서, 한국어판과 영어판이 서로 다른 자리에 꽂히도록 만드는 것과 같습니다.</p>
+  </section>
+
+  <!-- 4. 협상 헤더 판단표 -->
+  <section id="negotiation-table">
+    <h2>4. 협상 헤더 판단표</h2>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>요청 헤더</th>
+          <th>협상 대상</th>
+          <th>응답에 붙는 관련 헤더</th>
+          <th>캐시 영향</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>Accept</code></td>
+          <td>미디어 타입 (JSON vs XML 등)</td>
+          <td><code>Content-Type</code></td>
+          <td>API에서는 값이 사실상 고정(예: 항상 <code>application/json</code>)인 경우가 많아 <code>Vary</code>에 넣을 실익이 낮음</td>
+        </tr>
+        <tr>
+          <td><code>Accept-Language</code></td>
+          <td>응답 언어</td>
+          <td><code>Content-Language</code></td>
+          <td>다국어 서비스에서 캐시 오염의 가장 흔한 원인 — 언어별로 캐시 키가 갈려야 함</td>
+        </tr>
+        <tr>
+          <td><code>Accept-Encoding</code></td>
+          <td>압축 방식 (gzip, br 등)</td>
+          <td><code>Content-Encoding</code></td>
+          <td>CDN이 자동으로 처리하는 경우가 많지만, 직접 다루면 압축/비압축 버전이 섞이는 사고 발생 가능</td>
+        </tr>
+        <tr>
+          <td><code>User-Agent</code></td>
+          <td>클라이언트 종류 (모바일/데스크톱 등, 표준 협상 헤더는 아님)</td>
+          <td>없음(관례적 활용)</td>
+          <td>값의 조합 수가 사실상 무한대에 가까워 <code>Vary</code>에 넣으면 캐시 적중률이 급락 — 실무에서 지양</td>
+        </tr>
+        <tr>
+          <td><code>Cookie</code></td>
+          <td>세션/개인화 상태 (표준 협상 헤더는 아님)</td>
+          <td>없음</td>
+          <td><code>Vary: Cookie</code>는 쿠키 값이 요청마다 거의 다 달라 캐시가 사실상 무력화됨 — 이 경우는 애초에 캐시 대상에서 제외하는 것이 정답</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>RFC 9110의 정의 요약</h4>
+      <p>RFC 9110은 <code>Vary</code>를 "이 응답이 지정된 요청 헤더 필드의 값에 따라 선택되었음을 캐시에 알리는 헤더"로 정의합니다. 캐시는 이후 같은 URL로 요청이 오면, <code>Vary</code>에 나열된 각 헤더의 값이 캐시된 응답을 만들 때의 요청과 <strong>정확히 일치</strong>할 때만 그 캐시된 응답을 재사용해야 합니다. 하나라도 다르면 원 서버에 다시 요청해야 합니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. Vary 동작 원리 -->
+  <section id="vary-mechanism">
+    <h2>5. Vary 헤더의 동작 원리</h2>
+
+    <p>서버가 언어별로 다른 응답을 낼 때, 응답에는 이렇게 <code>Vary</code>가 붙습니다.</p>
+
+    <pre><code>GET /products/123 HTTP/1.1
+Accept-Language: ko-KR
+
+HTTP/1.1 200 OK
+Content-Language: ko
+Vary: Accept-Language
+Cache-Control: public, max-age=3600</code></pre>
+
+    <p>이 응답을 받은 캐시는 <strong>URL(<code>/products/123</code>) + <code>Accept-Language</code> 값(<code>ko-KR</code>)</strong>을 합쳐서 캐시 키로 저장합니다. 그다음 <code>Accept-Language: en-US</code>로 같은 URL에 요청이 오면, 캐시 키가 다르므로(언어 값이 다름) 캐시 미스가 나고 원 서버에 새로 요청해 영어 버전을 별도로 캐시합니다.
+
+    <div class="card">
+      <h4>캐시 키 생성 절차 — 단계별</h4>
+      <ul class="step-block">
+        <li>
+          <div class="step-num">1</div>
+          <div><strong>응답을 받으면 먼저 <code>Vary</code> 헤더 값을 확인한다.</strong> <code>Vary: Accept-Language, Accept-Encoding</code>처럼 여러 헤더가 콤마로 나열될 수 있습니다.</div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div><strong>원 요청에서 <code>Vary</code>에 나열된 각 헤더의 실제 값을 추출한다.</strong></div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div><strong>URL과 추출한 헤더 값들을 조합해 최종 캐시 키를 만든다.</strong> 예: <code>/products/123|Accept-Language=ko-KR|Accept-Encoding=gzip</code>.</div>
+        </li>
+        <li>
+          <div class="step-num">4</div>
+          <div><strong>다음 요청이 오면 같은 방식으로 캐시 키를 계산해서 일치하는 저장된 응답이 있는지 조회한다.</strong> 일치하는 게 없으면 캐시 미스로 처리해 원 서버에 요청한다.</div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="why-box">
+      <p><strong>한 줄 원칙:</strong> <code>Vary</code>가 없으면 캐시는 "URL만 같으면 응답도 같다"고 가정합니다. 협상 결과에 따라 응답이 달라지는 엔드포인트라면, 그 차이를 만드는 요청 헤더를 반드시 <code>Vary</code>에 선언해야 합니다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 캐시 오염 사고 재현 -->
+  <section id="pollution-case">
+    <h2>6. 캐시 오염 사고 재현 — 실제로 무슨 일이 일어나는가</h2>
+
+    <p>면접 질문의 시나리오를 단계별로 재구성하면 시니어다운 답변의 뼈대가 됩니다.</p>
+
+    <div class="card">
+      <h4>사고 재구성 — 다국어 API + CDN 캐시</h4>
+      <ul class="step-block">
+        <li>
+          <div class="step-num">1</div>
+          <div><strong>서버가 <code>Accept-Language</code>로 언어를 협상하지만, 응답에 <code>Vary: Accept-Language</code>를 붙이지 않는다.</strong> 개발자가 "캐시 설정은 <code>Cache-Control</code>만 신경 쓰면 된다"고 오해한 경우 흔히 발생합니다.</div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div><strong>영어 사용자 A가 먼저 <code>/products/123</code>에 요청을 보낸다.</strong> CDN 엣지 캐시는 이 응답을 <code>Vary</code>가 없으므로 <strong>URL만으로</strong> 캐시 키를 만들어 저장한다.</div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div><strong>한국어 사용자 B가 같은 URL에 <code>Accept-Language: ko-KR</code>로 요청을 보낸다.</strong> CDN은 캐시 키가 URL만이므로 "같은 URL이니 캐시 적중"이라 판단하고, 방금 저장된 영어 응답을 그대로 사용자 B에게 돌려준다.</div>
+        </li>
+        <li>
+          <div class="step-num">4</div>
+          <div><strong>사용자 B는 자신이 한국어를 요청했는데 영어 응답을 받는다.</strong> 이 응답이 <code>max-age=3600</code>으로 캐시되어 있다면, 캐시가 만료되거나 무효화되기 전까지 다른 사용자들도 계속 잘못된 언어 응답을 받는다.</div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card" style="border-color: var(--red);">
+      <h4>더 심각한 변종 — 개인화 응답이 섞이는 경우</h4>
+      <p>언어 대신 <strong>인증된 사용자별로 다른 데이터</strong>(예: 로그인한 사용자의 이름이 포함된 응답)를 캐시 가능한 엔드포인트로 잘못 설계하면, <code>Vary</code> 누락은 단순한 UX 문제를 넘어 <strong>사용자 A의 개인정보가 사용자 B에게 노출되는 보안 사고</strong>가 됩니다. 이런 엔드포인트는 애초에 <code>Cache-Control: private</code> 또는 <code>no-store</code>로 공유 캐시 저장 자체를 막는 것이 <code>Vary</code>보다 우선하는 방어선입니다(Day 8에서 심화).</p>
+    </div>
+
+    <div class="card">
+      <h4>진단 절차 — 사고가 났을 때 원인을 좁히는 순서</h4>
+      <ul class="step-block">
+        <li>
+          <div class="step-num">1</div>
+          <div><strong>피해 응답의 헤더를 확인한다.</strong> <code>Age</code>, <code>X-Cache: HIT</code>류 헤더(CDN마다 이름이 다름)로 이 응답이 캐시에서 나왔는지 원 서버에서 새로 생성됐는지 먼저 확정한다.</div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div><strong>캐시 HIT라면, 그 응답에 <code>Vary</code> 헤더가 있었는지, 있었다면 어떤 헤더를 포함했는지 확인한다.</strong> 원 서버 로그나 응답 캡처에서 확인할 수 있습니다.</div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div><strong>협상에 실제로 영향을 준 요청 헤더가 <code>Vary</code> 목록에 빠져 있는지 대조한다.</strong> 이 시점에서 원인이 "Vary 누락"인지 다른 원인(예: CDN이 특정 헤더를 아예 캐시 키 계산에서 무시하도록 설정된 경우)인지 갈립니다.</div>
+        </li>
+        <li>
+          <div class="step-num">4</div>
+          <div><strong>즉시 조치로 오염된 캐시 엔트리를 무효화(purge)하고, 근본 조치로 <code>Vary</code> 헤더를 추가하거나 해당 엔드포인트를 캐시 대상에서 제외한다.</strong></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7. 방어 설계 -->
+  <section id="defense">
+    <h2>7. 방어 설계 — CDN/캐시 계층별 대응</h2>
+
+    <div class="card">
+      <h4>1. 협상 축을 최소화한다</h4>
+      <p>지원하는 언어/인코딩의 가짓수를 줄이면 <code>Vary</code>로 인한 캐시 키 폭발(변형 폭증)도 줄어듭니다. 예를 들어 <code>Accept-Language</code>의 세부 로케일(<code>ko-KR</code>, <code>ko</code>, <code>ko;q=0.9</code> 등)을 서버가 소수의 표준 언어 코드로 정규화한 뒤 그 정규화된 값을 기준으로 응답을 생성하면, 캐시 변형 수를 실질적인 지원 언어 수만큼으로 제한할 수 있습니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>2. CDN 설정에서 "이 헤더 조합만 캐시 키에 반영"하도록 명시한다</h4>
+      <p>많은 CDN(Cloudflare, CloudFront 등)은 <code>Vary</code> 응답 헤더를 그대로 신뢰하지 않고, <strong>CDN 설정 자체에서 캐시 키에 포함할 요청 헤더 화이트리스트</strong>를 별도로 관리합니다. 이는 origin이 실수로 <code>Vary: User-Agent</code>처럼 너무 넓은 헤더를 선언해 캐시 적중률이 붕괴하는 것을 CDN 운영자가 통제하기 위함입니다. 따라서 실무에서는 "origin의 <code>Vary</code> 헤더"와 "CDN의 캐시 키 설정"을 이중으로 점검해야 합니다 — 둘이 어긋나면 origin의 의도와 다르게 캐싱될 수 있습니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>3. 개인화/인증 응답은 애초에 공유 캐시에 올리지 않는다</h4>
+      <p><code>Vary</code>는 "협상 축이 소수일 때" 유효한 해법입니다. 로그인 사용자별로 완전히 다른 데이터를 내려주는 응답이라면, <code>Vary: Cookie</code>나 <code>Vary: Authorization</code>으로 해결하려 하지 말고 <code>Cache-Control: private</code>(브라우저 캐시만 허용, 공유 캐시 금지) 또는 <code>no-store</code>로 애초에 공유 캐시 대상에서 제외하는 것이 원칙입니다. Day 8에서 <code>Cache-Control</code>의 <code>public</code>/<code>private</code>/<code>no-store</code> 차이를 심화합니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>4. 배포 전 협상 축을 바꾼 요청으로 캐시 동작을 검증한다</h4>
+      <p><code>curl -H "Accept-Language: ko-KR" ...</code>와 <code>curl -H "Accept-Language: en-US" ...</code>를 같은 URL에 반복 호출해 응답 바디와 <code>X-Cache</code> 계열 헤더가 요청 언어에 맞게 다르게 나오는지 배포 파이프라인에서 자동 검증하면, <code>Vary</code> 누락으로 인한 사고를 프로덕션 이전에 잡을 수 있습니다.</p>
+    </div>
+  </section>
+
+  <!-- 8. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>8. 답변 사고 순서</h2>
+
+    <p>면접에서 "content negotiation과 캐시" 류의 질문을 받으면 이 순서로 사고합니다.</p>
+
+    <ol>
+      <li><strong>먼저 캐시의 기본 전제("같은 URL = 같은 응답")를 명시적으로 짚습니다.</strong> 이 전제가 있어야 왜 문제가 생기는지 설명이 성립합니다.</li>
+      <li><strong>이 엔드포인트가 어떤 요청 헤더에 따라 응답이 실제로 달라지는지 특정합니다.</strong> Accept-Language인지, Accept-Encoding인지, 혹은 개인화 데이터인지.</li>
+      <li><strong>그 헤더가 응답의 <code>Vary</code>에 선언되어 있었는지 확인합니다.</strong> 없다면 이것이 오염의 직접 원인입니다.</li>
+      <li><strong>협상 축의 개수(카디널리티)를 평가합니다.</strong> 소수의 값(언어 몇 개)이면 <code>Vary</code>로 해결 가능하지만, 사실상 무한한 값(쿠키, User-Agent)이면 <code>Vary</code>가 아니라 캐시 대상 자체를 재검토해야 합니다.</li>
+      <li><strong>CDN 설정이 origin의 <code>Vary</code>를 그대로 따르는지, 별도 캐시 키 화이트리스트가 있는지 확인합니다.</strong></li>
+      <li><strong>즉시 조치(캐시 무효화)와 근본 조치(Vary 추가 또는 캐시 대상 재분류)를 구분해서 제시합니다.</strong></li>
+    </ol>
+  </section>
+
+  <!-- 9. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>9. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "같은 URL인데 사용자마다 다른 응답을 캐시 서버가 잘못 재사용해서 다른 사용자에게 내려주는 사고가 났습니다. 원인이 뭐라고 생각하시나요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>캐시는 기본적으로 "같은 URL이면 같은 응답"이라는 전제로 동작합니다. 그런데 이 API가 <code>Accept-Language</code> 같은 헤더로 content negotiation을 하고 있다면, 같은 URL이라도 실제로는 언어별로 다른 응답 여러 개가 존재하는 셈입니다. 이 경우 서버가 응답에 <code>Vary: Accept-Language</code>를 붙이지 않으면, 캐시는 이 차이를 전혀 모른 채 URL만으로 캐시 키를 만들어 저장합니다.</p>
+      <br>
+      <p>그러면 먼저 요청한 사용자의 언어 버전이 캐시에 저장되고, 다른 언어로 요청한 다음 사용자는 캐시 히트로 처리되어 앞 사용자의 언어 응답을 그대로 받게 됩니다. 저라면 먼저 문제가 된 응답에 <code>X-Cache: HIT</code>류 헤더가 있는지 확인해서 캐시에서 나온 응답인지 확정하고, 원 서버가 실제로 <code>Vary</code>를 응답에 붙였는지 로그로 대조하겠습니다.</p>
+      <br>
+      <p>근본 원인이 확인되면 즉시 조치로 오염된 캐시 엔트리를 CDN에서 무효화하고, 근본 조치로 <code>Vary: Accept-Language</code>를 응답에 추가합니다. 다만 <code>Vary</code>는 캐시 키의 변형 수를 늘려 적중률을 떨어뜨리는 트레이드오프가 있으므로, 지원 언어가 소수라면 문제없지만, 만약 이게 언어가 아니라 사용자별 개인화 데이터였다면 <code>Vary</code>로 해결하려 하지 않고 <code>Cache-Control: private</code>이나 <code>no-store</code>로 애초에 공유 캐시 대상에서 빼는 게 맞는 방향이라고 판단합니다. 또한 CDN에 따라 origin의 <code>Vary</code> 헤더와 별개로 캐시 키에 포함할 헤더를 자체 설정하는 경우가 있어서, 그 설정도 함께 점검하겠습니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>캐시의 기본 전제("URL = 응답")를 먼저 짚어 문제 구조를 명확히 함</li>
+      <li>진단 절차(캐시 HIT 확인 → Vary 대조)를 구체적인 헤더 이름과 함께 제시함</li>
+      <li>즉시 조치와 근본 조치를 구분함</li>
+      <li>Vary의 트레이드오프(적중률 하락)를 인지하고, 카디널리티에 따라 다른 해법(Vary vs private/no-store)을 제시함</li>
+      <li>CDN의 캐시 키 화이트리스트라는 실무 디테일까지 언급함</li>
+    </ul>
+  </section>
+
+  <!-- 10. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>10. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"Accept-Language 헤더로 언어를 협상하는데, 캐시 설정이 잘못돼서 그런 것 같습니다. Cache-Control을 다시 설정하면 될 것 같습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>왜 문제가 생기는지 인과관계(캐시 키가 URL만 반영한다는 것)를 설명하지 못했습니다.</li>
+        <li><code>Cache-Control</code>과 <code>Vary</code>는 서로 다른 문제를 해결하는 헤더인데 이를 구분하지 못했습니다 — <code>Cache-Control</code>은 "얼마나 오래, 누가 캐시할 수 있는가"를, <code>Vary</code>는 "무엇을 기준으로 다른 버전을 구분하는가"를 다룹니다.</li>
+        <li>구체적인 진단 절차나 즉시 조치가 없습니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"모든 응답에 Vary: * 를 붙이면 이런 문제가 아예 생기지 않을 것 같습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li><code>Vary: *</code>는 "이 응답은 모든 요청 헤더에 따라 달라질 수 있다"는 의미로, 사실상 <strong>이 응답은 절대 캐시하지 말라</strong>는 것과 같습니다. 캐시 오염은 막지만 캐시 자체가 무력화되어 성능 이점을 모두 잃습니다.</li>
+        <li>문제의 본질(협상 축과 캐시 키의 불일치)을 해결하는 대신, 캐시 기능 자체를 포기하는 극단적인 해법이라 실무적이지 않습니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>"URL만으로 캐시 키를 만드는" 캐시의 기본 전제에서 문제를 설명한다</li>
+        <li><code>Vary</code> 누락과 캐시 오염 사이의 인과관계를 명시한다</li>
+        <li>캐시 HIT 여부부터 확인하는 구체적 진단 절차를 제시한다</li>
+        <li>즉시 조치(무효화)와 근본 조치(Vary 추가/캐시 대상 재분류)를 구분한다</li>
+        <li><code>Vary</code>의 카디널리티 트레이드오프를 알고 상황에 맞는 대안(private/no-store)을 제시한다</li>
+        <li>CDN이 origin의 <code>Vary</code>와 별개로 캐시 키를 관리할 수 있다는 실무 디테일을 언급한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11. Follow-up -->
+  <section id="followups">
+    <h2>11. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: Vary: User-Agent를 쓰면 안 되는 이유를 구체적으로 설명해 주세요.</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> <code>User-Agent</code> 값은 브라우저, OS, 버전 조합에 따라 사실상 무한에 가까운 변형이 존재합니다. 이 값을 캐시 키에 포함시키면, 실제로는 거의 같은 응답을 낼 요청들도 전부 서로 다른 캐시 엔트리로 취급되어 캐시 적중률이 급격히 떨어집니다 — 극단적으로는 사용자 수만큼 캐시 미스가 발생해 캐시가 있으나 마나 한 상태가 됩니다. 만약 모바일/데스크톱처럼 정말 응답이 갈리는 경우가 있다면, <code>User-Agent</code> 원본 값 대신 서버가 이를 "mobile" / "desktop" 같은 소수의 값으로 정규화한 커스텀 헤더를 만들어 그 헤더를 <code>Vary</code>에 쓰는 것이 실무적인 절충안입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 같은 언어를 요청했는데도 Accept-Language 헤더의 형식(ko-KR vs ko;q=0.9,en;q=0.8)이 조금씩 달라서 캐시가 잘 안 맞는 것 같습니다. 어떻게 개선하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> <code>Accept-Language</code>는 브라우저/클라이언트마다 quality value(<code>q=</code>)를 포함해 다양한 형식으로 보내지기 때문에, 이 원본 문자열을 그대로 캐시 키에 쓰면 실제로는 같은 언어를 의미하는데도 문자열이 달라 캐시가 쪼개지는 문제가 생깁니다. 실무적인 해법은 origin에서 <code>Accept-Language</code>를 파싱해 지원하는 소수의 표준 언어 코드(예: <code>ko</code>, <code>en</code>) 중 하나로 정규화한 뒤, 이 정규화된 값을 별도의 내부 헤더(예: <code>X-Resolved-Language</code>)로 만들어 그 헤더를 <code>Vary</code>에 선언하는 것입니다. CDN이 이를 지원한다면 CDN 레벨에서 정규화 로직(Edge 함수 등)을 두는 것도 대안입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: Accept-Encoding과 압축은 CDN이 대부분 알아서 처리해준다고 들었는데, 그래도 신경 써야 할 부분이 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 많은 CDN이 <code>Accept-Encoding</code> 협상과 압축 버전 캐싱을 자동으로 처리해서 origin이 직접 <code>Vary: Accept-Encoding</code>을 신경 쓰지 않아도 되는 경우가 많은 것은 맞습니다. 하지만 origin 서버가 직접 사용자에게 응답하는 구간이 있거나(CDN을 거치지 않는 API 클라이언트, 내부 서비스 간 호출 등), 자체 리버스 프록시 캐시를 운영하는 경우라면 여전히 직접 챙겨야 합니다. 또한 CDN이 압축을 처리하더라도, origin이 이미 압축된 응답에 <code>Content-Encoding</code>은 있는데 <code>Vary: Accept-Encoding</code>이 없다면, 오래된 프록시나 클라이언트가 압축을 지원하지 않는 상황에서 깨진 응답을 캐시하고 재사용하는 문제가 이론적으로 남습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: Vary 헤더에 여러 개의 헤더를 나열하면 캐시 변형 수가 어떻게 증가하나요? 왜 이게 문제가 될 수 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> <code>Vary</code>에 나열된 헤더들의 값 조합 수만큼 캐시 변형(variant)이 곱해져서 늘어납니다. 예를 들어 지원 언어가 5개, 지원 인코딩이 2개(gzip/br)라면 <code>Vary: Accept-Language, Accept-Encoding</code>은 URL 하나당 최대 10개의 캐시 엔트리를 만들 수 있습니다. 축이 늘어날수록 이 값은 곱셈으로 커지므로(3개 축이면 언어×인코딩×세 번째 축), 각 변형이 개별적으로 캐시를 채워야 적중률이 올라가는 "cold start" 구간이 길어지고, 트래픽이 적은 URL이라면 변형이 다 채워지기도 전에 만료되어 캐시 이득을 거의 못 볼 수도 있습니다. 그래서 협상 축은 실제로 응답이 달라지는 최소한의 헤더로만 제한하는 것이 원칙입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Day 4에서 다룬 hop-by-hop/end-to-end 구분이 Vary와도 관련이 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 직접적인 hop-by-hop 헤더는 아니지만 개념적으로 연결됩니다. <code>Vary</code>가 지정하는 헤더(<code>Accept-Language</code> 등)는 end-to-end로 원 서버까지 전달되어야만 서버가 올바르게 협상할 수 있습니다. 만약 경로 중간의 어떤 프록시가 이 요청 헤더를 자체적으로 제거하거나 정규화해버리면, origin은 클라이언트가 실제로 원한 값을 못 보고 엉뚱한 협상 결과를 내게 되고, 이는 다시 캐시 계층에서 예상과 다른 <code>Vary</code> 동작으로 이어질 수 있습니다. 즉 헤더 전달 규칙(Day 4)과 협상/캐시 규칙(Day 5)은 같은 트래픽 경로 위에서 서로 맞물려 있습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>12. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"Cache-Control만 잘 설정하면 캐시 문제는 다 해결된다"</strong></p>
+      <p><code>Cache-Control</code>은 "얼마나 오래, 누가 캐시할 수 있는가"를 결정하고, <code>Vary</code>는 "같은 URL 안에서 어떤 버전을 구분해야 하는가"를 결정합니다. 둘은 서로 다른 문제를 다루며, content negotiation을 하는 엔드포인트는 <code>Cache-Control</code>만으로는 오염을 막을 수 없습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"Vary는 무조건 많이 선언할수록 안전하다"</strong></p>
+      <p><code>Vary</code>에 나열된 헤더가 늘어날수록 캐시 변형 수가 곱셈으로 늘어나 적중률이 떨어집니다. 극단적으로 <code>Vary: *</code>나 <code>Vary: Cookie</code>는 사실상 캐시를 무력화합니다. 실제로 응답이 달라지는 최소한의 헤더만 선언해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"브라우저 캐시만 신경 쓰면 되고 CDN/프록시 캐시는 알아서 처리해준다"</strong></p>
+      <p>CDN과 리버스 프록시도 각자 별도의 캐시 계층이며, origin의 <code>Vary</code> 헤더를 그대로 신뢰하는지 자체 캐시 키 설정을 우선하는지는 CDN마다 다릅니다. 트래픽 경로 위의 모든 캐시 계층을 각각 점검해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"개인화된 응답도 Vary: Cookie를 붙이면 안전하게 캐시할 수 있다"</strong></p>
+      <p>쿠키 값은 사용자마다 사실상 유일하므로 캐시 적중이 거의 발생하지 않아 캐시 이득이 없고, 무엇보다 공유 캐시(CDN 등)에 개인화 데이터가 잠깐이라도 올라갈 경우의 위험이 큽니다. 개인화 응답은 <code>Cache-Control: private</code> 또는 <code>no-store</code>로 공유 캐시 대상에서 원천 배제하는 것이 원칙입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"Accept 헤더 협상은 프론트엔드/브라우저만 관련된 이야기다"</strong></p>
+      <p>서버 간 통신(마이크로서비스 간 호출), 모바일 앱 클라이언트, 서드파티 API 소비자 모두 <code>Accept</code> 계열 헤더로 협상에 참여할 수 있습니다. 캐시 오염은 브라우저 요청에서만 발생하는 문제가 아니라, 협상이 일어나는 모든 트래픽 경로에서 발생할 수 있습니다.</p>
+    </div>
+  </section>
+
+  <!-- 13. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>13. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 5를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Content negotiation이 무엇이고, 왜 "같은 URL이 여러 응답 버전을 가질 수 있게" 만드는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>캐시의 기본 전제("URL만으로 캐시 키를 구성")와 content negotiation이 이 전제와 충돌하는 이유를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Vary 헤더가 캐시 키에 요청 헤더 값을 추가시키는 구체적 메커니즘을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Vary 누락으로 인한 캐시 오염 사고를 단계별로(A가 요청 → 캐시 저장 → B가 잘못된 응답 수신) 재구성해 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Vary: User-Agent나 Vary: Cookie가 왜 위험한지 카디널리티 개념으로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>개인화 응답은 Vary가 아니라 Cache-Control: private/no-store로 방어해야 하는 이유를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>CDN이 origin의 Vary 헤더와 별개로 자체 캐시 키 설정을 가질 수 있다는 실무 사실을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>실제 사고가 났을 때 캐시 HIT 여부부터 확인하는 진단 절차를 순서대로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Cache-Control과 Vary가 각각 다른 문제(보존 기간/대상 vs 버전 구분)를 해결한다는 것을 구분할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>협상 축이 늘어날수록 캐시 변형 수가 곱셈으로 증가한다는 것을 계산 예시로 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 6</h3>
+      <p><strong>Cookies & Session 관리 — SameSite, Secure, HttpOnly, 세션 vs 토큰 trade-off</strong></p>
+      <p>Day 5에서 "협상 결과에 따라 응답이 달라질 때 캐시가 어떻게 오염되는가"를 다뤘다면, Day 6에서는 상태 없는(stateless) HTTP 위에서 로그인 상태를 유지하는 쿠키/세션 메커니즘과, <code>SameSite</code>·<code>Secure</code>·<code>HttpOnly</code> 속성이 실제로 막는 공격, 그리고 세션 기반 인증과 토큰(JWT 등) 기반 인증 사이의 운영상 trade-off를 다룹니다.</p>
+      <p>면접 질문 예고: "세션 기반 인증 대신 JWT 같은 토큰 기반 인증으로 전환하자는 제안을 받았습니다. 어떤 기준으로 판단하시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    HTTP / Web Protocol & API Traffic 시니어 인터뷰 · Day 5 of 20 · 2026-07-06
+  </p>
+
+</div>
+</body>
+</html>
