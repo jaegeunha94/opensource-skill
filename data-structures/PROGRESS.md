@@ -16,25 +16,19 @@
 | 4 | 2026-07-03 | 해시 테이블 | [interview-day04-hash-tables.html](lessons/interview-day04-hash-tables.html) |
 | 5 | 2026-07-04 | 트리와 균형 트리 | [interview-day05-trees-and-balanced-trees.html](lessons/interview-day05-trees-and-balanced-trees.html) |
 | 6 | 2026-07-05 | 힙과 우선순위 큐 | [interview-day06-heap-and-priority-queue.html](lessons/interview-day06-heap-and-priority-queue.html) |
+| 7 | 2026-07-06 | 트라이와 문자열 검색 | [interview-day07-trie-and-string-search.html](lessons/interview-day07-trie-and-string-search.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 1 | 자료구조 선택 프레임워크 | "요구사항을 받았을 때 어떤 기준으로 자료구조를 선택합니까?" | 연산 패턴, 입력 규모, 시간/공간 복잡도, 운영 비용 |
-| 2 | 배열과 연결 리스트 | "배열과 연결 리스트의 Big-O만 보면 놓치는 실무 성능 차이는 무엇입니까?" | locality, allocation, resize, pointer chasing |
-| 3 | 스택과 큐 | "큐를 직접 구현할 때 어떤 경계 조건과 운영 이슈를 고려합니까?" | bounded/unbounded, backpressure, memory growth |
-| 4 | 해시 테이블 | "해시 테이블이 평균 O(1)이라는 말의 전제와 위험은 무엇입니까?" | collision, resizing, load factor, hash quality |
-| 5 | 트리와 균형 트리 | "정렬된 데이터를 다룰 때 배열, BST, balanced tree를 어떻게 비교합니까?" | range query, update cost, balance, cache |
-| 6 | 힙과 우선순위 큐 | "작업 스케줄러나 top-k 문제에서 힙을 선택하는 이유는 무엇입니까?" | partial ordering, update, memory, alternative |
-| 7 | 트라이와 문자열 검색 | "자동완성을 구현할 때 trie를 쓰면 어떤 비용을 치릅니까?" | prefix search, memory overhead, compression |
 | 8 | 그래프 표현과 탐색 | "인접 행렬과 인접 리스트를 어떤 기준으로 선택합니까?" | sparse/dense graph, traversal, memory |
 | 9 | 실무 자료구조 설계 | "캐시, rate limiter, ranking 시스템에 어떤 자료구조를 조합하겠습니까?" | HashMap+List, Heap, Tree, Queue 조합 |
 | 10 | 종합 모의 면접 | "요구사항이 바뀌는 상황에서 자료구조 선택을 재검토해보세요." | 변경 대응, trade-off, follow-up 대응 |
 
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음은 Day 7: 트라이와 문자열 검색 (자동완성을 구현할 때 trie를 쓰면 어떤 비용을 치르는가).
+**Day 7 완료** — 다음은 Day 8: 그래프 표현과 탐색 (인접 행렬과 인접 리스트를 어떤 기준으로 선택하는가).
 
 ## Interview 답변 체크리스트
 
@@ -57,4 +51,5 @@
 - [x] 해시 테이블 충돌, load factor, resize, 해시 편향과 해시 DoS — Day 4
 - [x] BST 편향(degenerate tree), 회전(rotation), AVL vs Red-Black trade-off, in-memory tree vs 디스크 B-Tree — Day 5
 - [x] 힙의 배열 표현과 sift-up/down, decrease-key 한계와 지연 삭제/인덱스 힙, top-k/k-way merge 활용 — Day 6
-- [ ] 트라이 구조와 prefix search, 메모리 오버헤드와 압축(radix trie) (예정 Day 7)
+- [x] 트라이 구조와 prefix search, 알파벳 크기별 자식 표현, radix tree/DAWG 압축 — Day 7
+- [ ] 인접 행렬 vs 인접 리스트, sparse/dense graph, 탐색 메모리 비용 (예정 Day 8)
