@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — 재시도 전략: Exponential Backoff와 재시도 횟수 결정</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    /* Header */
+    .lesson-header {
+      border-left: 4px solid #6366f1;
+      padding: 1rem 1.5rem;
+      background: #1e1f2e;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-header .day-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #818cf8;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .lesson-header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #f1f5f9;
+    }
+    .lesson-header .meta {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-top: 0.4rem;
+    }
+
+    /* Section */
+    .section {
+      background: #1a1b2e;
+      border: 1px solid #2d2e4a;
+      border-radius: 10px;
+      padding: 1.6rem 1.8rem;
+      margin-bottom: 1.8rem;
+    }
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6366f1;
+      margin-bottom: 0.6rem;
+    }
+    .section h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #c7d2fe;
+      margin-bottom: 1rem;
+    }
+    .section p { color: #cbd5e1; margin-bottom: 0.9rem; }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* Interview question box */
+    .interview-q {
+      background: #13141f;
+      border: 2px solid #4f46e5;
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.8rem;
+    }
+    .interview-q .q-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #a5b4fc;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q .q-text {
+      font-size: 1.08rem;
+      font-weight: 600;
+      color: #e0e7ff;
+      line-height: 1.6;
+    }
+
+    /* Callout */
+    .callout {
+      border-left: 3px solid #6366f1;
+      padding: 0.9rem 1.2rem;
+      background: #13141f;
+      border-radius: 0 6px 6px 0;
+      margin: 1rem 0;
+      color: #c7d2fe;
+    }
+    .callout.warn { border-left-color: #f59e0b; background: #1c1a10; color: #fde68a; }
+    .callout.good { border-left-color: #10b981; background: #0d1c16; color: #6ee7b7; }
+    .callout.bad  { border-left-color: #ef4444; background: #1c0d0d; color: #fca5a5; }
+
+    /* Steps */
+    .steps { list-style: none; counter-reset: step-counter; padding: 0; }
+    .steps li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step-counter);
+      min-width: 28px;
+      height: 28px;
+      background: #4f46e5;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .steps li .step-body { color: #cbd5e1; }
+    .steps li .step-body strong { color: #e2e8f0; }
+
+    /* Code block */
+    pre {
+      background: #0d0e1a;
+      border: 1px solid #2d2e4a;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      color: #a5f3fc;
+      line-height: 1.6;
+      margin: 1rem 0;
+    }
+    code { font-family: 'Fira Code', 'Cascadia Code', monospace; }
+
+    /* Comparison table */
+    .compare { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    .compare th {
+      background: #1e1f35;
+      color: #a5b4fc;
+      font-weight: 700;
+      padding: 0.7rem 1rem;
+      text-align: left;
+      border-bottom: 2px solid #3730a3;
+    }
+    .compare td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid #2d2e4a;
+      color: #cbd5e1;
+      vertical-align: top;
+    }
+    .compare tr:last-child td { border-bottom: none; }
+    .compare tr:hover td { background: #1e1f2e; }
+
+    /* Answer blocks */
+    .answer-block {
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .answer-block.strong {
+      background: #0a1f15;
+      border: 1px solid #059669;
+    }
+    .answer-block.weak {
+      background: #1c0e0e;
+      border: 1px solid #dc2626;
+    }
+    .answer-block .ab-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+    .answer-block.strong .ab-label { color: #34d399; }
+    .answer-block.weak .ab-label { color: #f87171; }
+    .answer-block p { font-size: 0.9rem; color: #cbd5e1; margin-bottom: 0.5rem; }
+
+    /* Rubric */
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid #2d2e4a;
+      align-items: flex-start;
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #6366f1;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .rubric-item .rubric-text { color: #cbd5e1; font-size: 0.9rem; }
+    .rubric-item .rubric-text strong { color: #e2e8f0; }
+
+    /* Follow-up */
+    .followup-item {
+      background: #13141f;
+      border: 1px solid #2d2e4a;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-item .fu-q {
+      font-weight: 600;
+      color: #a5b4fc;
+      margin-bottom: 0.5rem;
+      font-size: 0.92rem;
+    }
+    .followup-item .fu-a {
+      color: #94a3b8;
+      font-size: 0.88rem;
+      line-height: 1.65;
+    }
+
+    /* Tag pills */
+    .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
+    .tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.25rem 0.7rem;
+      border-radius: 999px;
+      background: #1e1f35;
+      color: #818cf8;
+      border: 1px solid #3730a3;
+    }
+
+    /* Nav */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #2d2e4a;
+      font-size: 0.85rem;
+    }
+    .nav a { color: #6366f1; text-decoration: none; }
+    .nav a:hover { text-decoration: underline; }
+
+    ul.bullets { list-style: disc; padding-left: 1.4rem; }
+    ul.bullets li { color: #cbd5e1; margin-bottom: 0.4rem; font-size: 0.92rem; }
+    ul.bullets li strong { color: #e2e8f0; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="lesson-header">
+    <div class="day-badge">Day 7 · 메시지 큐 / 비동기 처리 인터뷰</div>
+    <h1>재시도 전략 — Exponential Backoff와 재시도 횟수 결정</h1>
+    <div class="meta">2026-07-06 · 예상 학습 시간 80분</div>
+    <div class="tags">
+      <span class="tag">Exponential Backoff</span>
+      <span class="tag">Jitter</span>
+      <span class="tag">Retry Storm</span>
+      <span class="tag">Thundering Herd</span>
+      <span class="tag">재시도 비용</span>
+    </div>
+  </div>
+
+  <!-- Interview Question -->
+  <div class="interview-q">
+    <div class="q-label">오늘의 면접 질문</div>
+    <div class="q-text">
+      "결제 시스템이 외부 PG사 API를 호출하는데, PG사 쪽에 일시적인 장애가 생겨 5xx 응답이 늘고
+      있습니다. 현재 재시도 로직은 실패하면 곧바로 1초 뒤 재시도하는 방식인데, 오히려 PG사 장애가
+      더 오래가고 우리 서비스의 커넥션 풀까지 고갈되는 2차 장애로 번졌습니다. 무엇이 문제였고,
+      재시도 전략을 어떻게 다시 설계하시겠습니까? Exponential Backoff와 Jitter를 구체적인 수식과
+      함께 설명하고, 최대 재시도 횟수는 어떤 기준으로 정할지도 말씀해주세요."
+    </div>
+  </div>
+
+  <!-- 1. 전제 개념 -->
+  <div class="section">
+    <div class="section-label">전제 개념</div>
+    <h2>고정 간격 재시도가 왜 장애를 키우는가</h2>
+
+    <p>
+      재시도(retry)는 "실패하면 다시 해본다"는 단순한 개념이지만, <strong>언제, 얼마나 기다렸다가,
+      몇 번까지</strong> 다시 시도하느냐를 잘못 설계하면 재시도 자체가 장애의 원인이 된다.
+      질문 속 상황을 분해해보면 두 가지 문제가 겹쳐 있다.
+    </p>
+
+    <ul class="bullets">
+      <li>
+        <strong>일시적 실패 vs 재시도 간격의 불일치:</strong> Day 6에서 다룬 것처럼 PG사의 5xx는
+        보통 일시적 실패(순간 과부하, 인스턴스 재시작 등)다. 그런데 이런 실패는 대개 회복에
+        몇 초에서 몇십 초가 걸리는데, 1초 뒤 재시도는 <strong>문제가 해소되기도 전에 다시
+        두드리는 것</strong>과 같다. 회복 안 된 상태에 계속 요청이 쌓이면 PG사 입장에서는
+        복구할 시간조차 벌지 못한다.
+      </li>
+      <li>
+        <strong>고정 간격 재시도는 부하를 분산시키지 않는다:</strong> 우리 서비스에서 동시에
+        실패한 요청이 100건이라면, 모두 "1초 뒤"라는 같은 시점에 다시 몰린다. 이는 장애 중인
+        시스템에 <strong>일정한 리듬의 파도(retry storm)</strong>를 계속 때리는 셈이라, 회복
+        직전까지 갔다가도 재시도 파도에 다시 무너지는 일이 반복된다.
+      </li>
+    </ul>
+
+    <p>
+      <strong>Exponential Backoff</strong>는 이 문제의 첫 번째 부분(간격 불일치)을 푼다.
+      실패할 때마다 재시도 간격을 지수적으로 늘려서, 장애가 오래갈수록 우리 쪽 재시도 압박은
+      줄어들게 만든다. 기본 공식은 다음과 같다.
+    </p>
+
+    <pre><code>delay = min(base_delay * (multiplier ^ attempt), max_delay)
+
+예: base_delay = 1초, multiplier = 2, max_delay = 30초
+1번째 재시도: 1초
+2번째 재시도: 2초
+3번째 재시도: 4초
+4번째 재시도: 8초
+5번째 재시도: 16초
+6번째 재시도: 30초 (상한 적용)</code></pre>
+
+    <p>
+      하지만 Exponential Backoff만으로는 두 번째 문제(동시 재시도 쏠림)가 해결되지 않는다.
+      1번째 실패가 동시에 일어난 요청 100건은 모두 정확히 "1초 뒤"에 몰리고, 2번째도 정확히
+      "2초 뒤"에 몰린다. 간격은 늘어났지만 <strong>여전히 같은 시점에 뭉쳐서 재시도</strong>한다는
+      점은 그대로다. 이걸 풀기 위해 <strong>Jitter(지터, 무작위성)</strong>를 더한다.
+    </p>
+
+    <div class="callout">
+      <strong>핵심 직관:</strong> Exponential Backoff는 "얼마나 기다릴지"의 문제를 풀고,
+      Jitter는 "다 같이 몰리지 않게 하는" 문제를 푼다. 둘은 서로 다른 문제를 풀기 때문에
+      실무에서는 항상 함께 사용한다.
+    </div>
+  </div>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label">왜 면접에서 묻는가</div>
+    <h2>이 질문이 평가하는 것</h2>
+
+    <p>
+      "재시도할 때 Exponential Backoff를 씁니다"는 이름을 아는 수준의 답변이다. 면접관은
+      <strong>재시도가 실제로 어떻게 장애를 증폭시키는지</strong>를 이해하고, 수식과 파라미터
+      선택 근거까지 설명할 수 있는지를 본다.
+    </p>
+
+    <ul class="bullets">
+      <li>
+        <strong>재시도가 "공짜"가 아니라는 것을 아는가:</strong>
+        재시도 한 번은 우리 서비스의 스레드/커넥션/CPU를 점유하고, 상대 시스템에는 추가 요청을
+        보낸다. 장애 상황에서 무분별한 재시도는 회복 중인 시스템을 다시 무너뜨리는
+        <strong>부하 증폭기</strong>가 될 수 있다는 것을 이해하는지 본다.
+      </li>
+      <li>
+        <strong>Jitter 없이 Backoff만으로는 부족한 이유를 설명할 수 있는가:</strong>
+        동시에 실패한 다수의 요청이 같은 시점에 재시도가 몰리는 <strong>thundering herd</strong>
+        현상을 이해하고, 이를 무작위성으로 깨는 원리를 아는지 본다.
+      </li>
+      <li>
+        <strong>재시도 횟수 상한을 숫자와 근거로 말할 수 있는가:</strong>
+        "5번이요"라고 답만 하는 게 아니라, 그 숫자가 <strong>어떤 제약(SLA, 사용자 대기 시간,
+        다운스트림 회복 시간, 비용)</strong>에서 나왔는지 설명하는지가 시니어와 주니어를 가른다.
+      </li>
+      <li>
+        <strong>재시도와 Idempotency, DLQ를 하나의 흐름으로 연결하는가:</strong>
+        Day 5의 멱등성, Day 6의 DLQ와 이번 Backoff가 어떻게 이어지는 하나의 재시도 파이프라인을
+        이루는지 통합적으로 설명할 수 있는지 본다.
+      </li>
+    </ul>
+  </div>
+
+  <!-- 3. 실무 연결 -->
+  <div class="section">
+    <div class="section-label">실무 연결</div>
+    <h2>Jitter의 종류와 선택 기준</h2>
+
+    <p>
+      Jitter는 하나의 방식이 아니라 여러 변형이 있고, 각각 무작위성과 예측 가능성 사이의
+      트레이드오프가 다르다. AWS Architecture Blog의 "Exponential Backoff And Jitter"
+      아티클에서 정리한 세 가지가 실무에서 가장 많이 쓰인다.
+    </p>
+
+    <table class="compare">
+      <thead>
+        <tr>
+          <th>방식</th>
+          <th>공식</th>
+          <th>특징</th>
+          <th>주의할 점</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Full Jitter</td>
+          <td><code>delay = random(0, min(cap, base * 2^attempt))</code></td>
+          <td>0부터 계산된 상한 사이에서 완전히 무작위로 선택 — 부하 분산 효과가 가장 크다</td>
+          <td>운이 나쁘면 매우 짧은 지연(0에 가까운 값)이 나올 수 있어 재시도가 예상보다 빨리
+          몰릴 가능성이 이론적으로 남아 있음</td>
+        </tr>
+        <tr>
+          <td>Equal Jitter</td>
+          <td><code>delay = base_calc/2 + random(0, base_calc/2)</code></td>
+          <td>지수 계산값의 절반은 고정하고 나머지 절반만 무작위화 — 최소 대기 시간을 보장하면서
+          분산 효과도 확보하는 절충안</td>
+          <td>Full Jitter보다 분산 효과는 약간 떨어지지만, 지연이 지나치게 짧아지는 경우를
+          방지할 수 있음</td>
+        </tr>
+        <tr>
+          <td>Decorrelated Jitter</td>
+          <td><code>delay = min(cap, random(base, prev_delay * 3))</code></td>
+          <td>이전 지연 값을 기준으로 다음 지연을 계산 — 각 클라이언트의 재시도 간격이 서로
+          상관관계 없이 벌어지게 만들어 장기적으로 가장 고른 분산을 만든다고 알려짐</td>
+          <td>이전 지연값을 상태로 유지해야 해서 구현이 조금 더 복잡함</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <strong>흔한 오해:</strong> "Backoff를 적용했으니 재시도 문제는 해결됐다."
+      Jitter 없는 Backoff는 <strong>모든 실패 요청이 정확히 같은 지연 후 다시 몰리는 문제</strong>를
+      그대로 남긴다. 특히 배포 직후 여러 인스턴스가 동시에 같은 다운스트림 장애를 겪을 때,
+      Jitter가 없으면 재시도 파도가 그대로 재현된다.
+    </div>
+  </div>
+
+  <!-- 4. 핵심 개념: 재시도 대상과 비재시도 대상 -->
+  <div class="section">
+    <div class="section-label">핵심 개념</div>
+    <h2>모든 실패가 재시도 대상은 아니다</h2>
+
+    <p>
+      Backoff 공식을 아무리 잘 설계해도, <strong>애초에 재시도해서는 안 되는 요청</strong>까지
+      재시도하면 소용이 없다. 재시도 여부를 결정하는 기준은 Day 6의 일시적/영구적 실패 구분과
+      맞닿아 있지만, 여기서는 조금 더 구체적으로 봐야 한다.
+    </p>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <strong>HTTP 상태 코드/예외 유형으로 1차 분기한다</strong><br>
+          <code>429 Too Many Requests</code>, <code>503 Service Unavailable</code>, 네트워크
+          타임아웃은 재시도 대상이다. 반면 <code>400 Bad Request</code>(요청 자체가 잘못됨),
+          <code>401/403</code>(인증·권한 문제), <code>404</code>(리소스 없음)는 몇 번을
+          재시도해도 결과가 같으므로 즉시 실패 처리하고 DLQ나 에러 응답으로 넘긴다.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>부수 효과(side effect)가 실제로 발생했는지 확인 후 재시도한다</strong><br>
+          결제 승인처럼 상태를 변경하는 요청은, 응답을 못 받았다고 해서 무조건 재시도하면
+          안 된다. 타임아웃이 "요청이 전달되지 않은 것"인지 "처리는 됐는데 응답만 유실된 것"인지
+          모르기 때문이다. 이때 Day 5의 <strong>Idempotency-Key</strong>가 전제되어야 안전하게
+          재시도할 수 있다. Backoff는 "언제 재시도할지"를 정하고, Idempotency는 "재시도해도
+          안전한지"를 보장한다 — 이 둘은 항상 같이 다닌다.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>429/Retry-After 헤더가 있으면 서버 지시를 우선한다</strong><br>
+          다운스트림이 <code>Retry-After</code> 헤더로 명시적인 대기 시간을 알려주면, 클라이언트가
+          자체 계산한 Backoff보다 <strong>서버가 알려준 값을 우선</strong>해야 한다. 서버는
+          자기 부하 상태를 더 정확히 알고 있기 때문이다.
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 5. 핵심 개념: 최대 재시도 횟수 결정 -->
+  <div class="section">
+    <div class="section-label">핵심 개념</div>
+    <h2>최대 재시도 횟수는 감이 아니라 세 가지 제약으로 정한다</h2>
+
+    <p>
+      "재시도는 몇 번 하시겠습니까?"라는 질문에 "5번이요"라고만 답하면 근거가 없는 숫자다.
+      시니어 개발자는 다음 세 가지 제약을 놓고 숫자를 역산한다.
+    </p>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <strong>사용자/SLA 대기 시간 상한</strong><br>
+          동기 API 호출 안에서 재시도한다면, 전체 재시도에 걸리는 누적 시간이 사용자가 기다릴 수
+          있는 한도(예: 3초)를 넘으면 안 된다. Backoff 수열의 누적 합이 이 한도를 넘는 시점까지만
+          재시도 횟수를 허용한다. 비동기 큐 안에서 처리한다면 이 제약은 느슨해지고, 대신
+          <strong>메시지가 큐에 머무는 최대 허용 지연(freshness 요구사항)</strong>이 상한이 된다.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>다운스트림의 전형적인 회복 시간</strong><br>
+          PG사 장애가 보통 30초~1분 안에 회복된다는 운영 경험이 있다면, 재시도 간격의 누적 합이
+          그 시간대를 커버하도록 횟수와 상한(max_delay)을 정한다. 회복 시간보다 훨씬 짧게 포기하면
+          "조금만 더 기다렸으면 성공했을" 요청까지 DLQ로 흘려보내는 낭비가 생긴다.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>재시도 비용 대비 실패 처리 비용</strong><br>
+          재시도 한 번의 비용(스레드 점유, 다운스트림 부하, 지연)과, 포기하고 DLQ·실패 알림으로
+          넘겼을 때의 비용(고객 불만, 수동 재처리 인건비)을 비교한다. 결제처럼 실패 비용이 큰
+          도메인은 재시도 횟수를 늘리는 쪽이, 배치성 알림 발송처럼 실패해도 큰 문제가 없는
+          도메인은 빠르게 포기하고 DLQ로 넘기는 쪽이 합리적이다.
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout good">
+      <strong>면접 팁:</strong> "5번 재시도합니다"보다 "PG사 장애가 보통 40초 내 회복된다는
+      운영 데이터를 기준으로, base 1초·multiplier 2·최대 지연 30초로 계산하면 6번째 재시도
+      시점에 누적 대기가 약 47초가 되어 회복 시간대를 충분히 커버합니다. 이후에도 실패하면
+      DLQ로 격리합니다"처럼 숫자의 근거를 함께 말하면 훨씬 설득력이 있다.
+    </div>
+  </div>
+
+  <!-- 6. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label">답변 사고 순서</div>
+    <h2>면접에서 이 질문을 받았을 때 생각하는 순서</h2>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <strong>현재 방식의 문제를 정확히 짚는다</strong><br>
+          "1초 고정 간격 재시도는 두 가지 문제가 있습니다. 하나는 PG사가 회복하기 전에 계속
+          두드려서 회복을 방해하는 것이고, 다른 하나는 동시에 실패한 요청들이 정확히 같은
+          시점에 몰려서 재시도 파도(retry storm)를 만드는 것입니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>Exponential Backoff로 간격 문제를 푼다</strong><br>
+          "재시도할 때마다 간격을 지수적으로 늘리고 상한을 둡니다. base 1초, multiplier 2,
+          최대 30초로 설정하면 회복에 시간이 걸리는 장애일수록 재시도 압박이 줄어듭니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>Jitter로 쏠림 문제를 푼다</strong><br>
+          "Backoff만으로는 동시 실패 요청이 같은 시점에 몰리는 문제가 남기 때문에, Full Jitter나
+          Decorrelated Jitter로 지연 값에 무작위성을 더해 재시도가 시간축에 고르게 퍼지도록
+          합니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>재시도 대상과 안전성을 구분한다</strong><br>
+          "429/503/타임아웃처럼 일시적 실패만 재시도하고, 400/404처럼 재시도해도 결과가 같은
+          실패는 즉시 실패 처리합니다. 상태를 변경하는 요청이라면 Idempotency-Key로 중복 처리를
+          막아야 안전하게 재시도할 수 있습니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>최대 재시도 횟수를 근거와 함께 정한다</strong><br>
+          "PG사 장애의 전형적인 회복 시간, 사용자 대기 허용치, 재시도 비용 대비 실패 처리 비용을
+          함께 고려해서 재시도 횟수 상한을 정하고, 상한에 도달하면 Day 6에서 다룬 DLQ로 격리해
+          알림과 재처리 절차로 넘깁니다."
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 7. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label">핵심 답변 예시</div>
+    <h2>실제 면접 답변 예시</h2>
+
+    <div class="callout good">
+      <p>
+        "현재 1초 고정 간격 재시도는 두 가지 문제를 갖고 있습니다. 장애가 회복되기 전에 계속
+        요청을 보내 회복을 방해하고, 동시에 실패한 요청들이 정확히 같은 시점에 몰려 재시도
+        파도를 만들어 2차 장애로 이어졌습니다. 이를 Exponential Backoff와 Jitter로 개선하겠습니다.
+        base 1초, multiplier 2, 최대 지연 30초로 지수적으로 간격을 늘리고, Full Jitter를 적용해서
+        <code>random(0, min(30, 2^attempt))</code> 방식으로 지연 값에 무작위성을 더해 재시도
+        요청이 시간축에 고르게 분산되도록 합니다.
+      </p>
+      <p>
+        재시도 대상도 구분합니다. 429·503·타임아웃 같은 일시적 실패만 재시도하고, 400·401처럼
+        재시도해도 결과가 달라지지 않는 실패는 즉시 실패 처리합니다. 결제 승인은 상태를 변경하는
+        요청이므로 Idempotency-Key를 반드시 함께 사용해서, 응답 유실로 인한 재시도가 중복 승인을
+        일으키지 않도록 합니다. 최대 재시도 횟수는 PG사 장애의 평균 회복 시간(운영 데이터 기준
+        약 40초)과 사용자 대기 허용치를 함께 고려해서 6회로 설정하고, 이 이상 실패하면 DLQ로
+        격리해 온콜 알림과 재처리 절차로 넘깁니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- 8. Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label">Senior-Level Follow-up</div>
+    <h2>면접관이 이어서 물어볼 수 있는 질문들</h2>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "Jitter를 적용하면 재시도 시점이 예측 불가능해지는데, 이게 모니터링이나 SLA 계산에 문제가 되지 않습니까?"</div>
+      <div class="fu-a">
+        개별 요청의 재시도 시점은 예측하기 어려워지지만, 이는 의도된 트레이드오프입니다.
+        예측 가능성보다 전체 시스템의 부하 분산이 더 중요한 상황(장애 중 재시도)이기 때문입니다.
+        모니터링 측면에서는 개별 요청 단위가 아니라 "최종 성공/실패까지 걸린 누적 시간"과
+        "재시도 횟수 분포"를 집계 지표로 추적하면, Jitter로 인한 개별 편차는 흡수하면서도
+        전체 재시도 파이프라인의 건강 상태는 파악할 수 있습니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "여러 서비스가 같은 다운스트림을 호출하는데 각자 재시도하면, Backoff와 Jitter를 적용해도 전체 부하가 여전히 클 수 있지 않습니까?"</div>
+      <div class="fu-a">
+        맞습니다. Backoff와 Jitter는 개별 클라이언트의 재시도 쏠림을 완화할 뿐, 전체 클라이언트
+        수가 많으면 총 재시도 요청량 자체는 여전히 클 수 있습니다. 이 경우 클라이언트 단의
+        Circuit Breaker를 함께 둬서, 실패율이 임계값을 넘으면 아예 재시도를 잠시 멈추고
+        즉시 실패 처리(fail fast)하는 방어선을 추가합니다. Backoff/Jitter가 "재시도를 부드럽게
+        만드는" 역할이라면, Circuit Breaker는 "재시도 자체를 잠시 끄는" 상위 안전장치입니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "메시지 큐 컨슈머에서 Backoff를 적용할 때, SQS의 Visibility Timeout이나 Kafka의 컨슈머 poll 루프와 어떻게 결합됩니까?"</div>
+      <div class="fu-a">
+        브로커의 재전달 메커니즘과 애플리케이션의 Backoff 계산을 이중으로 관리해야 합니다.
+        SQS라면 Consumer가 실패를 감지한 즉시 메시지를 ack하지 않고, 계산된 Backoff 지연만큼
+        Visibility Timeout을 동적으로 연장(ChangeMessageVisibility)해서 그 시간 동안 재전달되지
+        않게 만드는 방식을 씁니다. Kafka처럼 순서를 지키는 파티션 컨슈머라면, 실패한 메시지 때문에
+        Backoff 대기 중에도 파티션이 멈추므로, 재시도 대상 메시지를 별도의 재시도 토픽으로 옮기고
+        원본 파티션은 계속 진행시키는 패턴을 흔히 사용합니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "재시도 로직을 서비스마다 각자 구현하면 일관성이 떨어질 텐데, 어떻게 관리하시겠습니까?"</div>
+      <div class="fu-a">
+        재시도 정책(Backoff 파라미터, Jitter 방식, 재시도 대상 상태 코드)을 서비스 코드에
+        직접 하드코딩하지 않고, 공통 라이브러리나 서비스 메시(Envoy, Istio의 retry policy 등)
+        레벨에서 선언적으로 관리하는 방식을 선호합니다. 이렇게 하면 정책 변경 시 배포 없이
+        설정만 바꿀 수 있고, 모든 서비스가 같은 재시도 규율을 따르게 되어 특정 팀만 재시도를
+        공격적으로 설정해 다운스트림에 부담을 주는 상황을 방지할 수 있습니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label">답변 품질 비교</div>
+    <h2>좋은 답변과 약한 답변의 차이</h2>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변 — 이렇게 말하면 시니어로 보인다</div>
+      <p>"고정 간격 재시도가 회복 방해와 재시도 파도를 동시에 일으킨다는 점을 짚고, Exponential Backoff로 간격을, Jitter로 쏠림을 각각 해결합니다. 재시도 대상을 상태 코드로 구분하고 Idempotency로 안전성을 확보하며, 최대 재시도 횟수는 다운스트림 회복 시간과 대기 허용치, 비용을 근거로 숫자를 도출합니다."</p>
+      <p><em>→ 문제 원인 분해 → Backoff와 Jitter의 역할 분리 → 재시도 안전성(Idempotency) → 숫자의 근거까지 하나의 논리로 연결</em></p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변 — 이렇게 말하면 주니어로 보인다</div>
+      <p>"Exponential Backoff를 적용해서 재시도 간격을 점점 늘리겠습니다."</p>
+      <p><em>→ Jitter가 빠져 있어 재시도 쏠림 문제가 그대로 남고, 재시도 횟수·재시도 대상 구분·Idempotency와의 연결이 전혀 없음.</em></p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변 — 숫자에 근거가 없음</div>
+      <p>"재시도는 보통 3번 정도로 하고, 그 이상은 실패 처리합니다."</p>
+      <p><em>→ "왜 3번인지"에 대한 제약 조건(SLA, 회복 시간, 비용)이 전혀 없어 임의로 정한 숫자처럼 들림.</em></p>
+    </div>
+  </div>
+
+  <!-- 10. 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label">자기 점검 Rubric</div>
+    <h2>내 답변을 이 기준으로 점검해보자</h2>
+
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>문제 분해:</strong>
+        고정 간격 재시도의 문제를 "회복 방해"와 "재시도 쏠림(thundering herd)" 두 가지로
+        구분해서 설명했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>Backoff 공식:</strong>
+        base, multiplier, max_delay를 포함한 Exponential Backoff 수식을 구체적으로
+        제시했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>Jitter의 필요성:</strong>
+        Backoff만으로는 부족한 이유와 Jitter 방식(Full/Equal/Decorrelated)의 차이를
+        설명했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>재시도 대상 구분과 안전성:</strong>
+        상태 코드/예외 유형에 따른 재시도 여부 판단과, 상태 변경 요청에서 Idempotency가 왜
+        함께 필요한지 언급했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>재시도 횟수의 근거:</strong>
+        최대 재시도 횟수를 SLA, 다운스트림 회복 시간, 재시도 비용 중 최소 두 가지 이상의
+        제약으로 도출했는가?
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. 오늘 배운 것 -->
+  <div class="section">
+    <div class="section-label">오늘 배운 것 요약</div>
+    <h2>Day 7 핵심 정리</h2>
+    <ul class="bullets">
+      <li>고정 간격 재시도는 <strong>다운스트림 회복을 방해</strong>하고, 동시 실패 요청이
+      같은 시점에 몰리는 <strong>재시도 파도(retry storm)</strong>를 만든다.</li>
+      <li>Exponential Backoff(<code>base * multiplier^attempt</code>, 상한 적용)는 간격
+      문제를 풀고, <strong>Jitter</strong>는 재시도 쏠림 문제를 푼다 — 둘은 항상 함께 쓴다.</li>
+      <li>Full/Equal/Decorrelated Jitter는 무작위성과 최소 대기 보장 사이의 트레이드오프가
+      다르며, 상황에 맞게 선택한다.</li>
+      <li>모든 실패가 재시도 대상은 아니다. 상태 코드·예외 유형으로 재시도 가능 여부를 분기하고,
+      상태를 변경하는 요청은 <strong>Idempotency-Key</strong>와 함께 재시도해야 안전하다.</li>
+      <li>최대 재시도 횟수는 <strong>사용자 대기 허용치, 다운스트림 회복 시간, 재시도 비용 대비
+      실패 처리 비용</strong>이라는 세 가지 제약에서 역산해서 정해야 한다.</li>
+    </ul>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 8: Backpressure와 Consumer Rate Control →</span>
+  </div>
+
+</div>
+</body>
+</html>
