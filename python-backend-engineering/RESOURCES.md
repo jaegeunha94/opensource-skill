@@ -11,6 +11,8 @@
 | Pydantic v2 문서 | 데이터 검증과 직렬화. FastAPI의 핵심 | https://docs.pydantic.dev |
 | Python asyncio 문서 | 비동기 프로그래밍 공식 레퍼런스 | https://docs.python.org/3/library/asyncio.html |
 | OpenTelemetry Python | 관측성(tracing) 표준 구현 | https://opentelemetry-python.readthedocs.io |
+| structlog 문서 | Python 구조화 로깅 표준 라이브러리 | https://www.structlog.org/en/stable/ |
+| prometheus_client (Python) | Prometheus 메트릭 노출 공식 클라이언트 | https://prometheus.github.io/client_python/ |
 | Docker 공식 문서 | 컨테이너화와 Compose | https://docs.docker.com |
 
 ## 도서 (검증된 고품질 자료)
