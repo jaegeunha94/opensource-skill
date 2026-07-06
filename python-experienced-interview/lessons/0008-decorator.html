@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — Decorator | 파이썬 경력자 Interview</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="lesson-header">
+    <span class="lesson-tag">Day 8</span>
+    <h1>Decorator<br><span style="font-size:0.7em;color:var(--text-muted)">함수형 패턴, closure, 실행 시점, 그리고 실무 활용</span></h1>
+    <p class="lesson-meta">파이썬 경력자 Interview · 2026-07-06 · 약 70–90분 소요</p>
+  </header>
+
+  <!-- ── 왜 이 주제인가 ── -->
+  <section>
+    <h2>왜 면접에서 Decorator를 묻는가</h2>
+    <p>
+      <code>@decorator</code> 문법 자체는 거의 모든 파이썬 개발자가 하루에도 몇 번씩 쓴다.
+      <code>@app.route(...)</code>, <code>@pytest.fixture</code>, <code>@lru_cache</code>,
+      <code>@retry</code>, <code>@login_required</code>... 하지만 면접관이 진짜 확인하고 싶은 건
+      "이 문법을 쓸 줄 아는가"가 아니라 <strong>"이 데코레이터가 정확히 언제 실행되는지, 원본 함수의
+      메타데이터(이름, docstring, 시그니처)가 왜 사라지는지, 여러 개를 겹쳐 쓰면 어떤 순서로 적용되고
+      어떤 순서로 실행되는지"</strong>를 설명할 수 있는가다.
+    </p>
+    <p>
+      이 감각은 Day 1의 data model(함수 자체가 호출 가능한 객체라는 원리), Day 7의 descriptor
+      (함수가 <code>__get__</code>을 구현한 non-data descriptor라는 사실)와 직접 연결된다. 실무에서
+      "API 요청마다 로깅하고 싶다", "특정 함수만 재시도 로직을 씌우고 싶다", "권한 체크를 여러
+      엔드포인트에 공통으로 적용하고 싶다"는 요구가 나올 때마다 데코레이터가 정답이 되는데, 그 내부
+      동작 원리를 모르면 <code>functools.wraps</code>를 빼먹어 디버깅 지옥에 빠지거나, 데코레이터
+      스택 순서를 잘못 이해해 버그를 만든다.
+    </p>
+    <div class="callout tip">
+      <div class="callout-title">실무 연결</div>
+      "여러 API 핸들러 함수에 '실행 시간 측정 + 실패 시 최대 3회 재시도 + 호출 로그'를 공통으로
+      적용하고 싶습니다. 각 함수 코드는 건드리지 않고 어떻게 적용하시겠습니까?" — 이 질문에 데코레이터
+      3개를 쌓아서 적용하는 설계와, 그 순서가 왜 그렇게 되어야 하는지(로깅이 재시도 각 회차를 감쌀지,
+      전체를 감쌀지)까지 설명할 수 있는가가 이 레슨의 핵심이다.
+    </div>
+  </section>
+
+  <!-- ── 전제 개념 1: 함수는 일급 객체, decorator는 그냥 문법 설탕 ── -->
+  <section>
+    <h2>전제 개념 ① — Decorator는 새로운 문법이 아니라 "함수를 받아 함수를 반환하는 함수"를 부르는 문법 설탕이다</h2>
+    <p>
+      파이썬에서 함수는 <strong>일급 객체(first-class object)</strong>다. 정수나 문자열처럼 변수에
+      담을 수 있고, 다른 함수의 인자로 넘길 수 있고, 다른 함수의 반환값이 될 수도 있다. 데코레이터는
+      이 성질 위에서 동작하는 <strong>"함수 하나를 받아서, 함수 하나를 반환하는 함수"</strong>일 뿐이다.
+    </p>
+    <div class="card accent">
+      <div class="card-label"><code>@decorator</code>가 실제로 하는 일</div>
+      <pre style="margin:0"><span class="op">@my_decorator</span>
+<span class="kw">def</span> <span class="fn">greet</span>():
+    ...
+
+<span class="cm"># 위 코드는 정확히 아래와 동일하다</span>
+<span class="kw">def</span> <span class="fn">greet</span>():
+    ...
+greet = <span class="fn">my_decorator</span>(greet)</pre>
+    </div>
+    <p>
+      여기서 가장 중요한 사실 하나: <strong><code>my_decorator(greet)</code>는 <code>greet</code>가
+      정의되는 시점, 즉 <strong>모듈이 import되거나 클래스 body가 실행되는 시점에 딱 한 번</strong>
+      실행된다.</strong> <code>greet()</code>를 호출할 때마다 실행되는 게 아니다. 이 시점 차이를
+      정확히 구분하지 못하면 "데코레이터 안에서 무거운 초기화를 하면 매번 비용이 든다"거나 "데코레이터
+      인자로 넘긴 값이 매 호출마다 새로 계산된다"는 식의 오해가 생긴다.
+    </p>
+    <pre><span class="kw">def</span> <span class="fn">my_decorator</span>(func):
+    <span class="fn">print</span>(<span class="st">"1) 데코레이터가 func를 감싸는 시점 — import/정의 시 1회 실행"</span>)
+    <span class="kw">def</span> <span class="fn">wrapper</span>(*args, **kwargs):
+        <span class="fn">print</span>(<span class="st">"2) wrapper 내부 — 실제 호출될 때마다 실행"</span>)
+        <span class="kw">return</span> <span class="fn">func</span>(*args, **kwargs)
+    <span class="kw">return</span> wrapper   <span class="cm"># func가 아니라 wrapper를 반환 — greet 이름이 wrapper로 교체됨</span>
+
+<span class="op">@my_decorator</span>   <span class="cm"># 이 줄에서 "1)"이 즉시 출력된다 (모듈 로드 시점)</span>
+<span class="kw">def</span> <span class="fn">greet</span>():
+    <span class="fn">print</span>(<span class="st">"hello"</span>)
+
+greet()   <span class="cm"># 이제서야 "2)"와 "hello"가 출력된다</span>
+greet()   <span class="cm"># 다시 호출하면 "1)"은 재출력되지 않고 "2)"만 매번 출력</span></pre>
+    <div class="callout warn">
+      <div class="callout-title">여기서 놓치기 쉬운 것 — <code>greet</code>이라는 이름이 가리키는 객체가 바뀐다</div>
+      데코레이터 적용 이후 <code>greet</code>은 원래의 함수 객체가 아니라 <code>wrapper</code> 함수
+      객체를 가리킨다. 원본 <code>greet</code> 함수 자체는 <code>wrapper</code>의 클로저 안에
+      <code>func</code>라는 이름으로만 남아 있고, 바깥에서는 더 이상 직접 접근할 수 없다. 이것이
+      다음 절에서 다룰 "메타데이터가 사라지는 문제"의 근본 원인이다.
+    </div>
+  </section>
+
+  <!-- ── 면접 Q1 ── -->
+  <section>
+    <h2>면접 질문 ① — 함수 실행 시간을 측정하는 데코레이터를 작성해보세요. <code>functools.wraps</code>는 왜 필요한가요?</h2>
+    <div class="interview-q">
+      임의의 함수에 적용해서 실행 시간을 로그로 남기는 데코레이터 <code>@timeit</code>을 작성해주세요.
+      그리고 <code>functools.wraps</code>를 쓰지 않으면 어떤 문제가 생기는지 설명해주세요.
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li>클로저(closure)를 이용해 <code>wrapper</code>가 <code>func</code>를 "기억"하는 구조를 정확히 구현하는가</li>
+      <li><code>*args, **kwargs</code>로 임의의 시그니처를 그대로 전달하는가</li>
+      <li><code>functools.wraps</code>가 <strong>무엇을 복사하는지</strong>(<code>__name__</code>, <code>__doc__</code>, <code>__wrapped__</code> 등) 구체적으로 아는가</li>
+      <li>메타데이터 손실이 실제로 어떤 실무 문제(디버깅, introspection, 다른 데코레이터와의 결합)를 일으키는지 아는가</li>
+    </ul>
+
+    <h3>답변 구조 — 생각의 순서</h3>
+    <ol>
+      <li><strong>구조 설계</strong>: 데코레이터 = 함수를 받아 wrapper 함수를 반환하는 함수</li>
+      <li><strong>구현</strong>: <code>wrapper</code> 안에서 시간을 재고 <code>func(*args, **kwargs)</code> 호출</li>
+      <li><strong>문제 짚기</strong>: <code>wraps</code> 없으면 <code>func.__name__</code>이 <code>"wrapper"</code>로 바뀜</li>
+      <li><strong>해결</strong>: <code>@functools.wraps(func)</code>로 메타데이터를 wrapper에 복사</li>
+    </ol>
+
+    <pre><span class="kw">import</span> functools
+<span class="kw">import</span> time
+
+<span class="kw">def</span> <span class="fn">timeit</span>(func):
+    <span class="op">@functools.wraps(func)</span>   <span class="cm"># 이게 없으면 func의 메타데이터가 사라짐</span>
+    <span class="kw">def</span> <span class="fn">wrapper</span>(*args, **kwargs):
+        start = time.perf_counter()
+        <span class="kw">try</span>:
+            <span class="kw">return</span> <span class="fn">func</span>(*args, **kwargs)
+        <span class="kw">finally</span>:
+            elapsed = time.perf_counter() - start
+            <span class="fn">print</span>(<span class="st">f"{func.__name__} 실행 시간: {elapsed:.4f}s"</span>)
+    <span class="kw">return</span> wrapper
+
+<span class="op">@timeit</span>
+<span class="kw">def</span> <span class="fn">slow_query</span>(n):
+    <span class="st">"""n번 반복해 합을 구한다."""</span>
+    <span class="kw">return</span> <span class="fn">sum</span>(<span class="fn">range</span>(n))
+
+<span class="fn">print</span>(slow_query.__name__)   <span class="cm"># wraps 있으면: "slow_query" / 없으면: "wrapper"</span>
+<span class="fn">print</span>(slow_query.__doc__)    <span class="cm"># wraps 있으면: "n번 반복해 합을 구한다." / 없으면: None</span>
+<span class="fn">print</span>(slow_query.__wrapped__) <span class="cm"># wraps가 추가로 심어주는 속성 — 원본 함수에 직접 접근 가능</span></pre>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변</div>
+      <p>
+        "데코레이터는 함수를 받아서 <code>wrapper</code> 함수를 반환하는 <strong>고차 함수</strong>입니다.
+        <code>wrapper</code>는 클로저로 원본 <code>func</code>를 캡처하고, 실행 전후로 시간을 측정한
+        뒤 <code>func(*args, **kwargs)</code>를 그대로 호출해 임의의 시그니처를 투명하게 전달합니다.
+      </p>
+      <p>
+        <code>functools.wraps</code>가 필요한 이유는, 데코레이터를 적용하면 <strong>바깥에서 보이는
+        함수 객체가 원본이 아니라 <code>wrapper</code>로 교체</strong>되기 때문입니다.
+        <code>wraps</code> 없이는 <code>slow_query.__name__</code>이 <code>"wrapper"</code>가 되고,
+        <code>__doc__</code>은 <code>None</code>이 되고, <code>inspect.signature()</code>로 원본
+        시그니처를 조회할 수도 없게 됩니다. 이건 단순 스타일 문제가 아니라 실무에서 <strong>로깅에
+        엉뚱한 함수 이름이 찍히거나, pytest 같은 프레임워크가 introspection으로 함수를 찾다가
+        실패하거나, Sphinx 같은 문서 자동 생성 도구가 docstring을 못 읽는</strong> 구체적인 버그로
+        이어집니다. <code>functools.wraps(func)</code>는 <code>__name__</code>,
+        <code>__doc__</code>, <code>__module__</code>, <code>__dict__</code> 등을 <code>wrapper</code>에
+        복사하고, 추가로 <code>__wrapped__</code> 속성에 원본 함수를 저장해서 필요하면 언랩(unwrap)할
+        수 있게 해줍니다."
+      </p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변</div>
+      <p>
+        "함수를 감싸는 함수를 만들고 시간을 재서 출력하면 됩니다. <code>functools.wraps</code>는
+        관례상 붙이는 겁니다."
+      </p>
+      <p style="margin-bottom:0">
+        <strong>왜 약한가:</strong> 동작은 맞지만 "관례상"이라는 표현이 <code>wraps</code>가 실제로
+        무엇을 복사하고, 없으면 어떤 구체적 실무 문제가 생기는지 이해하지 못했다는 신호를 준다.
+        인터뷰어 입장에서는 "이 사람이 데코레이터를 겪어봤을 뿐 원리를 설명하지는 못한다"고 판단하게
+        된다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── 전제 개념 2: 인자를 받는 decorator ── -->
+  <section>
+    <h2>전제 개념 ② — 인자를 받는 decorator는 함수를 한 겹 더 감싼 "데코레이터 팩토리"다</h2>
+    <p>
+      <code>@retry(times=3)</code>처럼 데코레이터에 괄호와 인자가 붙는 경우가 있다. 이건 데코레이터가
+      특별한 문법을 지원해서가 아니라, <strong><code>retry(times=3)</code>이 먼저 실행되어 "진짜
+      데코레이터"를 반환하고, 그 반환된 함수가 대상 함수에 적용</strong>되는 3단 구조이기 때문이다.
+    </p>
+    <div class="card accent">
+      <div class="card-label">3단 중첩 구조 — 왜 함수가 3겹인가</div>
+      <pre style="margin:0"><span class="op">@retry(times=3)</span>
+<span class="kw">def</span> <span class="fn">call_api</span>():
+    ...
+
+<span class="cm"># 위 코드는 아래와 동일하다</span>
+_actual_decorator = <span class="fn">retry</span>(times=<span class="num">3</span>)   <span class="cm"># 1단: 팩토리 호출 → 데코레이터 반환</span>
+call_api = _actual_decorator(call_api)  <span class="cm"># 2단: 데코레이터가 함수에 적용 → wrapper 반환</span></pre>
+    </div>
+    <pre><span class="kw">import</span> functools
+<span class="kw">import</span> time
+
+<span class="kw">def</span> <span class="fn">retry</span>(times=<span class="num">3</span>, delay=<span class="num">0.5</span>):        <span class="cm"># 1단: 팩토리 — 설정값을 받는다</span>
+    <span class="kw">def</span> <span class="fn">decorator</span>(func):              <span class="cm"># 2단: 실제 데코레이터 — func를 받는다</span>
+        <span class="op">@functools.wraps(func)</span>
+        <span class="kw">def</span> <span class="fn">wrapper</span>(*args, **kwargs):  <span class="cm"># 3단: 호출을 가로채는 함수</span>
+            last_exc = <span class="cls">None</span>
+            <span class="kw">for</span> attempt <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, times + <span class="num">1</span>):
+                <span class="kw">try</span>:
+                    <span class="kw">return</span> <span class="fn">func</span>(*args, **kwargs)
+                <span class="kw">except</span> <span class="cls">Exception</span> <span class="kw">as</span> exc:
+                    last_exc = exc
+                    <span class="fn">print</span>(<span class="st">f"{func.__name__} 시도 {attempt}/{times} 실패: {exc}"</span>)
+                    time.sleep(delay)
+            <span class="kw">raise</span> last_exc   <span class="cm"># times번 모두 실패하면 마지막 예외를 그대로 전파</span>
+        <span class="kw">return</span> wrapper
+    <span class="kw">return</span> decorator
+
+<span class="op">@retry(times=3, delay=1.0)</span>
+<span class="kw">def</span> <span class="fn">call_api</span>():
+    ...</pre>
+    <div class="callout warn">
+      <div class="callout-title">흔한 실수 — 인자 없는 데코레이터와 인자 있는 데코레이터를 하나로 만들려다 계층을 하나 빼먹는다</div>
+      <code>@retry</code>(괄호 없음)와 <code>@retry()</code>(괄호 있음, 인자 없음)를 동시에 지원하려면
+      <code>func</code>가 직접 넘어왔는지 감지하는 분기 로직이 추가로 필요하다. 이걸 처리하지 않고
+      "인자를 받을 수도, 안 받을 수도 있는" 데코레이터를 만들면 <code>@retry</code>로 쓰는 순간
+      <code>func</code> 자리에 아무 설정도 없이 함수 객체가 들어와 <code>TypeError</code>가 난다.
+      실무에서는 차라리 "항상 괄호를 쓰게 강제"하는 편이 버그를 줄인다.
+    </div>
+  </section>
+
+  <!-- ── 면접 Q2 ── -->
+  <section>
+    <h2>면접 질문 ② — 데코레이터를 여러 개 겹쳐 쓸 때, 적용 순서와 실행 순서를 설명해보세요</h2>
+    <div class="interview-q">
+      <pre style="margin:0"><span class="op">@log_call</span>
+<span class="op">@timeit</span>
+<span class="op">@retry(times=3)</span>
+<span class="kw">def</span> <span class="fn">fetch</span>():
+    ...</pre>
+      이렇게 데코레이터 3개가 겹쳐 있을 때, 어떤 순서로 <code>fetch</code>에 적용되고, 실제
+      <code>fetch()</code>를 호출하면 어떤 순서로 실행되나요?
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li><strong>적용(래핑) 순서</strong>는 코드에 쓰인 것과 반대로 <strong>아래에서 위로</strong> 진행된다는 것을 아는가</li>
+      <li><strong>실행 순서</strong>는 가장 바깥쪽(맨 위)부터 안으로 들어간다는 것을 아는가 — "적용은 아래→위, 실행은 위→아래"라는 두 방향을 헷갈리지 않는가</li>
+      <li>양파 껍질(onion) 비유로 "각 데코레이터가 다음 껍질을 완전히 감싼 상태로 실행된다"는 걸 설명할 수 있는가</li>
+      <li>실무 관점에서 "왜 이 순서로 쌓아야 하는지"(재시도 안쪽에 timeit을 두면 매 시도마다 시간이 찍힌다 등)를 판단할 수 있는가</li>
+    </ul>
+
+    <h3>답변 구조 — 생각의 순서</h3>
+    <ol>
+      <li><strong>적용 순서</strong>: <code>fetch = log_call(timeit(retry(times=3)(fetch)))</code> — 데코레이터가 아래에서부터 순서대로 함수를 감쌈</li>
+      <li><strong>실행 순서</strong>: 호출 시에는 가장 바깥쪽인 <code>log_call</code>의 wrapper부터 진입 → <code>timeit</code>의 wrapper → <code>retry</code>의 wrapper → 원본 <code>fetch</code></li>
+      <li><strong>의미 해석</strong>: <code>retry</code>가 가장 안쪽이므로 재시도 "각 회차"는 <code>timeit</code>과 <code>log_call</code>의 영향을 받지 않음. <code>timeit</code>이 <code>retry</code> 바로 바깥이므로 재시도 전체에 걸린 총 시간을 측정</li>
+      <li><strong>설계 함의</strong>: 만약 "각 시도마다 걸린 시간"을 재고 싶다면 <code>timeit</code>을 <code>retry</code> 안쪽으로 옮겨야 함</li>
+    </ol>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변</div>
+      <p>
+        "데코레이터가 <strong>적용되는 순서</strong>와 <strong>실행되는 순서</strong>는 반대 방향으로
+        생각해야 합니다. 적용은 코드 아래에서 위로 진행되어
+        <code>fetch = log_call(timeit(retry(times=3)(fetch)))</code>와 동일하게 됩니다. 즉
+        <code>retry</code>가 가장 먼저 원본 <code>fetch</code>를 감싸고, 그 결과를
+        <code>timeit</code>이 감싸고, 마지막으로 <code>log_call</code>이 가장 바깥에서 감쌉니다.
+      </p>
+      <p>
+        반면 <strong>실제로 <code>fetch()</code>를 호출하면 실행은 정반대로, 가장 바깥쪽인
+        <code>log_call</code>의 wrapper부터 진입</strong>합니다. 양파 껍질을 벗기듯
+        <code>log_call</code> → <code>timeit</code> → <code>retry</code> → 원본 <code>fetch</code>
+        순으로 들어갔다가, 다시 그 역순으로 반환값이 빠져나옵니다.
+      </p>
+      <p style="margin-bottom:0">
+        이 순서가 실무적으로 중요한 이유는, <strong><code>retry</code>가 가장 안쪽에 있기 때문에
+        재시도되는 각 시도는 <code>timeit</code>이나 <code>log_call</code>을 매번 다시 거치지
+        않는다</strong>는 겁니다. <code>timeit</code>이 재는 건 재시도 전체(성공까지 걸린 총 시간)이지
+        개별 시도의 시간이 아닙니다. 만약 '각 시도마다 걸린 시간'을 재고 싶다면 데코레이터 순서를
+        바꿔서 <code>timeit</code>을 <code>retry</code>보다 안쪽에 둬야 합니다. 이렇게 요구사항에
+        따라 스택 순서를 의도적으로 설계할 수 있어야 합니다."
+      </p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변</div>
+      <p>
+        "위에서부터 순서대로 적용되고, 위에서부터 순서대로 실행됩니다."
+      </p>
+      <p style="margin-bottom:0">
+        <strong>왜 약한가:</strong> 적용 순서와 실행 순서를 구분하지 못한 채 뭉뚱그려 답했다.
+        "적용은 아래→위, 실행은 위→아래"라는 두 방향성을 명확히 구분하지 못하면, 실제로 데코레이터
+        스택의 부작용(재시도 범위, 로그 범위)을 설계할 때 잘못된 순서로 쌓는 실수를 반복하게 된다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── 전제 개념 3: 클래스 기반 decorator ── -->
+  <section>
+    <h2>전제 개념 ③ — 함수 기반 decorator와 클래스 기반 decorator, 언제 클래스를 쓰는가</h2>
+    <p>
+      데코레이터는 "함수를 받아 호출 가능한(callable) 것을 반환"하기만 하면 되므로, 함수가 아니라
+      <strong><code>__call__</code>을 구현한 클래스</strong>로도 만들 수 있다. 상태를 유지해야 하거나
+      (예: 호출 횟수 카운트), 데코레이터 자체에 여러 메서드가 필요할 때(예: 캐시를 수동으로 초기화하는
+      기능) 클래스 기반이 더 자연스럽다.
+    </p>
+    <pre><span class="kw">import</span> functools
+
+<span class="kw">class</span> <span class="cls">CountCalls</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, func):
+        functools.update_wrapper(self, func)  <span class="cm"># 클래스 기반에서도 메타데이터 보존은 동일하게 필요</span>
+        self.func = func
+        self.call_count = <span class="num">0</span>
+
+    <span class="kw">def</span> <span class="fn">__call__</span>(self, *args, **kwargs):
+        self.call_count += <span class="num">1</span>
+        <span class="fn">print</span>(<span class="st">f"{self.func.__name__} 호출 {self.call_count}번째"</span>)
+        <span class="kw">return</span> self.func(*args, **kwargs)
+
+<span class="op">@CountCalls</span>
+<span class="kw">def</span> <span class="fn">process</span>():
+    ...
+
+process()          <span class="cm"># "process 호출 1번째"</span>
+process()          <span class="cm"># "process 호출 2번째"</span>
+<span class="fn">print</span>(process.call_count)   <span class="cm"># 2 — 함수 기반 decorator는 이 상태 접근이 훨씬 번거로움(nonlocal/클로저 변수 노출 필요)</span></pre>
+    <div class="callout warn">
+      <div class="callout-title">클래스 기반 decorator를 인스턴스 메서드에 적용할 때의 함정</div>
+      <code>CountCalls</code>처럼 <strong><code>__call__</code>만 구현하고 <code>__get__</code>은
+      구현하지 않은 클래스</strong>를 인스턴스 메서드에 데코레이터로 적용하면, Day 7에서 다룬
+      "함수는 non-data descriptor라 자동으로 <code>self</code>를 바인딩해준다"는 메커니즘이
+      깨진다. <code>CountCalls</code> 인스턴스는 함수가 아니라 일반 객체이므로 descriptor
+      프로토콜을 타지 않고, <code>self</code>가 자동으로 넘어오지 않아
+      <code>TypeError: missing 1 required positional argument</code>가 난다. 이를 해결하려면
+      <code>__get__</code>까지 구현해서 스스로를 descriptor로 만들거나, <code>functools.wraps</code>를
+      쓰는 함수 기반 클로저 방식(자동으로 descriptor가 됨)을 쓰는 것이 더 간단하다.
+    </div>
+  </section>
+
+  <!-- ── 면접 Q3 ── -->
+  <section>
+    <h2>면접 질문 ③ — 함수 기반 decorator와 클래스 기반 decorator 중 무엇을 선택하시겠습니까?</h2>
+    <div class="interview-q">
+      데코레이터를 구현하는 두 가지 방법(중첩 함수 vs <code>__call__</code>을 구현한 클래스)의
+      차이와 각각의 장단점, 그리고 실무에서 어떤 기준으로 선택하는지 설명해주세요.
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li>클래스 기반이 상태 관리와 추가 메서드 노출에 유리하다는 것을 아는가</li>
+      <li>클래스 기반이 인스턴스 메서드에 적용될 때 descriptor 문제가 생길 수 있음을 아는가</li>
+      <li>대부분의 경우 함수 기반(클로저)이 더 단순하고 충분하다는 실용적 판단을 하는가</li>
+    </ul>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변</div>
+      <p>
+        "기본적으로는 <strong>함수 기반(중첩 함수 + 클로저)을 기본값으로 선택</strong>합니다. 대부분의
+        데코레이터는 '호출을 가로채서 앞뒤에 로직을 추가'하는 정도라 클로저만으로 충분하고,
+        <code>functools.wraps</code>를 붙이면 인스턴스 메서드에 적용했을 때도 함수가 원래
+        non-data descriptor이므로 <code>self</code> 바인딩이 자동으로 잘 동작합니다.
+      </p>
+      <p style="margin-bottom:0">
+        <strong>클래스 기반으로 전환하는 기준</strong>은 두 가지입니다. 첫째, 데코레이터 자체가
+        <strong>상태를 유지</strong>해야 하고 그 상태를 외부에서 조회/리셋하는 API가 필요할 때
+        (예: 호출 횟수, 캐시 무효화 메서드). 둘째, 데코레이터 로직이 복잡해서 여러 헬퍼 메서드로
+        나누는 게 가독성에 도움이 될 때입니다. 다만 클래스 기반을 인스턴스 메서드에 적용할 계획이면
+        <code>__get__</code>까지 구현해서 스스로 descriptor가 되게 하거나, 아예 함수 기반으로
+        되돌리는 것을 우선 검토합니다."
+      </p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변</div>
+      <p>
+        "둘 다 같은 기능을 하니 취향에 따라 선택하면 됩니다."
+      </p>
+      <p style="margin-bottom:0">
+        <strong>왜 약한가:</strong> 실제로는 동일하지 않다. 인스턴스 메서드에 적용될 때 descriptor
+        문제로 클래스 기반이 깨질 수 있다는 실무적 함정을 완전히 놓치고 있으며, "취향"이라는 표현은
+        선택 기준이 없다는 뜻으로 들린다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Senior Follow-up ── -->
+  <section>
+    <h2>Senior-level Follow-up 질문</h2>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 1</div>
+      <p>
+        <strong><code>functools.lru_cache</code>도 데코레이터인데, 내부적으로 어떻게 캐시 무효화 없이 계속 메모리를 쓰나요?</strong>
+      </p>
+      <p style="margin-bottom:0">
+        <code>lru_cache</code>는 클래스 기반은 아니지만 <strong>클로저 안에 딕셔너리(캐시)를
+        유지</strong>하는 함수 기반 데코레이터다. 인자를 키로 결과를 저장하고,
+        <code>maxsize</code>를 넘으면 LRU(가장 오래 사용 안 된 것) 정책으로 오래된 항목을 제거한다.
+        <code>wrapper.cache_info()</code>, <code>wrapper.cache_clear()</code> 같은 부가 메서드를
+        <code>wrapper</code> 함수 객체에 속성으로 직접 붙여서 노출하는데, 이건 "함수도 객체이므로
+        임의의 속성을 붙일 수 있다"는 Day 1의 원리를 활용한 것이다. 다만 인자가 hashable해야 하고,
+        인자 조합이 무한히 다양하면 <code>maxsize</code> 설정 없이는 메모리 누수처럼 보일 수 있다는
+        trade-off가 있다.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 2</div>
+      <p>
+        <strong>데코레이터가 클래스 자체에 적용되면(class decorator) 무엇이 다른가요?</strong>
+      </p>
+      <p style="margin-bottom:0">
+        함수 데코레이터와 원리는 같다 — <strong>클래스 객체를 받아서 클래스(또는 다른 객체)를
+        반환</strong>하는 함수다. <code>@dataclasses.dataclass</code>가 대표적인 예로,
+        <code>__init__</code>, <code>__repr__</code>, <code>__eq__</code> 같은 dunder 메서드를
+        클래스에 자동으로 주입한 뒤 <strong>같은 클래스 객체를 그대로 반환</strong>한다(함수
+        데코레이터처럼 새 wrapper로 완전히 교체하는 게 아니라 기존 클래스를 수정해서 돌려주는 경우가
+        많다). 이건 Day 1에서 다룬 data model 자동 구현과 데코레이터가 결합된 대표 사례다.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 3</div>
+      <p>
+        <strong>데코레이터 안에서 예외가 발생하면 원본 함수의 트레이스백(traceback)이 어떻게 보이나요? 문제가 될 수 있나요?</strong>
+      </p>
+      <p style="margin-bottom:0">
+        <code>wrapper</code>가 <code>func(*args, **kwargs)</code>를 그대로 호출하고 별도로
+        예외를 잡아 재발생시키지 않는 한, 파이썬은 원본 예외의 트레이스백 체인을 그대로 유지한다.
+        문제는 <strong>데코레이터가 예외를 잡아서 새 예외로 감싸 다시 던질 때</strong> 생긴다 —
+        <code>raise NewError(...) from exc</code> 형태로 <code>from</code>을 쓰지 않으면 원본
+        예외 정보(어느 라인에서, 어떤 인자로 실패했는지)가 로그에서 사라져 디버깅이 훨씬 어려워진다.
+        데코레이터로 예외를 감쌀 때는 항상 <code>from</code>으로 원인 체인을 보존해야 한다는 게
+        실무에서 자주 놓치는 지점이다.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 4</div>
+      <p>
+        <strong>Decorator와 Day 7의 descriptor는 서로 어떻게 연결되나요?</strong>
+      </p>
+      <p style="margin-bottom:0">
+        데코레이터가 반환하는 <code>wrapper</code>도 결국 평범한 함수 객체이고, 함수 객체는
+        <code>__get__</code>만 구현한 <strong>non-data descriptor</strong>다(Day 7). 그래서
+        <code>@timeit</code>을 인스턴스 메서드에 적용해도 <code>self</code>가 자동으로 바인딩되는
+        이유는 데코레이터 자체의 마법이 아니라, "함수는 descriptor다"라는 더 근본적인 규칙이
+        <code>wrapper</code> 함수에도 똑같이 적용되기 때문이다. 반대로 <code>__call__</code>만
+        구현한 클래스 기반 데코레이터가 인스턴스 메서드에서 깨지는 이유도 바로 이 규칙에서 벗어나기
+        때문이라는 걸 짚으면, 두 개념을 하나의 원리로 통합해서 설명할 수 있다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Trade-off와 흔한 오해 ── -->
+  <section>
+    <h2>Trade-off와 흔한 오해</h2>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 1 — "데코레이터는 함수가 호출될 때마다 다시 적용된다"</div>
+      <p>
+        데코레이터가 함수를 감싸는 동작(<code>func = decorator(func)</code>)은 <strong>정의 시점에
+        딱 한 번</strong>만 일어난다. 매 호출마다 실행되는 건 <code>wrapper</code> 내부 코드일
+        뿐이다. 이 차이를 헷갈리면 "데코레이터 인자로 무거운 객체를 매번 새로 만든다"는 식의 잘못된
+        성능 우려나 설계를 하게 된다.
+      </p>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 2 — "<code>functools.wraps</code>는 없어도 프로그램이 똑같이 동작하니 선택사항이다"</div>
+      <p>
+        런타임 로직만 보면 맞다. 하지만 <code>__name__</code>/<code>__doc__</code>/시그니처가
+        사라지면 로깅, 디버깅, 테스트 프레임워크의 introspection, API 문서 자동 생성이 전부
+        영향을 받는다. "동작은 하지만 운영 가능성(observability)이 깨지는" 전형적인 사례이며, 실무
+        코드베이스에서는 사실상 필수로 취급해야 한다.
+      </p>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 3 — "데코레이터를 여러 개 쌓는 순서는 어차피 상관없다"</div>
+      <p>
+        순서가 결과에 영향을 주지 않는 경우(서로 독립적인 로깅 두 개)도 있지만, <strong>재시도, 트랜잭션
+        경계, 캐싱, 권한 체크</strong>처럼 "어디까지를 감싸는지"가 의미를 갖는 데코레이터는 순서가
+        동작을 완전히 바꾼다. "일단 쌓고 동작하면 끝"이 아니라 각 데코레이터가 어떤 범위를 감싸야
+        하는지 의도적으로 설계해야 한다.
+      </p>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 4 — "데코레이터는 항상 원본과 동일한 반환값을 돌려줘야 한다"</div>
+      <p>
+        대부분의 데코레이터는 <code>return func(*args, **kwargs)</code>로 반환값을 그대로 전달하지만,
+        이건 관례일 뿐 강제 규칙이 아니다. 캐싱 데코레이터는 두 번째 호출부터 저장된 값을 반환하고,
+        검증 데코레이터는 실패 시 원본을 아예 호출하지 않고 예외를 던지거나 기본값을 반환할 수도
+        있다. "데코레이터는 무조건 투명해야 한다"는 생각은 실무에서 흔히 필요한 단축 반환, 캐싱,
+        가드 패턴을 설계하지 못하게 막는다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Self-check Rubric ── -->
+  <section>
+    <h2>Self-check Rubric</h2>
+    <table class="rubric">
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>상 (Senior)</th>
+          <th>중 (Mid)</th>
+          <th>하 (Junior)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Decorator의 본질</td>
+          <td><span class="badge high">상</span> "함수를 받아 함수를 반환하는 함수"이며 정의 시점에 1회 적용됨을 정확히 설명</td>
+          <td><span class="badge mid">중</span> 문법은 쓰지만 내부적으로 함수 재할당이라는 걸 모름</td>
+          <td><span class="badge low">하</span> <code>@</code>를 특별한 전용 문법으로만 인식</td>
+        </tr>
+        <tr>
+          <td><code>functools.wraps</code> 이해</td>
+          <td><span class="badge high">상</span> 무엇을 복사하는지, 없으면 어떤 실무 문제가 생기는지 구체적으로 설명</td>
+          <td><span class="badge mid">중</span> "관례상 붙인다"는 정도로만 인지</td>
+          <td><span class="badge low">하</span> 존재 자체를 모르거나 필요성을 못 느낌</td>
+        </tr>
+        <tr>
+          <td>인자 있는 decorator 구조</td>
+          <td><span class="badge high">상</span> 3단 중첩 구조를 정확히 구현하고 괄호 유무 이슈까지 설명</td>
+          <td><span class="badge mid">중</span> 동작하는 코드는 작성하나 계층 구조를 명확히 설명 못 함</td>
+          <td><span class="badge low">하</span> 인자 있는 데코레이터를 구현하지 못함</td>
+        </tr>
+        <tr>
+          <td>스택 순서(적용 vs 실행)</td>
+          <td><span class="badge high">상</span> 적용은 아래→위, 실행은 위→아래라는 반대 방향을 정확히 구분</td>
+          <td><span class="badge mid">중</span> 순서가 있다는 건 알지만 방향을 헷갈림</td>
+          <td><span class="badge low">하</span> 여러 데코레이터 스택의 순서 개념이 없음</td>
+        </tr>
+        <tr>
+          <td>함수 vs 클래스 기반 선택</td>
+          <td><span class="badge high">상</span> descriptor 상호작용까지 고려해 상황별 기준을 제시</td>
+          <td><span class="badge mid">중</span> 클래스 기반 구현은 가능하나 descriptor 함정을 모름</td>
+          <td><span class="badge low">하</span> 클래스 기반 데코레이터 구현 자체를 모름</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── 핵심 요약 ── -->
+  <section>
+    <h2>핵심 요약 — 1분 복습 카드</h2>
+    <div class="card success">
+      <div class="card-label">오늘 반드시 기억할 것</div>
+      <ol style="margin:0.5rem 0 0 1.2rem">
+        <li>데코레이터는 "함수를 받아 함수를 반환하는 함수"이며 <code>func = decorator(func)</code>와 동일</li>
+        <li>데코레이터의 감싸는 동작은 <strong>정의(import) 시점에 1회</strong> 실행되고, <code>wrapper</code> 내부는 매 호출마다 실행</li>
+        <li><code>functools.wraps</code>는 <code>__name__</code>/<code>__doc__</code>/<code>__wrapped__</code> 등을 복사해 introspection과 디버깅 가능성을 보존</li>
+        <li>인자 있는 데코레이터는 팩토리(1단) → 데코레이터(2단) → wrapper(3단)의 3중 중첩 구조</li>
+        <li>여러 데코레이터를 쌓으면 <strong>적용은 아래→위</strong>, <strong>실행은 위→아래</strong>로 정반대 방향</li>
+        <li>클래스 기반 데코레이터(<code>__call__</code>)는 상태 유지에 유리하지만, 인스턴스 메서드에 쓸 때 descriptor(<code>__get__</code>) 문제를 조심해야 함</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ── Navigation ── -->
+  <nav class="lesson-nav">
+    <a href="./0007-descriptor-protocol.html">← Day 7: Descriptor 프로토콜</a>
+    <a href="./index.html">목록으로</a>
+    <span style="color:var(--text-muted)">Day 9: Python 실행 모델 →</span>
+  </nav>
+
+</div>
+</body>
+</html>

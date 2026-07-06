@@ -11,12 +11,12 @@
 | 5 | 2026-07-03 | asyncio와 이벤트 루프 — 협력적 멀티태스킹과 `await`의 실행 모델 | [0005-asyncio-event-loop.html](lessons/0005-asyncio-event-loop.html) |
 | 6 | 2026-07-04 | Context Manager — 리소스 관리 패턴과 `with`의 실행 모델 | [0006-context-manager.html](lessons/0006-context-manager.html) |
 | 7 | 2026-07-05 | Descriptor 프로토콜 — `__get__`/`__set__`/`__delete__`와 속성 접근의 실체 | [0007-descriptor-protocol.html](lessons/0007-descriptor-protocol.html) |
+| 8 | 2026-07-06 | Decorator — 함수형 패턴, closure, 실행 시점, 실무 활용 | [0008-decorator.html](lessons/0008-decorator.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Decorator — 함수형 패턴과 실무 활용 | closure, `functools.wraps`, 클래스 decorator, stacking |
 | 9 | Python 실행 모델 | 바이트코드, CPython 인터프리터, 네임스페이스, LEGB |
 | 10 | Typing — 타입 힌트 심화 | `Protocol`, `Generic`, `TypeVar`, `Literal`, `overload` |
 | 11 | Testing 전략 | pytest fixture, mock, property-based testing, 테스트 격리 |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 7 완료** — Day 8 (Decorator — 함수형 패턴과 실무 활용)부터 계속.
+**Day 8 완료** — Day 9 (Python 실행 모델)부터 계속.
 
 ## 습득한 핵심 개념
 
@@ -63,5 +63,10 @@
 - [x] `property`의 descriptor 기반 구현 원리 (Day 7)
 - [x] 커스텀 descriptor 설계 — `__set_name__`, 상태 공유 함정 회피 (Day 7)
 - [x] `functools.cached_property`가 non-data descriptor인 설계 의도 (Day 7)
+- [x] Decorator의 본질 — 정의 시점 1회 적용 vs 매 호출 실행 (Day 8)
+- [x] `functools.wraps`가 보존하는 메타데이터와 없을 때의 실무 문제 (Day 8)
+- [x] 인자 있는 decorator의 3단 중첩(팩토리) 구조 (Day 8)
+- [x] 데코레이터 스택의 적용 순서(아래→위) vs 실행 순서(위→아래) (Day 8)
+- [x] 클래스 기반 decorator(`__call__`)와 descriptor 상호작용 함정 (Day 8)
 
-- [ ] Decorator 구현 원리 (예정 Day 8)
+- [ ] Python 실행 모델 — 바이트코드, LEGB (예정 Day 9)
