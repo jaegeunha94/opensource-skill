@@ -10,19 +10,19 @@
 | 4 | 2026-07-03 | EC2 운영과 Auto Scaling 설계 | [0004-ec2-auto-scaling-design.html](lessons/0004-ec2-auto-scaling-design.html) |
 | 5 | 2026-07-04 | RDS 고가용성과 데이터 보호 | [0005-rds-high-availability-data-protection.html](lessons/0005-rds-high-availability-data-protection.html) |
 | 6 | 2026-07-05 | S3 설계와 보안 | [0006-s3-design-and-security.html](lessons/0006-s3-design-and-security.html) |
+| 7 | 2026-07-06 | ELB와 트래픽 설계 | [0007-elb-traffic-design.html](lessons/0007-elb-traffic-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | ELB와 트래픽 설계 | ALB vs NLB vs CLB, 헬스체크, 스티키 세션, HTTPS 종료, 다중 AZ 배포 |
 | 8 | CloudWatch와 운영 가시성 | 메트릭, 로그, 알람, 대시보드, Auto Scaling 연동, 비용 효율적 모니터링 |
 | 9 | 비용 최적화 전략 | 예약 인스턴스, Savings Plans, Spot, 리소스 태깅, Trusted Advisor, 비용 이상 탐지 |
 | 10 | 종합 아키텍처 설계 면접 — 웹 서비스 고가용성 설계 | 전 주제 통합, Multi-AZ + ASG + RDS + S3 + CloudFront 조합 설계 |
 
 ## 현재 학습 위치
 
-**Day 6 완료** — Day 7: ELB와 트래픽 설계로 진행 예정.
+**Day 7 완료** — Day 8: CloudWatch와 운영 가시성으로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -53,7 +53,11 @@
 - [x] CloudFront + OAC를 통한 비공개 정적 호스팅 패턴 (Day 6)
 - [x] 버전 관리/삭제 마커와 수명 주기 정책을 통한 보호·비용 설계 (Day 6)
 - [x] 스토리지 클래스별 조회 지연/비용 trade-off (Day 6)
-- [ ] ELB 트래픽 설계 (예정 Day 7)
+- [x] ALB vs NLB vs CLB 계층별 선택 기준 (Day 7)
+- [x] 헬스체크 설계와 장애 증폭 위험 (Day 7)
+- [x] Deregistration Delay를 통한 무중단 교체 (Day 7)
+- [x] 스티키 세션의 한계와 stateless 설계 (Day 7)
+- [x] TLS 종료 위치와 Cross-Zone Load Balancing (Day 7)
 - [ ] CloudWatch 운영 가시성 (예정 Day 8)
 - [ ] 비용 최적화 전략 (예정 Day 9)
 - [ ] 종합 아키텍처 설계 (예정 Day 10)

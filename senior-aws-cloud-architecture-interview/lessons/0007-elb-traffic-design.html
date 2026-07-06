@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — ELB와 트래픽 설계</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #222538;
+      --border: #2e3150;
+      --accent: #7c83ff;
+      --accent2: #50e3c2;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #e2e4f0;
+      --text2: #9da3c8;
+      --text3: #6b7099;
+      --good: #50e3c2;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card {
+      border-left: 4px solid var(--accent);
+    }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card {
+      border-left: 4px solid var(--accent2);
+      background: #1a2430;
+    }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card {
+      border-left: 4px solid var(--warn);
+      background: #1f1d10;
+    }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card {
+      border-left: 4px solid #a07bff;
+      background: #1a1828;
+    }
+    .answer-card .card-label { color: #a07bff; }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box {
+      background: #0f2420;
+      border: 1px solid var(--good);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box {
+      background: #28100f;
+      border: 1px solid var(--weak);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.91rem;
+      margin-top: 0.5rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:nth-child(odd) td { background: #15182a; }
+    .rubric-table tr:nth-child(even) td { background: #1a1d2e; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .pillar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1.2rem;
+    }
+    .pillar-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+    }
+    .pillar-name { font-weight: 700; color: var(--accent); margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .pillar-key { font-size: 0.83rem; color: var(--text2); }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.2rem;
+      margin-bottom: 0.7rem;
+    }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.1rem;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.78rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .misconception {
+      background: #1f1520;
+      border: 1px solid #6e3880;
+      border-radius: 8px;
+      padding: 1rem 1.3rem;
+      margin-bottom: 0.9rem;
+    }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 0.75rem;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      margin: 0.15rem 0.15rem 0.15rem 0;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 7 · AWS / Cloud Architecture 인터뷰 대비</div>
+    <h1>ELB와 트래픽 설계</h1>
+    <p class="subtitle">
+      ALB vs NLB vs CLB 선택 기준 · 헬스체크와 Deregistration Delay · 스티키 세션의 대가 · TLS 종료 위치 · 다중 AZ 트래픽 분산과 Cross-Zone Load Balancing
+    </p>
+  </header>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "여러 AZ에 걸쳐 EC2 인스턴스를 띄운 웹 서비스가 있습니다. 트래픽을 어떻게 분산시키고, 인스턴스 하나가 장애가 나거나 배포로 재시작될 때 사용자가 오류를 겪지 않도록 어떻게 설계하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"ALB, NLB, CLB의 차이는 무엇이고, 각각 언제 선택하나요?"</li>
+        <li>"헬스체크에서 정상으로 나오는데도 사용자 요청이 가끔 실패합니다. 왜 이런 일이 생길 수 있을까요?"</li>
+        <li>"로그인 세션을 서버 메모리에 저장하고 있는데, 로드밸런서에서 어떻게 다뤄야 하나요? 스티키 세션이 만능인가요?"</li>
+        <li>"HTTPS를 어디서 종료(terminate)해야 하나요? ALB에서 끝내도 되는 이유는 무엇인가요?"</li>
+        <li>"배포 중 인스턴스를 교체할 때 진행 중이던 사용자 요청이 갑자기 끊기는 문제가 있습니다. 원인과 해결책은?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">ALB vs NLB vs CLB</span>
+      <span class="tag">Target Group</span>
+      <span class="tag">헬스체크</span>
+      <span class="tag">Deregistration Delay</span>
+      <span class="tag">스티키 세션</span>
+      <span class="tag">TLS 종료</span>
+      <span class="tag">Cross-Zone Load Balancing</span>
+      <span class="tag">다중 AZ 배포</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>로드밸런서의 기본 역할 — "여러 서버를 하나의 주소처럼 보이게 한다"</h3>
+    <p>
+      로드밸런서(ELB, Elastic Load Balancing)는 사용자 트래픽을 받아 <strong>등록된 여러 대상(EC2 인스턴스, 컨테이너, IP, Lambda 등)에게 분산</strong>시키는 계층이다. 사용자는 로드밸런서의 DNS 이름 하나만 알면 되고, 실제로 몇 대의 서버가 뒤에서 트래픽을 처리하는지, 그중 몇 대가 죽었는지는 신경 쓸 필요가 없다. 이 "단일 진입점 뒤에 여러 대상을 숨긴다"는 개념이 고가용성 설계의 출발점이다 — 서버 한 대가 죽어도 로드밸런서가 나머지 살아있는 대상으로만 트래픽을 보내면 사용자 입장에서는 서비스가 계속된다.
+    </p>
+
+    <h3>세 종류의 로드밸런서 — 어느 계층에서 트래픽을 보는가</h3>
+    <p>
+      AWS의 로드밸런서는 겉보기엔 비슷해 보이지만, <strong>OSI 모델의 어느 계층에서 트래픽을 이해하고 판단하는지</strong>가 근본적으로 다르다. 이 차이를 계층 관점에서 설명하지 못하면 "왜 굳이 세 종류가 필요한가"에 답할 수 없다.
+    </p>
+    <div class="pillar-grid">
+      <div class="pillar-box">
+        <div class="pillar-name">ALB (Application Load Balancer) — L7</div>
+        <div class="pillar-key">HTTP/HTTPS 요청의 내용(경로, 호스트 헤더, 쿼리스트링)을 보고 라우팅한다. 마이크로서비스별 경로 기반 라우팅, 컨테이너 기반 서비스에 표준 선택지.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">NLB (Network Load Balancer) — L4</div>
+        <div class="pillar-key">TCP/UDP 패킷 단위로만 판단해 극도로 낮은 지연과 초당 수백만 연결 처리가 가능하다. 고정 IP가 필요하거나, HTTP가 아닌 프로토콜(게임 서버, IoT, gRPC 저수준)을 다룰 때 선택.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">CLB (Classic Load Balancer) — 레거시</div>
+        <div class="pillar-key">EC2-Classic 시대의 구형 로드밸런서. L4/L7 기능이 제한적이고 신규 기능이 추가되지 않는다. AWS는 신규 설계에 CLB를 권장하지 않으며, 기존 CLB는 ALB/NLB로 마이그레이션하는 것이 표준 권고다.</div>
+      </div>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">선택 기준을 한 문장으로</div>
+      <p>
+        "요청 내용을 보고 라우팅해야 하는가?"에 예스면 ALB, "TCP/UDP 자체를 초저지연·초고성능으로 처리해야 하는가"에 예스면 NLB, CLB는 기존 워크로드를 마이그레이션하는 경우가 아니면 신규 설계에서 선택하지 않는다.
+      </p>
+    </div>
+
+    <h3>Target Group — "로드밸런서와 실제 서버 사이의 계약서"</h3>
+    <p>
+      ALB/NLB는 인스턴스에 직접 연결되지 않고 <strong>Target Group</strong>이라는 논리적 그룹을 거친다. Target Group은 헬스체크 규칙, 라우팅 대상(인스턴스 ID, IP, Lambda), 프로토콜/포트를 정의한다. Auto Scaling Group이 인스턴스를 새로 만들거나 종료할 때, 그 인스턴스를 Target Group에 등록/해제하는 방식으로 로드밸런서와 자동으로 연동된다. 이 연동 구조를 모르면 "Auto Scaling으로 인스턴스를 늘렸는데 로드밸런서가 트래픽을 안 보낸다"는 상황을 진단할 수 없다.
+    </p>
+
+    <h3>헬스체크 — "정상이라고 믿는 것과 실제로 정상인 것의 차이"</h3>
+    <p>
+      로드밸런서는 주기적으로 각 대상에 헬스체크 요청(예: <code>GET /health</code>)을 보내고, 연속으로 실패하면 <strong>Unhealthy</strong>로 표시해 그 대상으로는 더 이상 새 트래픽을 보내지 않는다. 여기서 핵심 함정은 <strong>헬스체크 엔드포인트가 실제 서비스 상태를 정확히 반영하지 않을 수 있다</strong>는 점이다. 예를 들어 <code>/health</code>가 단순히 <code>200 OK</code>만 반환하도록 만들어져 있으면, 애플리케이션 서버는 떠 있지만 DB 커넥션이 끊긴 상태에서도 "정상"으로 보고돼 사용자 요청은 계속 실패하는데 로드밸런서는 그 대상을 계속 살아있다고 믿는다.
+    </p>
+    <div class="card why-card">
+      <div class="card-label">좋은 헬스체크 엔드포인트의 조건</div>
+      <p>
+        의미 있는 헬스체크는 "프로세스가 떠 있는가"가 아니라 <strong>"이 인스턴스가 실제 요청을 처리할 수 있는 상태인가"</strong>를 확인해야 한다. 다만 헬스체크 안에서 DB 쿼리처럼 무거운 검사를 하면, DB가 일시적으로 느려질 때 <strong>모든 인스턴스가 동시에 Unhealthy로 빠지는</strong> 역효과(cascading failure)가 날 수 있다. 그래서 실무에서는 "핵심 의존성 연결 여부는 확인하되, 매 헬스체크마다 무거운 쿼리를 날리지 않고 캐시된 상태를 참조"하는 절충이 표준이다.
+      </p>
+    </div>
+
+    <h3>Deregistration Delay(Connection Draining) — "갑자기 끊는 게 아니라 곱게 빼는 것"</h3>
+    <p>
+      Auto Scaling이 인스턴스를 종료하거나, 배포 중 구버전 인스턴스를 빼야 할 때, 로드밸런서가 그 인스턴스를 즉시 Target Group에서 제거해버리면 <strong>그 순간 처리 중이던 요청이 강제로 끊긴다</strong>. Deregistration Delay(기본 300초)는 "새로운 요청은 더 이상 이 대상으로 보내지 않되, 이미 진행 중인 요청은 지정된 시간 동안 마저 끝낼 수 있게 기다려주는" 유예 시간이다. 이 값을 0으로 두거나 지나치게 짧게 설정하면 배포·스케일인 때마다 진행 중인 요청이 끊기는 사용자 체감 오류가 발생한다. 반대로 너무 길게 두면 스케일인/배포 속도가 느려진다.
+    </p>
+
+    <h3>스티키 세션(Sticky Session) — "같은 사용자를 같은 서버로 계속 보낸다"</h3>
+    <p>
+      애플리케이션이 로그인 세션 같은 상태를 <strong>서버 로컬 메모리</strong>에 저장하고 있으면, 사용자의 두 번째 요청이 다른 서버로 가는 순간 "로그인이 풀리는" 문제가 생긴다. 스티키 세션은 쿠키를 이용해 <strong>같은 사용자의 요청을 항상 같은 대상으로 고정</strong>시켜 이 문제를 임시로 회피한다.
+    </p>
+    <div class="card why-card">
+      <div class="card-label">스티키 세션은 해결책이 아니라 임시방편이다</div>
+      <p>
+        스티키 세션을 쓰면 <strong>부하가 대상 간에 고르게 분산되지 않는다</strong> — 특정 서버에 오래 머무는 무거운 세션들이 몰리면 그 서버만 과부하가 걸린다. 또한 그 서버가 재시작되거나 Auto Scaling으로 종료되면 해당 세션은 그대로 유실된다. 근본적인 해결책은 세션 상태를 서버 로컬이 아니라 <strong>Redis/ElastiCache 같은 외부 세션 스토어에 저장해 애플리케이션을 완전한 stateless로 만드는 것</strong>이다. 인터뷰에서 "스티키 세션을 쓰겠다"고만 답하면 미드레벨 답변이고, "근본적으로는 stateless 설계로 가고, 스티키 세션은 마이그레이션 과도기의 임시 조치로만 쓴다"고 답하는 것이 시니어 답변이다.
+      </p>
+    </div>
+
+    <h3>TLS 종료 위치 — "암호화를 어디서 풀 것인가"</h3>
+    <p>
+      HTTPS 트래픽은 어느 지점에서 복호화(TLS Termination)할지 선택해야 한다. 실무 표준은 <strong>ALB/NLB에서 TLS를 종료</strong>시키는 것이다. 이렇게 하면 (1) 인증서 관리(ACM 연동, 자동 갱신)가 로드밸런서 한 곳에 집중되고, (2) 백엔드 인스턴스는 암호화/복호화 연산 부담 없이 평문 HTTP로 통신해 CPU 자원을 절약하며, (3) ALB의 요청 내용 기반 라우팅(L7)이 가능해진다.
+    </p>
+    <div class="card concept-card">
+      <div class="card-label">엔드투엔드 암호화가 필요할 때 — TLS Passthrough / Re-encryption</div>
+      <p>
+        규제 요구나 심층 방어 정책상 <strong>로드밸런서 뒤 구간도 암호화되어야 하는 경우</strong>가 있다. NLB는 TLS를 아예 통과(Passthrough)시켜 백엔드 인스턴스가 직접 복호화하게 할 수 있고, ALB는 뒤쪽 구간에서 다시 암호화(Re-encryption)해 HTTPS로 대상까지 보낼 수 있다. 다만 이 경우 ALB는 요청 내용을 볼 수 없으므로(Passthrough 시) L7 라우팅 기능을 포기하는 trade-off가 따른다.
+      </p>
+    </div>
+
+    <h3>다중 AZ 배포와 Cross-Zone Load Balancing</h3>
+    <p>
+      ELB는 여러 AZ에 걸쳐 <strong>최소 2개 이상의 AZ</strong>에 등록하는 것이 권장된다. 한 AZ가 통째로 장애가 나도, 로드밸런서가 살아있는 다른 AZ의 인스턴스로만 트래픽을 보내면 서비스는 계속된다. 여기서 <strong>Cross-Zone Load Balancing</strong> 설정이 중요한데, 이 값이 꺼져 있으면 로드밸런서는 <strong>자신이 받은 요청을 그 요청이 들어온 AZ 안의 대상에게만</strong> 분산한다. 만약 AZ-A에 인스턴스 4대, AZ-B에 인스턴스 1대가 있는 상태에서 Cross-Zone이 꺼져 있으면, 각 AZ로 균등하게 들어오는 트래픽이 AZ-B의 인스턴스 1대에 과도하게 몰리는 <strong>불균형</strong>이 생긴다. Cross-Zone을 켜면 로드밸런서가 AZ 경계를 넘어 전체 대상 풀에 고르게 분산한다(ALB는 기본 활성화, NLB는 기본 비활성화이며 AZ 간 트래픽 전송에 비용이 발생할 수 있다는 점을 함께 고려해야 한다).
+    </p>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>로드밸런서 종류를 계층(L4/L7) 기준으로 구분하는가:</strong> 단순히 이름을 아는 것이 아니라 "이 요구사항엔 왜 ALB가 아니라 NLB인가"를 계층 기준으로 설명할 수 있는가.</li>
+        <li><strong>헬스체크의 함정을 아는가:</strong> "정상"이 곧 "요청을 처리할 수 있는 상태"를 의미하지 않을 수 있다는 것, 그리고 헬스체크 자체가 장애를 증폭시킬 수 있다는 것을 이해하는가.</li>
+        <li><strong>무중단 배포/스케일인에 대한 감각:</strong> Deregistration Delay 없이 인스턴스를 빼면 진행 중인 요청이 끊긴다는 것을 실제 장애 시나리오로 설명할 수 있는가.</li>
+        <li><strong>상태(state) 설계에 대한 판단력:</strong> 스티키 세션을 "정답"이 아니라 "임시방편"으로 인식하고, 근본 해결책(외부 세션 스토어)을 아는가.</li>
+        <li><strong>AZ 장애를 가정한 설계:</strong> 다중 AZ 등록만으로 충분하지 않고, Cross-Zone 설정에 따라 실제 트래픽 분산 결과가 달라진다는 것을 아는가.</li>
+      </ul>
+    </div>
+
+    <p>
+      Day 4(EC2/Auto Scaling)에서 "장애 난 인스턴스를 자동으로 교체하는 방법"을 다뤘다면, Day 7(ELB)은 <strong>그 교체가 일어나는 순간에도 사용자가 오류를 겪지 않게 만드는 트래픽 계층</strong>을 다룬다. Auto Scaling만으로는 무중단이 보장되지 않는다 — 인스턴스가 교체되는 그 짧은 순간을 로드밸런서의 헬스체크와 Deregistration Delay가 어떻게 흡수하는지가 실제 가용성을 결정한다. 인터뷰어는 이 두 주제를 연결해서 사고하는지를 자주 확인한다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 1 — 배포할 때마다 일부 사용자 요청이 실패하는 문제</div>
+      <p>
+        롤링 배포 중 구버전 인스턴스를 즉시 종료하도록 설정되어 있었고, Deregistration Delay가 0에 가깝게 짧게 설정돼 있었다. 배포할 때마다 해당 인스턴스가 처리 중이던 요청이 강제로 끊기며 소수의 사용자가 오류를 겪었다.
+        원인 파악 후 Deregistration Delay를 애플리케이션의 평균 요청 처리 시간을 고려해 60초로 늘리고, 배포 스크립트도 "Unhealthy 전환 → 유예 시간 대기 → 종료" 순서를 명시적으로 따르도록 수정했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 2 — 헬스체크는 정상인데 사용자 오류가 발생</div>
+      <p>
+        헬스체크 엔드포인트가 단순히 <code>200 OK</code>만 반환하도록 만들어져 있어, DB 커넥션 풀이 고갈된 인스턴스도 계속 Healthy로 표시됐다. 로드밸런서는 계속 그 인스턴스로 트래픽을 보냈고, 사용자는 5xx 오류를 겪었다.
+        이후 헬스체크 엔드포인트를 "DB 커넥션 풀에서 커넥션을 하나 빌릴 수 있는지"까지 가볍게 확인하도록 개선했고, 동시에 모든 인스턴스가 동시에 Unhealthy로 빠지는 것을 막기 위해 헬스체크 임계값(연속 실패 횟수)을 신중하게 조정했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 3 — 스티키 세션 의존으로 인한 배포 시 세션 유실</div>
+      <p>
+        세션을 서버 메모리에 저장하고 스티키 세션으로 운영하던 서비스가, Auto Scaling으로 인스턴스가 교체될 때마다 그 인스턴스에 고정돼 있던 사용자들의 로그인이 풀리는 불만을 받았다.
+        세션 저장소를 ElastiCache(Redis)로 옮겨 애플리케이션을 stateless로 전환한 뒤에는, 어떤 인스턴스로 요청이 가도 세션이 유지되었고 스티키 세션 설정도 제거할 수 있었다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 4 — 특정 AZ의 인스턴스만 과부하가 걸리는 현상</div>
+      <p>
+        Auto Scaling Group이 한 AZ에서만 일시적으로 인스턴스 기동에 실패해 AZ 간 인스턴스 수가 불균형해졌는데, NLB의 Cross-Zone Load Balancing이 꺼져 있어 인스턴스 수가 적은 AZ의 서버들에 트래픽이 과도하게 몰렸다.
+        Cross-Zone을 활성화해 AZ 경계와 무관하게 전체 대상 풀에 고르게 분산하도록 수정했고, 이로 인해 발생하는 AZ 간 데이터 전송 비용은 트래픽 규모 대비 감내할 수준으로 판단해 수용했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 5 — TLS 종료를 인스턴스에서 처리하다 인증서 만료로 장애</div>
+      <p>
+        각 EC2 인스턴스가 개별적으로 인증서를 관리하며 HTTPS를 직접 종료하던 구조에서, 갱신 자동화가 일부 인스턴스에만 누락되어 인증서 만료로 일부 요청이 브라우저 경고와 함께 실패했다.
+        ALB로 TLS 종료를 이관하고 ACM(AWS Certificate Manager)으로 인증서를 자동 갱신하도록 바꾼 뒤에는 인증서 관리가 한 곳으로 집중되어 동일한 사고가 재발하지 않았다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>면접에서 "트래픽 분산과 무중단 운영을 어떻게 설계하시겠습니까"라는 질문을 받으면, 아래 순서로 생각하고 답변하라.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>요구사항에 맞는 로드밸런서 종류 선택</strong>
+        <p>HTTP 요청 내용 기반 라우팅이 필요하면 ALB, TCP/UDP 초저지연·고정 IP가 필요하면 NLB를 선택하고, CLB는 신규 설계에서 배제한다고 먼저 밝힌다.</p>
+      </li>
+      <li>
+        <strong>Target Group과 다중 AZ 등록</strong>
+        <p>로드밸런서를 최소 2개 이상의 AZ에 걸쳐 등록하고, Auto Scaling Group과 Target Group을 연동해 인스턴스 등록/해제가 자동화되도록 한다.</p>
+      </li>
+      <li>
+        <strong>의미 있는 헬스체크 설계</strong>
+        <p>헬스체크 엔드포인트가 실제 요청 처리 가능 여부를 반영하도록 만들되, 무거운 검사로 인해 전체 대상이 동시에 Unhealthy로 빠지는 위험은 피한다.</p>
+      </li>
+      <li>
+        <strong>무중단 교체를 위한 Deregistration Delay</strong>
+        <p>배포·스케일인 시 진행 중인 요청을 안전하게 끝낼 수 있도록 애플리케이션의 평균/최대 처리 시간에 맞는 유예 시간을 설정한다.</p>
+      </li>
+      <li>
+        <strong>상태 설계 — stateless를 기본으로</strong>
+        <p>세션을 서버 로컬에 두지 않고 외부 스토어(Redis 등)로 분리해 stateless를 지향하며, 마이그레이션 과도기에만 스티키 세션을 임시로 사용한다.</p>
+      </li>
+      <li>
+        <strong>TLS 종료 위치와 인증서 관리</strong>
+        <p>기본적으로 ALB/NLB에서 TLS를 종료해 인증서 관리를 한 곳으로 집중시키고, 엔드투엔드 암호화가 규제상 필요할 때만 Re-encryption/Passthrough를 검토한다.</p>
+      </li>
+      <li>
+        <strong>Cross-Zone Load Balancing 검토</strong>
+        <p>AZ별 인스턴스 수가 불균형해질 가능성이 있다면 Cross-Zone 설정과 그로 인한 AZ 간 전송 비용을 함께 언급한다.</p>
+      </li>
+    </ol>
+
+    <div class="card why-card">
+      <div class="card-label">핵심 팁</div>
+      <p>"로드밸런서를 두겠다"에서 멈추지 말고, <strong>"인스턴스가 교체되는 그 순간에 진행 중인 요청은 어떻게 되는가"</strong>까지 이어서 설명하라. 그것이 가용성을 실제 운영 시나리오로 사고하고 있다는 신호다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — 다중 AZ 웹 서비스의 트래픽 설계</div>
+      <p>
+        "이 서비스는 HTTP 요청이고 경로 기반 라우팅도 필요할 가능성이 있으므로 ALB를 선택하겠습니다. CLB는 신규 설계에서 고려하지 않고, 만약 TCP 자체를 초저지연으로 처리해야 하는 별도 요구가 있다면 그 부분만 NLB로 분리하겠습니다.
+      </p>
+      <p>
+        ALB는 최소 두 개 이상의 AZ에 걸쳐 등록하고, Auto Scaling Group을 Target Group에 연동해 인스턴스가 자동으로 등록/해제되도록 하겠습니다. 헬스체크는 단순 <code>200 OK</code>가 아니라, DB 커넥션 풀에서 커넥션을 하나 빌릴 수 있는지처럼 실제 요청 처리 가능 여부를 반영하는 경량 체크로 구성하겠습니다. 다만 이 체크가 너무 무거우면 DB가 잠깐 느려질 때 모든 인스턴스가 동시에 Unhealthy로 빠질 위험이 있으므로, 캐시된 상태를 활용해 가볍게 유지하겠습니다.
+      </p>
+      <p>
+        배포나 스케일인으로 인스턴스를 뺄 때 진행 중인 요청이 끊기지 않도록, Deregistration Delay를 애플리케이션의 평균 요청 처리 시간을 고려해 적절한 값(예: 60초)으로 설정하겠습니다.
+      </p>
+      <p>
+        세션 관리는 서버 로컬 메모리가 아니라 ElastiCache(Redis) 같은 외부 스토어에 저장해 애플리케이션을 stateless로 유지하겠습니다. 이렇게 하면 어떤 인스턴스로 요청이 가도 세션이 유지되고, 스티키 세션에 의존하지 않아 부하가 대상 간에 고르게 분산됩니다. 만약 레거시 이유로 스티키 세션이 당장 필요하다면, 이는 근본 해결책이 아니라 마이그레이션 과도기의 임시 조치로 명확히 구분하겠습니다.
+      </p>
+      <p>
+        TLS는 ALB에서 종료해 ACM으로 인증서 발급과 자동 갱신을 관리하고, 백엔드 인스턴스와는 평문 HTTP로 통신해 암호화 연산 부담을 줄이겠습니다. 규제상 백엔드 구간까지 암호화가 필요하다면 그때는 Re-encryption을 검토하겠습니다.
+      </p>
+      <p>
+        마지막으로 AZ별 인스턴스 수가 일시적으로 불균형해질 가능성을 감안해 Cross-Zone Load Balancing을 활성화하고, 이로 인해 발생할 수 있는 AZ 간 데이터 전송 비용은 트래픽 규모 대비 감내 가능한 수준인지 확인하겠습니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① 로드밸런서 종류를 계층(L4/L7)과 요구사항 기준으로 선택함 ② 헬스체크를 "실제 처리 가능 여부"와 "장애 증폭 위험"이라는 두 축으로 함께 설계함 ③ Deregistration Delay로 무중단 교체를 구체적으로 설명함 ④ 스티키 세션을 정답이 아닌 임시방편으로 명확히 구분함 ⑤ TLS 종료 위치와 Cross-Zone 설정까지 운영 관점에서 근거를 붙여 설명함
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "ALB 하나로 여러 마이크로서비스를 다 처리할 수 있는데, 왜 서비스마다 별도 로드밸런서를 두는 경우가 있나요?"</div>
+      <div class="followup-a">
+        <p>ALB의 경로/호스트 기반 라우팅(Listener Rule)을 이용하면 실제로 하나의 ALB로 여러 서비스를 라우팅할 수 있고, 비용과 관리 포인트를 줄이는 데 유리하다. 다만 이렇게 하면 모든 서비스가 <strong>같은 장애 반경(blast radius)</strong>을 공유하게 된다 — ALB 자체나 그 앞단 설정에 문제가 생기면 연결된 모든 서비스가 동시에 영향을 받는다.</p>
+        <p>트래픽 규모가 크거나, 서비스별로 독립적인 장애 격리·배포 주기·보안 정책이 필요하다면 서비스별로 별도 로드밸런서를 두는 것이 맞다. "하나로 통합 vs 서비스별 분리"는 관리 비용과 장애 격리 사이의 trade-off로 설명해야 한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "헬스체크 간격과 임계값(threshold)은 어떤 기준으로 정하나요?"</div>
+      <div class="followup-a">
+        <p>너무 짧은 간격/낮은 임계값은 일시적인 네트워크 지연이나 GC 일시정지만으로도 정상 인스턴스를 Unhealthy로 오판해 불필요하게 대상 풀에서 빼버릴 수 있다(false positive). 반대로 너무 길면 실제로 장애 난 인스턴스가 오랫동안 트래픽을 계속 받아 사용자 오류가 누적된다.</p>
+        <p>기준은 "일시적인 흔들림에는 관대하되, 실제 장애는 사용자 체감 이전에 감지"하는 지점을 찾는 것이다. 예를 들어 5초 간격에 연속 2~3회 실패를 Unhealthy 기준으로 잡으면, 최악의 경우에도 약 10~15초 안에 트래픽 흐름에서 배제되면서도 일회성 지연에는 흔들리지 않는다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "NLB에서 고정 IP가 필요한 이유는 구체적으로 어떤 상황인가요?"</div>
+      <div class="followup-a">
+        <p>ALB는 DNS 이름으로 접근하고 내부적으로 여러 IP를 가지며 그 IP가 바뀔 수 있어, 파트너사가 방화벽 화이트리스트에 "IP 하나"를 등록해야 하는 연동 시나리오에는 맞지 않는다. NLB는 각 AZ마다 고정된 정적 IP(또는 Elastic IP)를 가질 수 있어, 이런 IP 기반 화이트리스트 요구가 있는 외부 연동에 적합하다.</p>
+        <p>또한 매우 높은 처리량과 낮은 지연이 필요한 프로토콜(예: 게임 서버의 UDP 트래픽)에도 NLB가 표준 선택이다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "스티키 세션을 쓰면 부하가 불균형해진다고 했는데, 실제로 얼마나 심각한 문제인가요?"</div>
+      <div class="followup-a">
+        <p>세션의 성격에 따라 다르다. 짧고 가벼운 세션이 균등하게 분포되면 큰 문제가 아닐 수 있지만, 장바구니처럼 세션이 오래 지속되고 무거운 상태를 담는 경우, 특정 시점에 우연히 트래픽이 몰린 서버에 무거운 세션들이 누적되어 그 서버만 지속적으로 과부하 상태가 되는 "코끼리 서버(hot instance)" 문제가 생길 수 있다.</p>
+        <p>이 위험을 감수하면서까지 스티키 세션을 쓸 이유는 거의 없다 — 세션 스토어 분리 비용이 크지 않은 개선이므로, 시니어 답변에서는 스티키 세션을 오래 유지하는 선택 자체를 재검토 대상으로 제시하는 것이 자연스럽다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "ALB에서 TLS를 종료하면 백엔드 구간은 평문인데, 이게 보안상 괜찮은가요?"</div>
+      <div class="followup-a">
+        <p>ALB와 백엔드 인스턴스 사이의 트래픽은 VPC 내부, 즉 AWS가 물리적으로 통제하는 네트워크 안에서만 이동하며 외부에서 직접 스니핑할 수 있는 경로가 아니다. 대부분의 위협 모델(외부 공격자가 인터넷 구간에서 트래픽을 가로채는 시나리오)에서는 ALB까지의 구간 암호화로 충분하다.</p>
+        <p>다만 PCI-DSS, HIPAA 등 특정 컴플라이언스 요구사항이 "저장 및 전송 구간 전체 암호화"를 명시적으로 요구하거나, 내부자 위협까지 고려한 심층 방어 정책이 있다면 Re-encryption으로 백엔드 구간까지 HTTPS를 유지하는 것이 맞다. 이는 보편적 정답이 아니라 위협 모델과 컴플라이언스 요구에 따라 달라지는 결정이다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>ALB/NLB/CLB를 OSI 계층과 요구사항(라우팅 방식, 프로토콜, 고정 IP) 기준으로 구분해서 선택한다</li>
+          <li>헬스체크가 "정상"으로 보고해도 실제 요청 처리에 실패할 수 있는 시나리오를 안다</li>
+          <li>Deregistration Delay를 무중단 배포/스케일인과 연결해서 설명한다</li>
+          <li>스티키 세션을 임시방편으로 규정하고 stateless 설계를 근본 대안으로 제시한다</li>
+          <li>Cross-Zone Load Balancing이 AZ 간 트래픽 균형과 비용에 미치는 영향을 함께 언급한다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"로드밸런서를 두겠다"고만 하고 ALB/NLB 선택 근거를 말하지 못한다</li>
+          <li>헬스체크가 통과하면 그 인스턴스는 항상 정상이라고 가정한다</li>
+          <li>인스턴스 종료 시 진행 중인 요청이 어떻게 되는지 언급하지 않는다</li>
+          <li>스티키 세션을 세션 관리의 완결된 해결책처럼 제시한다</li>
+          <li>다중 AZ에 등록만 하면 트래픽이 자동으로 AZ 간 균등 분산된다고 단정한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        "로드밸런서를 두면 고가용성이 확보된다"는 답은 <strong>로드밸런서를 두는 것과, 그 로드밸런서를 실제 장애 상황에 맞게 세밀하게 튜닝하는 것의 차이</strong>를 놓친 것이다. 헬스체크 설계, Deregistration Delay, 세션 처리 방식 하나하나가 어긋나면 로드밸런서가 있어도 사용자는 오류를 겪는다. 시니어는 "로드밸런서가 있다"가 아니라 "이 설정들이 실제 장애 시나리오에서 어떻게 동작하는가"를 구체적으로 추론할 수 있어야 한다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"ALB가 NLB보다 기능이 많으니 항상 ALB를 쓰는 게 낫다."</p>
+      <div class="mc-right">실제</div>
+      <p>ALB는 HTTP/HTTPS 요청을 해석하는 오버헤드가 있어 NLB만큼의 초저지연·초고처리량을 내지 못한다. TCP/UDP 자체를 다루거나 고정 IP, 극한의 성능이 필요한 워크로드에는 NLB가 더 적합하다. "기능이 많다"와 "이 상황에 적합하다"는 다른 기준이다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"헬스체크에서 정상(Healthy)으로 나오면 그 인스턴스는 실제 요청도 문제없이 처리한다."</p>
+      <div class="mc-right">실제</div>
+      <p>헬스체크 엔드포인트가 실제 의존성(DB, 캐시, 외부 API) 상태를 반영하도록 설계되지 않았다면, 프로세스는 떠 있지만 실질적으로 요청을 처리할 수 없는 상태에서도 계속 Healthy로 보고될 수 있다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"Auto Scaling이 인스턴스를 종료하면 로드밸런서가 즉시 그 인스턴스를 제외하므로 별도 설정이 필요 없다."</p>
+      <div class="mc-right">실제</div>
+      <p>Deregistration Delay 설정이 없거나 너무 짧으면 그 인스턴스가 처리하던 진행 중인 요청이 강제로 끊긴다. 무중단 교체를 위해서는 애플리케이션의 요청 처리 시간에 맞는 유예 시간을 명시적으로 설정해야 한다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"스티키 세션을 켜두면 세션 관리 문제는 완전히 해결된 것이다."</p>
+      <div class="mc-right">실제</div>
+      <p>스티키 세션은 부하 불균형을 유발하고, 고정된 대상 인스턴스가 종료되면 그 세션은 그대로 유실된다. 근본 해결책은 세션을 외부 스토어로 분리해 애플리케이션을 stateless로 만드는 것이며, 스티키 세션은 과도기적 임시 조치로만 취급해야 한다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"인스턴스를 여러 AZ에 등록하기만 하면 로드밸런서가 항상 모든 대상에 균등하게 트래픽을 분산한다."</p>
+      <div class="mc-right">실제</div>
+      <p>Cross-Zone Load Balancing이 꺼져 있으면 각 로드밸런서 노드는 자신이 속한 AZ 내부의 대상에게만 트래픽을 분산한다. AZ별 인스턴스 수가 다르면 인스턴스 수가 적은 AZ의 서버들이 과부하를 겪을 수 있다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>로드밸런서 선택 근거</strong></td>
+          <td>OSI 계층과 요구사항(라우팅, 프로토콜, 고정 IP)을 기준으로 ALB/NLB를 구분해서 선택한다</td>
+          <td>ALB와 NLB가 다르다는 것은 알지만 선택 기준을 명확히 말하지 못한다</td>
+          <td>로드밸런서 종류를 구분하지 않고 "로드밸런서를 쓴다"로 답한다</td>
+        </tr>
+        <tr>
+          <td><strong>헬스체크 설계 감각</strong></td>
+          <td>헬스체크가 실제 처리 가능 여부를 반영해야 하며, 동시에 장애를 증폭시킬 수 있다는 것을 함께 설명한다</td>
+          <td>헬스체크가 필요하다는 것은 알지만 어떤 함정이 있는지 설명하지 못한다</td>
+          <td>헬스체크 통과 여부와 실제 서비스 정상 여부를 같다고 가정한다</td>
+        </tr>
+        <tr>
+          <td><strong>무중단 교체 이해</strong></td>
+          <td>Deregistration Delay를 배포/스케일인과 연결해 구체적인 값 설정 기준까지 설명한다</td>
+          <td>Deregistration Delay라는 개념은 알지만 왜 필요한지 설명하지 못한다</td>
+          <td>인스턴스 종료 시 진행 중인 요청 처리를 전혀 고려하지 않는다</td>
+        </tr>
+        <tr>
+          <td><strong>상태(state) 설계 판단</strong></td>
+          <td>스티키 세션을 임시방편으로 규정하고 stateless 전환을 근본 해결책으로 제시한다</td>
+          <td>스티키 세션을 알지만 그 한계는 설명하지 못한다</td>
+          <td>스티키 세션을 세션 관리의 정답으로 제시한다</td>
+        </tr>
+        <tr>
+          <td><strong>AZ 트래픽 분산 이해</strong></td>
+          <td>Cross-Zone Load Balancing의 동작과 비용 trade-off를 근거로 설명한다</td>
+          <td>다중 AZ 등록이 필요하다는 것은 알지만 Cross-Zone 개념은 모른다</td>
+          <td>AZ 등록만으로 트래픽이 항상 균등 분산된다고 가정한다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면, Day 8 CloudWatch와 운영 가시성에서 지금까지 다룬 컴퓨트(Day 4)·데이터(Day 5)·스토리지(Day 6)·트래픽(Day 7) 계층의 상태를 어떻게 관측하고, Auto Scaling과 알람을 연동해 장애를 조기에 감지하는지 이어서 다룬다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./0006-s3-design-and-security.html">← Day 6</a>
+    <a href="./index.html">목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>
