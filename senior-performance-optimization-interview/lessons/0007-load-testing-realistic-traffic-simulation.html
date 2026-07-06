@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — 부하 테스트 설계: 현실적인 트래픽 시뮬레이션 | 성능 최적화 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; color: #c8dae8; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .timeline { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1rem; font-size: 0.85rem; }
+    .timeline .row { display: flex; align-items: center; margin-bottom: 0.5rem; gap: 0.8rem; }
+    .timeline .row:last-child { margin-bottom: 0; }
+    .timeline .label { width: 190px; flex-shrink: 0; color: var(--text-muted); }
+    .timeline .bar-track { flex: 1; background: #0a0c12; border-radius: 4px; height: 1.4rem; position: relative; overflow: hidden; }
+    .timeline .bar { position: absolute; top: 0; bottom: 0; border-radius: 4px; display: flex; align-items: center; padding-left: 0.4rem; font-size: 0.75rem; color: #0a0c12; font-weight: 600; white-space: nowrap; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">성능 최적화 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 7
+  </nav>
+
+  <h1>Day 7 — 부하 테스트 설계: 현실적인 트래픽 시뮬레이션</h1>
+  <p class="subtitle">"부하 테스트를 했다"가 아니라 "실제 트래픽을 얼마나 정직하게 재현했는가"를 증명하는 능력 · 2026-07-06</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#patterns">부하 패턴 설계 — ramp-up, spike, soak, stress</a></li>
+      <li><a href="#tools">도구 선택 — k6, Locust, JMeter, wrk</a></li>
+      <li><a href="#isolate">부하 테스트 결과에서 병목 판별하기</a></li>
+      <li><a href="#practice">실무 연결</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"새로운 기능을 배포하기 전에 부하 테스트를 어떻게 설계하시겠어요? 실제 트래픽 패턴과 다르게 테스트하면 어떤 문제가 생기나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"부하 테스트에서는 초당 5,000 요청까지 문제없이 처리했는데, 실제 운영에서는 초당 1,000 요청 수준에서 이미 에러가 발생했습니다. 무엇이 잘못됐을까요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"부하 테스트 결과 응답 시간이 급격히 나빠지는 시점을 확인했습니다. 그 시점에서 병목이 애플리케이션 서버인지 DB인지 어떻게 구분하시겠어요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>Day 1~6이 "이미 발생한 병목을 찾아 원인을 특정하고 완화하는 능력"이었다면, Day 7은 그 반대 방향 — <strong>병목이 운영 환경에서 터지기 전에, 실험실 조건에서 미리 재현해 조기에 찾아내는 능력</strong>을 다룹니다. "부하 테스트를 돌려봤습니다"라는 말은 아무 의미가 없습니다. 면접관은 지원자가 <strong>부하 테스트 설계 자체가 실제 트래픽을 얼마나 정직하게 반영하는지</strong>를 검증하는 습관이 있는지, 그리고 테스트 결과에서 병목의 위치를 논리적으로 좁혀가는 절차가 있는지를 확인합니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>부하 패턴을 현실적으로 설계하는가</strong> — 요청을 균일하게 쏟아붓는 것이 아니라, 실제 사용자 행동(버스트, 리트라이, 세션 지속 시간)을 반영해 트래픽을 만드는가.</li>
+      <li><strong>테스트 환경과 운영 환경의 차이를 인지하는가</strong> — 캐시 웜업 상태, 데이터 볼륨, 네트워크 토폴로지, 커넥션 풀 크기 같은 조건이 다르면 결과도 무의미해진다는 것을 아는가.</li>
+      <li><strong>부하 테스트 결과에서 병목을 구조적으로 좁혀가는가</strong> — "느려졌다"에서 멈추지 않고, 앱 서버/DB/네트워크/외부 의존성 중 어디가 한계에 도달했는지 지표로 증명하는가.</li>
+      <li><strong>목표(SLO)를 먼저 정의하고 테스트를 설계하는가</strong> — "얼마나 빨라야 하는가"를 먼저 정하지 않은 채 막연히 부하를 올리기만 하는 것은 방향 없는 테스트라는 것을 아는가.</li>
+    </ul>
+
+    <p>10년차 이하의 전형적인 약한 패턴: "JMeter로 동시 사용자 1,000명 돌려봤는데 괜찮았습니다"에서 답이 끝남. 시니어는 "그 1,000명이 실제 사용자 행동 패턴(로그인 후 여러 페이지 이동, 일부는 장바구니만 보고 이탈)을 반영했는지, 테스트 데이터 볼륨이 운영 DB와 비슷했는지, 그리고 결과가 나빠진 지점에서 CPU/DB 커넥션/네트워크 중 무엇이 포화 상태였는지"까지 설명합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>부하 테스트(Load Test)란 — 다리의 하중 실험 비유</h3>
+    <p>새로 지은 다리를 개통하기 전, 실제 차량이 다니기 전에 미리 무거운 화물차를 여러 대 세워두고 다리가 버티는지 확인합니다. 소프트웨어의 부하 테스트도 똑같습니다. 실제 사용자가 몰리기 전에, 가상의 요청을 인위적으로 만들어 시스템에 흘려보내고, 시스템이 목표한 트래픽 수준에서 정상적으로 동작하는지 확인하는 것입니다. 다리 실험에서 실제 차량 무게 분포와 다른 하중(예: 한쪽에만 집중된 무게)을 쓰면 결과가 의미 없듯, 부하 테스트도 <strong>실제 트래픽 패턴과 얼마나 비슷한가</strong>가 결과의 신뢰도를 결정합니다.</p>
+
+    <h3>가상 사용자(Virtual User, VU)란 무엇인가</h3>
+    <p>부하 테스트 도구는 실제 브라우저나 사용자 대신, 요청을 자동으로 반복해서 보내는 스크립트를 여러 개 동시에 실행합니다. 이 스크립트 하나하나를 <strong>가상 사용자(VU)</strong>라고 부릅니다. "동시 사용자 1,000명 테스트"란 실제로 1,000개의 스크립트가 동시에 각자의 시나리오(로그인 → 목록 조회 → 상세 조회 → 주문)를 반복 실행하는 것을 의미합니다. 중요한 것은 VU 수 자체가 아니라, <strong>각 VU가 실제 사용자처럼 행동하는가</strong>입니다 — 실제 사용자는 페이지를 본 뒤 몇 초간 머물다가 다음 행동을 하는데, 이 "생각하는 시간(think time)"을 넣지 않으면 실제보다 훨씬 공격적인 트래픽이 만들어집니다.</p>
+
+    <h3>초당 요청 수(RPS/Throughput)와 동시 사용자 수의 차이</h3>
+    <p>동시 사용자 수(VU)와 초당 요청 수(RPS)는 다른 개념입니다. VU 1,000명이 각자 10초에 한 번씩 요청을 보낸다면 RPS는 대략 100 정도입니다. 반대로 VU 100명이 1초에 한 번씩 요청을 보내면 RPS는 100으로 동일하지만 서버가 느껴지는 부하 패턴은 다를 수 있습니다(예: 커넥션 수, 세션 상태 유지 비용). 면접에서 "동시 사용자 수"만 말하고 "초당 요청 수"를 말하지 않으면, 실제로 서버에 가해지는 부하를 정량화하지 못한 것으로 보입니다.</p>
+
+    <h3>Ramp-up이란 — 왜 요청을 한 번에 쏟아붓지 않는가</h3>
+    <p><strong>Ramp-up</strong>은 목표 부하까지 트래픽을 점진적으로 늘려가는 구간입니다. 처음부터 목표 부하(예: 5,000 RPS)를 한 번에 쏟아부으면, 시스템이 어느 지점부터 무너지기 시작하는지 정확히 알 수 없습니다 — 이미 임계점을 훌쩍 넘겨서 테스트가 시작된 셈이기 때문입니다. 트래픽을 0에서 목표치까지 서서히 올리면서 각 구간의 응답 시간과 에러율을 관찰하면, <strong>시스템이 감당할 수 있는 한계선(breaking point)</strong>을 훨씬 정확하게 찾을 수 있습니다. 이는 실제 트래픽 증가 양상(마케팅 이벤트로 트래픽이 서서히 몰리는 경우, 갑자기 스파이크가 오는 경우)에 따라서도 다르게 설계해야 합니다.</p>
+
+    <h3>포화(Saturation)와 병목(Bottleneck) — 가장 먼저 한계에 도달하는 자원</h3>
+    <p>시스템은 CPU, 메모리, DB 커넥션, 네트워크 대역폭, 스레드/이벤트 루프 등 여러 자원으로 구성됩니다. 부하를 올리다 보면 이 중 <strong>하나의 자원이 가장 먼저 100%에 가깝게 사용되며 한계에 도달</strong>합니다(포화). 이 자원이 전체 시스템 처리량을 결정하는 <strong>병목</strong>이 됩니다. 부하 테스트의 핵심 목적은 "언제 느려지는가"를 확인하는 것이 아니라 "무엇이 가장 먼저 한계에 도달하는가"를 찾는 것입니다. Day 1에서 다룬 USE Method(Utilization, Saturation, Errors)가 바로 이 단계에서 다시 등장합니다.</p>
+  </section>
+
+  <!-- 4. 부하 패턴 설계 -->
+  <section id="patterns">
+    <h2>4. 부하 패턴 설계 — ramp-up, spike, soak, stress</h2>
+
+    <p>목적에 따라 서로 다른 부하 패턴을 설계해야 합니다. "부하 테스트 한 번 돌렸다"가 아니라, 확인하려는 질문에 맞는 패턴을 선택했는지가 시니어와 주니어를 가르는 지점입니다.</p>
+
+    <table class="method-table">
+      <tr><th>패턴</th><th>목적</th><th>트래픽 모양</th><th>확인하는 것</th></tr>
+      <tr><td>Smoke Test</td><td>기본 동작 확인</td><td>매우 낮은 고정 부하 (VU 1~5)</td><td>테스트 스크립트와 환경 자체가 정상인지</td></tr>
+      <tr><td>Load Test</td><td>기대 트래픽 수준에서의 정상 동작 확인</td><td>목표 RPS까지 ramp-up 후 일정 시간 유지</td><td>SLO(목표 latency/error rate)를 만족하는지</td></tr>
+      <tr><td>Stress Test</td><td>시스템의 한계선(breaking point) 확인</td><td>목표치를 넘어 계속 증가시킴</td><td>어느 지점에서 에러율이 급증하고 무엇이 포화되는지</td></tr>
+      <tr><td>Spike Test</td><td>급격한 트래픽 폭증 대응력 확인</td><td>짧은 시간에 급격히 증가 후 급격히 감소</td><td>Auto Scaling 반응 속도, 큐잉/거절 동작</td></tr>
+      <tr><td>Soak Test (Endurance)</td><td>장시간 운영 시 누적 문제 확인</td><td>중간 수준 부하를 수 시간~하루 유지</td><td>메모리 누수, 커넥션 누수, 디스크/로그 누적 문제</td></tr>
+    </table>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> 블랙프라이데이 같은 이벤트 트래픽 대비라면 Spike Test가 핵심이고, 배치 처리 서버처럼 오래 켜져 있는 서비스라면 Soak Test에서 메모리 누수나 커넥션 누수가 드러납니다. 신규 기능 배포 전에는 보통 Load Test로 SLO 충족을 확인하고, 용량 계획(capacity planning)을 위해서는 Stress Test로 한계선을 찾습니다. "부하 테스트"라는 한 단어로 뭉뚱그리지 않고 목적에 맞는 패턴을 고르는 것 자체가 시니어의 신호입니다.
+    </div>
+
+    <h3>현실적인 트래픽 패턴 재현 — 균일한 부하의 함정</h3>
+    <p>가장 흔한 실수는 모든 VU가 동일한 간격으로 동일한 요청을 반복하는 것입니다. 실제 트래픽은 균일하지 않습니다: 특정 엔드포인트에 요청이 몰리고(예: 상품 상세 조회가 검색보다 10배 많음), 사용자 행동에 think time이 있고, 리트라이와 실패한 요청의 재시도가 섞여 있습니다. 현실적인 부하 테스트는 다음을 반영해야 합니다.</p>
+
+    <ul>
+      <li><strong>엔드포인트별 트래픽 비율</strong>: 실제 접근 로그(access log)를 분석해 어떤 엔드포인트가 얼마나 호출되는지 비율을 반영</li>
+      <li><strong>Think Time</strong>: 실제 사용자가 화면을 보고 다음 행동을 하기까지의 지연을 시나리오에 포함</li>
+      <li><strong>데이터 분포</strong>: 인기 상품 몇 개에 조회가 몰리는 것처럼, 요청 대상 데이터의 편향(hot key)을 재현 — 이는 캐시 히트율과 DB 부하 분산 양상에 직접 영향을 줌</li>
+      <li><strong>인증/세션 상태</strong>: 매 요청마다 새로 로그인하는 것이 아니라, 실제 세션 유지 시간과 유사하게 토큰을 재사용</li>
+    </ul>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> "부하 테스트에서는 잘 버텼는데 운영에서 무너졌다"는 사례의 상당수는 테스트 트래픽이 균일했기 때문입니다. 균일한 트래픽은 캐시가 항상 웜업된 상태를 유지하게 만들어 실제보다 훨씬 좋은 결과를 냅니다. 반면 실제 트래픽은 특정 데이터에 쏠리는 구간이 있고, 그 구간에서 캐시 미스가 몰리면서 DB에 갑자기 부하가 집중되는 상황이 재현되지 않습니다.
+    </div>
+
+    <h3>테스트 환경과 운영 환경의 격차(Environment Parity)</h3>
+    <p>부하 테스트 결과가 신뢰할 만하려면 테스트 환경이 운영 환경과 최대한 유사해야 합니다. 다음 항목이 다르면 결과가 왜곡됩니다.</p>
+
+    <table class="method-table">
+      <tr><th>격차 요소</th><th>왜 결과를 왜곡하는가</th></tr>
+      <tr><td>데이터 볼륨</td><td>테스트 DB에 데이터가 적으면 인덱스 효과, 쿼리 플랜이 운영과 달라져 실제보다 빠르게 나옴</td></tr>
+      <tr><td>인스턴스 스펙/개수</td><td>운영보다 작은 스펙에서 테스트하면 병목 위치 자체가 다르게 나타남</td></tr>
+      <tr><td>캐시 웜업 상태</td><td>테스트 직전에 캐시를 미리 채워두면 실제 콜드 스타트 상황의 부하가 재현되지 않음</td></tr>
+      <tr><td>네트워크 토폴로지</td><td>같은 데이터센터 내부에서 테스트하면 실제 사용자의 지리적 지연(RTT)이 빠짐</td></tr>
+      <tr><td>다운스트림 의존성</td><td>외부 API를 mock으로 대체하면 실제 외부 의존성의 latency/장애가 반영되지 않음</td></tr>
+    </table>
+  </section>
+
+  <!-- 5. 도구 선택 -->
+  <section id="tools">
+    <h2>5. 도구 선택 — k6, Locust, JMeter, wrk</h2>
+
+    <p>도구 선택 자체는 지엽적인 지식처럼 보이지만, 면접관은 도구의 <strong>동작 모델 차이</strong>를 아는지를 통해 부하 테스트의 정확도에 대한 이해도를 확인합니다.</p>
+
+    <table class="method-table">
+      <tr><th>도구</th><th>실행 모델</th><th>장점</th><th>주의할 점</th></tr>
+      <tr><td>k6</td><td>Go 기반, 각 VU가 경량 goroutine으로 실행</td><td>적은 리소스로 높은 VU 수 생성 가능, 스크립트를 JS로 작성, Grafana/Prometheus 연동 용이</td><td>복잡한 브라우저 렌더링 시나리오는 별도 확장(k6 browser) 필요</td></tr>
+      <tr><td>Locust</td><td>Python 기반, 이벤트 기반 또는 gevent 코루틴</td><td>Python으로 복잡한 사용자 행동 로직을 자유롭게 작성 가능, 분산 실행 지원</td><td>Python GIL 특성상 부하 생성기 자체가 CPU bound가 되면 부하 생성기가 병목이 될 수 있음 — 분산 워커로 확장 필요</td></tr>
+      <tr><td>Apache JMeter</td><td>JVM 기반, 스레드당 VU(기본 모델)</td><td>GUI로 시나리오 작성, 폭넓은 프로토콜 지원, 기업 환경에서 표준적으로 사용</td><td>스레드 기반이라 VU 수가 커지면 JMeter 자체의 메모리/CPU 사용량이 급증 — 대규모 테스트는 분산 실행 필요</td></tr>
+      <tr><td>wrk / hey</td><td>C 기반, 이벤트 기반 non-blocking</td><td>매우 높은 처리량의 순수 HTTP 벤치마크에 적합, 가벼움</td><td>복잡한 다단계 시나리오(로그인 → 여러 페이지 이동) 작성에는 부적합, 단일 엔드포인트 벤치마크용</td></tr>
+    </table>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> 여기서 가장 중요한 개념은 <strong>"부하 생성기 자체가 병목이 되지 않아야 한다"</strong>는 것입니다. 부하 생성기를 한 대의 서버에서만 돌리면, 목표 부하에 도달하기 전에 부하 생성기의 CPU나 네트워크 대역폭이 먼저 한계에 도달할 수 있습니다. 이 경우 테스트 대상 서버가 아니라 부하 생성기가 병목이 되어 "우리 서버는 5,000 RPS 이상은 못 버틴다"는 잘못된 결론을 내릴 수 있습니다. 대규모 테스트에서는 여러 대의 부하 생성기(분산 실행)로 나눠 이 문제를 피해야 합니다.
+    </div>
+  </section>
+
+  <!-- 6. 병목 판별 -->
+  <section id="isolate">
+    <h2>6. 부하 테스트 결과에서 병목 판별하기</h2>
+
+    <p>부하 테스트가 끝난 뒤 "느려지는 지점을 찾았다"만으로는 부족합니다. 그 지점에서 <strong>어느 자원이 포화되었는지</strong>를 지표로 증명해야 합니다.</p>
+
+    <div class="timeline">
+      <div class="row"><span class="label">부하 증가 (0 → 목표치)</span><div class="bar-track"><div class="bar" style="left:0%; width:40%; background:#34d399;">응답 시간 안정적, 에러율 0%</div></div></div>
+      <div class="row"><span class="label">임계점 근접</span><div class="bar-track"><div class="bar" style="left:40%; width:25%; background:#fbbf24;">p95 latency 급격히 상승 시작</div></div></div>
+      <div class="row"><span class="label">breaking point 이후</span><div class="bar-track"><div class="bar" style="left:65%; width:35%; background:#f87171;">에러율 급증, timeout 다발</div></div></div>
+    </div>
+
+    <table class="method-table">
+      <tr><th>관찰된 증상</th><th>의심되는 병목</th><th>확인 방법</th></tr>
+      <tr><td>앱 서버 CPU가 100% 근접, DB는 여유로움</td><td>애플리케이션 로직 (직렬화, 암호화, 비효율적 알고리즘)</td><td>APM 프로파일링으로 CPU 소비 상위 함수 확인 (Day 8 profiling과 연결)</td></tr>
+      <tr><td>앱 서버는 여유로운데 DB 커넥션 풀 대기 시간 증가</td><td>DB 커넥션 풀 크기 또는 느린 쿼리</td><td>커넥션 풀 대기 시간 지표, slow query log, EXPLAIN ANALYZE 확인 (Day 2, Day 10과 연결)</td></tr>
+      <tr><td>요청 수는 늘었는데 서버 자원(CPU/메모리)은 그대로인데 응답만 느려짐</td><td>네트워크 대역폭 또는 부하 생성기 자체의 한계</td><td>부하 생성기의 리소스 사용량, 네트워크 처리량 지표 확인</td></tr>
+      <tr><td>동시성을 늘려도 처리량이 더 이상 늘지 않고 정체(plateau)</td><td>스레드 풀/이벤트 루프/DB 커넥션 풀 등 고정된 자원 한계 도달</td><td>Little's Law로 이론적 최대 처리량 계산 후 실측치와 비교</td></tr>
+      <tr><td>부하 초반에는 빠르다가 시간이 지날수록(수십 분 이상) 점점 느려짐</td><td>메모리 누수, 커넥션 누수, GC 압박</td><td>Soak Test로 재현, 메모리 사용량 추이 그래프 확인 (Day 13과 연결)</td></tr>
+    </table>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> 이 판별 과정은 Day 1의 USE Method(Utilization, Saturation, Errors)를 실전에 적용하는 것입니다. 부하를 올리는 동안 앱 서버 CPU/메모리, DB CPU/커넥션 풀/쿼리 latency, 네트워크 처리량을 동시에 대시보드에서 관찰하면서, <strong>어느 지표가 임계점 근처에서 가장 먼저 100%에 가까워지는지</strong>를 시간축으로 겹쳐 보는 것이 핵심입니다. "느려졌다"는 결과만 보고 원인을 추측하지 않고, 동시간대 지표를 겹쳐서 상관관계로 병목을 좁혀갑니다.
+    </div>
+  </section>
+
+  <!-- 7. 실무 연결 -->
+  <section id="practice">
+    <h2>7. 실무 연결</h2>
+
+    <h3>상황 1: 테스트에서는 5,000 RPS를 버텼는데 운영에서 1,000 RPS에 무너졌다</h3>
+    <p>원인은 두 가지였습니다. 첫째, 테스트 데이터가 운영 DB보다 훨씬 적어 인덱스가 메모리에 전부 올라가 있었던 반면, 운영 DB는 데이터가 많아 디스크 I/O가 추가로 발생했습니다. 둘째, 테스트에서는 모든 VU가 동일한 인기 상품 몇 개만 조회해 캐시 히트율이 비정상적으로 높게 나왔지만, 실제 트래픽은 훨씬 다양한 상품을 조회해 캐시 미스가 잦았습니다. 테스트 데이터 볼륨을 운영 수준으로 맞추고, 조회 대상 분포를 실제 접근 로그 기반으로 재설계한 뒤에야 신뢰할 수 있는 결과가 나왔습니다.</p>
+
+    <h3>상황 2: Stress Test로 breaking point를 찾았더니 DB 커넥션 풀이 원인이었다</h3>
+    <p>부하를 계속 올리자 앱 서버 CPU는 40% 수준에서 안정적인데 응답 시간만 계속 나빠졌습니다. 커넥션 풀 대기 시간 지표를 확인하니, 풀 크기가 DB가 실제로 감당 가능한 동시 커넥션 수보다 훨씬 작게 설정되어 있었고, 요청들이 풀에서 커넥션을 얻기 위해 대기하고 있었습니다. 앱 서버 자체는 여유로운데 전체 응답 시간이 나빠지는 전형적인 신호였습니다. 풀 크기를 DB 용량에 맞춰 조정한 뒤 처리량이 개선됐습니다.</p>
+
+    <h3>상황 3: Soak Test에서만 발견된 메모리 누수</h3>
+    <p>일반 Load Test(짧은 시간 실행)에서는 문제가 없었지만, 8시간 동안 중간 수준 부하를 유지하는 Soak Test에서 메모리 사용량이 선형으로 계속 증가하는 것이 발견됐습니다. 원인은 캐시 라이브러리의 특정 캐시 항목에 만료 시간이 누락되어 무한정 쌓이고 있었던 것이었습니다. 짧은 부하 테스트만 했다면 배포 후 며칠이 지나서야 운영 중에 발견됐을 문제였습니다.</p>
+
+    <h3>상황 4: 배포 전 Spike Test로 Auto Scaling 반응 지연을 발견</h3>
+    <p>마케팅 이벤트를 앞두고 급격한 트래픽 증가를 시뮬레이션하는 Spike Test를 돌렸더니, Auto Scaling이 새 인스턴스를 띄우는 데 몇 분이 걸리는 동안 기존 인스턴스들이 과부하로 에러를 반환하는 것을 확인했습니다. 이 결과를 바탕으로 이벤트 시작 전 수동으로 최소 인스턴스 수를 미리 늘려두는 운영 절차를 추가했습니다.</p>
+  </section>
+
+  <!-- 8. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>8. 답변 사고 순서</h2>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>목표(SLO)를 먼저 정의한다</strong>
+          <p style="margin-top:0.3rem">"얼마나 빨라야 하는가", "어느 수준의 트래픽까지 버텨야 하는가"를 먼저 숫자로 정의합니다. 목표 없이 부하만 올리는 테스트는 결과를 판단할 기준이 없습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>실제 트래픽 패턴을 분석해 시나리오에 반영한다</strong>
+          <p style="margin-top:0.3rem">접근 로그 기반 엔드포인트 비율, think time, 데이터 분포(hot key), 세션 유지 방식을 시나리오에 녹여 균일한 부하가 아닌 현실적인 부하를 설계합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>테스트 환경과 운영 환경의 격차를 최소화한다</strong>
+          <p style="margin-top:0.3rem">데이터 볼륨, 인스턴스 스펙, 캐시 웜업 상태, 네트워크 조건이 운영과 다르면 결과가 왜곡된다는 것을 인지하고 가능한 한 맞춥니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>목적에 맞는 부하 패턴을 선택한다</strong>
+          <p style="margin-top:0.3rem">SLO 충족 확인이면 Load Test, 한계선 파악이면 Stress Test, 이벤트 대비면 Spike Test, 장시간 안정성이면 Soak Test를 선택합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>결과에서 병목을 지표로 좁혀간다</strong>
+          <p style="margin-top:0.3rem">"느려졌다"에서 멈추지 않고, 부하 증가 시점과 앱 서버/DB/네트워크 지표를 시간축으로 겹쳐 어느 자원이 먼저 포화되는지 증명합니다.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 9. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>9. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "새로운 기능을 배포하기 전에 부하 테스트를 어떻게 설계하시겠어요? 실제 트래픽 패턴과 다르게 테스트하면 어떤 문제가 생기나요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>먼저 목표를 숫자로 정의합니다. 이 기능이 목표하는 트래픽 수준(예: 초당 2,000 요청)에서 p95 응답 시간과 에러율의 허용 기준을 먼저 정하고, 그 기준을 만족하는지 확인하는 것이 테스트의 목적입니다.</p>
+      <br>
+      <p>그다음 실제 트래픽 패턴을 최대한 재현하려고 합니다. 모든 가상 사용자가 동일한 간격으로 동일한 요청을 반복하면 실제보다 훨씬 낙관적인 결과가 나옵니다. 실제 접근 로그를 분석해서 엔드포인트별 호출 비율을 반영하고, 실제 사용자가 화면을 보고 다음 행동을 하기까지의 think time을 시나리오에 넣고, 인기 상품 몇 개에 조회가 몰리는 것 같은 데이터 편향도 재현합니다. 이걸 생략하면 캐시가 항상 웜업된 상태로 테스트되어 실제 운영에서 캐시 미스가 몰리는 순간의 부하가 전혀 재현되지 않습니다.</p>
+      <br>
+      <p>테스트 환경도 운영과 최대한 맞춥니다. 특히 DB 데이터 볼륨이 적으면 인덱스 효과가 실제와 달라지고, 캐시를 테스트 직전에 미리 채워두면 콜드 스타트 상황이 반영되지 않습니다. 목적에 따라 패턴도 다르게 씁니다. 배포 전 SLO 충족 확인은 Load Test로, 시스템의 한계선을 알아야 할 때는 Stress Test로 트래픽을 계속 올리면서 breaking point를 찾고, 장시간 운영 시 메모리 누수 같은 문제는 Soak Test로만 드러나기 때문에 별도로 돌립니다.</p>
+      <br>
+      <p>마지막으로 결과가 나빠지는 지점에서는 앱 서버 CPU, DB 커넥션 풀 대기 시간, 네트워크 처리량을 동시에 시간축으로 겹쳐서 어느 자원이 가장 먼저 포화되는지 확인합니다. "느려졌다"로 끝내지 않고 병목의 위치를 지표로 증명하는 것이 실제로 조치할 수 있는 결론을 만듭니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>SLO를 먼저 정의해 테스트에 목적성을 부여함</li>
+      <li>현실적인 트래픽 재현(think time, 데이터 편향, 엔드포인트 비율)의 구체적 요소를 설명</li>
+      <li>테스트 환경과 운영 환경의 격차가 결과를 왜곡하는 구체적 메커니즘까지 설명</li>
+      <li>목적별 부하 패턴(Load/Stress/Soak/Spike)을 구분해 적용</li>
+      <li>결과 해석을 지표 상관관계 기반 병목 판별로 마무리</li>
+    </ul>
+  </section>
+
+  <!-- 10. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>10. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"JMeter나 k6로 동시 사용자 1,000명을 설정해서 몇 분 동안 돌려보고, 에러 없이 통과하면 배포합니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>목표(SLO)가 정의되지 않아 "통과"의 기준이 불명확함</li>
+        <li>동시 사용자 수만 언급하고 실제 트래픽 패턴(엔드포인트 비율, think time, 데이터 분포)에 대한 고려가 없음</li>
+        <li>테스트 환경과 운영 환경의 차이를 전혀 언급하지 않음</li>
+        <li>결과가 나빠졌을 때 병목을 어떻게 찾을지에 대한 절차가 없음</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"부하를 최대한 많이 줘서 서버가 죽는지 안 죽는지 확인합니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>목적(SLO 충족 확인인지, 한계선 파악인지, 장시간 안정성 확인인지)을 구분하지 않고 뭉뚱그림</li>
+        <li>"죽는지 안 죽는지"라는 이진적 기준만 있고, 어느 자원이 먼저 포화되는지 판별하는 절차가 없음</li>
+        <li>부하 생성기 자체가 병목이 될 수 있다는 것을 고려하지 않음</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>부하 테스트 전에 SLO(목표 latency/error rate)를 숫자로 정의한다</li>
+        <li>실제 접근 로그 기반 트래픽 패턴(엔드포인트 비율, think time, 데이터 편향)을 시나리오에 반영한다</li>
+        <li>테스트 환경과 운영 환경의 격차(데이터 볼륨, 캐시 웜업, 네트워크)를 인지하고 최소화한다</li>
+        <li>목적에 맞는 부하 패턴(Load/Stress/Spike/Soak)을 구분해 선택한다</li>
+        <li>부하 생성기 자체가 병목이 되지 않도록 분산 실행을 고려한다</li>
+        <li>결과 해석 시 앱 서버/DB/네트워크 지표를 겹쳐 병목을 지표로 증명한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11. Follow-up -->
+  <section id="followups">
+    <h2>11. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: 부하 테스트에서는 초당 5,000 요청까지 문제없이 처리했는데, 실제 운영에서는 초당 1,000 요청 수준에서 이미 에러가 발생했습니다. 무엇이 잘못됐을까요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 테스트 환경과 운영 환경의 격차를 먼저 의심합니다. 가장 흔한 원인은 테스트 DB의 데이터 볼륨이 운영보다 훨씬 적어 인덱스 효과나 쿼리 플랜이 실제와 다르게 나온 경우, 그리고 테스트 트래픽이 균일해서 캐시가 항상 웜업된 상태로 테스트된 경우입니다. 실제 트래픽은 데이터 조회가 특정 항목에 쏠리는 구간에서 캐시 미스가 몰려 DB 부하가 급증하는데, 균일한 테스트 트래픽은 이 상황을 재현하지 못합니다. 테스트 데이터 볼륨을 운영 수준으로 맞추고, 실제 접근 로그 기반의 데이터 분포로 시나리오를 재설계해 재현을 시도합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 부하 테스트 결과 응답 시간이 급격히 나빠지는 시점을 확인했습니다. 그 시점에서 병목이 애플리케이션 서버인지 DB인지 어떻게 구분하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 그 시점의 앱 서버 CPU/메모리 사용률, DB 커넥션 풀 대기 시간, 쿼리 latency, 네트워크 처리량을 동시에 시간축으로 겹쳐 봅니다. 앱 서버 CPU가 포화 상태이고 DB는 여유롭다면 애플리케이션 로직(직렬화, 비효율적 알고리즘)이 병목이고, 앱 서버는 여유로운데 DB 커넥션 풀 대기 시간이 늘어난다면 커넥션 풀 크기나 느린 쿼리가 병목입니다. USE Method(Utilization, Saturation, Errors)를 각 자원에 적용해 어느 자원이 가장 먼저 한계에 도달하는지로 구분합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 부하 테스트 도구로 목표 RPS를 만들어냈는데도 서버 응답이 느립니다. 부하 생성기 자체가 문제일 가능성은 어떻게 배제하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 부하 생성기를 실행하는 머신의 CPU, 메모리, 네트워크 대역폭 사용률을 함께 확인합니다. 만약 부하 생성기 자체가 CPU나 네트워크 한계에 도달해 있다면, 목표 RPS를 실제로 만들어내지 못하고 있을 수 있습니다. 이 경우 부하 생성기를 여러 대로 분산 실행해서 생성기 자체가 병목이 아님을 확인한 뒤에야 테스트 대상 서버의 결과를 신뢰합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: Load Test는 통과했는데 배포 며칠 뒤 메모리 사용량이 계속 증가하다 서버가 재시작되는 문제가 발생했습니다. 왜 사전에 발견하지 못했을까요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 일반적인 Load Test는 몇 분에서 길어야 한두 시간 정도만 실행하기 때문에, 느리게 누적되는 메모리 누수나 커넥션 누수는 그 시간 안에 드러나지 않습니다. 이런 문제는 중간 수준의 부하를 수 시간에서 하루 이상 유지하는 Soak Test에서만 재현됩니다. 앞으로는 배포 전 체크리스트에 Soak Test를 포함해, 짧은 시간에 통과했다고 해서 장시간 안정성까지 보장된 것은 아니라는 점을 팀에 공유하겠습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 부하를 계속 올렸는데 어느 순간부터 처리량(throughput)이 더 이상 늘지 않고 평평해집니다. 이 현상을 어떻게 설명하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 이는 시스템의 특정 자원이 포화 상태에 도달해 그 이상의 동시 처리를 받아들이지 못하는 것입니다(처리량 정체, plateau). Little's Law(L = λ × W) 관점에서 보면, 처리 시간(W)이 고정된 자원(스레드 풀, DB 커넥션 풀, 이벤트 루프)에 막혀 있다면 도착률(λ)을 아무리 늘려도 시스템 내부에 머무는 요청 수(L)만 늘어나고 실제 처리량은 늘지 않습니다. 이 지점부터는 요청이 대기열에 쌓이며 응답 시간만 계속 나빠지므로, 어느 자원이 고정 한계인지 찾아 확장하거나(커넥션 풀 크기, 인스턴스 수) 그 자원 앞에서 명시적으로 요청을 거절하는 backpressure를 적용해야 합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>12. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"동시 사용자 수(VU)가 많을수록 더 강한 부하 테스트다"</strong></p>
+      <p>VU 수 자체보다 각 VU가 실제 사용자 행동(think time, 엔드포인트 비율, 데이터 분포)을 얼마나 정직하게 반영하는지가 결과의 신뢰도를 결정합니다. VU 1만 명이라도 균일하고 비현실적인 트래픽이면 결과는 무의미합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"한 번의 부하 테스트로 모든 것을 확인할 수 있다"</strong></p>
+      <p>Load, Stress, Spike, Soak은 각각 다른 질문에 답합니다. SLO 충족(Load)과 한계선 파악(Stress)은 다른 테스트이고, 메모리 누수 같은 시간 누적 문제는 Soak Test에서만 드러납니다. 목적에 맞는 패턴을 별도로 설계해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"테스트 환경이 운영보다 작아도 비율만 맞으면 결과를 그대로 신뢰할 수 있다"</strong></p>
+      <p>데이터 볼륨이 작으면 인덱스가 메모리에 전부 올라가 실제보다 빠르게 나오는 등, 규모 차이는 단순 비율로 환산되지 않는 비선형적 효과를 만듭니다. 특히 DB 성능과 캐시 히트율은 규모에 따라 質적으로 달라질 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"부하 테스트에서 에러가 없으면 성능에 문제가 없다는 뜻이다"</strong></p>
+      <p>에러율이 0%여도 응답 시간(특히 p95/p99)이 SLO를 넘었다면 사용자 경험은 이미 나빠진 것입니다. 에러 발생 여부만으로 판단하지 않고 latency 분포를 함께 확인해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"부하 테스트 결과가 나쁘면 무조건 서버를 늘리면 해결된다"</strong></p>
+      <p>병목이 DB 커넥션 풀이나 외부 API rate limit처럼 인스턴스를 늘려도 해결되지 않는 자원이라면, 앱 서버를 늘려봐야 그 다운스트림 자원에 더 많은 부하가 몰릴 뿐입니다. 병목의 실제 위치를 지표로 확인한 뒤 그에 맞는 해법(커넥션 풀 확장, 쿼리 튜닝, 캐시 도입)을 선택해야 합니다.</p>
+    </div>
+  </section>
+
+  <!-- 13. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>13. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 7을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>가상 사용자(VU) 수와 초당 요청 수(RPS)의 차이를 설명하고, 왜 VU 수만으로는 부하를 정량화할 수 없는지 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Load, Stress, Spike, Soak Test 각각의 목적과 확인하려는 질문을 구분해 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>실제 트래픽 패턴(think time, 엔드포인트 비율, 데이터 편향)을 재현하지 않으면 왜 결과가 왜곡되는지 구체적 메커니즘으로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>테스트 환경과 운영 환경의 격차(데이터 볼륨, 캐시 웜업, 네트워크)가 결과에 미치는 영향을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>부하 테스트 결과에서 앱 서버/DB/네트워크 중 병목의 위치를 지표 기반으로 판별하는 절차를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>부하 생성기 자체가 병목이 될 수 있다는 것과 그 대응(분산 실행)을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>처리량 정체(plateau) 현상을 Little's Law 관점에서 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 8</h3>
+      <p><strong>Profiling 실전 — CPU/메모리/I/O 프로파일링 해석</strong></p>
+      <p>Day 7에서 부하 테스트로 "언제, 무엇이 병목인지"를 지표 수준에서 좁혔다면, Day 8은 그 병목이 애플리케이션 코드 안이라고 판단됐을 때 <strong>정확히 어느 함수, 어느 라인이 시간을 소모하는지</strong>까지 파고드는 profiling 기법을 다룹니다. py-spy, cProfile, flame graph 읽는 법과 CPU/메모리/I/O wait를 구분하는 방법을 봅니다.</p>
+      <p>면접 질문 예고: "운영 서버에서 CPU 사용률이 갑자기 치솟았습니다. 서비스를 중단하지 않고 원인을 어떻게 찾으시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    성능 최적화 시니어 인터뷰 · Day 7 of 20 · 2026-07-06
+  </p>
+
+</div>
+</body>
+</html>

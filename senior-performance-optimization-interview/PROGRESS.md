@@ -10,19 +10,19 @@
 | 4 | 2026-07-03 | 느린 API 분석 — latency 분해와 병목 특정 | [0004-slow-api-latency-breakdown-bottleneck-isolation.html](lessons/0004-slow-api-latency-breakdown-bottleneck-isolation.html) |
 | 5 | 2026-07-04 | 캐시 전략 설계 — 히트율, 무효화, 일관성 trade-off | [0005-cache-strategy-hit-rate-invalidation-consistency.html](lessons/0005-cache-strategy-hit-rate-invalidation-consistency.html) |
 | 6 | 2026-07-05 | 비동기 처리와 동시성 — async가 해결책인 경우와 함정 | [0006-async-concurrency-when-it-helps-and-traps.html](lessons/0006-async-concurrency-when-it-helps-and-traps.html) |
+| 7 | 2026-07-06 | 부하 테스트 설계 — 현실적인 트래픽 시뮬레이션 | [0007-load-testing-realistic-traffic-simulation.html](lessons/0007-load-testing-realistic-traffic-simulation.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | 부하 테스트 설계 — 현실적인 트래픽 시뮬레이션 | 부하 패턴, k6/Locust, ramp-up, 병목 판별 |
 | 8 | Profiling 실전 — CPU/메모리/I/O 해석 | py-spy, cProfile, flame graph, I/O wait |
 | 9 | 성능 지표 해석 — p50/p95/p99, throughput, error rate | percentile latency, histogram, SLO |
 | 10 | DB Connection Pool 튜닝 | pool exhaustion, deadlock, timeout 설정 |
 
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음: Day 7 — 부하 테스트 설계 (현실적인 트래픽 시뮬레이션)
+**Day 7 완료** — 다음: Day 8 — Profiling 실전 (CPU/메모리/I/O 해석)
 
 ## 습득한 핵심 개념
 
@@ -58,4 +58,10 @@
 - [x] 이벤트 루프 단일 스레드 모델과 Event Loop Blocking (Day 6)
 - [x] GIL의 범위 — CPU 병렬성 제한, I/O 대기 동시 처리는 무관 (Day 6)
 - [x] Thread Pool Executor를 통한 blocking 코드 격리 (Day 6)
-- [ ] 부하 테스트 설계 원칙 (예정 Day 7)
+- [x] 부하 패턴 분류 — Load/Stress/Spike/Soak Test의 목적 구분 (Day 7)
+- [x] VU(가상 사용자)와 RPS(초당 요청 수)의 차이 (Day 7)
+- [x] Ramp-up과 breaking point 탐색 (Day 7)
+- [x] 현실적인 트래픽 재현 — think time, 엔드포인트 비율, 데이터 편향 (Day 7)
+- [x] 테스트 환경과 운영 환경의 격차(Environment Parity) (Day 7)
+- [x] 부하 테스트 결과에서 지표 기반 병목 판별 (Day 7)
+- [ ] Profiling 도구와 flame graph 해석 (예정 Day 8)
