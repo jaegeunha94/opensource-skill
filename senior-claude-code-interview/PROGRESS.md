@@ -7,12 +7,12 @@
 | 1 | 2026-07-03 | Claude Code 기반 agentic coding 운영 프레임워크 | [0001-agentic-coding-operating-framework.html](lessons/0001-agentic-coding-operating-framework.html) |
 | 2 | 2026-07-04 | Surfaces — Terminal/IDE/Desktop/Web/CI 아키텍처와 선택 기준 | [0002-surfaces-architecture-and-selection.html](lessons/0002-surfaces-architecture-and-selection.html) |
 | 3 | 2026-07-05 | 코드베이스 컨텍스트 설계 — CLAUDE.md와 Auto Memory | [0003-codebase-context-claude-md-auto-memory.html](lessons/0003-codebase-context-claude-md-auto-memory.html) |
+| 4 | 2026-07-06 | 권한 모델 심화 — permission mode와 규칙 문법 | [0004-permission-model-modes-and-rule-syntax.html](lessons/0004-permission-model-modes-and-rule-syntax.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | 권한 모델 심화 — permission mode와 규칙 문법 | default/acceptEdits/plan/auto/dontAsk/bypassPermissions, allow/deny/ask 평가 순서, settings precedence |
 | 5 | 샌드박싱과 shell/file 도구 실행 경계 | OS 레벨 파일시스템/네트워크 격리, permission과 sandbox의 계층 분리, credential 보호 |
 | 6 | 보안 — 위협 모델과 prompt injection 방어 | 신뢰 경계, 프롬프트 인젝션, MCP 공급망 리스크, secure deployment 패턴 |
 | 7 | MCP — Model Context Protocol 통합과 운영 | MCP 서버 연결, tool search(온디맨드 로드), 권한 규칙, 조직 단위 managed MCP |
@@ -34,7 +34,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — Day 4: 권한 모델 심화(permission mode와 규칙 문법)로 진행 예정.
+**Day 4 완료** — Day 5: 샌드박싱과 shell/file 도구 실행 경계로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -50,7 +50,11 @@
 - [x] `.claude/rules/`의 path-scoped rules(`paths` frontmatter)와 per-directory CLAUDE.md의 차이, `@path` import는 정리 목적일 뿐 컨텍스트 비용을 줄이지 않는다는 것, AGENTS.md는 직접 읽지 않고 import/symlink로 연동한다는 것 (Day 3)
 - [x] Auto memory(`MEMORY.md`, 200줄/25KB 임계값)가 머신 로컬이며 CLAUDE.md와 "누가 쓰는가"로 역할이 분리된다는 것, CLAUDE.md/auto memory는 강제 계층이 아니라 컨텍스트이며 절대 규칙은 훅/권한으로 이중화해야 한다는 것, `/compact` 후 루트 CLAUDE.md는 재주입되지만 서브디렉토리 CLAUDE.md는 그렇지 않다는 것 (Day 3)
 - [x] 모노레포 전략(claudeMdExcludes, Read deny 규칙, code intelligence, sparse worktree, additionalDirectories vs --add-dir의 컨텍스트 로드 차이, 플러그인/MCP로의 중앙화) (Day 3)
-- [ ] 권한 모델 심화 (예정 Day 4)
+- [x] 6개 permission mode(default/Manual, acceptEdits, plan, auto, dontAsk, bypassPermissions) 구분과 surface별(CLI/VS Code/Web/Remote Control) 가용 모드 차이 (Day 4)
+- [x] 권한 규칙 3종(allow/ask/deny) 평가 순서(deny→ask→allow, 구체성 무관)와 bare tool 삭제 vs scoped 차단의 차이 (Day 4)
+- [x] Bash/Read·Edit/WebFetch/MCP/Agent/Cd 규칙 문법, compound command 개별 매칭, 환경 러너/curl 필터링의 구조적 우회 가능성과 대안(WebFetch/훅) (Day 4)
+- [x] `Tool(param:value)` 매개변수 매칭 문법과 canonicalizing 필드 매칭 불가 이유, Protected paths와 모드별 처리(bypassPermissions도 root/home 삭제는 예외) (Day 4)
+- [x] Hooks(PreToolUse)↔permission, Sandbox↔permission의 우선순위와 병합 관계, Settings precedence 5단계와 managed-only 설정, Workspace trust의 비대칭 설계(확장은 신중/축소는 즉시) (Day 4)
 - [ ] 샌드박싱 (예정 Day 5)
 - [ ] 보안/위협 모델 (예정 Day 6)
 - [ ] MCP (예정 Day 7)
