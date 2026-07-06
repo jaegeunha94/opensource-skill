@@ -34,6 +34,17 @@
 - [Streaming — LangChain 공식 문서](https://docs.langchain.com/oss/python/langchain/streaming) — `stream_mode`(values/updates/messages/custom/debug) 개요(`docs.langchain.com` 403 차단 시 검색 요약으로 보강, Day 4 근거)
 - [langchain-ai/streaming-cookbook (GitHub)](https://github.com/langchain-ai/streaming-cookbook) — `astream_events(version="v3")` 기반 신규 event streaming/typed projection(content block, tool call 상관관계, lifecycle 채널) 원본 예제(Day 4 근거)
 - [From Token Streams to Agent Streams — LangChain 공식 블로그](https://www.langchain.com/blog/token-streams-to-agent-streams) — event streaming 계층이 해결하려는 멀티 에이전트 UI 문제(Day 4 근거, `langchain.com` 403 차단 시 대체 소스로 검색 요약 사용)
+- [RAG — LangChain 공식 문서](https://docs.langchain.com/oss/python/langchain/rag) — retriever를 tool로 감싸는 표준 패턴(`docs.langchain.com` 403 차단 시 검색 요약으로 보강, Day 5 근거)
+- [Agentic RAG — LangGraph 공식 문서](https://docs.langchain.com/oss/python/langgraph/agentic-rag) — retrieval을 그래프 노드로 구성하는 대안 패턴(Day 5 근거)
+- [Migrating Memory to LangGraph — 공식 마이그레이션 가이드](https://python.langchain.com/docs/versions/migrating_memory/) — `ConversationBufferMemory` 등 구버전 memory 클래스가 checkpointer/Store로 대체되는 근거 원문(Day 5 근거)
+- [`ConversationBufferMemory` API Reference (deprecated)](https://python.langchain.com/api_reference/langchain/memory/langchain.memory.buffer.ConversationBufferMemory.html) — 0.3.1부터 deprecated 확인(Day 5 근거)
+- [Short-term memory — LangChain 공식 문서](https://docs.langchain.com/oss/python/langchain/short-term-memory) — checkpointer 기반 thread-scoped memory 개요(`docs.langchain.com` 403 차단 시 검색 요약으로 보강, Day 5 근거)
+- [Memory concepts — LangChain 공식 문서](https://docs.langchain.com/oss/python/concepts/memory) — short-term/long-term memory 개념 정의 원문(Day 5 근거)
+- [Semantic Search for LangGraph's Long-Term Memory — 공식 changelog](https://changelog.langchain.com/announcements/semantic-search-for-langgraph-s-long-term-memory) — `BaseStore`의 임베딩 기반 semantic search 추가 공지(`changelog.langchain.com` 403 차단 시 대체 소스로 검색 요약 사용, Day 5 근거)
+- [`summarization.py` — langchain_v1 middleware 소스 (GitHub raw)](https://raw.githubusercontent.com/langchain-ai/langchain/master/libs/langchain_v1/langchain/agents/middleware/summarization.py) — `SummarizationMiddleware`의 `trigger`/`keep`/`trim_tokens_to_summarize` 실제 시그니처 원본(Day 5 근거)
+- [langchain-ai/langmem (GitHub)](https://github.com/langchain-ai/langmem) — `BaseStore` 위에 얹는 별도 메모리 관리 패키지, 1.x 코어 미흡수 확인(Day 5 근거)
+- [Checkpoint serialization overhead — 85% storage / 38% token bloat (GitHub Issue langgraph#7714)](https://github.com/langchain-ai/langgraph/issues/7714) — 16턴 ReAct agent 기준 실측 오버헤드 수치, short-term memory 비용 근거(Day 5 근거)
+- [Unclear whether all checkpointed history auto-injects into context (GitHub Issue langchain-ai/docs#2356)](https://github.com/langchain-ai/docs/issues/2356) — checkpointer 이력과 모델 context 주입 범위의 문서 불명확성 사례(Day 5 근거)
 
 ## 아키텍처 딥다이브 / 엔지니어링 블로그
 

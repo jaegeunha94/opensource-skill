@@ -8,12 +8,12 @@
 | 2 | 2026-07-03 | Model / Tool / Message abstraction | [0002-langchain-model-tool-message-abstraction.html](lessons/0002-langchain-model-tool-message-abstraction.html) |
 | 3 | 2026-07-04 | Middleware 아키텍처 | [0003-langchain-middleware-architecture.html](lessons/0003-langchain-middleware-architecture.html) |
 | 4 | 2026-07-05 | Structured Output과 Streaming | [0004-langchain-structured-output-streaming.html](lessons/0004-langchain-structured-output-streaming.html) |
+| 5 | 2026-07-06 | Retrieval과 Memory | [0005-langchain-retrieval-memory.html](lessons/0005-langchain-retrieval-memory.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | Retrieval과 Memory | RAG 통합 지점, short-term vs long-term memory, memory 설계가 agent 품질에 미치는 영향 |
 | 6 | Guardrails와 Context Engineering | context window 예산 관리, prompt injection 방어, tool scoping, context 압축/요약 middleware |
 | 7 | LangGraph StateGraph 설계 | node/edge, conditional edge, state schema(TypedDict/Pydantic), reducer |
 | 8 | Persistence와 Checkpointer | MemorySaver/SqliteSaver/PostgresSaver, thread-scoped state, time travel/replay |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — 다음: Day 5 — Retrieval과 Memory
+**Day 5 완료** — 다음: Day 6 — Guardrails와 Context Engineering
 
 ## 습득한 핵심 개념
 
@@ -44,7 +44,11 @@
 - [x] `tool_choice` 강제와 extended thinking의 provider-level 충돌 (Day 4)
 - [x] `stream_mode`(values/updates/messages/custom/debug) trade-off와 신규 event streaming(typed projection) 계층 (Day 4)
 - [x] 구조화된 출력과 토큰 스트리밍의 충돌 및 혼합 렌더링 전략 (Day 4)
-- [ ] Retrieval / Memory 설계 (예정 Day 5)
+- [x] Retrieval = tool 패턴(create_retriever_tool)과 agentic RAG vs 그래프 노드 판단 기준 (Day 5)
+- [x] Short-term memory(checkpointer, thread-scoped) vs long-term memory(Store, cross-thread) 구분 (Day 5)
+- [x] Store의 semantic search와 recall/precision trade-off, 구버전 memory 클래스 deprecation (Day 5)
+- [x] `SummarizationMiddleware` 기반 context 압박 관리와 checkpoint 직렬화 비용 인지 (Day 5)
+- [x] 장기기억 쓰기 자동화의 설계 공백(직접 구현 vs LangMem) (Day 5)
 - [ ] Guardrails / Context Engineering (예정 Day 6)
 - [ ] StateGraph 설계(node/edge/reducer) (예정 Day 7)
 - [ ] Checkpointer / Persistence (예정 Day 8)

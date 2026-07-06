@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — LangChain Retrieval과 Memory</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 5 · LangChain / LangGraph Interview</div>
+    <h1>Retrieval과 Memory</h1>
+    <div class="subtitle">RAG를 agent에 통합하는 방식(retrieval = tool)과, agent가 "기억"을 갖게 만드는 두 축 — thread 안에서의 short-term memory(checkpointer)와 thread를 넘나드는 long-term memory(Store) — 그리고 이 설계가 실제로 비용·정확도에서 무너지는 지점</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전 기준:</strong> 이 레슨은 2026-07 기준 <strong>LangChain 1.x / LangGraph 1.x(GA)</strong> API를 기준으로 작성됐다.
+    구버전 <code>langchain.memory</code>의 <code>ConversationBufferMemory</code>/<code>ConversationSummaryMemory</code> 등은
+    LangChain 0.3.1부터 deprecated 되었고 1.x에서는 동작하지 않는다 — 공식 마이그레이션 가이드는 이를
+    LangGraph의 <strong>checkpointer(단기)</strong>와 <strong>Store(장기)</strong>로 대체하라고 안내한다.
+    <code>docs.langchain.com</code>은 자동화 접근을 종종 차단(403)하므로, 이 레슨의 근거는 공식 마이그레이션 가이드,
+    GitHub 소스(<code>raw.githubusercontent.com</code>), GitHub 이슈 트래커를 우선 사용했고 문서 사이트 인용은
+    검색 스니펫으로 교차 확인한 내용임을 명시한다.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "LangChain agent에 RAG(retrieval)를 어떻게 통합하나요? create_agent에 retrieval 전용 파라미터가 따로 있나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "Agent의 short-term memory와 long-term memory는 어떻게 다르고, 각각 LangGraph의 어떤 컴포넌트로 구현하나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "대화가 길어질수록 memory/context 관리에서 어떤 문제가 생기나요? 실제로 비용이나 정확도에 어떤 영향을 주나요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Retrieval은 왜 "그냥 tool"인가, Memory는 왜 두 축으로 나뉘는가</h2>
+
+    <h3>Retrieval — create_agent에 별도 파라미터가 없다</h3>
+    <p>
+      많은 사람이 "LangChain에는 RAG 기능이 내장돼 있을 것"이라고 기대하지만, <code>create_agent</code>에는
+      retrieval 전용 파라미터가 <strong>존재하지 않는다</strong>. 공식 패턴은 벡터 스토어에서 리트리버를 만들고
+      (<code>vectorstore.as_retriever()</code>), 이걸 <strong>tool 하나로 감싸서</strong> 다른 tool과 똑같이
+      <code>tools=[...]</code>에 넣는 것이다. <code>langchain.tools.retriever.create_retriever_tool</code> 헬퍼나
+      직접 <code>@tool</code> 데코레이터로 감싸는 방식 모두 가능하다.
+    </p>
+    <pre><code><span class="keyword">from</span> langchain.tools.retriever <span class="keyword">import</span> create_retriever_tool
+<span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent
+
+retriever = vectorstore.as_retriever(search_kwargs={<span class="string">"k"</span>: <span class="number">4</span>})
+search_docs = create_retriever_tool(
+    retriever,
+    name=<span class="string">"search_product_docs"</span>,
+    description=<span class="string">"제품 매뉴얼에서 관련 문서를 검색한다. 사용자 질문이 제품 사용법·스펙에 관한 것일 때 사용한다."</span>,
+)
+
+agent = create_agent(model=<span class="string">"claude-sonnet-5"</span>, tools=[search_docs])</code></pre>
+    <div class="callout callout-info">
+      <strong>핵심 전제:</strong> 이건 게으른 설계가 아니라 의도된 아키텍처다. Retrieval을 agent 루프에 특별한
+      1급 개념으로 넣지 않고 <strong>"모델이 스스로 판단해서 호출하는 tool"</strong>로 유지하면, 모델이
+      "지금 검색이 필요한가", "몇 번 검색할 것인가", "검색어를 어떻게 재구성할 것인가"까지 스스로 판단하게
+      된다. 이게 바로 <strong>agentic RAG</strong>다 — 검색을 파이프라인의 고정 단계가 아니라 agent의
+      의사결정 대상으로 만드는 것.
+    </div>
+    <p>
+      더 세밀한 제어가 필요하면(예: 검색 결과를 반드시 특정 노드에서 후처리해야 함) <code>create_agent</code>
+      대신 <strong>LangGraph로 직접 그래프를 짜고 retrieval을 하나의 node로 넣는 패턴</strong>도 공식적으로
+      문서화되어 있다. 이건 Day 1에서 다룬 "create_agent vs StateGraph" 판단 기준이 retrieval에도 그대로
+      적용되는 사례다 — 단순 RAG는 tool 하나로 충분하지만, 검색→재랭킹→필터링처럼 <strong>결정적으로 항상
+      거쳐야 하는 다단계 파이프라인</strong>이면 그래프로 명시적으로 그리는 게 낫다.
+    </p>
+
+    <h3>구버전 Memory 클래스는 죽었다 — 무엇으로 대체됐는가</h3>
+    <p>
+      LangChain 0.x 시절의 <code>ConversationBufferMemory</code>, <code>ConversationBufferWindowMemory</code>,
+      <code>ConversationSummaryMemory</code>, <code>ConversationEntityMemory</code>는 0.3.1부터 deprecated
+      되었고, 1.x 라인에서는 실질적으로 동작하지 않는다. 공식 마이그레이션 가이드는 이 클래스들을
+      <strong>LangGraph의 영속성(persistence) 메커니즘</strong>으로 대체하라고 명시한다. 이 영속성은 목적에 따라
+      완전히 다른 두 컴포넌트로 나뉜다.
+    </p>
+    <table>
+      <tr><th>축</th><th>Short-term memory</th><th>Long-term memory</th></tr>
+      <tr><td>범위</td><td>하나의 <strong>thread(대화 세션)</strong> 안</td><td><strong>thread를 넘나드는</strong> 사용자/조직 단위</td></tr>
+      <tr><td>구현체</td><td><strong>Checkpointer</strong> (<code>MemorySaver</code>/<code>InMemorySaver</code>: dev, <code>SqliteSaver</code>/<code>PostgresSaver</code>: prod)</td><td><strong>Store</strong> (<code>BaseStore</code> 인터페이스, <code>InMemoryStore</code>: dev, <code>PostgresStore</code>: prod)</td></tr>
+      <tr><td>저장 단위</td><td>그래프의 <strong>전체 state 스냅샷</strong>(메시지 이력 포함)을 매 스텝마다</td><td>개발자가 명시적으로 <code>put()</code>한 <strong>임의의 key-value(+ namespace)</strong></td></tr>
+      <tr><td>조회 방식</td><td><code>thread_id</code>로 이전 상태 복원</td><td><code>get</code>/<code>list_keys</code> 또는 <strong>semantic search</strong>(임베딩 유사도)</td></tr>
+      <tr><td>대표 용도</td><td>"방금 뭐라고 했더라" — 대화 맥락 유지, time travel/replay(Day 8)</td><td>"이 사용자는 예전에 이런 걸 좋아했다" — 세션이 끝나도 남는 사용자 프로필/선호</td></tr>
+    </table>
+    <pre><code><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver
+<span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore
+<span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent
+
+checkpointer = InMemorySaver()   <span class="comment"># short-term: thread 안의 대화 이력</span>
+store = InMemoryStore()          <span class="comment"># long-term: thread를 넘나드는 사용자 메모리</span>
+
+agent = create_agent(
+    model=<span class="string">"claude-sonnet-5"</span>,
+    tools=[search_docs],
+    checkpointer=checkpointer,
+    store=store,
+)
+<span class="comment"># thread_id가 같으면 같은 대화, 다르면 새 대화(그러나 store는 공유됨)</span>
+agent.invoke({<span class="string">"messages"</span>: [...]}, config={<span class="string">"configurable"</span>: {<span class="string">"thread_id"</span>: <span class="string">"user-42-session-9"</span>}})</code></pre>
+
+    <h3>Store의 semantic search — "기억"을 임베딩 유사도로 찾기</h3>
+    <p>
+      <code>BaseStore</code>는 단순 key-value 저장소가 아니다. 임베딩 함수를 설정해두면 <code>search</code>/
+      <code>asearch</code>가 자연어 쿼리를 받아 <strong>저장된 메모리를 의미적 유사도 순으로</strong> 반환한다.
+      "사용자가 예전에 채식주의자라고 말한 적 있는지" 같은 걸 정확한 키 없이 자연어로 찾을 수 있다는
+      뜻이다. 이건 Day 4에서 다룬 구조화된 출력의 스키마 검증과는 다른 종류의 신뢰성 문제를 만든다 —
+      <strong>정확한 매칭이 아니라 확률적 유사도 매칭</strong>이므로 recall(관련 기억을 놓치지 않는가)과
+      precision(관련 없는 기억을 끼워오지 않는가) 사이의 트레이드오프가 항상 존재한다.
+    </p>
+    <pre><code><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore
+
+store = InMemoryStore(index={<span class="string">"embed"</span>: embeddings_model, <span class="string">"dims"</span>: <span class="number">1536</span>})
+store.put((<span class="string">"user-42"</span>, <span class="string">"preferences"</span>), <span class="string">"dietary"</span>, {<span class="string">"note"</span>: <span class="string">"채식주의자, 견과류 알레르기"</span>})
+
+<span class="comment"># 나중에 정확한 키 없이 자연어로 검색</span>
+results = store.search((<span class="string">"user-42"</span>, <span class="string">"preferences"</span>), query=<span class="string">"이 사용자가 못 먹는 음식이 있나?"</span>)</code></pre>
+
+    <h3>"Memory를 자동으로 써주는 middleware"는 없다 — LangMem이 그 공백을 메운다</h3>
+    <p>
+      <code>langchain.agents.middleware</code> 소스를 직접 확인하면, PII 리댁션·호출 제한·HITL 같은 built-in
+      middleware는 있어도 <strong>"대화에서 장기기억 후보를 추출해서 Store에 자동으로 써주는" middleware는
+      없다</strong>. 이유는 단순하다 — "무엇을 장기기억으로 남길지"는 도메인마다 판단 기준이 완전히
+      다르기 때문에, 프레임워크가 일반화해서 자동화하기 어렵다. 그래서 실무에서는 두 가지 중 하나를 택한다.
+    </p>
+    <ul>
+      <li><strong>직접 구현:</strong> <code>after_model</code> hook에서 "이 턴에 장기기억으로 남길 만한 정보가
+      있는가"를 판단하는 별도 LLM 호출을 걸고, 조건에 맞으면 <code>store.put()</code>을 호출한다.</li>
+      <li><strong>LangMem 사용:</strong> <code>langchain-ai/langmem</code>은 <code>BaseStore</code> 위에 얹는
+      <strong>별도 패키지</strong>로, 메모리 추출·메모리 관리용 tool·백그라운드 메모리 매니저를 제공한다.
+      1.x 코어에 흡수된 게 아니라 여전히 독립 패키지로 유지되고 있다는 점을 정확히 알아야 한다 — "공식
+      장기기억 API"가 아니라 "가장 흔히 곁들이는 동반 라이브러리"다.</li>
+    </ul>
+
+    <h3>Context 압박 관리 — SummarizationMiddleware</h3>
+    <p>
+      Short-term memory(checkpointer)에 대화가 계속 쌓이면 매 모델 호출마다 <strong>전체 이력이 context에
+      들어가면서 토큰 비용이 선형으로 증가</strong>한다. 이걸 완화하는 built-in middleware가
+      <code>SummarizationMiddleware</code>다 — 토큰 수가 임계치(<code>trigger</code>)에 가까워지면 오래된
+      메시지를 요약으로 압축하고, 최근 메시지(기본 마지막 20개, <code>keep</code>으로 조절)와 AI/Tool
+      메시지 쌍은 그대로 보존한다.
+    </p>
+    <pre><code><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> SummarizationMiddleware
+
+agent = create_agent(
+    model=<span class="string">"claude-sonnet-5"</span>,
+    tools=[search_docs],
+    checkpointer=checkpointer,
+    middleware=[
+        SummarizationMiddleware(
+            model=<span class="string">"claude-haiku-4-5"</span>,  <span class="comment"># 요약 전용으로는 저렴한 모델을 쓰는 게 실무 관행</span>
+            trigger={<span class="string">"tokens"</span>: <span class="number">4000</span>},
+            keep={<span class="string">"messages"</span>: <span class="number">20</span>},
+        ),
+    ],
+)</code></pre>
+    <div class="callout callout-warn">
+      <strong>주의:</strong> 이건 short-term memory(대화 내 context)를 압축하는 것이지, long-term memory(Store)에
+      뭔가를 "저장"하는 게 아니다. 요약된 옛 대화는 압축된 채로 이번 thread에만 남고, 다른 thread에서는
+      보이지 않는다. 두 축을 섞어서 "요약하니까 장기기억도 해결됐다"고 착각하면 안 된다.
+    </div>
+
+    <h3>실제로 터진 문제 — checkpoint 직렬화 오버헤드</h3>
+    <p>
+      2026년에 보고된 실제 이슈(<code>langgraph</code> GitHub #7714)는 16턴짜리 ReAct agent의 기본 체크포인트
+      직렬화가 최적화된 형태 대비 <strong>저장 용량 85.3%, 토큰 수 37.8%가 불필요하게 부풀려진다</strong>는 걸
+      측정으로 보여준다. 즉 short-term memory를 "그냥 켜두기만" 하면 매 후속 호출의 <strong>입력 토큰
+      비용이 눈덩이처럼 불어나는 게 기본 동작</strong>이라는 뜻이다. 같은 시기 문서 이슈(<code>docs</code> #2356)는
+      "체크포인트에 쌓인 이력이 전부 자동으로 모델 context에 들어가는지, 개발자가 부분집합을 선택해야
+      하는지"가 문서상 불명확하다는 점도 지적한다 — 이건 실무에서 그대로 함정이 된다.
+    </p>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+    <p>
+      이 질문은 <strong>"RAG 튜토리얼을 따라해봤는가"</strong>가 아니라, <strong>"검색과 기억이라는 두 개념을
+      혼동하지 않고 각각을 올바른 컴포넌트에 배치할 수 있는가"</strong>, 그리고 <strong>"memory가 켜져
+      있으면 공짜가 아니라 토큰 비용과 정확도 리스크를 계속 지불하고 있다는 걸 아는가"</strong>를 함께 본다.
+    </p>
+    <ul>
+      <li><strong>Retrieval의 위치:</strong> retrieval이 agent 루프의 특수 기능이 아니라 tool이라는 걸 알고,
+      언제 tool로 충분하고 언제 그래프로 명시적 파이프라인을 짜야 하는지 판단하는가</li>
+      <li><strong>두 축의 분리:</strong> short-term(checkpointer, thread-scoped)과 long-term(Store, cross-thread)을
+      정확히 구분하고, 각각의 조회 방식(복원 vs semantic search) 차이를 아는가</li>
+      <li><strong>비용을 설계에 포함하는가:</strong> memory를 켜두는 것 자체가 토큰 비용·직렬화 오버헤드를
+      만든다는 것과, 이를 압축(summarization)으로 완화하는 것을 아는가</li>
+      <li><strong>확률적 검색의 한계:</strong> semantic search가 정확한 매칭이 아니라 유사도 기반이라
+      recall/precision trade-off가 항상 존재한다는 걸 이해하는가</li>
+    </ul>
+    <div class="callout callout-warn">
+      Senior 개발자는 "memory를 추가했다"를 하나의 스위치로 말하지 않고, <strong>"이 정보는 이번 대화에서만
+      필요한가, 다음 세션에도 남아야 하는가"라는 질문에 먼저 답한 뒤 컴포넌트를 고르고, 그 선택이 만드는
+      토큰 비용과 검색 정확도 트레이드오프까지</strong> 하나의 설계 결정으로 설명한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 사용자가 세션을 다시 열 때마다 예전에 말한 선호를 처음부터 다시 설명해야 함</h3>
+    <p>
+      Checkpointer만 쓰고 있어서 <code>thread_id</code>가 바뀌는 순간(앱 재시작, 새 대화 시작) 사용자의
+      선호(알레르기, 선호 브랜드 등)가 전부 사라졌다. → Store를 추가해서 "이 정보는 세션이 끝나도
+      남아야 하는가"를 기준으로 일부 정보를 <code>after_model</code> hook에서 <code>store.put()</code>으로
+      명시적으로 승격시켰다. 모든 대화를 장기기억으로 남기지 않고, <strong>재사용 가치가 있다고 판단된
+      정보만 선별</strong>해서 저장하는 게 핵심이었다.
+    </p>
+
+    <h3>상황 2: 긴 대화가 이어질수록 응답 속도가 느려지고 비용이 급증</h3>
+    <p>
+      고객지원 챗봇이 한 세션 안에서 40~50턴씩 이어지는 경우가 흔했는데, 매 턴마다 전체 이력이 context에
+      들어가면서 모델 호출 비용이 선형으로 증가했다. → <code>SummarizationMiddleware</code>를 추가해
+      토큰 임계치를 넘으면 오래된 대화를 요약하고 최근 20개 메시지만 원문으로 유지하도록 바꿔서 비용
+      증가를 완화했다. 다만 요약 과정에서 세부 수치(계약 금액 등)가 뭉개진 사고가 있어, <strong>수치·ID처럼
+      정확해야 하는 정보는 요약 대상에서 제외하고 별도로 Store에 저장</strong>하는 정책을 추가했다.
+    </p>
+
+    <h3>상황 3: Semantic search가 관련 없는 옛 기억을 끌어와 답변이 엉뚱해짐</h3>
+    <p>
+      "이 사용자가 선호하는 색상"을 물었는데, 몇 달 전 다른 맥락에서 언급된 "빨간색 경고"라는 문구가
+      임베딩 유사도로 걸려서 잘못된 답변에 섞여 들어갔다. → 저장 시 namespace를 세분화(예:
+      <code>(user_id, "preferences", "color")</code>처럼)하고, 검색 결과에 <strong>유사도 점수 하한선</strong>을
+      둬서 애매한 매칭은 아예 모델에 넘기지 않도록 필터링했다. Semantic search는 "관련 있어 보이는 것"이지
+      "정확히 맞는 것"이 아니라는 전제를 코드에 반영한 사례다.
+    </p>
+
+    <h3>상황 4: 리트리버 tool이 항상 문서를 4개 가져와서 관련 없는 문서까지 context에 섞임</h3>
+    <p>
+      <code>k=4</code>로 고정된 리트리버가 질문 난이도와 무관하게 항상 4개를 가져와서, 단순 질문에도
+      관련성 낮은 문서가 섞여 답변 품질이 떨어졌다. → 모델이 검색어와 필요 문서 수를 스스로 판단하게
+      tool description을 구체화하고, 리트리버 tool 안에서 <strong>유사도 점수로 2차 필터링</strong>을
+      추가했다. "retrieval = tool"이라는 설계를 활용해 <strong>모델이 검색 전략 자체를 조정할 수 있게</strong>
+      만든 게 핵심 교훈이었다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Retrieval은 tool이라는 것부터 짚기</strong>
+        "create_agent에는 retrieval 전용 파라미터가 없습니다. 리트리버를 tool로 감싸서 다른 tool과
+        똑같이 등록하고, 모델이 스스로 검색 여부와 방식을 판단하는 agentic RAG 패턴을 씁니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Memory를 두 축으로 나눠서 설명하기</strong>
+        "Short-term memory는 checkpointer로 thread 안의 대화 이력을 유지하고, long-term memory는
+        Store로 thread를 넘나드는 정보를 key-value 또는 semantic search로 관리합니다. 이 둘은 목적과
+        조회 방식이 완전히 다릅니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Memory가 공짜가 아니라는 것을 비용 관점에서 짚기</strong>
+        "체크포인트에 대화가 쌓일수록 매 호출의 토큰 비용이 늘어나고, 직렬화 오버헤드도 실제로
+        보고된 문제입니다. 그래서 SummarizationMiddleware로 압축하거나 필요한 정보만 선별해서
+        Store로 승격시킵니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Semantic search의 한계를 인정하기</strong>
+        "Store의 semantic search는 임베딩 유사도 기반이라 정확한 매칭이 아닙니다. Recall과 precision
+        사이 트레이드오프가 있고, namespace 설계와 유사도 임계값으로 관련 없는 기억이 섞이는 걸
+        방지해야 합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>자동화의 공백을 인지하고 있음을 보여주기 (Senior 포인트)</strong>
+        "프레임워크는 무엇을 장기기억으로 남길지 자동으로 판단해주지 않습니다. 직접 after_model
+        hook에서 판단 로직을 짜거나, LangMem 같은 별도 패키지를 조합해야 합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+    <div class="callout callout-tip">
+      <p>
+        "LangChain agent에서 retrieval은 별도 기능이 아니라 tool입니다. 벡터 스토어를
+        retriever로 만들고 create_retriever_tool로 감싸서 다른 tool과 동일하게 등록하면, 모델이
+        스스로 언제 검색할지, 검색어를 어떻게 재구성할지 판단합니다. 이걸 agentic RAG라고 부르고,
+        검색 파이프라인을 항상 고정된 순서로 강제해야 한다면 create_agent 대신 LangGraph로 직접
+        노드를 구성합니다.
+      </p>
+      <p>
+        Memory는 두 축으로 나눠서 생각합니다. Short-term memory는 checkpointer가 담당하고, thread_id로
+        구분되는 하나의 대화 세션 안에서 전체 state를 스냅샷으로 저장·복원합니다. Long-term memory는
+        Store가 담당하고, thread를 넘나드는 사용자 프로필이나 선호 같은 정보를 key-value로 저장하거나
+        임베딩 기반 semantic search로 찾습니다. 이 둘은 목적이 다르기 때문에 구버전 ConversationBufferMemory
+        처럼 하나로 뭉뚱그려 쓰지 않습니다.
+      </p>
+      <p>
+        다만 memory를 켜두는 것 자체가 공짜가 아닙니다. 체크포인트에 대화가 쌓일수록 매 호출마다
+        전체 이력이 context에 들어가서 토큰 비용이 늘어나고, 실제로 기본 직렬화 방식의 오버헤드가
+        문제로 보고된 사례도 있습니다. 그래서 SummarizationMiddleware로 오래된 메시지를 압축하되
+        수치처럼 정확해야 하는 정보는 요약 대상에서 제외합니다. Long-term memory 쪽은 무엇을 저장할지
+        프레임워크가 자동으로 판단해주지 않기 때문에, after_model hook에서 직접 판단 로직을 짜거나
+        LangMem 같은 별도 패키지를 조합합니다. 그리고 semantic search는 정확한 매칭이 아니라 유사도
+        기반이라는 걸 항상 전제하고, namespace 설계와 유사도 임계값으로 관련 없는 기억이 섞여드는 걸
+        막습니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "왜 LangChain은 retrieval을 create_agent의 1급 파라미터로 만들지 않았을까요?"</h3>
+    <p><strong>약한 답변:</strong> "아직 그 기능을 안 만들어서 그런 것 같습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "의도된 설계라고 봅니다. Retrieval을 특수한 1급 개념으로 넣으면 '언제 검색할지'가 프레임워크
+      레벨에서 고정되어 버립니다. Tool로 유지하면 모델이 질문의 성격에 따라 검색 여부, 검색 횟수,
+      검색어 재구성까지 스스로 판단할 수 있고, 이게 바로 agentic RAG의 핵심입니다. 결정적으로 항상
+      거쳐야 하는 다단계 검색 파이프라인이 필요하면 그때는 tool 대신 LangGraph 노드로 명시적으로
+      그리면 됩니다."
+    </p>
+
+    <h3>F2. "체크포인터에 쌓인 대화 이력이 전부 자동으로 모델 context에 들어가나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "이 부분은 실제로 커뮤니티에서도 문서가 불명확하다고 지적된 지점입니다. 체크포인터는 state
+      전체를 저장·복원하는 역할이고, 그 state의 messages 필드가 보통 모델 호출의 context로 들어가는데,
+      개발자가 별도로 trim이나 summarization을 걸지 않으면 대화가 길어질수록 context가 계속 자랍니다.
+      그래서 저는 memory를 켤 때 반드시 SummarizationMiddleware나 메시지 트리밍 정책을 함께 설계해서
+      '무제한으로 쌓이지 않는다'는 걸 보장합니다."
+    </p>
+
+    <h3>F3. "Store의 semantic search는 항상 정확한가요?"</h3>
+    <p><strong>약한 답변:</strong> "임베딩 기반이니까 관련 있는 걸 잘 찾아줍니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "아닙니다. 임베딩 유사도는 확률적 매칭이라 recall과 precision 사이 트레이드오프가 항상
+      존재합니다. 벤치마크에 따라 장기기억 라이브러리마다 검색 지연시간과 정확도 특성도 크게
+      달라질 수 있어서, '정확한 조회'가 아니라 '관련 있어 보이는 후보를 가져오는 것'으로 이해하고
+      설계합니다. 그래서 namespace를 세분화하고 유사도 점수 하한선을 둬서 애매한 매칭이 그대로
+      모델에 들어가지 않게 막습니다."
+    </p>
+
+    <h3>F4. "왜 LangChain은 memory-write를 자동화하는 built-in middleware를 안 만들었을까요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "Context 압박 관리(SummarizationMiddleware)는 '토큰 임계치를 넘었는가'라는 일반화 가능한 기준이
+      있어서 built-in으로 만들기 쉽습니다. 반면 '이 정보를 장기기억으로 남길 가치가 있는가'는 도메인마다
+      판단 기준이 완전히 다릅니다 — 고객지원 봇과 코딩 어시스턴트가 남겨야 할 정보가 다르니까요.
+      그래서 프레임워크는 Store라는 저장소만 제공하고, 무엇을 저장할지는 after_model hook에서
+      직접 판단 로직을 짜거나 LangMem 같은 메모리 관리 전용 패키지를 조합하도록 열어뒀다고 봅니다."
+    </p>
+
+    <h3>F5. "체크포인트 직렬화 오버헤드는 실무에서 어떻게 완화하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "가장 먼저 체크포인터가 매 호출마다 전체 state를 그대로 직렬화한다는 걸 인지해야 합니다.
+      완화 방법은 세 가지로 조합합니다 — 첫째 SummarizationMiddleware로 오래된 메시지를 압축해서
+      state 자체를 줄이고, 둘째 state에 불필요한 대용량 필드(예: 원본 검색 결과 전체)를 그대로
+      들고 있지 않도록 노드에서 필요한 부분만 추려 저장하고, 셋째 프로덕션 checkpointer(Postgres 등)의
+      직렬화 방식과 스토리지 비용을 모니터링해서 대화가 길어지는 서비스에서 비용이 선형 이상으로
+      늘지 않는지 주기적으로 확인합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>Retrieval이 <strong>agent 루프의 특수 기능이 아니라 tool</strong>이라는 것을 정확히 안다</li>
+          <li>Short-term(checkpointer)과 long-term(Store)을 <strong>범위와 조회 방식</strong>으로 명확히 구분한다</li>
+          <li>Memory가 <strong>토큰 비용·직렬화 오버헤드</strong>를 만든다는 것을 실제 수치/사례로 안다</li>
+          <li>Semantic search의 <strong>recall/precision trade-off</strong>를 인지하고 필터링 전략을 설명한다</li>
+          <li>Memory-write 자동화의 <strong>공백을 인지</strong>하고 직접 설계 또는 보조 라이브러리 조합을 언급한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"RAG는 벡터 DB에 넣고 검색하면 된다"는 <strong>단순 파이프라인 설명</strong>에 그침</li>
+          <li>Memory를 <strong>"대화 기억해주는 기능"</strong> 하나로 뭉뚱그리고 short/long-term을 구분 못 함</li>
+          <li>Memory를 켜두면 <strong>비용이 늘어난다는 것을 인지하지 못함</strong></li>
+          <li>Semantic search가 <strong>항상 정확하다고 가정</strong></li>
+          <li>구버전 <code>ConversationBufferMemory</code>를 여전히 표준으로 알고 있음</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 retrieval과 memory를 "기능 나열"이 아니라 <strong>"이 정보가
+      어느 범위에서 필요한가, 그리고 그 선택이 만드는 비용·정확도 트레이드오프가 무엇인가"</strong>라는
+      하나의 설계 축으로 설명한다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "ConversationBufferMemory 같은 memory 클래스를 계속 써도 된다"</h3>
+    <p>
+      <strong>사실:</strong> 0.3.1부터 deprecated되었고 1.x에서는 동작하지 않는다. 공식 마이그레이션
+      가이드는 checkpointer(short-term)와 Store(long-term)로 대체하라고 명시한다.
+    </p>
+
+    <h3>오해 2: "memory를 켜두면 대화 맥락을 더 잘 이해하니 무조건 좋다"</h3>
+    <p>
+      <strong>사실:</strong> Checkpointer에 대화가 쌓일수록 매 호출의 토큰 비용이 늘고, 직렬화 오버헤드도
+      실제로 보고된 문제다. Memory는 정확도를 사기 위해 비용을 지불하는 트레이드오프지, 무조건적인
+      이득이 아니다.
+    </p>
+
+    <h3>오해 3: "Semantic search는 임베딩 기반이니 정확한 매칭이다"</h3>
+    <p>
+      <strong>사실:</strong> 유사도 기반 확률적 매칭이라 recall/precision trade-off가 항상 있다. 관련
+      없어 보이는 옛 기억이 유사도로 걸려 잘못된 답변에 섞여 들어갈 수 있다.
+    </p>
+
+    <h3>오해 4: "LangMem이나 Store를 쓰면 장기기억 저장이 자동으로 처리된다"</h3>
+    <p>
+      <strong>사실:</strong> Store는 저장소(인프라)를 제공할 뿐, "무엇을 저장할지" 판단은 자동화되어
+      있지 않다. LangMem도 그 판단을 돕는 도구를 제공하는 별도 패키지이지 완전 자동화가 아니며,
+      대부분 도메인 특화 판단 로직을 직접 설계해야 한다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Retrieval·Memory 설계 전 점검표</h2>
+    <table>
+      <tr><th>항목</th><th>확인할 것</th><th>리스크</th></tr>
+      <tr>
+        <td>Retrieval 통합 방식</td>
+        <td>단순 RAG인지, 항상 고정 순서로 거쳐야 하는 다단계 파이프라인인지(tool vs 그래프 노드) 판단했는가</td>
+        <td><span class="badge badge-yellow">과도한 단순화 또는 과도한 복잡화</span></td>
+      </tr>
+      <tr>
+        <td>Memory 범위 구분</td>
+        <td>이 정보가 이번 대화에서만 필요한지, 세션을 넘어 남아야 하는지 명시적으로 구분했는가</td>
+        <td><span class="badge badge-red">세션 종료 시 중요 정보 유실</span></td>
+      </tr>
+      <tr>
+        <td>토큰 비용 관리</td>
+        <td>SummarizationMiddleware나 트리밍 정책 없이 checkpointer만 켜둔 채 방치하고 있지 않은가</td>
+        <td><span class="badge badge-red">비용 선형 증가</span></td>
+      </tr>
+      <tr>
+        <td>Semantic search 필터링</td>
+        <td>namespace 세분화와 유사도 임계값으로 관련 없는 기억 유입을 막았는가</td>
+        <td><span class="badge badge-yellow">엉뚱한 기억으로 잘못된 답변</span></td>
+      </tr>
+      <tr>
+        <td>Long-term memory 쓰기 정책</td>
+        <td>무엇을 장기기억으로 승격할지 판단 로직(직접 구현 또는 LangMem)을 명시적으로 설계했는가</td>
+        <td><span class="badge badge-yellow">기억 누락 또는 불필요한 저장 폭증</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>Retrieval과 memory를 "RAG 붙이면 된다", "메모리 켜면 된다" 정도로만 뭉뚱그려 설명함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>Retriever를 tool로 감싸본 경험이 있고, checkpointer를 붙여 대화 맥락을 유지해본 적 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>Short-term(checkpointer)과 long-term(Store)을 구분해서 설명하고, semantic search와 SummarizationMiddleware의 용도를 안다</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>Retrieval을 tool 대 그래프 노드로 언제 나눌지 판단하고, memory의 토큰/직렬화 비용과 semantic search의
+      recall/precision trade-off, 장기기억 쓰기 정책의 설계 공백까지 하나의 설계 결정으로 연결해서 설명함</span>
+    </div>
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. create_agent에 retrieval 전용 파라미터가 없는 이유를 agentic RAG 철학으로 설명할 수 있는가?<br>
+      2. Short-term memory와 long-term memory를 구현체(checkpointer vs Store)와 조회 방식 차이로 구분해서 설명할 수 있는가?<br>
+      3. Memory를 켜두는 것이 왜 공짜가 아닌지, 실제 비용 증가 메커니즘을 설명할 수 있는가?<br>
+      4. Semantic search가 정확한 매칭이 아니라는 것을 알고, 관련 없는 기억 유입을 막는 구체적 방법을 제시할 수 있는가?<br>
+      5. 장기기억에 무엇을 저장할지 프레임워크가 자동으로 판단해주지 않는다는 것과, 이를 어떻게 직접 설계하는지 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>Retrieval은 create_agent의 1급 기능이 아니라 tool</strong>이다. 리트리버를 tool로 감싸
+      모델이 검색 여부·전략을 스스로 판단하게 하는 게 agentic RAG이고, 고정된 다단계 파이프라인이
+      필요하면 LangGraph 노드로 명시적으로 구성한다.</li>
+      <li><strong>구버전 memory 클래스(ConversationBufferMemory 등)는 죽었다</strong> — short-term memory는
+      checkpointer(thread-scoped), long-term memory는 Store(cross-thread)로 완전히 나뉘어 대체됐다.</li>
+      <li><strong>Store는 semantic search를 지원</strong>하지만 이건 확률적 유사도 매칭이라 recall/precision
+      trade-off가 항상 존재한다 — namespace 설계와 유사도 임계값으로 관리해야 한다.</li>
+      <li><strong>Memory는 공짜가 아니다.</strong> Checkpointer에 대화가 쌓일수록 토큰 비용과 직렬화
+      오버헤드가 늘어나며, 이는 실제로 보고된 프로덕션 문제다. SummarizationMiddleware로 압축하되
+      정확해야 하는 정보는 요약 대상에서 제외한다.</li>
+      <li><strong>"무엇을 장기기억으로 남길지"는 자동화되어 있지 않다.</strong> after_model hook에서 직접
+      판단 로직을 짜거나 LangMem 같은 별도 패키지를 조합해야 한다 — LangMem은 코어에 흡수된 게 아니라
+      독립 패키지다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 5 완료 · 다음: Day 6 — Guardrails와 Context Engineering</span>
+  </div>
+
+</div>
+</body>
+</html>
