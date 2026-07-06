@@ -8,12 +8,12 @@
 | 2 | 2026-07-03 | Pod 설계, Probe, Resource Request/Limit | [0002-pod-probe-resource-request-limit.html](lessons/0002-pod-probe-resource-request-limit.html) |
 | 3 | 2026-07-04 | Deployment Rollout/Rollback과 배포 안정성 | [0003-deployment-rollout-rollback-stability.html](lessons/0003-deployment-rollout-rollback-stability.html) |
 | 4 | 2026-07-05 | StatefulSet과 상태 유지 워크로드 설계 | [0004-statefulset-stateful-workload-design.html](lessons/0004-statefulset-stateful-workload-design.html) |
+| 5 | 2026-07-06 | DaemonSet과 노드 레벨 운영 | [0005-daemonset-node-level-operations.html](lessons/0005-daemonset-node-level-operations.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | DaemonSet과 노드 레벨 운영 | 노드당 1개 보장, 업그레이드 롤아웃, 로그/모니터링 에이전트 배치 패턴, 리소스 경합 |
 | 6 | Service, CoreDNS, 서비스 디스커버리 | ClusterIP/NodePort/LoadBalancer/Headless, kube-proxy 동작(iptables vs nftables), CoreDNS 캐싱/장애 패턴 |
 | 7 | Ingress vs Gateway API — 트래픽 라우팅 설계 | Ingress Controller 구조, Gateway API 역할 분리(GatewayClass/Gateway/HTTPRoute), 마이그레이션 판단 |
 | 8 | CNI 네트워킹과 클러스터 네트워크 트러블슈팅 | Pod 네트워크 모델, CNI 플러그인 비교, NetworkPolicy, DNS/연결 장애 진단 순서 |
@@ -31,7 +31,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — Day 5: DaemonSet과 노드 레벨 운영으로 진행 예정.
+**Day 5 완료** — Day 6: Service, CoreDNS, 서비스 디스커버리로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -53,7 +53,11 @@
 - [x] RollingUpdate 역순 진행과 partition을 이용한 순번 단위 canary 검증 (Day 4)
 - [x] PersistentVolumeClaimRetentionPolicy(GA, v1.32~)의 whenDeleted/whenScaled Retain vs Delete 트레이드오프 (Day 4)
 - [x] PV 토폴로지 제약(존/노드 바인딩)이 StatefulSet Pod 재스케줄을 막을 수 있다는 것과 StatefulSet이 클러스터링 로직 자체를 대신하지 않는다는 경계 (Day 4)
-- [ ] DaemonSet 운영 (예정 Day 5)
+- [x] DaemonSet의 "노드당 1개" 모델과 v1.17부터 기본 스케줄러가 배치를 결정한다는 것 (Day 5)
+- [x] 기본 toleration(NoExecute, tolerationSeconds 없음)으로 NotReady/Unreachable 노드에서도 DaemonSet Pod가 남아있는 이유 (Day 5)
+- [x] RollingUpdate maxUnavailable(기본) vs maxSurge(GA, v1.25~)의 선택 기준과 hostPort 제약 (Day 5)
+- [x] system-node-critical/system-cluster-critical PriorityClass의 필요성과 노드 압박 시 축출 순서 문제 (Day 5)
+- [x] DaemonSet request/limit이 노드 수만큼 곱해지는 효과와 오토스케일러 용량 계산에서의 overhead 반영 (Day 5)
 - [ ] Service/CoreDNS (예정 Day 6)
 - [ ] Ingress vs Gateway API (예정 Day 7)
 - [ ] CNI 네트워킹/NetworkPolicy (예정 Day 8)
