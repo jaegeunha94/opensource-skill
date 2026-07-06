@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — 웹 접근성(A11y) 심화 | 프론트엔드 10년차 이상 개발자 Interview</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">프론트엔드 10년차 이상 개발자 Interview</a> › <a href="./">레슨 목록</a> › Day 5
+  </nav>
+
+  <h1>Day 5 — 웹 접근성(A11y) 심화</h1>
+  <p class="subtitle">접근성 트리, WAI-ARIA, 키보드 인터랙션 모델, 스크린리더 대응, 프로덕션 접근성 감사 절차 · 2026-07-06</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#widget-patterns">커스텀 위젯 접근성 — role, state, 키보드 매핑</a></li>
+      <li><a href="#focus-live">포커스 관리와 Live Region</a></li>
+      <li><a href="#audit">프로덕션 접근성 감사 절차</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"커스텀 드롭다운 컴포넌트를 만들었는데, 스크린리더 사용자가 이 컴포넌트를 전혀 조작할 수 없다는 피드백을 받았습니다. 어떤 부분부터 점검하시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"마우스를 전혀 쓰지 않고 키보드만으로 우리 앱의 핵심 플로우(로그인 → 검색 → 결제)를 완료할 수 있는지, 어떻게 검증하시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"ARIA 속성을 잘못 사용하면 오히려 접근성을 해칠 수 있다고들 하는데, 실제로 어떤 경우에 그런 일이 벌어지나요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"ARIA 속성 이름을 몇 개 아는가"가 아니라, 브라우저가 DOM과 별개로 만드는 접근성 트리(Accessibility Tree)를 이해하고, 그 트리에 노출되는 role·name·state·value가 실제로 시각적 UI와 어떻게 어긋날 수 있는지 진단할 수 있는가</strong>를 테스트합니다. 접근성은 "체크리스트를 따라가면 끝나는 작업"으로 오해받기 쉽지만, 시니어는 접근성 문제를 브라우저 렌더링 파이프라인의 연장선 — 즉 DOM 트리 하나에서 시각적 렌더 트리와 접근성 트리라는 <em>두 개의 서로 다른 소비자</em>가 파생된다는 구조로 이해해야 합니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>시맨틱 HTML을 먼저 고려하는가</strong> — 커스텀 컴포넌트를 만들기 전에 네이티브 요소(<code>&lt;select&gt;</code>, <code>&lt;button&gt;</code>, <code>&lt;dialog&gt;</code>)로 해결 가능한지부터 판단하는가, 아니면 곧바로 <code>&lt;div&gt;</code> + ARIA 조합으로 재발명하는가.</li>
+      <li><strong>ARIA를 "장식"이 아니라 "계약"으로 이해하는가</strong> — <code>role</code>을 선언하면 그 role에 해당하는 키보드 동작, 상태 전이, 자식 구조까지 <strong>전부 직접 구현해야 하는 책임</strong>이 함께 따라온다는 것을 아는가(W3C WAI-ARIA Authoring Practices Guide의 계약).</li>
+      <li><strong>포커스 관리를 설계 문제로 다루는가</strong> — 모달을 열 때 포커스를 어디로 옮기고, 닫을 때 어디로 되돌리며, Tab 키가 배경 콘텐츠로 새어나가지 않도록 트랩을 거는 구체적 메커니즘을 아는가.</li>
+      <li><strong>재현 가능한 감사(audit) 절차가 있는가</strong> — "스크린리더로 한번 켜봤어요" 수준이 아니라, 자동화 도구와 수동 키보드 점검과 실제 스크린리더 조합 테스트를 층위별로 조합하는 절차를 아는가.</li>
+      <li><strong>비즈니스 언어로 우선순위를 설명할 수 있는가</strong> — 접근성을 "선의의 추가 작업"이 아니라 법적 리스크(WCAG/ADA 소송), TAM(도달 가능 시장) 확장, SEO·성능과의 구조적 연결로 설명할 수 있는가.</li>
+    </ul>
+
+    <p>주니어~중니어에서 자주 나오는 답변 패턴: "<code>aria-label</code>을 붙이겠습니다"처럼 증상 하나에 속성 하나를 대응시키거나, "Lighthouse 접근성 점수를 100점으로 만들겠습니다"처럼 자동화 도구 점수를 목표 그 자체로 착각하는 경우입니다. 시니어는 속성 하나가 아니라 <strong>이 컴포넌트가 접근성 트리에서 어떤 역할·상태·이름으로 노출되고, 어떤 키보드 이벤트에 응답해야 하는지 전체 계약</strong>부터 짚습니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>접근성 트리(Accessibility Tree)란 무엇인가</h3>
+    <p>브라우저는 화면에 그림을 그리기 위한 <strong>렌더 트리</strong>와는 별도로, 보조 기술(스크린리더, 음성 제어 소프트웨어)에 정보를 전달하기 위한 <strong>두 번째 트리</strong>를 DOM으로부터 만들어냅니다. 이것이 접근성 트리입니다. 도서관에 비유하면, 렌더 트리는 "책이 서가에 어떻게 진열되어 눈에 보이는가"이고, 접근성 트리는 "시각장애인을 위한 점자 카탈로그에 이 책이 어떤 제목·분류·상태로 등록되어 있는가"입니다. 두 트리는 같은 DOM에서 나오지만 <strong>완전히 다른 소비자를 위한 별도의 표현</strong>이며, 개발자가 시각적으로만 확인하고 넘어가면 접근성 트리 쪽은 비어있거나 잘못된 정보로 남을 수 있습니다.</p>
+
+    <h3>접근성 트리의 노드는 무엇으로 구성되는가 — Role, Name, State, Value</h3>
+    <p>스크린리더는 접근성 트리의 각 노드를 4가지 정보로 사용자에게 읽어줍니다.</p>
+    <ul>
+      <li><strong>Role(역할)</strong> — "이게 뭐 하는 요소인가"(버튼인가, 체크박스인가, 탭인가). <code>&lt;button&gt;</code>은 자동으로 <code>role=button</code>을 갖지만, <code>&lt;div onclick="..."&gt;</code>은 역할이 없어 스크린리더에게는 "그냥 텍스트 덩어리"로만 들립니다.</li>
+      <li><strong>Name(접근 가능한 이름)</strong> — "이게 뭐라고 불리는가"(버튼의 텍스트, 아이콘 버튼의 <code>aria-label</code>). 아이콘만 있는 버튼에 이름이 없으면 스크린리더는 "버튼"이라고만 읽어 어떤 동작인지 알 수 없습니다.</li>
+      <li><strong>State(상태)</strong> — "지금 어떤 상태인가"(체크박스가 체크됐는지, 드롭다운이 펼쳐졌는지 — <code>aria-checked</code>, <code>aria-expanded</code>).</li>
+      <li><strong>Value(값)</strong> — 슬라이더나 프로그레스바처럼 수치를 갖는 요소의 현재 값(<code>aria-valuenow</code>).</li>
+    </ul>
+    <p>커스텀 드롭다운이 스크린리더 사용자에게 "조작 불가능"으로 느껴지는 근본 원인은 대부분 이 4가지 중 하나 이상이 접근성 트리에 제대로 노출되지 않았기 때문입니다 — 예를 들어 role은 있는데 <code>aria-expanded</code> state가 갱신되지 않아 "펼쳐졌는지 닫혔는지" 스크린리더가 전혀 알려주지 못하는 식입니다.</p>
+
+    <h3>스크린리더는 실제로 어떻게 "탐색"하는가 — Browse Mode와 Focus Mode</h3>
+    <p>스크린리더 사용자는 마우스 커서 대신 <strong>가상 커서(virtual cursor)</strong>로 페이지를 탐색합니다. 대부분의 시간은 "Browse Mode"(문서를 읽어 내려가듯 화살표 키로 요소 하나하나를 순회하는 모드)에 있다가, 폼 입력 필드나 커스텀 위젯처럼 실제 키 입력이 필요한 요소에 도달하면 자동으로 "Focus Mode"(키 입력이 그대로 애플리케이션에 전달되는 모드)로 전환됩니다. 커스텀 위젯을 만들 때 이 전환이 예상대로 일어나도록 올바른 role을 부여하지 않으면, 스크린리더는 계속 Browse Mode에 머물러 사용자의 화살표 키 입력을 위젯이 아니라 "다음 문서 요소로 이동"으로 해석해버립니다 — 이것이 "조작이 안 된다"는 제보의 실제 정체인 경우가 많습니다.</p>
+
+    <h3>WAI-ARIA란 무엇이고, 왜 "계약"인가</h3>
+    <p>WAI-ARIA(Web Accessibility Initiative - Accessible Rich Internet Applications)는 HTML 자체에 없는 role·state·property를 표현하기 위한 속성 집합입니다. 중요한 점은, <code>role="listbox"</code> 같은 속성을 선언하는 순간 그 요소는 <strong>"나는 listbox처럼 행동하겠다"고 브라우저와 보조 기술에 선언(약속)한 것</strong>이 됩니다. 이 약속을 지키려면 W3C의 <a href="#" style="color:inherit">ARIA Authoring Practices Guide(APG)</a>가 정의한 키보드 동작(화살표 키로 옵션 이동, Enter로 선택 등)까지 개발자가 <strong>전부 JavaScript로 직접 구현</strong>해야 합니다. 네이티브 <code>&lt;select&gt;</code>는 브라우저가 이 약속을 이미 구현해두었지만, <code>&lt;div role="listbox"&gt;</code>는 그 구현 책임이 전부 개발자에게 넘어옵니다.</p>
+
+    <h3>"No ARIA is better than Bad ARIA" 원칙이란 무엇인가</h3>
+    <p>role만 선언하고 그에 따르는 상태·키보드 동작을 구현하지 않으면, 스크린리더 사용자에게는 오히려 <strong>"이건 조작 가능한 위젯이다"라는 잘못된 기대</strong>를 심어준 뒤 그 기대를 배신하는 결과가 됩니다. ARIA를 아예 쓰지 않은 밋밋한 텍스트보다, ARIA로 "나는 인터랙티브 위젯"이라고 선언해놓고 실제로는 반응하지 않는 쪽이 사용자에게 훨씬 큰 혼란과 좌절을 줍니다. 그래서 WAI-ARIA 명세 스스로도 "가능하면 네이티브 HTML 시맨틱을 먼저 쓰고, ARIA는 네이티브로 표현할 수 없는 경우에만 최후 수단으로 쓰라"고 명시합니다.</p>
+
+    <h3>포커스 트랩(Focus Trap)이란 무엇인가</h3>
+    <p>모달 다이얼로그가 열려 있는 동안 Tab 키로 이동 가능한 범위를 모달 내부로 <strong>가둬두는 것</strong>입니다. 트랩이 없으면 스크린리더나 키보드 사용자가 Tab을 계속 누르다가 화면에는 안 보이지만 DOM에는 존재하는 배경 콘텐츠로 포커스가 새어나가, "모달이 열려 있는데 갑자기 배경의 다른 버튼에 포커스가 가 있는" 혼란스러운 상태에 빠집니다.</p>
+  </section>
+
+  <!-- 4. 커스텀 위젯 접근성 -->
+  <section id="widget-patterns">
+    <h2>4. 커스텀 위젯 접근성 — role, state, 키보드 매핑</h2>
+
+    <p>APG는 위젯 유형별로 필요한 role, 상태, 키보드 매핑을 표준 패턴으로 정의합니다. 대표적인 패턴은 다음과 같습니다.</p>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>위젯</th>
+          <th>핵심 role/state</th>
+          <th>필수 키보드 매핑</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>커스텀 드롭다운(Combobox)</td>
+          <td><code>role="combobox"</code> + <code>aria-expanded</code>, <code>aria-controls</code>, 목록에 <code>role="listbox"</code>, 옵션에 <code>role="option"</code></td>
+          <td>Enter/Space로 열기, ArrowDown/Up으로 옵션 이동, Enter로 선택, Escape로 닫고 트리거로 포커스 복귀</td>
+        </tr>
+        <tr>
+          <td>모달 다이얼로그</td>
+          <td><code>role="dialog"</code> + <code>aria-modal="true"</code>, <code>aria-labelledby</code></td>
+          <td>열릴 때 첫 포커스 가능 요소로 이동, Tab 순환을 내부로 트랩, Escape로 닫고 트리거 요소로 포커스 복귀</td>
+        </tr>
+        <tr>
+          <td>탭(Tabs)</td>
+          <td><code>role="tablist"</code>/<code>tab</code>/<code>tabpanel</code> + <code>aria-selected</code></td>
+          <td>ArrowLeft/Right로 탭 이동(자동 활성화 또는 수동 활성화 선택), Tab은 탭 목록에서 패널로만 이동</td>
+        </tr>
+        <tr>
+          <td>아코디언</td>
+          <td>트리거에 <code>aria-expanded</code>, <code>aria-controls</code></td>
+          <td>Enter/Space로 토글, ArrowDown/Up으로 헤더 간 이동(선택적)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>드롭다운의 두 가지 포커스 관리 전략 — 실제 포커스 이동 vs <code>aria-activedescendant</code></h4>
+      <p>옵션 목록을 탐색할 때 포커스를 관리하는 방법은 두 가지입니다.</p>
+      <ul>
+        <li><strong>Roving tabindex</strong>: 실제 DOM 포커스를 옵션 요소 사이로 직접 이동시킵니다(<code>tabindex="-1"</code>로 다른 옵션을 비활성화하고, 현재 옵션만 <code>tabindex="0"</code>). 구현이 직관적이지만 옵션마다 focus/blur 이벤트를 관리해야 합니다.</li>
+        <li><strong><code>aria-activedescendant</code></strong>: 실제 DOM 포커스는 컨테이너(예: input)에 그대로 두고, <code>aria-activedescendant</code> 속성값만 바꿔서 "지금 활성화된 것처럼 보이는 옵션의 id"를 스크린리더에 알립니다. 텍스트 입력을 유지하면서 목록을 탐색해야 하는 combobox(예: 자동완성 검색창)에 적합합니다.</li>
+      </ul>
+      <p>커스텀 드롭다운이 "조작 불가능"하다는 제보의 흔한 원인 중 하나가 바로 이것입니다 — 시각적으로는 옵션에 하이라이트가 표시되도록 CSS만 바꿔놓고, 실제 DOM 포커스도 <code>aria-activedescendant</code>도 갱신하지 않아서 접근성 트리 입장에서는 "아무 일도 일어나지 않는" 상태로 남는 경우입니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>코드 예시 — 최소한의 올바른 combobox 골격</h4>
+      <pre><code>&lt;label id="fruit-label" for="fruit-input"&gt;과일 선택&lt;/label&gt;
+&lt;input
+  id="fruit-input"
+  role="combobox"
+  aria-expanded="false"
+  aria-controls="fruit-listbox"
+  aria-activedescendant=""
+  aria-labelledby="fruit-label"
+/&gt;
+&lt;ul id="fruit-listbox" role="listbox" hidden&gt;
+  &lt;li id="opt-apple" role="option"&gt;사과&lt;/li&gt;
+  &lt;li id="opt-banana" role="option"&gt;바나나&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;script&gt;
+// 옵션 목록을 열 때: aria-expanded를 "true"로, listbox의 hidden을 제거
+// 화살표 키로 옵션 이동 시: aria-activedescendant를 현재 옵션 id로 갱신
+// 옵션 선택(Enter) 시: input 값 갱신 + aria-expanded="false" + listbox 다시 hidden
+// Escape 시: 목록 닫고 input에 포커스 유지
+&lt;/script&gt;</code></pre>
+      <p>이 골격에서 role만 있고 <code>aria-expanded</code>/<code>aria-activedescendant</code> 값이 실제 상태 변화와 함께 갱신되지 않으면, 시각적으로는 옵션이 열려 보여도 스크린리더에게는 "닫혀 있고 아무것도 선택되지 않은" 상태로 계속 보고됩니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. 포커스 관리와 Live Region -->
+  <section id="focus-live">
+    <h2>5. 포커스 관리와 Live Region</h2>
+
+    <div class="card">
+      <h4>모달 포커스 트랩 구현의 3가지 필수 동작</h4>
+      <ul class="step-block">
+        <li>
+          <div class="step-num">1</div>
+          <div><strong>열릴 때 포커스를 모달 내부로 이동</strong>
+            <p style="margin-top:0.3rem">보통 모달의 제목이나 첫 번째 인터랙티브 요소로 포커스를 옮깁니다. 이동시키지 않으면 포커스가 여전히 배경의 트리거 버튼에 남아있어, 스크린리더는 모달이 열렸다는 사실 자체를 사용자에게 알리지 못합니다.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div><strong>Tab 순환을 모달 내부로 제한</strong>
+            <p style="margin-top:0.3rem">모달 안의 마지막 포커스 가능 요소에서 Tab을 누르면 첫 번째 요소로, Shift+Tab을 누르면 마지막 요소로 순환하도록 <code>keydown</code>에서 직접 처리하거나(또는 네이티브 <code>&lt;dialog&gt;</code> 요소 사용), 배경 콘텐츠 전체에 <code>inert</code> 속성을 부여해 트리 자체를 포커스 대상에서 제외합니다.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div><strong>닫힐 때 포커스를 트리거 요소로 복귀</strong>
+            <p style="margin-top:0.3rem">모달을 열었던 버튼으로 포커스를 되돌리지 않으면, 스크린리더 사용자는 모달이 닫힌 후 "지금 포커스가 어디에 있는지" 전혀 알 수 없어 처음부터 다시 페이지를 탐색해야 하는 상황에 빠집니다.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h4>Live Region — 사용자가 포커스하지 않은 곳의 변화를 알리는 방법</h4>
+      <p>폼 제출 후 에러 메시지가 나타나거나, 장바구니 개수가 실시간으로 바뀌는 것처럼 <strong>사용자가 지금 보고 있지 않은 위치에서 콘텐츠가 바뀌는 경우</strong>, 스크린리더는 포커스가 그쪽에 없으므로 자동으로 알아채지 못합니다. 이때 <code>aria-live</code>로 "이 영역이 바뀌면 알려달라"고 미리 선언해둡니다.</p>
+      <ul>
+        <li><code>aria-live="polite"</code>: 사용자가 현재 하던 작업(읽기, 입력)을 끝낼 때까지 기다렸다가 알림. 대부분의 상태 업데이트(검색 결과 개수, 저장 완료 메시지)에 사용.</li>
+        <li><code>aria-live="assertive"</code>: 현재 읽고 있던 것을 즉시 중단하고 알림. 폼 검증 에러처럼 <strong>사용자 행동을 막아야 하는 긴급한 정보</strong>에만 제한적으로 사용해야 합니다 — 남용하면 매 순간 알림이 끼어들어 오히려 탐색을 방해합니다.</li>
+      </ul>
+      <p>흔한 실수는 라이브 리전 컨테이너를 <strong>동적으로 DOM에 추가</strong>하는 것입니다. <code>aria-live</code> 속성은 페이지 로드 시점부터 이미 DOM에 존재하는 컨테이너에 붙어 있어야 스크린리더가 "감시 대상"으로 등록합니다. 콘텐츠가 바뀔 때마다 컨테이너 자체를 새로 생성해서 삽입하면, 스크린리더는 그 변화를 감지하지 못하는 경우가 많습니다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 감사 절차 -->
+  <section id="audit">
+    <h2>6. 프로덕션 접근성 감사 절차</h2>
+
+    <p>"스크린리더로 한 번 열어봤다"는 감사가 아닙니다. 재현 가능하고 회귀를 방지할 수 있는 층위별 절차가 필요합니다.</p>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div><strong>자동화 도구로 1차 스캔(axe-core, Lighthouse)</strong>
+          <p style="margin-top:0.3rem">색상 대비 부족, 누락된 <code>alt</code>, 폼 레이블 누락처럼 규칙 기반으로 판별 가능한 문제를 빠르게 걸러냅니다. 다만 자동화 도구는 <strong>전체 접근성 이슈의 약 30~40% 정도만</strong> 탐지한다는 한계를 반드시 인지해야 합니다 — "이 요소에 role이 있는가"는 검사할 수 있어도 "이 role이 실제 사용자 경험에 맞게 동작하는가"는 검사하지 못합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div><strong>키보드 전용 수동 점검</strong>
+          <p style="margin-top:0.3rem">마우스를 물리적으로 치워두고 Tab/Shift+Tab/Enter/Space/화살표/Escape만으로 핵심 플로우를 완료해봅니다. 이 단계에서 포커스 순서 뒤엉킴, 포커스가 시각적으로 보이지 않는 문제(<code>outline: none</code> 남용), 포커스 트랩 누락이 대부분 드러납니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div><strong>실제 스크린리더 조합으로 검증</strong>
+          <p style="margin-top:0.3rem">스크린리더와 브라우저의 조합에 따라 동작이 달라지므로, 표준 조합인 NVDA+Firefox(Windows), VoiceOver+Safari(macOS/iOS), JAWS+Chrome(Windows, 특히 기업 환경)을 최소한으로 확인합니다. 하나의 조합에서만 통과했다고 다른 조합에서도 동일하게 동작한다고 가정할 수 없습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div><strong>확대/축소와 리플로우 점검</strong>
+          <p style="margin-top:0.3rem">브라우저 확대 200~400%, 텍스트 전용 확대, 뷰포트 축소 시 콘텐츠가 잘리거나 가로 스크롤이 생기지 않는지(WCAG Reflow 기준) 확인합니다. 저시력 사용자의 실제 사용 방식과 직결됩니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div><strong>CI에 회귀 방지 테스트 통합</strong>
+          <p style="margin-top:0.3rem">axe-core를 단위/통합 테스트에 통합해 새 컴포넌트가 자동화 규칙을 위반하면 빌드를 실패시키고, 핵심 플로우는 Playwright 등으로 키보드 전용 시나리오를 회귀 테스트로 고정합니다. 감사를 "한 번 하고 끝"이 아니라 지속적인 게이트로 만드는 것이 시니어 레벨의 접근성 운영입니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div><strong>가능하다면 실제 보조기술 사용자 테스트</strong>
+          <p style="margin-top:0.3rem">개발자가 스크린리더를 켜서 확인하는 것과, 매일 스크린리더로 웹을 쓰는 사용자가 확인하는 것은 발견하는 문제의 종류가 다릅니다. 리소스가 허락한다면 실제 사용자 테스트를 감사 절차의 마지막 단계로 포함시킵니다.</p>
+        </div>
+      </li>
+    </ul>
+
+    <div class="card">
+      <h4>왜 "Lighthouse 100점"이 목표가 되면 안 되는가</h4>
+      <p>Lighthouse 접근성 점수는 <strong>자동으로 검사 가능한 규칙</strong>만 채점합니다. 커스텀 드롭다운에 <code>role="combobox"</code>를 붙였지만 화살표 키 동작을 전혀 구현하지 않아도 자동화 도구는 이를 잡아내지 못해 점수는 여전히 높게 나올 수 있습니다. 점수를 목표로 삼으면 "점수가 안 잡는 진짜 문제"를 방치하게 되므로, 점수는 1차 필터로만 쓰고 실제 목표는 "핵심 플로우를 키보드와 스크린리더만으로 완료할 수 있는가"로 설정해야 합니다.</p>
+    </div>
+  </section>
+
+  <!-- 7. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>7. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>증상을 구체화합니다.</strong> "조작이 안 된다"는 제보를 어떤 스크린리더/브라우저 조합에서, 어떤 동작(열기/탐색/선택/닫기) 중 어디서 실패하는지로 좁힙니다.</li>
+      <li><strong>접근성 트리 관점에서 현재 상태를 확인합니다.</strong> 브라우저 DevTools의 Accessibility 패널로 이 컴포넌트의 role, name, state가 실제로 무엇으로 노출되고 있는지 봅니다.</li>
+      <li><strong>네이티브 HTML로 대체 가능한지 먼저 판단합니다.</strong> "No ARIA is better than Bad ARIA" 원칙에 따라, 커스텀 구현 대신 네이티브 요소로 같은 UX를 만들 수 있는지 검토합니다.</li>
+      <li><strong>APG 패턴과 대조해 누락된 role/state/키보드 매핑을 채웁니다.</strong> combobox라면 <code>aria-expanded</code>, <code>aria-activedescendant</code>(또는 roving tabindex), 화살표/Enter/Escape 매핑이 전부 갖춰져 있는지 하나씩 대조합니다.</li>
+      <li><strong>실제 스크린리더로 검증하고, 회귀 방지 테스트로 고정합니다.</strong> 수정 후 최소 하나의 실제 스크린리더 조합으로 확인하고, 동일한 문제가 재발하지 않도록 자동화 테스트에 추가합니다.</li>
+    </ol>
+  </section>
+
+  <!-- 8. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>8. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "커스텀 드롭다운 컴포넌트를 만들었는데, 스크린리더 사용자가 이 컴포넌트를 전혀 조작할 수 없다는 피드백을 받았습니다. 어떤 부분부터 점검하시겠어요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>먼저 제보를 재현 가능한 수준까지 구체화합니다. 어떤 스크린리더와 브라우저 조합(예: NVDA+Firefox)에서, "드롭다운을 여는 것" 자체가 안 되는지, 아니면 "열리긴 하는데 옵션 사이 이동이 안 되는지" 단계를 나눠서 확인합니다.</p>
+      <br>
+      <p>그 다음 Chrome DevTools의 Accessibility 패널을 열어 이 컴포넌트가 접근성 트리에서 실제로 어떤 role, name, state로 노출되고 있는지 확인합니다. 시각적으로는 정상으로 보여도 접근성 트리에는 전혀 다른 정보가 노출되는 경우가 많기 때문입니다. 예를 들어 <code>role="combobox"</code>는 붙어 있는데 목록이 열려도 <code>aria-expanded</code>가 <code>false</code>로 고정되어 있다면, 스크린리더 입장에서는 "닫혀 있는 위젯"으로만 계속 보고되므로 사용자가 화살표 키를 눌러도 아무 반응이 없는 것처럼 느껴집니다.</p>
+      <br>
+      <p>구조적 원인을 찾으면, 먼저 이걸 정말 커스텀 컴포넌트로 유지해야 하는지부터 재검토합니다. 요구사항이 단순 선택이라면 네이티브 <code>&lt;select&gt;</code>로 대체하는 것이 브라우저가 이미 구현해둔 키보드 동작과 스크린리더 호환성을 공짜로 얻는 가장 안전한 선택입니다. 반드시 커스텀 UI가 필요하다면(예: 옵션에 아이콘·설명이 함께 들어가는 복잡한 레이아웃), ARIA Authoring Practices Guide의 combobox 패턴을 기준으로 <code>aria-expanded</code>, <code>aria-controls</code>, <code>aria-activedescendant</code>(또는 roving tabindex)가 실제 상태 변화와 함께 갱신되는지, 그리고 ArrowDown/Up으로 옵션 이동, Enter로 선택, Escape로 닫고 트리거로 포커스를 복귀시키는 키보드 핸들러가 전부 구현되어 있는지 하나씩 대조합니다.</p>
+      <br>
+      <p>수정 후에는 자동화 도구(axe-core)로 1차 확인을 하되, 거기서 끝내지 않고 실제로 NVDA나 VoiceOver를 켜서 전체 플로우를 다시 따라가 봅니다. 마지막으로 같은 회귀가 재발하지 않도록 이 컴포넌트의 키보드 인터랙션을 Playwright 등으로 테스트에 고정하고, 팀 내 컴포넌트 라이브러리 문서에 이 패턴을 표준으로 남겨 다른 팀원이 같은 실수를 반복하지 않도록 합니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>"조작이 안 된다"는 모호한 제보를 접근성 트리 관점의 구체적 검증 절차로 재정의함</li>
+      <li>커스텀 구현을 정당화하기 전에 네이티브 HTML 대체 가능성부터 검토하는 원칙을 지킴</li>
+      <li>APG 패턴 대조라는 표준 근거로 role/state/키보드 매핑을 체계적으로 확인함</li>
+      <li>자동화 도구 하나로 끝내지 않고 실제 스크린리더 검증 + 회귀 방지 테스트 + 팀 문서화까지 확장함</li>
+    </ul>
+  </section>
+
+  <!-- 9. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>9. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"드롭다운에 <code>aria-label</code>을 추가하겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>제보의 실제 원인이 "이름이 없다"인지조차 확인하지 않고 임의의 속성 하나를 대응시킵니다.</li>
+        <li>role, state(<code>aria-expanded</code>), 키보드 매핑 전체를 놓친 채 name 하나만 다루므로 근본 원인을 놓칠 가능성이 큽니다.</li>
+        <li>수정 후 검증 절차가 전혀 없어 실제로 문제가 해결됐는지 알 방법이 없습니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"Lighthouse 접근성 점수를 100점으로 만들겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>자동화 도구는 규칙 기반 검사만 하므로, 키보드 상호작용처럼 "동작이 실제로 되는가"는 검증하지 못합니다.</li>
+        <li>점수 자체를 목표로 삼으면 자동화가 못 잡는 실제 사용자 경험 문제를 방치하게 됩니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>제보를 재현 가능한 수준(어떤 스크린리더/브라우저, 어떤 단계)으로 구체화한다</li>
+        <li>접근성 트리에서 role/name/state가 실제로 무엇으로 노출되는지 DevTools로 확인한다</li>
+        <li>커스텀 구현 전에 네이티브 HTML 대체 가능성을 먼저 검토한다</li>
+        <li>APG 표준 패턴과 대조해 누락된 상태·키보드 매핑을 체계적으로 채운다</li>
+        <li>자동화 검사 + 실제 스크린리더 검증 + 회귀 방지 테스트까지 확장한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. Follow-up -->
+  <section id="followups">
+    <h2>10. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: <code>aria-hidden="true"</code>와 <code>display: none</code>/<code>visibility: hidden</code>의 차이는 무엇인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> <code>display: none</code>과 <code>visibility: hidden</code>은 요소를 렌더 트리에서 완전히 제외하거나 시각적으로 숨기며, 동시에 접근성 트리에서도 제외됩니다 — 즉 시각적으로도, 보조 기술에도 존재하지 않게 됩니다. 반면 <code>aria-hidden="true"</code>는 <strong>시각적으로는 그대로 보이지만 접근성 트리에서만 숨기는</strong> 속성입니다. 대표적인 용도는 장식용 아이콘(옆에 이미 텍스트 레이블이 있는 아이콘)처럼 스크린리더가 중복해서 읽지 않아야 할 요소를 숨기는 것입니다. 반대로 실수로 <code>aria-hidden="true"</code>를 실제로 보이는 인터랙티브 요소에 붙이면, 눈으로는 버튼이 보이는데 스크린리더에게는 아예 존재하지 않는 것처럼 처리되는 심각한 문제가 생깁니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 포커스 트랩을 구현할 때 흔히 저지르는 실수는 무엇인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 가장 흔한 실수는 모달이 열릴 때 포커스를 실제로 이동시키지 않아 스크린리더가 모달이 열렸다는 사실 자체를 알리지 못하는 것, 그리고 모달을 닫을 때 포커스를 트리거 버튼으로 되돌리지 않아 사용자가 자신이 지금 어디에 있는지 잃어버리는 것입니다. 또한 Tab 순환 로직을 직접 구현할 때 <code>tabindex</code>가 음수인 비활성 요소나 <code>display: none</code>으로 숨겨진 요소까지 순환 대상에 포함시켜 포커스가 보이지 않는 곳으로 이동해버리는 실수도 흔합니다. 가능하다면 네이티브 <code>&lt;dialog&gt;</code> 요소나 검증된 라이브러리(Radix, react-aria 등)를 사용해 이 로직을 직접 재구현하는 리스크를 줄이는 것이 실무적으로 더 안전합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 자동화 접근성 도구가 구조적으로 탐지할 수 없는 이슈의 종류는 무엇인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 자동화 도구는 "규칙으로 판별 가능한 정적 속성"만 검사합니다 — 색상 대비 수치, <code>alt</code> 속성 존재 여부, 폼 레이블 연결 등입니다. 반대로 탐지할 수 없는 것은 <strong>맥락과 상호작용의 의미</strong>입니다. 예를 들어 <code>alt="이미지"</code>처럼 형식적으로는 존재하지만 의미 없는 대체 텍스트, 시각적 포커스 순서와 논리적 탭 순서의 불일치, 커스텀 위젯이 role은 갖췄지만 실제 키보드 동작을 구현하지 않은 경우, 에러 메시지가 발생했지만 <code>aria-live</code>로 연결되지 않아 스크린리더가 알아채지 못하는 경우는 전부 사람이 직접 키보드와 스크린리더로 조작해봐야만 발견됩니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q (비기술적): 디자이너가 "접근성 요구사항 때문에 포커스 아웃라인이 디자인을 해친다"며 <code>outline: none</code>을 고수합니다. 어떻게 설득하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> "접근성이냐 디자인이냐"라는 이분법 대신 <strong>공동 문제 해결</strong>로 프레이밍합니다. 먼저 포커스 표시가 사라지면 키보드 사용자(스크린리더 사용자뿐 아니라 운동 장애, 임시 부상, 단순히 마우스가 고장 난 파워유저 등 광범위한 집단)가 "지금 어디에 있는지"를 완전히 잃어버려 핵심 플로우 자체를 완료할 수 없게 된다는 구체적 실패 시나리오를 보여줍니다. 그 다음 "아예 없애는 것"과 "디자인 시스템에 맞는 커스텀 포커스 스타일(색상, 두께, box-shadow)을 정의하는 것" 사이에 제3의 선택지가 있다는 것을 제안하고, 실제로 브랜드 컬러를 활용한 포커스 링 시안을 함께 만들어봅니다. 마지막으로 WCAG의 포커스 가시성 요구사항(Focus Visible)이 접근성 감사에서 자주 걸리는 항목이라는 규제/리스크 관점도 함께 제시해 디자인 취향의 문제가 아니라 제품 품질 기준의 문제임을 분명히 합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>11. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"ARIA 속성만 붙이면 접근성 문제가 해결된다"</strong></p>
+      <p>ARIA는 정보를 "선언"할 뿐, 그 선언에 맞는 동작(키보드 응답, 상태 갱신)은 개발자가 직접 구현해야 합니다. role만 붙이고 상태·키보드를 구현하지 않으면 오히려 "조작 가능하다고 믿게 만든 뒤 배신하는" 더 나쁜 결과를 만듭니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"자동화 도구(Lighthouse, axe)를 통과하면 접근성 문제가 없는 것이다"</strong></p>
+      <p>자동화 도구는 전체 접근성 이슈의 일부(대략 30~40% 수준)만 탐지합니다. 키보드 상호작용, 포커스 순서의 논리성, 라이브 리전의 실제 안내 여부처럼 "맥락"이 필요한 문제는 사람이 직접 키보드와 스크린리더로 검증해야만 드러납니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"접근성은 시각 장애인만을 위한 것이다"</strong></p>
+      <p>키보드 내비게이션은 운동 장애가 있는 사용자, 스크린리더는 시각 장애뿐 아니라 인지 부하가 높은 상황의 사용자에게도 도움이 되며, 색상 대비와 명확한 레이블은 저시력자·고령 사용자·밝은 햇빛 아래 스마트폰을 보는 일반 사용자 모두에게 이득이 됩니다. 접근성 개선은 특정 소수 집단만을 위한 것이 아니라 제품 품질 전반을 끌어올립니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"<code>tabindex</code>를 큰 양수로 주면 포커스 순서를 원하는 대로 제어할 수 있다"</strong></p>
+      <p>양수 <code>tabindex</code>는 문서 흐름(DOM 순서)과 무관하게 지정한 숫자 순서대로 포커스를 강제하는데, 이는 유지보수 중 다른 요소가 추가·삭제될 때마다 전체 순서를 다시 계산해야 하는 깨지기 쉬운 안티패턴입니다. 올바른 방법은 시각적 순서와 DOM 순서를 일치시켜 <code>tabindex</code>를 아예 지정하지 않거나(자연스러운 순서를 따르게 함), 특정 요소만 포커스 가능하게 하려면 <code>tabindex="0"</code>(자연 순서에 포함) 또는 <code>tabindex="-1"</code>(스크립트로만 포커스 가능, Tab 순서에서는 제외)만 사용하는 것입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"스크린리더 사용자는 소수이므로 우선순위가 낮다"</strong></p>
+      <p>재현 빈도가 아니라 실패의 절대성으로 판단해야 합니다. 색상 대비가 조금 낮은 문제는 대부분의 사용자에게 "불편함"이지만, 접근성 트리가 잘못된 커스텀 위젯은 스크린리더 사용자에게 "그 기능을 아예 쓸 수 없음"이라는 완전한 실패입니다. 또한 다수의 관할권에서 접근성 미준수는 WCAG/ADA 기반 법적 소송 리스크로 이어지는 비즈니스 문제이기도 합니다.</p>
+    </div>
+  </section>
+
+  <!-- 12. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>12. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 5를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>접근성 트리가 렌더 트리와 별개로 DOM에서 파생되며, role/name/state/value 4가지로 구성된다는 것을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>스크린리더의 Browse Mode와 Focus Mode 전환이 왜 커스텀 위젯에서 자주 어긋나는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"No ARIA is better than Bad ARIA" 원칙과, role 선언이 왜 키보드 동작 구현까지 포함하는 "계약"인지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Roving tabindex와 <code>aria-activedescendant</code> 두 포커스 관리 전략의 차이와 각각의 적합한 상황을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>모달 포커스 트랩의 3가지 필수 동작(진입 시 이동, Tab 순환 제한, 종료 시 복귀)을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>aria-live="polite"</code>와 <code>"assertive"</code>의 차이와 남용 시 부작용을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>자동화 도구 → 키보드 수동 점검 → 실제 스크린리더 검증 → 리플로우 점검 → CI 통합이라는 층위별 감사 절차를 순서대로 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>자동화 도구가 구조적으로 탐지할 수 없는 이슈의 종류(맥락·상호작용 문제)를 예시로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>양수 <code>tabindex</code> 안티패턴이 왜 깨지기 쉬운지, 올바른 대안이 무엇인지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>접근성을 재현 빈도가 아니라 실패의 절대성과 법적/비즈니스 리스크 관점에서 우선순위를 설득하는 대화를 예로 들 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 6</h3>
+      <p><strong>Web Vitals &amp; 성능 예산 — LCP/INP/CLS, RUM, 성능 예산 설계와 CI 통합</strong></p>
+      <p>Day 5에서 "접근성 트리"라는 보조 기술의 소비 경로를 다뤘다면, Day 6에서는 실제 사용자가 체감하는 로딩·반응성·시각적 안정성을 수치화하는 Web Vitals와, 그 수치가 프로덕션에서 회귀하지 않도록 성능 예산을 CI에 통합하는 절차를 다룹니다.</p>
+      <p>면접 질문 예고: "제품 A/B 테스트에서 신규 기능을 배포한 후 LCP가 눈에 띄게 나빠졌다는 리포트를 받았습니다. 어떻게 원인을 좁혀 나가시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    프론트엔드 10년차 이상 개발자 Interview · Day 5 of 17 · 2026-07-06
+  </p>
+
+</div>
+</body>
+</html>

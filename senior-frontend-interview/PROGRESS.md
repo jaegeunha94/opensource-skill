@@ -8,12 +8,12 @@
 | 2 | 2026-07-03 | HTML/CSS 아키텍처와 크로스 브라우저 레이아웃 사고 | [0002-html-css-architecture-and-cross-browser-layout-thinking.html](lessons/0002-html-css-architecture-and-cross-browser-layout-thinking.html) |
 | 3 | 2026-07-04 | 브라우저 렌더링 파이프라인 심화 (Critical Rendering Path, Reflow/Repaint, Layout Thrashing, Compositor) | [0003-rendering-pipeline-reflow-repaint-composite.html](lessons/0003-rendering-pipeline-reflow-repaint-composite.html) |
 | 4 | 2026-07-05 | JavaScript 실행 모델, 클로저와 메모리 누수 (콜스택/이벤트 루프/마이크로태스크, 클로저 기반 누수, 프로덕션 힙 스냅샷 진단) | [0004-javascript-execution-model-closures-memory-leaks.html](lessons/0004-javascript-execution-model-closures-memory-leaks.html) |
+| 5 | 2026-07-06 | 웹 접근성(A11y) 심화 (접근성 트리, WAI-ARIA, 키보드 인터랙션 모델, 스크린리더 대응, 프로덕션 접근성 감사 절차) | [0005-accessibility-aria-keyboard-audit.html](lessons/0005-accessibility-aria-keyboard-audit.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | 웹 접근성(A11y) 심화 | WAI-ARIA, 키보드 내비게이션, 스크린리더 대응, 접근성 감사 프로세스 |
 | 6 | Web Vitals & 성능 예산 | LCP/INP/CLS, RUM, 성능 예산 설계와 CI 통합 |
 | 7 | API 통합 & 네트워크 계층 | REST/GraphQL, 캐싱, 에러 처리, 오프라인/재시도 전략 |
 | 8 | 상태/데이터 아키텍처 | 클라이언트 상태 vs 서버 상태, 캐시 무효화, 데이터 정합성 |
@@ -29,7 +29,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — Day 5 (웹 접근성(A11y) 심화)가 다음 차례.
+**Day 5 완료** — Day 6 (Web Vitals & 성능 예산)이 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -39,7 +39,7 @@
 - [x] 시맨틱 HTML과 접근성/SEO 연결, Cascade/Specificity 붕괴 원인 사슬, CSS 아키텍처 방법론 트레이드오프, 크로스 브라우저 레이아웃 디버깅 절차 (Day 2)
 - [x] Critical Rendering Path 단계별 비용 모델, Reflow/Repaint 트리거 조건, Layout Thrashing 발생 메커니즘과 batch 해결 패턴, GPU 레이어 승격의 트레이드오프 (Day 3)
 - [x] 콜스택/이벤트 루프/마이크로·매크로태스크 실행 순서, 클로저가 참조를 유지시켜 발생시키는 메모리 누수 패턴, 힙 스냅샷 비교와 Retainers 추적을 통한 프로덕션 진단 절차 (Day 4)
-- [ ] 웹 접근성 심화와 감사 프로세스 (예정 Day 5)
+- [x] 접근성 트리(role/name/state/value)와 렌더 트리의 분리, WAI-ARIA 계약 원칙, 커스텀 위젯 키보드 패턴, 포커스 트랩과 Live Region, 층위별 프로덕션 접근성 감사 절차 (Day 5)
 - [ ] Web Vitals와 성능 예산 운영 (예정 Day 6)
 - [ ] API 통합과 네트워크 계층 설계 (예정 Day 7)
 - [ ] 상태/데이터 아키텍처 (예정 Day 8)
