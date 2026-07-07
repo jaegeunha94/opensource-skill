@@ -79,6 +79,16 @@
 - [E2B — Enterprise AI Agent Cloud (Firecracker microVM 샌드박스)](https://e2b.dev/)
 - [Daytona — Secure Infrastructure for AI-generated code](https://www.daytona.io/)
 
+## Guardrail / Prompt Injection 방어 (Day 5)
+
+- [Simon Willison — The lethal trifecta for AI agents](https://simonw.substack.com/p/the-lethal-trifecta-for-ai-agents) / [lethal-trifecta 태그 모음](https://simonwillison.net/tags/lethal-trifecta/)
+- [Anthropic — Mitigate jailbreaks and prompt injections](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks) — direct/indirect 위협 모델 구분, harmlessness screen, tool_result 격리, JSON 인코딩, tool 출력 스크리닝 (직접 접근해 확인한 1차 출처)
+- [Anthropic — Mitigating the risk of prompt injections in browser use](https://www.anthropic.com/research/prompt-injection-defenses)
+- [Anthropic — How we built Claude Code auto mode: a safer way to skip permissions](https://www.anthropic.com/engineering/claude-code-auto-mode) — 2단계 계단식 classifier(single-token filter → chain-of-thought), reasoning-blind 설계, false positive 8.5%→0.4%
+- [OpenAI Agents SDK — Guardrails](https://openai.github.io/openai-agents-python/guardrails/) — input/output guardrail, tripwire, `InputGuardrailTripwireTriggered`/`OutputGuardrailTripwireTriggered`
+- [OWASP Top 10 for Agentic Applications 2026 (ASI Top 10) — NeuralTrust 정리](https://neuraltrust.ai/blog/owasp-top-10-for-agentic-applications-2026) / [Practical DevSecOps 정리](https://www.practical-devsecops.com/owasp-top-10-agentic-applications/) — ASI01 Agent Goal Hijack ~ ASI10 Rogue Agents
+- [OWASP Gen AI Security Project — Top 10 for Agentic Applications for 2026 (공식)](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/)
+
 ## 아키텍처 딥다이브 / 엔지니어링 블로그 / 사례 연구
 
 - [Martin Fowler — Harness Engineering](https://martinfowler.com/articles/harness-engineering.html) — "LLM은 agent 시스템에서 가장 작은 부분" 프레임 정립
@@ -137,3 +147,4 @@
 - Day 2의 Vercel d0(80% tool 삭감) 수치와 Anthropic "Writing effective tools" 원칙은 원문 접근(403)이 안 되어 벤더 공식 소셜 포스트 + 다수의 독립적 2차 인용으로 교차검증했다. 핵심 수치(성공률 80%→100%, 응답시간 274초→77초/3.5배, 토큰/스텝 40% 감소)는 3개 이상 출처에서 일치했으나, 정확한 원문 인용이 필요하면 실제 브라우저로 재확인한다.
 - Day 3의 `platform.claude.com`(compaction/context-editing/memory-tool) 문서는 직접 접근해 확인한 1차 출처다. 반면 Anthropic "Effective context engineering" 블로그와 Chroma의 "Context Rot" 연구는 원문 접근(403)이 안 되어 검색 스니펫과 다수의 2차 출처(요약 블로그, 커뮤니티 글)로 교차검증했다 — 특히 Context Rot의 정확한 수치(30%p, 7.9% 등)와 MINJA/멀티에이전트 오염 통계(95% 이상, 4시간 87%)는 정확한 원문 인용이 필요하면 실제 브라우저로 재확인한다.
 - Day 4의 `code.claude.com/docs/en/agent-sdk/agent-loop`는 직접 접근해 확인한 1차 출처이며, `max_turns`/`max_budget_usd`/에러 subtype 설명은 이 문서를 근거로 한다. 반면 `anthropic.com`(Effective harnesses for long-running agents)과 `letta.com` 블로그는 403으로 막혀 검색 스니펫으로만 교차검증했다. 2026년 비용 폭주 사례(DN42 $6,531, CRM 6시간 $4,200, 멀티에이전트 순환호출 $30,000)는 여러 2차 블로그 출처에서 유사하게 인용되지만 1차 인시던트 리포트는 확인하지 못했으므로, 정확한 금액·날짜가 필요하면 실제 브라우저로 원문을 재확인해야 한다.
+- Day 5의 `platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks`는 직접 접근해 확인한 1차 출처이며, direct/indirect 위협 모델 구분, harmlessness screen, tool_result 격리·JSON 인코딩·tool 출력 스크리닝 기법 설명은 이 문서를 근거로 한다. Simon Willison의 lethal trifecta 원문, Anthropic "How we built Claude Code auto mode" 블로그, OWASP ASI Top 10 원문은 403 또는 자동화 접근 제한으로 검색 스니펫과 다수의 2차 출처(정리 블로그)로 교차검증했다 — Claude Code Auto Mode의 false positive 수치(8.5%→0.4%)와 ASI01~ASI10 정확한 명칭·순서는 정확한 인용이 필요하면 실제 브라우저로 원문을 재확인해야 한다.

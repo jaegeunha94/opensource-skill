@@ -8,12 +8,12 @@
 | 2 | 2026-07-04 | Model/Tool/Runtime 경계와 Provider 추상화 | [0002-model-tool-runtime-boundary-provider-abstraction.html](lessons/0002-model-tool-runtime-boundary-provider-abstraction.html) |
 | 3 | 2026-07-05 | Prompt/Context/Memory Scaffolding | [0003-prompt-context-memory-scaffolding.html](lessons/0003-prompt-context-memory-scaffolding.html) |
 | 4 | 2026-07-06 | Control-Flow Scaffolding과 루프 안정성 | [0004-control-flow-scaffolding-loop-stability.html](lessons/0004-control-flow-scaffolding-loop-stability.html) |
+| 5 | 2026-07-07 | Guardrail과 Prompt Injection 방어 | [0005-guardrail-prompt-injection-defense.html](lessons/0005-guardrail-prompt-injection-defense.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | Guardrail과 Prompt Injection 방어 | lethal trifecta, input/output/tool guardrail, tripwire, defense-in-depth, OWASP Agentic Top 10 |
 | 6 | Sandboxed Workspace Execution과 권한 스코핑 | OS 레벨 샌드박스(bubblewrap/Seatbelt), hosted code execution, E2B/Daytona, least-privilege 권한 설계 |
 | 7 | Model Context Protocol(MCP) | tools/resources/prompts/sampling, stdio/streamable HTTP, stateless 전환, 거버넌스(AAIF) |
 | 8 | Handoff와 Multi-Agent Coordination | orchestrator-worker, manager(agents-as-tools) vs handoff 패턴, 토큰 비용 구조(15x), multi-agent를 쓰지 말아야 할 때 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — 다음: Day 5 — Guardrail과 Prompt Injection 방어
+**Day 5 완료** — 다음: Day 6 — Sandboxed Workspace Execution과 권한 스코핑
 
 ## 습득한 핵심 개념
 
@@ -48,7 +48,12 @@
 - [x] Repeated-state/progress 감지, 텍스트만 반복하는 정체(Claude Code 사례) (Day 4)
 - [x] Agent circuit breaker(소비 속도 감시) vs 전통 circuit breaker(실패율 감시), OWASP LLM10 (Day 4)
 - [x] 멀티에이전트 전역 예산 소유권과 사이클 방지 (Day 4)
-- [ ] Guardrail, prompt injection 방어 (예정 Day 5)
+- [x] Lethal trifecta(비공개 데이터/신뢰 불가 콘텐츠/외부 통신) (Day 5)
+- [x] Direct vs indirect prompt injection 위협 모델 구분 (Day 5)
+- [x] Input/output guardrail과 tripwire(OpenAI Agents SDK) (Day 5)
+- [x] Tool-result 격리, JSON 인코딩, tool 출력 스크리닝(Anthropic 공식 가이드) (Day 5)
+- [x] 계단식(cascade) 분류기 비용 최적화(Claude Code Auto Mode 사례) (Day 5)
+- [x] OWASP ASI Top 10 2026 개관과 defense-in-depth 원칙 (Day 5)
 - [ ] Sandboxed execution, 권한 스코핑 (예정 Day 6)
 - [ ] MCP (예정 Day 7)
 - [ ] Handoff, multi-agent coordination (예정 Day 8)
