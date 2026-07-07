@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — 파일 시스템 구조 (inode vs FAT) | 파일구조 면접 준비</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222535;
+      --border: #2e3147;
+      --accent: #5b8dee;
+      --accent2: #7c5cbf;
+      --green: #3ecf8e;
+      --red: #e25c5c;
+      --yellow: #f5a623;
+      --text: #e2e4f0;
+      --muted: #8b90a8;
+      --code-bg: #12141f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1f3c 0%, #12141f 100%);
+      border-bottom: 2px solid var(--accent2);
+      padding: 2.5rem 2rem;
+      margin: 0 -1rem 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .icon-q  { background: #2b1f4a; color: var(--accent2); }
+    .icon-pre { background: #1a2f3a; color: var(--accent); }
+    .icon-why { background: #2a2010; color: var(--yellow); }
+    .icon-real { background: #112a1f; color: var(--green); }
+    .icon-think { background: #1f2a3a; color: #a8c5f0; }
+    .icon-ans  { background: #1a2a1a; color: var(--green); }
+    .icon-trade { background: #2a1a1a; color: var(--red); }
+    .icon-myth  { background: #2a1f10; color: var(--yellow); }
+    .icon-follow { background: #1a1a2a; color: var(--accent2); }
+    .icon-diff  { background: #202020; color: #c0c0c0; }
+    .icon-rub  { background: #0e1e1a; color: var(--green); }
+
+    h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 1.25rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    li { margin-bottom: 0.35rem; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #2b1f4a 0%, #1a1d27 100%);
+      border: 1.5px solid var(--accent2);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #d4c8f5;
+      margin-bottom: 0.75rem;
+    }
+    .interview-sub {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.88rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+      font-size: 0.87rem;
+      line-height: 1.6;
+    }
+    pre code { background: none; border: none; padding: 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.85rem 0;
+      font-size: 0.92rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+    .answer-block {
+      border-left: 3px solid;
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 0.85rem 0;
+    }
+    .answer-strong { border-color: var(--green); background: rgba(62,207,142,0.06); }
+    .answer-weak   { border-color: var(--red);   background: rgba(226,92,92,0.06); }
+    .answer-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+    .label-strong { color: var(--green); }
+    .label-weak   { color: var(--red); }
+
+    .step-list { counter-reset: step; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-list li:last-child { border-bottom: none; }
+    .step-list li::before {
+      content: counter(step);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0;
+    }
+    .followup-q {
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .score-high { background: rgba(62,207,142,0.2); color: var(--green); }
+    .score-mid  { background: rgba(245,166,35,0.2); color: var(--yellow); }
+    .score-low  { background: rgba(226,92,92,0.2);  color: var(--red); }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.85rem 0;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+    .callout-info { background: rgba(91,141,238,0.08); border-left: 3px solid var(--accent); }
+    .callout-warn { background: rgba(245,166,35,0.08); border-left: 3px solid var(--yellow); }
+    .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin: 0.1rem;
+    }
+    .tag-blue { background: rgba(91,141,238,0.15); color: var(--accent); }
+    .tag-green { background: rgba(62,207,142,0.15); color: var(--green); }
+    .tag-yellow { background: rgba(245,166,35,0.15); color: var(--yellow); }
+
+    .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      color: #c9d0e8;
+      margin: 0.85rem 0;
+      white-space: pre;
+    }
+
+    nav.breadcrumb {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    nav.breadcrumb a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <nav class="breadcrumb">
+      <a href="../">파일구조 면접 준비</a> › <a href="./index.html">레슨 목록</a>
+    </nav>
+    <div class="day-badge">Interview Day 8</div>
+    <h1>파일 시스템 구조 — inode와 FAT의 Trade-off</h1>
+    <p class="subtitle">"파일 하나의 데이터 블록을 어떻게 찾아가는가"를 다르게 설계하면, 메타데이터 크기·랜덤 접근 속도·손상 복구·단편화가 전부 달라진다</p>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-q">Q</div>
+      <h2>면접 질문</h2>
+    </div>
+    <div class="interview-q">
+      "inode와 FAT 방식은 어떤 trade-off가 있습니까?"
+    </div>
+    <p class="interview-sub">변형 질문 유형</p>
+    <ul>
+      <li>"파일 시스템은 '파일의 몇 번째 블록이 디스크의 어디에 있는가'를 어떻게 찾아갑니까?"</li>
+      <li>"큰 파일을 랜덤 접근(예: <code>seek</code> 후 read)할 때 FAT 방식이 왜 느립니까?"</li>
+      <li>"USB 드라이브는 왜 아직도 FAT32/exFAT을 쓰는데, 서버 OS는 왜 ext4/XFS(inode 기반)를 씁니까?"</li>
+      <li>"디스크 전원이 갑자기 끊기면 inode 기반과 FAT 기반 파일 시스템은 각각 어떻게 복구합니까?"</li>
+    </ul>
+  </div>
+
+  <!-- 2. 전제 개념 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">📖</div>
+      <h2>전제 개념 — 쉬운 한국어로 먼저 이해하기</h2>
+    </div>
+
+    <h3>8-1. 파일 시스템이 풀어야 하는 근본 문제</h3>
+    <p>
+      디스크는 Day 1에서 다뤘듯 고정 크기 <strong>block(또는 sector, cluster)</strong> 단위로만 읽고 쓸 수
+      있습니다. 파일 하나가 여러 블록에 걸쳐 저장될 때, 파일 시스템은 "이 파일의 3번째 블록은 디스크의
+      어느 물리적 위치에 있는가?"라는 질문에 항상 답할 수 있어야 합니다. 이 매핑 정보(파일 → 블록 목록)를
+      <strong>어디에, 어떤 자료구조로 저장하느냐</strong>가 파일 시스템 설계의 핵심이고, inode 방식과
+      FAT 방식은 이 질문에 근본적으로 다르게 답합니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>8-2. FAT(File Allocation Table) — 연결 리스트를 테이블로 흉내낸 구조</h3>
+    <p>
+      FAT는 디스크 전체에 대해 <strong>하나의 큰 테이블</strong>을 유지합니다. 이 테이블은 디스크의 모든
+      클러스터(블록)에 대응하는 항목을 갖고, 각 항목에는 "다음 클러스터의 번호" 또는 "파일 끝(EOF)"
+      표시가 들어갑니다. 즉 파일 하나는 <strong>연결 리스트</strong>로 저장되는데, 그 "다음 포인터"를
+      데이터 블록 안에 직접 넣는 대신 별도의 테이블에 모아둔 것입니다. 디렉터리 엔트리는 파일의
+      "첫 번째 클러스터 번호"만 가지고 있고, 나머지는 FAT 테이블을 순서대로 따라가야 알 수 있습니다.
+    </p>
+    <div class="diagram">[ FAT 구조 예시 ]
+
+디렉터리 엔트리: "report.txt" → 시작 클러스터 = 5
+
+FAT 테이블 (배열, 인덱스 = 클러스터 번호):
+  index:   0    1    2    3    4    5    6    7    8    9
+  value:   -    -    -    -    -    8    EOF  -    12   -
+                                    │           │
+                                    └───────────┘
+클러스터 5 → FAT[5]=8 → 클러스터 8 → FAT[8]=12 → 클러스터 12 → FAT[12]=EOF
+
+=> report.txt = 클러스터 5, 8, 12 (디스크 여기저기 흩어져 있을 수 있음)
+=> "파일의 100번째 블록"을 알려면 5→8→12→... 순서로 99번 테이블을 따라가야 함</div>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span>
+        <strong>핵심 문제:</strong> FAT는 순차 접근(처음부터 끝까지 읽기)에는 큰 문제가 없지만,
+        <strong>랜덤 접근(파일 중간의 특정 블록으로 바로 이동)</strong>이 근본적으로 O(n)입니다.
+        "100번째 블록"을 찾으려면 연결 리스트를 100번 따라가야 하기 때문입니다. 배열이 아니라
+        연결 리스트라는 점이 랜덤 접근을 느리게 만드는 근본 원인입니다.
+      </span>
+    </div>
+
+    <div class="divider"></div>
+    <h3>8-3. inode — 파일마다 독립된 "블록 주소록"을 갖는 구조</h3>
+    <p>
+      inode(index node) 방식은 파일마다 <strong>고정 크기의 메타데이터 구조체</strong>를 하나씩 둡니다.
+      이 inode 안에는 파일 크기, 권한, 소유자, 타임스탬프 같은 메타데이터와 함께, <strong>이 파일이 사용하는
+      데이터 블록들의 번호를 담은 포인터 배열</strong>이 들어 있습니다. 파일이 작으면 inode 안의
+      "직접 블록 포인터(direct pointer)"만으로 전체 블록 목록을 표현할 수 있고, 파일이 커지면
+      "간접 포인터(indirect pointer)"가 별도 블록을 가리켜 포인터 배열 자체를 확장합니다.
+    </p>
+    <div class="diagram">[ inode 구조 예시 — 단순화 ]
+
+inode #7342 (report.txt에 대응)
+┌─────────────────────────────────┐
+│ 메타데이터: 크기, 권한, 소유자, mtime │
+│ 직접 포인터 12개: [블록52, 블록9, 블록200, ...] │
+│ 단일 간접 포인터 1개: → 포인터 256개짜리 블록 │
+│ 이중 간접 포인터 1개: → (포인터 블록의 포인터 블록) │
+│ 삼중 간접 포인터 1개: → ... │
+└─────────────────────────────────┘
+
+"파일의 100번째 블록"을 찾으려면?
+  - 100번째가 직접 포인터 범위(0~11) 밖이면 → 단일 간접 포인터가 가리키는 블록을 1번 읽어
+    그 안의 88번째(100-12) 항목을 확인 → 바로 그 블록 번호를 얻음
+  - 즉 "최대 몇 단계의 포인터 역참조"만 거치면 어떤 위치든 O(1)~O(log n) 수준으로 도달</div>
+    <p>
+      핵심 차이는 <strong>"메타데이터(블록 주소록)가 파일별로 독립돼 있고, 배열 기반 인덱싱이 가능하다"</strong>는
+      점입니다. FAT처럼 디스크 전체를 순서대로 따라가지 않고, inode 하나만 읽으면(또는 많아야 1~2단계
+      간접 참조만 거치면) 원하는 블록 번호를 바로 계산할 수 있습니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>8-4. 왜 이 차이가 "랜덤 접근 성능"으로 직결되는가</h3>
+    <p>
+      FAT는 본질적으로 <strong>연결 리스트 순회</strong>이고, inode는 <strong>(부분적으로) 배열
+      인덱싱 + 트리형 간접 참조</strong>입니다. 자료구조 수업에서 "연결 리스트의 임의 접근은 O(n),
+      배열은 O(1)"이라 배운 원리가 그대로 디스크 파일 접근에 적용되는 것입니다. 큰 동영상 파일에서
+      특정 구간으로 seek하거나, 데이터베이스 파일에서 특정 페이지를 랜덤하게 읽는 워크로드는 FAT
+      구조에서 훨씬 불리하고, 이것이 서버/DB용 파일 시스템이 inode 기반(ext4, XFS, NTFS의 MFT 등)을
+      쓰는 핵심 이유 중 하나입니다.
+    </p>
+  </div>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-why">?</div>
+      <h2>왜 면접에서 이 질문을 묻는가</h2>
+    </div>
+    <p>
+      "inode가 뭔지 정의를 아는가"가 아니라, <strong>"파일 접근 패턴에 따라 메타데이터 자료구조 설계가
+      성능·신뢰성에 어떤 영향을 주는지 스스로 추론할 수 있는가"</strong>를 봅니다. 이는 Day 1의 접근
+      패턴 프레임워크, Day 3~4의 인덱스 구조 선택 논리를 파일 시스템 레벨로 확장할 수 있는지를
+      확인하는 질문입니다.
+    </p>
+    <ol>
+      <li>
+        <strong>블록 매핑 자료구조가 "연결 리스트냐 배열/트리냐"로 접근 복잡도가 갈린다는 것을 아는가</strong><br>
+        FAT의 O(n) 랜덤 접근과 inode의 O(1)~O(log n) 접근을 근거를 들어 설명할 수 있어야 합니다.
+      </li>
+      <li>
+        <strong>메타데이터 분산/집중이 손상 복구에 미치는 영향을 이해하는가</strong><br>
+        FAT는 테이블 하나가 손상되면 다수 파일이 동시에 영향받고, inode는 손상 범위가 파일 단위로
+        국소화되는 경향이 있다는 것을 알아야 합니다.
+      </li>
+      <li>
+        <strong>단편화(fragmentation)가 왜, 어떻게 다르게 나타나는지 설명할 수 있는가</strong><br>
+        두 구조 모두 외부 단편화에 취약할 수 있지만, 원인과 완화 전략(할당 정책, defrag)이 다릅니다.
+      </li>
+      <li>
+        <strong>"그래서 언제 무엇을 쓰는가"라는 운영 판단으로 연결하는가</strong><br>
+        단순 정의 나열이 아니라 실제 파일 시스템 선택/설계 상황에 적용할 수 있는지를 봅니다.
+      </li>
+    </ol>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span>
+        주니어 수준 답변: "inode는 파일 정보를 담고 있고, FAT는 파일 할당 테이블입니다."<br>
+        10년차 기대 답변: "FAT는 블록 매핑을 디스크 전체의 단일 연결 리스트로 관리해서 랜덤 접근이
+        O(n)이 되고 테이블 손상 시 다수 파일이 동시에 위험해지는 반면, inode는 파일별 포인터
+        배열(+ 간접 포인터)로 매핑을 독립시켜 랜덤 접근을 상수~로그 시간에 가깝게 만들고 손상
+        범위도 파일 단위로 국소화됩니다. 그래서 랜덤 I/O가 잦은 서버/DB 워크로드는 inode 기반을
+        쓰고, 단순 순차 접근 위주의 이동식 미디어 호환성이 중요한 경우엔 여전히 FAT 계열을 씁니다."
+      </span>
+    </div>
+  </div>
+
+  <!-- 4. 실무 연결 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-real">⚙</div>
+      <h2>실무 연결</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>실무 상황</th>
+          <th>inode/FAT 판단</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>DB 데이터 파일이 저장된 파일 시스템 선택</strong></td>
+          <td>
+            MySQL/PostgreSQL 같은 DBMS는 페이지 단위 랜덤 I/O가 매우 잦습니다. ext4, XFS 같은 inode
+            기반 파일 시스템 위에서 운영하는 것이 표준이며, FAT32 위에 대용량 DB 파일을 올리는 경우는
+            실무에서 거의 없습니다(파일 크기 4GB 제한 문제까지 겹칩니다).
+          </td>
+        </tr>
+        <tr>
+          <td><strong>USB 드라이브, SD 카드, 카메라 저장매체</strong></td>
+          <td>
+            FAT32/exFAT은 구조가 단순해 다양한 OS·기기 간 호환성이 뛰어나고, 대부분 순차 쓰기(사진/영상
+            저장) 위주라 랜덤 접근 단점이 크게 부각되지 않습니다. 호환성이 성능보다 중요한 상황의
+            전형적인 선택입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>"디스크 조각 모음(defrag)이 왜 필요한가" 설명</strong></td>
+          <td>
+            FAT 기반 파일 시스템은 파일이 늘어날 때 빈 클러스터를 그때그때 이어붙이며 디스크 전체에
+            흩어지기 쉬워 순차 읽기 성능이 점점 저하됩니다. inode 기반도 단편화가 없는 것은 아니지만,
+            블록 할당 정책(extent 기반 할당 등)으로 연속 블록을 미리 확보하려는 전략을 씁니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>파일 시스템 손상/정전 후 복구(fsck)</strong></td>
+          <td>
+            FAT는 테이블 자체가 손상되면 그 테이블에 연결된 모든 파일의 블록 체인을 잃을 위험이 있어
+            보통 FAT을 이중화(백업 FAT)해 둡니다. inode 기반은 저널링(journaling)을 결합해(ext4 등)
+            "메타데이터 변경을 로그로 먼저 기록 후 반영"하는 방식으로 정전 시에도 일관성 복구 시간을
+            크게 줄입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>대용량 파일의 특정 구간 seek(동영상 스트리밍, 로그 파일 tail)</strong></td>
+          <td>
+            동영상 재생 시 사용자가 임의 구간으로 이동(seek)하면 파일 시스템이 그 위치의 블록을 얼마나
+            빠르게 찾아내는지가 체감 성능에 영향을 줍니다. inode(+ extent) 기반이 이런 랜덤 seek
+            워크로드에 유리합니다.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-think">→</div>
+      <h2>답변 사고 순서 — 면접에서 이렇게 생각하면서 말한다</h2>
+    </div>
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>파일 시스템이 풀어야 할 근본 문제를 정의한다</strong><br>
+          "파일의 N번째 블록이 디스크 어디에 있는지 찾는 매핑을 어떻게 저장하는가"로 질문을 재정의합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>FAT의 자료구조를 설명한다</strong><br>
+          디스크 전체 단일 테이블 + 연결 리스트 방식이라는 것과, 그로 인한 랜덤 접근 O(n)을 짚습니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>inode의 자료구조를 설명한다</strong><br>
+          파일별 독립 메타데이터 + 직접/간접 포인터 배열로 랜덤 접근이 훨씬 빠르다는 것을 짚습니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>메타데이터 손상 복구와 단편화 관점의 차이를 덧붙인다</strong><br>
+          테이블 집중 vs 파일별 분산이 장애 범위와 저널링 전략에 미치는 영향을 설명합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>실무 선택 기준으로 마무리한다</strong><br>
+          랜덤 I/O가 잦은 서버/DB는 inode 기반, 호환성·순차 쓰기 위주는 FAT 계열이라는 결론을 냅니다.
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-ans">✓</div>
+      <h2>핵심 답변 예시</h2>
+    </div>
+
+    <h3>짧은 버전 (1~2분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Short)</div>
+      <p>
+        FAT는 디스크 전체에 대한 하나의 테이블에 "다음 블록 번호"를 연결 리스트처럼 저장해서, 파일
+        중간의 특정 블록을 찾으려면 처음부터 순서대로 따라가야 하는 O(n) 구조입니다. inode는 파일마다
+        독립된 블록 포인터 배열(직접/간접 포인터)을 가지고 있어서, 임의 위치의 블록 번호를 몇 단계
+        포인터 역참조만으로 바로 계산할 수 있습니다. 그래서 랜덤 접근이 잦은 서버/DB 환경은 inode
+        기반 파일 시스템을 쓰고, 단순하고 호환성이 중요한 이동식 매체는 여전히 FAT 계열을 씁니다.
+      </p>
+    </div>
+
+    <h3>깊이 있는 버전 (3~5분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Deep)</div>
+      <p>
+        두 구조 모두 "파일의 논리적 블록 번호를 디스크의 물리적 블록 번호로 매핑"하는 문제를 풀지만,
+        이 매핑 정보를 어떤 자료구조로 저장하느냐가 다릅니다.
+      </p>
+      <p>
+        FAT는 디스크 전체 클러스터 수만큼 크기를 갖는 단일 배열(테이블)을 두고, 각 항목이 "다음
+        클러스터 번호"를 가리키게 해서 사실상 연결 리스트를 구현합니다. 디렉터리 엔트리는 파일의
+        시작 클러스터만 가지고 있으므로, N번째 블록을 찾으려면 시작부터 N번 테이블을 따라가야 합니다.
+        순차 읽기에는 문제가 없지만, 랜덤 접근은 파일 길이에 비례하는 O(n) 비용이 듭니다.
+      </p>
+      <p>
+        inode는 파일마다 고정 크기 구조체를 두고, 그 안에 직접 포인터(작은 파일은 이것만으로 충분),
+        단일/이중/삼중 간접 포인터(큰 파일은 포인터 블록을 몇 단계 거쳐 확장)를 둡니다. 이는 배열
+        기반 인덱싱에 트리형 확장을 결합한 구조라, 임의의 블록 번호를 원하면 "몇 번째 간접 단계에
+        속하는지"를 산술 계산으로 바로 판단하고, 많아야 2~3번의 추가 블록 읽기로 목표 블록 번호를
+        얻습니다. 즉 파일 크기와 무관하게 접근 비용이 사실상 상수~로그 시간에 가깝습니다.
+      </p>
+      <p>
+        이 차이는 손상 복구와 단편화에도 이어집니다. FAT는 메타데이터가 테이블 하나에 집중돼 있어
+        해당 영역이 손상되면 다수 파일이 동시에 영향을 받고, 그래서 보통 백업 FAT를 이중으로 둡니다.
+        inode 기반 파일 시스템(ext4 등)은 메타데이터 변경을 저널(journal)에 먼저 기록한 뒤 실제
+        반영하는 저널링을 결합해, 정전 같은 장애 후에도 저널만 재생(replay)하면 되므로 전체 파일
+        시스템을 처음부터 스캔하는 fsck 시간을 크게 줄입니다. 단편화 측면에서는 두 구조 모두 파일이
+        늘어나며 블록이 흩어질 수 있지만, inode 기반은 extent(연속 블록 구간)를 미리 확보하는 할당
+        정책을 자주 써서 단편화를 완화하는 반면, FAT는 그때그때 비어 있는 클러스터를 이어붙이는
+        경향이 강해 장기적으로 조각화가 더 쉽게 누적됩니다.
+      </p>
+      <p>
+        결론적으로 랜덤 I/O가 많은 서버/DB 워크로드는 inode(+ 저널링, extent) 기반이 유리하고,
+        구조 단순성과 다양한 OS/기기 간 호환성이 중요한 이동식 저장매체는 FAT32/exFAT이 여전히
+        표준으로 쓰입니다.
+      </p>
+    </div>
+
+    <div class="answer-block answer-weak">
+      <div class="answer-label label-weak">약한 답변</div>
+      <p>
+        "inode는 리눅스에서 파일 정보를 저장하는 거고, FAT는 윈도우/USB에서 쓰는 옛날 방식입니다."
+      </p>
+      <p>
+        <strong>왜 약한가:</strong> 두 구조가 "블록 매핑을 어떻게 저장하는가"라는 공통 문제를 다르게
+        푼다는 핵심을 짚지 못했습니다. 연결 리스트 vs 배열/트리라는 자료구조 차이, 그로 인한 랜덤
+        접근 복잡도 차이, 손상 복구·단편화에 미치는 영향이 전혀 없어 "OS별 용도 암기" 수준에
+        그칩니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 7. Trade-off -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-trade">⇄</div>
+      <h2>Trade-off 정리</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>FAT</th>
+          <th>inode</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>랜덤 접근(특정 블록 seek)</td>
+          <td>O(n) — 연결 리스트를 순서대로 따라가야 함</td>
+          <td>O(1)~O(log n)에 가까움 — 포인터 배열/간접 참조로 직접 계산</td>
+        </tr>
+        <tr>
+          <td>순차 접근</td>
+          <td>문제 없음 — 다음 포인터만 계속 따라가면 됨</td>
+          <td>문제 없음 — extent 기반이면 오히려 더 유리</td>
+        </tr>
+        <tr>
+          <td>메타데이터 저장 방식</td>
+          <td>디스크 전체를 위한 단일 테이블(집중)</td>
+          <td>파일마다 독립된 구조체(분산)</td>
+        </tr>
+        <tr>
+          <td>손상 시 영향 범위</td>
+          <td>테이블 손상 시 다수 파일 동시 영향 위험 → 이중화로 대응</td>
+          <td>손상 범위가 파일 단위로 국소화되는 경향, 저널링으로 복구 시간 단축</td>
+        </tr>
+        <tr>
+          <td>구조 복잡도 / 구현 단순성</td>
+          <td>단순 — 다양한 OS/기기 호환성이 높음</td>
+          <td>상대적으로 복잡 — 권한, 링크, 저널링 등 풍부한 기능 지원</td>
+        </tr>
+        <tr>
+          <td>대표 사용처</td>
+          <td>USB, SD카드, 임베디드/이동식 매체</td>
+          <td>서버 OS(ext4, XFS), DB 데이터 파일, 대용량 랜덤 I/O 워크로드</td>
+        </tr>
+        <tr>
+          <td>단편화 완화 전략</td>
+          <td>defrag(조각 모음) 도구에 의존</td>
+          <td>extent 기반 연속 블록 할당으로 사전 완화</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span>
+        면접에서는 "어느 쪽이 더 좋은가"가 아니라 <strong>"접근 패턴(순차 vs 랜덤)과 운영 요구사항
+        (호환성 vs 신뢰성/성능)에 따라 선택이 달라진다"</strong>는 것을 강조하는 것이 중요합니다.
+      </span>
+    </div>
+  </div>
+
+  <!-- 8. 흔한 오해 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-myth">✗</div>
+      <h2>흔한 오해와 바로잡기</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 1: "FAT는 오래된 기술이라 무조건 inode보다 열등하다"</div>
+      <p>
+        FAT는 구조가 단순해 다양한 OS·기기 간 호환성이 매우 뛰어나고, 순차 쓰기 위주(사진/영상 저장)
+        워크로드에서는 실질적 단점이 크지 않습니다. "오래됨 = 열등함"이 아니라 <strong>설계 목표(호환성
+        vs 랜덤 성능)가 다른 것</strong>으로 이해해야 합니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 2: "inode에는 파일 이름이 들어 있다"</div>
+      <p>
+        파일 이름은 inode가 아니라 <strong>디렉터리 엔트리</strong>에 저장되고, 디렉터리 엔트리는
+        "이름 → inode 번호" 매핑만 담습니다. inode 자체는 이름을 모르며, 그래서 하드 링크(같은 inode를
+        가리키는 여러 이름)가 가능한 것입니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 3: "inode 기반 파일 시스템은 단편화가 없다"</div>
+      <p>
+        inode 기반도 파일이 늘어나고 삭제/재할당이 반복되면 단편화가 발생할 수 있습니다. 다만
+        extent 기반 할당(연속 블록 구간을 통째로 예약)이나 할당 정책 최적화로 <strong>단편화가
+        발생하는 빈도와 정도를 완화</strong>하는 것이지, 원천적으로 없앤 것은 아닙니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 4: "저널링(journaling)은 inode 방식에서만 가능하다"</div>
+      <p>
+        저널링은 "메타데이터/데이터 변경을 로그로 먼저 남기고 실제 반영은 나중에 한다"는 일반적인
+        기법으로, FAT 계열에도 일부 변형(예: 트랜잭션 안전성을 강화한 exFAT의 일부 구현)이 존재합니다.
+        다만 inode + 저널링 조합(ext3/ext4 등)이 서버 환경에서 훨씬 널리 쓰이는 조합일 뿐, "inode만
+        저널링이 가능하다"는 것은 과도한 일반화입니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- 9. Follow-up 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-follow">↓</div>
+      <h2>Senior-Level Follow-up 질문과 답변 방향</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "inode의 간접 포인터(indirect pointer)는 왜 단일/이중/삼중 단계로 나뉘어 있습니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        inode 구조체 크기가 고정돼 있어 담을 수 있는 포인터 개수가 제한됩니다. 작은 파일은 직접
+        포인터만으로 충분하지만, 파일이 커질수록 더 많은 블록 번호를 담아야 하므로 "포인터가 가리키는
+        블록 자체를 포인터들의 배열로 쓰는" 간접 참조를 단계적으로 확장합니다. 이렇게 하면 inode
+        자체의 크기를 늘리지 않으면서도 파일 크기 한계를 기하급수적으로 늘릴 수 있고, 대부분의
+        파일은 작으므로 direct pointer만으로 처리해 평균 접근 속도는 유지하면서 최악의 경우(초대형
+        파일)에도 대응 가능한 설계입니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "extent 기반 할당은 inode의 블록 포인터 방식과 무엇이 다릅니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        전통적 inode는 블록 하나하나의 번호를 포인터로 나열하지만, extent 기반(ext4, XFS)은 "시작
+        블록 번호 + 연속 블록 개수"라는 압축된 표현으로 연속된 블록 구간을 한 번에 표현합니다. 파일이
+        대부분 연속된 블록에 할당된다면 훨씬 적은 메타데이터로 같은 정보를 표현할 수 있고, 큰 파일의
+        메타데이터 오버헤드와 단편화 가능성을 함께 줄입니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "저널링 파일 시스템에서 저널 자체가 손상되면 어떻게 됩니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        저널은 보통 체크섬과 트랜잭션 경계 표시를 포함해, 불완전하게 기록된 트랜잭션은 복구 시
+        무시(롤백)하고 마지막으로 완전히 커밋된 상태까지만 재생합니다. 저널 영역 자체가 물리적으로
+        손상되면(디스크 배드 섹터 등) 저널링만으로는 복구할 수 없고, RAID나 백업 같은 상위 계층의
+        중복성에 의존해야 합니다. 즉 저널링은 "정전/비정상 종료로 인한 논리적 불일치"를 해결하는
+        것이지 "물리적 손상"까지 해결하는 것은 아닙니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "클라우드 오브젝트 스토리지(S3 등)는 inode/FAT 중 어느 모델에 가깝습니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        오브젝트 스토리지는 전통적 파일 시스템의 블록 체이닝 개념 자체를 쓰지 않고, 객체 키 → 분산된
+        메타데이터 서비스(보통 자체 인덱스/키-값 저장소)를 통해 데이터 위치를 찾는 구조에 가깝습니다.
+        "파일 하나 = 순차적으로 이어진 블록들"이라는 로컬 파일 시스템의 전제 자체가 다르고, 대신
+        가용성·내구성을 위해 데이터를 여러 노드에 복제/샤딩하는 것이 핵심 설계입니다. inode/FAT
+        논쟁은 로컬 블록 디바이스 위에서의 매핑 문제이고, 오브젝트 스토리지는 분산 시스템 레벨의
+        다른 문제라는 것을 구분해서 답해야 합니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 10. 좋은 답변과 약한 답변 차이 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-diff">≠</div>
+      <h2>좋은 답변과 약한 답변의 차이</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>약한 답변 (5년차 이하)</th>
+          <th>강한 답변 (10년차 이상)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>두 구조의 정의</td>
+          <td>"inode는 리눅스, FAT는 윈도우/USB에서 쓴다"</td>
+          <td>"블록 매핑을 연결 리스트(FAT)로 저장하느냐, 파일별 포인터 배열(inode)로 저장하느냐의 차이"</td>
+        </tr>
+        <tr>
+          <td>랜덤 접근 성능 근거</td>
+          <td>"inode가 더 빠르다"</td>
+          <td>"FAT는 O(n) 순회, inode는 직접/간접 포인터로 상수~로그 시간에 블록 위치 계산"</td>
+        </tr>
+        <tr>
+          <td>손상 복구 관점</td>
+          <td>없음</td>
+          <td>"FAT는 테이블 손상 시 다수 파일 동시 영향(백업 FAT로 대응), inode는 저널링으로 복구 시간 단축"</td>
+        </tr>
+        <tr>
+          <td>단편화 이해</td>
+          <td>"조각 모음하면 된다"</td>
+          <td>"extent 기반 연속 할당으로 사전 완화, inode도 단편화가 없는 것은 아니라는 점까지 인지"</td>
+        </tr>
+        <tr>
+          <td>실무 선택 기준</td>
+          <td>없음</td>
+          <td>랜덤 I/O 많은 서버/DB → inode 기반, 호환성/순차 쓰기 위주 이동식 매체 → FAT 계열</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 11. Self-check Rubric -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-rub">✓</div>
+      <h2>자기 점검 Rubric</h2>
+    </div>
+    <p>답변 연습 후 아래 기준으로 자신을 평가하세요.</p>
+
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>두 구조를 "블록 매핑을 어떻게 저장하는가"라는 공통 문제로 재정의했다</strong><br>
+        FAT는 연결 리스트, inode는 파일별 포인터 배열/트리라는 자료구조 관점으로 설명했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>랜덤 접근 복잡도 차이를 근거를 들어 설명했다</strong><br>
+        FAT의 O(n) 순회와 inode의 상수~로그 시간 접근을 대비시켰다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>손상 복구 관점의 차이를 설명했다</strong><br>
+        메타데이터 집중(FAT) vs 분산(inode)이 장애 범위와 저널링 전략에 미치는 영향을 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>단편화 원인과 완화 전략(extent 등)을 언급했다</strong><br>
+        inode 기반도 단편화가 없는 것은 아니라는 점까지 정확히 짚었다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>실무 사용처(서버/DB vs USB/이동식 매체)로 연결했다</strong><br>
+        접근 패턴과 호환성 요구가 선택 기준이라는 것을 설명했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>간접 포인터 단계 구조나 extent 기반 할당의 동작 원리를 설명했다</strong><br>
+        inode 크기 제약을 어떻게 극복하는지 구체적으로 말했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>저널링이 해결하는 문제 범위(논리적 불일치)와 한계(물리적 손상)를 구분했다</strong><br>
+        저널링이 만능 복구 수단이 아니라는 것을 정확히 이해했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>클라우드 오브젝트 스토리지와 로컬 파일 시스템 모델의 차이를 구분했다</strong><br>
+        inode/FAT 논쟁이 로컬 블록 디바이스 문제라는 것을 명확히 했다.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="callout callout-info">
+      <span class="callout-icon">📊</span>
+      <span>
+        <strong>자가 평가:</strong>
+        '필수' 3개 모두 → 합격 수준 |
+        '권장' 3개 추가 → 좋은 인상 |
+        '심화' 포함 → 탑티어 후보
+      </span>
+    </div>
+  </div>
+
+  <!-- 12. 다음 레슨 예고 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">→</div>
+      <h2>다음 레슨 예고 — Day 9: 대용량 로그/이벤트 저장 (Append-only 구조)</h2>
+    </div>
+    <p>
+      다음 레슨에서는 "append-only 파일 구조는 어떤 장점과 단점이 있습니까?"를 다룹니다. 순차 쓰기
+      최적화, compaction, 인덱스 결합, 장애 복구(WAL, LSM-Tree) 관점에서 append-only 구조를 다룹니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>주제</th><th>면접 핵심 질문</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Append-only 쓰기</td>
+          <td>왜 순차 쓰기만 허용하는 구조가 쓰기 성능에 유리한가?</td>
+        </tr>
+        <tr>
+          <td>Compaction</td>
+          <td>삭제/갱신된 데이터는 append-only 구조에서 어떻게 정리되는가?</td>
+        </tr>
+        <tr>
+          <td>WAL / LSM-Tree</td>
+          <td>DB의 write-ahead log와 LSM-Tree는 append-only 구조를 어떻게 활용하는가?</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <span class="tag tag-blue">Append-only</span>
+      <span class="tag tag-blue">WAL</span>
+      <span class="tag tag-green">LSM-Tree</span>
+      <span class="tag tag-yellow">Compaction</span>
+      개념이 실제 로그 저장소·DB 엔진 설계와 직접 연결되는 형태로 다루어집니다.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>
