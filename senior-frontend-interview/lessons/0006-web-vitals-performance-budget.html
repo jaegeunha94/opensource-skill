@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — Web Vitals &amp; 성능 예산 | 프론트엔드 10년차 이상 개발자 Interview</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">프론트엔드 10년차 이상 개발자 Interview</a> › <a href="./">레슨 목록</a> › Day 6
+  </nav>
+
+  <h1>Day 6 — Web Vitals &amp; 성능 예산</h1>
+  <p class="subtitle">LCP/INP/CLS 세부 진단, RUM 기반 실사용자 성능 관측, 성능 예산 설계와 CI 회귀 방지 · 2026-07-07</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#vitals-deep">LCP/INP/CLS 세부 분해와 진단</a></li>
+      <li><a href="#rum-lab">RUM vs Lab 데이터, p75와 분포 사고</a></li>
+      <li><a href="#budget">성능 예산 설계와 CI 통합</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"제품 A/B 테스트에서 신규 기능을 배포한 후 LCP가 눈에 띄게 나빠졌다는 리포트를 받았습니다. 어떻게 원인을 좁혀 나가시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"Lighthouse에서는 점수가 좋은데 실제 사용자 리포트(RUM)에서는 Core Web Vitals가 나쁘게 나옵니다. 왜 이런 괴리가 생기고, 어떻게 해석하시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"성능 예산(Performance Budget)을 어떻게 설계하고, 그 예산을 넘는 PR을 CI에서 자동으로 막는 파이프라인을 어떻게 구성하시겠어요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"LCP/INP/CLS가 각각 무엇의 약자인지 아는가"가 아니라, 하나의 숫자 뒤에 있는 여러 단계 중 어디가 병목인지 분해할 수 있는가, 그리고 그 진단을 실험실 환경(Lab)이 아니라 실제 사용자 분포(RUM) 위에서 재현 가능한 프로세스로 만들 수 있는가</strong>를 테스트합니다. 성능은 "빠르게 만들면 끝나는 일회성 작업"으로 오해받기 쉽지만, 시니어는 성능을 <em>지속적으로 감시하고 회귀를 막는 운영 체계</em>로 다뤄야 합니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>지표를 구성 요소로 분해할 수 있는가</strong> — "LCP가 나쁘다"를 TTFB, 리소스 로드 지연, 리소스 로드 시간, 렌더 지연이라는 4단계로 쪼개서 어느 구간이 문제인지 짚을 수 있는가.</li>
+      <li><strong>Lab 데이터와 RUM 데이터의 차이를 아는가</strong> — Lighthouse 점수 하나를 "진실"로 믿지 않고, 실제 기기·네트워크·지역 분포를 반영한 현장 데이터(Field Data)로 검증하는 습관이 있는가.</li>
+      <li><strong>통계적으로 사고하는가</strong> — 평균이 아니라 p75(75th percentile) 기준으로 판단하고, 분포의 꼬리(느린 기기·느린 네트워크 사용자)가 왜 중요한지 설명할 수 있는가.</li>
+      <li><strong>예산을 프로세스로 만들 수 있는가</strong> — 성능 목표를 문서 한 장으로 끝내지 않고, 번들 크기·이미지 크기·타이밍 지표에 대한 구체적 임계값을 CI 게이트로 강제할 수 있는가.</li>
+      <li><strong>비즈니스 임팩트로 연결할 수 있는가</strong> — 성능 개선을 "체감상 빨라졌다"가 아니라 전환율·이탈률·매출 등 비즈니스 지표와 상관관계로 설명할 수 있는가.</li>
+    </ul>
+
+    <p>주니어~중니어에서 자주 나오는 답변 패턴: "이미지를 압축하고 코드 스플리팅을 하겠습니다"처럼 일반적인 최적화 기법을 나열하거나, "Lighthouse 점수를 90점 이상으로 만들겠습니다"처럼 랩 환경의 단일 점수를 목표 그 자체로 착각하는 경우입니다. 시니어는 기법을 나열하기 전에 <strong>어떤 구간에서, 어떤 사용자 세그먼트에서, 왜 느려졌는지</strong>부터 데이터로 좁힙니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Core Web Vitals란 무엇인가</h3>
+    <p>Google이 정의한 <strong>사용자가 실제로 체감하는 품질을 대표하는 세 가지 핵심 지표</strong>입니다. "페이지가 빨리 열리는가"(LCP), "클릭하면 즉시 반응하는가"(INP), "레이아웃이 갑자기 흔들리지 않는가"(CLS)를 각각 숫자로 측정합니다. 비유하면, 레스토랑을 평가할 때 "음식이 나오는 데 얼마나 걸리는가"(LCP), "주문하면 직원이 바로 응대하는가"(INP), "테이블이 갑자기 흔들리지 않는가"(CLS) 세 가지로 나눠 서비스 품질을 정량화하는 것과 같습니다. 이 세 지표가 중요한 이유는 개발자의 주관적 체감이 아니라 <strong>수백만 실제 사용자의 경험을 하나의 숫자로 요약</strong>하기 때문입니다.</p>
+
+    <h3>LCP(Largest Contentful Paint)란 무엇인가</h3>
+    <p>뷰포트 안에서 <strong>가장 큰 콘텐츠 요소(보통 히어로 이미지나 큰 텍스트 블록)가 화면에 그려지는 시점</strong>입니다. "페이지가 로딩되고 있다는 느낌"이 아니라 "실제로 쓸 만한 콘텐츠가 보이는 시점"을 측정하려는 지표입니다. 좋은 기준선은 2.5초 이하입니다.</p>
+
+    <h3>INP(Interaction to Next Paint)란 무엇인가, 왜 FID를 대체했는가</h3>
+    <p>과거 Core Web Vitals의 반응성 지표는 FID(First Input Delay)였습니다. FID는 <strong>사용자의 첫 번째 상호작용 시작부터 브라우저가 그 이벤트 처리를 시작하기까지의 지연</strong>만 측정했습니다. 문제는 "시작 지연"만 보고 "그 이후 실제로 화면이 갱신되기까지 걸린 처리 시간"은 전혀 반영하지 않았다는 점입니다. 예를 들어 클릭 이벤트 처리가 매우 무거워서 화면 갱신에 500ms가 걸려도, 이벤트 처리 자체가 즉시 시작만 됐다면 FID는 낮게 나왔습니다. INP는 이 허점을 메우기 위해 <strong>페이지 생애 전체에서 발생한 상호작용 중(클릭, 탭, 키 입력) 가장 느렸던(또는 그에 준하는) 것을, 입력부터 다음 프레임이 실제로 그려지기까지 전체 구간</strong>으로 측정합니다. 2024년부터 FID를 대체해 Core Web Vitals의 정식 반응성 지표가 되었습니다. 좋은 기준선은 200ms 이하입니다.</p>
+
+    <h3>CLS(Cumulative Layout Shift)란 무엇인가</h3>
+    <p>사용자가 예상하지 못한 레이아웃 이동의 누적치입니다. 이미지에 <code>width</code>/<code>height</code>를 지정하지 않아 로드 완료 후 갑자기 아래 콘텐츠가 밀리거나, 광고 배너가 늦게 삽입되며 버튼 위치가 바뀌어 사용자가 실수로 다른 것을 클릭하게 되는 경험을 수치화합니다. 좋은 기준선은 0.1 이하입니다. 계산식은 <strong>impact fraction(화면에서 이동에 영향받은 영역의 비율) × distance fraction(실제로 이동한 거리의 비율)</strong>의 곱으로, 큰 요소가 조금 움직이거나 작은 요소가 크게 움직이거나 모두 점수에 반영됩니다.</p>
+
+    <h3>Lab 데이터와 Field 데이터(RUM)의 차이</h3>
+    <p>Lab 데이터는 Lighthouse나 WebPageTest처럼 <strong>통제된 환경(고정된 네트워크 속도, 고정된 기기 스펙)</strong>에서 한 번 측정한 값입니다. Field 데이터(RUM, Real User Monitoring)는 <strong>실제 사용자의 실제 기기·네트워크·지역에서 수집된 값의 분포</strong>입니다. 비유하면 Lab 데이터는 "표준 시험장에서 한 사람이 정해진 조건으로 뛴 기록"이고, Field 데이터는 "실제 마라톤 당일 수만 명의 완주 기록 분포"입니다. 개발자의 개발 머신과 사무실 와이파이에서는 LCP가 1초로 훌륭해 보여도, 실제 사용자의 상당수가 저사양 안드로이드 기기와 불안정한 3G/4G 환경에 있다면 Field 데이터의 LCP는 전혀 다른 이야기를 할 수 있습니다.</p>
+
+    <h3>왜 평균이 아니라 p75(75th Percentile)인가</h3>
+    <p>Google이 Core Web Vitals 평가에 p75를 쓰는 이유는, <strong>평균은 소수의 매우 빠른 사용자가 다수의 느린 사용자를 가려버리는 착시</strong>를 만들기 때문입니다. p75는 "전체 방문자의 75%가 이 값 이하로 경험했다"는 뜻이며, 다르게 말하면 상위 25%의 가장 느린 경험까지 포함해서 판단하겠다는 의도입니다. 이는 저사양 기기·느린 네트워크에 있는 사용자를 의도적으로 대표성 있게 반영하는 통계적 선택입니다.</p>
+  </section>
+
+  <!-- 4. LCP/INP/CLS 세부 분해 -->
+  <section id="vitals-deep">
+    <h2>4. LCP/INP/CLS 세부 분해와 진단</h2>
+
+    <div class="card">
+      <h4>LCP의 4단계 분해</h4>
+      <p>"LCP가 나쁘다"는 진단이 아니라 증상입니다. 실제 원인은 다음 4개 구간 중 어디에 시간이 몰려있는지로 좁혀야 합니다.</p>
+      <table class="method-table">
+        <thead>
+          <tr><th>구간</th><th>정의</th><th>흔한 원인</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>TTFB (Time to First Byte)</td><td>요청 시작부터 서버 응답 첫 바이트 수신까지</td><td>서버 처리 지연, DB 쿼리, CDN 캐시 미스, 리전 간 거리</td></tr>
+          <tr><td>Resource Load Delay</td><td>HTML 파싱 시작부터 LCP 리소스(이미지 등) 요청 시작까지</td><td>리소스가 CSS/JS 뒤에 늦게 발견됨, <code>preload</code> 미사용</td></tr>
+          <tr><td>Resource Load Time</td><td>LCP 리소스 요청부터 다운로드 완료까지</td><td>이미지 용량 과다, 압축 미적용, 느린 네트워크, 서드파티 호스팅</td></tr>
+          <tr><td>Element Render Delay</td><td>리소스 다운로드 완료부터 화면에 실제로 그려지기까지</td><td>메인 스레드 차단(무거운 JS 실행), render-blocking CSS</td></tr>
+        </tbody>
+      </table>
+      <p>이 4단계를 나누면 "이미지를 압축하겠다"는 답이 항상 맞는 게 아니라는 것이 드러납니다 — 예를 들어 TTFB가 전체 LCP의 60%를 차지한다면 이미지 압축은 체감 개선을 거의 만들지 못하고, 서버/CDN 캐싱 전략을 먼저 고쳐야 합니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>INP의 3단계 분해 — Input Delay, Processing Time, Presentation Delay</h4>
+      <ul class="step-block">
+        <li>
+          <div class="step-num">1</div>
+          <div><strong>Input Delay</strong>
+            <p style="margin-top:0.3rem">사용자가 클릭한 시점부터 이벤트 핸들러가 실행을 시작하기까지의 지연입니다. 메인 스레드가 다른 작업(긴 JS 태스크, 렌더링)으로 이미 바쁘면 이 구간이 길어집니다.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div><strong>Processing Time</strong>
+            <p style="margin-top:0.3rem">이벤트 핸들러 콜백이 실제로 실행되는 시간입니다. 상태 업데이트 로직이 무겁거나, 하나의 클릭 핸들러 안에서 큰 리스트 전체를 동기적으로 재계산하면 이 구간이 길어집니다.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div><strong>Presentation Delay</strong>
+            <p style="margin-top:0.3rem">핸들러 실행이 끝난 후 브라우저가 실제로 다음 프레임을 그려서 화면에 반영하기까지의 시간입니다. 큰 DOM 변경으로 인한 강제 리플로우, 레이아웃 계산 비용이 여기에 반영됩니다.</p>
+          </div>
+        </li>
+      </ul>
+      <p>Chrome DevTools Performance 패널에서 특정 상호작용을 녹화하면 이 3단계가 타임라인에 구분되어 표시되며, "어느 구간이 전체 INP의 대부분을 차지하는지"를 시각적으로 확인할 수 있습니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>CLS 디버깅 — Layout Shift 항목 찾기</h4>
+      <p>Chrome DevTools Performance 패널의 "Experience" 트랙이나 <code>PerformanceObserver</code>로 <code>layout-shift</code> 엔트리를 구독하면, 어떤 요소가 언제 얼마나 이동했는지 <code>sources</code> 배열로 정확히 짚어낼 수 있습니다.</p>
+      <pre><code>new PerformanceObserver((list) => {
+  for (const entry of list.getEntries()) {
+    if (!entry.hadRecentInput) {
+      console.log('shift value:', entry.value);
+      console.log('culprits:', entry.sources);
+    }
+  }
+}).observe({ type: 'layout-shift', buffered: true });</code></pre>
+      <p><code>hadRecentInput</code> 체크가 중요합니다 — 사용자가 직접 유발한 레이아웃 변화(예: 아코디언을 눌러서 펼쳐짐)는 CLS 점수에 포함되지 않아야 하기 때문에, 최근 500ms 이내 입력이 있었던 경우는 걸러냅니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. RUM vs Lab -->
+  <section id="rum-lab">
+    <h2>5. RUM vs Lab 데이터, p75와 분포 사고</h2>
+
+    <div class="card">
+      <h4>Lab과 RUM이 괴리되는 전형적인 시나리오</h4>
+      <p>"Lighthouse에서는 점수가 좋은데 RUM에서는 나쁘다"는 상황은 다음 원인들로 흔히 발생합니다.</p>
+      <ul>
+        <li><strong>기기 성능 분포 차이</strong>: Lighthouse는 보통 중간급 모바일 기기를 시뮬레이션하지만, 실제 사용자층에는 훨씬 저사양 기기 비중이 더 높을 수 있습니다(특히 신흥 시장 트래픽 비중이 있는 서비스).</li>
+        <li><strong>네트워크 조건 차이</strong>: Lab은 고정된 스로틀링 프로파일을 쓰지만, 실사용자는 지하철 와이파이, 해외 로밍, 4G 음영지역 등 훨씬 넓은 네트워크 조건 분포를 가집니다.</li>
+        <li><strong>캐시 상태 차이</strong>: Lab 측정은 대개 캐시가 비어있는 "cold load" 한 번으로 끝나지만, RUM은 재방문자의 warm cache 경험까지 섞여 있어 분포가 다릅니다(다만 이 경우 오히려 RUM이 더 좋게 나올 수도 있습니다).</li>
+        <li><strong>서드파티 스크립트 실측 차이</strong>: 광고, 트래킹, A/B 테스트 SDK 등은 실제 프로덕션 트래픽에서만 전체 규모로 로드되며, Lab 측정 환경에서는 일부만 활성화되어 있을 수 있습니다.</li>
+        <li><strong>지역별 CDN/엣지 거리</strong>: Lab은 보통 특정 리전에서 측정하지만, 실제 사용자는 전 세계에 분포하므로 TTFB가 지역별로 크게 갈립니다.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h4>RUM 데이터를 세그먼트로 쪼개서 봐야 하는 이유</h4>
+      <p>전체 p75 하나만 보면 "무엇이 원인인지" 알 수 없습니다. 실무에서는 RUM 데이터를 다음 축으로 분해해서 병목 세그먼트를 찾습니다.</p>
+      <table class="method-table">
+        <thead><tr><th>분해 축</th><th>드러나는 문제 유형</th></tr></thead>
+        <tbody>
+          <tr><td>기기 유형(모바일/데스크톱, 저사양/고사양)</td><td>메인 스레드 처리 능력 차이로 인한 INP 격차</td></tr>
+          <tr><td>연결 유형(4G/3G/Wi-Fi)</td><td>리소스 다운로드 시간에 의한 LCP 격차</td></tr>
+          <tr><td>지역(국가/리전)</td><td>TTFB와 CDN 엣지 커버리지 문제</td></tr>
+          <tr><td>페이지 템플릿(상세페이지/목록/체크아웃)</td><td>특정 화면에서만 발생하는 CLS·LCP 회귀</td></tr>
+          <tr><td>배포 버전(신규 배포 전/후)</td><td>특정 배포가 유발한 회귀를 시계열로 특정</td></tr>
+        </tbody>
+      </table>
+      <p>"LCP가 나빠졌다"는 리포트를 받았을 때, 전체 평균이 아니라 위 축으로 쪼개보면 "사실은 특정 국가의 특정 기기군에서만 나빠졌다"는 식으로 원인을 훨씬 빠르게 좁힐 수 있습니다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 성능 예산 -->
+  <section id="budget">
+    <h2>6. 성능 예산 설계와 CI 통합</h2>
+
+    <div class="card">
+      <h4>성능 예산(Performance Budget)이란 무엇인가</h4>
+      <p>"나중에 측정해서 나쁘면 고치자"가 아니라, <strong>사전에 정한 임계값을 넘는 변경은 애초에 병합되지 못하게 막는 계약</strong>입니다. 코드 리뷰가 코드 품질의 게이트키퍼라면, 성능 예산은 성능의 게이트키퍼입니다. 예산이 없으면 팀 전체가 "이번 기능은 조금 무거워도 괜찮겠지"라는 개별 판단을 반복하다가, 수십 번의 작은 타협이 누적되어 어느 순간 전체 서비스가 눈에 띄게 느려지는 "성능 부채"가 쌓입니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>예산의 종류 — 무엇에 숫자를 매길 것인가</h4>
+      <table class="method-table">
+        <thead><tr><th>예산 유형</th><th>예시</th><th>측정 방식</th></tr></thead>
+        <tbody>
+          <tr><td>타이밍 예산</td><td>LCP p75 &lt; 2.5s, INP p75 &lt; 200ms, CLS p75 &lt; 0.1</td><td>RUM(필드) + Lighthouse CI(랩)</td></tr>
+          <tr><td>리소스 크기 예산</td><td>JS 번들 총량 &lt; 170KB(gzip), 이미지 개별 &lt; 200KB</td><td>번들 분석 도구, CI 빌드 산출물 검사</td></tr>
+          <tr><td>수량 기반 예산</td><td>서드파티 스크립트 &lt; 5개, HTTP 요청 &lt; 50개</td><td>정적 분석, 네트워크 탭 자동 집계</td></tr>
+          <tr><td>규칙 기반 예산</td><td>모든 <code>&lt;img&gt;</code>에 <code>width</code>/<code>height</code> 필수</td><td>Lint 규칙, 자동화 감사</td></tr>
+        </tbody>
+      </table>
+      <p>타이밍 예산만으로는 "왜 넘었는지" CI 단계에서 즉시 알기 어렵기 때문에, 실무에서는 타이밍 예산(결과 지표)과 리소스 예산(원인 지표)을 함께 설정해 이중으로 방어합니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>CI 파이프라인에 성능 예산을 통합하는 절차</h4>
+      <ul class="step-block">
+        <li>
+          <div class="step-num">1</div>
+          <div><strong>PR마다 Lighthouse CI 실행</strong>
+            <p style="margin-top:0.3rem">각 PR이 프리뷰 배포된 URL에 대해 Lighthouse CI를 돌리고, LCP·CLS·번들 크기가 <code>lighthouserc.json</code>에 정의한 임계값(<code>assertions</code>)을 넘으면 CI를 실패시킵니다. 네트워크 변동성을 줄이기 위해 여러 번 측정 후 중앙값을 사용합니다.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div><strong>번들 크기 diff를 PR 코멘트로 자동 게시</strong>
+            <p style="margin-top:0.3rem">bundlesize, size-limit 같은 도구로 빌드 산출물의 gzip/brotli 크기를 base 브랜치와 비교해, 몇 KB가 늘었는지 리뷰어가 바로 보게 합니다. 숫자가 안 보이면 "이 PR이 성능에 영향을 주는지" 리뷰어가 판단할 근거가 없습니다.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div><strong>배포 후 RUM 대시보드에 배포 마커 삽입</strong>
+            <p style="margin-top:0.3rem">각 배포 시점을 RUM 대시보드(시계열 그래프)에 수직선으로 표시해, 특정 배포 직후 p75 지표가 꺾이면 즉시 원인 배포를 특정할 수 있게 합니다.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">4</div>
+          <div><strong>회귀 감지 시 자동 알림 + 롤백 트리거</strong>
+            <p style="margin-top:0.3rem">RUM p75가 예산을 일정 기간 초과하면 Slack/PagerDuty로 알리고, 카나리 배포 단계에서는 자동 롤백 조건에 성능 지표를 포함시켜 사람이 알아채기 전에 되돌립니다.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h4>예산 임계값은 어떻게 정하는가 — 임의의 숫자가 아니라 근거 있는 숫자</h4>
+      <p>"JS 170KB"라는 숫자 자체가 절대 진리는 아닙니다. 실무적으로는 다음 근거로 팀 고유의 예산을 도출합니다.</p>
+      <ul>
+        <li><strong>타겟 기기·네트워크 기준선</strong>: 서비스의 실제 사용자층 중 하위 25%(p75가 대표하는 구간)가 쓰는 기기·네트워크(예: 중저가 안드로이드 + 4G)를 기준으로 "이 조건에서 목표 시간 안에 도달하려면 리소스가 얼마 이하여야 하는가"를 역산합니다.</li>
+        <li><strong>현재 값 대비 점진적 개선 목표</strong>: 처음부터 이상적인 숫자를 강제하면 팀이 지킬 수 없어 예산 자체가 무력화됩니다. 현재 RUM p75를 베이스라인으로 삼고, "더 나빠지지 않기"부터 게이트로 걸고 점진적으로 목표를 낮춥니다.</li>
+        <li><strong>경쟁사/업계 벤치마크</strong>: 동일 카테고리 서비스의 공개 CrUX(Chrome UX Report) 데이터를 참고해 상대적 위치를 파악합니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>7. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>증상을 데이터로 확인합니다.</strong> "LCP가 나빠졌다"가 RUM p75 기준인지, 어떤 배포 시점부터인지, 특정 페이지·기기·지역에 국한되는지 먼저 시계열과 세그먼트로 확인합니다.</li>
+      <li><strong>Lab에서 재현을 시도합니다.</strong> 문제가 된 배포 전/후 버전을 Lighthouse나 WebPageTest로 비교 측정해, 동일한 회귀가 통제된 환경에서도 재현되는지 확인합니다.</li>
+      <li><strong>LCP를 4단계로 분해합니다.</strong> TTFB, 리소스 로드 지연, 리소스 로드 시간, 렌더 지연 중 어느 구간이 실제로 늘어났는지 Performance 패널이나 RUM의 세부 타이밍으로 짚습니다.</li>
+      <li><strong>해당 배포의 변경 내용과 대조합니다.</strong> 그 구간이 늘어난 원인이 배포에 포함된 특정 변경(새 서드파티 스크립트, 이미지 최적화 파이프라인 변경, 서버 응답 로직 변경)과 인과관계가 있는지 확인합니다.</li>
+      <li><strong>수정 후 RUM으로 검증하고, 재발 방지 예산을 추가합니다.</strong> 수정을 배포한 뒤 며칠간 RUM p75 추이를 지켜보고, 같은 회귀가 재발하지 않도록 해당 리소스나 지표에 대한 CI 예산 게이트를 추가합니다.</li>
+    </ol>
+  </section>
+
+  <!-- 8. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>8. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "제품 A/B 테스트에서 신규 기능을 배포한 후 LCP가 눈에 띄게 나빠졌다는 리포트를 받았습니다. 어떻게 원인을 좁혀 나가시겠어요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>먼저 "나빠졌다"는 리포트의 근거가 어떤 데이터인지부터 확인합니다. RUM 대시보드에서 LCP p75의 시계열을 보고, 정확히 어느 배포 시점부터 꺾였는지, 전체 트래픽에서 나빠진 것인지 아니면 이번 A/B 테스트 그룹에 한정된 것인지 세그먼트로 나눠 확인합니다.</p>
+      <br>
+      <p>회귀 시점과 A/B 테스트 배포 시점이 일치하는 것을 확인했다면, 통제된 환경에서 재현을 시도합니다. 실험군/대조군 페이지를 각각 Lighthouse나 WebPageTest로 여러 번 측정해 LCP 값을 비교하고, 신규 기능이 포함된 버전에서 실제로 LCP가 늘어나는지 확인합니다.</p>
+      <br>
+      <p>재현이 되면 LCP를 TTFB, 리소스 로드 지연, 리소스 로드 시간, 렌더 지연 4단계로 분해합니다. 이번 케이스처럼 새 기능이 추가된 경우라면, 신규 기능이 페이지 상단에 새로운 서드파티 스크립트나 배너를 삽입해 (1) 그 스크립트가 메인 스레드를 점유해 LCP 리소스의 렌더 지연을 늘렸는지, (2) 새 리소스가 기존 히어로 이미지보다 먼저 로드되도록 우선순위가 뒤바뀌어 리소스 로드 지연을 늘렸는지를 각각 짚어봅니다. Chrome DevTools의 Performance 패널이나 WebPageTest의 워터폴 차트로 각 구간의 실측치를 비교하면 어느 구간이 늘어났는지 명확히 드러납니다.</p>
+      <br>
+      <p>원인이 특정되면(예: 신규 배너 스크립트가 render-blocking으로 삽입되어 렌더 지연이 늘어난 경우), 해당 스크립트를 지연 로드하거나 <code>fetchpriority="low"</code>를 부여하는 식으로 수정하고, 수정 버전을 다시 Lab에서 검증합니다. 배포 후에는 RUM p75가 회귀 이전 수준으로 복귀하는지 며칠간 지켜보고, 향후 같은 문제가 재발하지 않도록 이 페이지의 LCP 예산을 CI의 Lighthouse CI 어설션에 추가해 임계값을 넘는 변경이 자동으로 걸리도록 만듭니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>"나빠졌다"는 모호한 리포트를 RUM 시계열과 세그먼트 분해로 재현 가능한 사실로 좁힘</li>
+      <li>Field(RUM)에서 시작해 Lab(Lighthouse)에서 재현하는 순서로 인과관계를 검증함</li>
+      <li>LCP를 4단계로 분해해 "어느 구간이 늘었는가"까지 구체적으로 짚음</li>
+      <li>수정 후 검증과 CI 예산 추가라는 재발 방지 절차까지 포함함</li>
+    </ul>
+  </section>
+
+  <!-- 9. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>9. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"이미지를 WebP로 바꾸고 코드 스플리팅을 적용하겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>이번 회귀가 이미지 문제인지, 스크립트 실행 지연 문제인지, 서버 응답 지연 문제인지 전혀 확인하지 않고 일반적인 최적화 기법을 먼저 제시합니다.</li>
+        <li>LCP가 4단계로 구성된다는 것을 고려하지 않아, TTFB가 원인이었다면 이 답변은 문제를 전혀 해결하지 못합니다.</li>
+        <li>배포와의 인과관계를 확인하는 절차가 없어, 실제로는 무관한 변경을 손댈 위험이 있습니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"Lighthouse 점수를 다시 90점 이상으로 만들면 해결된 것으로 보겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>Lab 점수 하나만으로는 실제 사용자 분포(RUM)에서 회귀가 해소됐는지 확인할 수 없습니다.</li>
+        <li>Lighthouse는 단일 조건 측정이므로, 특정 기기·지역군에서만 발생하는 회귀는 놓칠 수 있습니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>리포트의 근거 데이터(RUM 시계열, 세그먼트)를 먼저 확인해 회귀를 재현 가능한 사실로 좁힌다</li>
+        <li>Field 데이터에서 시작해 Lab 환경에서 재현을 시도한다</li>
+        <li>LCP/INP/CLS를 구성 단계로 분해해 병목 구간을 특정한다</li>
+        <li>원인을 배포 변경 내용과 인과관계로 대조한다</li>
+        <li>수정 후 RUM으로 검증하고, CI 예산 게이트로 재발을 방지한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. Follow-up -->
+  <section id="followups">
+    <h2>10. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: INP가 왜 FID를 대체했는지, 두 지표의 핵심 차이를 설명해주세요.</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> FID는 사용자의 첫 상호작용에서 "이벤트 처리가 시작되기까지의 지연"만 측정해, 핸들러 실행 자체가 얼마나 오래 걸리는지, 그리고 이후 실제 화면 갱신까지 걸리는 시간은 전혀 반영하지 못했습니다. INP는 페이지 생애 전체의 상호작용(첫 클릭에 한정되지 않음)을 대상으로, 입력부터 다음 프레임이 그려지기까지 전체 구간(Input Delay + Processing Time + Presentation Delay)을 측정합니다. 결과적으로 INP는 "반응이 시작됐는가"가 아니라 "사용자가 실제로 반응을 체감할 수 있었는가"를 훨씬 정확하게 대표합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 성능 예산에서 평균이 아니라 p75, 때로는 p95까지 함께 보는 이유는 무엇인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 평균은 소수의 매우 빠른 사용자(좋은 기기, 좋은 네트워크)가 다수의 느린 사용자 경험을 가려버립니다. p75는 Core Web Vitals의 공식 평가 기준이자 "대다수 사용자가 경험한 최악의 지점 부근"을 대표하고, p95까지 함께 보는 이유는 저사양 기기·열악한 네트워크에 있는 소수지만 무시할 수 없는 사용자군(때로는 특정 국가 전체 사용자층)의 경험이 완전히 사용 불가능한 수준인지 아닌지를 확인하기 위해서입니다. p75만 좋고 p95가 극단적으로 나쁘다면, 특정 세그먼트가 서비스를 사실상 쓸 수 없는 상태일 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 성능 예산을 도입했는데 팀이 계속 예산을 초과하는 PR을 올립니다. 어떻게 프로세스를 개선하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 먼저 예산 자체가 현실적인지부터 재검토합니다 — 팀이 반복적으로 못 지키는 예산은 대개 근거 없이 이상적인 숫자로 설정되어 있어 무력화되기 쉽습니다. 그 다음 "CI에서 실패로 막는 것"과 "PR 코멘트로 정보만 제공하는 것"의 단계를 나눠, 처음에는 경고만 하다가 팀이 익숙해지면 점진적으로 강제(하드 게이트)로 전환합니다. 또한 예산 초과가 반복되는 컴포넌트나 패턴(예: 매번 무거운 아이콘 라이브러리를 통째로 import)을 찾아 공용 컴포넌트나 lint 규칙으로 원천 차단하는 것이 "예산을 지키라"는 반복 지적보다 훨씬 효과적입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q (비기술적): 경영진이 "성능 개선에 한 스프린트를 쓰자는데, 이게 매출에 어떤 영향을 주는지 숫자로 보여달라"고 요청합니다. 어떻게 답하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 먼저 업계에 공개된 사례(대형 이커머스·미디어 기업들이 발표한 "N00ms 지연당 전환율 X% 감소" 같은 벤치마크)를 참고 자료로 제시하되, 그것을 우리 서비스에 그대로 적용하기보다 <strong>자체 실험으로 검증</strong>하겠다고 제안합니다. 구체적으로는 성능 개선을 A/B 테스트로 배포해(예: 이번 스프린트의 개선을 50% 트래픽에만 적용), 실험군과 대조군의 전환율·이탈률·세션 길이를 비교하는 것을 제안합니다. 이렇게 하면 "성능이 중요하다"는 일반론이 아니라, 우리 서비스 고유의 숫자로 다음 투자 우선순위를 결정할 근거를 만들 수 있습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>11. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"Lighthouse 점수가 좋으면 실제 사용자 경험도 좋다"</strong></p>
+      <p>Lighthouse는 단일 통제 조건(고정 기기·네트워크 시뮬레이션)에서 한 번 측정한 Lab 데이터입니다. 실제 사용자층의 기기·네트워크·지역 분포가 반영된 RUM(Field 데이터)과 괴리가 클 수 있으며, Core Web Vitals의 공식 평가 기준도 Field 데이터의 p75입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"평균 로딩 시간이 개선되면 성능이 개선된 것이다"</strong></p>
+      <p>평균은 소수의 빠른 경험이 다수의 느린 경험을 가릴 수 있습니다. Core Web Vitals가 p75를 쓰는 이유가 바로 이 착시를 피하기 위해서이며, 실무에서도 평균이 아니라 백분위수 분포로 판단해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"성능 예산은 프론트엔드 코드에만 적용된다"</strong></p>
+      <p>LCP의 상당 부분을 차지할 수 있는 TTFB는 서버 응답 속도, DB 쿼리, CDN 캐시 전략의 문제입니다. 성능 예산과 진단은 프론트엔드 번들만이 아니라 백엔드·인프라까지 포함한 전체 요청 경로를 대상으로 해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"CLS는 이미지에 크기만 지정하면 완전히 해결된다"</strong></p>
+      <p>이미지 크기 지정은 CLS의 가장 흔한 원인 하나를 없앨 뿐입니다. 폰트 로딩으로 인한 텍스트 리플로우(FOIT/FOUT), 동적으로 삽입되는 광고·배너, 사용자 입력 전에 나타나는 쿠키 배너, 애니메이션으로 처리되지 않은 상태 전환도 모두 CLS를 유발하는 독립적인 원인입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"성능 예산을 CI에 걸어두면 그 자체로 성능이 관리된다"</strong></p>
+      <p>CI 게이트는 "새로운 회귀가 추가되는 것"만 막습니다. 이미 존재하는 기존 부채나, 서드파티 스크립트처럼 CI가 통제할 수 없는 런타임 요인으로 인한 서서히 진행되는 악화는 RUM 기반의 지속적 모니터링과 알림이 별도로 있어야 감지할 수 있습니다.</p>
+    </div>
+  </section>
+
+  <!-- 12. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>12. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 6를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>LCP를 TTFB, 리소스 로드 지연, 리소스 로드 시간, 렌더 지연 4단계로 분해해 병목을 짚을 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>INP가 FID를 대체한 이유와, Input Delay/Processing Time/Presentation Delay 3단계 구성을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>CLS 계산식(impact fraction × distance fraction)과 <code>hadRecentInput</code>의 역할을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Lab 데이터와 RUM(Field) 데이터의 차이, 둘이 괴리되는 전형적 원인을 예시로 들 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>평균이 아니라 p75(때로는 p95)로 판단해야 하는 통계적 이유를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>RUM 데이터를 기기·네트워크·지역·페이지·배포 버전 축으로 세그먼트 분해하는 이유를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>성능 예산의 4가지 유형(타이밍/리소스 크기/수량/규칙 기반)과 각각의 측정 방식을 구분할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>PR 단위 Lighthouse CI → 번들 diff 코멘트 → RUM 배포 마커 → 회귀 알림/롤백으로 이어지는 CI 통합 절차를 순서대로 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>예산 임계값을 임의로 정하지 않고 사용자층 기준선·현재값 대비 점진 개선·업계 벤치마크로 도출하는 근거를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>성능 개선을 비즈니스 지표(전환율·이탈률)와 실험(A/B 테스트)으로 연결해 경영진에게 설명하는 대화를 예로 들 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 7</h3>
+      <p><strong>API 통합 &amp; 네트워크 계층 — REST/GraphQL, 캐싱, 에러 처리, 오프라인/재시도 전략</strong></p>
+      <p>Day 6에서 "화면이 얼마나 빨리, 얼마나 안정적으로 보이는가"를 다뤘다면, Day 7에서는 그 화면을 채우는 데이터가 네트워크를 통해 오가는 과정 — API 계약 설계, 캐싱 전략, 실패 처리, 오프라인 대응을 다룹니다.</p>
+      <p>면접 질문 예고: "백엔드 API가 간헐적으로 5xx를 반환하는 상황에서, 프론트엔드가 사용자 경험을 지키기 위해 어떤 재시도·폴백 전략을 설계하시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    프론트엔드 10년차 이상 개발자 Interview · Day 6 of 17 · 2026-07-07
+  </p>
+
+</div>
+</body>
+</html>
