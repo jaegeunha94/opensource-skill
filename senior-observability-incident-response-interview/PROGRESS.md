@@ -11,18 +11,18 @@
 | 5 | 2026-07-04 | 장애 원인 분석 (RCA) | [0005-root-cause-analysis.html](lessons/0005-root-cause-analysis.html) |
 | 6 | 2026-07-05 | 대시보드 설계 원칙 | [0006-dashboard-design-principles.html](lessons/0006-dashboard-design-principles.html) |
 | 7 | 2026-07-06 | SLO / SLI / SLA와 Error Budget | [0007-slo-sli-sla-error-budget.html](lessons/0007-slo-sli-sla-error-budget.html) |
+| 8 | 2026-07-07 | Postmortem 작성과 재발 방지 | [0008-postmortem-and-recurrence-prevention.html](lessons/0008-postmortem-and-recurrence-prevention.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Postmortem 작성과 재발 방지 | 비난 없는 postmortem, 액션 아이템 추적 |
 | 9 | 장애 커뮤니케이션 | 이해관계자 보고, 에스컬레이션, 장애 브리핑 |
 | 10 | 대규모 관측성 아키텍처 | 파이프라인 설계, 비용 trade-off, 카디널리티 |
 
 ## 현재 학습 위치
 
-**Day 7 완료** — Day 8 (Postmortem 작성과 재발 방지) 예정.
+**Day 8 완료** — Day 9 (장애 커뮤니케이션) 예정.
 
 ## 습득한 핵심 개념
 
@@ -51,4 +51,8 @@
 - [x] Error Budget 계산과 조직적 의미 (Day 7)
 - [x] Burn Rate와 Multi-window Multi-burn-rate 알림 설계 (Day 7)
 - [x] Error Budget과 Release Gating 연결 (Day 7)
-- [ ] 비난 없는 postmortem 작성 (예정 Day 8)
+- [x] Blameless Postmortem과 accountability의 차이 (Day 8)
+- [x] 장애 보고서 표준 구조(요약/임팩트/타임라인/근본원인/액션아이템) (Day 8)
+- [x] 액션 아이템 방치("postmortem 무덤") 방지 구조(담당자/기한/추적) (Day 8)
+- [x] 심각도별 postmortem 프로세스 차등화 (Day 8)
+- [ ] 이해관계자 보고와 에스컬레이션 기준 (예정 Day 9)
