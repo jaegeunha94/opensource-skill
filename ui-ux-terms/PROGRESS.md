@@ -19,6 +19,7 @@
 | 13 | 2026-07-04 | 디자인 리뷰 & 협업 프로세스 용어 | [0013-design-review-collaboration.html](lessons/0013-design-review-collaboration.html) |
 | 14 | 2026-07-05 | 폼 & 인풋 UX 용어 — Progressive Disclosure·Inline Validation·Error Prevention | [0014-form-input-ux.html](lessons/0014-form-input-ux.html) |
 | 15 | 2026-07-06 | 알림 & 피드백 UI 컴포넌트 용어 — Toast·Snackbar·Banner·Modal vs Non-modal Dialog | [0015-notification-feedback-ui.html](lessons/0015-notification-feedback-ui.html) |
+| 16 | 2026-07-07 | 로딩 상태 & 스켈레톤 UI 용어 — Skeleton Screen·Spinner·Progress Indicator·Optimistic UI | [0016-loading-states-skeleton-ui.html](lessons/0016-loading-states-skeleton-ui.html) |
 
 ## 다음 예정 학습
 
@@ -27,7 +28,7 @@
 
 ## 현재 학습 위치
 
-**Day 15 완료** — 다음 주제 미정. 다음 세션에서 MISSION.md와 완료 내용을 바탕으로 새 주제를 선정 예정.
+**Day 16 완료** — 다음 주제 미정. 다음 세션에서 MISSION.md와 완료 내용을 바탕으로 새 주제를 선정 예정.
 
 ## 습득한 핵심 개념
 
@@ -138,3 +139,10 @@
 - [x] Non-modal Dialog (논모달 다이얼로그) — Day 15
 - [x] Alert Dialog (얼럿 다이얼로그) — Day 15
 - [x] Badge (배지) — Day 15
+- [x] Skeleton Screen (스켈레톤 스크린) — Day 16
+- [x] Spinner (스피너) — Day 16
+- [x] Progress Indicator (프로그레스 인디케이터) — Day 16
+- [x] Shimmer Effect (셔머 이펙트) — Day 16
+- [x] Optimistic UI (옵티미스틱 UI) — Day 16
+- [x] Lazy Loading (지연 로딩) — Day 16
+- [x] Perceived Performance (체감 성능) — Day 16
