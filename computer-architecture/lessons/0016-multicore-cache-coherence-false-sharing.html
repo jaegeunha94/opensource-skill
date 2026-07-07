@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — 멀티코어와 캐시 일관성 | 컴퓨터 구조 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">컴퓨터 구조 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 6
+  </nav>
+
+  <h1>Day 6 — 멀티코어와 캐시 일관성</h1>
+  <p class="subtitle">cache coherence, false sharing으로 "스레드를 늘렸는데 왜 더 느려졌는가"에 답하기 · 2026-07-07</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#deep">캐시 일관성 프로토콜과 false sharing을 깊이 이해하기</a></li>
+      <li><a href="#example">구체 예시 — 패딩 하나로 몇 배 빨라지는 카운터</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"멀티스레드 코드에서 false sharing이 왜 문제가 됩니까?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"스레드 4개가 각자 독립적인 카운터를 증가시키는 코드인데, 스레드 수를 늘렸더니 오히려 처리량이 떨어졌습니다. 왜 이런 일이 생길 수 있습니까?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"캐시 일관성(cache coherence)이란 무엇이고, 멀티코어 CPU에서 왜 반드시 필요한가요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"논리적으로 완전히 독립적인 두 변수가, 물리적으로는 같은 캐시 라인에 있다는 이유만으로 서로의 성능을 갉아먹을 수 있다"</strong>는 사실을 이해하는가를 확인합니다. 면접관이 원하는 답은 "락 경합(lock contention) 때문입니다"라는 성급한 결론이 아니라, <strong>애초에 락도 없고 데이터 레이스도 없는데 왜 코어 간에 통신 비용이 발생하는지</strong>를 cache coherence protocol과 cache line 단위의 동작으로 설명하는 것입니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>멀티코어 메모리 모델에 대한 정확한 이해</strong> — 각 코어가 자신만의 L1(보통 L2도)을 갖고 있고, 이 캐시들이 같은 메모리 주소를 서로 다른 시점에 서로 다른 값으로 들고 있을 수 있다는 구조를 아는가.</li>
+      <li><strong>cache coherence protocol이 하는 일을 구체적으로 설명하는 능력</strong> — 한 코어가 캐시 라인을 쓰면 다른 코어가 들고 있던 같은 라인의 사본을 무효화(invalidate)해야 한다는 것, 그리고 이 무효화가 코어 간 통신(interconnect traffic)을 발생시킨다는 것을 아는가.</li>
+      <li><strong>공유 단위가 "변수"가 아니라 "캐시 라인"이라는 것을 정확히 짚는 능력</strong> — false sharing은 실제 데이터 레이스가 전혀 없어도, 서로 다른 변수가 같은 64바이트 캐시 라인에 우연히 배치되어 있다는 이유만으로 발생한다는 것을 구분하는가.</li>
+      <li><strong>"코어를 늘리면 무조건 빨라진다"는 성급한 일반화를 하지 않는가</strong> — 실제로는 코어 간 캐시 라인 핑퐁(ping-pong) 때문에 스레드 수를 늘릴수록 오히려 처리량이 떨어지는 역설적 상황이 존재한다는 것을 아는가.</li>
+    </ul>
+
+    <p>주니어 답변의 전형적인 패턴: "여러 스레드가 같은 메모리를 공유해서 느려집니다"라는 한 줄로 멈추거나, 이를 데이터 레이스와 혼동합니다. 10년차 이상은 <strong>cache line 크기(보통 64바이트), MESI 프로토콜의 무효화 동작, padding/alignment로 실제 처리량을 몇 배 개선한 경험</strong>까지 연결해서 말합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>멀티코어 캐시 구조 복습 — 코어마다 자기만의 캐시가 있다</h3>
+    <p>현대 CPU는 코어가 여러 개이고, 보통 각 코어는 <strong>자신만의 L1 캐시(그리고 대개 L2도)</strong>를 갖습니다. L3 캐시와 메인 메모리(RAM)는 모든 코어가 공유합니다. 즉 코어 0과 코어 1이 같은 메모리 주소의 데이터를 각자 자신의 L1에 복사해두고 사용할 수 있다는 뜻입니다. 여기서 문제가 생깁니다 — 코어 0이 자기 L1에 있는 사본을 수정했는데, 코어 1의 L1에는 여전히 <strong>수정 전 값</strong>이 남아있다면, 코어 1은 낡은(stale) 데이터를 읽게 됩니다.</p>
+
+    <p>사무실 비유가 도움이 됩니다. 여러 팀원이 같은 공유 문서를 각자 프린트해서(로컬 캐시) 책상에 두고 봅니다. 한 명이 원본 문서를 수정했는데 다른 사람들 책상 위의 프린트본은 그대로라면, 다들 서로 다른 버전을 보고 있는 셈입니다. 이 문제를 막으려면 누군가 "원본이 바뀌었으니 네 프린트본은 무효야, 다시 인쇄해"라고 알려주는 규칙이 필요합니다. 이 역할을 하는 것이 <strong>캐시 일관성 프로토콜(cache coherence protocol)</strong>입니다.</p>
+
+    <h3>캐시 일관성(Cache Coherence)이란 무엇인가</h3>
+    <p>캐시 일관성은 <strong>"어떤 코어가 특정 메모리 주소를 읽어도 항상 가장 최근에 쓰여진 값을 본다"</strong>는 것을 하드웨어가 자동으로 보장해주는 메커니즘입니다. 소프트웨어 개발자가 명시적으로 신경 쓰지 않아도, CPU가 코어 간에 "이 캐시 라인은 내가 지금 쓰고 있으니 너희가 들고 있던 사본은 무효다"라는 메시지를 주고받아 일관성을 유지합니다. 대표적인 구현이 <strong>MESI 프로토콜</strong>입니다 (Day 6 심화 절에서 다룸).</p>
+
+    <h3>Cache Line 복습 — 공유의 실제 단위 (Day 4 확장)</h3>
+    <p>Day 4에서 CPU와 메모리 사이의 데이터 이동 단위가 바이트가 아니라 <strong>cache line(보통 64바이트)</strong>이라고 배웠습니다. 캐시 일관성 프로토콜도 정확히 이 단위로 동작합니다 — 즉 "이 변수가 바뀌었다"가 아니라 <strong>"이 캐시 라인 전체가 바뀌었다"</strong>는 단위로 무효화가 일어납니다. 이 사실이 이번 Day의 핵심 반전을 만듭니다.</p>
+
+    <h3>False Sharing이란 무엇인가</h3>
+    <p>두 스레드가 각자 <strong>완전히 다른 변수</strong>를 읽고 쓰는데, 그 두 변수가 우연히 <strong>같은 64바이트 캐시 라인</strong> 안에 나란히 배치되어 있다고 합시다. 이 경우 논리적으로는 데이터 공유가 전혀 없지만(진짜 공유, true sharing이 아님), 캐시 라인이라는 물리적 단위에서는 "같은 라인을 여러 코어가 쓰고 있는" 상황이 됩니다. 그래서 이름이 <strong>false(가짜) sharing</strong>입니다 — 데이터는 공유되지 않지만 캐시 라인은 공유된 것처럼 취급되어 실제 코어 간 통신 비용이 발생합니다.</p>
+  </section>
+
+  <!-- 4. 심화 -->
+  <section id="deep">
+    <h2>4. 캐시 일관성 프로토콜과 false sharing을 깊이 이해하기</h2>
+
+    <h3>MESI 프로토콜 — 캐시 라인의 네 가지 상태</h3>
+    <p>MESI는 각 코어가 들고 있는 캐시 라인 사본이 다음 네 가지 상태 중 하나에 있다고 표시해서 일관성을 관리하는 대표적인 프로토콜입니다.</p>
+    <table class="method-table">
+      <thead><tr><th>상태</th><th>의미</th></tr></thead>
+      <tbody>
+        <tr><td>Modified (M)</td><td>이 코어만 이 라인의 최신 사본을 갖고 있고, 메모리의 값보다 최신이다(아직 메모리에 안 써짐). 다른 코어는 이 라인을 갖고 있지 않다.</td></tr>
+        <tr><td>Exclusive (E)</td><td>이 코어만 이 라인을 갖고 있지만, 메모리 값과 동일하다(아직 수정 안 함). 자유롭게 수정해도 다른 코어에 알릴 필요가 없다.</td></tr>
+        <tr><td>Shared (S)</td><td>여러 코어가 동시에 이 라인의 동일한(읽기 전용) 사본을 갖고 있다.</td></tr>
+        <tr><td>Invalid (I)</td><td>이 코어가 갖고 있던 사본이 무효화되어, 다시 쓰려면 최신 값을 가져와야 한다.</td></tr>
+      </tbody>
+    </table>
+    <p>핵심 동작: 코어 A가 Shared 상태의 라인을 <strong>쓰기(write)</strong>하려고 하면, 먼저 다른 코어들에게 "나 이거 쓸 거야"라는 신호(invalidate message)를 인터커넥트를 통해 보내고, 다른 코어들은 자기 사본을 Invalid로 바꿉니다. 그런 다음 A는 자기 사본을 Modified로 바꾸고 씁니다. 만약 다른 코어 B가 그 직후 같은 라인을 다시 읽거나 쓰려고 하면, B는 자기 캐시가 Invalid임을 확인하고 A로부터(또는 메모리를 거쳐) 최신 값을 다시 가져와야 합니다. <strong>이 무효화·재요청 과정 자체가 코어 간 통신이며, 순수 로컬 캐시 히트보다 훨씬 느립니다(대략 L3 접근 이상의 비용, 수십 cycle 이상).</strong></p>
+
+    <h3>False Sharing이 만드는 "캐시 라인 핑퐁"</h3>
+    <p>이제 두 스레드가 각각 자신만의 변수 <code>counter_A</code>, <code>counter_B</code>를 계속 증가시킨다고 합시다. 두 변수가 메모리상에서 인접하게 선언되어 같은 캐시 라인에 들어가 있다면, 다음과 같은 일이 반복됩니다.</p>
+    <ol>
+      <li>코어 0이 <code>counter_A</code>를 쓰기 위해 그 캐시 라인을 Modified로 가져오면서, 코어 1이 갖고 있던 같은 라인의 사본을 Invalid로 만듭니다.</li>
+      <li>코어 1이 (자신의 변수인) <code>counter_B</code>를 증가시키려고 하지만, 자기 캐시가 Invalid이므로 그 라인을 다시 가져와야 합니다(캐시 미스 + 코어 간 통신).</li>
+      <li>코어 1이 라인을 가져와 Modified로 바꾸면서, 이번엔 코어 0이 갖고 있던 사본이 Invalid가 됩니다.</li>
+      <li>코어 0이 다시 <code>counter_A</code>를 증가시키려는 순간, 다시 캐시 미스가 발생합니다.</li>
+    </ol>
+    <p>이 과정이 반복문 내내 매번 반복되면서, 두 스레드는 <strong>서로의 변수에는 손도 대지 않으면서도</strong> 매번 캐시 미스와 코어 간 통신 비용을 지불하게 됩니다. 이것이 캐시 라인이 코어 사이를 핑퐁처럼 오가는(cache line ping-pong/bouncing) 현상이며, 스레드 수를 늘릴수록 이 핑퐁 빈도와 인터커넥트 트래픽이 늘어나 <strong>오히려 처리량이 줄어드는 역설</strong>이 발생할 수 있습니다.</p>
+
+    <h3>해결 방법 — Padding과 Alignment</h3>
+    <p>가장 직접적인 해결책은 각 스레드가 쓰는 변수를 <strong>서로 다른 캐시 라인</strong>에 배치하는 것입니다. 구조체에 padding(더미 바이트)을 추가하거나, <code>alignas(64)</code> 같은 정렬 지시자로 각 필드를 캐시 라인 경계에 맞춰 강제로 분리시키면, 두 변수는 물리적으로 서로 다른 라인에 놓여 더 이상 서로의 무효화에 영향을 주지 않습니다. 대가는 <strong>메모리 사용량 증가</strong>입니다 — 원래 몇 바이트면 될 데이터가 캐시 라인 단위(64바이트)로 부풀려집니다.</p>
+  </section>
+
+  <!-- 5. 구체 예시 -->
+  <section id="example">
+    <h2>5. 구체 예시 — 패딩 하나로 몇 배 빨라지는 카운터</h2>
+
+    <pre><code>// (A) False sharing이 발생하는 구조 — 두 카운터가 같은 캐시 라인에 있을 가능성이 높음
+struct Counters {
+    long counter_A;   // 스레드 0이 계속 증가
+    long counter_B;   // 스레드 1이 계속 증가
+};
+Counters shared;   // counter_A, counter_B가 메모리상 8바이트 간격으로 인접 -> 같은 64B 라인에 들어감
+
+// 스레드 0: for (...) shared.counter_A++;
+// 스레드 1: for (...) shared.counter_B++;</code></pre>
+
+    <pre><code>// (B) Padding으로 캐시 라인을 분리 — false sharing 제거
+struct alignas(64) PaddedCounter {
+    long value;
+    char padding[64 - sizeof(long)];   // 다음 필드가 다음 캐시 라인에서 시작하도록 강제
+};
+
+PaddedCounter counter_A;   // 자신만의 캐시 라인 차지
+PaddedCounter counter_B;   // 자신만의 캐시 라인 차지
+
+// 스레드 0: for (...) counter_A.value++;
+// 스레드 1: for (...) counter_B.value++;</code></pre>
+
+    <p>(A)와 (B)는 계산 결과가 완전히 동일하고, 두 스레드가 서로의 변수를 전혀 참조하지 않는다는 점(데이터 레이스 없음)도 동일합니다. 하지만 (A)는 매 증가 연산마다 두 코어의 캐시 라인이 서로를 무효화시키는 핑퐁이 발생해 로컬 캐시 히트보다 훨씬 느린 코어 간 통신 비용을 반복해서 지불합니다. (B)는 각 카운터가 독립된 캐시 라인에 있어 두 스레드가 완전히 독립적으로, 자신의 L1 캐시 안에서만 작업을 끝냅니다. 이 차이만으로 실측 처리량이 여러 배(흔히 4~10배 이상) 벌어지는 사례가 실무에서 자주 보고됩니다. 대신 (B)는 카운터 하나에 8바이트가 아니라 64바이트를 쓰므로, 카운터 개수가 아주 많다면 메모리·캐시 점유 비용이 커진다는 trade-off가 있습니다.</p>
+  </section>
+
+  <!-- 6. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>6. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>멀티코어 캐시 구조를 먼저 짚습니다.</strong> "각 코어는 자신만의 L1 캐시를 갖고 있고, 같은 메모리 주소를 서로 다른 캐시에 복사해 들고 있을 수 있습니다."</li>
+      <li><strong>캐시 일관성이 왜 필요한지 설명합니다.</strong> "그래서 한 코어가 값을 수정하면 다른 코어의 낡은 사본을 무효화하는 프로토콜(MESI)이 필요합니다."</li>
+      <li><strong>공유의 단위가 변수가 아니라 캐시 라인임을 짚습니다.</strong> "무효화는 변수 하나가 아니라 그 변수가 속한 64바이트 캐시 라인 전체 단위로 일어납니다."</li>
+      <li><strong>false sharing의 메커니즘을 구체적으로 설명합니다.</strong> "서로 다른 변수라도 같은 라인에 있으면, 실제 데이터 공유 없이도 캐시 라인이 코어 사이를 핑퐁하며 무효화·재요청이 반복됩니다."</li>
+      <li><strong>측정과 개선안으로 마무리합니다.</strong> "perf c2c 같은 도구로 캐시 라인 경합을 확인하고, padding/alignment로 변수를 별도 캐시 라인에 분리해 해결하되 메모리 비용 증가를 고려합니다."</li>
+    </ol>
+  </section>
+
+  <!-- 7. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>7. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "멀티스레드 코드에서 false sharing이 왜 문제가 됩니까?"</p>
+    </div>
+
+    <h3>짧은 버전 (엘리베이터 피치)</h3>
+    <div class="good-answer">
+      <div class="tag">SHORT ANSWER</div>
+      <p>각 코어는 자신만의 L1 캐시를 갖고 있고, 캐시 일관성 프로토콜(MESI)은 캐시 라인 단위로 데이터를 최신 상태로 유지합니다. 문제는 서로 다른 스레드가 쓰는, 논리적으로는 아무 관계 없는 두 변수가 우연히 같은 64바이트 캐시 라인에 배치되면, 실제 데이터 공유가 없는데도 한 스레드가 자기 변수를 쓸 때마다 다른 스레드의 캐시 사본이 무효화되는 일이 반복된다는 것입니다. 이 캐시 라인 핑퐁 때문에 각 스레드는 매번 캐시 미스와 코어 간 통신 비용을 지불하게 되고, 스레드 수를 늘릴수록 오히려 처리량이 떨어질 수 있습니다.</p>
+    </div>
+
+    <h3>깊이 있는 버전</h3>
+    <div class="good-answer">
+      <div class="tag">DEEP ANSWER</div>
+      <p>멀티코어 CPU에서 각 코어는 자신만의 L1(대개 L2도)을 갖고, L3와 메모리만 공유합니다. 같은 메모리 주소를 여러 코어가 각자 캐시에 복사해 가질 수 있기 때문에, 한 코어가 값을 수정했을 때 다른 코어의 사본이 낡은 값을 보지 않도록 캐시 일관성 프로토콜(대표적으로 MESI)이 하드웨어 수준에서 동작합니다. 한 코어가 캐시 라인을 쓰려면 다른 코어들이 갖고 있던 그 라인의 사본을 Invalid로 만드는 신호를 보내야 하고, 이 무효화·재요청은 코어 간 통신이라 로컬 캐시 히트보다 훨씬 비쌉니다.</p>
+      <br>
+      <p>여기서 중요한 것은 이 무효화가 <strong>변수 단위가 아니라 캐시 라인(보통 64바이트) 단위</strong>로 일어난다는 점입니다. 그래서 스레드 0과 스레드 1이 완전히 독립적인 변수를 각자 쓰고 있어도, 그 변수들이 메모리상에서 같은 라인 안에 인접해 있으면 매번 서로의 캐시 사본을 무효화시키며 캐시 라인이 두 코어 사이를 핑퐁하듯 오갑니다. 이것이 false sharing이고, 데이터 레이스가 전혀 없는데도 실제 처리량을 크게 떨어뜨립니다. 저는 실제로 스레드별 통계 카운터를 하나의 배열에 나란히 두었다가 스레드 수를 늘릴수록 처리량이 오히려 줄어드는 것을 확인하고, <code>perf c2c</code>로 캐시 라인 경합(cache-to-cache transfer)을 확인한 뒤 각 카운터를 <code>alignas(64)</code>와 padding으로 별도 캐시 라인에 분리해 처리량을 몇 배 개선한 경험이 있습니다. 다만 이 방식은 카운터마다 64바이트를 소모하므로, 카운터 수가 매우 많은 경우엔 캐시 점유량 증가라는 대가를 함께 고려했습니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>멀티코어 캐시 구조와 일관성 프로토콜을 먼저 세우고 그 위에서 false sharing을 설명함</li>
+      <li>"공유 단위가 캐시 라인"이라는 핵심 반전을 명확히 짚음</li>
+      <li>데이터 레이스와 false sharing을 명시적으로 구분함</li>
+      <li>측정 도구(perf c2c)와 실제 개선 경험, padding의 trade-off까지 근거로 제시함</li>
+    </ul>
+  </section>
+
+  <!-- 8. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"여러 스레드가 같은 메모리를 동시에 접근해서 느려지는 겁니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"같은 메모리를 접근한다"는 표현이 데이터 레이스(진짜 공유)와 false sharing(가짜 공유)을 구분하지 못합니다. false sharing에서는 스레드들이 실제로는 서로 다른 변수만 접근합니다.</li>
+        <li>왜 코어 간 통신 비용이 발생하는지(캐시 일관성 프로토콜의 무효화 동작)를 전혀 설명하지 않습니다.</li>
+        <li>공유의 실제 단위가 변수가 아니라 캐시 라인이라는 핵심을 놓칩니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"그냥 락을 걸어서 순서대로 접근하게 하면 해결됩니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>false sharing은 애초에 동시 접근을 막아야 하는 데이터 레이스가 아니므로 락이 필요하지도 않고, 락을 추가하면 오히려 불필요한 직렬화로 성능이 더 나빠집니다.</li>
+        <li>근본 원인(캐시 라인 배치)을 해결하지 않고 증상에 대응하지 못하는 방법을 제시합니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>멀티코어에서 코어마다 자신의 L1 캐시를 갖는다는 구조를 먼저 세운다</li>
+        <li>캐시 일관성 프로토콜(MESI)의 무효화 동작을 설명한다</li>
+        <li>공유의 단위가 변수가 아니라 캐시 라인이라는 것을 명확히 짚는다</li>
+        <li>데이터 레이스와 false sharing을 명시적으로 구분한다</li>
+        <li>padding/alignment 해결책과 그 trade-off(메모리 비용)를 제시하고, 측정 도구(perf c2c)로 검증한 경험을 든다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9. Follow-up -->
+  <section id="followups">
+    <h2>9. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: False sharing과 데이터 레이스(data race)는 어떻게 다른가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 데이터 레이스는 여러 스레드가 <strong>같은 변수</strong>를 동기화 없이 동시에 읽고 써서 결과가 정의되지 않는(undefined behavior) 정확성 문제입니다. false sharing은 스레드들이 <strong>서로 다른 변수</strong>에만 접근하므로 정확성에는 전혀 문제가 없고, 오직 그 변수들이 같은 캐시 라인에 있다는 이유로 성능이 저하되는 순수한 성능 문제입니다. 즉 false sharing은 고쳐도 프로그램의 정답이 바뀌지 않지만, 데이터 레이스는 반드시 동기화로 고쳐야 하는 버그입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: False sharing을 실제로 어떻게 탐지하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> Linux에서는 <code>perf c2c</code>(cache-to-cache) 도구가 어떤 캐시 라인이 여러 코어 사이에서 자주 전송(HITM)되는지 보여줘 false sharing 후보를 짚어줍니다. 더 기본적으로는 스레드 수를 늘렸을 때 처리량이 선형적으로 늘지 않거나 오히려 줄어드는 패턴을 관찰하고, 공유 구조체 안에서 서로 다른 스레드가 쓰는 필드들이 얼마나 가까이 붙어 있는지(오프셋 차이가 캐시 라인 크기보다 작은지) 코드 리뷰로 확인하는 방법도 병행합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 캐시 라인 크기(예: 64바이트)는 항상 고정인가요? 이식성 문제는 없나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 대부분의 x86/ARM 서버·데스크톱 CPU는 64바이트 캐시 라인을 쓰지만, 이는 하드웨어에 따라 다를 수 있는 값입니다. 그래서 하드코딩된 64 대신 C++17의 <code>std::hardware_destructive_interference_size</code> 같은 표준 상수나 빌드 시점에 감지한 값을 쓰는 것이 이식성 측면에서 더 안전합니다. 다만 실무에서는 대상 배포 환경의 캐시 라인 크기를 알고 있다면 명시적으로 64를 쓰는 경우도 흔합니다 — 이식성과 명확성 사이의 선택입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: Padding으로 해결하는 것 외에 다른 접근은 없나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 있습니다. 각 스레드가 자신만의 로컬 변수(스택이나 thread-local storage)에 값을 누적하고, 마지막에만 한 번씩 합산(reduce)하는 방식이 대표적입니다. 이 경우 스레드들은 실행 도중 공유 캐시 라인 자체에 전혀 접근하지 않으므로 false sharing이 원천적으로 발생하지 않습니다. padding은 "공유 구조는 유지하되 물리적으로 라인을 분리"하는 방법이고, thread-local 누적은 "아예 공유 상태를 없애고 마지막에만 합친다"는 다른 설계 방향입니다. 후자가 가능하면 더 근본적인 해결책입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: NUMA(Non-Uniform Memory Access) 환경에서는 이 문제가 어떻게 달라지나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> NUMA 시스템에서는 코어가 여러 소켓(노드)에 나뉘어 있고, 각 노드는 자신에게 물리적으로 가까운 메모리에 더 빠르게 접근합니다. false sharing이 같은 소켓 내 코어 사이에서 일어나면 상대적으로 빠른 인터커넥트를 타지만, 서로 다른 소켓의 코어 사이에서 캐시 라인이 핑퐁하면 소켓 간 링크(QPI/UPI 등)를 거쳐야 해서 지연이 훨씬 커집니다. 그래서 NUMA 환경에서는 false sharing 문제가 단일 소켓 서버보다 더 크게 증폭될 수 있고, 스레드를 특정 노드에 고정(pinning)하는 전략과 함께 고려해야 합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>10. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"false sharing은 데이터 레이스의 일종이다"</strong></p>
+      <p>false sharing은 정확성 문제가 아니라 성능 문제입니다. 스레드들은 서로 다른 변수만 읽고 쓰므로 결과는 항상 올바르며, 동기화(락)가 필요하지도 않습니다. 문제는 오직 캐시 라인 단위의 무효화가 불필요하게 반복된다는 것뿐입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"코어 수를 늘리면 항상 처리량도 늘어난다"</strong></p>
+      <p>false sharing이 있는 코드는 스레드(코어)를 늘릴수록 캐시 라인 핑퐁 빈도와 인터커넥트 트래픽이 늘어나 오히려 처리량이 떨어질 수 있습니다. 병렬화의 이득은 공유 캐시 라인 경합이 없을 때만 온전히 실현됩니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"패딩을 추가하면 항상 이득이다"</strong></p>
+      <p>false sharing이 실제로 병목인 경우에만 padding이 이득입니다. padding은 캐시 라인 하나를 변수 하나가 통째로 차지하게 만들므로, 카운터나 공유 구조체 개수가 많으면 캐시 점유량과 메모리 사용량이 크게 늘어나 오히려 캐시 미스가 늘어날 수 있습니다. 반드시 프로파일링으로 false sharing이 실제 병목임을 확인한 뒤 적용해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"캐시 일관성 프로토콜은 소프트웨어가 신경 쓸 부분이 아니다"</strong></p>
+      <p>일관성 자체(항상 최신 값을 본다는 정확성)는 하드웨어가 보장하지만, 그 프로토콜이 어떤 단위(캐시 라인)로 동작하는지는 데이터 구조 설계에 직접적인 성능 영향을 줍니다. 정확성은 하드웨어 책임이지만, 그로 인한 성능 특성은 개발자가 데이터 배치로 관리해야 하는 영역입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"멀티스레드 성능 문제는 대부분 락 경합(lock contention) 때문이다"</strong></p>
+      <p>락 경합은 흔한 원인이지만 유일한 원인이 아닙니다. 락이 전혀 없는, 완전히 독립적인 lock-free 카운터 코드에서도 false sharing만으로 심각한 성능 저하가 발생할 수 있습니다. "락을 안 썼는데 왜 느리지?"라는 상황에서 false sharing을 의심하지 못하면 원인 분석이 막히게 됩니다.</p>
+    </div>
+  </section>
+
+  <!-- 11. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>11. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 6를 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>각 코어가 자신만의 L1 캐시를 갖고 있고, 같은 메모리 주소의 사본을 여러 코어가 각자 들고 있을 수 있다는 구조를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>캐시 일관성 프로토콜(MESI)이 무엇을 보장하고, 무효화가 어떻게 일어나는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>일관성의 단위가 변수가 아니라 캐시 라인이라는 것을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>false sharing과 데이터 레이스의 차이를 명확히 구분해서 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>캐시 라인 핑퐁이 왜 스레드 수를 늘릴수록 처리량을 떨어뜨릴 수 있는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>padding/alignment 해결책과 그 메모리 비용 trade-off를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>false sharing을 실제로 탐지하는 방법(perf c2c, 처리량 스케일링 관찰)을 말할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 7</h3>
+      <p><strong>SIMD와 배치 처리</strong></p>
+      <p>Day 6에서 코어 사이의 상호작용(캐시 일관성, false sharing)을 다뤘습니다. Day 7에서는 다시 한 코어 내부로 돌아가, 하나의 명령어로 여러 데이터를 동시에 처리하는 SIMD(vectorization)가 대량 데이터 처리 성능에 어떤 영향을 주는지 다룹니다.</p>
+      <p>면접 질문 예고: "대량 데이터를 빠르게 처리할 때 CPU 특성을 어떻게 활용합니까?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    컴퓨터 구조 시니어 인터뷰 · Day 6 of 10 · 2026-07-07
+  </p>
+
+</div>
+</body>
+</html>
