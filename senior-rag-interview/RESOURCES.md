@@ -115,6 +115,25 @@
 > 등 벤더별 구현 세부사항은 위 자료들을 종합한 것이며, 파라미터 기본값과 라이선스 정책은 자주 갱신되므로
 > 실제 도입 전 각 제공사의 최신 공식 문서로 재검증해야 한다.
 
+## Metadata Filtering 최신 근거 (Day 7, 2026년 7월 조사 반영)
+
+- [Pre and Post Filtering in Vector Search with Metadata and RAG Pipelines — Volodymyr Pavlyshyn](https://ai.plainenglish.io/pre-and-post-filtering-in-vector-search-with-metadata-and-rag-pipelines-fc4c58fff2be) — pre/post-filter 구조적 차이와 실패 모드
+- [Filtering in Vector Search with Metadata and RAG Pipelines — Turso](https://turso.tech/blog/filtering-in-vector-search-with-metadata-and-rag-pipelines) — 필터링 전략별 실무 가이드
+- [How to Implement Metadata Filtering — OneUptime (2026)](https://oneuptime.com/blog/post/2026-01-30-metadata-filtering/view) — 2026년 메타데이터 필터링 구현 가이드
+- [Pre-filtering vs Post-filtering in Vector Search — apxml](https://apxml.com/courses/advanced-vector-search-llms/chapter-2-optimizing-vector-search-performance/advanced-filtering-strategies) — 필터링 전략 비교
+- [Document-Level RBAC for RAG Pipelines: The 2026 Enterprise Architecture Guide — Truto](https://truto.one/blog/how-to-maintain-document-level-rbac-in-enterprise-rag-pipelines/) — 소스 시스템 ACL 동기화와 RBAC/ABAC/ReBAC 비교
+- [Item-Level Permissions in RAG: Why Your Vector Database Needs Access Control — Kirk Ryan](https://kirkryan.co.uk/item-level-permissions-in-rag-why-your-vector-database-needs-access-control/) — 쿼리 레벨 권한 강제의 필요성
+- [Strategies for Managing Permissions in RAG — Paragon](https://www.useparagon.com/blog/respecting-3rd-party-data-permissions-with-rag) — 서드파티 ACL 동기화 실무 이슈
+- [RAG with Access Control — Pinecone](https://www.pinecone.io/learn/rag-access-control/) — 네임스페이스/메타데이터 기반 권한 설계
+- [Mastering RAG Chatbot Security: ACL and Metadata Filtering with Mosaic AI Vector Search — Databricks Community](https://community.databricks.com/t5/technical-blog/mastering-rag-chatbot-security-acl-and-metadata-filtering-with/ba-p/101946) — ACL과 metadata filtering 결합 아키텍처
+- [Benchmarking Metadata Filtering: A System-Level Review of Weaviate vs. Pinecone vs. Qdrant](https://www.bignewsnetwork.com/news/278980772/benchmarking-metadata-filtering-a-system-level-review-of-weaviate-vs-pinecone-vs-qdrant) — 벤더별 필터 통합(payload index, adaptive traversal, query-time constraint) 성능 비교
+- [Attribute Filtering in Approximate Nearest Neighbor Search: An In-depth Experimental Study (arXiv 2508.16263)](https://arxiv.org/html/2508.16263v1) — ACORN 등 필터 인지형 ANN 알고리즘의 선택도별 성능 벤치마크
+- [Filtered Approximate Nearest Neighbor Search: A Unified Benchmark and Systematic Experimental Study (arXiv 2509.07789)](https://arxiv.org/html/2509.07789v1) — 필터 선택도 구간별 알고리즘 우열 비교
+
+> 참고: Qdrant payload index/Weaviate adaptive traversal/Pinecone query-time constraint의 세부 동작과
+> ACORN 계열 알고리즘의 선택도별 성능 수치는 2026년 7월 기준 공개 자료를 종합한 것이며, 벤더별 구현과
+> 벤치마크는 자주 갱신되므로 실제 도입 전 공식 문서와 자체 벤치마크로 재검증해야 한다.
+
 ## 인터뷰 준비
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 검색 시스템 설계 문제와 유사한 사고 프레임

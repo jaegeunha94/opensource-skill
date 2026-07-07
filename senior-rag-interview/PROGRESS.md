@@ -10,12 +10,12 @@
 | 4 | 2026-07-04 | Embedding 모델 선택과 트레이드오프 | [0004-embedding-model-selection-and-tradeoffs.html](lessons/0004-embedding-model-selection-and-tradeoffs.html) |
 | 5 | 2026-07-05 | Vector Database 선택과 운영 | [0005-vector-database-selection-and-operations.html](lessons/0005-vector-database-selection-and-operations.html) |
 | 6 | 2026-07-06 | Hybrid Search — BM25와 Vector 결합 | [0006-hybrid-search-bm25-and-vector-fusion.html](lessons/0006-hybrid-search-bm25-and-vector-fusion.html) |
+| 7 | 2026-07-07 | Metadata Filtering과 검색 정밀도 | [0007-metadata-filtering-and-retrieval-precision.html](lessons/0007-metadata-filtering-and-retrieval-precision.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | Metadata Filtering과 검색 정밀도 | Pre/Post filtering, 스키마 설계, ACL 결합 |
 | 8 | Reranking 전략 | Cross-encoder reranking, 비용 대비 품질 개선 |
 | 9 | Context 구성과 Prompt 설계 | Context window 관리, ordering, prompt injection 방어 |
 | 10 | Hallucination 완화와 답변 근거 표시 | Grounding, citation, 답변 거부(abstain) 전략 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음: Day 7 — Metadata Filtering과 검색 정밀도
+**Day 7 완료** — 다음: Day 8 — Reranking 전략
 
 ## 습득한 핵심 개념
 
@@ -46,7 +46,8 @@
 - [x] 샤딩·복제 목적 구분과 Blue-Green 재인덱싱 운영 전략 (Day 5)
 - [x] Dense/BM25/SPLADE 강약점과 score incompatibility 문제 (Day 6)
 - [x] RRF(순위 기반 fusion)와 가중치 fusion(alpha/DBSF)의 트레이드오프, k 상수 튜닝 기준 (Day 6)
-- [ ] Metadata Filtering (예정 Day 7)
+- [x] Pre/Post filtering의 실패 모드와 필터 선택도 기반 인덱스 전략(Qdrant/Weaviate/Pinecone/ACORN) (Day 7)
+- [x] ACL 쿼리 레벨 강제와 소스 시스템 ACL 동기화 지연(staleness) 위험 (Day 7)
 - [ ] Reranking 전략 (예정 Day 8)
 - [ ] Context 구성과 Prompt 설계 (예정 Day 9)
 - [ ] Hallucination 완화와 답변 근거 표시 (예정 Day 10)

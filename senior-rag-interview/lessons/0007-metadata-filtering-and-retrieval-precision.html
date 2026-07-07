@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — Metadata Filtering과 검색 정밀도</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-top: 1px dashed var(--border);
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 7 · RAG Interview</div>
+    <h1>Metadata Filtering과 검색 정밀도</h1>
+    <div class="subtitle">벡터 유사도만으로는 절대 강제할 수 없는 테넌트·권한·신선도 경계를, 필터링 전략과 인덱스 구조 선택으로 안전하고 빠르게 강제하는 판단 능력</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "Vector 검색에 metadata filter를 걸 때 pre-filtering과 post-filtering의 차이는 무엇이고, 각각 어떤 위험이 있나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형 (성능형)</span>
+      "필터가 전체 데이터의 1%만 남기는 것처럼 선택도(selectivity)가 매우 낮을 때 검색 성능이 급격히 나빠지는 이유는 무엇이고, 어떻게 해결하나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형 (보안형)</span>
+      "멀티테넌트 RAG 서비스에서 사용자가 권한 없는 문서의 내용을 절대 보지 못하게 하려면 어떻게 설계하시겠습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q4 — 변형 (장애형)</span>
+      "필터를 걸었더니 요청한 top-k보다 적은 결과가 반환되거나, 아예 0건이 반환된다는 보고를 받았습니다. 어떻게 대응하시겠습니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>유사도(similarity)와 접근권한(access)은 서로 다른 축이다</h2>
+
+    <h3>왜 metadata filter가 필요한가</h3>
+    <p>
+      Day 4~6에서 다룬 dense/sparse 검색은 "쿼리와 의미적으로 얼마나 가까운가"만 판단한다. 하지만 실무
+      RAG에는 <strong>의미와 무관하게 반드시 지켜야 하는 경계</strong>가 있다 — 이 테넌트의 데이터는
+      저 테넌트에게 보이면 안 되고, 이 부서 문서는 저 부서 사용자에게 보이면 안 되며, 폐기된 정책 문서는
+      최신 문서보다 먼저 나오면 안 된다. 벡터 유사도 점수는 이런 경계를 <strong>전혀 알지 못한다</strong> —
+      의미적으로 가장 가까운 chunk가 권한이 없는 문서일 수도 있다. 그래서 metadata filter는 "검색을
+      더 정교하게 만드는 부가 기능"이 아니라, <strong>유사도 계산과는 독립적으로 반드시 강제해야 하는
+      제약 조건</strong>이다.
+    </p>
+
+    <h3>Pre-filtering — 필터부터 걸고 그 안에서 검색</h3>
+    <p>
+      Pre-filtering은 메타데이터 조건을 먼저 적용해 후보 문서 집합을 좁힌 다음, <strong>그 부분집합
+      안에서만</strong> 벡터 유사도 검색을 수행한다. 문제는 HNSW 같은 근사 최근접 이웃(ANN) 인덱스가
+      원래 전체 데이터셋 위에 그래프로 구축되어 있다는 점이다 — 임의의 필터로 부분집합을 골라내면 그
+      그래프 구조를 그대로 쓸 수 없어서, 결국 <strong>필터링된 부분집합 전체를 brute-force로 스캔</strong>하는
+      경우가 많다. 필터가 아주 선택적이어서 부분집합이 작으면 문제없지만, 수백만 벡터 규모에서 부분집합이
+      여전히 크다면 지연 시간이 급격히 커진다.
+    </p>
+
+    <h3>Post-filtering — 검색부터 하고 나중에 걸러내기</h3>
+    <p>
+      Post-filtering은 반대로 필터 없이 전체 인덱스에서 top-k를 근사 검색한 다음, 그 결과에 메타데이터
+      조건을 적용해 걸러낸다. ANN 인덱스의 속도를 그대로 쓸 수 있어 빠르지만, <strong>치명적인 결함</strong>이
+      있다 — top-k 안에 필터 조건을 만족하는 문서가 충분히 없으면, 요청한 개수보다 적은 결과가 반환되거나
+      최악의 경우 <strong>0건</strong>이 반환된다. 예를 들어 top-10을 뽑았는데 그중 필터를 통과하는
+      문서가 2개뿐이면, 나머지 8개 자리는 그냥 비어버린다.
+    </p>
+    <div class="callout callout-warn">
+      <strong>흔한 완화책과 그 한계:</strong> "top-10이 필요하면 필터 적용 전에 top-50을 넉넉히 가져온다"는
+      오버페치(over-fetch) 전략이 널리 쓰인다. 하지만 이는 확률을 낮출 뿐 없애지는 못한다 — 필터 선택도가
+      극단적으로 낮으면(예: 전체의 0.01%만 조건을 만족) top-50, 심지어 top-500을 가져와도 조건을 만족하는
+      문서가 하나도 없을 수 있다. 그래서 프로덕션에서는 결과가 부족하면 <strong>k를 점진적으로 넓혀가며
+      재검색(iterative widening)</strong>하는 로직이 필요하다.
+    </div>
+
+    <h3>필터를 그래프 순회 자체에 통합하기 — 필터 인지형 ANN 인덱스</h3>
+    <p>
+      2026년 기준 프로덕션 벡터 DB들은 pre/post-filter의 이분법을 넘어, <strong>필터 조건 자체를 ANN
+      그래프 순회 로직에 통합</strong>하는 방향으로 진화했다. 벤더별 접근이 다르다.
+    </p>
+    <table>
+      <tr>
+        <th>벤더/엔진</th>
+        <th>필터 통합 방식</th>
+        <th>특징</th>
+      </tr>
+      <tr>
+        <td><strong>Qdrant</strong></td>
+        <td>Payload index를 HNSW 그래프 순회 자체에 결합</td>
+        <td>필터가 후보의 99%를 제거해도 그래프 순회 중 조건을 검사하므로 성능 저하가 작음</td>
+      </tr>
+      <tr>
+        <td><strong>Weaviate</strong></td>
+        <td>적응형(adaptive) 순회 — 선택도에 따라 전략 전환</td>
+        <td>필터가 매우 선택적이면 이웃의 이웃까지 확장 탐색, 선택도가 낮으면(필터가 널널하면) 단순 순회로 전환</td>
+      </tr>
+      <tr>
+        <td><strong>Pinecone</strong></td>
+        <td>쿼리 타임 제약 계층(query-time constraint)</td>
+        <td>필터가 저장 구조에 깊이 통합되어 있지 않아, 매우 선택적인 필터에서 불필요한 연산과 지연이 발생할 수 있음</td>
+      </tr>
+      <tr>
+        <td><strong>pgvector</strong></td>
+        <td>PostgreSQL B-tree 인덱스와 결합</td>
+        <td>관계형 DB의 성숙한 인덱스 최적화기를 그대로 활용 가능</td>
+      </tr>
+      <tr>
+        <td><strong>ACORN(연구)</strong></td>
+        <td>HNSW 순회 중 필터 조건을 즉시 검사, 임의의 복합 필터 지원</td>
+        <td>가장 유연하지만, 선택도가 0.5 근처(중간)일 때 인덱스 구축 비용이 오히려 커지는 등 선택도 전
+        구간에서 안정적이지는 않다는 벤치마크 결과가 있음</td>
+      </tr>
+    </table>
+    <div class="callout callout-tip">
+      <strong>선택도(selectivity) 기준 실무 판단:</strong> 여러 2026년 필터링 ANN 벤치마크 연구에 따르면
+      <strong>필터 선택도가 높을 때(필터를 걸어도 50% 이상 남을 때)</strong>는 전통적인 post-filter 방식이
+      오히려 효율적이고, <strong>선택도가 매우 낮을 때(1% 미만만 남을 때)</strong>는 필터를 인덱스 구조에
+      통합한 전용 알고리즘이 유리한 경향이 있다. 즉 "우리 필터는 항상 이렇다"고 가정하지 말고,
+      <strong>실제 쿼리 로그의 필터 선택도 분포</strong>를 측정한 뒤 인덱스 전략을 선택해야 한다.
+    </div>
+
+    <h3>필터 스키마 설계 — 무엇을 인덱싱할 것인가</h3>
+    <p>
+      실무에서 metadata filter로 자주 쓰이는 필드는 <code>tenant_id</code>(테넌트 격리, 항상 강제),
+      <code>access_level</code> 또는 ACL 목록(권한), <code>department</code>(부서), <code>doc_type</code>
+      (문서 종류), <code>updated_at</code>(신선도), <code>language</code>(언어), <code>source_system</code>
+      (수집 출처)이다. 여기서 중요한 설계 판단은 <strong>카디널리티(cardinality)</strong>다 —
+      <code>doc_type</code>처럼 값의 종류가 적은 필드는 인덱싱 비용이 낮지만, 사용자별 ACL 목록처럼
+      카디널리티가 매우 높고 <strong>배열(리스트) 형태로 여러 값을 가지는 필드</strong>는 멤버십 검사를
+      지원하는 전용 인덱스(예: Qdrant의 keyword payload index)가 필요하고, 잘못 설계하면 인덱스 크기와
+      갱신 비용이 폭증할 수 있다.
+    </p>
+
+    <h3>ACL은 애플리케이션이 아니라 쿼리 레벨에서 강제해야 한다</h3>
+    <p>
+      가장 위험한 안티패턴은 <strong>"일단 top-k를 검색하고, 화면에 뿌리기 직전에 애플리케이션 코드가
+      권한 없는 결과를 숨긴다"</strong>는 방식이다. 이 방식에서는 벡터 DB가 이미 미인가 chunk를
+      <strong>내부적으로 가져온 상태</strong>다 — 로깅 파이프라인, LLM에 넘기는 context, 캐시 계층 어딘가에서
+      한 번이라도 필터를 빠뜨리면 그 즉시 데이터 유출로 이어진다. 그래서 <code>access_level</code>이나
+      <code>tenant_id</code> 필터는 <strong>테넌트 격리 필터와 동일하게, 모든 쿼리 경로에서 예외 없이
+      강제되는 하드 필터</strong>로 벡터 DB 쿼리 자체에 내장해야 한다. Open Policy Agent(OPA) 같은 외부
+      정책 엔진을 쓰는 경우에도, 이를 <strong>검색 이후의 후처리 단계로만</strong> 두면 벡터 DB는 이미
+      내부적으로 미인가 문서를 가져온 뒤이므로 근본적인 해법이 아니다 — 정책 엔진은 보조 방어선이고,
+      1차 방어선은 항상 벡터 DB 쿼리에 내장된 필터여야 한다.
+    </p>
+    <p>
+      또한 이 필터는 <strong>Day 6의 hybrid search와 함께 쓸 때 BM25/dense 양쪽 검색 경로 모두에</strong>
+      동일하게 적용해야 한다. 흔한 버그는 dense 검색 쿼리에는 tenant 필터를 넣었는데 BM25 쿼리에는
+      빠뜨려서, fusion 이후 최종 결과에 다른 테넌트 문서가 섞여 들어가는 경우다.
+    </p>
+
+    <h3>권한 모델과 소스 시스템 동기화 문제</h3>
+    <p>
+      권한을 표현하는 모델은 여러 층위가 있다 — 사용자-리소스를 직접 매핑하는 ACL, <code>admin</code>/
+      <code>editor</code> 같은 역할 기반 RBAC, 부서·직급·보안등급 같은 속성 기반 ABAC, 그리고 사용자와
+      리소스의 관계를 그래프로 모델링하는 ReBAC(Relationship-Based Access Control)이다. 폴더 중첩, 그룹
+      멤버십처럼 관계가 복잡한 대규모 엔터프라이즈 RAG에서는 ReBAC이 유연성과 확장성 면에서 유리하다는
+      것이 최근 실무 컨센서스다.
+    </p>
+    <div class="callout callout-danger">
+      <strong>실무에서 가장 자주 터지는 문제 — ACL staleness:</strong> Google Drive, Confluence, SharePoint
+      같은 소스 시스템의 권한은 벡터 DB 메타데이터에 <strong>동기화된 사본</strong>일 뿐이다. 원본 시스템에서
+      권한이 회수되어도, 벡터 DB 메타데이터가 재동기화되기 전까지는 <strong>여전히 검색 가능한 상태로
+      남는다</strong>. 튜토리얼 수준의 데모는 이 동기화를 한 번만 하고 끝내지만, 프로덕션에서는 수십 개의
+      서드파티 시스템에서 온 ACL을 지속적으로 재동기화하는 파이프라인 없이는 이 위험이 상시로 존재한다.
+    </div>
+
+    <div class="source-note">
+      참고: pre/post-filtering의 구조적 차이와 위험, 벤더별 필터 통합 방식(Qdrant payload index, Weaviate
+      adaptive traversal, Pinecone query-time constraint, ACORN 연구)과 선택도별 성능 특성, 소스 시스템
+      ACL 동기화 지연 문제와 RBAC/ABAC/ReBAC 비교는 레슨 작성 시점(2026년 7월) 기준 공개 자료를 바탕으로
+      했다. 벤더별 세부 구현과 벤치마크 수치는 자주 갱신되므로 도입 전 공식 문서와 자체 벤치마크로
+      재검증해야 한다. 세부 출처는 <code>RESOURCES.md</code> 참고.
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <ul>
+      <li>
+        <strong>유사도와 접근권한을 같은 축으로 착각하지 않는가:</strong> "가장 유사한 문서를 보여주면
+        된다"는 데모 수준 사고에서 벗어나, 권한·테넌트 경계가 유사도와 무관하게 강제돼야 하는 별개의
+        제약임을 아는지 본다.
+      </li>
+      <li>
+        <strong>Pre/Post filtering의 실패 모드를 구체적으로 아는가:</strong> "필터를 걸면 된다"에서 멈추지
+        않고, brute-force 스캔 비용과 "top-k 미달/0건" 문제를 원리 수준에서 설명할 수 있는지가 핵심이다.
+      </li>
+      <li>
+        <strong>보안을 성능 문제와 분리해서 다루는가:</strong> ACL 필터를 애플리케이션 후처리로 두는 것이
+        왜 위험한지, 왜 쿼리 레벨의 하드 필터가 반드시 필요한지 설명할 수 있는지 본다.
+      </li>
+      <li>
+        <strong>선택도(selectivity) 기반으로 아키텍처를 판단하는가:</strong> "우리 벡터 DB가 필터링을
+        지원한다"는 사실 나열이 아니라, 실제 쿼리의 필터 선택도 분포를 보고 인덱스 전략을 선택하는
+        사고를 하는지 본다.
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      Senior 엔지니어는 "메타데이터 필터를 지원하는 벡터 DB를 씁니다"에서 멈추지 않는다. <strong>필터가
+      성능에 미치는 구조적 영향, 권한 강제가 검색 이후가 아니라 검색 쿼리 자체에 내장돼야 하는 이유,
+      그리고 소스 시스템 권한과 벡터 DB 메타데이터 사이의 동기화 지연이 만드는 유출 위험</strong>까지
+      하나의 설계 판단으로 엮어서 설명한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 멀티테넌트 SaaS RAG에서 테넌트 경계가 뚫림</h3>
+    <p>
+      신규 기능 배포 후 특정 사용자가 다른 회사의 문서 내용을 답변으로 받는 사고가 발생했다. 원인을
+      파고들면 대개 <strong>tenant 필터가 hybrid search의 BM25 경로에는 빠져 있거나</strong>, 캐시 계층이
+      필터 조건 없이 결과를 재사용한 경우다. → 모든 검색 경로(dense, BM25, 캐시 조회)에 tenant 필터가
+      예외 없이 적용되는지 통합 테스트로 검증하는 체계를 갖춘다.
+    </p>
+
+    <h3>상황 2: 사내 위키 RAG — 부서 문서 접근 권한이 소스 시스템과 어긋남</h3>
+    <p>
+      Confluence에서 특정 팀 문서의 접근 권한을 회수했는데, 벡터 DB 메타데이터가 재동기화되기 전까지는
+      여전히 검색된다는 사고가 접수됐다. → ACL을 일회성으로 동기화하지 않고, 소스 시스템 변경 이벤트(webhook)와
+      주기적 전체 재검증(reconciliation job)을 함께 운영해 동기화 지연 시간을 최소화한다.
+    </p>
+
+    <h3>상황 3: 특정 고객사 전용 문서만 필터링했더니 검색 결과가 0건</h3>
+    <p>
+      고선택도 필터(전체 문서의 0.1%만 해당 고객사 소유)를 post-filter로 적용했더니, top-50을 가져와도
+      조건을 만족하는 chunk가 하나도 없는 경우가 발생했다. → over-fetch 배수를 늘려도 근본 해법이 아니므로,
+      결과가 부족하면 k를 점진적으로 넓혀 재검색하거나, 애초에 그 고객사 전용 컬렉션/네임스페이스로
+      물리적으로 분리해 필터 자체를 없애는 방안을 함께 검토한다.
+    </p>
+
+    <h3>상황 4: Hybrid search(Day 6)와 필터를 함께 쓸 때 fusion 이전에 필터 미적용</h3>
+    <p>
+      BM25와 dense 검색 결과를 RRF로 합친 뒤에야 메타데이터 필터를 적용했더니, 필터로 제거된 문서 자리만큼
+      최종 top-k가 비어버렸다. → 필터는 fusion 이전에 각 검색 경로(BM25, dense) 안에서 먼저 적용해,
+      두 경로 모두 이미 필터를 통과한 후보만 fusion 단계에 올라오도록 파이프라인을 재구성한다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>유사도와 접근권한이 다른 축이라는 것부터 짚기</strong>
+        "벡터 유사도는 의미적 가까움만 판단하고 테넌트·권한 경계는 전혀 모르기 때문에, metadata filter는
+        부가 기능이 아니라 반드시 강제해야 하는 제약이라는 것을 먼저 짚습니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Pre/Post filtering의 실패 모드를 설명하기</strong>
+        "Pre-filter는 부분집합이 크면 brute-force 스캔 비용이 커지고, post-filter는 top-k 안에 조건을
+        만족하는 문서가 부족하면 결과가 미달되거나 0건이 될 수 있다는 트레이드오프를 설명합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>선택도 기반으로 인덱스 전략을 판단한다는 것을 보여주기</strong>
+        "필터 선택도가 높으면 post-filter가, 매우 낮으면 필터를 그래프 순회에 통합한 전용 인덱스가
+        유리한 경향이 있어서, 실제 쿼리 로그의 선택도 분포를 측정한 뒤 전략을 정합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>ACL은 쿼리 레벨 하드 필터여야 한다는 점을 보안 관점에서 짚기</strong>
+        "권한 필터를 검색 이후 애플리케이션에서 숨기는 방식은 이미 벡터 DB가 미인가 문서를 내부적으로
+        가져온 뒤이므로 위험하고, tenant 필터와 동일하게 모든 검색 경로에 쿼리 레벨로 강제해야 한다는
+        것을 설명합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>소스 시스템 ACL 동기화 지연 문제까지 짚기 (Senior 포인트)</strong>
+        "권한은 소스 시스템의 사본일 뿐이라서, 실시간 이벤트 동기화와 주기적 재검증 없이는 권한 회수 후에도
+        일정 시간 동안 검색 가능한 상태로 남는 staleness 위험이 있다는 점을 함께 설명합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>Hybrid search·다른 컴포넌트와의 연결까지 짚기</strong>
+        "필터는 fusion 이전에 BM25/dense 각 경로에 동일하게 적용돼야 하고, 캐시 계층도 필터 조건을
+        포함한 키로 구분해야 한다는 것까지 언급합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "먼저 벡터 유사도와 접근권한은 완전히 다른 축이라는 점을 전제로 둡니다. 유사도 점수는 의미적으로
+        가까운 문서를 찾을 뿐, 그 문서를 이 사용자가 봐도 되는지는 전혀 모릅니다. 그래서 metadata filter는
+        검색을 더 정교하게 만드는 옵션이 아니라 반드시 강제해야 하는 제약 조건이라고 봅니다.
+      </p>
+      <p>
+        필터를 적용하는 방식에는 pre-filtering과 post-filtering이 있는데, 각각 실패 모드가 다릅니다.
+        Pre-filtering은 필터로 좁힌 부분집합 안에서 검색하는데, ANN 인덱스가 원래 전체 데이터셋 위에
+        구축돼 있어서 부분집합에 대해서는 결국 brute-force 스캔에 가까워지고, 부분집합이 크면 지연이
+        커집니다. Post-filtering은 반대로 먼저 top-k를 뽑고 나중에 필터를 거는데, top-k 안에 조건을
+        만족하는 문서가 부족하면 요청한 개수보다 적게 반환되거나 최악의 경우 0건이 됩니다. 그래서 어느
+        한쪽이 항상 정답은 아니고, 저는 실제 쿼리 로그에서 필터 선택도 분포를 먼저 측정합니다 — 필터를
+        걸어도 절반 가까이 남는 느슨한 필터라면 post-filter로 충분하고, 1% 미만만 남는 매우 선택적인
+        필터라면 Qdrant의 payload index처럼 필터 조건을 그래프 순회 자체에 통합한 인덱스를 씁니다.
+      </p>
+      <p>
+        여기서 가장 중요하게 보는 건 권한 필터입니다. 검색 결과를 다 가져온 다음 애플리케이션 레벨에서
+        권한 없는 것만 화면에서 숨기는 방식은 절대 쓰지 않습니다. 그 시점에는 이미 벡터 DB가 미인가
+        문서를 내부적으로 가져온 뒤라서, 로깅이나 LLM에 넘기는 context 어딘가에서 한 번이라도 필터를
+        빠뜨리면 바로 유출로 이어집니다. 그래서 tenant_id나 access_level 필터는 테넌트 격리와 동일하게
+        모든 검색 경로 — dense, BM25, 캐시 조회 — 에 예외 없이 쿼리 레벨로 강제합니다.
+      </p>
+      <p>
+        마지막으로 이 권한 메타데이터는 소스 시스템의 사본일 뿐이라는 것도 중요하게 봅니다. Confluence나
+        Google Drive에서 권한이 회수돼도 벡터 DB가 재동기화되기 전까지는 여전히 검색될 수 있기 때문에,
+        일회성 동기화가 아니라 이벤트 기반 동기화와 주기적 재검증을 함께 운영해서 이 지연 시간을 최소화하는
+        체계를 만듭니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "그냥 필터 걸고 top-k 검색하면 되지 않나요? 왜 이렇게 복잡한가요?"</h3>
+    <p><strong>약한 답변:</strong> "필터를 WHERE 절처럼 걸면 벡터 DB가 알아서 처리해줍니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "필터를 거는 것 자체는 쉽지만, 그 필터가 성능에 미치는 영향은 선택도에 따라 완전히 다릅니다.
+      대부분의 벡터 DB에서 ANN 인덱스는 전체 데이터셋 위에 구축돼 있기 때문에, 필터가 매우 선택적이면
+      결국 부분집합에 대한 brute-force 스캔이 되거나, top-k 안에 조건을 만족하는 문서가 부족해 결과가
+      미달될 수 있습니다. 그래서 필터를 '거는 것'과 '안전하고 빠르게 거는 것'은 다른 문제입니다."
+    </p>
+
+    <h3>F2. "ACL을 벡터 DB 메타데이터에 동기화하는 것과, 검색 후 애플리케이션에서 걸러내는 것 중 어느 게 낫나요?"</h3>
+    <p><strong>약한 답변:</strong> "검색 결과를 받은 다음 권한 없는 건 화면에서 안 보여주면 됩니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "그 방식은 벡터 DB가 이미 미인가 문서를 내부적으로 가져온 뒤라서 근본적인 방어가 아닙니다. 로깅
+      파이프라인이나 LLM에 넘기는 context 생성 로직에서 필터를 한 번이라도 빠뜨리면 바로 유출됩니다.
+      그래서 저는 access_level이나 tenant_id를 벡터 DB 쿼리 자체의 하드 필터로 강제하고, OPA 같은 정책
+      엔진은 보조 방어선으로만 둡니다."
+    </p>
+
+    <h3>F3. "필터 선택도가 매우 낮을 때(예: 상위 1%) 성능이 왜 떨어지고 어떻게 완화하나요?"</h3>
+    <p><strong>약한 답변:</strong> "필터 조건을 최대한 단순하게 만듭니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "선택도가 낮으면 post-filter는 top-k 안에 조건을 만족하는 문서가 거의 없어 결과가 부족해지고,
+      pre-filter는 부분집합에 대해 ANN 인덱스의 이점을 못 살려 brute-force에 가까워집니다. 그래서 Qdrant의
+      payload index나 Weaviate의 적응형 순회처럼 필터 조건을 그래프 순회 자체에 통합한 인덱스를 쓰고,
+      그래도 부족하면 결과가 채워질 때까지 k를 점진적으로 넓혀가며 재검색하는 로직을 둡니다."
+    </p>
+
+    <h3>F4. "Post-filtering으로 top-k보다 적은 결과가 반환되면 어떻게 하나요?"</h3>
+    <p><strong>약한 답변:</strong> "그냥 있는 만큼만 반환합니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "먼저 요청한 k보다 훨씬 넉넉하게(예: 5배) 오버페치해서 필터를 통과할 확률을 높입니다. 그래도
+      부족하면 k를 점진적으로 넓혀 재검색하는 iterative widening을 적용하고, 그 과정에서 지연이 너무
+      커지면 사용자에게 결과가 제한적이라는 것을 명시하거나, 애초에 특정 필터 조합이 빈번하다면 별도
+      컬렉션/네임스페이스로 물리적 분리를 검토합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>유사도와 접근권한을 <strong>서로 다른 축</strong>으로 명확히 구분한다</li>
+          <li>Pre/post-filtering의 실패 모드를 <strong>구체적으로</strong> 설명한다</li>
+          <li>필터 선택도에 따라 인덱스 전략을 다르게 판단한다</li>
+          <li>ACL을 <strong>쿼리 레벨 하드 필터</strong>로 강제해야 하는 보안적 이유를 설명한다</li>
+          <li>소스 시스템 ACL 동기화 지연(staleness) 위험까지 짚는다</li>
+          <li>Day 6(hybrid search)과의 연결(필터가 fusion 이전에 적용돼야 함)을 자연스럽게 언급한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"필터를 걸면 된다"는 수준에서 멈춘다</li>
+          <li>Pre/post-filtering의 차이나 실패 모드를 설명하지 못한다</li>
+          <li>선택도라는 개념 자체를 언급하지 못한다</li>
+          <li>권한 필터를 애플리케이션 후처리로 처리해도 된다고 답한다</li>
+          <li>ACL이 소스 시스템의 사본일 뿐이라는 것을 인지하지 못한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 metadata filter를 "쿼리에 조건 하나 추가하는 문제"가 아니라
+      <strong>"성능(선택도별 인덱스 구조)과 보안(쿼리 레벨 강제, 동기화 지연)을 동시에 만족시켜야 하는
+      설계 문제"</strong>로 다룬다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "메타데이터 필터는 SQL의 WHERE 절 붙이듯 간단하다"</h3>
+    <p>
+      <strong>사실:</strong> 필터의 선택도와 인덱스 구조에 따라 성능이 완전히 달라진다. 선택도가 높으면
+      post-filter가, 매우 낮으면 필터를 그래프 순회에 통합한 전용 인덱스가 유리한 경향이 있어, 실제
+      쿼리 패턴을 측정하지 않고 아무 방식이나 쓰면 프로덕션에서 지연이나 결과 미달 문제가 터진다.
+    </p>
+
+    <h3>오해 2: "오버페치로 top-k의 몇 배를 가져오면 post-filtering 문제는 항상 해결된다"</h3>
+    <p>
+      <strong>사실:</strong> 오버페치는 확률을 낮출 뿐 없애지 못한다. 필터 선택도가 극단적으로 낮으면
+      아무리 많이 가져와도 조건을 만족하는 문서가 없을 수 있어, 결과가 부족할 때 k를 점진적으로 넓혀가는
+      로직이 별도로 필요하다.
+    </p>
+
+    <h3>오해 3: "권한 필터는 검색 결과를 화면에서 숨기기만 하면 충분하다"</h3>
+    <p>
+      <strong>사실:</strong> 그 시점에는 벡터 DB가 이미 미인가 문서를 내부적으로 가져온 뒤이므로, 로깅이나
+      LLM context 생성 과정에서 필터가 한 번이라도 빠지면 유출로 이어진다. 권한 필터는 테넌트 격리와
+      동일하게 벡터 DB 쿼리 자체에 하드 필터로 강제해야 한다.
+    </p>
+
+    <h3>오해 4: "소스 시스템 ACL을 한 번 동기화해두면 그걸로 끝이다"</h3>
+    <p>
+      <strong>사실:</strong> 권한은 소스 시스템에서 계속 변경·회수된다. 이벤트 기반 동기화와 주기적
+      재검증 파이프라인 없이는, 권한이 회수된 뒤에도 벡터 DB 메타데이터가 재동기화될 때까지 해당 문서가
+      계속 검색 가능한 staleness window가 생긴다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Metadata Filtering 설계·운영 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>항목</th>
+        <th>확인할 것</th>
+        <th>누락 시 위험</th>
+      </tr>
+      <tr>
+        <td>필터 선택도 측정</td>
+        <td>실제 쿼리 로그에서 필터별 선택도 분포를 측정해 pre/post-filter 또는 필터 통합 인덱스를
+        선택했는가</td>
+        <td><span class="badge badge-yellow">고선택도 필터에서 지연 급증 또는 결과 미달</span></td>
+      </tr>
+      <tr>
+        <td>결과 미달/0건 대응</td>
+        <td>오버페치 배수와 iterative widening 로직을 갖췄는가</td>
+        <td><span class="badge badge-yellow">사용자에게 빈 답변 또는 불완전한 답변 노출</span></td>
+      </tr>
+      <tr>
+        <td>ACL 쿼리 레벨 강제</td>
+        <td>access_level/tenant_id 필터를 dense, BM25, 캐시 조회 등 모든 검색 경로에 예외 없이
+        적용하는가</td>
+        <td><span class="badge badge-red">테넌트 간 데이터 유출</span></td>
+      </tr>
+      <tr>
+        <td>필터·fusion 순서</td>
+        <td>Hybrid search에서 필터를 fusion 이전에 각 검색 경로에 적용하는가</td>
+        <td><span class="badge badge-red">필터 누락 경로로 인한 결과 오염</span></td>
+      </tr>
+      <tr>
+        <td>ACL 동기화 체계</td>
+        <td>소스 시스템 권한 변경에 대한 이벤트 동기화와 주기적 재검증이 모두 있는가</td>
+        <td><span class="badge badge-red">권한 회수 후에도 검색 가능한 staleness 유출</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"필터를 걸면 된다"는 수준에서 멈추고, 유사도와 접근권한이 왜 다른 축인지 설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>Pre/post-filter라는 용어는 알지만, 각각의 실패 모드(brute-force 비용, 결과 미달/0건)를
+      설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>Pre/post-filter의 실패 모드와 오버페치 완화책을 설명할 수 있고, ACL을 쿼리 레벨에서 강제해야
+      한다는 것을 알고 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>필터 선택도 기반 인덱스 전략 선택-ACL의 쿼리 레벨 강제와 보안적 근거-소스 시스템 ACL
+      동기화 지연 위험-hybrid search와의 필터 순서까지 하나의 일관된 프레임으로 설명하고, Day 5(벡터
+      DB)·Day 6(hybrid search)과의 연결까지 자연스럽게 답변함</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. Pre-filtering과 post-filtering이 각각 어떤 상황에서 실패하는지 구체적으로 설명할 수 있는가?<br>
+      2. 필터 선택도에 따라 어떤 인덱스 전략을 선택할지 판단 기준을 설명할 수 있는가?<br>
+      3. 권한 필터를 검색 결과 후처리가 아니라 쿼리 레벨에서 강제해야 하는 이유를 보안 관점에서 설명할
+      수 있는가?<br>
+      4. 소스 시스템의 ACL 변경이 벡터 DB 메타데이터에 반영되기까지의 지연이 왜 위험한지, 이를 어떻게
+      최소화할지 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>유사도와 접근권한은 서로 다른 축</strong>이다 — metadata filter는 부가 기능이 아니라
+      반드시 강제해야 하는 제약이다.</li>
+      <li><strong>Pre-filtering은 선택적이지 않으면 brute-force에 가까워지고, post-filtering은 선택적일수록
+      결과 미달·0건 위험이 커진다.</strong></li>
+      <li><strong>필터 선택도를 실제로 측정하고</strong>, 그에 맞는 인덱스 전략(post-filter vs 필터
+      통합 인덱스)을 선택해야 한다.</li>
+      <li><strong>ACL은 애플리케이션 후처리가 아니라 벡터 DB 쿼리 자체의 하드 필터</strong>로, 모든
+      검색 경로(dense/BM25/캐시)에 예외 없이 적용해야 한다.</li>
+      <li><strong>ACL은 소스 시스템의 사본일 뿐</strong>이므로, 이벤트 동기화와 주기적 재검증 없이는
+      권한 회수 후에도 일정 시간 검색 가능한 staleness 위험이 남는다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 7 완료 · 다음: Day 8 — Reranking 전략</span>
+  </div>
+
+</div>
+</body>
+</html>
