@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — Cookies & Session 관리 | HTTP / Web Protocol & API Traffic 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">HTTP / Web Protocol & API Traffic 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 6
+  </nav>
+
+  <h1>Day 6 — Cookies & Session 관리</h1>
+  <p class="subtitle">SameSite/Secure/HttpOnly와 세션 vs 토큰(JWT) trade-off · 2026-07-07</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#attr-table">쿠키 속성 판단표</a></li>
+      <li><a href="#samesite-mechanism">SameSite의 동작 원리</a></li>
+      <li><a href="#session-vs-token">세션 vs 토큰(JWT) — 실무 판단 기준</a></li>
+      <li><a href="#incident-case">실전 장애 사례 — "로그인 후 쿠키가 저장되지 않습니다"</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"세션 기반 인증 대신 JWT 같은 토큰 기반 인증으로 전환하자는 제안을 받았습니다. 어떤 기준으로 판단하시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"SameSite 쿠키 속성은 왜 필요하고, Strict/Lax/None의 차이가 실무에서 각각 무엇을 뜻하나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"프로덕션에서 '로그인은 성공했다는데 이후 요청에서 계속 로그아웃 상태로 보인다'는 신고가 들어왔습니다. 원인을 어떻게 좁혀 나가시겠어요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"쿠키 속성 이름을 아는가"가 아니라 "HTTP가 stateless라는 제약 위에서 로그인 상태를 유지하는 두 가지 서로 다른 전략(세션 vs 토큰)이 각각 무엇을 희생하고 무엇을 얻는지 설명할 수 있는가"</strong>를 테스트합니다. "SameSite는 CSRF를 막아줍니다"는 정의로는 맞지만, 시니어를 가르는 지점은 <strong>이 선택이 트래픽 경로(Day 1~5에서 그린 CDN/프록시/게이트웨이 경계)와 만났을 때 어떤 실제 장애로 이어지는지, 그리고 그 장애를 어떻게 재현·진단하는지</strong>입니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>Stateless 프로토콜 위에 상태를 얹는 근본 이유에 대한 이해</strong> — Day 1에서 다룬 "HTTP는 각 요청을 독립적으로 취급한다"는 전제가, 로그인이라는 "여러 요청에 걸친 상태"와 왜 충돌하는지 아는가.</li>
+      <li><strong>보안 속성과 실제 공격 사이의 인과관계</strong> — <code>HttpOnly</code>가 막는 것은 XSS를 통한 쿠키 탈취이고, <code>SameSite</code>가 막는 것은 CSRF라는 것을, "무엇을 막는지"가 아니라 "왜 그 공격이 성립하고 왜 이 속성이 그것을 차단하는지" 인과관계로 설명할 수 있는가.</li>
+      <li><strong>세션 vs 토큰의 트레이드오프를 아키텍처 레벨에서 판단하는 능력</strong> — 수평 확장, 무효화(revocation), 저장 위치별 공격 표면, 인프라 복잡도라는 여러 축을 동시에 놓고 상황에 맞는 선택을 정당화할 수 있는가.</li>
+      <li><strong>실제 장애를 헤더/브라우저 동작으로 재현·격리하는 능력</strong> — "쿠키가 안 온다"는 증상 하나가 <code>Secure</code> 누락, <code>SameSite</code> 불일치, 도메인 불일치, 서드파티 쿠키 차단 등 여러 원인 중 어느 것인지 좁혀갈 수 있는가.</li>
+    </ul>
+
+    <p>10년차 이하에서 자주 나오는 답변 패턴: "JWT는 stateless라서 확장성이 좋고 세션은 서버에 저장해야 해서 무겁습니다." 방향은 맞지만 <strong>그 "가벼움"이 대가로 무엇을 잃는지(즉시 무효화 불가, 토큰 크기, 저장 위치에 따른 XSS/CSRF 노출)</strong>를 언급하지 않습니다. 시니어는 두 방식을 저울질할 때 반드시 "이 서비스에서 로그아웃/권한 회수가 즉시 반영되어야 하는가"라는 구체적 제약을 먼저 확인하고 답을 시작합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>HTTP는 왜 "로그인 상태"를 기억하지 못하는가 — Stateless라는 제약</h3>
+    <p>Day 1에서 다룬 것처럼 HTTP는 각 요청을 완전히 독립적으로 처리합니다. 서버 입장에서 두 번째 요청은 "방금 그 사람이 또 왔다"가 아니라 "새로운 낯선 손님이 왔다"입니다. 매표소 창구에 비유하면, 창구 직원이 매 손님을 처음 보는 사람처럼 대하는 것과 같습니다 — 방금 표를 산 사람이 다시 와도 "누구세요?"라고 묻습니다. 로그인이라는 기능은 본질적으로 "이 요청과 저 요청이 같은 사용자다"라는 연속성을 필요로 하는데, HTTP 자체에는 이 연속성을 기억하는 기능이 없습니다.</p>
+
+    <h3>쿠키란 — "다음에 올 때 이 이름표를 들고 오세요"라는 서버의 부탁</h3>
+    <p>쿠키는 이 문제를 푸는 가장 기본적인 방법입니다. 서버가 응답에 <code>Set-Cookie</code>로 작은 값(이름표)을 실어 보내면, 브라우저는 이 값을 저장해뒀다가 <strong>같은 사이트로 가는 이후 모든 요청에 자동으로</strong> 그 값을 실어 보냅니다. 매표소 비유를 이어가면, 첫 방문 때 손목에 도장(쿠키)을 찍어주고, 다음 창구에 갈 때 그 도장을 보여주면 직원이 "아, 아까 그분이시군요"라고 알아보는 것과 같습니다. 이 도장 자체는 그냥 문자열일 뿐이고, "누구인지"를 실제로 판단하는 것은 서버입니다.</p>
+
+    <h3>세션이란 — 도장의 의미를 서버 쪽 장부에 적어두는 방식</h3>
+    <p>세션 방식에서 쿠키에 담기는 값은 의미 없는 무작위 문자열(세션 ID)입니다. "누가 로그인했는지, 어떤 권한이 있는지" 같은 실제 정보는 서버(또는 서버가 공유하는 저장소, 예: Redis)의 장부에 세션 ID를 키로 저장됩니다. 손목 도장 자체에는 아무 의미가 없고, 매표소 뒤편 장부에 "도장 번호 1234 = 홍길동, VIP"라고 적혀 있는 것과 같습니다. 요청이 오면 서버는 도장 번호로 장부를 뒤져 실제 정보를 찾습니다.</p>
+
+    <h3>토큰(JWT)이란 — 장부 없이, 도장 자체에 서명된 내용을 담는 방식</h3>
+    <p>JWT 같은 토큰 방식은 다릅니다. 도장(토큰) 자체에 "홍길동, VIP, 이 도장은 오늘 자정까지 유효함"이라는 내용을 적어 넣고, 위조를 막기 위해 서버의 비밀 열쇠로 서명을 찍습니다. 서버는 도장을 받으면 장부를 뒤질 필요 없이, 서명만 확인하면(비밀 열쇠로 검증) 그 내용을 그대로 믿을 수 있습니다. 이것이 "stateless"라는 말의 실제 의미입니다 — 서버가 이 사용자에 대해 별도로 기억해둔 상태가 없어도 검증이 가능합니다.</p>
+
+    <div class="why-box">
+      <p><strong>핵심 차이 한 줄 요약:</strong> 세션은 "진짜 정보는 서버 장부에 있고, 쿠키는 그 장부를 찾는 열쇠"이고, 토큰은 "진짜 정보가 쿠키(또는 헤더) 자체에 서명된 채로 들어있어서 장부가 필요 없다"입니다. 이 차이가 뒤에 나올 모든 trade-off(무효화, 확장성, 크기, 저장 위치 보안)의 근원입니다.</p>
+    </div>
+  </section>
+
+  <!-- 4. 쿠키 속성 판단표 -->
+  <section id="attr-table">
+    <h2>4. 쿠키 속성 판단표</h2>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>속성</th>
+          <th>의미</th>
+          <th>막아주는 것 / 제어하는 것</th>
+          <th>실무 주의점</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>HttpOnly</code></td>
+          <td>JavaScript(<code>document.cookie</code>)로 이 쿠키를 읽을 수 없게 함</td>
+          <td>XSS가 발생했을 때 쿠키 탈취를 막음</td>
+          <td>세션 ID/인증 토큰 쿠키에는 항상 붙여야 함. 프론트엔드가 값을 직접 읽어야 하는 용도(예: UI 표시용 플래그)에는 붙이면 안 됨</td>
+        </tr>
+        <tr>
+          <td><code>Secure</code></td>
+          <td>HTTPS 연결에서만 브라우저가 이 쿠키를 전송함</td>
+          <td>평문 HTTP 구간에서의 쿠키 도청(중간자 공격)을 막음</td>
+          <td><code>SameSite=None</code>은 <code>Secure</code>가 없으면 최신 브라우저가 쿠키 자체를 거부함 — 반드시 함께 설정</td>
+        </tr>
+        <tr>
+          <td><code>SameSite</code></td>
+          <td>이 쿠키를 어떤 크로스 사이트 요청에 실어 보낼지 제어 (<code>Strict</code>/<code>Lax</code>/<code>None</code>)</td>
+          <td>CSRF(Cross-Site Request Forgery) 공격 표면을 줄임</td>
+          <td>Day 7에서 배울 CORS와는 별개 메커니즘 — CORS는 "응답을 읽을 수 있는가", SameSite는 "쿠키를 실어 보낼 것인가"를 다룸</td>
+        </tr>
+        <tr>
+          <td><code>Domain</code></td>
+          <td>이 쿠키를 전송할 호스트 범위 지정 (미지정 시 요청한 호스트에만 한정)</td>
+          <td>서브도메인 간 쿠키 공유 범위 제어</td>
+          <td>부모 도메인으로 넓게 설정하면 모든 서브도메인이 같은 쿠키를 공유 — 서브도메인 하나가 취약하면 전체가 위험해짐</td>
+        </tr>
+        <tr>
+          <td><code>Path</code></td>
+          <td>이 쿠키를 전송할 URL 경로 범위 지정</td>
+          <td>같은 도메인 내에서도 특정 경로에만 쿠키를 한정</td>
+          <td>실무에서는 세밀하게 나누기보다 <code>/</code>로 두는 경우가 많음 — 과도한 세분화는 디버깅을 어렵게 함</td>
+        </tr>
+        <tr>
+          <td><code>Max-Age</code> / <code>Expires</code></td>
+          <td>쿠키의 만료 시점 (없으면 세션 쿠키 — 브라우저 종료 시 삭제)</td>
+          <td>탈취된 쿠키의 유효 기간을 제한</td>
+          <td><code>Max-Age</code>가 <code>Expires</code>보다 우선 적용되며, 클라이언트 시계에 의존하므로 서버 발급 시각과 상대값(초 단위)으로 관리하는 것이 안전</td>
+        </tr>
+        <tr>
+          <td><code>Partitioned</code> (CHIPS)</td>
+          <td>서드파티 쿠키를 최상위 사이트별로 분리 저장(state partitioning)</td>
+          <td>크로스 사이트 트래킹 목적의 서드파티 쿠키 남용을 제한하면서도 임베디드 위젯 등의 정상 기능은 유지</td>
+          <td>서드파티 쿠키 차단이 강화되는 브라우저 흐름 속에서 등장한 비교적 최신 표준 — 임베디드 결제·위젯 서비스를 운영한다면 채택 여부를 점검해야 함</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 5. SameSite 동작 원리 -->
+  <section id="samesite-mechanism">
+    <h2>5. SameSite의 동작 원리</h2>
+
+    <p><code>SameSite</code>는 "이 요청이 지금 보고 있는 사이트와 같은 사이트(same-site)에서 시작됐는가, 다른 사이트(cross-site)에서 시작됐는가"를 기준으로 쿠키 전송 여부를 결정합니다.</p>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>값</th>
+          <th>동작</th>
+          <th>대표 시나리오</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>Strict</code></td>
+          <td>같은 사이트에서 시작된 요청에만 쿠키 전송. 다른 사이트에서 링크를 눌러 들어와도(최초 내비게이션 포함) 쿠키를 실어 보내지 않음</td>
+          <td>은행 계좌 이체처럼 민감도가 가장 높은 세션. 다만 외부 링크를 타고 들어온 첫 요청에서 "로그인 안 된 것처럼" 보이는 UX 단점 존재</td>
+        </tr>
+        <tr>
+          <td><code>Lax</code> (브라우저 기본값)</td>
+          <td>최상위 내비게이션(주소창 이동, 링크 클릭 등)의 GET 요청에는 쿠키를 전송하지만, 크로스 사이트에서 발생하는 서브 리소스 요청(이미지, iframe)이나 POST에는 전송하지 않음</td>
+          <td>일반적인 로그인 세션 대부분의 기본 선택. 이메일에 담긴 링크를 눌러 로그인 페이지로 이동해도 세션이 유지됨</td>
+        </tr>
+        <tr>
+          <td><code>None</code></td>
+          <td>크로스 사이트 요청에도 항상 쿠키 전송. 단, 최신 브라우저는 <code>Secure</code> 속성이 함께 없으면 이 쿠키 자체를 거부함</td>
+          <td>다른 도메인에 임베드된 결제 위젯, 서드파티 SSO 콜백처럼 의도적으로 크로스 사이트에서 쿠키가 필요한 경우</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>왜 이것이 CSRF를 막는가 — 인과관계</h4>
+      <p>CSRF 공격은 공격자 사이트(<code>evil.com</code>)가 사용자 브라우저에서 은행 사이트(<code>bank.com</code>)로 몰래 요청을 보내는 것입니다. 브라우저는 기본적으로 "쿠키가 있는 사이트로 가는 요청이면 쿠키를 자동으로 실어 보낸다"는 규칙을 가지고 있었기 때문에, 사용자가 <code>bank.com</code>에 로그인되어 있으면 <code>evil.com</code>이 몰래 보낸 요청에도 그 로그인 쿠키가 실려서 은행 서버는 이를 정상 사용자의 요청으로 착각합니다. <code>SameSite=Lax</code> 또는 <code>Strict</code>는 정확히 이 지점 — "다른 사이트에서 시작된 요청에는 쿠키를 실어 보내지 않는다"는 규칙을 브라우저 레벨에서 강제해서, 공격자 사이트가 아무리 요청을 위조해도 로그인 쿠키가 함께 가지 않게 만듭니다.</p>
+    </div>
+
+    <div class="why-box">
+      <p><strong>2020년 이후 브라우저 기본값 변화:</strong> 과거에는 <code>SameSite</code>를 지정하지 않으면 사실상 <code>None</code>처럼 동작했지만, Chrome 등 주요 브라우저는 지정하지 않은 쿠키를 <code>Lax</code>로 취급하도록 기본값을 바꿨습니다. 이 변화 때문에 "예전엔 되던 크로스 사이트 쿠키 전송이 갑자기 안 된다"는 장애가 실무에서 흔히 발생하며, 이런 경우 명시적으로 <code>SameSite=None; Secure</code>를 설정해야 의도한 크로스 사이트 동작이 복원됩니다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 세션 vs 토큰 -->
+  <section id="session-vs-token">
+    <h2>6. 세션 vs 토큰(JWT) — 실무 판단 기준</h2>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>판단 축</th>
+          <th>세션(서버 저장)</th>
+          <th>토큰(JWT 등)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>즉시 무효화(로그아웃, 권한 회수)</td>
+          <td>장부에서 삭제하면 즉시 반영됨 — 강함</td>
+          <td>서명이 유효하면 만료 전까지 계속 통과됨 — 즉시 회수가 원천적으로 어려움(블랙리스트 별도 관리 필요, 이 경우 결국 "상태를 어딘가 저장"하게 되어 stateless 이점이 줄어듦)</td>
+        </tr>
+        <tr>
+          <td>수평 확장(여러 서버 인스턴스)</td>
+          <td>모든 인스턴스가 같은 세션 저장소(Redis 등)를 공유해야 함 — 저장소 자체가 추가 인프라이자 장애점</td>
+          <td>서명 검증만으로 어느 인스턴스든 처리 가능 — 별도 공유 저장소 불필요</td>
+        </tr>
+        <tr>
+          <td>요청/전송 크기</td>
+          <td>세션 ID는 짧음(수십 바이트)</td>
+          <td>서명·클레임을 포함해 상대적으로 큼(수백 바이트~) — 매 요청마다 헤더/쿠키로 반복 전송되어 누적 대역폭 영향 존재</td>
+        </tr>
+        <tr>
+          <td>저장 위치별 공격 표면</td>
+          <td>쿠키(HttpOnly)로 저장하는 것이 표준이라 XSS로부터 비교적 안전</td>
+          <td><code>localStorage</code>에 저장하면 XSS에 취약(JS로 직접 읽힘), 쿠키에 저장하면 CSRF 대응이 다시 필요 — "어디에 저장하느냐"가 곧 보안 설계</td>
+        </tr>
+        <tr>
+          <td>서버 상태 조회 없이 신원 검증</td>
+          <td>매 요청마다 저장소 조회 필요 — 지연 시간·저장소 부하 발생</td>
+          <td>서명 검증(CPU 연산)만으로 가능 — 저장소 왕복 없음</td>
+        </tr>
+        <tr>
+          <td>정보 노출</td>
+          <td>토큰 자체에는 정보가 없어 탈취돼도 장부 내용까지 알 수는 없음</td>
+          <td>서명은 위조를 막지만 암호화가 아니므로, 페이로드는 base64로 누구나 디코딩 가능 — 민감 정보를 클레임에 직접 담으면 안 됨</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>실무 절충안 — Access Token + Refresh Token</h4>
+      <p>많은 프로덕션 시스템은 극단적인 양자택일 대신 절충안을 씁니다: 수명이 짧은(예: 5~15분) JWT access token으로 매 요청을 stateless하게 검증하고, 수명이 긴 refresh token은 서버 저장소에 등록해 <strong>회전(rotation)과 폐기(revocation)</strong>가 가능하게 관리합니다. 이렇게 하면 access token의 stateless 이점(확장성, 저장소 조회 없음)을 대부분 누리면서도, refresh token 폐기를 통해 "짧은 지연 후" 사실상의 즉시 무효화 효과를 얻습니다. "즉시 무효화가 필수인가"라는 질문에 대한 답이 access token의 만료 시간을 얼마나 짧게 잡을지를 결정합니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>판단 기준 정리 — 무엇을 먼저 물어야 하는가</h4>
+      <ul class="step-block">
+        <li>
+          <div class="step-num">1</div>
+          <div><strong>로그아웃/권한 회수가 즉시(초 단위로) 반영되어야 하는 도메인인가?</strong> 금융, 관리자 권한처럼 즉시성이 중요하면 세션 또는 짧은 만료의 access token + 서버 측 검증이 필요합니다.</div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div><strong>서비스가 여러 서버/리전에 걸쳐 수평 확장되는가, 아니면 서버 간 통신(마이크로서비스)이 잦은가?</strong> 그렇다면 매 요청마다 공유 세션 저장소를 조회하는 비용이 커지므로 토큰 쪽이 유리해집니다.</div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div><strong>클라이언트가 브라우저인가, 모바일/서드파티 API 소비자인가?</strong> 브라우저라면 HttpOnly 쿠키로 세션/토큰 모두 안전하게 다룰 수 있지만, 서드파티 API 클라이언트는 쿠키 기반 세션을 쓰기 어려워 토큰(Authorization 헤더)이 자연스러운 선택이 됩니다.</div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7. 실전 장애 사례 -->
+  <section id="incident-case">
+    <h2>7. 실전 장애 사례 — "로그인 후 쿠키가 저장되지 않습니다"</h2>
+
+    <div class="card">
+      <h4>원인 후보와 진단 절차</h4>
+      <ul class="step-block">
+        <li>
+          <div class="step-num">1</div>
+          <div><strong>브라우저 개발자 도구의 Network 탭에서 로그인 응답의 <code>Set-Cookie</code> 헤더 자체가 존재하는지 확인한다.</strong> 없다면 서버가 애초에 쿠키를 내려주지 않은 것 — 원인은 애플리케이션 코드에 있습니다.</div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div><strong><code>Set-Cookie</code>는 있는데 브라우저 Application 탭의 쿠키 저장소에 값이 없다면, 브라우저가 이 쿠키를 거부한 것.</strong> 가장 흔한 원인은 <code>SameSite=None</code>인데 <code>Secure</code>가 빠진 경우 — 최신 브라우저는 이 조합의 쿠키를 조용히 버립니다.</div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div><strong>요청이 실제로 HTTPS로 도달했는지 확인한다.</strong> 프론트엔드는 HTTPS인데 API가 TLS 종료 후 내부 구간에서 HTTP로 통신하며 <code>Secure</code> 판단 로직이 origin 서버 기준으로 어긋나는 경우, 리버스 프록시가 <code>X-Forwarded-Proto</code>를 애플리케이션에 정확히 전달하는지도 함께 점검합니다(Day 4의 헤더 전달 규칙과 연결).</div>
+        </li>
+        <li>
+          <div class="step-num">4</div>
+          <div><strong>쿠키가 저장은 됐는데 이후 요청에 실리지 않는다면 <code>Domain</code>/<code>Path</code> 불일치를 의심한다.</strong> 예를 들어 로그인은 <code>api.example.com</code>에서, 이후 요청은 <code>app.example.com</code>에서 발생하는데 <code>Domain</code>이 좁게 설정되어 있으면 쿠키가 전송되지 않습니다.</div>
+        </li>
+        <li>
+          <div class="step-num">5</div>
+          <div><strong>인증 흐름이 크로스 사이트(예: OAuth 리다이렉트, 서드파티에 임베드된 위젯)를 거치는지 확인한다.</strong> 이 경우 <code>SameSite=Lax</code>가 기본값으로 적용되면서 특정 리다이렉트/서브 리소스 요청에서 쿠키가 빠질 수 있습니다 — 의도적으로 크로스 사이트 전송이 필요하면 <code>SameSite=None; Secure</code>로 명시해야 합니다.</div>
+        </li>
+        <li>
+          <div class="step-num">6</div>
+          <div><strong>CDN/리버스 프록시가 <code>Set-Cookie</code> 헤더를 캐싱하거나 제거하고 있는지 확인한다.</strong> 응답을 공유 캐시에 저장하도록 설정된 엔드포인트가 실수로 <code>Set-Cookie</code>까지 캐싱하면, 이후 사용자들이 다른 사용자의 세션 쿠키를 받는 심각한 사고로 이어질 수 있습니다 — 이 경우 즉시 해당 응답을 <code>Cache-Control: private</code> 또는 <code>no-store</code>로 전환합니다(Day 8에서 심화).</div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>8. 답변 사고 순서</h2>
+
+    <p>면접에서 "쿠키/세션/토큰" 류의 질문을 받으면 이 순서로 사고합니다.</p>
+
+    <ol>
+      <li><strong>먼저 HTTP가 stateless라는 제약과, 로그인이 그 제약과 왜 충돌하는지 짚습니다.</strong> 이 전제가 있어야 쿠키/세션/토큰이 왜 필요한지 설명이 성립합니다.</li>
+      <li><strong>쿠키 자체는 "값을 자동으로 실어 보내는 운반 수단"일 뿐이고, 그 값의 의미가 서버 장부에 있는지(세션) 값 자체에 서명되어 있는지(토큰)를 구분합니다.</strong></li>
+      <li><strong>질문이 요구하는 구체적 제약을 먼저 확인합니다.</strong> 즉시 무효화가 필요한가, 수평 확장이 중요한가, 클라이언트가 브라우저인가 API 소비자인가.</li>
+      <li><strong>보안 속성(HttpOnly/Secure/SameSite)이 각각 어떤 공격을 어떤 인과관계로 막는지 설명합니다.</strong> "막아준다"가 아니라 "왜 막아지는지"까지.</li>
+      <li><strong>실무 절충안(짧은 access token + 폐기 가능한 refresh token)을 통해 극단적 양자택일이 아닌 현실적 설계를 제시합니다.</strong></li>
+      <li><strong>트래픽 경로 위의 다른 계층(리버스 프록시, CDN)이 쿠키 전달/캐싱에 미치는 영향을 언급해 Day 1~5의 사고 프레임워크와 연결합니다.</strong></li>
+    </ol>
+  </section>
+
+  <!-- 9. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>9. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "세션 기반 인증 대신 JWT 같은 토큰 기반 인증으로 전환하자는 제안을 받았습니다. 어떤 기준으로 판단하시겠어요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>가장 먼저 확인하는 건 "로그아웃이나 권한 회수가 즉시 반영되어야 하는가"입니다. 세션은 서버 장부에서 항목을 지우면 다음 요청부터 바로 무효화되지만, JWT 같은 토큰은 서명이 유효한 한 만료 시각 전까지 계속 통과되기 때문에 즉시 회수가 원천적으로 어렵습니다. 관리자 권한이나 결제 관련 세션처럼 즉시성이 중요한 도메인이라면 저는 토큰으로 전면 전환하는 것에 신중한 입장입니다.</p>
+      <br>
+      <p>두 번째로 보는 건 확장성입니다. 서버 인스턴스가 여러 대이고 수평 확장이 잦다면, 세션 방식은 모든 인스턴스가 Redis 같은 공유 저장소를 매 요청마다 조회해야 해서 그 저장소 자체가 병목이자 장애점이 됩니다. 토큰은 서명 검증만으로 처리되니 이 부분에서는 확실히 유리합니다.</p>
+      <br>
+      <p>다만 토큰으로 전환한다고 해서 즉시 무효화를 완전히 포기할 필요는 없다고 생각합니다. 실무에서 많이 쓰는 방식은 수명이 짧은(5~15분) access token으로 대부분의 요청을 stateless하게 처리하고, 수명이 긴 refresh token만 서버에 등록해서 회전과 폐기가 가능하게 관리하는 절충안입니다. 이러면 확장성 이점은 대부분 유지하면서, refresh 주기 정도의 지연 안에서 사실상의 즉시 무효화 효과를 얻을 수 있습니다.</p>
+      <br>
+      <p>저장 위치도 중요한 판단 축입니다. 토큰을 <code>localStorage</code>에 저장하면 XSS에 그대로 노출되므로, 저는 HttpOnly 쿠키에 저장하는 걸 기본으로 하고, 대신 <code>SameSite</code>와 CSRF 토큰으로 별도 방어를 추가하는 쪽을 권장합니다. 결론적으로 "토큰이 무조건 낫다"가 아니라, 이 서비스가 즉시 무효화를 요구하는지, 수평 확장 규모가 어느 정도인지, 클라이언트가 브라우저 위주인지에 따라 결정하겠습니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>즉시 무효화 가능 여부라는 가장 결정적인 판단 축을 먼저 제시함</li>
+      <li>세션과 토큰 각각의 대가(trade-off)를 구체적 메커니즘(서명 검증 vs 장부 조회)으로 설명함</li>
+      <li>양자택일이 아닌 실무 절충안(access + refresh token)을 구체적 수치와 함께 제시함</li>
+      <li>저장 위치(쿠키 vs localStorage)가 곧 보안 설계라는 것을 짚음</li>
+      <li>마지막에 "이 서비스의 제약에 따라 결정한다"는 조건부 결론으로 마무리해 정답을 암기해온 것이 아니라 판단 기준을 갖췄음을 보여줌</li>
+    </ul>
+  </section>
+
+  <!-- 10. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>10. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"JWT가 stateless라서 서버 부하가 적고 확장성이 좋으니까 무조건 JWT로 가는 게 맞다고 생각합니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>확장성이라는 한 가지 축만 보고, 즉시 무효화·저장 위치 보안·토큰 크기 같은 다른 trade-off를 전혀 언급하지 않습니다.</li>
+        <li>"stateless라서 좋다"는 이유만 말하고, 그것이 정확히 어떤 메커니즘(서명 검증 vs 장부 조회) 덕분인지 설명하지 못합니다.</li>
+        <li>모든 서비스에 하나의 정답이 있다는 식의 결론은 실무 판단력 부재로 읽힙니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"쿠키에 HttpOnly, Secure, SameSite를 다 붙이면 보안 문제는 해결됩니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>각 속성이 서로 다른 공격(XSS 탈취, 도청, CSRF)을 막는다는 것을 구분하지 못하고 뭉뚱그려 말합니다.</li>
+        <li>이 속성들은 쿠키 자체의 안전한 "운반"을 돕는 것이지, 세션 고정(session fixation), 토큰 재사용 같은 다른 인증 취약점까지 해결해주지 않는다는 한계를 언급하지 않습니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>즉시 무효화 요구사항을 가장 먼저 확인하는 판단 순서를 보여준다</li>
+        <li>세션/토큰 각각의 메커니즘(장부 조회 vs 서명 검증)으로 trade-off를 설명한다</li>
+        <li>access token + refresh token 같은 실무 절충안을 구체적으로 제시한다</li>
+        <li>저장 위치(HttpOnly 쿠키 vs localStorage)에 따른 공격 표면 차이를 안다</li>
+        <li>HttpOnly/Secure/SameSite가 각각 다른 공격을 막는다는 것을 인과관계로 구분한다</li>
+        <li>서비스의 구체적 제약에 따라 답이 달라진다는 조건부 결론을 낸다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11. Follow-up -->
+  <section id="followups">
+    <h2>11. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: JWT를 사용하는데 특정 사용자를 지금 당장 강제 로그아웃시켜야 하는 보안 사고가 발생했습니다. 어떻게 하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 순수 stateless JWT는 서명이 유효하면 만료 전까지 막을 방법이 없으므로, 결국 "차단 목록(revocation list 또는 denylist)"이라는 최소한의 상태를 서버 쪽에 두는 절충이 필요합니다. 해당 사용자의 토큰 식별자(jti 클레임 등)나 사용자 ID를 짧은 TTL의 캐시(Redis 등)에 등록해두고, 매 요청마다 이 차단 목록을 조회해 걸리면 거부하는 방식입니다. 이는 access token의 stateless 이점을 완전히 포기하는 것은 아니지만, "이 정도의 상태 조회는 감수하더라도 즉시 차단이 필요하다"는 것을 인정하는 설계입니다. access token의 만료 시간을 짧게 유지해두면 이런 비상 상황에서 차단 목록에 올려야 하는 기간과 대상이 최소화됩니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: SameSite=Strict를 쓰면 CSRF를 완벽히 막을 수 있는데 왜 실무에서는 Lax를 더 많이 쓰나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> <code>Strict</code>는 외부 사이트에서 링크를 눌러 처음 들어오는 내비게이션에도 쿠키를 실어 보내지 않기 때문에, 사용자가 이메일이나 검색 결과 링크를 눌러 들어오면 로그인 상태임에도 로그아웃된 것처럼 보이는 UX 문제가 생깁니다. <code>Lax</code>는 이런 최상위 GET 내비게이션에는 쿠키를 허용하면서도, 실제 CSRF 공격의 대부분을 차지하는 크로스 사이트 POST나 서브 리소스 요청은 여전히 차단하기 때문에, 보안과 사용성 사이에서 실무적으로 더 나은 절충점으로 자리 잡았습니다. 결제처럼 정말 민감한 개별 엔드포인트에 한해 별도로 <code>Strict</code>나 CSRF 토큰을 추가하는 것이 일반적입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 세션 저장소로 Redis를 쓰고 있는데, 이 Redis가 장애 나면 어떤 일이 벌어지나요? 어떻게 대비하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 세션 저장소가 단일 장애점(SPOF)이 되어, 조회가 실패하면 모든 사용자가 동시에 "로그인이 풀린 것처럼" 보이는 대규모 장애로 번질 수 있습니다. 대비책으로는 Redis를 Sentinel이나 Cluster 구성으로 이중화하고, 세션 조회 실패 시 무조건 인증 실패로 처리하지 않고 짧은 재시도와 서킷 브레이커를 두어 일시적 장애가 전면 로그아웃으로 번지지 않게 완충하는 설계가 필요합니다. 근본적으로는 이 SPOF 자체가 부담스러운 트래픽 규모라면, 세션 대신 stateless 토큰으로 전환해 저장소 의존을 없애는 것이 이 축에서는 더 유리한 선택이 됩니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: JWT 페이로드에 사용자의 이메일이나 역할(role) 정보를 넣어도 괜찮나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> JWT의 서명은 "내용이 위조되지 않았음"을 보장할 뿐 "내용을 숨겨준다"는 뜻이 아닙니다. 페이로드는 base64로 인코딩된 것일 뿐 누구나 디코딩해서 읽을 수 있으므로, 비밀번호나 주민번호 같은 민감 정보를 클레임에 직접 넣으면 안 됩니다. 이메일이나 role처럼 인가(authorization) 판단에 필요한 비민감 정보는 흔히 담기지만, 그마저도 클라이언트가 토큰을 들고 있는 한 계속 노출된다는 점, 그리고 role이 서버 쪽 정책 변경 후에도 토큰이 재발급되기 전까지는 과거 값 그대로 남아있다는 점(위 강제 로그아웃 질문과 같은 맥락)을 함께 고려해야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 모바일 앱 클라이언트라면 쿠키 대신 무엇을 쓰는 게 맞나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 모바일 앱은 브라우저의 쿠키 저장/자동 전송 메커니즘 바깥에 있기 때문에, 보통 토큰을 안전한 로컬 저장소(iOS Keychain, Android Keystore)에 보관하고 <code>Authorization: Bearer &lt;token&gt;</code> 헤더로 직접 실어 보내는 방식을 씁니다. 이 경우 CSRF는 애초에 성립하지 않는 공격 모델이 되지만(브라우저의 자동 쿠키 전송이 전제가 아니므로), 대신 기기 자체가 탈취되거나 루팅/탈옥된 환경에서 저장소 접근이 뚫리는 것이 주요 위협 모델이 되므로 토큰 만료 시간과 refresh 전략, 기기 단위 폐기(로그아웃 시 해당 기기의 refresh token만 무효화)가 더 중요해집니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>12. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"JWT는 암호화되어 있어서 안전하다"</strong></p>
+      <p>JWT의 서명은 위조 방지용이지 암호화가 아닙니다. 페이로드는 base64 인코딩일 뿐이라 누구나 디코딩해 내용을 읽을 수 있습니다. 진짜 암호화가 필요하면 JWE 같은 별도 표준을 써야 하며, 일반적인 JWT(JWS) 사용에서는 민감 정보를 클레임에 담지 않는 것이 원칙입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"HttpOnly만 붙이면 쿠키가 완전히 안전해진다"</strong></p>
+      <p><code>HttpOnly</code>는 JavaScript를 통한 탈취(XSS)만 막습니다. 네트워크 도청은 <code>Secure</code>가, CSRF는 <code>SameSite</code>가 막는 별개의 위협입니다. 세 속성은 서로 다른 공격을 방어하므로 함께 써야 하며, 하나로 나머지를 대체할 수 없습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"세션은 구식이고 토큰이 항상 더 현대적이고 우월한 방식이다"</strong></p>
+      <p>즉시 무효화가 중요한 도메인, 트래픽 규모가 크지 않아 공유 저장소 조회 비용이 문제되지 않는 서비스라면 세션이 더 단순하고 안전한 선택일 수 있습니다. 우열이 아니라 서비스 제약에 따른 선택의 문제입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"SameSite를 설정하면 CORS 설정은 따로 안 해도 된다"</strong></p>
+      <p><code>SameSite</code>는 "쿠키를 요청에 실어 보낼지"를 결정하고, CORS는 "브라우저가 응답 내용을 JavaScript에서 읽도록 허용할지"를 결정하는 완전히 다른 메커니즘입니다(Day 7에서 심화). 크로스 오리진 API를 쿠키 기반 인증으로 호출하려면 <code>SameSite=None; Secure</code>와 적절한 CORS 설정(특히 <code>credentials</code> 관련 헤더)이 모두 필요합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"Refresh token은 그냥 수명이 긴 access token일 뿐이다"</strong></p>
+      <p>Refresh token은 API 요청 인가에 직접 쓰이지 않고, 오직 "새 access token을 발급받는" 별도 엔드포인트에서만 사용되도록 설계하는 것이 원칙입니다. 이렇게 용도를 분리해야 access token이 탈취되어도 피해 범위가 짧은 만료 시간 안으로 제한되고, refresh token 자체는 서버에 등록해 회전·폐기를 관리할 수 있습니다.</p>
+    </div>
+  </section>
+
+  <!-- 13. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>13. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 6을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>HTTP의 stateless 특성과 로그인 상태 유지가 왜 충돌하는지, 쿠키가 이를 어떻게 해결하는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>세션 방식(장부 조회)과 토큰 방식(서명 검증)의 근본적인 메커니즘 차이를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>HttpOnly, Secure, SameSite가 각각 어떤 공격을 어떤 인과관계로 막는지 구분해서 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>SameSite=Strict/Lax/None의 차이와, 2020년 이후 브라우저 기본값 변화가 실무에 미친 영향을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>세션 vs 토큰을 즉시 무효화, 수평 확장, 저장 위치 보안이라는 최소 세 가지 축으로 비교할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Access token + Refresh token 절충 설계가 왜 필요하고 각 토큰의 역할이 어떻게 분리되는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"쿠키가 저장/전송되지 않는다"는 증상을 Secure 누락, Domain/Path 불일치, SameSite 차단, 프록시의 Set-Cookie 캐싱 등 원인별로 진단할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>JWT 서명이 위조 방지이지 암호화가 아니라는 것과, 이것이 클레임 설계에 주는 함의를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>SameSite와 CORS가 서로 다른 문제(쿠키 전송 여부 vs 응답 읽기 허용 여부)를 다룬다는 것을 구분할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>모바일/서드파티 API 클라이언트처럼 브라우저 쿠키 모델 바깥의 클라이언트에서는 인증 설계가 어떻게 달라지는지 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 7</h3>
+      <p><strong>CORS 심화 — Preflight, credentials, 실전 트러블슈팅</strong></p>
+      <p>Day 6에서 "쿠키를 요청에 실어 보낼 것인가(SameSite)"를 다뤘다면, Day 7에서는 그 다음 단계 — "브라우저가 크로스 오리진 응답을 JavaScript에서 읽도록 허용할 것인가(CORS)"를 다룹니다. Preflight 요청이 언제 발생하고 언제 생략되는지, <code>credentials: 'include'</code>와 쿠키/CORS 설정이 어떻게 맞물리는지, 그리고 "CORS 에러"라는 증상이 실제로는 몇 가지 서로 다른 원인 중 어느 것인지 진단하는 절차를 다룹니다.</p>
+      <p>면접 질문 예고: "프론트엔드에서 API를 호출하는데 브라우저 콘솔에 CORS 에러가 뜹니다. 어떤 순서로 원인을 좁혀 나가시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    HTTP / Web Protocol & API Traffic 시니어 인터뷰 · Day 6 of 20 · 2026-07-07
+  </p>
+
+</div>
+</body>
+</html>
