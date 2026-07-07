@@ -8,12 +8,12 @@
 | 2 | 2026-07-04 | Local-first 실행과 배포 토폴로지 | [0002-local-first-execution-deployment-topology.html](lessons/0002-local-first-execution-deployment-topology.html) |
 | 3 | 2026-07-05 | Self-Learning과 Skill Capture | [0003-self-learning-skill-capture.html](lessons/0003-self-learning-skill-capture.html) |
 | 4 | 2026-07-06 | Model/Tool/Runtime 경계와 Provider 추상화 | [0004-model-tool-runtime-boundary-provider-abstraction.html](lessons/0004-model-tool-runtime-boundary-provider-abstraction.html) |
+| 5 | 2026-07-07 | MCP와 API 통합, ACP 기반 IDE 연동 | [0005-mcp-api-integration-acp-ide-integration.html](lessons/0005-mcp-api-integration-acp-ide-integration.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | MCP와 API 통합, ACP 기반 IDE 연동 | MCP 서버 연결, Agent Control Protocol(ACP), VS Code/Zed/JetBrains 연동, diff/터미널 렌더링 |
 | 6 | Gateway와 채널 통합 | 단일 gateway의 다중 채널 팬아웃(Telegram/Discord/Slack/WhatsApp/Signal), 채널 간 대화 연속성, 신뢰 경계 |
 | 7 | 메모리와 세션 설계 | FTS5 전문 검색 + LLM 요약, Honcho 기반 dialectic user modeling, 세션 영속성 vs 컨텍스트 예산 |
 | 8 | 스케줄링과 반복 작업 | 내장 cron, 자연어 반복 작업 정의, 실패한 예약 작업의 복구/알림 설계 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — 다음: Day 5 — MCP와 API 통합, ACP 기반 IDE 연동
+**Day 5 완료** — 다음: Day 6 — Gateway와 채널 통합
 
 ## 습득한 핵심 개념
 
@@ -45,7 +45,11 @@
 - [x] 설정 계층(CLI>yaml>env>기본값)과 secret 분리, credential pool 로테이션/fallback 체인 (Day 4)
 - [x] Tool dispatch 파이프라인(`handle_function_call`→agent-loop 툴 분기 vs `registry.dispatch`→`ToolEntry`) (Day 4)
 - [x] `execute_code`(programmatic tool calling)의 컨텍스트 절약 메커니즘과 credential stripping 보안 모델 (Day 4)
-- [ ] MCP/ACP 통합 (예정 Day 5)
+- [x] MCP client(카탈로그 승인/stdio·HTTP transport/tool filtering/자격증명 격리) vs MCP server(`hermes mcp serve`, 10개 tool, read/send 비대칭) 구분 (Day 5)
+- [x] MCP sampling — 서버가 역으로 Hermes에게 추론을 요청하는 방향 반전과 rate limit 필요성 (Day 5)
+- [x] ACP(Agent Client Protocol)가 core `AIAgent` loop을 감싼 stdio 진입점이라는 위치, stdout=JSON-RPC 전용/stderr=로그 분리 (Day 5)
+- [x] ACP 세션 상태(인메모리, 재시작 시 소실) vs 영속 설정/스킬/메모리/영구 승인의 수명 주기 구분 (Day 5)
+- [x] 신생 프로젝트에서 공식 문서와 GitHub 이슈트래커가 상충할 때 출처 우선순위를 판단하는 원칙 (Day 5)
 - [ ] Gateway/채널 통합 (예정 Day 6)
 - [ ] 메모리/세션 설계, dialectic user modeling (예정 Day 7)
 - [ ] 스케줄링(cron) (예정 Day 8)

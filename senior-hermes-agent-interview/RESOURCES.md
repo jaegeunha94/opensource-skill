@@ -63,6 +63,37 @@
   모델 선택지에 승격, Google Vertex AI가 Gemini용 1st-class provider로 추가(서비스 계정 기반 무정적-키
   인증) — 이번 Day의 핵심 최신 근거로 채택
 
+## Day 5 리서치 — MCP/API 통합, ACP 기반 IDE 연동 (1차 출처 우선, 2026-07-07 확인)
+
+- [MCP (Model Context Protocol) 공식 문서](https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp)
+  및 GitHub 미러 [`website/docs/user-guide/features/mcp.md`](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md) —
+  Nous 승인 카탈로그(`optional-mcps/`), `hermes mcp`/`catalog`/`install`/`configure`/`login`/`add`/`serve`
+  CLI, `/reload-mcp`, stdio vs HTTP transport, OAuth 2.1 자동 처리(discovery/PKCE/토큰 갱신), mTLS
+  (`client_cert`/`client_key`), `mcp_<server>_<tool>` 명명 규칙과 `notifications/tools/list_changed`
+  기반 동적 재적재, `tools.include`/`exclude`/`prompts`/`resources` 필터링, 자격증명 처리(전체 env
+  미전달, `~/.hermes/.env`, `~/.hermes/mcp-tokens/<server>.json` 0o600, `${VAR}`는 연결 시점 치환 vs
+  `${INSTALL_DIR}`는 설치 시점 치환), sampling 설정(`max_tokens_cap`/`max_rpm`/`max_tool_rounds`),
+  Hermes as MCP server의 10개 tool과 read/send 비대칭 — WebFetch로 GitHub raw 미러 원문 확인
+- [MCP Config Reference](https://hermes-agent.nousresearch.com/docs/reference/mcp-config-reference),
+  [Use MCP with Hermes 가이드](https://hermes-agent.nousresearch.com/docs/guides/use-mcp-with-hermes) —
+  WebSearch 스니펫으로 존재 확인, 세부 설정 항목은 실제 면접/도입 전 브라우저로 재확인 권장
+- [ACP Editor Integration 공식 문서](https://hermes-agent.nousresearch.com/docs/user-guide/features/acp)
+  및 GitHub 미러 `website/docs/user-guide/features/acp.md` — ACP(Agent Client Protocol) 정의, 세
+  진입점(`hermes acp`/`hermes-acp`/`python -m acp_adapter`), 에디터용 축소 toolset(메시징 발신·cron
+  제외), stdout=JSON-RPC 전용/stderr=로그, 세션 상태 수명 주기(인메모리 세션 vs 영속
+  config.yaml/.env/skills/state.db), 승인 3단계(allow_once/allow_session/allow_always), VS
+  Code/Zed/JetBrains 설치 방법, 브라우저 tool 별도 설정(`--setup-browser`) — WebFetch로 GitHub raw
+  미러 원문 확인
+- [GitHub Issue #569 — Feature: Agent Client Protocol (ACP) Server Mode](https://github.com/NousResearch/hermes-agent/issues/569)
+  (2026-03-07 오픈, 2026-07-07 기준 재확인해도 **Open** 상태) — ACP 배경(Apache 2.0, Zed/JetBrains가
+  2025-10부터 후원, JSON-RPC 2.0 over stdio, "LSP의 에이전트 버전" 비유), 3단계 구현 로드맵 제안, 툴
+  이중성(Hermes 자체 tool vs 에디터 제공 tool) 미해결 논의 — **주의:** 이 이슈는 여전히 제안 단계로
+  서술되어 있어 공식 문서(이미 동작하는 기능으로 서술)와 직접 상충한다. 이 트랙 원칙에 따라 더 최신·
+  구체적인 공식 문서 쪽을 채택했고, 이 불일치 자체를 Day 5 레슨의 교재(출처 교차검증)로 사용했다.
+  실제 도입 전에는 `hermes acp --help` 등으로 직접 재검증 필요
+- [GitHub Releases — v0.18.0 "The Judgment Release"](https://github.com/NousResearch/hermes-agent/releases/tag/v2026.7.1) —
+  2026-07-07 기준 재확인해도 최신 릴리스 동일
+
 ## 보안 감사 / CVE
 
 - 독립 보안 감사(연구자 @Anic888, 2026-04-11) — 기본 설정 기준 Critical 4건 + High 9건: 무제한 셸 실행, 컨테이너 승인 우회, 지속적인 skill-injection 벡터

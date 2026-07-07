@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — MCP와 API 통합, ACP 기반 IDE 연동</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 5 · Hermes Agent Interview</div>
+    <h1>MCP와 API 통합, ACP 기반 IDE 연동</h1>
+    <div class="subtitle">에이전트가 "툴을 늘리는 두 방향" — 바깥 툴을 끌어오는 MCP client, 자기 자신을 다른 에이전트의 툴로 내주는 MCP server, 그리고 에디터 안에 상주하는 ACP</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전/출처 기준:</strong> 2026-07-07 기준 재확인 결과 최신 태그는 여전히 <strong>v0.18.0 "The
+    Judgment Release"</strong>(2026-07-01)다. 이번 Day는 공식 문서
+    <code>website/docs/user-guide/features/mcp.md</code>와
+    <code>website/docs/user-guide/features/acp.md</code>(GitHub 미러, WebFetch로 원문 확인)를 1차 출처로
+    삼았다. 다만 ACP 관련해서는 흥미로운 <strong>출처 간 불일치</strong>가 발견됐다 — 공식 문서는 ACP를
+    이미 동작하는 완성된 기능으로 서술하지만, 이 기능을 처음 제안한 GitHub 이슈(<code>#569</code>,
+    2026-03-07 오픈)는 여전히 "제안 단계"로 열려 있고 종료 코멘트가 보이지 않는다. 이 트랙의 원칙대로
+    <strong>공식 문서(더 최신이고 구체적)를 우선 채택</strong>하되, 이 불일치 자체를 아래 전제 개념과
+    Follow-up에서 교재로 삼는다 — "이슈 하나가 열려 있다고 기능이 안 붙었다고 단정하면 안 되는" 실무
+    교훈이다.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "Hermes Agent는 MCP client이면서 동시에 MCP server 역할도 할 수 있다고 들었습니다. 두 방향이 각각
+      뭘 의미하고, 서버 모드는 실제로 어떤 상황에서 쓸모가 있습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "새 MCP 서버를 설치할 때 Hermes는 보안을 어떻게 관리합니까? catalog 승인, 자격증명 격리, tool
+      filtering을 구체적으로 설명해주세요."
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "ACP가 뭐고, 왜 에디터 통합에는 MCP 대신 별도 프로토콜이 필요합니까? Hermes를 VS Code나 Zed 안에서
+      쓰면 Day 1에서 다룬 core <code>AIAgent</code> loop과는 어떤 관계입니까 — 별도 런타임입니까, 아니면
+      같은 루프를 감싼 것입니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>"툴을 늘리는 세 가지 경로"부터 정리한다</h2>
+
+    <p>
+      Day 4까지 배운 <code>ToolEntry</code> registry는 Hermes 안에 <strong>내장된</strong> 툴을 다룬다.
+      하지만 실무에서는 회사 내부 API, GitHub, 데이터베이스처럼 <strong>Hermes 바깥에 있는</strong> 기능을
+      쓰고 싶을 때가 훨씬 많다. 이걸 해결하는 표준 프로토콜이 <strong>MCP(Model Context Protocol)</strong>다.
+      쉬운 비유로, MCP는 "AI 에이전트용 USB-C"라고 생각하면 된다 — 데이터베이스마다, 사내 API마다 전용
+      커넥터를 새로 짜는 대신, MCP라는 공통 규격만 지키면 어떤 툴 서버든 어떤 에이전트든 서로 꽂아 쓸 수
+      있다.
+    </p>
+
+    <h3>MCP client 방향 — Hermes가 바깥 툴을 끌어온다</h3>
+    <p>
+      Hermes는 <strong>Nous Research 직원이 심사해서 승인한 큐레이션 카탈로그</strong>를 기본 제공한다.
+      공식 문서는 "카탈로그 항목은 저장소의 <code>optional-mcps/</code> 디렉터리에 있고, 거기 있다는 것
+      자체가 Nous의 승인을 의미한다"고 명시한다. 커뮤니티가 자유롭게 등록하는 마켓플레이스 트랙은 따로
+      없고, 새 항목은 PR 머지를 통해서만 추가된다 — Day 3에서 다룬 Skills Hub(외부 skills.sh 등도 함께
+      허용)보다 <strong>더 폐쇄적이고 보수적인</strong> 신뢰 모델임을 눈여겨봐야 한다.
+    </p>
+    <table>
+      <tr><th>커맨드</th><th>기능</th></tr>
+      <tr><td><code>hermes mcp</code></td><td>인터랙티브 피커 — 카탈로그 탐색/관리(기본 진입점)</td></tr>
+      <tr><td><code>hermes mcp catalog</code></td><td>스크립트 가능한 평문 카탈로그 목록</td></tr>
+      <tr><td><code>hermes mcp install &lt;name&gt;</code></td><td>카탈로그 항목 설치</td></tr>
+      <tr><td><code>hermes mcp configure &lt;name&gt;</code></td><td>tool 선택 체크리스트 재오픈</td></tr>
+      <tr><td><code>hermes mcp login &lt;server&gt;</code></td><td>OAuth 플로우 처리/토큰 확인</td></tr>
+      <tr><td><code>hermes mcp add [--preset]</code></td><td>MCP 서버를 설정에 수동 추가</td></tr>
+      <tr><td><code>/reload-mcp</code></td><td>실행 중 MCP 서버·tool registry 런타임 재적재</td></tr>
+      <tr><td><code>hermes mcp serve</code></td><td>Hermes 자신을 MCP 서버로 실행(아래 참고)</td></tr>
+    </table>
+    <p>
+      설치 시점에 Hermes는 대상 서버에 <strong>실제로 접속해 노출된 tool 목록을 probe</strong>하고, 체크
+      리스트를 보여준다. 기본 체크 상태는 (1) 재설치 시 이전 선택, (2) 매니페스트의
+      <code>tools.default_enabled</code>, (3) 아무것도 없으면 전체 활성화 순으로 결정된다. probe가
+      실패하면 매니페스트 기본값을 그대로 적용한다.
+    </p>
+
+    <h3>Stdio 서버 vs HTTP 서버 — 로컬과 원격을 같은 설정 파일에</h3>
+    <p>
+      <strong>Stdio 서버</strong>는 로컬 서브프로세스로 떠서 stdin/stdout으로 통신한다(예: <code>npx -y
+      @modelcontextprotocol/server-filesystem /tmp</code>). <strong>HTTP 서버</strong>는 원격 엔드포인트에
+      직접 연결한다(사내 MCP 엔드포인트 등). OAuth 2.1이 필요한 호스팅 서비스는 <code>auth: oauth</code>만
+      설정하면 Hermes가 discovery, dynamic client registration, PKCE, 토큰 교환/갱신, step-up auth까지
+      전부 처리한다. 단 Google Drive나 Atlassian처럼 자동 등록을 거부하는 provider는 <code>client_id</code>/
+      <code>client_secret</code>을 미리 발급받아 직접 넣어줘야 한다. mTLS가 필요한 원격 서버는
+      <code>client_cert</code>/<code>client_key</code>(합본 PEM 또는 분리 파일 + 패스프레이즈)를 지정한다.
+    </p>
+
+    <h3>Tool 이름 규칙과 동적 discovery</h3>
+    <p>
+      시작 시 Hermes는 MCP 서버를 discover하고 각 tool을 <code>mcp_&lt;server&gt;_&lt;tool&gt;</code>
+      형식으로 자동 등록한다(예: <code>github</code> 서버의 <code>create-issue</code> →
+      <code>mcp_github_create_issue</code>). <code>list_resources</code>/<code>read_resource</code>,
+      <code>list_prompts</code>/<code>get_prompt</code> 같은 유틸리티 wrapper도 서버가 지원하면 함께
+      등록된다. MCP 서버가 런타임에 자기 tool 목록이 바뀌었다고
+      <code>notifications/tools/list_changed</code>를 보내면, Hermes는 <strong>수동 reload 없이</strong>
+      자동으로 registry를 재조회한다 — 서버 쪽에서 새 버전을 배포해도 Hermes 재시작이 필요 없다는 뜻이다.
+    </p>
+
+    <h3>Per-server tool filtering — 보안이자 UX</h3>
+    <pre><code><span class="keyword">tools</span>:
+  <span class="func">include</span>: [create_issue, list_issues]  <span class="comment"># 화이트리스트 — 지정된 것만 등록</span>
+  <span class="func">exclude</span>: [delete_customer]           <span class="comment"># 블랙리스트 — 지정된 것만 제외</span>
+  <span class="func">prompts</span>: <span class="keyword">false</span>                        <span class="comment"># 유틸리티 wrapper 개별 끄기</span>
+  <span class="func">resources</span>: <span class="keyword">false</span></code></pre>
+    <p>
+      <code>include</code>와 <code>exclude</code>가 동시에 있으면 <code>include</code>가 이긴다. 모든
+      tool과 유틸리티가 필터링되면 빈 toolset 항목을 만들지 않고 아예 생략한다. 이 필터링은 단순 UX가
+      아니라 <strong>보안 경계</strong>다 — 모델이 절대 호출해서는 안 되는 위험 tool(예: 삭제 API)을
+      원천 차단하거나, 민감한 서비스는 화이트리스트 몇 개만 노출할 수 있다.
+    </p>
+
+    <h3>자격증명 처리 — "전체 셸 환경을 넘기지 않는다"</h3>
+    <p>
+      Stdio 서버를 띄울 때 Hermes는 <strong>현재 셸의 전체 환경변수를 그대로 넘기지 않는다</strong>.
+      공식 문서 표현으로는 "명시적으로 설정된 env와 안전한 baseline만 전달된다" — 실수로 민감한 환경변수가
+      서브프로세스에 새는 사고를 구조적으로 줄인다. API 키/시크릿은 설치 시점에
+      <code>~/.hermes/.env</code>에 기록되고, OAuth 토큰은 <code>~/.hermes/mcp-tokens/&lt;server&gt;.json</code>에
+      <code>0o600</code> 권한으로 캐시된다. 설정 안의 <code>${VAR}</code> 플레이스홀더는 <strong>연결
+      시점</strong>에 환경변수로 치환되는데, 이는 매니페스트 안의 <code>${INSTALL_DIR}</code>가
+      <strong>설치 시점</strong>에 치환되는 것과는 다른 타이밍이라는 점도 구분해서 알아야 한다.
+    </p>
+
+    <h3>Sampling — 방향이 뒤집히는 흥미로운 기능</h3>
+    <p>
+      지금까지는 전부 "Hermes → MCP 서버로 tool 호출"이라는 한 방향이었다. 그런데 MCP에는
+      <strong>sampling</strong>이라는 반대 방향 메커니즘이 있다 — MCP 서버가 <strong>Hermes에게
+      역으로 LLM 추론을 요청</strong>할 수 있다. 기본적으로 활성화되어 있지만 서버별로 끄거나 제한할 수
+      있다.
+    </p>
+    <pre><code><span class="keyword">sampling</span>:
+  <span class="func">enabled</span>: <span class="keyword">true</span>
+  <span class="func">model</span>: <span class="string">"openai/gpt-4o"</span>
+  <span class="func">max_tokens_cap</span>: <span class="number">4096</span>
+  <span class="func">max_rpm</span>: <span class="number">10</span>
+  <span class="func">max_tool_rounds</span>: <span class="number">5</span></code></pre>
+    <p>
+      슬라이딩 윈도우 rate limit과 tool-loop 깊이 제한이 함께 걸려 있는 이유가 중요하다 — 서버가 Hermes의
+      추론 능력을 임의로 끌어다 쓸 수 있다는 건, 잘못 짜인(혹은 악의적인) MCP 서버가
+      <strong>무한 루프성 추론 요청을 반복해 비용을 폭증시키거나</strong>, 심하면 추론 결과를 이용해
+      또 다른 tool 호출을 유도하는 간접 공격 표면이 될 수 있다는 뜻이다. Day 11에서 다룰 prompt injection
+      방어와 개념적으로 이어지는 지점이다.
+    </p>
+
+    <h3>MCP server 방향 — Hermes가 자신을 다른 에이전트의 툴로 내준다</h3>
+    <p>
+      <code>hermes mcp serve</code>를 실행하면 Hermes 자체가 MCP 서버가 되어, Claude Code·Cursor·Codex
+      같은 <strong>다른 MCP client 에이전트</strong>가 Hermes의 메시징 브릿지(Day 6에서 다룰 Gateway)
+      기능을 tool처럼 쓸 수 있다. 노출되는 tool은 총 10개다.
+    </p>
+    <table>
+      <tr><th>분류</th><th>tool</th></tr>
+      <tr><td>대화 조회</td><td><code>conversations_list</code>, <code>conversation_get</code>,
+        <code>messages_read</code>, <code>attachments_fetch</code></td></tr>
+      <tr><td>이벤트</td><td><code>events_poll</code>, <code>events_wait</code>(약 200ms 간격 근실시간
+        이벤트 브릿지)</td></tr>
+      <tr><td>발신</td><td><code>messages_send</code>(활성 gateway 필요, 텍스트 전용)</td></tr>
+      <tr><td>채널 탐색</td><td><code>channels_list</code></td></tr>
+      <tr><td>승인 워크플로</td><td><code>permissions_list_open</code>, <code>permissions_respond</code></td></tr>
+    </table>
+    <p>
+      여기서 <strong>read는 gateway 없이도 동작하지만 send는 활성 gateway가 있어야 한다</strong>는 비대칭이
+      핵심이다 — 조회는 로컬에 저장된 상태(DB)만 읽으면 되지만, 발신은 실제로 Telegram/Discord 같은
+      채널 어댑터가 살아 있어야 메시지가 물리적으로 나갈 수 있기 때문이다. 현재는 stdio 전용(HTTP MCP
+      서버 모드 없음), 미디어 첨부 발신 불가라는 제약도 있다.
+    </p>
+
+    <h3>ACP — 에디터 안에 Hermes를 그대로 들여놓기</h3>
+    <p>
+      <strong>ACP(Agent Client Protocol)</strong>는 에디터가 에이전트 런타임과 통신하는 개방 표준이다.
+      Apache 2.0 라이선스로 Zed와 JetBrains가 2025-10부터 후원하고 있고, JSON-RPC 2.0을 stdio 위에
+      얹는다. 비유하자면 <strong>"LSP(Language Server Protocol)의 에이전트 버전"</strong>이다 — LSP가
+      "에디터마다 언어별 자동완성을 따로 구현하지 않아도 되게" 만든 것처럼, ACP는 "에디터마다 에이전트를
+      따로 통합하지 않아도 되게" 만드는 게 목표다. 실제로 Hermes 공식 문서는 이렇게 요약한다 — "Hermes를
+      ACP 서버로 띄우면, ACP를 지원하는 어떤 에디터든 stdio로 대화하며 채팅 메시지·tool 활동·파일
+      diff·터미널 명령·승인 프롬프트·스트리밍되는 사고 과정을 렌더링할 수 있다."
+    </p>
+
+    <h3>ACP 진입점과 축소된 toolset</h3>
+    <p>
+      Hermes는 세 가지 동등한 커맨드로 ACP 모드를 띄울 수 있다 — <code>hermes acp</code>,
+      <code>hermes-acp</code>, <code>python -m acp_adapter</code>. 이때 쓰이는 toolset은 CLI/Gateway
+      전체 toolset이 아니라 <strong>에디터 맥락에 맞게 큐레이션된 부분집합</strong>이다 — 메시징 발신이나
+      cron 작업 관리처럼 "에디터 네이티브가 아닌" 기능은 빠지고, 파일 조작·터미널 접근·웹/브라우저 tool·
+      메모리 유틸리티·비전·스킬 실행은 남는다. 이건 Day 1에서 배운 "단일 core loop + 다중 entry point"
+      원칙의 구체적 사례다 — 진입점마다 <strong>같은 core</strong>를 쓰되 노출하는 tool 표면만 다르게
+      깎아내는 것이다.
+    </p>
+
+    <h3>stdout은 오직 JSON-RPC 전용 — 운영상 실수 포인트</h3>
+    <p>
+      ACP는 stdio 기반 서버로 동작하며(별도 데몬이 아니다), 공식 문서는 "Hermes는 stderr로 로그를 남겨서
+      stdout이 ACP JSON-RPC 트래픽 전용으로 남게 한다"고 명시한다. 이 규칙이 왜 중요한지는 실무적으로
+      생각해봐야 한다 — 만약 커스텀 tool이나 플러그인이 실수로 <code>print()</code>로 stdout에 직접 뭔가
+      출력하면, 그 순간 JSON-RPC 스트림에 임의의 텍스트가 섞여 <strong>에디터 쪽 파서가 프로토콜 전체를
+      깨진 것으로 인식</strong>할 수 있다. 이건 Day 13에서 다룰 트러블슈팅과 바로 연결되는 실전 함정이다.
+    </p>
+
+    <h3>세션 상태 — 무엇이 남고 무엇이 사라지는가</h3>
+    <table>
+      <tr><th>범주</th><th>지속 여부</th><th>비고</th></tr>
+      <tr><td>세션 ID, 현재 작업 디렉터리, 선택된 모델, 대화 히스토리, cancel 이벤트</td>
+        <td><span class="badge badge-red">인메모리</span></td>
+        <td>ACP adapter의 세션 매니저 안에만 존재 — 에디터/프로세스 재시작 시 소실</td></tr>
+      <tr><td><code>~/.hermes/config.yaml</code>, <code>.env</code>, 스킬 디렉터리, <code>state.db</code></td>
+        <td><span class="badge badge-green">영속</span></td>
+        <td>재시작해도 유지 — 설정·자격증명·스킬·장기 기억은 여기 저장</td></tr>
+      <tr><td><code>allow_session</code>(세션 한정 승인)</td>
+        <td><span class="badge badge-red">재시작 시 초기화</span></td>
+        <td>세션이 끝나면 다시 물어봐야 함</td></tr>
+      <tr><td><code>allow_always</code>(영구 승인)</td>
+        <td><span class="badge badge-green">영속</span></td>
+        <td>allowlist에 저장되어 재시작 후에도 유지</td></tr>
+    </table>
+    <p>
+      즉 "세션 자체(방금 나눈 대화 흐름)"와 "누적 지식(설정·스킬·장기 기억)"은 완전히 다른 수명 주기를
+      가진다 — 에디터를 껐다 켜면 대화 맥락은 사라지지만, 스킬과 메모리는 그대로 남아 있다.
+    </p>
+
+    <h3>승인(approval) 3단계와 렌더링</h3>
+    <table>
+      <tr><th>범위</th><th>에디터 표시</th><th>지속성</th></tr>
+      <tr><td>단발 실행</td><td>"Allow once"</td><td>즉시 1회만</td></tr>
+      <tr><td>현재 세션</td><td>"Allow for session"</td><td>세션 한정, 재시작 시 초기화</td></tr>
+      <tr><td>영구</td><td>"Allow always"</td><td>allowlist에 기록</td></tr>
+    </table>
+    <p>
+      공식 문서의 권장 운영 패턴은 "낯선 명령은 <code>allow_once</code>로 시작하고, 같은 패턴을 에이전트가
+      반복해서 올바르게 실행하는 걸 본 뒤에야 <code>allow_session</code>으로 승격하라"는 것이다 — 이건
+      Day 10에서 다룰 위험 명령 승인 게이트와 완전히 같은 철학을 CLI 대신 에디터 UI로 표현한 것뿐이다.
+      ACP는 채팅 메시지, tool 활동, 파일 diff, 터미널 출력, 승인 프롬프트, 스트리밍 사고 과정을 에디터
+      네이티브 UI로 렌더링해서 CLI의 텍스트 기반 표현을 대체한다.
+    </p>
+
+    <h3>ACP도 결국 같은 core AIAgent를 감싼 것이다</h3>
+    <p>
+      가장 중요한 아키텍처 포인트는, ACP가 provider 해석과 권한 프레임워크를 <strong>Hermes의 표준
+      방식 그대로</strong> 상속한다는 점이다. 내부의 <code>AIAgent</code>는 영속화·로깅 경로를 CLI/
+      Gateway/Batch/API 진입점과 똑같이 사용하고, ACP의 세션 관리는 그 위에 얇게 씌워진 래퍼일 뿐 core
+      loop을 대체하지 않는다. 즉 "에디터 통합"이 별도 제품이 아니라, <strong>같은 엔진에 새 운전석
+      (dashboard)을 하나 더 단 것</strong>이라고 이해하는 게 정확하다.
+    </p>
+
+    <h3>IDE별 설치 방식 요약</h3>
+    <table>
+      <tr><th>에디터</th><th>설치 방식</th></tr>
+      <tr><td>VS Code</td><td>ACP Client 확장 설치 → Activity Bar에서 ACP Client 패널 열기 → 내장
+        에이전트 목록에서 Hermes Agent 선택 → 연결</td></tr>
+      <tr><td>Zed</td><td>내장 <code>zed: acp registry</code>에서 Hermes Agent 검색·설치(레지스트리
+        설치에는 <code>uv</code> 필요)</td></tr>
+      <tr><td>JetBrains</td><td>JetBrains Marketplace에서 "Agent Communication Protocol" 플러그인 설치 →
+        Settings → Tools → ACP에서 Hermes 구성</td></tr>
+    </table>
+    <p>
+      한 번 설치된 Hermes 하나가 같은 머신 위 여러 에디터를 동시에 서빙할 수 있다는 점, 그리고 브라우저
+      tool은 별도로 <code>hermes acp --setup-browser</code>(npm/Chromium 설치)를 실행해야 활성화된다는
+      제약도 알아둔다.
+    </p>
+
+    <div class="callout callout-warn">
+      <strong>출처 교차검증 — 문서와 이슈가 어긋날 때 어떻게 판단하는가.</strong> 위 ACP 설명은 공식 문서
+      <code>acp.md</code>를 근거로 했다. 그런데 이 기능을 처음 제안한 GitHub 이슈 <code>#569</code>(2026-03-07
+      오픈, "Feature: Agent Client Protocol (ACP) Server Mode")는 여전히 <strong>Open</strong> 상태이고,
+      본문은 "제안 단계, 구현 착수 전"이라고 서술하며 3단계 구현 로드맵(1단계: 기본 JSON-RPC 서버, 2단계:
+      에디터 제공 파일/터미널 접근, 3단계: 레지스트리 등록)을 제시한다. 종료 코멘트나 머지된 PR 링크는
+      보이지 않는다. 두 출처가 이렇게 다른 얘기를 할 때, 이 트랙의 원칙(공식 문서 &gt; 개별 이슈, 최신
+      근거 우선)에 따라 <strong>동작 중인 기능이라는 문서 쪽을 채택</strong>했다 — 실제로는 다른 이슈나
+      PR을 통해 구현이 완료되고 원래 제안 이슈만 정리되지 않은 채 열려 있을 가능성이 높다. 실제 면접
+      준비나 실무 도입 전에는 반드시 <code>hermes acp --help</code>를 직접 실행해 커맨드 존재 여부로
+      최종 확인해야 한다.
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+    <ul>
+      <li>
+        <strong>확장 메커니즘을 구조로 구분하는가:</strong> 내장 <code>ToolEntry</code>(Day 4), MCP
+        client(바깥 툴 끌어오기), MCP server(자신을 노출), <code>execute_code</code>(Day 4) 같은 여러
+        확장 경로를 뒤섞지 않고 각각의 역할을 구분해서 설명할 수 있는가
+      </li>
+      <li>
+        <strong>3rd-party 통합의 공급망 보안 감각:</strong> "MCP 서버를 설치한다"는 행위가 임의 코드/네트워크
+        접근을 모델에게 열어주는 것과 같다는 걸 인지하고, catalog 승인·tool filtering·자격증명 격리로
+        어떻게 완화하는지 아는가
+      </li>
+      <li>
+        <strong>에디터 통합을 "새 런타임"으로 오해하지 않는가:</strong> ACP를 별도 제품처럼 설명하지 않고,
+        같은 core <code>AIAgent</code> loop을 감싼 얇은 어댑터로 정확히 위치시키는가
+      </li>
+      <li>
+        <strong>프로토콜 성숙도와 운영 리스크를 함께 보는가:</strong> pre-1.0 프로토콜의 breaking change
+        위험, stdout/stderr 분리 같은 실전 함정을 아는가
+      </li>
+      <li>
+        <strong>출처 검증 습관:</strong> 신생 프로젝트에서 문서와 이슈트래커가 다른 얘기를 할 때, 단일
+        출처를 맹신하지 않고 더 신뢰도 높은 근거를 우선하는 판단력이 있는가
+      </li>
+    </ul>
+    <div class="callout callout-warn">
+      실무에서 이 판단을 잘못하면, 검증 안 된 MCP 서버를 아무 필터링 없이 통째로 붙여서 위험한 tool
+      (삭제, 결제, 관리자 API)까지 모델이 호출 가능한 상태로 노출하거나, 에디터 통합이 별도 시스템이라고
+      착각해 권한 정책을 이중으로(그리고 서로 다르게) 관리하다가 구멍이 생긴다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 사내 API를 MCP 서버로 노출했는데 전체 tool이 그대로 활성화됐다</h3>
+    <p>
+      팀이 사내 고객관리 시스템을 MCP 서버로 감싸서 붙였는데, 설치 시 아무 검토 없이 probe된 tool을 전부
+      체크 상태로 두었다. 그 안에는 <code>delete_customer</code> 같은 파괴적 API도 포함돼 있었다. →
+      <code>tools.exclude</code>로 위험한 tool을 원천 차단하거나, 반대로 꼭 필요한 조회성 tool만
+      <code>include</code> 화이트리스트로 좁힌다. 이걸 설치 시점에 안 하면, 모델이 잘못된 판단으로
+      실제 고객 데이터를 삭제하는 사고까지 갈 수 있다.
+    </p>
+
+    <h3>상황 2: 팀원마다 VS Code/Zed에서 Hermes를 쓰는데 "대화가 사라진다"는 불만이 나온다</h3>
+    <p>
+      에디터를 재시작할 때마다 방금까지의 대화 흐름이 없어진다는 문의가 반복된다. → ACP 세션 상태(세션
+      ID, 히스토리, <code>allow_session</code> 승인)는 인메모리라서 재시작 시 소실되는 게
+      <strong>설계상 정상 동작</strong>임을 설명하고, 대신 스킬·메모리·<code>allow_always</code> 승인은
+      <code>state.db</code>/<code>config.yaml</code>에 영속화되어 그대로 남는다는 걸 구분해서 안내한다.
+    </p>
+
+    <h3>상황 3: Claude Code나 Cursor에서 Hermes가 관리하는 메시징 대화 이력을 끌어쓰고 싶다</h3>
+    <p>
+      팀이 Telegram/Discord로 들어온 고객 문의를 Hermes로 모아두고 있는데, 다른 코딩 에이전트(Claude
+      Code 등)에서도 그 대화 맥락을 참고하고 싶어한다. → <code>hermes mcp serve</code>로 Hermes를 MCP
+      서버로 노출하면 <code>conversations_list</code>/<code>messages_read</code> 같은 tool을 다른
+      MCP client 에이전트가 그대로 호출할 수 있다. 다만 <code>messages_send</code>는 활성 gateway가
+      필요하다는 제약을 미리 팀에 공지해야, "왜 조회는 되는데 답장은 안 나가지?"라는 혼란을 막을 수 있다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>MCP의 두 방향부터 구분한다</strong>
+        client(바깥 tool을 끌어오기)와 server(자신을 다른 에이전트에게 노출)를 먼저 나눠서 설명해 큰
+        그림을 잡는다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>client 방향의 신뢰·보안 모델을 짚는다</strong>
+        Nous 승인 카탈로그, stdio/HTTP 이중 transport, 자격증명 격리(전체 env 미전달), include/exclude
+        필터링을 순서대로 언급한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>server 방향과 sampling의 방향 반전을 설명한다</strong>
+        <code>hermes mcp serve</code>의 10개 tool과 read/send 비대칭, 그리고 서버가 역으로 Hermes에게
+        추론을 요청하는 sampling 메커니즘과 그 rate limit 필요성을 연결한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>ACP를 "같은 core loop의 새 진입점"으로 위치시킨다</strong>
+        stdio 기반, stdout=JSON-RPC 전용, 축소된 toolset, 그리고 provider 해석·권한 프레임워크를 그대로
+        상속한다는 점을 강조한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>세션 상태의 수명 주기와 승인 3단계로 마무리한다</strong>
+        인메모리 세션 vs 영속 설정/스킬/메모리를 구분하고, allow_once/session/always 승인 단계를
+        Day 10 승인 게이트와 같은 철학으로 연결한다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+    <p>
+      "먼저 MCP를 두 방향으로 나눠서 설명하겠습니다. client 방향은 Hermes가 바깥의 tool 서버를 끌어와
+      쓰는 것이고, server 방향은 Hermes 자신을 다른 에이전트가 쓸 수 있는 tool로 내주는 것입니다.
+    </p>
+    <p>
+      client 방향에서는 신뢰 모델이 중요합니다. Hermes 기본 카탈로그는 Nous 직원이 심사해서 저장소의
+      <code>optional-mcps/</code>에 병합한 항목만 포함하고, 커뮤니티가 자유롭게 올리는 트랙은 없습니다.
+      설치할 때는 stdio(로컬 서브프로세스)와 HTTP(원격 엔드포인트) 두 transport를 같은 설정 파일에서
+      다루고, OAuth 2.1이 필요하면 discovery부터 토큰 갱신까지 Hermes가 자동 처리합니다. 보안 측면에서는
+      서브프로세스에 전체 셸 환경을 넘기지 않고 명시적으로 설정한 것과 안전한 baseline만 전달하며,
+      <code>tools.include</code>/<code>exclude</code>로 위험한 tool을 원천 차단하거나 화이트리스트만
+      노출할 수 있습니다.
+    </p>
+    <p>
+      흥미로운 지점은 sampling인데, MCP 서버가 반대로 Hermes에게 LLM 추론을 요청할 수 있는 기능입니다.
+      기본 활성화돼 있지만 <code>max_rpm</code>, <code>max_tool_rounds</code> 같은 rate limit이 함께
+      걸려 있는 이유는, 잘못되거나 악의적인 서버가 추론 능력을 남용해 비용을 폭증시키거나 연쇄적인 tool
+      호출을 유도하는 걸 막기 위해서라고 이해하고 있습니다.
+    </p>
+    <p>
+      server 방향은 <code>hermes mcp serve</code>로 활성화하고, Claude Code나 Cursor 같은 다른
+      MCP client 에이전트가 Hermes의 메시징 브릿지 기능(대화 조회, 발신, 승인 워크플로 등 10개 tool)을
+      그대로 쓸 수 있게 합니다. 여기서 조회는 gateway 없이도 되지만 발신은 활성 gateway가 필요하다는
+      비대칭이 있는데, 이건 조회는 로컬 상태만 읽으면 되지만 발신은 실제 채널 어댑터가 살아 있어야 물리적
+      으로 메시지가 나갈 수 있기 때문이라고 봅니다.
+    </p>
+    <p>
+      ACP는 완전히 다른 축입니다. 이건 새 tool 확장이 아니라 새 <strong>진입점</strong>입니다. Hermes를
+      <code>hermes acp</code>로 띄우면 VS Code, Zed, JetBrains 같은 ACP 호환 에디터가 stdio JSON-RPC로
+      대화하면서 채팅·tool 활동·파일 diff·터미널 출력·승인 프롬프트를 자기 UI로 렌더링합니다. 이때 로그는
+      전부 stderr로 가고 stdout은 JSON-RPC 전용으로 예약되는데, 이건 프로토콜 안정성을 위한 설계라고
+      이해하고 있습니다. 그리고 가장 중요한 건, ACP가 provider 해석이나 권한 프레임워크를 Hermes의 표준
+      방식 그대로 상속한다는 점입니다 — 즉 별도 런타임이 아니라 같은 core <code>AIAgent</code> loop에
+      새로 단 진입점일 뿐입니다. 세션 상태(대화 히스토리, 세션 한정 승인)는 인메모리라 재시작하면
+      사라지지만, 설정·스킬·장기 메모리·영구 승인은 그대로 남는다는 점도 함께 설명하겠습니다."
+    </p>
+  </div>
+
+  <!-- Senior-level Follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>Follow-up 1: "MCP sampling이 방향이 반대인 기능이라고 하셨는데, 이게 왜 새로운 보안 표면이 될
+      수 있나요?"</h3>
+    <p>
+      모범적인 사고 방향: 지금까지의 tool calling은 전부 "에이전트가 외부를 호출"하는 방향이었지만,
+      sampling은 "외부(MCP 서버)가 에이전트의 추론 능력을 호출"하는 역방향이라는 점을 먼저 짚는다. 이
+      역전 자체가 위험한 건 아니지만, 서버가 반복적으로 추론을 요청해 비용을 폭증시키거나(무한 루프성
+      악용), 추론 결과를 다시 tool 호출로 이어붙여 사실상 서버가 에이전트의 행동을 원격 조종하는 것과
+      비슷한 효과를 낼 수 있다는 점을 짚는다. <code>max_rpm</code>/<code>max_tool_rounds</code>/
+      <code>max_tokens_cap</code>이 이 남용을 구조적으로 제한하는 안전장치라고 설명하면 좋다.
+    </p>
+
+    <h3>Follow-up 2: "ACP가 stdout을 JSON-RPC 전용으로 예약하는 이유와, 이게 실제 운영에서 어떤 실수로
+      이어질 수 있나요?"</h3>
+    <p>
+      모범적인 사고 방향: JSON-RPC는 stdout이라는 단일 스트림 위에서 메시지 경계를 파싱하는데, 만약
+      로그나 임의 출력이 같은 스트림에 섞이면 에디터 쪽 파서가 프로토콜 자체를 깨진 것으로 인식한다는
+      점을 짚는다. 실제 실수 시나리오로는, 커스텀 skill이나 디버깅 코드에서 실수로
+      <code>print()</code>를 직접 호출해 stdout에 텍스트를 흘리는 경우를 든다. 이건 로컬 개발 중에는
+      잘 안 드러나다가 프로덕션에서 특정 skill이 활성화될 때만 에디터 연결이 끊기는, 재현하기 까다로운
+      장애로 나타날 수 있다고 설명하면 좋다.
+    </p>
+
+    <h3>Follow-up 3: "공식 문서는 ACP를 이미 동작하는 기능처럼 서술하는데, 이 기능을 제안한 GitHub
+      이슈는 아직 Open 상태입니다. 이 모순을 어떻게 해석하고, 실무에서는 어떻게 대응해야 하나요?"</h3>
+    <p>
+      모범적인 사고 방향: 단일 출처(이슈트래커 상태)만 보고 "기능이 아직 없다"고 단정하지 않는 게
+      핵심이다. 이슈는 기능 제안·설계 논의를 기록하는 용도이지, 구현 완료 여부를 실시간으로 반영하는
+      진실의 원천이 아닐 수 있다 — 실제 구현은 다른 PR/이슈를 통해 이뤄지고 원래 제안 이슈만 정리 없이
+      열려 있을 수 있다는 걸 인지해야 한다. 실무 대응으로는 "공식 문서 vs 이슈트래커"처럼 출처가 갈릴 때
+      더 최신이고 더 구체적인 출처(여기서는 실제 사용법을 담은 공식 문서)를 우선하되, 최종적으로는
+      <code>hermes acp --help</code>나 실제 설치를 통해 <strong>직접 검증</strong>하는 걸 원칙으로
+      삼아야 한다고 답하면 좋다.
+    </p>
+
+    <h3>Follow-up 4: "<code>hermes mcp serve</code>로 노출했을 때 조회(read)는 gateway 없이도 되는데
+      발신(send)은 gateway가 필요합니다. 왜 이렇게 비대칭으로 설계했을까요?"</h3>
+    <p>
+      모범적인 사고 방향: 조회는 이미 로컬 DB/상태에 저장된 데이터를 읽기만 하면 되므로 외부 채널
+      연결과 무관하게 항상 가능하지만, 발신은 실제로 Telegram/Discord 같은 채널 어댑터가 살아서
+      인증된 세션을 유지하고 있어야 물리적으로 메시지를 내보낼 수 있다는 근본적 차이를 짚는다. 이
+      비대칭을 설계 원칙으로 이해하면, "왜 이 tool은 되고 저 tool은 안 되는가"를 매번 암기하지 않고
+      "그 기능이 로컬 상태만으로 완결되는가, 살아있는 외부 연결이 필요한가"라는 기준으로 일반화해서
+      판단할 수 있다고 답하면 좋다.
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변</span> <span class="tag tag-weak">vs 약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>좋은 답변</h4>
+        <ul>
+          <li>MCP client/server 두 방향을 먼저 구분하고 각각의 역할을 설명한다</li>
+          <li>카탈로그 승인 모델, transport 이중화, 자격증명 격리, tool filtering을 구체적으로 짚는다</li>
+          <li>sampling이라는 방향 반전 기능과 그 rate limit의 존재 이유를 설명한다</li>
+          <li>ACP를 "새 tool"이 아니라 "같은 core loop의 새 진입점"으로 정확히 위치시킨다</li>
+          <li>인메모리 세션 상태 vs 영속 설정/스킬/메모리를 구분한다</li>
+          <li>출처가 상충할 때 어떻게 우선순위를 판단하는지 언급한다(문서 vs 이슈트래커)</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변</h4>
+        <ul>
+          <li>"MCP로 외부 tool을 연결할 수 있다"는 한 줄로 끝내고 client/server 구분을 못한다</li>
+          <li>MCP 서버 설치를 "그냥 설정 추가"로만 이해하고 보안·자격증명 이슈를 언급 못한다</li>
+          <li>ACP를 별도 제품/런타임으로 오해해 core <code>AIAgent</code>와의 관계를 설명 못한다</li>
+          <li>ACP 세션이 재시작 후에도 전부 그대로 유지된다고 잘못 답한다</li>
+          <li>sampling의 존재나 방향성을 전혀 모른다</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 흔한 오해 정정 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <div class="callout callout-danger">
+      <strong>오해 1: "카탈로그에 있는 MCP 서버는 다 똑같이 안전하다."</strong><br>
+      카탈로그 항목은 PR 심사를 거쳐 <code>optional-mcps/</code>에 병합됐다는 의미일 뿐, 그 서버가
+      노출하는 개별 tool까지 전부 안전 검증됐다는 뜻은 아니다. 공식 문서도 "그래도 설치 전 매니페스트를
+      직접 읽어야 한다"고 명시한다 — 특히 <code>source</code>, <code>install.bootstrap</code>,
+      <code>transport.command</code> 필드를 확인해야 한다.
+    </div>
+
+    <div class="callout callout-danger">
+      <strong>오해 2: "ACP는 core <code>AIAgent</code>와 별개의 새 런타임이다."</strong><br>
+      실제로는 같은 provider 해석, 같은 권한 프레임워크, 같은 영속화/로깅 경로를 그대로 쓰는 stdio
+      어댑터일 뿐이다. Day 1에서 배운 "단일 core loop + 다중 entry point" 원칙의 다섯 번째 진입점이라고
+      이해하는 게 정확하다.
+    </div>
+
+    <div class="callout callout-danger">
+      <strong>오해 3: "MCP는 항상 Hermes에서 외부 서버로만 흐른다."</strong><br>
+      기본적인 tool calling은 그 방향이 맞지만, sampling 기능 덕분에 MCP 서버가 역으로 Hermes에게 LLM
+      추론을 요청하는 반대 방향도 존재한다. 이 방향을 놓치면 "MCP 보안은 tool filtering만 신경 쓰면
+      끝"이라고 오해하게 되는데, sampling 쪽의 rate limit도 별도로 챙겨야 하는 보안 표면이다.
+    </div>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">Weak</span>
+      <span>MCP와 ACP를 "외부 연동 기능"이라고 뭉뚱그려 말하고, client/server, tool 확장/진입점의 구분을
+        전혀 못한다.</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">Junior</span>
+      <span>MCP client로 tool을 붙이는 것 정도는 설명하지만, server 모드나 sampling, 자격증명 격리 같은
+        세부는 모른다.</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">Mid</span>
+      <span>MCP client/server, ACP 각각을 따로 설명할 수 있지만, ACP가 core <code>AIAgent</code> loop과
+        어떤 관계인지, 세션 상태의 수명 주기가 무엇이 남고 무엇이 사라지는지까지는 연결하지 못한다.</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">Senior</span>
+      <span>MCP client(카탈로그/transport/필터링/자격증명) → server(10개 tool, read/send 비대칭) →
+        sampling(방향 반전과 rate limit) → ACP(같은 core loop의 새 진입점, stdout 예약, 세션 상태
+        수명 주기) → 출처 상충 시 판단 기준까지 하나의 논리로 연결한다.</span>
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li>MCP는 client 방향(바깥 tool을 끌어옴)과 server 방향(자신을 내줌)으로 나뉘며, Hermes는 둘 다
+        지원한다</li>
+      <li>MCP client는 Nous 승인 카탈로그, stdio/HTTP 이중 transport, 전체 env 미전달, include/exclude
+        필터링으로 보안을 관리한다</li>
+      <li>sampling은 MCP 서버가 역으로 Hermes에게 추론을 요청하는 방향 반전 기능이며, rate limit으로
+        남용을 제한한다</li>
+      <li><code>hermes mcp serve</code>는 Hermes를 10개 tool을 가진 MCP 서버로 노출하고, 조회는 gateway
+        없이도 되지만 발신은 활성 gateway가 필요하다</li>
+      <li>ACP는 별도 런타임이 아니라 같은 core <code>AIAgent</code> loop을 stdio JSON-RPC로 감싼 새
+        진입점이며, stdout은 JSON-RPC 전용, 로그는 stderr로 분리된다</li>
+      <li>ACP 세션 상태(히스토리, 세션 한정 승인)는 인메모리라 재시작 시 사라지지만, 설정/스킬/메모리/
+        영구 승인은 영속화된다</li>
+      <li>신생 프로젝트에서 문서와 이슈트래커가 다른 얘기를 하면, 더 최신이고 구체적인 출처를 우선하되
+        최종 확인은 직접 실행/검증으로 마무리한다</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span>Day 5 / 14</span>
+    <a href="./index.html">← 레슨 목록으로</a>
+  </div>
+
+</div>
+</body>
+</html>
