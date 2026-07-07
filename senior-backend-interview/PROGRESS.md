@@ -12,6 +12,7 @@
 | 6 | 2026-07-04 | 동시성 & 비동기 처리 | [0006-concurrency-and-async-processing.html](lessons/0006-concurrency-and-async-processing.html) |
 | 7 | 2026-07-05 | 신뢰성 & 장애 대응 | [0007-reliability-and-incident-response.html](lessons/0007-reliability-and-incident-response.html) |
 | 8 | 2026-07-06 | 보안 | [0008-security.html](lessons/0008-security.html) |
+| 9 | 2026-07-07 | 관측성 | [0009-observability.html](lessons/0009-observability.html) |
 
 ## 다음 예정 학습
 
@@ -24,14 +25,14 @@
 | ~~6~~ | ~~동시성 & 비동기 처리~~ | ~~완료~~ |
 | ~~7~~ | ~~신뢰성 & 장애 대응~~ | ~~완료~~ |
 | ~~8~~ | ~~보안~~ | ~~완료~~ |
-| 9 | 관측성 | 로깅 전략, 메트릭, 분산 트레이싱, SLO/SLA/에러 예산 |
+| ~~9~~ | ~~관측성~~ | ~~완료~~ |
 | 10 | 배포 & DevOps | CI/CD, 블루-그린, 카나리, 피처 플래그, 롤백 |
 | 11 | 기술 리딩 | 설계 리뷰, 기술 부채 관리, RFC 프로세스, 멘토링 |
 | 12 | 커뮤니케이션 & 케이스 스터디 | 비즈니스 번역, 갈등 해결, 실전 케이스 종합 |
 
 ## 현재 학습 위치
 
-**Day 8 완료** — Day 9 (관측성)이 다음 차례.
+**Day 9 완료** — Day 10 (배포 & DevOps)이 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -66,7 +67,11 @@
 - [x] JWT alg confusion, 즉시 무효화 한계와 블랙리스트/Refresh Token 전략, 저장 위치 딜레마 (Day 8)
 - [x] OWASP Top 10 실전 식별(SQL Injection, IDOR/BOLA, 저장형 XSS, SSRF, CSRF)과 코드 수정 (Day 8)
 - [x] 비밀번호 해싱(bcrypt/Argon2), 지연 마이그레이션, 시크릿 관리(KMS/Vault), 전송/저장 암호화 (Day 8)
-- [ ] 관측성 전략 (예정 Day 9)
+- [x] 구조화 로깅과 상관관계 ID로 여러 서비스에 걸친 요청 추적 (Day 9)
+- [x] RED/USE 메트릭 프레임워크와 percentile(p50/p95/p99) 중심 관찰 (Day 9)
+- [x] 메트릭 라벨 카디널리티 폭발 방지 (Day 9)
+- [x] 분산 트레이싱(trace/span/context propagation)과 Head/Tail-based 샘플링 (Day 9)
+- [x] SLI/SLO/SLA 구분과 에러 예산, burn rate 기반 알림 설계 (Day 9)
 - [ ] 배포 전략 (예정 Day 10)
 - [ ] 기술 리딩 역량 (예정 Day 11)
 - [ ] 커뮤니케이션 & 케이스 스터디 (예정 Day 12)

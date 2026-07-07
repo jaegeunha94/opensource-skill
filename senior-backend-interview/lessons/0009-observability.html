@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 9 — 관측성</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #232635;
+      --border: #2e3248;
+      --text: #e2e4f0;
+      --muted: #8b8fa8;
+      --accent: #7c83f5;
+      --accent2: #56cfb2;
+      --warn: #f5a623;
+      --danger: #f56060;
+      --success: #56cf8a;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    .header {
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+    h1 { font-size: 1.9rem; font-weight: 700; line-height: 1.3; }
+    .subtitle { color: var(--muted); margin-top: 0.4rem; font-size: 0.95rem; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--accent2);
+      font-size: 0.72rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      margin: 0.2rem 0.1rem;
+      border: 1px solid var(--border);
+    }
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+      padding-left: 0.75rem;
+      margin-bottom: 1.2rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 0.6rem;
+      margin-top: 1.2rem;
+    }
+    h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--warn);
+      margin-bottom: 0.4rem;
+      margin-top: 1rem;
+    }
+    p { margin-bottom: 0.8rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.3rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card.question { border-left: 4px solid var(--warn); }
+    .card.followup  { border-left: 4px solid var(--accent); }
+    .card.good      { border-left: 4px solid var(--success); }
+    .card.weak      { border-left: 4px solid var(--danger); }
+    .card.rubric    { border-left: 4px solid var(--accent2); }
+    .card.info      { border-left: 4px solid var(--muted); }
+
+    .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .label.q { color: var(--warn); }
+    .label.f { color: var(--accent); }
+    .label.g { color: var(--success); }
+    .label.w { color: var(--danger); }
+    .label.r { color: var(--accent2); }
+    .label.i { color: var(--muted); }
+
+    .quote {
+      font-style: italic;
+      color: var(--text);
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.88rem;
+      color: var(--accent2);
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .step-body { flex: 1; }
+
+    .rubric-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score { display: flex; gap: 0.3rem; }
+    .dot {
+      width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+    }
+    .dot.filled { background: var(--accent2); border-color: var(--accent2); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--accent2);
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    td {
+      padding: 0.55rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 2rem;
+    }
+    .toc ol { margin-bottom: 0; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    .highlight-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .nav-bottom a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .nav-bottom a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ───────────── HEADER ───────────── -->
+  <div class="header">
+    <div class="day-badge">DAY 9</div>
+    <h1>관측성</h1>
+    <p class="subtitle">10년차 이상 백엔드 엔지니어 Interview 대비 — 실무 판단력 중심</p>
+    <div style="margin-top:0.8rem;">
+      <span class="tag">구조화 로깅</span>
+      <span class="tag">메트릭 / RED·USE</span>
+      <span class="tag">분산 트레이싱</span>
+      <span class="tag">SLO/SLA</span>
+      <span class="tag">에러 예산</span>
+      <span class="tag">알림 설계</span>
+    </div>
+  </div>
+
+  <!-- ───────────── TOC ───────────── -->
+  <div class="toc">
+    <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.6rem;">목차</p>
+    <ol>
+      <li><a href="#section-overview">오늘 레슨 개요</a></li>
+      <li><a href="#section-logging">구조화된 로깅 — 검색 가능한 이야기로 남기기</a></li>
+      <li><a href="#section-metrics">메트릭 — RED/USE와 카디널리티 관리</a></li>
+      <li><a href="#section-tracing">분산 트레이싱 — 마이크로서비스 전체 요청 흐름 추적</a></li>
+      <li><a href="#section-slo">SLO/SLA/에러 예산 — 알림을 신호로 만드는 기준</a></li>
+      <li><a href="#section-scenario">종합 시나리오 — "느려요"라는 신고 하나로 원인을 좁혀가기</a></li>
+      <li><a href="#section-rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- ───────────── 1. OVERVIEW ───────────── -->
+  <section id="section-overview">
+    <h2>1. 오늘 레슨 개요</h2>
+    <p>
+      관측성(Observability)은 "모니터링 도구를 설치했는가"의 문제가 아닙니다. 진짜 질문은 <strong>"시스템 내부에 새로운 코드를 추가하지 않고도, 지금 무슨 일이 벌어지고 있는지 외부에서 관찰한 신호(로그·메트릭·트레이스)만으로 답을 찾아낼 수 있는가"</strong>입니다.
+      모니터링(Monitoring)은 "미리 알고 있던 질문"(CPU가 90%를 넘었는가?)에 답하는 것이고, 관측성은 <strong>"미리 예상하지 못했던 질문"</strong>(왜 특정 국가의 특정 기기에서만 결제 실패율이 높은가?)에도 답할 수 있는 능력입니다.
+      10년차 이상 면접에서 관측성을 묻는 이유는, 장애가 터졌을 때 "감으로 찍어서 재시작"하는 엔지니어와 <strong>신호를 근거로 원인을 좁혀 들어가는 엔지니어</strong>를 구분하기 위해서입니다.
+    </p>
+    <div class="highlight-box">
+      <strong>면접관이 실제로 보는 신호</strong>
+      <ul style="margin-top:0.5rem;">
+        <li>"로그를 남기겠습니다"라는 선언 ↔ 구조화(JSON) 로그와 상관관계 ID(correlation ID)로 <strong>검색 가능하고 요청 단위로 추적 가능한</strong> 로그를 설계</li>
+        <li>메트릭을 "대시보드에 그래프 몇 개 띄우는 것"으로 이해 ↔ <strong>어떤 지표를 볼지(RED/USE)와 카디널리티 폭발 위험</strong>까지 고려한 설계</li>
+        <li>트레이싱을 "느린 요청 찾는 도구"로만 이해 ↔ <strong>여러 서비스 경계를 넘나드는 컨텍스트 전파와 샘플링 트레이드오프</strong>까지 이해</li>
+        <li>알림을 "임계치 넘으면 무조건 울리는 것"으로 이해 ↔ <strong>사용자 영향 기반 SLO와 에러 예산으로 알림 노이즈를 줄이는</strong> 설계</li>
+      </ul>
+    </div>
+    <p>이 레슨은 <strong>관측성의 3대 축(로그, 메트릭, 트레이스)</strong>과 이를 조직적으로 묶는 <strong>SLO/에러 예산/알림 설계</strong>를 다루며, 각 영역마다 배경 개념 → 면접 질문 → 답변 구조 → senior follow-up → 좋은/약한 답변 비교 → 자기 점검 순서로 진행합니다.</p>
+  </section>
+
+  <!-- ───────────── 2. LOGGING ───────────── -->
+  <section id="section-logging">
+    <h2>2. 구조화된 로깅 — 검색 가능한 이야기로 남기기</h2>
+
+    <h3>배경 개념: "로그를 많이 남긴다"와 "쓸모 있는 로그를 남긴다"는 다르다</h3>
+    <p>
+      전통적인 로그는 <code>"2026-07-07 10:23:11 ERROR 결제 실패 user=12345"</code>처럼 사람이 읽기 좋은 자유 텍스트(free text)였습니다. 문제는 이런 텍스트 로그는 <strong>기계가 필드 단위로 검색·집계하기 어렵다</strong>는 것입니다.
+      "실패한 결제 중 특정 PG사만 골라서 시간대별로 집계"하려면 정규식으로 텍스트를 파싱해야 하고, 메시지 포맷이 조금만 바뀌어도 파싱이 깨집니다.
+      <strong>구조화 로깅(structured logging)</strong>은 로그를 <code>{"level":"error","event":"payment_failed","user_id":12345,"pg":"toss","reason":"timeout","trace_id":"abc123"}</code>처럼 <strong>키-값의 JSON</strong>으로 남겨, 로그 수집 시스템(ELK, Loki, CloudWatch Logs Insights 등)이 각 필드를 인덱싱하고 즉시 쿼리할 수 있게 합니다.
+      더 중요한 것은 <strong>상관관계 ID(correlation ID / trace ID)</strong>입니다. 하나의 사용자 요청이 API 게이트웨이 → 주문 서비스 → 결제 서비스 → 알림 서비스를 거친다면, 이 요청 전체에 동일한 ID를 부여해 각 서비스의 로그를 <strong>그 ID로 필터링하면 요청 하나의 전체 여정을 재구성</strong>할 수 있어야 합니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"특정 사용자가 '주문은 완료됐다고 나오는데 결제 앱에는 승인이 안 됐다'고 문의했습니다. 로그만으로 이 사용자의 요청이 각 서비스에서 어떻게 처리됐는지 재구성하려면, 로깅을 어떻게 설계해야 할까요?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"로그 레벨을 잘 나누겠다"는 답에서 멈추는지, 아니면 <strong>여러 서비스에 걸친 하나의 요청을 하나의 ID로 꿰어 추적 가능하게 설계</strong>하는지를 봅니다.</p>
+
+    <h4>로그 레벨과 용도</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>레벨</th>
+          <th>용도</th>
+          <th>실무 판단 기준</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ERROR</strong></td>
+          <td>사용자 요청이 실패로 끝났거나, 즉시 조치가 필요한 이상 상태</td>
+          <td>알림(alert)과 직결되어야 함. 너무 남발하면 "에러 피로(alert fatigue)"로 진짜 중요한 에러를 놓침</td>
+        </tr>
+        <tr>
+          <td><strong>WARN</strong></td>
+          <td>실패하진 않았지만 정상 범위를 벗어난 상태(재시도 성공, 폴백 사용, 임계치 근접)</td>
+          <td>즉시 조치는 불필요하지만 추세를 관찰해야 하는 신호. 대시보드로 추적</td>
+        </tr>
+        <tr>
+          <td><strong>INFO</strong></td>
+          <td>비즈니스적으로 의미 있는 상태 변화(주문 생성, 결제 승인, 배포 시작)</td>
+          <td>감사(audit)나 비즈니스 분석에 활용. 과도하면 볼륨 비용 증가</td>
+        </tr>
+        <tr>
+          <td><strong>DEBUG</strong></td>
+          <td>개발/디버깅 시에만 필요한 상세 정보(요청 파라미터 전체 덤프 등)</td>
+          <td>운영 환경에서는 기본 비활성화하고, 특정 요청/사용자에 한해 동적으로 활성화(dynamic log level)하는 것이 이상적</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>요청 진입점(API 게이트웨이 또는 최초 서비스)에서 trace ID를 생성합니다.</strong> 클라이언트가 이미 ID를 갖고 있다면(예: 모바일 앱에서 생성한 요청 ID) 이를 이어받고, 없으면 새로 생성합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>서비스 간 호출(HTTP 헤더, 메시지 큐 메타데이터)에 trace ID를 전파합니다.</strong> 주문 서비스가 결제 서비스를 호출할 때, 큐에 이벤트를 넣을 때도 이 ID를 함께 실어 보내야 다음 서비스가 같은 ID로 로그를 남길 수 있습니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>모든 로그를 구조화된 JSON으로, trace ID를 필수 필드로 남깁니다.</strong> 로깅 미들웨어/라이브러리 레벨에서 강제해, 개발자가 실수로 trace ID 없이 로그를 남기지 못하게 합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>중앙 로그 수집 시스템에서 trace ID로 전체 서비스의 로그를 조인해 조회합니다.</strong> 이 사용자 문의의 경우, 주문 서비스는 "주문 완료" 로그를 남겼지만 결제 서비스는 "PG 타임아웃으로 승인 실패" 로그를 같은 trace ID로 남겼다면, <strong>주문과 결제 상태가 어긋난 근본 원인(비동기 처리 중 보상 트랜잭션 누락)</strong>을 로그만으로 재구성할 수 있습니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"API 게이트웨이에서 요청마다 <code>trace_id</code>를 생성해 모든 다운스트림 호출의 HTTP 헤더와 큐 메시지 메타데이터에 전파합니다. 모든 서비스는 구조화된 JSON 로그에 <code>trace_id</code>, <code>service</code>, <code>event</code>, <code>user_id</code>를 필수 필드로 남기도록 로깅 미들웨어에서 강제합니다. 이 사용자의 <code>trace_id</code>로 중앙 로그 시스템(예: Loki)을 조회하면, 주문 서비스는 <code>order_created</code> 이벤트를, 결제 서비스는 <code>payment_timeout</code> 이벤트를 같은 trace_id로 남긴 것을 확인할 수 있고, 두 이벤트의 시간 간격을 보면 결제 서비스가 PG 타임아웃 후 주문 서비스에 실패를 통지하는 보상 로직이 없었다는 것까지 로그만으로 재구성됩니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"각 서비스의 로그를 서버에 접속해서 <code>grep</code>으로 확인하겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 여러 서버·여러 서비스에 흩어진 로그를 사람이 시간대만 보고 수동으로 짜맞추는 방식은 서비스 수가 늘어나면 사실상 불가능해집니다. 요청을 하나로 꿰는 식별자(trace ID)와 중앙 집계 시스템이 없다는 것은 애초에 이 문제를 "재현 가능하게" 풀 수 있는 설계가 없다는 뜻입니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"구조화 로그에 사용자 개인정보(이메일, 카드번호 뒷자리)를 그대로 남기면 어떤 문제가 생기고, 그럼에도 문의 대응을 위해 사용자를 식별할 수는 있어야 합니다. 어떻게 균형을 잡으시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 로그는 종종 개발자 여러 명, 심지어 외부 로그 관리 SaaS까지 접근 권한이 넓게 퍼지기 때문에, <strong>개인정보를 평문으로 남기는 것은 그 자체로 보안·컴플라이언스 위험</strong>(Day 8에서 다룬 데이터 유출 표면 확대)입니다.
+        1) 사용자를 식별해야 하는 목적에는 <strong>내부 user_id(정수/UUID)만 로그에 남기고</strong>, 이메일·카드번호 같은 실제 PII는 로그에서 제외하거나 마스킹(카드 뒷 4자리만)합니다.
+        2) 로깅 프레임워크 레벨에서 <strong>필드 이름 기준 자동 마스킹 규칙</strong>(예: <code>email</code>, <code>card_number</code> 필드는 자동으로 <code>***</code> 처리)을 두어, 개별 개발자의 실수에 의존하지 않게 합니다.
+        3) 문의 대응 시에는 user_id로 로그를 조회한 뒤, 실제 개인정보가 필요한 경우 <strong>별도의 접근 통제된 사용자 DB에서 조회</strong>하도록 분리해, 로그 시스템 자체는 PII 노출 표면이 되지 않게 합니다.
+        핵심은 "추적 가능성"과 "개인정보 최소화(data minimization)"를 <strong>식별자와 실제 개인정보를 분리</strong>함으로써 동시에 만족시키는 설계입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 3. METRICS ───────────── -->
+  <section id="section-metrics">
+    <h2>3. 메트릭 — RED/USE와 카디널리티 관리</h2>
+
+    <h3>배경 개념: 로그는 "이야기", 메트릭은 "숫자로 된 추세"</h3>
+    <p>
+      로그가 "무슨 일이 있었는가"라는 개별 사건의 이야기라면, 메트릭은 <strong>시간에 따라 집계된 숫자</strong>(요청 수, 에러율, 응답 시간 분포)입니다. 메트릭은 로그보다 저장 비용이 훨씬 낮고 조회가 빨라, <strong>대시보드와 알림의 기본 단위</strong>로 쓰입니다.
+      메트릭을 잘 설계한다는 것은 "무엇을 측정할지"를 아는 것인데, 실무에서 널리 쓰이는 두 프레임워크가 있습니다. <strong>RED</strong>(Rate 요청 수, Errors 에러율, Duration 응답 시간)는 <strong>요청을 처리하는 서비스</strong>(API 서버)에 적합하고, <strong>USE</strong>(Utilization 사용률, Saturation 포화도, Errors 에러)는 <strong>자원 자체</strong>(CPU, 디스크, 커넥션 풀)를 볼 때 적합합니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"신규 서비스를 배포하는데, 어떤 메트릭을 수집해서 대시보드로 만들지 설계해달라는 요청을 받았습니다. 무엇을 어떻게 측정하시겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"CPU, 메모리를 보겠다"는 인프라 중심 답변에서 멈추는지, 아니면 <strong>사용자가 체감하는 지표(RED)와 내부 자원 지표(USE)를 구분</strong>해 계층적으로 설계하는지를 봅니다.</p>
+
+    <h4>RED vs USE</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>프레임워크</th>
+          <th>측정 대상</th>
+          <th>핵심 지표</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>RED</strong></td>
+          <td>요청 기반 서비스(API, 웹 서버)</td>
+          <td>Rate(초당 요청 수), Errors(에러율 %), Duration(응답 시간 분포 — 특히 p50/p95/p99)</td>
+        </tr>
+        <tr>
+          <td><strong>USE</strong></td>
+          <td>자원(CPU, 메모리, 디스크, 네트워크, 커넥션 풀, 스레드 풀)</td>
+          <td>Utilization(사용 중인 비율), Saturation(대기 큐 길이 등 초과 수요), Errors(자원 관련 에러, 예: OOM)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>왜 평균이 아니라 percentile(p95/p99)을 봐야 하는가</h4>
+    <p>
+      평균 응답 시간이 100ms라고 해도, 상위 1% 요청이 5초씩 걸린다면 <strong>매일 수천 명의 사용자가 느린 경험</strong>을 하고 있는데도 평균 지표는 이를 완전히 가려버립니다.
+      이를 <strong>평균의 함정(average is a lie)</strong>이라 부르며, 특히 응답 시간처럼 분포가 한쪽으로 치우친(long-tail) 지표는 반드시 <strong>p50(중앙값), p95, p99</strong>를 함께 봐야 "대부분의 사용자"와 "가장 불행한 사용자"의 경험을 모두 파악할 수 있습니다.
+    </p>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>사용자 체감 계층(RED)을 최우선으로 설계합니다.</strong> 엔드포인트별 요청 수, 상태 코드별 에러율, 응답 시간의 p50/p95/p99를 기본으로 수집합니다. 이는 알림의 1차 근거가 됩니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>RED 지표에 이상이 생겼을 때 원인을 좁힐 자원 계층(USE)을 그 아래에 둡니다.</strong> CPU 사용률, 힙 메모리, DB 커넥션 풀 사용률/대기 큐, 스레드 풀 포화도 등을 수집해, "왜 느려졌는가"를 추적할 수 있게 합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>라벨(label/tag) 설계 시 카디널리티 폭발을 경계합니다.</strong> <code>user_id</code>나 <code>request_id</code>처럼 값의 종류가 무한히 늘어나는 필드를 메트릭 라벨로 쓰면, 시계열 DB(Prometheus 등)의 시계열 수가 기하급수적으로 늘어나 <strong>메트릭 시스템 자체가 다운</strong>됩니다. 라벨은 <code>endpoint</code>, <code>status_code</code>, <code>region</code>처럼 <strong>값의 종류가 유한한 필드</strong>로 제한합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>대시보드는 "위에서 아래로" 계층적으로 구성합니다.</strong> 최상단에 전체 서비스의 RED 요약, 그 아래 엔드포인트별 상세, 최하단에 자원(USE) 지표를 두어 알림을 받은 사람이 자연스럽게 원인을 파고들 수 있게 합니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"1차로 RED 지표(엔드포인트별 요청 수, 4xx/5xx 에러율, p50/p95/p99 응답 시간)를 수집해 사용자 체감 품질을 대표하는 알림 기준으로 삼습니다. 2차로 USE 지표(CPU/메모리 사용률, DB 커넥션 풀 사용률과 대기 큐, 스레드 풀 포화도)를 수집해 RED 지표 이상 시 원인 추적에 씁니다. 라벨은 <code>endpoint</code>, <code>method</code>, <code>status_code</code>처럼 값의 종류가 제한적인 필드만 쓰고, <code>user_id</code>는 절대 메트릭 라벨로 넣지 않고 트레이싱이나 로그로만 추적해 카디널리티 폭발을 막습니다. 대시보드는 전체 RED 요약을 최상단에, 엔드포인트별 상세와 자원 지표를 그 아래 계층으로 구성해 온콜 담당자가 위에서부터 원인을 좁혀갈 수 있게 합니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"서버의 CPU, 메모리, 디스크 사용량을 그래프로 보여주는 대시보드를 만들겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 인프라 지표만으로는 "사용자가 실제로 느린 경험을 하고 있는가"를 알 수 없습니다. CPU가 낮아도 특정 쿼리 락 대기로 응답이 느려질 수 있고, CPU가 높아도 사용자 요청은 정상 응답될 수 있습니다. 사용자 체감(RED)과 자원(USE)의 계층 구분, percentile 사용, 카디널리티 관리가 빠져 있습니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"p99 응답 시간이 갑자기 5배로 튀었는데, p50은 그대로입니다. 이게 어떤 상황을 의미할 수 있고, 어떻게 더 조사하시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> p50이 그대로인데 p99만 튀는 것은 <strong>"전체가 골고루 느려진 것"이 아니라 "일부 요청만 매우 느려진 것"</strong>이라는 신호입니다. 대부분의 사용자는 영향이 없지만, 소수(1%)의 사용자는 심각하게 느립니다.
+        1) 흔한 원인은 <strong>특정 파티션/샤드에 쏠린 hot key</strong>, <strong>GC(Garbage Collection) stop-the-world 정지</strong>가 가끔 발생, <strong>특정 사용자의 대용량 데이터 조회</strong>(예: 특정 계정만 주문 내역이 수십만 건), 또는 <strong>커넥션 풀에서 가끔 대기하는 요청</strong>입니다.
+        2) 메트릭만으로는 "어떤 요청이" 느린지 알 수 없으므로, 여기서 <strong>트레이싱(4장)이 필요</strong>해집니다. p99 구간에 속하는 느린 요청들의 trace를 샘플링해, 공통적으로 어떤 스팬(예: 특정 DB 쿼리, 특정 외부 API 호출)에서 시간이 소요되는지 비교합니다.
+        3) 만약 GC가 원인이라면 GC 이벤트를 메트릭으로 별도 수집(GC pause duration)해, GC 타이밍과 p99 스파이크의 상관관계를 확인합니다.
+        핵심은 <strong>percentile의 이상 패턴 자체가 "전체 문제"인지 "특정 소수 요청의 문제"인지를 구분하는 신호</strong>라는 것이고, 후자라면 메트릭에서 트레이싱으로 조사 도구를 전환해야 한다는 판단입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 4. TRACING ───────────── -->
+  <section id="section-tracing">
+    <h2>4. 분산 트레이싱 — 마이크로서비스 전체 요청 흐름 추적</h2>
+
+    <h3>배경 개념: 로그와 메트릭만으로는 "어디서 시간이 샜는가"를 알 수 없다</h3>
+    <p>
+      하나의 사용자 요청이 API 게이트웨이 → 주문 서비스 → 재고 서비스 → 결제 서비스 → DB를 순서대로(혹은 병렬로) 거친다고 합시다. 전체 응답 시간이 2초로 느려졌을 때, 각 서비스의 RED 메트릭을 따로 보면 "다 정상 범위인데 전체는 느리다"는 답답한 상황이 생길 수 있습니다.
+      <strong>분산 트레이싱(distributed tracing)</strong>은 하나의 요청을 <strong>trace</strong>로 묶고, 그 안에서 각 서비스/각 작업 단위를 <strong>span</strong>으로 기록해, "게이트웨이 20ms → 주문 서비스 50ms → 재고 서비스가 결제 서비스를 호출하는 동안 1.5초 대기 → 결제 서비스 내부 DB 쿼리가 1.4초" 같은 <strong>시간 분해(waterfall)</strong>를 시각적으로 보여줍니다.
+      업계 표준은 <strong>OpenTelemetry</strong>로, 벤더 중립적인 계측(instrumentation) 라이브러리와 데이터 포맷을 제공해 Jaeger, Zipkin, Datadog, Grafana Tempo 등 다양한 백엔드로 export할 수 있습니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"5개 마이크로서비스를 거치는 주문 요청의 평균 응답 시간이 지난주 대비 3배 느려졌습니다. 각 서비스의 자체 메트릭은 모두 정상 범위처럼 보입니다. 어떻게 원인을 찾으시겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>서비스 하나씩 순서대로 로그를 뒤지는 방식에서 멈추는지, 아니면 <strong>트레이스의 span 분해로 시간이 어느 구간에 몰려 있는지부터 좁히는</strong> 접근을 하는지를 봅니다.</p>
+
+    <h4>트레이싱 핵심 개념</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>개념</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Trace</strong></td>
+          <td>하나의 요청 전체를 나타내는 최상위 단위. 고유한 <code>trace_id</code>를 가짐</td>
+        </tr>
+        <tr>
+          <td><strong>Span</strong></td>
+          <td>trace 내부의 개별 작업 단위(예: "결제 서비스의 DB 쿼리"). 시작/종료 시각, 부모-자식 관계(parent span)를 가짐</td>
+        </tr>
+        <tr>
+          <td><strong>Context Propagation</strong></td>
+          <td>서비스 간 호출 시 trace_id와 현재 span_id를 헤더(<code>traceparent</code> 등 W3C Trace Context 표준)로 전달해, 다음 서비스가 같은 trace에 자신의 span을 이어 붙이게 함</td>
+        </tr>
+        <tr>
+          <td><strong>Sampling</strong></td>
+          <td>모든 요청을 100% 트레이싱하면 저장·처리 비용이 매우 커지므로, 일부만 샘플링해서 저장. Head-based(요청 시작 시 확률로 결정)와 Tail-based(요청이 끝난 후 에러/느린 요청 위주로 결정)로 나뉨</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>느려진 요청 하나의 trace를 열어 span waterfall을 봅니다.</strong> 전체 2초 중 어느 구간(어느 서비스, 어느 span)이 대부분을 차지하는지 시각적으로 확인합니다. "재고 서비스가 결제 서비스를 호출하는 span이 1.5초"처럼 병목 구간이 드러납니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>해당 구간이 순차 호출인지 병렬 호출인지 확인합니다.</strong> 만약 재고 확인과 가격 조회를 순차적으로 호출하고 있는데 서로 의존 관계가 없다면, <strong>병렬화만으로도 응답 시간을 크게 줄일 수 있는 구조적 문제</strong>가 트레이스에서 바로 드러납니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>병목 span 안에서 더 세밀한 하위 span(DB 쿼리, 캐시 조회, 외부 API 호출)을 추가로 확인합니다.</strong> 결제 서비스의 DB 쿼리 span이 1.4초라면, 그 쿼리에 인덱스가 빠졌거나 락 대기가 있었는지 추가로 조사합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>개별 요청 하나가 아니라 여러 느린 trace를 비교해 공통 패턴을 찾습니다.</strong> 특정 서비스 인스턴스에서만 느린지, 특정 시간대에만 느린지, 특정 파라미터(대용량 주문)에서만 느린지를 여러 trace의 공통 태그로 필터링해 확인합니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"각 서비스의 RED 메트릭이 정상으로 보인다는 것 자체가, 문제가 '평균적으로' 퍼진 게 아니라 <strong>특정 구간에 시간이 몰려 있다</strong>는 신호로 해석합니다. 최근 느려진 요청의 trace를 몇 개 샘플링해 span waterfall을 보면, 재고 서비스가 결제 서비스를 호출하는 구간이 전체의 70%를 차지하는 것을 확인합니다. 그 span을 더 파고들어 보니 결제 서비스의 하위 DB 쿼리 span이 1.4초로, 최근 배포에서 인덱스가 빠진 쿼리가 추가된 것이 원인이었습니다. 여러 trace를 비교해 이 패턴이 재고 서비스 인스턴스 전체에서 일관되게 나타나는 것도 함께 확인해 특정 인스턴스만의 문제가 아님을 검증했습니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"각 서비스 담당 팀에 연락해서 자기 서비스가 느려진 게 맞는지 하나씩 확인해달라고 하겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 5개 팀에 순서대로 연락해 확인받는 방식은 시간이 오래 걸리고, 각 팀은 자기 서비스의 RED 지표만 보고 "우리는 정상"이라고 답할 가능성이 높습니다(문제는 서비스 간 호출 구조에 있을 수 있음). 트레이스라는 "요청 하나의 전체 여정"을 보는 도구 자체를 활용하지 않았습니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"트래픽이 초당 10만 요청인 서비스에서 모든 요청을 100% 트레이싱하면 어떤 문제가 생기고, 어떻게 샘플링 전략을 세우시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 100% 트레이싱은 <strong>스토리지 비용과 계측 오버헤드(각 span 생성·전송에 드는 CPU/네트워크)</strong>가 트래픽에 비례해 선형으로 증가해, 대규모 트래픽에서는 감당하기 어려워집니다.
+        1) <strong>Head-based sampling</strong>: 요청이 시작될 때 확률(예: 1%)로 트레이싱 여부를 결정합니다. 구현이 단순하지만, 정작 <strong>에러가 나거나 느린 중요한 요청이 샘플링에서 빠질 수 있다</strong>는 단점이 있습니다.
+        2) <strong>Tail-based sampling</strong>: 요청이 끝난 후(모든 span이 모인 후) 에러가 있었거나 느렸던 요청 위주로 저장 여부를 결정합니다. 중요한 요청을 놓치지 않지만, 모든 span을 일단 임시로 버퍼링해야 하므로 <strong>수집 인프라(collector)의 메모리·복잡도 비용</strong>이 커집니다.
+        3) 실무에서는 <strong>두 방식을 절충</strong>합니다. 기본 트래픽은 Head-based로 낮은 비율(0.1~1%) 샘플링하되, <strong>에러 응답이나 특정 레이턴시 임계치를 넘는 요청은 100% 강제 샘플링</strong>하는 규칙을 추가해, "평소 패턴 파악"과 "이상 상황은 놓치지 않기"를 동시에 달성합니다.
+        핵심은 트레이싱 커버리지를 "전부 아니면 전무"가 아니라, <strong>정상 트래픽은 낮은 비율로 샘플링하고 이상 신호는 우선적으로 보존</strong>하는 계층적 전략으로 설계하는 것입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 5. SLO/ERROR BUDGET ───────────── -->
+  <section id="section-slo">
+    <h2>5. SLO/SLA/에러 예산 — 알림을 신호로 만드는 기준</h2>
+
+    <h3>배경 개념: 임계치 알림은 왜 알림 피로를 만드는가</h3>
+    <p>
+      "CPU가 80% 넘으면 알림"처럼 인프라 임계치 기반 알림은 두 가지 문제가 있습니다. 첫째, CPU가 80%를 넘어도 <strong>사용자에게 실제 영향이 없을 수도 있고</strong>, 반대로 CPU는 정상인데 <strong>특정 쿼리 락으로 사용자는 실제로 장애를 겪을 수도</strong> 있습니다.
+      이 간극을 메우는 개념이 <strong>SLI(Service Level Indicator, 실제 측정치) → SLO(Service Level Objective, 내부 목표) → SLA(Service Level Agreement, 고객과의 계약)</strong>입니다. SLI는 "가용성 = 성공 응답 수 / 전체 요청 수"처럼 실측 지표이고, SLO는 "이 SLI가 분기당 99.9% 이상"이라는 내부 목표, SLA는 이를 어길 시 <strong>고객에게 보상(크레딧 등)이 발생하는 대외 계약</strong>입니다. SLA는 보통 SLO보다 느슨하게 잡아 여유를 둡니다(예: SLO 99.9%, SLA 99.5%).
+      SLO에서 파생되는 <strong>에러 예산(Error Budget)</strong>은 "이번 분기에 허용 가능한 장애 시간/실패율"을 명시적 숫자로 계산한 것입니다(99.9% SLO라면 분기당 약 2시간 11분의 예산). 에러 예산이 남아 있으면 새 기능을 공격적으로 배포해도 되고, 소진되면 <strong>신뢰성 작업을 최우선</strong>으로 전환하는 조직적 정책의 근거가 됩니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"온콜 담당자들이 밤에 알림을 너무 많이 받아서 지쳐 있고, 정작 진짜 중요한 알림도 무시하는 습관이 생겼습니다(alert fatigue). 알림 체계를 어떻게 다시 설계하시겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"임계치를 더 널널하게 조정하겠다"는 대증 요법에서 멈추는지, 아니면 <strong>사용자 영향 기반 SLO와 에러 예산 소진 속도(burn rate)</strong>로 알림의 근거 자체를 재설계하는지를 봅니다.</p>
+
+    <h4>Burn Rate 기반 알림</h4>
+    <p>
+      단순히 "에러율이 1% 넘으면 알림"이 아니라, <strong>에러 예산이 얼마나 빠른 속도로 소진되고 있는지(burn rate)</strong>를 기준으로 알림의 심각도를 나눕니다. 예를 들어 SLO 99.9%(월간 예산 43분)에서:
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Burn Rate</th>
+          <th>의미</th>
+          <th>대응</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>14.4배 (1시간 내 예산의 2% 소진)</td>
+          <td>이 속도가 지속되면 <strong>2일 안에 월간 예산 전체 소진</strong> — 심각한 장애</td>
+          <td>즉시 페이지(온콜 호출)</td>
+        </tr>
+        <tr>
+          <td>6배 (6시간 내 예산의 5% 소진)</td>
+          <td>이 속도면 <strong>5일 안에 소진</strong> — 중간 심각도</td>
+          <td>낮 시간 알림(티켓/슬랙), 즉시 페이지는 아님</td>
+        </tr>
+        <tr>
+          <td>1배 (예산 소진 속도가 예산 계획과 동일)</td>
+          <td>정상적인 계획된 소진 속도</td>
+          <td>알림 없음, 대시보드로만 추적</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>서비스별로 사용자 영향과 직결된 SLI를 정의합니다.</strong> "CPU 사용률"이 아니라 "성공 응답 비율", "p99 응답 시간이 500ms 이하인 요청의 비율"처럼 <strong>사용자가 실제로 체감하는 것</strong>을 SLI로 삼습니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>비즈니스 요구 수준에 맞춰 SLO를 설정합니다.</strong> 결제처럼 핵심적인 경로는 99.95%, 추천처럼 부가 기능은 99.5%로 SLO를 다르게 두어, <strong>모든 서비스를 동일한 엄격도로 다루지 않습니다.</strong>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>단순 임계치 알림을 burn rate 기반 다단계 알림으로 교체합니다.</strong> 빠른 소진 속도는 즉시 페이지, 느린 소진 속도는 낮 시간 티켓으로 나눠 <strong>밤중에 울리는 알림의 수를 "정말 지금 당장 사람이 필요한 것"으로 좁힙니다.</strong>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>에러 예산 소진 상태를 배포/기능 개발 우선순위와 연결하는 정책을 조직적으로 합의합니다.</strong> 예산이 소진되면 신규 기능 배포를 멈추고 신뢰성 작업에 집중하는 규칙을 두어, 알림 설계가 단발성 기술 조치가 아니라 <strong>지속 가능한 온콜 문화</strong>로 이어지게 합니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"먼저 서비스별로 SLI를 '성공 응답 비율'과 'p99 500ms 이내 비율'로 정의하고, 결제 경로는 SLO 99.95%, 추천 등 부가 기능은 99.5%로 차등을 둡니다. 그 다음 단순 임계치 알림을 버리고, burn rate 기반 다단계 알림으로 바꿉니다. 1시간 내 월간 예산의 2%가 소진되는 속도(14.4배)면 즉시 온콜 페이지를 울리고, 6시간 내 5% 소진(6배) 속도면 낮 시간 티켓으로만 알립니다. 이렇게 하면 밤에 울리는 페이지는 '정말 며칠 안에 SLO를 어길 위험이 있는 심각한 상황'으로만 좁혀지고, 사소한 일시적 스파이크는 낮에 확인해도 되는 티켓으로 처리되어 온콜 피로가 크게 줄어듭니다. 추가로 에러 예산이 소진되면 신규 배포를 중단하고 신뢰성 작업을 우선하는 정책을 팀 차원에서 합의합니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"에러율 임계치를 5%에서 10%로 올려서 알림이 덜 오게 하겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 임계치를 단순히 올리는 것은 알림 수를 줄이지만, 실제로 SLO를 위협하는 심각한 상황도 함께 놓치게 만듭니다. "얼마나 심각한가"를 판단할 기준(사용자 영향 기반 SLO, 소진 속도)이 없고, 문제를 근본적으로 재설계하지 않고 숫자만 조정한 임시방편입니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"에러 예산을 다 써버린 다음 분기에 또 큰 장애가 나서 예산이 마이너스가 됐습니다. 이 상태에서 '신규 기능 개발 전면 중단'을 강제하는 게 비즈니스적으로 항상 맞을까요? 어떻게 판단하시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 에러 예산 정책을 <strong>교조적으로 100% 적용</strong>하면, 예를 들어 중요한 규제 대응 기능이나 이미 계약된 대형 고객사 요구사항까지 막혀 오히려 비즈니스에 해를 끼칠 수 있습니다.
+        1) 에러 예산 소진 시 정책은 <strong>"전면 중단"이 아니라 "우선순위 재협상 트리거"</strong>로 설계하는 것이 현실적입니다. 예산 소진을 근거로 엔지니어링 리더와 프로덕트 리더가 모여 "이번 주는 신뢰성 작업에 몇 %를 배정할지"를 다시 협의합니다.
+        2) 예산이 마이너스로 크게 초과된 경우는 <strong>일반적인 소진과 다르게 취급</strong>합니다. 반복적으로 예산을 초과한다는 것은 SLO 자체가 현재 아키텍처 대비 너무 낙관적으로 설정되었거나, 근본적인 아키텍처 부채가 누적되었다는 신호일 수 있어 <strong>SLO 재설정 논의</strong>도 함께 열어야 합니다.
+        3) 이 정책이 "몇몇 엔지니어의 개인 판단"이 아니라 <strong>사전에 합의된 에스컬레이션 절차</strong>(예: 예산 -50% 초과 시 VP 레벨 검토)로 명문화되어 있어야, 장애 상황에서 즉흥적인 논쟁 없이 일관되게 작동합니다.
+        핵심은 에러 예산 정책이 <strong>기계적 강제 규칙이 아니라, 비즈니스와 신뢰성 사이의 트레이드오프를 정기적으로 재협상하게 만드는 구조적 장치</strong>라는 점입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 6. SCENARIO ───────────── -->
+  <section id="section-scenario">
+    <h2>6. 종합 시나리오 — "느려요"라는 신고 하나로 원인을 좁혀가기</h2>
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"고객 지원팀에서 '몇몇 고객이 최근 앱이 가끔 느리다고 한다'는 애매한 제보를 전달받았습니다. 구체적인 에러나 장애 알림은 없는 상태입니다. 지금부터 관측성 도구를 활용해 어떻게 조사하시겠습니까?"</p>
+    </div>
+    <p>이 질문은 오늘 배운 로그·메트릭·트레이스·SLO를 <strong>"명확한 알림 없이 애매한 신고만 있는 상황"에서 순서대로 조합해 원인을 좁혀가는 능력</strong>을 봅니다.</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>메트릭 대시보드에서 RED 지표의 percentile 추세부터 확인합니다.</strong> 에러율은 낮아도(알림이 안 뜬 이유), p99 응답 시간이 최근 며칠 특정 시간대에만 스파이크를 보이는지 확인합니다. "가끔"이라는 제보는 평균이 아니라 꼬리 분포(p99+)에 신호가 있을 가능성이 높습니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>스파이크가 특정 엔드포인트, 특정 지역, 특정 기기/클라이언트 버전에 몰려 있는지 메트릭 라벨로 좁힙니다.</strong> 카디널리티를 고려해 라벨을 <code>endpoint</code>, <code>region</code>, <code>client_version</code> 정도로 제한해 집계했으므로, 이 단계에서 "특정 리전에서만 p99가 튄다"는 패턴을 빠르게 찾을 수 있습니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>해당 리전/엔드포인트의 느린 요청 trace를 샘플링해 span waterfall을 확인합니다.</strong> tail-based sampling 규칙 덕분에 느린 요청들이 이미 보존되어 있어, 여러 trace를 비교해 공통적으로 어떤 span(특정 리전의 캐시 노드 호출, 특정 DB 리플리카)에서 지연이 몰리는지 확인합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>병목으로 지목된 span과 관련된 로그를 trace ID로 조회해 세부 원인을 확인합니다.</strong> 예를 들어 특정 리전의 캐시 노드 로그에서 "커넥션 풀 대기" 경고(WARN)가 그 시간대에 급증한 것을 확인해, "해당 리전의 캐시 커넥션 풀이 과소 설정되어 있다"는 결론에 도달합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>SLO 관점에서 이 문제의 심각도를 판단합니다.</strong> 이 리전의 p99 SLO를 위협할 정도의 burn rate인지 계산해, 즉시 온콜 대응이 필요한 수준인지 다음 스프린트에 처리할 개선 작업인지 우선순위를 정합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>재발 방지를 위해 관측성 자체를 보강합니다.</strong> 이번에 알림이 뜨지 않은 이유(에러율 기반 알림만 있고 p99 리전별 burn rate 알림이 없었음)를 확인해, 리전별 p99 SLO와 burn rate 알림을 새로 추가합니다.
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <strong>시니어가 반드시 언급해야 하는 것</strong>: 명확한 에러나 알림이 없는 애매한 신고에서도 <strong>"평균이 아니라 꼬리 분포부터 본다"</strong>는 직관, 메트릭 → 트레이스 → 로그로 <strong>점점 좁혀가는 조사 순서(넓은 신호에서 좁은 신호로)</strong>, 그리고 조사로 끝내지 않고 <strong>"왜 이번엔 알림이 뜨지 않았는가"를 관측성 자체의 개선으로 연결</strong>하는 관점입니다. 이 세 가지가 없으면 "우연히 로그를 뒤지다 발견한" 운에 의존하는 조사로 보입니다.
+    </div>
+  </section>
+
+  <!-- ───────────── 7. RUBRIC ───────────── -->
+  <section id="section-rubric">
+    <h2>7. 자기 점검 Rubric</h2>
+    <p>각 항목을 솔직하게 채점하세요. ●●●=잘 설명할 수 있음, ●●○=부분적으로 앎, ●○○=어렴풋이 앎, ○○○=모름</p>
+
+    <div class="card rubric">
+      <div class="rubric-item">
+        <span>구조화 로깅과 상관관계 ID(trace ID)로 여러 서비스에 걸친 요청 하나를 재구성하는 방법을 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>로그에 개인정보를 남길 때의 위험과, 식별자·PII 분리 설계를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>RED와 USE 프레임워크의 차이, 그리고 왜 평균이 아니라 percentile을 봐야 하는지 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>메트릭 라벨의 카디널리티 폭발이 왜 위험한지, 어떤 필드를 라벨로 써야 하는지 판단할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>trace/span/context propagation의 관계와, 분산 트레이싱이 어떤 문제를 로그·메트릭보다 잘 푸는지 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>Head-based와 Tail-based 샘플링의 트레이드오프를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>SLI/SLO/SLA의 관계와 에러 예산의 개념, burn rate 기반 알림이 임계치 알림보다 나은 이유를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>에러 예산 소진 정책을 교조적으로 적용할 때의 위험과, 비즈니스와의 재협상 구조로 설계하는 방법을 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+    </div>
+
+    <h3>점수 해석</h3>
+    <ul>
+      <li><strong>7~8개 ●●●</strong>: 관측성 영역 시니어 수준. Day 10으로 진행해도 됩니다.</li>
+      <li><strong>4~6개 ●●●</strong>: 핵심은 알지만 ●●○ 항목을 다시 읽고, 자신이 운영해본 서비스의 실제 대시보드/알림 설정과 비교해 보세요.</li>
+      <li><strong>3개 이하 ●●●</strong>: 메트릭(RED/USE)과 트레이싱 섹션을 한 번 더 읽고, 종합 시나리오의 6단계를 소리 내어 설명해보세요.</li>
+    </ul>
+
+    <h3>추천 복습 방법</h3>
+    <p>오늘 배운 내용 중 가장 자신 없는 질문 하나를 골라, 면접관 앞에서 말하듯 2~3분간 소리 내어 설명해보세요. 막히는 부분이 실제로 모르는 부분입니다.</p>
+  </section>
+
+  <!-- ───────────── NAVIGATION ───────────── -->
+  <div class="nav-bottom">
+    <a href="./0008-security.html">← Day 8: 보안</a>
+    <a href="./index.html">목록으로</a>
+    <span style="color:var(--muted);font-size:0.9rem;">Day 10: 배포 &amp; DevOps →</span>
+  </div>
+
+</div>
+</body>
+</html>
