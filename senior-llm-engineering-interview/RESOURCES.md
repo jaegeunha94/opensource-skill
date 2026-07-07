@@ -48,6 +48,16 @@
 | 프롬프트 버전 관리·회귀 테스트 생태계 (Braintrust, MLflow prompt registry, Confident AI/DeepEval 등) | 프롬프트 레지스트리, CI/CD 통합 회귀 테스트, 배포 후 관측 패턴 — 구체 도구명은 계속 바뀌므로 파이프라인 구조 자체를 참고 |
 | xAI — Grok 미승인 시스템 프롬프트 변경 사고 공개 설명 (2025-05) | 프롬프트 변경 리뷰 프로세스 우회로 인한 실제 공개 사고 사례, 재발 방지 조치(공개 프롬프트, 승인 절차, 24시간 모니터링) |
 
+## Reasoning Model 사용 판단
+
+| 자료 | 설명 |
+|------|------|
+| Anthropic — Adaptive Thinking / Effort 공식 문서 (platform.claude.com/docs) | 모델별 adaptive thinking 지원 범위, effort 5단계(low~max), 수동 `budget_tokens` deprecation 공지 |
+| OpenAI — GPT-5.5 `reasoning_effort` 공식 가이드 | none/low/medium/high/xhigh 단계별 권장 사용처, "낮은 단계부터 시도하고 eval로 검증" 원칙 |
+| Google — Gemini Thinking 공식 문서 (`thinking_level`) | Gemini 2.5 숫자 `thinking_budget` → Gemini 3.x 등급 `thinking_level` 전환 |
+| "Don't Overthink It" 계열 서베이 (arXiv, 2025) | R1류 reasoning model의 overthinking 현상, 정확도-비용 역-U자 곡선 실증 |
+| "OverThink: Slowdown Attacks on Reasoning LLMs" (arXiv:2502.02542, 2025) | 외부 입력에 디코이 추론 문제를 심어 사고 토큰을 부풀리는 슬로다운/DoS 공격 |
+
 ## Fine-tuning, RFT & Embedding
 
 | 자료 | 설명 |

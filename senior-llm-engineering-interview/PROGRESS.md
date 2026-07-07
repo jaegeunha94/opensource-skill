@@ -8,12 +8,12 @@
 | 2 | 2026-07-04 | LLM 동작 특성과 Capability Boundary | [0002-llm-behavior-and-capability-boundary.html](lessons/0002-llm-behavior-and-capability-boundary.html) |
 | 3 | 2026-07-05 | Tokenization과 Context Window | [0003-tokenization-and-context-window.html](lessons/0003-tokenization-and-context-window.html) |
 | 4 | 2026-07-06 | Prompt Engineering 실무 | [0004-prompt-engineering-in-production.html](lessons/0004-prompt-engineering-in-production.html) |
+| 5 | 2026-07-07 | Reasoning Model 사용 판단 | [0005-reasoning-model-usage-judgment.html](lessons/0005-reasoning-model-usage-judgment.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | Reasoning Model 사용 판단 | extended thinking/reasoning effort 판단 기준, latency/cost 대가 |
 | 6 | Structured Output 설계 | 스키마 강제, 파싱 실패 처리, 신뢰성 있는 출력 계약 |
 | 7 | Function/Tool Calling & Agentic 아키텍처 | tool calling 설계, 멀티스텝 신뢰성, 실패 복구 |
 | 8 | Multimodal 입출력 | vision/audio/generation 품질·비용·안전 trade-off |
@@ -29,7 +29,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — Day 5 (Reasoning Model 사용 판단)가 다음 차례.
+**Day 5 완료** — Day 6 (Structured Output 설계)가 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -45,7 +45,7 @@
 - [x] 포지션 편향(U-shaped, lost in the middle)과 정보 배치 전략 (Day 3)
 - [x] RAG vs long-context stuffing 판단 기준, compaction/context editing/caching을 통한 장기 실행 컨텍스트 관리 (Day 3)
 - [x] 프롬프트 엔지니어링 실무와 버전 관리 (Day 4)
-- [ ] reasoning model 사용 판단 기준 (예정 Day 5)
+- [x] reasoning model 사용 판단 기준: effort 파라미터, overthinking/역-U자 곡선, 슬로다운 공격 표면 (Day 5)
 - [ ] structured output 설계와 실패 처리 (예정 Day 6)
 - [ ] function/tool calling과 agentic 아키텍처 (예정 Day 7)
 - [ ] 멀티모달 입출력 trade-off (예정 Day 8)
@@ -65,4 +65,5 @@
 - 2026-07-04 Day 2 작성 시점, OpenAI "Why Language Models Hallucinate"(2025, arXiv:2509.04664) 및 관련 2026년 후속 논의(평가 인센티브가 환각을 유도한다는 논지, Nature 게재 등)를 확인해 실패 모드/환각 섹션에 반영함. 2026년 프론티어 모델의 표준 벤치마크 환각률은 한 자릿수 %대까지 낮아졌으나, 실제 프로덕션 표본 조사에서는 여전히 도메인에 따라 두 자릿수 %대 환각이 보고된다는 간극도 함께 확인함.
 - 2026-07-05 Day 3 작성 시점, Anthropic Claude Platform Docs(context windows, token counting)를 확인해 2026년 중반 기준 Claude Opus 4.6/4.7/4.8·Sonnet 5·Sonnet 4.6이 API 기본값으로 1M 토큰 context window를 제공하며(Sonnet 4.5 등 일부는 200K 유지), OpenAI GPT-5.5도 1M 토큰 컨텍스트를 지원한다는 것을 확인함. Anthropic 문서가 공식 용어로 쓰는 "context rot"(컨텍스트가 커질수록 정확도·회상이 저하되는 현상)을 프레임워크의 핵심 개념으로 채택했고, Claude Opus 4.7 이후·Sonnet 5 등에서 새 토크나이저가 도입되어 동일 텍스트가 약 30% 더 많은 토큰으로 계산된다는 마이그레이션 함정도 반영함. Chroma의 다중 모델(GPT/Claude/Gemini/Qwen) context rot 벤치마크에서 확인된 "effective context window가 claimed보다 훨씬 작을 수 있다"는 수치와 포지션 편향(U-shaped) 연구도 근거로 사용함.
 - 2026-07-06 Day 4 작성 시점, Anthropic의 프롬프트/컨텍스트 엔지니어링 공식 가이드(적정 고도, 5대 고효율 기법 — XML 태그, 근거 우선 요구, 역할 부여, 단계별 추론, 예시 제시)와 OpenAI GPT-5.5 프롬프팅 가이드(캐싱 친화적 레이아웃: 정적 내용 앞, 변동 내용 뒤)를 확인해 반영함. 2026년 기준 프롬프트 버전 관리·회귀 테스트 생태계(레지스트리형 버전 관리, CI/CD 통합 회귀 테스트, 배포 후 관측)가 표준 관행으로 자리잡고 있음을 확인함. 2025년 5월 xAI Grok의 미승인 시스템 프롬프트 변경 사고(리뷰 프로세스 우회 → 공개 사고 → GitHub 프롬프트 공개·추가 승인 절차·24시간 모니터링으로 재발 방지)를 프롬프트 변경 관리의 실제 공개 사례로 채택함.
+- 2026-07-07 Day 5 작성 시점, Anthropic Claude Platform Docs의 Adaptive Thinking·Effort 공식 문서(Opus 4.7/4.8은 adaptive thinking만 지원하고 수동 `budget_tokens`는 400 에러로 거부, effort는 low~max 5단계), OpenAI GPT-5.5 `reasoning_effort` 공식 가이드(none/low/medium(기본)/high/xhigh, "낮은 단계부터 시도하고 eval로 검증된 경우에만 올리라"는 권고), Google Gemini의 `thinking_budget`(숫자) → `thinking_level`(등급) 전환을 확인함. 세 벤더 모두 "숫자 기반 토큰 예산 → 등급형 effort"로 수렴하고 있다는 공통 흐름을 핵심 근거로 반영함. reasoning 효율화 연구에서 반복 관찰되는 "overthinking"(정확도가 정점 이후 하락하는 역-U자 곡선)과, 2025년 연구(arXiv:2502.02542, "OverThink")가 보인 외부 입력 기반 사고량 부풀리기 슬로다운 공격을 프레임워크에 반영해, reasoning effort 판단이 성능/비용 문제를 넘어 보안(Day 14 prompt injection과 연결) 문제이기도 하다는 관점을 추가함.
 - 특정 모델명·버전·수치는 인터뷰 시점에 따라 바뀔 수 있으므로, 새 레슨을 만들 때마다 공식 문서와 changelog를 다시 확인하고 이 메모를 갱신한다.

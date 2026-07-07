@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — Reasoning Model 사용 판단 | LLM Engineering 10년차 이상 개발자 Interview</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    .freshness {
+      background: #201a2d;
+      border: 1px solid var(--accent2);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .freshness strong { color: var(--accent2); }
+    .incident {
+      background: #2d0d18;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 1rem;
+    }
+    .incident .label { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; letter-spacing: 0.05em; text-transform: uppercase; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">LLM Engineering 10년차 이상 개발자 Interview</a> › <a href="./">레슨 목록</a> › Day 5
+  </nav>
+
+  <h1>Day 5 — Reasoning Model 사용 판단</h1>
+  <p class="subtitle">"생각을 더 시키면 무조건 좋다"는 직관을 깨고, effort를 비용/지연/공격 표면까지 포함한 trade-off로 다루는 사고법 · 2026-07-07</p>
+
+  <div class="freshness">
+    <strong>최신성 안내</strong> — 이 레슨은 2026년 7월 기준 Anthropic Claude Platform Docs의 <strong>Adaptive Thinking</strong>·<strong>Effort</strong> 공식 문서, OpenAI GPT-5.5 <code>reasoning_effort</code> 가이드, Google Gemini <code>thinking_level</code> 공식 문서, 그리고 reasoning model의 "overthinking" 현상과 이를 악용하는 <strong>OverThink 슬로다운 공격</strong> 관련 2025~2026년 연구를 확인해 작성되었습니다. 업계는 "extended thinking을 켤지 말지"를 개발자가 고정된 토큰 예산(<code>budget_tokens</code>)으로 수동 조절하던 방식에서, 모델이 문제 난이도에 따라 스스로 사고 여부·깊이를 결정하고 개발자는 <strong>effort 레벨(대략 low~max)</strong>로 그 경향만 조절하는 방식으로 빠르게 이동하고 있습니다(Anthropic은 Opus 4.7/4.8·Sonnet 5에서 수동 <code>budget_tokens</code> 방식 자체를 거부하도록 전환했고, OpenAI GPT-5.5와 Google Gemini 3.1 계열도 유사한 effort/level 파라미터로 수렴). 구체적 파라미터 이름·모델명은 계속 바뀌므로, 암기 대상은 <strong>"reasoning은 공짜가 아니고, 심지어 항상 이득도 아니며, 새로운 공격 표면이기도 하다"는 판단 프레임워크</strong>입니다.
+  </div>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#snapshot">최신 정보 스냅샷 — 2026년 7월 기준 reasoning model 지형</a></li>
+      <li><a href="#framework">사용 판단 프레임워크</a></li>
+      <li><a href="#strategy">상황별 전략 매핑</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"reasoning 기능을 켜니 정확도는 조금 올랐는데 응답 시간이 몇 배로 늘었습니다. 어떤 기준으로 켜고 끌지 결정하시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"extended thinking이나 reasoning effort가 실제로 정확도를 얼마나, 어떤 조건에서 높이나요? 모든 태스크에 항상 도움이 되나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"안전하게 가려고 reasoning effort를 항상 최대로 설정해두면 되지 않나요? 그게 왜 리스크가 될 수 있나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 3</div>
+      <p>"멀티스텝 tool-calling 에이전트를 운영한다면, reasoning effort를 어떻게 설정하고 검증하시겠어요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 지원자가 reasoning model을 <strong>"더 똑똑한 모델을 켜는 스위치"</strong>로 이해하는지, 아니면 <strong>"정확도-지연시간-비용-공격 표면 사이의 4자 trade-off를 판단하는 다이얼"</strong>로 이해하는지를 가른다. reasoning model은 프론티어 벤치마크에서 인상적인 점수를 내지만, 그 점수는 "생각을 더 많이 시킬수록 무조건 좋아진다"는 뜻이 아니다. 실제로는 문제 난이도에 따라 정확도가 어느 지점에서 정점을 찍고 오히려 떨어지는 역-U자 곡선이 관찰되며, 지연시간과 비용은 거의 선형으로 계속 증가한다. 시니어 엔지니어는 이 곡선의 존재를 알고, "이 태스크에 reasoning이 필요한가"를 감이 아니라 측정된 근거로 판단할 수 있어야 한다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>Reasoning model의 본질을 이해하는가</strong> — extended thinking/reasoning effort가 "더 똑똑한 모델"이 아니라 "추론 과정에 더 많은 연산(토큰)을 배분하는 모드"라는 것, 그리고 그 연산이 항상 답의 품질로 전환되지는 않는다는 것을 아는가.</li>
+      <li><strong>Trade-off를 수치로 말할 수 있는가</strong> — "정확도가 조금 오른다"가 아니라, 몇 %p 오르고 지연시간·비용이 몇 배 느는지, 그리고 그 대가가 이 제품의 요구사항(응답 시간 SLA, 단가)에 비춰 정당한지 판단하는 사고를 보여주는가.</li>
+      <li><strong>"항상 최대로 켜두면 안전하다"는 함정을 아는가</strong> — reasoning effort를 무조건 높이는 것이 비용·지연만의 문제가 아니라, "overthinking"으로 인한 정확도 저하와, 공격자가 추론 과정을 인위적으로 부풀리는 새로운 공격 표면(slowdown/cost 공격)까지 만든다는 것을 아는가.</li>
+      <li><strong>측정 기반 의사결정 절차를 설계할 수 있는가</strong> — reasoning을 켤지 끌지, effort를 얼마로 할지를 벤치마크 점수가 아니라 자사 task-fit eval로 검증하고, 배포 후에도 지연시간·비용·정확도를 계속 관측하는 절차를 제시하는가.</li>
+      <li><strong>에이전틱 워크플로우에서의 판단력</strong> — 멀티스텝 tool calling이 섞인 워크플로우에서는 단순 질의응답과 다른 기준(계획 수립 단계에만 reasoning 집중 등)이 필요하다는 것을 아는가.</li>
+    </ul>
+
+    <p>주니어~중니어에서 자주 나오는 답변 패턴: "reasoning 모델이 더 똑똑하니까 중요한 요청에는 무조건 켜두면 됩니다." 이 답변은 reasoning을 이진 스위치(on/off)로만 보고, effort 레벨이라는 연속적 다이얼과 그 다이얼을 어디에 맞출지 결정하는 측정 절차가 빠져 있다는 신호다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Reasoning model(추론 모델)이란 무엇인가</h3>
+    <p>일반 LLM은 질문을 받으면 바로 다음 토큰을 예측해 답을 생성하기 시작한다. Reasoning model은 답을 내놓기 전에 <strong>사람에게 보이지 않는(또는 요약되어 보이는) "생각 과정" 토큰을 먼저 생성</strong>하고, 그 생각을 바탕으로 최종 답을 낸다. 비유하면, 일반 모델은 즉석에서 대답하는 사람이고, reasoning model은 "잠깐만요, 생각 좀 해볼게요"라며 메모지에 여러 각도로 따져본 뒤 대답하는 사람이다. 이 "생각 메모"도 결국 모델이 생성하는 토큰이기 때문에, 시간(지연시간)과 돈(비용)이 똑같이 든다 — 심지어 최종 답보다 생각 메모가 훨씬 길어서 비용의 대부분을 차지하는 경우가 많다.</p>
+
+    <h3>왜 "생각을 더 시키면 무조건 좋다"가 틀린 직관인가 — 역-U자 곡선</h3>
+    <p>reasoning 토큰을 늘리면 처음에는 정확도가 올라간다 — 복잡한 수학 문제나 멀티스텝 코드 디버깅처럼, 실제로 여러 단계를 거쳐야 풀리는 문제에서는 "생각 시간"이 실제로 답의 품질을 높인다. 하지만 연구들은 반복적으로 <strong>정확도가 어느 지점에서 정점을 찍고, 그 이후로는 생각을 더 시켜도 오히려 정확도가 떨어지는 역-U자(inverse-U) 형태</strong>를 관찰한다. 이를 "overthinking(과잉 사고)"이라 부른다 — 모델이 이미 맞는 답에 도달했는데도 스스로를 계속 의심하며 불필요한 재검토를 반복하다가, 오히려 처음의 올바른 판단을 뒤집는 경우가 여기 해당한다. 간단한 산수 문제("2+3은?")에도 온갖 각도에서 검토하는 장문의 사고 과정을 생성하는 모델이 대표적 사례다. 사람으로 비유하면, 쉬운 결정을 지나치게 오래 고민하다가 분석 마비(analysis paralysis)에 빠져 오히려 더 나쁜 선택을 하는 것과 비슷하다.</p>
+
+    <h3>Effort(노력 수준) 파라미터란 무엇이고 왜 "토큰 예산 직접 지정" 대신 이것으로 옮겨가는가</h3>
+    <p>초기 reasoning model API는 개발자가 "생각에 쓸 토큰 예산(예: 최대 1만 토큰)"을 직접 숫자로 지정하는 방식이었다. 문제는, 개발자가 매 요청마다 이 문제가 얼마나 어려운지 미리 알 수 없다는 것이다 — 쉬운 질문에 큰 예산을 주면 낭비고, 어려운 질문에 작은 예산을 주면 답이 부실해진다. 그래서 최신 API들은 <strong>모델이 요청의 난이도를 스스로 판단해 사고 여부와 깊이를 정하게 하고, 개발자는 "얼마나 적극적으로 생각할지"의 대략적 성향만 낮음/보통/높음 같은 등급(effort)으로 지정</strong>하는 방식으로 옮겨가고 있다. 신입 직원에게 "이 보고서는 최대 3시간 안에 써오세요"라고 시간을 못박는 대신, "이 보고서는 꼼꼼하게 검토해서 써오세요" vs "이건 빠르게 초안만 주세요"처럼 <strong>기대 수준을 등급으로 전달</strong>하는 것에 가깝다.</p>
+
+    <h3>Reasoning model이 새로운 공격 표면이 되는 이유 — Slowdown/Cost 공격</h3>
+    <p>reasoning model이 "스스로 판단해서 더 생각한다"는 특성은 거꾸로 악용될 수 있다. 만약 모델이 처리하는 입력(예: 검색 결과, 웹페이지, 사용자가 업로드한 문서) 어딘가에 <strong>"이 문제를 아주 신중하게, 여러 번 재검토하며 풀어보세요" 같은 유도 문구나 가짜 하위 문제를 몰래 심어두면</strong>, 모델이 그 문구에 이끌려 원래 필요한 것보다 수십 배 더 많은 사고 토큰을 생성하게 만들 수 있다는 것이 연구로 확인되었다("OverThink" 슬로다운 공격). 이는 서비스 거부(DoS)나 비용 폭증을 노리는 공격이 될 수 있는데, 중요한 점은 이 공격이 모델의 "결함"이 아니라 reasoning model의 핵심 설계(모델이 스스로 얼마나 생각할지 판단한다는 특성) 자체를 이용한다는 것이다. 이는 Day 14에서 다룰 prompt injection 방어와 직접 연결되는 지점이다 — reasoning effort를 관리하는 문제가 성능·비용 문제만이 아니라 보안 문제이기도 하다는 뜻이다.</p>
+  </section>
+
+  <!-- 4. 최신 정보 스냅샷 -->
+  <section id="snapshot">
+    <h2>4. 최신 정보 스냅샷 — 2026년 7월 기준 reasoning model 지형</h2>
+
+    <div class="card">
+      <h4>Anthropic — Adaptive Thinking과 Effort 파라미터로의 전환</h4>
+      <p>Anthropic 공식 문서에 따르면, Claude Opus 4.7/4.8은 <strong>adaptive thinking만 지원</strong>하며 수동 <code>budget_tokens</code> 방식은 아예 400 에러로 거부된다. Claude Sonnet 5는 adaptive thinking이 기본으로 켜져 있고, 끄려면 명시적으로 disable해야 한다. Effort 레벨은 <code>low → medium → high(기본값) → xhigh → max</code>의 5단계로, 기본값인 high에서는 "거의 항상 생각"하고, low에서는 "속도가 중요한 단순 요청에서 생각을 건너뛴다." xhigh는 Opus 4.7/4.8·Sonnet 5 등 최신 모델에서만 제공되는, high와 max 사이의 중간 단계로 "최대 지출을 커밋하지 않으면서 어려운 태스크에 추가 연산을 주는" 용도로 안내된다. 구형 모델(Sonnet 4.5, Opus 4.5 등)은 여전히 수동 <code>budget_tokens</code> 방식만 지원한다.</p>
+    </div>
+
+    <div class="card">
+      <h4>OpenAI GPT-5.5 — <code>reasoning_effort</code> 5단계와 "낮은 단계부터 시도하라"는 공식 권고</h4>
+      <p>GPT-5.5는 <code>reasoning_effort</code>를 <code>none/low/medium(기본값)/high/xhigh</code> 5단계로 지원한다. OpenAI 공식 가이드는 medium을 "품질·신뢰성·지연시간·비용의 균형점"으로 제시하면서, 지연시간이 중요한 워크플로우에서는 <strong>tool 사용·계획 수립·검색·멀티스텝 판단이 여전히 중요하다면 none보다 low를 먼저 검토</strong>하라고 권고한다. none은 reasoning이나 멀티스텝 tool 호출이 필요 없는 지연 초민감 태스크(경량 음성 응답, 빠른 정보 검색, 분류)에만 남겨두라고 명시한다. high·xhigh는 "eval에서 측정 가능한 품질 향상이 그 추가 지연·비용을 정당화할 때만" 올리라는 것이 공식 권고다 — 즉 effort를 올리는 결정 자체를 eval 결과라는 증거 기반으로 만들라는 것이다.</p>
+    </div>
+
+    <div class="card">
+      <h4>Google Gemini — <code>thinking_level</code>로의 전환과 "동적 사고" 기본값</h4>
+      <p>Gemini 모델은 기본적으로 요청 복잡도에 따라 스스로 사고량을 조절하는 "동적 사고(dynamic thinking)"가 기본값이다. Gemini 2.5 세대의 숫자 기반 <code>thinking_budget</code>(토큰 수 직접 지정) 방식은 Gemini 3.x 세대에서 <code>thinking_level</code>(<code>MINIMAL/LOW/MEDIUM/HIGH</code>) 등급 방식으로 대체되었다 — Anthropic·OpenAI와 같은 방향(숫자 예산 → 등급형 effort)으로 수렴하고 있다는 뜻이다. MINIMAL은 저복잡도 태스크에서 사고 토큰을 최소화하도록 설계된 등급이다.</p>
+    </div>
+
+    <div class="card">
+      <h4>Overthinking과 비용/성능 trade-off의 실측 근거</h4>
+      <p>reasoning 효율화 연구들은 SWE-bench류의 실제 코드 수정 벤치마크에서 <strong>reasoning effort를 높였을 때 해결률과 비용이 함께 오르지만 비례하지 않는다</strong>는 것을 반복적으로 보여준다. 예를 들어, high reasoning effort는 낮은 effort 대비 해결률이 소폭 높지만 비용은 3배 이상 뛰는 반면, 동일한 낮은 effort로 후보를 여러 개 생성해 그중 "과잉 사고 점수가 낮은" 것을 고르는 전략은 high effort에 근접한 해결률을 훨씬 낮은 비용으로 달성한다는 결과가 보고된다. 이는 "effort를 무조건 올리는 것"과 "같은 예산을 더 영리하게 쓰는 것" 사이에 실질적인 선택지가 있다는 것을 뒷받침한다.</p>
+    </div>
+
+    <div class="incident">
+      <div class="label">Emerging Risk — OverThink 슬로다운 공격 (2025년 연구, arXiv:2502.02542)</div>
+      <p>2025년 발표된 연구는 reasoning model에 입력되는 콘텍스트(검색 결과, 웹 문서, 도구 응답 등)에 디코이(decoy) 추론 문제를 몰래 삽입하면, 모델이 원래 태스크와 무관하게 그 디코이를 붙잡고 불필요하게 방대한 사고 토큰을 생성하도록 유도할 수 있음을 보였다 — 보고된 사례에서는 정상 대비 추론 토큰 사용량이 수십 배까지 부풀려졌다. 이는 RAG나 에이전틱 워크플로우처럼 <strong>외부에서 온 텍스트가 모델의 컨텍스트에 그대로 들어가는 구조</strong>에서 특히 위험하다. 방어책 연구는 아직 진행 중이지만, 핵심 시사점은 reasoning effort 관리가 이제 성능·비용 최적화 문제를 넘어 <strong>보안·가용성(DoS) 문제</strong>이기도 하다는 것이다(Day 14 prompt injection 방어에서 심화).</p>
+    </div>
+
+    <div class="why-box">
+      <p><strong>이 스냅샷에서 인터뷰용으로 가져가야 할 한 문장:</strong> "주요 벤더들이 숫자 기반 토큰 예산에서 등급형 effort 파라미터로 함께 수렴하고 있다는 것은, reasoning을 '개발자가 정밀 제어하는 자원'이 아니라 '모델이 판단하고 개발자는 성향만 조율하는 자원'으로 다루는 방향이 업계 표준이 되고 있다는 뜻이며, 동시에 이 자원을 eval로 검증하지 않고 무조건 높이면 overthinking으로 인한 정확도 저하와 prompt injection 기반 슬로다운 공격이라는 두 가지 새로운 리스크에 노출된다는 것입니다."</p>
+    </div>
+  </section>
+
+  <!-- 5. 프레임워크 -->
+  <section id="framework">
+    <h2>5. 사용 판단 프레임워크</h2>
+
+    <p>인터뷰에서 reasoning model 사용 여부를 이야기할 때는 "언제 켤 것인가"와 "어떻게 검증·통제할 것인가"를 분리해서 구조화하면 신호가 명확해진다.</p>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>축</th>
+          <th>핵심 질문</th>
+          <th>실무 기법</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>① 태스크 성격 판단</strong></td>
+          <td>이 요청이 실제로 멀티스텝 추론을 필요로 하는가?</td>
+          <td>수학/코드 디버깅/멀티스텝 계획 vs 단순 조회/분류/짧은 대화 구분</td>
+        </tr>
+        <tr>
+          <td><strong>② 지연시간 예산</strong></td>
+          <td>이 제품이 허용하는 응답 시간은 얼마인가?</td>
+          <td>실시간 음성/채팅 UI는 low~none, 배치/비동기 파이프라인은 high~max 여지</td>
+        </tr>
+        <tr>
+          <td><strong>③ Effort 단계별 실측</strong></td>
+          <td>effort를 한 단계 올릴 때 정확도·지연·비용이 각각 얼마나 바뀌는가?</td>
+          <td>고정 eval 셋으로 effort별 정확도-지연-비용 곡선을 직접 측정</td>
+        </tr>
+        <tr>
+          <td><strong>④ Overthinking 경계 탐지</strong></td>
+          <td>effort를 더 올려도 정확도가 정체·하락하는 지점은 어디인가?</td>
+          <td>역-U자 곡선에서 정점 근처 effort를 기본값으로 채택</td>
+        </tr>
+        <tr>
+          <td><strong>⑤ 워크플로우 단위 배분</strong></td>
+          <td>멀티스텝 에이전트에서 모든 단계에 동일한 effort가 필요한가?</td>
+          <td>계획 수립·모호성 해소 단계는 높게, 정형화된 실행 단계는 낮게 차등 배분</td>
+        </tr>
+        <tr>
+          <td><strong>⑥ 공격 표면 통제</strong></td>
+          <td>외부 입력이 reasoning 분량을 조작할 수 있는 구조인가?</td>
+          <td>외부 콘텐츠 신뢰 구간 분리, 사고 토큰 상한(hard cap), 이상 급증 모니터링</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>왜 ①~③(언제 켤까)만으로는 부족한가</h4>
+      <p>많은 팀이 reasoning 판단을 ①~③(이 태스크에 도움이 되는지)에서 멈춘다. 그러나 OverThink 공격 사례처럼, 아무리 태스크 성격상 reasoning이 유익하더라도 <strong>사고 분량 자체가 외부에서 조작될 수 있는 구조</strong>라면 비용·가용성 리스크가 남는다. 시니어 엔지니어의 답변은 "reasoning이 도움이 되는가"에서 그치지 않고, ④~⑥(그 이득이 정점을 넘어서지 않는지, 그리고 그 자원이 악용되지 않는지)까지 포함해야 완결된다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 상황별 전략 매핑 -->
+  <section id="strategy">
+    <h2>6. 상황별 전략 매핑</h2>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>"실시간 채팅/음성 UI에서 응답한다" → low 또는 none부터 시작</strong>
+          <p style="margin-top:0.3rem">지연시간 SLA가 엄격한 인터페이스는 reasoning을 기본으로 끄거나 최소 단계에서 시작하고, tool 호출·멀티스텝 판단이 실제로 필요한 경로에서만 예외적으로 올린다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>"수학/코드/멀티스텝 계획 태스크에서 정확도가 부족하다" → effort를 단계적으로 올리며 eval로 실측</strong>
+          <p style="margin-top:0.3rem">effort를 한 번에 max로 올리지 않는다. medium → high → xhigh 순으로 고정 eval 셋에 대해 정확도·지연·비용을 측정해, 정확도 향상이 정체되는 지점(overthinking 경계)을 찾아 그 직전 단계를 기본값으로 채택한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>"멀티스텝 tool-calling 에이전트를 운영한다" → 단계별 차등 effort</strong>
+          <p style="margin-top:0.3rem">계획 수립·모호한 요구사항 해석처럼 판단이 중요한 단계에는 effort를 높게, 이미 계획이 확정된 뒤 정형화된 tool 호출을 반복 실행하는 단계에는 낮게 배분한다. 모든 단계에 동일한 effort를 주는 것은 낭비이거나 부족일 가능성이 높다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>"안전을 위해 항상 최대 effort를 쓰고 싶다" → 정점을 넘는지부터 검증</strong>
+          <p style="margin-top:0.3rem">"높을수록 안전하다"는 가정을 검증 없이 채택하지 않는다. 역-U자 곡선 때문에 max effort가 오히려 특정 태스크에서 정확도를 떨어뜨릴 수 있으므로, "최대"가 아니라 "이 태스크의 정점"을 목표로 삼는다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>"외부 문서·검색 결과·도구 응답이 컨텍스트에 들어온다" → 사고 토큰 상한과 이상 탐지 추가</strong>
+          <p style="margin-top:0.3rem">OverThink류 공격 가능성을 고려해, 외부에서 온 콘텐츠가 포함된 요청에는 사고 토큰의 hard cap을 걸고, 평소 대비 비정상적으로 긴 사고가 발생하는 요청을 관측·알림 대상으로 삼는다. (Day 14 prompt injection 방어에서 심화)</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 7. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>7. 답변 사고 순서</h2>
+
+    <p>면접에서 이 순서대로 30초~1분 정도로 요약해 말하면 된다.</p>
+
+    <ol>
+      <li><strong>Reasoning model을 "더 똑똑한 모델"이 아니라 "연산을 더 쓰는 모드"로 정의합니다.</strong> 사고 토큰도 지연시간과 비용을 그대로 소모하는 출력 토큰이라는 전제를 먼저 짚습니다.</li>
+      <li><strong>정확도-지연-비용이 함께 오르되 비례하지 않는다는 것을 짚습니다.</strong> 특히 역-U자 곡선(overthinking으로 정점 이후 정확도가 하락)을 언급합니다.</li>
+      <li><strong>이 특정 케이스에서 정확도 향상 폭과 지연시간 증가 배수를 실제 수치로 되짚습니다.</strong> "조금 올랐다"를 그대로 받아들이지 않고, eval로 몇 %p·몇 배인지 확인했는지 확인합니다.</li>
+      <li><strong>effort 단계를 정점 근처로 재조정하는 절차를 제시합니다.</strong> effort를 낮추거나, 단계별로 차등 배분하거나, 후보 여러 개를 낮은 effort로 생성해 고르는 대안까지 고려합니다.</li>
+      <li><strong>보안·가용성 측면(공격 표면)까지 언급하며 마무리합니다.</strong> 외부 입력이 사고 분량을 조작할 수 있는 구조라면 hard cap과 모니터링이 필요하다는 것을 짚어, 판단이 성능 논의로만 끝나지 않게 합니다.</li>
+    </ol>
+  </section>
+
+  <!-- 8. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>8. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "reasoning 기능을 켜니 정확도는 조금 올랐는데 응답 시간이 몇 배로 늘었습니다. 어떤 기준으로 켜고 끌지 결정하시겠어요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>먼저 전제를 짚겠습니다. reasoning 모드는 "더 똑똑한 모델"이 아니라, 답을 내기 전에 생성하는 "생각 과정" 토큰에 더 많은 연산을 배분하는 모드입니다. 이 생각 과정도 결국 모델이 생성하는 토큰이기 때문에 지연시간과 비용을 그대로 잡아먹고, 실제로 많은 벤치마크에서 effort를 계속 올리면 정확도가 어느 지점에서 정점을 찍고 오히려 떨어지는 역-U자 곡선이 관찰됩니다 — "overthinking"이라 부르는 현상입니다.</p>
+      <br>
+      <p>그래서 "정확도가 조금 올랐다"는 결과를 그대로 받아들이지 않고, 먼저 숫자로 되짚겠습니다. 고정된 eval 데이터셋에 대해 effort를 낮음-보통-높음 단계별로 실측해서, 정확도가 몇 %p 오르고 지연시간·비용이 몇 배 느는지를 곡선으로 그립니다. 만약 정확도 향상이 미미한데 지연시간이 3~4배로 뛰었다면, 이 태스크는 이미 역-U자 곡선의 정점을 지났거나 애초에 reasoning이 필요한 태스크가 아니었을 가능성이 높습니다. 이 경우 effort를 한 단계 낮추거나, 혹은 낮은 effort로 후보를 여러 개 생성해 그중 더 나은 것을 고르는 방식으로 비슷한 정확도를 훨씬 낮은 비용에 얻을 수 있는지도 검토합니다.</p>
+      <br>
+      <p>그다음 제품 요구사항과 대조합니다. 이 인터페이스가 실시간 응답 SLA가 있는 채팅이나 음성이라면, 정확도가 조금 오르는 정도로는 지연시간 몇 배 증가를 정당화하기 어렵습니다. 반면 배치로 처리되거나 사용자가 "깊이 검토 중"이라는 신호를 받아들일 수 있는 워크플로우(예: 코드 리뷰, 복잡한 분석 리포트 생성)라면 높은 effort가 정당화될 수 있습니다. 그리고 멀티스텝 에이전트라면, 모든 단계에 동일한 effort를 주지 않고 계획 수립처럼 판단이 중요한 단계에만 높은 effort를 배분합니다.</p>
+      <br>
+      <p>마지막으로 한 가지를 더 확인합니다. 이 요청에 외부 문서나 검색 결과처럼 신뢰할 수 없는 콘텐츠가 섞여 들어가는 구조라면, 그 콘텐츠 안에 모델이 불필요하게 깊이 파고들도록 유도하는 문구가 숨겨져 있을 가능성(OverThink류 슬로다운 공격)도 배제하지 않고, 사고 토큰에 hard cap을 걸고 평소보다 비정상적으로 긴 사고가 발생하면 알림이 오도록 관측 체계를 둡니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>reasoning을 "무조건 좋은 것"이 아니라 연산 배분 모드로 정확히 정의함</li>
+      <li>"조금 올랐다"는 모호한 표현을 숫자 기반 effort별 곡선 실측으로 되짚음</li>
+      <li>overthinking(역-U자 곡선) 개념으로 "더 올리면 안 좋을 수도 있다"는 반직관적 사실을 근거로 제시함</li>
+      <li>제품 요구사항(지연시간 SLA)과 워크플로우 단계별 차등 배분까지 판단에 포함함</li>
+      <li>성능 논의로 그치지 않고 보안(슬로다운 공격) 관점까지 확장함</li>
+    </ul>
+  </section>
+
+  <!-- 9. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>9. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"reasoning 모델이 더 똑똑하니까, 중요한 요청에는 무조건 켜두고 effort도 최대로 설정합니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>reasoning을 이진 스위치로만 보고, effort라는 연속적 다이얼과 태스크별 최적점이 다르다는 것을 고려하지 않습니다.</li>
+        <li>"더 많이 생각할수록 항상 좋다"는 가정이 틀렸다는 것(overthinking, 역-U자 곡선)을 모르고 있습니다.</li>
+        <li>지연시간·비용 대가를 제품 요구사항과 연결짓지 않았고, 측정 없이 "중요하니까 최대로"라는 감으로 결정합니다.</li>
+        <li>reasoning effort가 새로운 공격 표면이 될 수 있다는 보안 관점이 전혀 없습니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"reasoning은 비용이 많이 드니까 저희 서비스에서는 아예 쓰지 않습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>일괄적으로 켜거나 끄는 이진 판단이며, 태스크 성격(멀티스텝 수학/코드 vs 단순 조회)에 따라 필요성이 다르다는 것을 고려하지 않습니다.</li>
+        <li>워크플로우 단계별 차등 배분(계획 수립 단계에만 높은 effort)이라는 절충안을 놓치고 있습니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>reasoning을 "연산 배분 모드"로 정의하고 사고 토큰도 비용·지연을 소모한다는 전제를 명시한다</li>
+        <li>overthinking(역-U자 곡선)을 언급해 "더 올릴수록 좋다"는 가정이 틀릴 수 있음을 짚는다</li>
+        <li>effort 단계별 정확도-지연-비용을 eval로 실측하는 절차를 제시한다</li>
+        <li>제품의 지연시간 SLA·워크플로우 단계별 요구사항과 판단을 연결한다</li>
+        <li>reasoning effort가 prompt injection 기반 슬로다운 공격의 표면이 될 수 있다는 보안 관점을 포함한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. Follow-up -->
+  <section id="followups">
+    <h2>10. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: extended thinking이나 reasoning effort가 실제로 정확도를 얼마나, 어떤 조건에서 높이나요? 모든 태스크에 항상 도움이 되나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 아니요, 태스크 성격에 크게 좌우됩니다. 여러 단계를 거쳐야 풀리는 수학·코드 디버깅·멀티스텝 계획 같은 태스크에서는 사고 시간이 실제로 정확도를 높입니다. 반면 단순 조회, 분류, 짧은 대화처럼 애초에 여러 단계 추론이 필요 없는 태스크에서는 사고 토큰만 늘고 정확도 향상은 거의 없거나, 오히려 "overthinking"으로 떨어질 수도 있습니다. 게다가 같은 태스크라도 effort를 계속 올리면 정확도가 어느 지점에서 정점을 찍고 하락하는 역-U자 곡선이 관찰되므로, "reasoning은 항상 도움이 된다"가 아니라 "이 태스크와 이 effort 수준의 조합에서 도움이 되는지를 eval로 확인해야 한다"가 정확한 태도입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 안전하게 가려고 reasoning effort를 항상 최대로 설정해두면 되지 않나요? 그게 왜 리스크가 될 수 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 세 가지 이유로 리스크가 됩니다. 첫째, 역-U자 곡선 때문에 max effort가 오히려 특정 태스크에서 정확도를 떨어뜨릴 수 있습니다 — "최대"가 "최선"이 아닐 수 있습니다. 둘째, 지연시간과 비용이 거의 선형으로 계속 늘어나는데, 정확도 향상은 정점 이후 정체되므로 비용 대비 효율이 급격히 나빠집니다. 셋째, reasoning effort를 무조건 높게 열어두면, 외부에서 온 입력에 사고량을 부풀리는 유도 문구가 섞여 있을 때(OverThink류 슬로다운 공격) 그 공격이 더 큰 피해를 낼 수 있는 표면을 열어두는 셈입니다. 그래서 저는 "최대"가 아니라 "eval로 확인한 이 태스크의 정점"을 기본값으로 삼고, 사고 토큰에는 항상 hard cap을 둡니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 멀티스텝 tool-calling 에이전트를 운영한다면, reasoning effort를 어떻게 설정하고 검증하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 워크플로우를 단계별로 나눠 차등 배분합니다. 계획을 수립하거나 모호한 사용자 요구를 해석하는 단계처럼 판단의 질이 결과를 좌우하는 단계에는 높은 effort를, 계획이 이미 확정된 뒤 정형화된 tool 호출을 반복 실행하는 단계에는 낮은 effort나 reasoning을 끈 상태를 씁니다. 검증은 각 단계별로 대표적인 실패 케이스를 포함한 고정 eval 시나리오를 만들어, effort 조합별로 전체 워크플로우의 성공률과 총 지연시간·비용을 함께 측정합니다. 모든 단계에 동일한 effort를 주는 것은 거의 항상 최적이 아닙니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: reasoning model을 쓸지, 아니면 프롬프트에서 "단계별로 생각하라(chain-of-thought)"고 유도하는 일반 모델을 쓸지는 어떻게 구분하시나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 둘은 다른 메커니즘입니다. 프롬프트로 "단계별로 생각하라"고 유도하는 것은 응답 텍스트 안에 사고 과정을 섞어 넣는 것으로, 모델이 그 유도를 얼마나 따를지 보장되지 않고 응답에 그 사고 과정이 그대로 노출됩니다. Reasoning model은 별도의 사고 단계를 구조적으로 분리해 실행하고 필요시 요약된 형태로만 노출하며, 학습 단계에서부터 이 사고-응답 분리에 최적화되어 있어 일반적으로 더 신뢰할 수 있는 성능 향상을 보입니다. 다만 그만큼 지연시간·비용이 명시적으로 더 들기 때문에, 저는 먼저 일반 모델 + 프롬프트 유도로 eval을 통과할 수 있는지 확인한 뒤, 그것으로 부족한 경우에만 reasoning model로 전환하는 순서를 취합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q (비기술적): "생각을 더 시키면 당연히 더 정확해지는 거 아닌가요?"라고 비개발 조직이 묻는다면 어떻게 설명하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 비유로 설명합니다. "사람도 쉬운 결정을 너무 오래 고민하면 오히려 헷갈려서 처음의 올바른 판단을 뒤집는 경우가 있죠. AI 모델도 비슷합니다. 어려운 문제는 생각 시간을 늘리면 실제로 더 정확해지지만, 어느 지점을 넘기면 오히려 스스로를 과도하게 의심하다가 정확도가 떨어지는 현상이 관찰됩니다. 그래서 저희는 '무조건 많이 생각하게' 하는 대신, 실제 테스트로 '이 업무에는 어느 정도 생각 시간이 딱 맞는지'를 미리 확인하고 그 수준으로 설정합니다. 그렇게 하지 않으면 응답 속도와 비용만 몇 배로 늘고 정확도는 오히려 제자리이거나 나빠질 수 있습니다."</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>11. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"reasoning model/extended thinking은 항상 더 똑똑하고 더 정확하다"</strong></p>
+      <p>reasoning은 "더 똑똑한 모델"이 아니라 사고 과정에 더 많은 연산(토큰)을 배분하는 모드다. 단순 조회·분류처럼 멀티스텝 추론이 필요 없는 태스크에서는 이득이 거의 없고, 심지어 overthinking으로 정확도가 떨어질 수 있다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"effort/thinking budget을 최대로 설정하면 가장 안전하고 좋은 답이 나온다"</strong></p>
+      <p>정확도는 effort 증가에 따라 역-U자 곡선을 그린다 — 어느 지점을 넘으면 오히려 하락한다. "최대"가 아니라 eval로 확인한 "이 태스크의 정점"을 목표로 삼아야 한다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"reasoning 토큰은 어차피 내부 처리 과정이니 비용에 큰 영향이 없다"</strong></p>
+      <p>사고 토큰도 모델이 생성하는 출력 토큰이며 그대로 과금 대상이다. 실제로는 최종 응답보다 사고 토큰이 훨씬 길어 비용의 대부분을 차지하는 경우가 흔하다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"reasoning effort는 순수하게 성능·비용 최적화 문제일 뿐, 보안과는 무관하다"</strong></p>
+      <p>모델이 스스로 사고량을 판단한다는 특성은, 외부 입력에 사고량을 부풀리는 문구를 심어 서비스 거부나 비용 폭증을 노리는 슬로다운 공격(OverThink류)의 표면이 될 수 있다. RAG·에이전틱 워크플로우처럼 외부 콘텐츠가 컨텍스트에 들어오는 구조에서는 hard cap과 모니터링이 필요하다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"멀티스텝 에이전트는 모든 단계에 동일한 reasoning effort를 쓰는 것이 가장 안전하다"</strong></p>
+      <p>계획 수립처럼 판단이 중요한 단계와, 계획이 확정된 뒤 정형화된 실행 단계는 요구되는 effort가 다르다. 모든 단계에 동일한 effort를 주는 것은 대개 낭비이거나 부족이다.</p>
+    </div>
+  </section>
+
+  <!-- 12. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>12. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 5를 이해한 것이다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>reasoning model/extended thinking이 "더 똑똑한 모델"이 아니라 "사고 과정에 더 많은 토큰을 배분하는 모드"라는 것을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>overthinking과 역-U자 곡선 현상을 예시와 함께 설명하고, "더 올릴수록 좋다"는 가정이 왜 틀렸는지 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>주요 벤더가 숫자 기반 토큰 예산에서 등급형 effort 파라미터로 옮겨간 이유를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>effort를 결정할 때 감이 아니라 고정 eval 셋으로 정확도-지연-비용 곡선을 실측하는 절차를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>멀티스텝 tool-calling 에이전트에서 단계별로 effort를 차등 배분하는 이유를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>reasoning effort가 OverThink류 슬로다운 공격의 표면이 될 수 있는 이유와 방어 방향(hard cap, 이상 탐지)을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>비개발 조직에게 "생각을 더 시키면 왜 항상 좋은 게 아닌지"를 비유로 쉽게 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 6</h3>
+      <p><strong>Structured Output 설계</strong></p>
+      <p>Day 5에서 "얼마나 깊게 생각하게 할 것인가"를 다뤘다면, Day 6에서는 그 결과를 "얼마나 신뢰할 수 있는 형식으로 뽑아낼 것인가"를 다룹니다. 스키마 강제(JSON Schema/구조화 출력), 파싱 실패 처리, 멀티스텝 파이프라인에서 구조화 출력을 신뢰성 있게 계약(contract)으로 다루는 법을 다룹니다.</p>
+      <p>면접 질문 예고: "모델이 반환한 JSON이 가끔 스키마를 깨뜨립니다. 이 문제를 어떻게 구조적으로 해결하시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    LLM Engineering 10년차 이상 개발자 Interview · Day 5 of 17 · 2026-07-07
+  </p>
+
+</div>
+</body>
+</html>
