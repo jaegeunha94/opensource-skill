@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — SSL/TLS 모드와 Origin 보호</title>
+  <style>
+    :root {
+      --bg: #14100c;
+      --surface: #211a13;
+      --surface2: #2b221a;
+      --border: #4a3a26;
+      --accent: #f6821f;
+      --accent2: #4fd1c5;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #f2e9de;
+      --text2: #c9b8a3;
+      --text3: #8f8071;
+      --good: #4fd1c5;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    a.source { color: var(--accent2); }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card { border-left: 4px solid var(--accent); }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card {
+      border-left: 4px solid var(--accent2);
+      background: #142523;
+    }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card {
+      border-left: 4px solid var(--warn);
+      background: #201c10;
+    }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card {
+      border-left: 4px solid #c99bff;
+      background: #1e1828;
+    }
+    .answer-card .card-label { color: #c99bff; }
+    .incident-card {
+      border-left: 4px solid var(--weak);
+      background: #2a1512;
+    }
+    .incident-card .card-label { color: var(--weak); }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box {
+      background: #12241f;
+      border: 1px solid var(--good);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box {
+      background: #2a1512;
+      border: 1px solid var(--weak);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.91rem;
+      margin-top: 0.5rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:nth-child(odd) td { background: #1a140e; }
+    .rubric-table tr:nth-child(even) td { background: #211a13; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .layer-stack { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.2rem; }
+    .layer-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent2);
+      border-radius: 8px;
+      padding: 0.85rem 1.1rem;
+    }
+    .layer-name { font-weight: 700; color: var(--accent2); font-size: 0.95rem; }
+    .layer-desc { font-size: 0.85rem; color: var(--text2); margin-top: 0.2rem; }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.2rem;
+      margin-bottom: 0.7rem;
+    }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.1rem;
+      background: var(--accent);
+      color: #1a1408;
+      font-weight: 700;
+      font-size: 0.78rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .misconception {
+      background: #201530;
+      border: 1px solid #6e3880;
+      border-radius: 8px;
+      padding: 1rem 1.3rem;
+      margin-bottom: 0.9rem;
+    }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 0.75rem;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      margin: 0.15rem 0.15rem 0.15rem 0;
+    }
+    .freshness-note {
+      background: #142523;
+      border: 1px dashed var(--accent2);
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      font-size: 0.87rem;
+      color: var(--text2);
+      margin-bottom: 2rem;
+    }
+    .freshness-note strong { color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 4 · Cloudflare 구성 인터뷰 대비</div>
+    <h1>SSL/TLS 모드와 Origin 보호</h1>
+    <p class="subtitle">
+      SSL/TLS 5가지 암호화 모드 · Automatic SSL/TLS · Origin CA vs Let's Encrypt · Authenticated Origin Pulls(Global/Zone/Per-hostname) · mTLS와 RFC 9440 · 리다이렉트 루프 장애 진단
+    </p>
+  </header>
+
+  <div class="freshness-note">
+    <strong>커리큘럼 최신성 안내 (2026-07-07 기준 확인)</strong> — 이 레슨은 Cloudflare 공식 문서(SSL/TLS encryption modes, Authenticated Origin Pulls, Origin CA, mTLS/Transform Rules)와 공식 changelog/블로그를 다시 확인해 작성했다.
+    Day 1~3 이후 새로 확인한 핵심 변화 네 가지: ① SSL/TLS 모드는 <strong>Off/Flexible/Full/Full(strict) 4가지가 아니라, Enterprise 전용 <code>Strict (SSL-Only Origin Pull)</code>까지 포함해 공식적으로 5가지</strong>다 — 방문자 프로토콜과 무관하게 origin에는 항상 HTTPS+인증서 검증으로만 연결하는 모드다.
+    ② <strong>Automatic SSL/TLS</strong>(SSL/TLS Recommender 기반)가 이미 600만 개 도메인에 적용돼, 트래픽의 1% → 10% 단위로 점진적으로 더 안전한 모드로 자동 전환하고 실패 시 즉시 롤백한다 — "SSL 모드는 사람이 수동으로 정하고 끝내는 값"이라는 전제가 무너지고 있다.
+    ③ Origin CA 인증서 발급에 쓰이던 <strong>레거시 Service Keys(Origin CA Keys) 인증 방식이 2026-09-30부로 완전히 제거</strong>되며, Zone-SSL/Certificates-Edit 권한을 가진 API Token으로 전환해야 한다.
+    ④ <strong>2026-03 RFC 9440 mTLS 필드가 Transform Rules/Workers에 추가</strong>돼 클라이언트 인증서 정보를 표준 포맷으로 origin에 전달할 수 있게 됐고, 동시에 <strong>2026-06에는 AOP/Custom Origin Trust Store가 ML-DSA(post-quantum) 인증서까지 지원</strong>하기 시작했다. 이 레슨은 이 네 가지를 핵심 최신 근거로 반영한다.
+  </div>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "Cloudflare를 앞단에 둔 서비스에서, 방문자 브라우저부터 origin 서버까지 전체 구간이 실제로 암호화되어 있다고 어떻게 보장하시겠습니까? Origin 서버의 IP를 누군가 알아내서 Cloudflare를 건너뛰고 직접 공격한다면, 그걸 막을 방법은 무엇입니까?"
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"SSL/TLS 모드를 Flexible로 설정했더니 사이트가 리다이렉트 루프에 빠졌습니다. 원인이 뭐고 어떻게 고치나요?"</li>
+        <li>"Origin CA 인증서와 Let's Encrypt 인증서 중 origin에는 뭘 쓰는 게 맞나요? 근거는요?"</li>
+        <li>"Authenticated Origin Pulls가 정확히 무엇을 막아주는 기능인가요? mTLS와 어떤 관계인가요?"</li>
+        <li>"이 도메인이 아직도 Flexible 모드인 걸 최근에서야 알았습니다. 지금까지 별 문제가 없었다면 안전한 건가요?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">SSL/TLS 5가지 모드</span>
+      <span class="tag">Automatic SSL/TLS</span>
+      <span class="tag">Origin CA vs Let's Encrypt</span>
+      <span class="tag">Authenticated Origin Pulls</span>
+      <span class="tag">mTLS / RFC 9440</span>
+      <span class="tag">리다이렉트 루프</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>왜 "구간"을 나눠서 생각해야 하는가</h3>
+    <p>
+      Cloudflare가 앞단에 있는 서비스는 암호화 구간이 <strong>둘</strong>이다. ① 방문자 브라우저 ↔ Cloudflare 엣지, ② Cloudflare 엣지 ↔ origin 서버. 많은 사람이 "HTTPS 자물쇠가 보이니까 다 암호화됐다"고 착각하는데, 그 자물쇠는 <strong>①번 구간만</strong> 보장한다.
+      SSL/TLS 모드는 정확히 <strong>②번 구간(Cloudflare→origin)을 어떻게 암호화하고 검증할지</strong>를 정하는 설정이고, Origin 보호(Origin CA, Authenticated Origin Pulls, mTLS)는 그 ②번 구간을 "누구든 origin에 직접 요청을 보낼 수 있는 구조"에서 "오직 Cloudflare만 origin과 대화할 수 있는 구조"로 좁히는 작업이다.
+    </p>
+
+    <h3>SSL/TLS 암호화 모드 — 5가지, 신뢰의 강도가 다르다</h3>
+    <p>
+      Cloudflare 공식 문서 기준으로 암호화 모드는 5가지다. 위로 갈수록(아래 순서) 신뢰 수준이 높아진다.
+    </p>
+    <div class="layer-stack">
+      <div class="layer-box" style="border-left-color: var(--weak);">
+        <div class="layer-name" style="color:var(--weak);">Off</div>
+        <div class="layer-desc">HTTPS 요청 자체를 평문 HTTP로 리다이렉트한다. 브라우저가 "안전하지 않음"으로 표시하고 SEO에도 불리하다. 사실상 인터뷰에서 "왜 이 모드를 쓰면 안 되는가"를 설명하는 용도로만 등장한다.</div>
+      </div>
+      <div class="layer-box" style="border-left-color: var(--weak);">
+        <div class="layer-name" style="color:var(--weak);">Flexible</div>
+        <div class="layer-desc">방문자↔Cloudflare 구간은 HTTPS, <strong>Cloudflare↔origin 구간은 평문 HTTP</strong>다. origin이 TLS를 아예 지원하지 못하는 legacy 서버에서만 임시로 쓴다. 443 포트에서만 지원되고, 다른 포트의 HTTPS는 자동으로 Full로 대체된다.</div>
+      </div>
+      <div class="layer-box">
+        <div class="layer-name">Full</div>
+        <div class="layer-desc">Cloudflare가 방문자와 같은 프로토콜로 origin에 연결하되(HTTPS 요청이면 HTTPS로), <strong>origin 인증서를 검증하지 않는다</strong> — 자체 서명 인증서도 통과한다. "암호화는 되지만 그 origin이 진짜 우리 origin인지는 확인 안 함" 상태다.</div>
+      </div>
+      <div class="layer-box" style="border-left-color: var(--good);">
+        <div class="layer-name" style="color:var(--good);">Full (strict)</div>
+        <div class="layer-desc">Full과 동일하게 암호화하되, <strong>origin 인증서가 신뢰할 수 있는 CA(Let's Encrypt 등 공인 CA 또는 Cloudflare Origin CA)에서 발급된 유효한 인증서인지까지 검증</strong>한다. 공식 문서가 명시적으로 권장하는 최소 기준선이다.</div>
+      </div>
+      <div class="layer-box" style="border-left-color: var(--good);">
+        <div class="layer-name" style="color:var(--good);">Strict (SSL-Only Origin Pull) <span class="tag" style="margin-left:0.4rem;">Enterprise 전용</span></div>
+        <div class="layer-desc">방문자가 HTTP로 요청하든 HTTPS로 요청하든 <strong>Cloudflare→origin 구간은 항상 HTTPS + 인증서 검증</strong>으로 고정한다. Full(strict)은 "방문자 프로토콜을 따라가면서 검증"하는 반면, 이 모드는 "방문자 프로토콜과 무관하게 무조건 검증된 HTTPS"라는 점이 다르다.</div>
+      </div>
+    </div>
+    <div class="card why-card">
+      <div class="card-label">왜 Full(strict) 미만이 위험한가</div>
+      <p>
+        Flexible과 Full은 둘 다 "Cloudflare까지는 안전, 그 다음은 보장 안 됨" 상태를 만든다. Flexible은 평문이라 그 구간을 도청/변조할 수 있는 위치(예: origin이 호스팅된 데이터센터 내부 네트워크, 잘못 설정된 중간 프록시)에서 트래픽을 그대로 읽을 수 있고, Full은 암호화는 되지만 <strong>origin 신원을 확인하지 않으므로 자체 서명 인증서를 가진 가짜 origin에도 그대로 연결</strong>할 수 있다. 두 경우 모두 "브라우저에는 자물쇠가 보이지만 전체 경로가 안전하다는 결론은 틀렸다"는 게 핵심이다.
+      </p>
+    </div>
+
+    <h3>Automatic SSL/TLS — "사람이 정하고 잊어버리는 값"에서 벗어나기</h3>
+    <p>
+      SSL/TLS 모드는 보통 최초 설정 이후 아무도 다시 들여다보지 않는 값이 되기 쉽다. Cloudflare는 이 문제를 <strong>SSL/TLS Recommender</strong> 기반의 <strong>Automatic SSL/TLS</strong> 기능으로 접근한다 — origin의 인증서/설정 능력을 분석해 더 안전한 모드로 전환할 수 있는지 판단하고, <strong>트래픽의 1%부터 시작해 10% 단위로 점진적으로 새 모드를 적용</strong>한다. 도중에 origin 연결 실패가 감지되면 즉시 이전 모드로 롤백하고 실패를 기록한다. 100%까지 문제없이 올라가야 그 도메인의 설정이 영구적으로 갱신된다.
+      이 기능은 이미 600만 개 이상의 도메인을 자동으로 더 안전한 모드로 업그레이드했다.
+    </p>
+    <div class="card concept-card">
+      <div class="card-label">인터뷰에서 중요한 이유</div>
+      <p>
+        이 기능을 아는 것 자체보다 <strong>"SSL 모드를 한 번 정해두면 끝나는 값이 아니라, origin 인증서 상태가 바뀌면 재평가돼야 하는 살아있는 설정"</strong>이라는 관점을 아는지가 시니어 신호다. 수동으로 전체 zone을 주기적으로 감사하는 대신, 이런 점진적 자동화 기능의 존재와 안전장치(1%→10% 롤아웃, 실패 시 롤백)를 설명할 수 있으면 운영 성숙도를 보여줄 수 있다.
+      </p>
+    </div>
+
+    <h3>Origin CA vs Let's Encrypt vs 자체 서명 — origin 인증서, 무엇을 써야 하는가</h3>
+    <p>
+      Full(strict) 이상을 쓰려면 origin에 유효한 인증서가 있어야 한다. 선택지는 세 가지다.
+    </p>
+    <div class="card concept-card">
+      <div class="card-label">Cloudflare Origin CA — Cloudflare 전용 사설 CA</div>
+      <p>
+        Cloudflare가 직접 운영하는 <strong>사설(private) CA</strong>다. 이 CA의 루트는 <strong>공인 브라우저 신뢰 저장소에는 등록돼 있지 않다</strong> — 즉 이 인증서를 origin에 설치해도 방문자가 Cloudflare를 우회해 origin에 직접 접속하면 브라우저가 신뢰하지 않는다(오히려 이건 장점이다: origin 인증서가 공개 웹에서 신뢰되지 않으므로 우회 접근의 매력이 떨어진다). 유효기간을 <strong>최대 15년</strong>까지 설정할 수 있어 갱신 자동화 부담이 거의 없고, API 토큰만으로 발급이 가능해 HTTP-01/DNS-01 같은 도메인 검증 절차가 필요 없다.
+      </p>
+    </div>
+    <div class="card concept-card">
+      <div class="card-label">Let's Encrypt(공인 CA) — origin이 Cloudflare 외의 클라이언트도 상대할 때</div>
+      <p>
+        origin이 항상 Cloudflare만 상대한다는 보장이 없는 경우(예: 메일 서버처럼 프록시를 거치지 않는 서비스, 임시로 DNS-only로 전환해 직접 접근을 허용해야 하는 경우, 다른 CDN/리버스 프록시와 병행 사용) Let's Encrypt 같은 공인 CA 인증서를 유지해야 한다. 대신 90일마다 갱신 자동화(예: certbot)를 운영해야 하는 부담이 있다.
+      </p>
+    </div>
+    <div class="card why-card">
+      <div class="card-label">실무 판단 기준</div>
+      <p>
+        "이 zone이 항상 proxied 상태로만 운영되는가"가 기준이다. 그렇다면 Origin CA가 갱신 부담과 우회 접근 노출 두 가지 면에서 더 안전한 선택이다. 하지만 임시로 DNS-only 전환이 필요하거나(장애 대응, 마이그레이션), origin이 Cloudflare 외의 경로로도 트래픽을 받는다면 공인 인증서를 병행 유지해야 한다.
+      </p>
+    </div>
+
+    <h3>Authenticated Origin Pulls(AOP) — "Cloudflare가 맞다는 걸 origin이 확인하게 하기"</h3>
+    <p>
+      Full(strict)는 <strong>"Cloudflare가 origin이 맞는지"</strong>를 확인하는 방향(서버 인증서 검증)이다. 반대 방향도 필요하다 — <strong>"이 요청이 진짜 Cloudflare에서 온 게 맞는지"</strong>를 origin이 확인하는 것, 이게 AOP다. Cloudflare가 origin에 연결할 때 <strong>클라이언트 인증서(mTLS)</strong>를 제시하고, origin은 이 인증서를 검증한 요청만 받아들이도록 설정한다.
+    </p>
+    <div class="card concept-card">
+      <div class="card-label">Global / Zone-level / Per-hostname — 세 가지는 서로 독립적</div>
+      <p>
+        ① <strong>Global AOP</strong>: Cloudflare가 제공하는 공용 클라이언트 인증서를 계정 전체에 적용한다. ② <strong>Zone-level AOP</strong>: zone 단위로 켜고 끌 수 있다. ③ <strong>Per-hostname AOP</strong>: 특정 호스트네임에만 <strong>직접 업로드한 인증서</strong>를 적용한다(Cloudflare 제공 global 인증서를 재사용할 수 없다 — 반드시 자체 인증서를 올려야 한다). 세 설정 중 하나를 켜거나 꺼도 나머지에는 영향이 없고, 같은 호스트네임에 여러 설정이 겹치면 <strong>per-hostname이 zone-level/global보다 우선</strong>한다. zone당 최대 10개 hostname 인증서, 인증서 하나당 최대 100개 호스트네임 연결이라는 한도가 있다.
+      </p>
+    </div>
+    <div class="card why-card">
+      <div class="card-label">왜 이게 origin 보호의 핵심인가</div>
+      <p>
+        SSL/TLS 모드를 아무리 Full(strict)로 잘 설정해도, <strong>origin의 공인 IP를 알아낸 공격자가 Cloudflare를 완전히 건너뛰고 origin에 직접 HTTPS로 접속</strong>하는 걸 막지는 못한다(origin이 공인 인증서를 갖고 있다면 그 접속도 정상적인 HTTPS로 보인다). AOP는 origin 쪽에 "클라이언트 인증서 없는 요청은 전부 거부"라는 조건을 걸어서, <strong>origin의 IP가 유출돼도 Cloudflare의 클라이언트 인증서 없이는 아무도 origin과 TLS 핸드셰이크 자체를 완료할 수 없게</strong> 만든다. IP 은닉이 뚫려도 살아남는 마지막 방어선이다.
+      </p>
+    </div>
+
+    <h3>mTLS와 2026년의 RFC 9440 — 클라이언트 인증서 정보를 origin에 표준 방식으로 전달하기</h3>
+    <p>
+      AOP는 "Cloudflare↔origin" 구간의 mTLS다. 이와 별개로 <strong>"방문자↔Cloudflare" 구간의 mTLS</strong>(Client Certificates)도 존재한다 — 예를 들어 특정 API를 사용하는 파트너사에게 클라이언트 인증서를 발급해, 그 인증서를 제시하는 요청만 받는 구조다. 이 경우 origin 애플리케이션이 "누구의 인증서로 접속했는지"를 알아야 할 때가 있는데, 과거에는 이걸 커스텀 PEM 헤더나 비표준 포맷으로 파싱해야 했다.
+    </p>
+    <div class="card concept-card">
+      <div class="card-label">2026-03 변화 — RFC 9440 표준 필드</div>
+      <p>
+        Cloudflare는 Transform Rules(및 Workers)에 <code>cf.tls_client_auth.cert_rfc9440</code>(클라이언트 leaf 인증서), <code>cf.tls_client_auth.cert_chain_rfc9440</code>(체인, root 제외) 필드를 추가했다. 각 인증서는 DER 인코딩 → Base64 인코딩 → 콜론으로 감싸는 RFC 9440 표준 포맷을 따른다. 이걸 <code>Client-Cert</code>/<code>Client-Cert-Chain</code> 헤더로 origin에 전달하면, origin은 표준화된 방식으로 파싱할 수 있다.
+      </p>
+    </div>
+    <div class="card why-card">
+      <div class="card-label">반드시 알아야 할 보안 함정 — 헤더 스푸핑</div>
+      <p>
+        <code>Client-Cert</code> 헤더는 <strong>일반 HTTP 헤더</strong>다. Cloudflare가 이 헤더를 채워서 보내주더라도, origin이 "들어오는 모든 요청에서 이 헤더 이름을 무조건 먼저 제거하고, Cloudflare가 방금 이 요청에 대해 새로 채운 값만 신뢰"하도록 설정하지 않으면, <strong>공격자가 직접 이 헤더에 가짜 인증서 정보를 넣어 보내는 것만으로 인증을 우회</strong>할 수 있다. "필드가 표준화됐다"는 것과 "그 값을 무조건 신뢰해도 된다"는 것은 완전히 다른 이야기이며, 이 구분을 하지 못하는 게 이 기능의 가장 흔한 오용이다.
+      </p>
+    </div>
+
+    <h3>리다이렉트 루프(ERR_TOO_MANY_REDIRECTS) — SSL 모드 오설정의 가장 흔한 증상</h3>
+    <p>
+      Flexible 모드 + origin이 "HTTP로 들어오면 무조건 HTTPS로 리다이렉트"하도록 구성된 조합은 <strong>무한 루프</strong>를 만든다. 흐름은 이렇다: 방문자가 HTTPS로 요청 → Cloudflare가 Flexible이므로 origin에는 평문 HTTP로 전달 → origin은 "HTTP로 들어왔으니 HTTPS로 리다이렉트하라"는 자기 규칙에 따라 301/302로 HTTPS 리다이렉트 응답 → Cloudflare는 이 리다이렉트를 그대로 방문자에게 전달 → 방문자는 다시 HTTPS로 요청 → 다시 Cloudflare가 origin에는 평문으로 전달 → 무한 반복.
+    </p>
+    <div class="card why-card">
+      <div class="card-label">근본 원인과 올바른 수정</div>
+      <p>
+        근본 원인은 "origin이 강제하는 HTTPS 리다이렉트 규칙"과 "Cloudflare가 origin에 평문으로 연결하는 모드"가 충돌하는 것이다. 임시 미봉책으로 origin의 강제 리다이렉트 규칙을 없앨 수도 있지만, <strong>근본 수정은 SSL/TLS 모드를 Full 또는 Full(strict)로 올리는 것</strong>이다 — 그러면 Cloudflare가 origin에도 HTTPS로 연결하므로 origin의 리다이렉트 규칙이 애초에 발동하지 않는다. "리다이렉트 루프가 났다"는 신고는 사실 "이 zone이 여태 Flexible로 방치돼 있었다"는 걸 발견하는 계기인 경우가 많다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>"HTTPS 자물쇠 = 전체 구간 안전"이라는 착각에 빠지지 않는가:</strong> 방문자-엣지 구간과 엣지-origin 구간을 분리해서 사고하는가</li>
+        <li><strong>암호화(encryption)와 인증(authentication)을 구분하는가:</strong> Full은 암호화만 하고 origin 신원은 검증하지 않는다는 걸 아는가, AOP가 반대 방향(origin이 Cloudflare를 검증)의 문제라는 걸 아는가</li>
+        <li><strong>"origin IP가 유출되면 끝"이라는 단일 장애점을 인식하는가:</strong> SSL 모드만으로는 origin 직접 접근을 막지 못한다는 걸 알고, AOP/Tunnel 같은 다음 방어선을 제시하는가</li>
+        <li><strong>표준화된 기능도 신뢰 경계 설정 없이는 위험할 수 있다는 걸 아는가:</strong> RFC 9440 필드처럼 최신 기능을 "무조건 안전한 표준"으로 오해하지 않고 헤더 스푸핑 같은 함정을 짚어내는가</li>
+        <li><strong>설정을 "한 번 하고 끝"이 아니라 지속적으로 관리해야 하는 대상으로 보는가:</strong> Automatic SSL/TLS 같은 자동화 기능과 Origin CA Service Key 폐기 같은 마이그레이션 이벤트를 팔로우하고 있는가</li>
+      </ul>
+    </div>
+
+    <p>
+      이 질문은 "SSL 모드 이름을 외웠는가"가 아니라 <strong>"암호화와 신원 검증을 구분해서, 방문자-엣지-origin 3자 관계에서 어디가 아직 뚫려 있는지 스스로 진단할 수 있는가"</strong>를 검증한다. Origin 노출로 인한 실제 우회 공격 사례가 보안 업계에 잘 알려져 있어서, "SSL 모드를 Full(strict)로만 하면 끝"이라고 답하면 origin 직접 접근이라는 다음 공격면을 놓친 것으로 평가된다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <div class="card incident-card">
+      <div class="card-label">시나리오 1 — Origin IP 유출로 Cloudflare 우회 공격</div>
+      <p>
+        운영 초기 DNS-only(grey cloud)로 잠깐 운영했던 이력이 있는 zone에서, 그 시절 DNS 응답이 제3자 DNS 히스토리 서비스에 캐싱돼 origin의 실제 공인 IP가 그대로 남아있었다. 이후 proxied로 전환했지만, 공격자는 이 히스토리 기록으로 origin IP를 알아내 Cloudflare의 WAF/Rate Limiting/DDoS 방어를 모두 건너뛰고 origin에 직접 대량 요청을 보냈다.
+        AOP가 켜져 있지 않았던 탓에 origin은 "TLS 핸드셰이크만 되면 정상 요청"으로 받아들였고, 결국 origin이 직접 과부하로 다운됐다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: SSL/TLS 모드와 WAF/DDoS 설정이 아무리 완벽해도, origin이 "Cloudflare에서 온 요청만 받는다"는 조건을 강제하지 않으면 그 방어 전체가 우회 가능한 장식에 불과하다.</p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">시나리오 2 — Flexible 모드 방치로 인한 리다이렉트 루프 장애</div>
+      <p>
+        수년 전 origin이 아직 TLS를 지원하지 않던 시절 Flexible로 설정해 둔 zone이 있었는데, 이후 origin 팀이 별도로 웹서버에 "HTTP 요청은 전부 HTTPS로 리다이렉트"하는 보안 강화 규칙을 추가했다. SSL/TLS 모드는 그대로 방치돼 있었기 때문에, 이 변경이 배포되자마자 전체 사이트가 ERR_TOO_MANY_REDIRECTS로 즉시 장애가 났다.
+        원인 파악에 시간이 걸린 이유는 담당자가 "SSL 인증서 문제"로 오인해 origin 인증서만 계속 점검했기 때문이다 — 실제 원인은 인증서가 아니라 Cloudflare 설정(Flexible)과 origin 설정(강제 리다이렉트)의 조합이었다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: SSL 모드는 origin 팀과 Cloudflare 설정 담당자가 별도로 관리하는 경우가 많아, 한쪽의 변경이 다른 쪽 설정과 충돌해도 아무도 먼저 알아차리지 못하는 구조적 위험이 있다.</p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">시나리오 3 — Origin CA Service Key 폐기 전환 실패</div>
+      <p>
+        Origin CA 인증서 자동 발급/갱신 스크립트가 오래전에 레거시 Origin CA Key(Service Key) 인증 방식으로 작성돼 있었고, 아무도 이 인증 방식이 폐기 예정이라는 공지를 팔로우하지 않았다. 폐기 시점이 다가와서야 스크립트가 API 인증에 실패하기 시작했고, 자동 갱신이 조용히 실패하는 동안 인증서 만료가 임박한 상태로 방치될 뻔했다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: 15년짜리 Origin CA 인증서는 "한 번 발급하면 오래 안전하다"는 장점이 있지만, 그 발급/갱신에 쓰는 인증 방식 자체의 수명 주기(API Token vs 레거시 Service Key)는 별도로 관리해야 한다.</p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">시나리오 4 — 클라이언트 인증서 헤더 스푸핑 시도</div>
+      <p>
+        파트너사 API에 mTLS 기반 클라이언트 인증을 도입하면서, origin 애플리케이션이 <code>Client-Cert</code> 헤더 값으로 요청자를 식별하도록 구현했다. 보안 점검 과정에서, 이 헤더가 일반 HTTP 헤더라 <strong>Cloudflare를 거치지 않고 origin에 직접 요청을 보낼 수 있는 경로(예: 다른 내부 네트워크 경유)</strong>가 있다면 누구나 이 헤더에 신뢰받는 파트너사의 인증서 정보를 그대로 위조해 넣을 수 있다는 게 드러났다.
+        점검 후 origin 앞단에서 들어오는 모든 요청의 <code>Client-Cert</code>/<code>Client-Cert-Chain</code> 헤더를 무조건 제거한 뒤 Cloudflare가 채운 값만 신뢰하도록 수정했다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: 새로 표준화된 기능(RFC 9440)이라도 "신뢰 경계를 어디에 그을 것인가"라는 근본 질문은 그대로 남는다. 표준 포맷 = 안전한 값이 아니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>"Cloudflare 뒤의 origin을 어떻게 보호하시겠습니까"라는 질문에는 아래 순서로 답한다.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>구간을 둘로 나눠 현재 상태를 진단</strong>
+        <p>방문자↔엣지, 엣지↔origin 두 구간의 암호화/인증 상태를 각각 확인한다. 지금 SSL/TLS 모드가 무엇이고, 그게 왜 그렇게 설정돼 있는지(historical reason)부터 파악한다.</p>
+      </li>
+      <li>
+        <strong>암호화 모드를 Full(strict) 이상으로 올릴 수 있는지 확인</strong>
+        <p>origin에 유효한 인증서(Origin CA 또는 공인 CA)가 있는지 확인하고, 없다면 Origin CA 발급이 가능한지(zone이 항상 proxied인지) 판단한다. Flexible/Full로 남아있다면 그 이유(origin이 TLS 미지원 등)가 여전히 유효한지 재검증한다.</p>
+      </li>
+      <li>
+        <strong>반대 방향 인증(AOP)으로 origin 직접 접근을 차단</strong>
+        <p>SSL 모드만으로는 origin IP 유출 시 우회 접근을 막지 못한다는 점을 명시하고, Global/Zone/Per-hostname AOP 중 상황에 맞는 수준을 적용한다. 궁극적으로는(Day 9에서 다룰) Cloudflare Tunnel로 origin의 공인 IP 자체를 없애는 게 최상위 방어라는 것도 언급한다.</p>
+      </li>
+      <li>
+        <strong>클라이언트 신원이 필요한 경우 mTLS/RFC 9440을 신뢰 경계와 함께 설계</strong>
+        <p>클라이언트 인증서 정보를 origin에 전달해야 한다면, "origin이 들어오는 요청의 해당 헤더를 무조건 먼저 제거한다"는 조건을 반드시 함께 설계한다.</p>
+      </li>
+      <li>
+        <strong>장애 시나리오(리다이렉트 루프)를 역으로 진단 도구로 활용</strong>
+        <p>ERR_TOO_MANY_REDIRECTS 같은 증상이 나타나면 "이 zone의 SSL 모드가 origin 설정과 충돌하고 있다"는 신호로 해석하고, 근본 수정(모드 상향)과 임시 완화(origin 강제 리다이렉트 제거)를 구분해서 제시한다.</p>
+      </li>
+      <li>
+        <strong>설정의 수명 주기를 관리 대상으로 포함</strong>
+        <p>Automatic SSL/TLS 같은 점진적 자동화와, Origin CA Service Key 폐기 같은 API 인증 방식 전환을 팔로우하는 운영 프로세스가 있는지까지 언급한다.</p>
+      </li>
+    </ol>
+
+    <div class="card why-card">
+      <div class="card-label">핵심 팁</div>
+      <p>이 순서에서 <strong>"암호화 모드(Full strict)"와 "origin이 Cloudflare를 검증하는 방향(AOP)"을 서로 다른 문제로 분리해서 설명하는 것</strong>이 시니어 답변의 핵심이다. 이 둘을 하나로 뭉뚱그리면 "origin IP가 유출되면 어떻게 되나요?"라는 follow-up에 답하지 못한다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — origin 보호 설계</div>
+      <p>
+        "먼저 암호화 구간을 방문자-엣지와 엣지-origin 두 개로 나눠서 봅니다. 방문자-엣지는 Universal SSL로 기본적으로 보장되지만, 엣지-origin 구간은 SSL/TLS 모드에 따라 완전히 다릅니다. Flexible이나 Full로 남아있으면 각각 평문 전송, 또는 origin 신원 미검증이라는 구멍이 있기 때문에, origin에 유효한 인증서를 준비해서 Full(strict) 이상으로 올리는 걸 최소 기준으로 삼습니다. Origin 인증서는 이 zone이 항상 Cloudflare를 통해서만 트래픽을 받는다면 15년짜리 Cloudflare Origin CA를, 다른 경로로도 접근이 필요하면 Let's Encrypt 같은 공인 인증서를 씁니다.
+      </p>
+      <p>
+        그런데 Full(strict)은 'Cloudflare가 origin이 맞는지'만 확인하는 방향이라, 반대로 'origin이 이 요청이 진짜 Cloudflare에서 온 게 맞는지' 확인하는 장치가 따로 필요합니다. 이게 Authenticated Origin Pulls고, 이걸 켜지 않으면 origin의 공인 IP가 어떤 경로로든(과거 DNS-only 이력, DNS 히스토리 서비스 등) 유출됐을 때 공격자가 Cloudflare의 WAF와 DDoS 방어를 통째로 건너뛰고 origin에 직접 접근할 수 있습니다. 상황에 따라 zone 전체에는 Zone-level AOP를, 특정 호스트네임만 별도 인증서로 강하게 격리해야 하면 Per-hostname AOP를 씁니다. 근본적으로는 origin의 공인 IP 자체를 없애는 Cloudflare Tunnel이 더 상위의 방어라는 것도 함께 고려합니다.
+      </p>
+      <p>
+        마지막으로 이런 설정은 한 번 하고 끝나는 게 아니라고 봅니다. Automatic SSL/TLS 같은 기능이 트래픽 1%씩 점진적으로 더 안전한 모드로 자동 전환을 시도하기도 하고, Origin CA 발급에 쓰던 인증 방식(Service Key)이 폐기되고 API Token으로 바뀌는 것처럼 운영 방식 자체가 바뀌는 이벤트도 있어서, 이런 변화를 정기적으로 팔로우하는 걸 원칙으로 둡니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① 구간을 명확히 둘로 나눠 설명 ② 암호화(Full strict)와 신원 검증 방향(AOP)을 구분 ③ Origin CA와 공인 인증서를 상황 기준으로 선택 ④ origin IP 유출이라는 구체적 위협을 근거로 AOP의 필요성을 설명 ⑤ 설정을 정적인 것이 아니라 지속 관리 대상으로 언급
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "Full(strict)만 켜두면 origin이 안전하다고 볼 수 있나요?"</div>
+      <div class="followup-a">
+        <p>아니다. Full(strict)은 방문자가 Cloudflare를 거쳐 들어올 때의 암호화/신원 검증만 보장한다. origin이 공인 IP를 그대로 가지고 있고 AOP도 켜져 있지 않다면, 공격자는 Cloudflare를 완전히 우회해서 origin에 직접 HTTPS로 접속할 수 있다 — origin 입장에서는 그것도 정상적인 TLS 연결이므로 Full(strict) 자체는 이 우회를 전혀 막지 못한다. Full(strict)은 "Cloudflare를 거치는 경로"를 안전하게 만드는 것이고, AOP는 "Cloudflare를 거치지 않는 경로 자체를 차단"하는 것이라는 점을 구분해야 한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "Global AOP를 켜뒀는데 특정 파트너 도메인만 더 강하게 격리하고 싶습니다. 어떻게 하나요?"</div>
+      <div class="followup-a">
+        <p>Per-hostname AOP를 그 도메인에만 추가로 적용한다. Global/Zone-level/Per-hostname은 서로 독립적인 설정이고, 같은 호스트네임에 여러 설정이 겹치면 per-hostname이 우선한다. 다만 per-hostname은 Cloudflare가 제공하는 global 인증서를 재사용할 수 없고 반드시 별도로 인증서를 직접 업로드해야 한다는 제약이 있으므로, 그 인증서의 발급/갱신/폐기 주체를 누가 맡을지도 함께 설계해야 한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "Automatic SSL/TLS가 알아서 모드를 올려준다면, 수동으로 SSL 모드를 관리할 필요가 없어지는 건가요?"</div>
+      <div class="followup-a">
+        <p>완전히 위임하기는 이르다. Automatic SSL/TLS는 origin이 "더 안전한 모드에서도 문제없이 응답하는지"를 트래픽 일부로 검증하면서 점진적으로 전환하는 안전장치이지만, 그 판단 기준은 어디까지나 자동화된 추정이다. 규제 준수나 계약상 특정 모드를 강제해야 하는 서비스, 또는 origin 변경 시점과 자동 전환 시점이 겹치면 안 되는 민감한 배포 일정이 있는 경우에는 여전히 수동 통제와 명시적 모니터링이 필요하다. "자동화가 있으니 신경 안 써도 된다"가 아니라 "자동화가 사람의 감사 주기를 대체하는 게 아니라 보완한다"는 관점이 맞다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "origin이 Cloudflare 외에 사내 모니터링 시스템에서도 직접 접근해야 합니다. AOP를 켜면 이게 막히지 않나요?"</div>
+      <div class="followup-a">
+        <p>맞다, AOP는 클라이언트 인증서가 없는 모든 요청을 거부하므로 사내 시스템의 직접 접근도 함께 막힌다. 해결책은 "AOP를 포기한다"가 아니라 "origin에서 어떤 소스가 클라이언트 인증서 없이 접근해도 되는지를 IP 허용목록이나 별도 네트워크 경로(사내 VPN, private network)로 명시적으로 분리"하는 것이다. 실무에서는 Cloudflare 트래픽 경로와 내부 운영 트래픽 경로를 origin의 리스너/방화벽 규칙 단에서 아예 분리해서, AOP는 공개 인터넷에서 들어오는 경로에만 적용하는 방식을 쓴다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "RFC 9440 mTLS 필드를 쓰면 Client-Cert 헤더 스푸핑 문제가 자동으로 해결되나요?"</div>
+      <div class="followup-a">
+        <p>아니다. RFC 9440은 "인증서 정보를 어떤 포맷으로 인코딩할지"를 표준화한 것이지, "이 헤더를 무조건 신뢰해도 되는지"를 보장하는 게 아니다. 여전히 origin(또는 origin 바로 앞단)이 들어오는 모든 요청에서 해당 헤더 이름을 무조건 먼저 제거하고, Cloudflare가 이번 요청에 대해 새로 채운 값만 신뢰하도록 명시적으로 구현해야 한다. 표준화는 파싱을 쉽게 해줄 뿐, 신뢰 경계 설계는 여전히 구현자의 책임이다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>방문자-엣지 구간과 엣지-origin 구간을 분리해서 암호화 상태를 각각 설명한다</li>
+          <li>암호화(Full strict)와 origin의 Cloudflare 검증(AOP)을 서로 다른 문제로 구분한다</li>
+          <li>origin IP 유출이라는 구체적 위협 모델을 근거로 AOP/Tunnel의 필요성을 설명한다</li>
+          <li>Origin CA와 공인 인증서를 "항상 proxied인가"라는 기준으로 선택한다</li>
+          <li>표준화된 기능(RFC 9440)도 신뢰 경계 설계 없이는 안전하지 않다는 걸 짚는다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"Full(strict)로 설정하면 끝"이라고만 답하고 origin 직접 접근 위협을 언급하지 않는다</li>
+          <li>Flexible과 Full의 차이를 "암호화 여부" 정도로만 뭉뚱그린다</li>
+          <li>AOP를 아예 모르거나 SSL/TLS 모드와 같은 개념으로 혼동한다</li>
+          <li>Origin CA와 Let's Encrypt를 "아무거나 상관없다"고 답한다</li>
+          <li>Client-Cert 헤더를 무조건 신뢰해도 된다고 가정한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        SSL/TLS 모드는 "암호화를 켜는 스위치"가 아니라 <strong>"누구를 신뢰의 기준으로 삼을지, 어느 방향의 신원을 검증할지를 정하는 설계"</strong>다. 이 관점이 없으면 겉으로는 완벽해 보이는 설정(Full strict)을 해두고도, origin IP 유출이라는 훨씬 더 근본적인 공격면을 그대로 열어둔 채로 방치하게 된다.
+        시니어 면접에서는 "설정 이름을 아는가"가 아니라 "그 설정이 정확히 어느 방향의 신뢰를 보장하고, 어느 방향은 여전히 뚫려 있는지 스스로 짚을 수 있는가"를 본다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"브라우저 주소창에 자물쇠가 보이면 방문자부터 origin까지 전체 구간이 암호화된 것이다."</p>
+      <div class="mc-right">실제</div>
+      <p>자물쇠는 방문자-Cloudflare 엣지 구간만 보장한다. 엣지-origin 구간의 암호화 여부는 SSL/TLS 모드(Off/Flexible/Full/Full strict/Strict)에 따라 완전히 다르며, Flexible이면 이 구간은 평문이다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"Full(strict)로 설정하면 origin이 완전히 안전해진다."</p>
+      <div class="mc-right">실제</div>
+      <p>Full(strict)은 Cloudflare가 origin의 신원을 검증하는 방향일 뿐이다. origin이 Authenticated Origin Pulls로 "Cloudflare가 아닌 요청은 거부"하도록 설정돼 있지 않다면, origin IP가 유출됐을 때 공격자가 Cloudflare를 완전히 우회해 origin에 직접 접근하는 걸 막지 못한다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"Origin CA 인증서든 Let's Encrypt든 Full(strict)만 통과하면 아무거나 써도 상관없다."</p>
+      <div class="mc-right">실제</div>
+      <p>zone이 항상 proxied 상태로만 운영된다면 Origin CA가 갱신 자동화 부담(15년 vs 90일)과 우회 접근 노출(사설 CA라 공개 웹에서 신뢰되지 않음) 두 측면에서 더 안전하다. 반대로 origin이 Cloudflare 외의 경로로도 직접 트래픽을 받을 가능성이 있다면 공인 인증서를 반드시 병행 유지해야 한다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"리다이렉트 루프는 SSL 인증서가 잘못 설치돼서 생기는 문제다."</p>
+      <div class="mc-right">실제</div>
+      <p>가장 흔한 원인은 인증서 문제가 아니라, Flexible 모드(Cloudflare→origin 평문)와 origin의 강제 HTTPS 리다이렉트 규칙이 서로 충돌하는 설정 문제다. 인증서를 아무리 재발급해도 해결되지 않고, SSL/TLS 모드를 Full 이상으로 올리거나 origin의 강제 리다이렉트 규칙을 재검토해야 해결된다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"RFC 9440처럼 표준화된 형식으로 클라이언트 인증서 정보를 받으면, 그 헤더 값은 신뢰해도 된다."</p>
+      <div class="mc-right">실제</div>
+      <p>인코딩 표준화와 신뢰 가능 여부는 별개다. <code>Client-Cert</code>는 여전히 일반 HTTP 헤더이므로, origin이 들어오는 모든 요청에서 이 헤더를 무조건 먼저 제거하고 Cloudflare가 그 요청에 대해 새로 채운 값만 신뢰하도록 구현하지 않으면 헤더 위조로 인증을 우회당할 수 있다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>SSL/TLS 모드 이해</strong></td>
+          <td>5가지 모드의 암호화/검증 차이와 각 모드의 위험을 구간별로 설명한다</td>
+          <td>Flexible/Full/Full(strict) 3가지 정도만 안다</td>
+          <td>모드 차이를 설명하지 못한다</td>
+        </tr>
+        <tr>
+          <td><strong>암호화 vs 신원 검증 구분</strong></td>
+          <td>Full(strict)과 AOP가 서로 다른 방향의 신뢰 문제를 푼다는 걸 설명한다</td>
+          <td>둘 다 "보안 강화 설정" 정도로 뭉뚱그린다</td>
+          <td>AOP를 아예 모른다</td>
+        </tr>
+        <tr>
+          <td><strong>Origin IP 유출 위협 모델</strong></td>
+          <td>origin IP 유출 시 SSL 모드만으로는 우회 접근을 막지 못한다는 걸 구체적 근거로 설명한다</td>
+          <td>"origin을 보호해야 한다"는 원칙만 안다</td>
+          <td>이 위협 자체를 고려하지 않는다</td>
+        </tr>
+        <tr>
+          <td><strong>인증서 선택 판단</strong></td>
+          <td>Origin CA/공인 CA를 proxied 여부 기준으로 선택하는 근거를 설명한다</td>
+          <td>"Origin CA를 쓰면 된다" 정도로만 안다</td>
+          <td>인증서 종류를 구분하지 못한다</td>
+        </tr>
+        <tr>
+          <td><strong>mTLS 신뢰 경계</strong></td>
+          <td>표준화된 필드도 origin이 헤더를 제거/재검증해야 안전하다는 걸 짚는다</td>
+          <td>mTLS 개념은 알지만 헤더 스푸핑 위험은 모른다</td>
+          <td>mTLS를 모른다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면 계속 복습하라. 다음 Day 5에서는 WAF와 Rate Limiting 설계(Managed Rules, Custom Rules, Rate Limiting Rules, 오탐 대응, 단계적 배포)를 다룬다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./0003-cdn-cache-strategy-and-cache-rules.html">← Day 3</a>
+    <a href="./index.html">목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>
