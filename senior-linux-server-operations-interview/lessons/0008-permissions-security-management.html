@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — 권한 &amp; 보안 관리 | Linux 서버 운영 인터뷰</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<header class="lesson-header">
+  <div class="header-inner">
+    <span class="subject-label">Linux 서버 운영 인터뷰 · Day 8</span>
+    <h1>권한 &amp; 보안 관리</h1>
+    <p class="subtitle">
+      "Permission denied" 한 줄을 받았을 때, DAC(전통적 rwx)와 MAC(SELinux) 중
+      어디를 먼저 의심해야 하는지, 그리고 왜 root 권한 전체를 주는 대신 필요한
+      권한만 정밀하게 위임해야 하는지 판단하는 능력
+    </p>
+    <p style="margin-top:1rem; font-size:0.82rem; color:#64748b;">
+      <span class="tag">chmod/chown</span>
+      <span class="tag">umask</span>
+      <span class="tag">sudo/sudoers</span>
+      <span class="tag">setuid/setgid</span>
+      <span class="tag">SELinux</span>
+      <span class="tag">capability</span>
+    </p>
+  </div>
+</header>
+
+<nav class="lesson-nav">
+  <ul>
+    <li><a href="#questions">면접 질문</a></li>
+    <li><a href="#concepts">전제 개념</a></li>
+    <li><a href="#why">왜 묻는가</a></li>
+    <li><a href="#realworld">실무 연결</a></li>
+    <li><a href="#framework">답변 사고 순서</a></li>
+    <li><a href="#model-answer">핵심 답변 예시</a></li>
+    <li><a href="#followup">Senior Follow-up</a></li>
+    <li><a href="#comparison">좋은 vs 약한 답변</a></li>
+    <li><a href="#misconceptions">흔한 오해</a></li>
+    <li><a href="#rubric">자기 점검 Rubric</a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <!-- ══════════════════════════════════════
+       SECTION 1: 오늘의 면접 질문
+  ══════════════════════════════════════ -->
+  <section id="questions">
+    <h2><span class="icon">❓</span> 오늘의 면접 질문</h2>
+
+    <div class="question-card">
+      <span class="q-label main">핵심 질문</span>
+      <p class="q-text">
+        "배포 스크립트가 애플리케이션 로그 파일에 쓰기를 시도하다가 'Permission denied'
+        에러로 실패했습니다. <code>ls -la</code>로 확인한 rwx 권한은 문제가 없어
+        보이는데도 계속 실패합니다. 어떤 순서로 원인을 좁혀나가시겠습니까?"
+      </p>
+    </div>
+
+    <div class="question-card">
+      <span class="q-label related">관련 질문</span>
+      <p class="q-text">
+        "운영팀 신규 입사자에게 서버 운영 권한을 줘야 합니다. root 비밀번호를 공유하는
+        방식과 <code>sudo</code>로 세분화된 권한을 주는 방식 중 무엇을 선택하고,
+        왜 그렇게 판단하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="question-card">
+      <span class="q-label related">관련 질문</span>
+      <p class="q-text">
+        "80번 포트로 애플리케이션을 띄우려는데 일반 사용자 권한으로는 바인딩이 안
+        됩니다. root로 실행하는 것 말고 더 안전한 대안이 있을까요?"
+      </p>
+    </div>
+
+    <div class="callout info">
+      <span class="icon">💡</span>
+      <p>
+        Day 1~7이 "무엇이 병목이고 무엇이 막혀 있는가"를 진단하는 능력이었다면, Day 8은
+        "누가 무엇을 할 수 있고 없는지"를 진단하고 설계하는 능력입니다. 면접관이 보는
+        것은 <code>chmod 755</code> 같은 숫자 암기가 아니라, <strong>왜 이 권한
+        구조가 이렇게 설계되어야 하는지</strong>, 그리고 최소 권한 원칙(least
+        privilege)을 실제 운영 판단에 적용할 수 있는지입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 2: 전제 개념
+  ══════════════════════════════════════ -->
+  <section id="concepts">
+    <h2><span class="icon">📚</span> 전제 개념 — 이것을 먼저 이해해야 한다</h2>
+
+    <div class="concept-box">
+      <h3>1. 리눅스 권한 모델 — "누구에게 어떤 열쇠를 줄 것인가"</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 리눅스의 모든 파일과 디렉터리는 "이 파일을 소유한
+        사람(owner)", "같은 그룹에 속한 사람들(group)", "그 외 모든 사람(other)" 세
+        부류로 나눠서 읽기(r)/쓰기(w)/실행(x) 권한을 각각 다르게 줄 수 있습니다. 마치
+        건물에 "본인 열쇠", "부서 공용 열쇠", "방문객 출입증"을 따로 발급하는 것과
+        같습니다.
+      </p>
+      <pre><code><span class="cmd">$ ls -la /var/log/myapp.log</span>
+<span class="output">-rw-r----- 1 appuser appgroup 15234 Jul  7 10:00 /var/log/myapp.log</span>
+<span class="comment"># 앞 10자리 해부: -(파일종류) rw-(owner) r--(group) ---(other)</span></code></pre>
+      <ul>
+        <li><strong>숫자 표기(numeric)</strong>: r=4, w=2, x=1을 더해서 3자리 숫자로 표현. <code>rw-r-----</code> = owner(rw-=6) group(r--=4) other(---=0) → <code>chmod 640</code>.</li>
+        <li><strong>문자 표기(symbolic)</strong>: <code>chmod u+x,g-w file</code>처럼 기존 권한에 상대적으로 더하거나 빼는 방식 — 현재 권한을 모르는 상태에서 "실행 권한만 추가"하고 싶을 때 숫자 표기보다 안전.</li>
+        <li>디렉터리의 <code>x</code>(실행) 권한은 "그 안으로 들어갈 수 있는가(cd 가능 여부)"를 의미 — 디렉터리에 <code>r</code>만 있고 <code>x</code>가 없으면 파일 목록은 보여도 안으로 들어가거나 그 안의 파일을 열 수 없는, 초보자가 자주 헷갈리는 조합.</li>
+        <li><code>chown user:group file</code>로 소유자/그룹을 바꾸고, <code>chmod</code>로 권한을 바꾸는 것은 별개의 축 — "누가 소유하는가"와 "그 소유자가 무엇을 할 수 있는가"를 혼동하지 않는 것이 중요.</li>
+      </ul>
+      <div class="callout tip">
+        <span class="icon">✅</span>
+        <p>
+          면접 팁: 위 질문("rwx는 문제없어 보이는데 Permission denied")의 정답 후보 중
+          하나가 바로 이 디렉터리 <code>x</code> 권한입니다. 파일 자체의 권한만 보고
+          "문제없다"고 판단하지 않고, <strong>그 파일이 위치한 모든 상위 디렉터리의
+          실행 권한</strong>까지 확인하는 습관이 senior와 junior를 가르는 지점입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>2. umask — "새로 만들어지는 파일의 기본 권한은 왜 이렇게 정해지나"</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 파일을 만들 때마다 매번 권한을 지정하지 않아도,
+        시스템이 자동으로 적용하는 "기본 차감값"이 <code>umask</code>입니다. 파일의
+        이론적 최대 권한(666, 실행 비트는 프로그램이 명시할 때만 부여)에서 umask 값을
+        뺀 것이 실제 생성되는 파일의 권한입니다.
+      </p>
+      <pre><code><span class="cmd">$ umask</span>
+<span class="output">0022</span>
+<span class="comment"># 파일 기본 666 - umask 022 = 644 (rw-r--r--)</span>
+<span class="comment"># 디렉터리 기본 777 - umask 022 = 755 (rwxr-xr-x)</span>
+<span class="cmd">$ umask 027   # 그룹 쓰기, other 전체 차단 — 더 보수적인 기본값</span></code></pre>
+      <ul>
+        <li>umask는 "권한을 부여하는 것"이 아니라 <strong>"기본값에서 빼는 것"</strong> — 이 방향을 거꾸로 이해하면 계산이 꼬입니다.</li>
+        <li>애플리케이션 서비스 계정에 <code>umask 027</code>이나 <code>077</code>을 적용하면, 그 프로세스가 새로 만드는 로그/설정 파일이 처음부터 other에게 노출되지 않아 <strong>사후에 chmod로 조이는 것보다 근본적으로 안전</strong>합니다.</li>
+        <li>systemd 서비스 unit에서는 <code>UMask=</code> 지시자로 서비스별 umask를 개별 지정할 수 있어, 전역 셸 umask와 무관하게 일관된 권한을 강제할 수 있습니다.</li>
+      </ul>
+      <div class="callout info">
+        <span class="icon">💡</span>
+        <p>
+          <strong>실무 연결:</strong> 여러 개발자가 같은 그룹으로 배포 서버에 접근하는
+          환경에서 umask가 022로 되어 있으면, 누군가 실수로 만든 설정 파일이 other에게
+          읽기 권한까지 열려버릴 수 있습니다. 공유 배포 계정은 umask를 027 이상으로
+          맞추는 것이 실무 관행입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>3. sudo / sudoers — "root 비밀번호를 나눠주지 않고 권한을 위임하는 방법"</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> root 계정 비밀번호를 여러 사람과 공유하면 "누가
+        무엇을 했는지" 추적이 불가능하고, 권한을 회수하려면 비밀번호 자체를 바꿔야
+        합니다. <code>sudo</code>는 각자의 개인 계정으로 로그인한 상태에서, 정해진
+        범위의 명령어만 root 권한으로 실행하도록 <strong>위임</strong>하는 구조입니다 —
+        누가(who) 언제(when) 무엇을(what) 실행했는지 로그(<code>/var/log/auth.log</code>
+        또는 <code>journalctl _COMM=sudo</code>)에 그대로 남습니다.
+      </p>
+      <pre><code><span class="comment"># /etc/sudoers (반드시 visudo로 편집 — 문법 오류 시 저장 전 검증)</span>
+<span class="cmd">$ sudo visudo</span>
+<span class="output">deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart myapp
+%ops    ALL=(ALL) ALL</span>
+<span class="comment"># deploy 계정은 딱 하나의 명령어만, 비밀번호 없이 실행 가능</span>
+<span class="comment"># ops 그룹은 모든 명령어를 (비밀번호 입력 후) 실행 가능</span></code></pre>
+      <ul>
+        <li><code>visudo</code>를 쓰는 이유: 직접 <code>/etc/sudoers</code>를 편집하다 문법 오류가 나면 <strong>어떤 sudo 명령어도 실행할 수 없게 잠기는</strong> 치명적 상황이 발생 — visudo는 저장 전 문법을 검증해 이를 방지.</li>
+        <li><code>NOPASSWD</code>는 자동화 스크립트(배포 파이프라인 등)에서 사람의 개입 없이 특정 명령어를 실행해야 할 때 필요하지만, 범위를 넓게 주면(<code>NOPASSWD: ALL</code>) 사실상 root 비밀번호 공유와 다를 바 없어지는 trade-off가 있습니다.</li>
+        <li>명령어를 와일드카드로 열어두면(<code>/usr/bin/systemctl *</code>) 의도한 것보다 넓은 권한이 열릴 수 있음 — 예를 들어 <code>systemctl restart myapp</code>만 허용하려 했는데 와일드카드 때문에 <code>systemctl stop sshd</code>까지 가능해지는 식.</li>
+      </ul>
+      <div class="callout warn">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>흔한 실수:</strong> 특정 프로그램에 <code>sudo</code> 권한을 줬는데,
+          그 프로그램 안에서 셸을 실행할 수 있는 기능(예: 일부 에디터의 <code>:!sh</code>,
+          <code>less</code>의 <code>!</code>)이 있다면 결과적으로 root 셸을 얻는 것과
+          같습니다(GTFOBins로 잘 알려진 패턴). "이 명령어만 허용했으니 안전하다"는
+          판단은 그 명령어의 내부 기능까지 확인한 뒤에야 유효합니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>4. setuid / setgid / sticky bit — "실행하는 순간 다른 사람의 권한을 빌린다"</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 보통 프로그램을 실행하면 그 프로그램을 실행한
+        사람의 권한으로 동작합니다. 그런데 <code>setuid</code> 비트가 설정된 프로그램은
+        "누가 실행했든 상관없이, 이 프로그램의 <strong>소유자</strong> 권한으로 동작"합니다.
+        대표적 예가 비밀번호를 바꾸는 <code>passwd</code> 명령어 — 일반 사용자가 실행해도
+        내부적으로는 <code>/etc/shadow</code>(root만 쓰기 가능)를 수정해야 하므로
+        setuid로 root 소유의 프로그램이 root 권한을 잠깐 빌려줍니다.
+      </p>
+      <pre><code><span class="cmd">$ ls -la /usr/bin/passwd</span>
+<span class="output">-rwsr-xr-x 1 root root 68208 ... /usr/bin/passwd</span>
+<span class="comment"># owner의 x 자리가 's' — setuid 비트가 설정됨을 의미</span>
+<span class="comment"># 숫자 표기로는 4자리: chmod 4755 file (맨 앞 4가 setuid)</span>
+<span class="cmd">$ find / -perm -4000 -type f 2>/dev/null   # setuid 걸린 파일 전수 조사(보안 점검 시 필수)</span></code></pre>
+      <ul>
+        <li><code>setgid</code>(숫자 2xxx): 디렉터리에 걸면 그 안에서 새로 만들어지는 파일/디렉터리가 <strong>부모 디렉터리의 그룹을 자동 상속</strong> — 여러 사용자가 협업하는 공유 디렉터리에서 그룹 권한 일관성을 유지하는 실무적으로 매우 유용한 설정.</li>
+        <li><code>sticky bit</code>(숫자 1xxx, <code>/tmp</code>가 대표 예): 디렉터리에 걸면 <strong>그 디렉터리 안의 파일은 소유자 본인만 삭제/이름변경 가능</strong> — 여러 사용자가 쓰기 권한을 공유하는 <code>/tmp</code>에서 남의 파일을 함부로 지우지 못하게 막는 안전장치.</li>
+        <li>setuid 프로그램은 강력한 만큼 위험도 큽니다 — 그 프로그램에 버그(예: 버퍼 오버플로)가 있으면 공격자가 root 권한을 그대로 획득할 수 있어, 보안 점검 시 <code>find / -perm -4000</code>으로 불필요한 setuid 바이너리를 주기적으로 점검하는 것이 실무 관행.</li>
+      </ul>
+      <div class="callout tip">
+        <span class="icon">✅</span>
+        <p>
+          면접 팁: "80번 포트 바인딩" 질문에서 setuid로 root 권한을 통째로 빌리는 방식(과거
+          관행)은 대안이 있다는 걸 아는 것이 핵심입니다 — 다음에 나올 <strong>Linux
+          capability</strong>(CAP_NET_BIND_SERVICE)가 정확히 이 문제를 위한 더 안전한
+          해법입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>5. SELinux — "rwx가 다 맞아도 막힐 수 있다는 두 번째 잠금장치"</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 지금까지의 rwx 권한 모델을 <strong>DAC(Discretionary
+        Access Control, 임의적 접근 제어)</strong>라고 부릅니다 — 파일 소유자가 "내
+        마음대로" 권한을 설정할 수 있다는 뜻입니다. 그런데 만약 애플리케이션이 해킹당해
+        공격자가 그 애플리케이션 계정 권한을 통째로 얻으면, DAC만으로는 그 계정이 접근
+        가능한 모든 파일이 뚫립니다. <strong>SELinux(MAC, Mandatory Access Control)</strong>는
+        여기에 "이 프로세스는 설령 소유자 권한이 있어도, <strong>정책에 명시된 라벨
+        (context)</strong>이 일치하는 자원에만 접근 가능"이라는 두 번째 독립적인 잠금을
+        더합니다.
+      </p>
+      <pre><code><span class="cmd">$ ls -Z /var/www/html/index.html</span>
+<span class="output">system_u:object_r:httpd_sys_content_t:s0 /var/www/html/index.html</span>
+<span class="comment"># httpd 프로세스는 httpd_sys_content_t 라벨이 붙은 파일만 읽도록 정책에 정의됨</span>
+<span class="cmd">$ getenforce</span>
+<span class="output">Enforcing</span>
+<span class="cmd">$ sudo ausearch -m avc -ts recent   # SELinux가 막은 시도 로그 확인 (거부 이유 파악)</span>
+<span class="cmd">$ sudo semanage fcontext -a -t httpd_sys_content_t "/data/web(/.*)?" &amp;&amp; restorecon -Rv /data/web</span></code></pre>
+      <ul>
+        <li>rwx 권한(DAC)이 완벽해도, SELinux 컨텍스트(MAC)가 정책과 맞지 않으면 접근이 거부됩니다 — 이 질문의 정답 후보 중 가장 중요한 것이 바로 이 지점: "권한은 맞는데 안 된다"는 SELinux/AppArmor를 먼저 의심해야 하는 강한 신호.</li>
+        <li>웹 콘텐츠를 표준 경로(<code>/var/www</code>) 밖으로 옮기면 새 위치는 기본적으로 올바른 SELinux 컨텍스트가 없어 접근이 거부됩니다 — <code>mv</code>가 아니라 <code>semanage fcontext</code> + <code>restorecon</code>으로 컨텍스트를 명시적으로 지정해야 함.</li>
+        <li>AppArmor(Ubuntu/Debian 계열)는 SELinux와 목적은 같지만(MAC), 파일 라벨 대신 <strong>경로 기반 프로파일</strong>로 프로세스별 허용 범위를 정의 — 접근 방식은 다르지만 "DAC를 통과해도 두 번째 정책 계층이 막을 수 있다"는 개념은 동일.</li>
+      </ul>
+      <div class="callout warn">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>trade-off:</strong> <code>setenforce 0</code>으로 SELinux를 끄면 문제가
+          "해결된 것처럼" 보이지만, 이는 원인을 찾은 게 아니라 <strong>보안 계층
+          전체를 제거한 것</strong>입니다. 정답은 <code>ausearch -m avc</code>로 실제
+          거부된 컨텍스트를 확인하고, <code>semanage</code>/<code>restorecon</code>으로
+          올바른 라벨을 지정하거나 필요한 정책만 <code>audit2allow</code>로 추가하는
+          것 — "끄기"와 "고치기"는 완전히 다른 조치입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>6. Linux Capability — "root냐 아니냐"의 이분법을 잘게 쪼갠다</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 전통적으로 리눅스 권한은 "root(전지전능) vs
+        일반 사용자(제한적)"라는 두 단계뿐이었습니다. 하지만 실제로는 "1024번 이하
+        포트 바인딩", "시스템 시간 변경", "네트워크 인터페이스 설정 변경"처럼 root
+        권한 중에서도 아주 좁은 기능 하나만 필요한 경우가 많습니다. <strong>capability</strong>는
+        root의 거대한 권한 덩어리를 세분화된 조각(약 40개 이상)으로 나눠서, 필요한
+        조각 하나만 프로세스에 부여할 수 있게 한 메커니즘입니다.
+      </p>
+      <pre><code><span class="comment"># 일반 사용자로도 80번(1024 이하) 포트를 바인딩할 수 있도록, 그 기능만 부여</span>
+<span class="cmd">$ sudo setcap 'cap_net_bind_service=+ep' /usr/bin/myapp</span>
+<span class="cmd">$ getcap /usr/bin/myapp</span>
+<span class="output">/usr/bin/myapp cap_net_bind_service=ep</span>
+<span class="comment"># 컨테이너에서 불필요한 capability를 제거해 공격 표면을 줄이는 것도 같은 원리</span>
+<span class="cmd">$ docker run --cap-drop=ALL --cap-add=NET_BIND_SERVICE myapp</span></code></pre>
+      <ul>
+        <li>setuid root와 비교하면, capability는 <strong>"필요한 기능 하나만"</strong> 부여하므로 그 프로그램에 취약점이 있어도 공격자가 얻는 권한의 범위가 훨씬 좁습니다 — 최소 권한 원칙(least privilege)의 정석적인 구현.</li>
+        <li>systemd 서비스 unit의 <code>AmbientCapabilities=CAP_NET_BIND_SERVICE</code>로도 동일한 효과를 낼 수 있어, 바이너리 자체를 건드리지 않고 서비스 실행 시점에 capability를 부여하는 방법도 실무에서 많이 사용됩니다.</li>
+        <li>컨테이너 환경(Docker/Kubernetes)에서는 기본적으로 상당수 capability가 이미 제한되어 있는데, 여기에 추가로 <code>--cap-drop=ALL</code> 후 필요한 것만 <code>--cap-add</code>하는 것이 컨테이너 보안 강화의 표준 패턴.</li>
+      </ul>
+      <div class="callout info">
+        <span class="icon">💡</span>
+        <p>
+          <strong>실무 연결:</strong> "왜 root로 실행하면 간단한데 굳이 capability를
+          쓰는가"라는 질문에는, "root로 실행된 프로세스가 원격 코드 실행 취약점에
+          걸리면 시스템 전체가 뚫리지만, <code>cap_net_bind_service</code>만 가진
+          프로세스가 뚫려도 공격자가 추가로 얻는 것은 포트 바인딩 권한뿐"이라는 <strong>피해
+          반경(blast radius) 축소</strong> 논리로 답하는 것이 senior다운 답변입니다.
+        </p>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 3: 왜 면접에서 묻는가
+  ══════════════════════════════════════ -->
+  <section id="why">
+    <h2><span class="icon">🎯</span> 왜 면접에서 묻는가</h2>
+
+    <p>
+      권한/보안 질문은 <code>chmod</code> 숫자 암기가 아니라, "이 시스템에 누가 무엇을
+      할 수 있어야 하는가"를 최소 권한 원칙에 따라 설계하고, 권한 문제가 발생했을 때
+      DAC과 MAC 두 계층을 구분해서 원인을 좁힐 수 있는지를 평가합니다.
+    </p>
+
+    <h3>면접관이 실제로 평가하는 것</h3>
+    <ol>
+      <li>
+        <strong>권한 문제를 계층별로 진단하는가?</strong><br>
+        "Permission denied"라는 하나의 증상 뒤에 파일 rwx, 상위 디렉터리 실행 권한,
+        SELinux/AppArmor 컨텍스트라는 여러 계층이 있다는 것을 알고 순서대로 확인할
+        수 있는지를 봅니다.
+      </li>
+      <li>
+        <strong>최소 권한 원칙을 실제로 설계에 적용하는가?</strong><br>
+        root 비밀번호 공유 대신 <code>sudo</code>로 세분화하고, setuid 전체 권한
+        대신 capability로 필요한 기능만 부여하는 식으로 "필요한 만큼만" 권한을
+        설계하는 습관이 있는지를 봅니다.
+      </li>
+      <li>
+        <strong>보안 계층을 끄는 것과 고치는 것을 구분하는가?</strong><br>
+        SELinux를 끄거나 sudo 권한을 무한정 넓히는 임시방편의 위험을 인지하고,
+        근본 원인(정책/컨텍스트/범위)을 고치는 방향으로 판단하는지를 봅니다.
+      </li>
+      <li>
+        <strong>추적 가능성(accountability)을 이해하는가?</strong><br>
+        root 직접 로그인 대신 개인 계정 + sudo를 쓰는 이유가 "누가 언제 무엇을
+        했는지" 감사 로그로 추적하기 위함이라는 것을 설명할 수 있는지를 봅니다.
+      </li>
+    </ol>
+
+    <div class="callout info">
+      <span class="icon">💡</span>
+      <p>
+        본질은 "권한은 편의를 위해 넓히는 것이 아니라, 사고가 났을 때의 피해 반경을
+        줄이기 위해 최소한으로 설계하는 것"이라는 사고방식입니다. 이 감각이 없으면
+        운영 편의를 위해 권한을 넓히다가, 사고 한 번에 시스템 전체가 뚫리는 결과로
+        이어집니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 4: 실무 연결
+  ══════════════════════════════════════ -->
+  <section id="realworld">
+    <h2><span class="icon">🏭</span> 실무 연결 — 이런 상황에서 실제로 쓴다</h2>
+
+    <h3>시나리오 A: rwx는 정상인데 계속 Permission denied</h3>
+    <p>
+      배포 스크립트가 <code>/data/app/logs/app.log</code>에 쓰기를 시도하다 실패했습니다.
+      파일 자체의 권한(<code>rw-rw-r--</code>)과 소유자는 문제가 없었지만, 상위
+      디렉터리인 <code>/data/app</code>이 최근 보안 점검 과정에서 <code>chmod 700</code>으로
+      바뀌어 있었습니다. 배포 계정이 그 그룹에 속하지 않아 디렉터리 진입 자체가
+      막힌 것이 원인이었고, 그룹 소유권을 조정한 뒤 <code>chmod 750</code>으로
+      되돌려 문제를 해결했습니다.
+    </p>
+
+    <h3>시나리오 B: 신규 웹 서버에서 SELinux가 정적 파일 접근을 막음</h3>
+    <p>
+      새 스토리지 볼륨을 <code>/mnt/newdisk/www</code>에 마운트하고 심볼릭 링크로
+      웹 루트를 연결했더니 502 에러가 발생했습니다. <code>ausearch -m avc -ts recent</code>로
+      확인한 결과 SELinux가 <code>httpd</code> 프로세스의 접근을 거부한 로그가
+      쌓여 있었고, 새 경로에 <code>httpd_sys_content_t</code> 컨텍스트가 없는 것이
+      원인이었습니다. <code>semanage fcontext</code>로 컨텍스트를 등록하고
+      <code>restorecon</code>으로 적용한 뒤 정상화되었으며, 이 경험을 계기로 신규
+      마운트 볼륨 체크리스트에 SELinux 컨텍스트 확인 단계를 추가했습니다.
+    </p>
+
+    <h3>시나리오 C: 운영팀 권한 위임 재설계</h3>
+    <p>
+      기존에는 운영팀 전원이 root 비밀번호를 공유해 서버에 로그인했습니다. 감사
+      추적이 불가능하고 퇴사자 발생 시 전체 서버 root 비밀번호를 바꿔야 하는
+      부담이 있어, 개인 계정 + <code>sudo</code> 구조로 전환했습니다. 일상적인
+      서비스 재시작/로그 확인은 <code>NOPASSWD</code>로 세분화된 명령어만 허용하고,
+      시스템 설정 변경처럼 위험도 높은 작업은 비밀번호 재확인을 요구하도록
+      <code>sudoers</code>를 계층화했습니다.
+    </p>
+
+    <h3>실무에서 배운 핵심 교훈</h3>
+    <ul>
+      <li>"Permission denied"는 <strong>파일 권한 → 상위 디렉터리 권한 → SELinux/AppArmor</strong>
+        순서로, 최소 두 개의 독립적인 계층을 확인해야 완전한 진단이다.</li>
+      <li>root 권한은 <strong>공유하는 것이 아니라 위임하는 것</strong> — sudo와
+        capability 모두 "필요한 만큼만, 추적 가능하게" 권한을 나눠주는 같은 철학의
+        다른 구현이다.</li>
+      <li>보안 계층(SELinux, 방화벽 등)을 <strong>끄는 것</strong>과 원인을 찾아
+        <strong>고치는 것</strong>은 전혀 다른 조치이며, 끄는 순간 감춰졌던 위험이
+        그대로 열린다.</li>
+      <li>새로운 인프라(볼륨 마운트, 신규 서비스 계정)를 추가할 때는 rwx뿐 아니라
+        <strong>SELinux 컨텍스트, capability, sudoers 범위</strong>까지 체크리스트에
+        포함해야 재발을 막을 수 있다.</li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 5: 답변 사고 순서
+  ══════════════════════════════════════ -->
+  <section id="framework">
+    <h2><span class="icon">🧠</span> 답변 사고 순서 — 권한 문제 진단 흐름</h2>
+
+    <ul class="steps">
+      <li>
+        <div class="step-content">
+          <h3>대상 파일/프로세스의 정확한 정체 확인</h3>
+          <p>
+            어떤 프로세스(어떤 사용자 계정)가, 어떤 파일/포트/자원에 접근하려다
+            실패했는지부터 명확히 합니다. <code>ps aux | grep</code>과 <code>id</code>로
+            실제 실행 계정을 확인하는 것이 출발점입니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>DAC(rwx) 계층 확인 — 파일과 모든 상위 디렉터리</h3>
+          <p>
+            <code>ls -la</code>로 파일 자체의 owner/group/other 권한을 확인하고,
+            <strong>그 파일이 위치한 모든 상위 디렉터리의 실행(x) 권한</strong>까지
+            순서대로 확인합니다. 하나라도 막혀 있으면 그 지점이 원인입니다.
+          </p>
+          <pre><code><span class="cmd">$ namei -l /data/app/logs/app.log   # 경로 전체의 권한을 한 번에 확인</span></code></pre>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>MAC(SELinux/AppArmor) 계층 확인</h3>
+          <p>
+            DAC이 모두 정상인데도 거부된다면 <code>getenforce</code>로 SELinux
+            활성 여부를 확인하고, <code>ausearch -m avc -ts recent</code> 또는
+            <code>journalctl</code>에서 최근 거부(denied) 로그를 찾아 정확한 원인
+            컨텍스트를 확인합니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>권한 위임 구조 점검(sudo/capability)</h3>
+          <p>
+            특정 계정이 특정 작업을 못 하는 상황이라면, 그 계정에 필요한 권한이
+            <code>sudoers</code>나 capability로 <strong>충분히, 그러나 과하지 않게</strong>
+            부여되어 있는지 확인합니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>최소 권한 원칙에 맞는 조치와 재발 방지</h3>
+          <p>
+            문제를 "끄는" 방식(SELinux 비활성화, 777 권한 부여, root 실행)이 아니라
+            정확한 원인 위치에 필요한 만큼만 권한을 부여하는 방식으로 해결하고,
+            향후 유사한 인프라 변경 시 체크리스트에 반영합니다.
+          </p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 6: 핵심 답변 예시
+  ══════════════════════════════════════ -->
+  <section id="model-answer">
+    <h2><span class="icon">💬</span> 핵심 답변 예시</h2>
+
+    <p>면접에서 자연스럽게 말할 수 있는 구조입니다. 외우지 말고 논리의 흐름을 이해하세요.</p>
+
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:1.5rem; box-shadow:0 1px 3px rgba(0,0,0,.06);">
+      <p style="font-size:0.88rem; color:#64748b; margin-bottom:1rem;">💬 면접관: "rwx 권한은 문제없어 보이는데 계속 Permission denied가 발생합니다. 어떻게 접근하시겠습니까?"</p>
+
+      <p>
+        "가장 먼저 실제로 접근을 시도하는 프로세스가 어떤 계정으로 실행되는지
+        <code>ps aux</code>와 <code>id</code>로 확인합니다. 그 다음 대상 파일뿐 아니라
+        <code>namei -l</code>로 경로 전체의 상위 디렉터리 실행 권한까지 확인합니다 —
+        파일 자체는 문제없어도 상위 디렉터리 하나가 막혀 있으면 같은 증상이 나타나기
+        때문입니다.
+      </p>
+      <p>
+        여기까지 DAC(전통적 rwx) 관점에서 문제가 없다면, <code>getenforce</code>로
+        SELinux가 Enforcing 상태인지 확인하고, <code>ausearch -m avc -ts recent</code>로
+        최근 거부 로그를 찾습니다. rwx가 통과해도 SELinux 컨텍스트가 정책과 맞지 않으면
+        똑같이 Permission denied가 발생할 수 있기 때문입니다.
+      </p>
+      <p>
+        원인을 찾은 뒤에는 SELinux를 끄거나 권한을 777로 여는 방식이 아니라,
+        <code>semanage fcontext</code>로 올바른 컨텍스트를 지정하거나 필요한 그룹
+        권한만 정확히 부여하는 방식으로 해결합니다. 이렇게 하면 문제를 감추지 않고
+        정확한 지점만 열어주기 때문에 다른 보안 경계는 그대로 유지됩니다."
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 7: Senior Follow-up
+  ══════════════════════════════════════ -->
+  <section id="followup">
+    <h2><span class="icon">🔍</span> Senior-level Follow-up 질문과 모범 답변</h2>
+
+    <div class="followup-block">
+      <p class="fq">Q. "SELinux가 원인인지 아닌지 가장 빠르게 확인하는 방법은 무엇인가요?"</p>
+      <div class="fa">
+        <p>
+          "임시로 <code>setenforce 0</code>으로 Permissive 모드로 바꿔서 같은 동작을
+          재현해보는 방법이 있습니다. Permissive 모드에서는 SELinux가 정책 위반을
+          '차단'하지 않고 '로그만' 남기기 때문에, 이 상태에서 문제가 사라진다면
+          SELinux가 원인이라는 강한 증거가 됩니다. 다만 이건 어디까지나 <strong>진단
+          목적의 임시 조치</strong>이고, 확인 즉시 다시 <code>setenforce 1</code>로
+          되돌리고 <code>ausearch</code> 로그를 근거로 정확한 컨텍스트를 고치는 것이
+          다음 단계입니다. Permissive 상태로 방치하는 것은 보안 계층을 사실상 꺼둔
+          것과 같습니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 진단용 임시 조치와 영구적 해결책을 구분하고, Permissive를 방치하지 않는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "sudoers에 NOPASSWD를 광범위하게 설정하면 어떤 위험이 있나요?"</p>
+      <div class="fa">
+        <p>
+          "가장 큰 위험은 그 계정이 해킹당했을 때, 공격자가 비밀번호 확인 없이 곧바로
+          root 권한의 모든 명령을 실행할 수 있다는 점입니다. 즉 그 계정의 인증
+          자체가 시스템 전체의 보안 경계가 되어버립니다. 자동화 파이프라인처럼 사람이
+          개입할 수 없는 경우에는 불가피하게 NOPASSWD가 필요하지만, 그럴 때는 범위를
+          '서비스 재시작' 같은 구체적인 명령어 하나로 최대한 좁히고, 와일드카드나
+          셸 접근이 가능한 프로그램은 제외해야 합니다. 즉 '필요성'과 '범위'를 분리해서
+          판단해야 합니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: NOPASSWD의 존재 이유와 범위를 분리해서 판단하고, 공격 시 피해 반경을 설명하는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "setuid root 프로그램 대신 capability를 쓰는 것이 항상 더 나은가요?"</p>
+      <div class="fa">
+        <p>
+          "대부분의 경우 그렇지만 항상은 아닙니다. capability는 커널이 지원하는
+          특정 기능 단위로만 세분화되어 있기 때문에, 프로그램이 필요한 동작이 딱
+          맞는 capability 하나로 떨어지지 않고 여러 개를 조합해야 한다면 오히려
+          setuid보다 관리가 복잡해질 수 있습니다. 또한 파일 시스템이 capability를
+          지원하지 않는 환경(일부 네트워크 파일시스템)에서는 아예 적용이 안 되는
+          제약도 있습니다. 그래서 저는 '이 프로그램이 필요한 권한이 하나의 capability로
+          명확히 떨어지는가'를 먼저 확인하고, 그렇다면 capability를, 그렇지 않고
+          범위가 넓다면 차라리 setuid 대신 별도의 권한 상승 없는 헬퍼 프로세스로
+          분리하는 구조를 고려합니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: capability를 만능 해법으로 보지 않고 적용 한계와 대안까지 고려하는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "umask를 서비스별로 다르게 관리해야 하는 이유가 있을까요?"</p>
+      <div class="fa">
+        <p>
+          "서비스마다 다루는 데이터의 민감도가 다르기 때문입니다. 예를 들어 결제
+          정보를 다루는 서비스가 만드는 로그 파일은 처음부터 other 권한을 완전히
+          차단(umask 077)하는 것이 안전하지만, 여러 팀이 함께 보는 배치 작업 산출물은
+          그룹 읽기 권한 정도는 열어두는 것(umask 027)이 협업에 유리합니다. 전역
+          umask 하나로 통일하면 한쪽은 과도하게 열리고 다른 쪽은 과도하게 막히는
+          문제가 생기므로, systemd unit의 <code>UMask=</code>로 서비스별 기본값을
+          분리하는 것이 실무적으로 더 정확합니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: umask를 전역 설정이 아니라 데이터 민감도에 따른 서비스별 설계 요소로 보는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "컨테이너 환경에서는 이 권한 모델이 어떻게 달라지나요?"</p>
+      <div class="fa">
+        <p>
+          "기본 rwx, sudo, capability 개념은 그대로 적용되지만, 컨테이너는 기본적으로
+          호스트 root와 컨테이너 root가 같은 UID를 공유하는 경우가 많아서 컨테이너
+          탈출 시 호스트 root 권한으로 이어질 위험이 있습니다. 그래서 저는
+          <code>--cap-drop=ALL</code>로 불필요한 capability를 모두 제거한 뒤 필요한
+          것만 <code>--cap-add</code>하고, 가능하면 non-root 사용자로 프로세스를
+          실행하도록 Dockerfile에 <code>USER</code>를 명시하며, User Namespace
+          remapping으로 컨테이너 내부 root를 호스트의 일반 사용자로 매핑하는
+          방식까지 고려합니다. 결국 같은 최소 권한 원칙을 컨테이너 경계에도 동일하게
+          적용하는 것입니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 전통적 권한 모델의 원칙을 컨테이너라는 새 경계에도 일관되게 확장하는가</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 8: 좋은 vs 약한 답변
+  ══════════════════════════════════════ -->
+  <section id="comparison">
+    <h2><span class="icon">⚖️</span> 좋은 답변 vs 약한 답변 분석</h2>
+
+    <div class="answer-box weak">
+      <span class="box-label">약한 답변 (Junior 수준)</span>
+      <blockquote>
+        "권한 문제니까 <code>chmod 777</code>로 바꿔서 일단 되게 하겠습니다."
+      </blockquote>
+      <div class="analysis">
+        <strong>왜 약한 답변인가:</strong>
+        <ul>
+          <li>원인을 찾지 않고 모든 권한을 열어버려 보안 경계를 완전히 무너뜨립니다.</li>
+          <li>DAC과 MAC(SELinux) 두 계층을 구분하지 못해 실제 원인이 SELinux라면 아예 해결되지 않습니다.</li>
+          <li>"왜 안 되는지"에 대한 진단 과정 없이 결과만 맞추려는 접근입니다.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="answer-box good">
+      <span class="box-label">좋은 답변 (Senior 수준)</span>
+      <blockquote>
+        "먼저 파일과 상위 디렉터리 전체의 rwx를 확인하고, 그래도 안 되면
+        <code>ausearch</code>로 SELinux 거부 로그를 확인해서 정확한 컨텍스트
+        문제를 찾은 뒤, 그 지점에만 필요한 권한을 정확히 부여하겠습니다."
+      </blockquote>
+      <div class="analysis">
+        <strong>왜 좋은 답변인가:</strong>
+        <ul>
+          <li>DAC(rwx) → MAC(SELinux) 순서로 계층을 구분해서 진단합니다.</li>
+          <li><code>namei -l</code>, <code>ausearch</code> 같은 구체적인 진단 도구와 근거를 제시합니다.</li>
+          <li>"필요한 만큼만" 권한을 부여해 최소 권한 원칙을 지킵니다.</li>
+          <li>보안 계층을 끄는 대신 정확한 원인을 고치는 방향을 선택합니다.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 9: 흔한 오해
+  ══════════════════════════════════════ -->
+  <section id="misconceptions">
+    <h2><span class="icon">🚫</span> 흔한 오해와 정확한 이해</h2>
+
+    <div class="misconception">
+      <p class="myth">오해 1: "파일의 rwx 권한만 맞으면 접근이 가능하다"</p>
+      <p class="truth">
+        rwx가 완벽해도 상위 디렉터리의 실행(x) 권한이 없거나, SELinux/AppArmor
+        같은 MAC 정책이 별도로 막고 있으면 접근이 거부됩니다. rwx는 여러 계층 중
+        하나일 뿐입니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 2: "SELinux는 문제만 일으키니 끄는 게 정석이다"</p>
+      <p class="truth">
+        SELinux를 끄는 것은 원인을 고치는 것이 아니라 보안 계층 전체를 제거하는
+        것입니다. 정석은 <code>ausearch</code>로 정확한 거부 원인을 찾아 컨텍스트를
+        고치거나 필요한 정책만 추가하는 것입니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 3: "sudo 권한을 주는 것과 root 비밀번호를 공유하는 것은 결국 같다"</p>
+      <p class="truth">
+        sudo는 개인 계정으로 인증하고 실행 범위를 좁힐 수 있으며, 모든 실행이
+        로그로 남아 추적 가능합니다. root 비밀번호 공유는 누가 무엇을 했는지 추적이
+        불가능하고 권한 회수도 어렵습니다. 통제 가능성 자체가 다릅니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 4: "80번 포트를 쓰려면 반드시 root로 실행해야 한다"</p>
+      <p class="truth">
+        <code>setcap cap_net_bind_service=+ep</code>로 그 기능 하나만 부여하면
+        일반 사용자 권한으로도 1024번 이하 포트를 바인딩할 수 있습니다. root 전체
+        권한을 줄 필요가 없습니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 5: "umask는 한 번 설정하면 시스템 전체에 항상 똑같이 적용해야 한다"</p>
+      <p class="truth">
+        서비스마다 다루는 데이터의 민감도가 다르므로 umask도 서비스별로 다르게
+        관리하는 것이 정확합니다. systemd unit의 <code>UMask=</code>로 서비스
+        단위 기본값을 개별 지정할 수 있습니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 10: 자기 점검 Rubric
+  ══════════════════════════════════════ -->
+  <section id="rubric">
+    <h2><span class="icon">📊</span> 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변을 점검해보세요. 각 항목에서 어느 수준인지 솔직하게 평가하세요.</p>
+
+    <div style="overflow-x:auto;">
+      <table class="rubric-table">
+        <thead>
+          <tr>
+            <th>평가 항목</th>
+            <th class="score-senior">Senior (3점)</th>
+            <th class="score-mid">Mid (2점)</th>
+            <th class="score-junior">Junior (1점)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>DAC 진단</strong></td>
+            <td class="score-senior">파일뿐 아니라 상위 디렉터리 전체의 rwx를 확인</td>
+            <td class="score-mid">파일 권한만 확인하고 상위 디렉터리는 놓침</td>
+            <td class="score-junior">rwx가 안 되면 바로 777로 변경</td>
+          </tr>
+          <tr>
+            <td><strong>MAC 계층 이해</strong></td>
+            <td class="score-senior">DAC이 정상이어도 SELinux/AppArmor가 별도로 막을 수 있음을 알고 ausearch로 확인</td>
+            <td class="score-mid">SELinux 존재는 알지만 진단 순서가 약함</td>
+            <td class="score-junior">SELinux를 원인 파악 없이 즉시 비활성화</td>
+          </tr>
+          <tr>
+            <td><strong>권한 위임 설계</strong></td>
+            <td class="score-senior">sudoers 범위를 최소화하고 NOPASSWD의 위험을 설명</td>
+            <td class="score-mid">sudo는 쓰지만 범위 최소화 개념이 약함</td>
+            <td class="score-junior">root 비밀번호 공유와 sudo를 동일시</td>
+          </tr>
+          <tr>
+            <td><strong>최소 권한 적용</strong></td>
+            <td class="score-senior">setuid 대신 capability로 필요한 기능만 부여하는 대안을 제시</td>
+            <td class="score-mid">capability는 알지만 setuid와 차이를 명확히 설명 못함</td>
+            <td class="score-junior">권한이 부족하면 무조건 root로 실행</td>
+          </tr>
+          <tr>
+            <td><strong>trade-off 이해</strong></td>
+            <td class="score-senior">보안 계층을 끄는 것과 고치는 것의 차이, 피해 반경 개념까지 설명</td>
+            <td class="score-mid">위험은 알지만 구체적 근거 제시가 약함</td>
+            <td class="score-junior">임시 조치를 영구 해결책으로 제시</td>
+          </tr>
+          <tr>
+            <td><strong>재발 방지 연결</strong></td>
+            <td class="score-senior">인프라 변경 체크리스트에 권한/컨텍스트 점검을 반영하는 수준까지 제시</td>
+            <td class="score-mid">원인은 찾지만 재발 방지 언급이 약함</td>
+            <td class="score-junior">문제 해결 후 별도 조치 없이 종료</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top:1rem; font-size:0.9rem; color:#64748b;">
+      <strong>점수 해석:</strong> 6개 항목 × 3점 = 최대 18점.
+      15점 이상 → Senior 수준 답변 완성.
+      11~14점 → 구조는 있지만 일부 키워드/관점 보완 필요.
+      10점 이하 → 이 레슨을 다시 읽고, 모범 답변을 소리 내어 말해보세요.
+    </p>
+
+    <div class="key-points" style="margin-top:2rem;">
+      <h3>Day 8 핵심 포인트 요약</h3>
+      <ul>
+        <li>"Permission denied"는 <strong>파일 rwx → 상위 디렉터리 rwx → SELinux/AppArmor</strong>
+          순서로 최소 두 개 이상의 독립적인 계층을 확인해야 완전한 진단이다.</li>
+        <li>root 권한은 <strong>공유가 아니라 위임</strong> — sudo와 capability 모두
+          "필요한 만큼만, 추적 가능하게"라는 같은 원칙의 다른 구현이다.</li>
+        <li>SELinux를 <strong>끄는 것</strong>과 <code>ausearch</code>/<code>semanage</code>로
+          <strong>고치는 것</strong>은 전혀 다른 조치다.</li>
+        <li>setuid root 대신 <strong>capability</strong>로 필요한 기능만 부여하면
+          사고 시 피해 반경이 줄어든다.</li>
+        <li>umask는 전역 설정이 아니라 <strong>서비스별 데이터 민감도</strong>에 맞춰
+          설계하는 요소다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 다음 레슨 링크 -->
+  <div style="margin-top:2.5rem; padding:1.2rem 1.5rem; background:#fff; border:1px solid #e2e8f0; border-radius:10px; text-align:center;">
+    <p style="margin:0; color:#64748b; font-size:0.9rem;">
+      다음 레슨: <strong>Day 9 — 종합 장애 시나리오 실습</strong> (Day 1~8 개념 종합, 실전 시나리오 3개)
+    </p>
+    <p style="margin:0.4rem 0 0; font-size:0.82rem; color:#94a3b8;">레슨 목록으로 돌아가기: <a href="./index.html">index.html</a></p>
+  </div>
+
+</main>
+
+<footer>
+  <p>Linux 서버 운영 인터뷰 · Day 8 · 2026-07-07 |
+    <a href="../RESOURCES.md">참고 자료</a> ·
+    <a href="../PROGRESS.md">학습 진행 현황</a>
+  </p>
+  <p style="margin-top:0.3rem;">궁금한 점은 Claude에게 바로 물어보세요. 이 레슨의 개념, follow-up 질문, 모범 답변 피드백 모두 도와드립니다.</p>
+</footer>
+
+</body>
+</html>

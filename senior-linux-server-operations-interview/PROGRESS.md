@@ -11,17 +11,17 @@
 | 5 | 2026-07-04 | 로그 분석 & journalctl | [0005-log-analysis-journalctl.html](lessons/0005-log-analysis-journalctl.html) |
 | 6 | 2026-07-05 | systemd 서비스 관리 | [0006-systemd-service-management.html](lessons/0006-systemd-service-management.html) |
 | 7 | 2026-07-06 | 네트워크 진단 | [0007-network-diagnostics.html](lessons/0007-network-diagnostics.html) |
+| 8 | 2026-07-07 | 권한 & 보안 관리 | [0008-permissions-security-management.html](lessons/0008-permissions-security-management.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | 권한 & 보안 관리 | chmod/chown 숫자/문자 표기, umask, sudo/sudoers, setuid/setgid, SELinux context, capability |
 | 9 | 종합 장애 시나리오 실습 | Day 1~8 개념 종합. 실전 시나리오 3개 — CPU 폭식, 디스크 풀, 서비스 재시작 반복 |
 
 ## 현재 학습 위치
 
-**Day 7 완료** — Day 8: 권한 & 보안 관리 예정.
+**Day 8 완료** — Day 9: 종합 장애 시나리오 실습 예정.
 
 ## 습득한 핵심 개념
 
@@ -62,5 +62,10 @@
 - [x] tcpdump로 패킷 도달 여부를 증거로 활용한 계층별 원인 좁히기 (Day 7)
 - [x] ip route/ip route get으로 라우팅 테이블과 비대칭 라우팅 진단 (Day 7)
 - [x] iptables/nftables/firewalld/ufw 관계와 DROP vs REJECT trade-off, 클라우드 보안그룹 계층 구분 (Day 7)
-- [ ] 권한 & 보안 관리 (예정 Day 8)
+- [x] rwx 숫자/문자 표기와 디렉터리 x 권한(진입 가능 여부)의 의미 (Day 8)
+- [x] umask는 기본값에서 차감하는 방식이며 서비스별로 다르게 설계해야 함 (Day 8)
+- [x] sudo/sudoers를 통한 root 권한 위임과 추적 가능성, NOPASSWD 범위의 trade-off (Day 8)
+- [x] setuid/setgid/sticky bit의 권한 상승 메커니즘과 보안 위험 (Day 8)
+- [x] SELinux(MAC)가 DAC(rwx)와 독립적인 두 번째 잠금이라는 개념, ausearch로 원인 진단 (Day 8)
+- [x] Linux capability로 root 권한을 세분화해 최소 권한 원칙을 구현하는 방법 (Day 8)
 - [ ] 종합 시나리오 실습 (예정 Day 9)
