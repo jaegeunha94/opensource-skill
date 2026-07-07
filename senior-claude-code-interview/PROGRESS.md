@@ -8,12 +8,12 @@
 | 2 | 2026-07-04 | Surfaces — Terminal/IDE/Desktop/Web/CI 아키텍처와 선택 기준 | [0002-surfaces-architecture-and-selection.html](lessons/0002-surfaces-architecture-and-selection.html) |
 | 3 | 2026-07-05 | 코드베이스 컨텍스트 설계 — CLAUDE.md와 Auto Memory | [0003-codebase-context-claude-md-auto-memory.html](lessons/0003-codebase-context-claude-md-auto-memory.html) |
 | 4 | 2026-07-06 | 권한 모델 심화 — permission mode와 규칙 문법 | [0004-permission-model-modes-and-rule-syntax.html](lessons/0004-permission-model-modes-and-rule-syntax.html) |
+| 5 | 2026-07-07 | 샌드박싱과 shell/file 도구 실행 경계 | [0005-sandboxing-shell-file-tool-execution-boundary.html](lessons/0005-sandboxing-shell-file-tool-execution-boundary.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | 샌드박싱과 shell/file 도구 실행 경계 | OS 레벨 파일시스템/네트워크 격리, permission과 sandbox의 계층 분리, credential 보호 |
 | 6 | 보안 — 위협 모델과 prompt injection 방어 | 신뢰 경계, 프롬프트 인젝션, MCP 공급망 리스크, secure deployment 패턴 |
 | 7 | MCP — Model Context Protocol 통합과 운영 | MCP 서버 연결, tool search(온디맨드 로드), 권한 규칙, 조직 단위 managed MCP |
 | 8 | Skills — 재사용 워크플로우 설계와 컨텍스트 비용 | on-demand 로드, disable-model-invocation, 팀 표준화 |
@@ -34,7 +34,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — Day 5: 샌드박싱과 shell/file 도구 실행 경계로 진행 예정.
+**Day 5 완료** — Day 6: 보안 — 위협 모델과 prompt injection 방어로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -55,7 +55,12 @@
 - [x] Bash/Read·Edit/WebFetch/MCP/Agent/Cd 규칙 문법, compound command 개별 매칭, 환경 러너/curl 필터링의 구조적 우회 가능성과 대안(WebFetch/훅) (Day 4)
 - [x] `Tool(param:value)` 매개변수 매칭 문법과 canonicalizing 필드 매칭 불가 이유, Protected paths와 모드별 처리(bypassPermissions도 root/home 삭제는 예외) (Day 4)
 - [x] Hooks(PreToolUse)↔permission, Sandbox↔permission의 우선순위와 병합 관계, Settings precedence 5단계와 managed-only 설정, Workspace trust의 비대칭 설계(확장은 신중/축소는 즉시) (Day 4)
-- [ ] 샌드박싱 (예정 Day 5)
+- [x] 샌드박스 scope 경계(Bash+자식 프로세스만 격리, Read/Edit/WebFetch/MCP/Hooks는 host에서 직접 실행) — "shell/file 도구 실행 경계"의 핵심 (Day 5)
+- [x] OS 레벨 강제 메커니즘(macOS Seatbelt, Linux/WSL2 bubblewrap+socat), auto-allow vs regular permissions 모드와 그 안에서도 살아있는 예외(deny, 루트/홈 rm, content-scoped ask) (Day 5)
+- [x] 파일시스템 격리 기본값의 함정(read는 credential 파일 포함 전체 허용), sandbox.filesystem.allowWrite/denyWrite/denyRead/allowRead 경로 프리픽스가 permission Read/Edit 규칙과 다르다는 것 (Day 5)
+- [x] sandbox.credentials의 deny vs mask(sentinel 치환, network.tlsTerminate 전제조건, 프로젝트 설정에서는 무시됨) (Day 5)
+- [x] 네트워크 격리(프록시가 hostname만 보고 기본적으로 TLS 미검사 → domain fronting 리스크), dangerouslyDisableSandbox 탈출구와 Strict sandbox mode (Day 5)
+- [x] 격리 스펙트럼(Sandboxed Bash tool < sandbox-runtime < devcontainer/custom container < VM < Claude Code on the web)과 --dangerously-skip-permissions는 전체 프로세스 격리 안에서만 써야 한다는 원칙, managed settings 강제와 excludedCommands의 잠금 불가 한계 (Day 5)
 - [ ] 보안/위협 모델 (예정 Day 6)
 - [ ] MCP (예정 Day 7)
 - [ ] Skills (예정 Day 8)
