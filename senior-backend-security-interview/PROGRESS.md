@@ -11,18 +11,18 @@
 | 5 | 2026-07-04 | 파일 업로드 보안과 SSRF | [0005-file-upload-ssrf.html](lessons/0005-file-upload-ssrf.html) |
 | 6 | 2026-07-05 | API 보안 — 인증, 속도 제한, 데이터 노출 | [0006-api-security.html](lessons/0006-api-security.html) |
 | 7 | 2026-07-06 | 비밀번호 저장과 크리덴셜 보호 | [0007-password-storage-credential-protection.html](lessons/0007-password-storage-credential-protection.html) |
+| 8 | 2026-07-07 | Secret 관리와 환경 변수 전략 | [0008-secret-management.html](lessons/0008-secret-management.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Secret 관리 | 환경 변수, Vault, KMS, 비밀 로테이션 |
 | 9 | Secure Coding 원칙 | 입력 검증, 최소 권한, 보안 기본값, 코드 리뷰 |
 | 10 | 종합 케이스 스터디 | 실제 침해 사례 분석, 설계 리뷰 |
 
 ## 현재 학습 위치
 
-**Day 7 완료** — Day 8 (Secret 관리)이 다음 차례.
+**Day 8 완료** — Day 9 (Secure Coding 원칙과 코드 리뷰)이 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -64,4 +64,9 @@
 - [x] cost factor/파라미터 튜닝과 하드웨어 기반 벤치마크 (Day 7)
 - [x] 크리덴셜 스터핑 — 저장 방식과 별개인 방어선, 유출 비밀번호 대조와 MFA (Day 7)
 - [x] 레거시 시스템 점진적 해시 마이그레이션(lazy migration) 패턴 (Day 7)
-- [ ] Secret 관리 — 환경 변수, Vault, KMS, 로테이션 (예정 Day 8)
+- [x] 환경 변수(.env)의 노출 경로 — git 커밋, 로그, 프로세스 덤프, 서브프로세스 상속 (Day 8)
+- [x] Vault/AWS Secrets Manager — 접근 제어, 감사 로그, 동적 Secret (Day 8)
+- [x] 정적 vs 동적 Secret과 무중단 로테이션(overlap window) 설계 (Day 8)
+- [x] CI/CD Secret 노출 위험 — fork PR, pull_request_target, 서드파티 액션 공급망 침해 (Day 8)
+- [x] Envelope Encryption — KEK/DEK 계층 구조와 HSM 기반 키 관리 (Day 8)
+- [ ] Secure Coding 원칙 — 입력 검증, 최소 권한, 보안 기본값, 코드 리뷰 (예정 Day 9)
