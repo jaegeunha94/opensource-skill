@@ -9,12 +9,12 @@
 | 3 | 2026-07-04 | Middleware 아키텍처 | [0003-langchain-middleware-architecture.html](lessons/0003-langchain-middleware-architecture.html) |
 | 4 | 2026-07-05 | Structured Output과 Streaming | [0004-langchain-structured-output-streaming.html](lessons/0004-langchain-structured-output-streaming.html) |
 | 5 | 2026-07-06 | Retrieval과 Memory | [0005-langchain-retrieval-memory.html](lessons/0005-langchain-retrieval-memory.html) |
+| 6 | 2026-07-07 | Guardrails와 Context Engineering | [0006-langchain-guardrails-context-engineering.html](lessons/0006-langchain-guardrails-context-engineering.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | Guardrails와 Context Engineering | context window 예산 관리, prompt injection 방어, tool scoping, context 압축/요약 middleware |
 | 7 | LangGraph StateGraph 설계 | node/edge, conditional edge, state schema(TypedDict/Pydantic), reducer |
 | 8 | Persistence와 Checkpointer | MemorySaver/SqliteSaver/PostgresSaver, thread-scoped state, time travel/replay |
 | 9 | Store, Interrupt, Human-in-the-loop | 장기 메모리용 Store vs 세션용 Checkpointer, `interrupt()`, 승인 게이트 설계 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 다음: Day 6 — Guardrails와 Context Engineering
+**Day 6 완료** — 다음: Day 7 — LangGraph StateGraph 설계
 
 ## 습득한 핵심 개념
 
@@ -49,7 +49,11 @@
 - [x] Store의 semantic search와 recall/precision trade-off, 구버전 memory 클래스 deprecation (Day 5)
 - [x] `SummarizationMiddleware` 기반 context 압박 관리와 checkpoint 직렬화 비용 인지 (Day 5)
 - [x] 장기기억 쓰기 자동화의 설계 공백(직접 구현 vs LangMem) (Day 5)
-- [ ] Guardrails / Context Engineering (예정 Day 6)
+- [x] `PIIMiddleware`의 타입별 인스턴스 분리, 적용 범위(input/output/tool_results) 기본값과 함정, 스트리밍 리댁션 (Day 6)
+- [x] `LLMToolSelectorMiddleware`를 통한 tool scoping — 비용/혼동 완화이자 공격 표면 축소 장치 (Day 6)
+- [x] `ToolCallLimitMiddleware`/`ModelCallLimitMiddleware`의 thread_limit vs run_limit, exit_behavior 트레이드오프 (Day 6)
+- [x] Prompt injection의 3층 방어(입력 소독/행동 평가/환경적 봉쇄)와 LangChain core의 현재 공백 인지 (Day 6)
+- [x] Context engineering — Anthropic(Right altitude/JIT/Compaction/Isolation) vs LangChain(Write/Select/Compress/Isolate) 프레임 비교 (Day 6)
 - [ ] StateGraph 설계(node/edge/reducer) (예정 Day 7)
 - [ ] Checkpointer / Persistence (예정 Day 8)
 - [ ] Store / Interrupt / Human-in-the-loop (예정 Day 9)
