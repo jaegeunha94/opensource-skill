@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 5 — Tools와 Tool Dispatch 보안</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 5 · OpenClaw Interview</div>
+    <h1>Tools와 Tool Dispatch 보안</h1>
+    <div class="subtitle">"tool을 몇 개 껐다"가 아니라, tool 권한이 서로 독립적인 세 개의 통제축(무엇을 줄지 / 어디서 실행할지 / exec만의 예외)으로 이루어져 있고, 그 축들이 서로를 대신해주지 않는다는 것을 구조적으로 설명하는 능력</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전/시점 기준:</strong> 이 레슨은 2026-07 기준 OpenClaw 공식 문서(<code>docs/tools/exec-approvals.md</code>,
+    <code>docs/tools/exec.md</code>, <code>docs/tools</code> 개요, <code>docs/gateway/config-tools</code>,
+    <code>docs/gateway/sandbox-vs-tool-policy-vs-elevated.md</code>, 브라우저 tool 문서)와 GitHub 이슈/보안 권고
+    (#16323, GHSA-m3mh-3mpg-37hw, #12173, GHSA-cv7m-c9jx-vg7q/CVE-2026-26329, #12202, #5948, #32637)를 직접
+    조사해 작성했다. <code>docs.openclaw.ai</code> 도메인은 자동화 접근에 403을 반환하는 경우가 있어,
+    <code>raw.githubusercontent.com</code> 경로의 문서 원문과 검색 스니펫, GitHub 이슈/보안 권고 원문으로 교차
+    검증했다. 정책 축 구분(sandbox/tool policy/elevated)과 승인 바인딩 로직, 실제 취약점 사례는 문서·이슈 원문으로
+    직접 확인한 <strong>높은 확정도</strong>이며, 세부 설정 키 이름은 릴리스마다 바뀔 수 있어 면접 전 최신 문서로
+    재확인이 필요하다.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "OpenClaw 에이전트에게 파일을 읽고, 셸 명령을 실행하고, 브라우저를 조작할 수 있는 tool을 준다고 할 때, 이
+      tool 실행 권한을 어떻게 설계하시겠습니까? 실제 OpenClaw의 tool dispatch 구조를 기준으로 설명해주세요."
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "<code>write</code>/<code>edit</code> tool은 막아두고 <code>exec</code> tool만 열어둔 에이전트가 있습니다.
+      이 구성이 안전하다고 볼 수 있을까요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "샌드박스(Docker) 안에서 실행되는 에이전트라면 tool 허용 범위를 느슨하게 잡아도 괜찮을까요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Tool, Tool Policy, 그리고 "세 가지 독립된 통제축"</h2>
+
+    <h3>1) Tool이란 무엇인가 — 그리고 정책은 "모델이 부르기 전"에 적용된다</h3>
+    <p>
+      <strong>tool</strong>은 에이전트가 호출할 수 있는 타입이 있는 함수다. 파일을 읽거나, 셸 명령을 실행하거나,
+      메시지를 보내거나, provider를 호출하거나, 다른 시스템을 조작할 때 쓰인다. OpenClaw의 tool은 크게 아래처럼
+      나뉜다.
+    </p>
+    <table>
+      <tr><th>카테고리</th><th>대표 tool</th><th>할 수 있는 것</th></tr>
+      <tr><td>Runtime</td><td><code>exec</code>, <code>process</code>, <code>code_execution</code></td><td>셸 명령/코드 실행</td></tr>
+      <tr><td>Files</td><td><code>read</code>, <code>write</code>, <code>edit</code>, <code>apply_patch</code></td><td>워크스페이스 파일 읽기/쓰기/패치</td></tr>
+      <tr><td>Web</td><td><code>web_search</code>, <code>x_search</code>, <code>web_fetch</code></td><td>외부 정보 조회</td></tr>
+      <tr><td>Browser</td><td><code>browser</code></td><td>탭 열기/클릭/입력/스크린샷/JS 실행</td></tr>
+      <tr><td>Messaging</td><td><code>message</code></td><td>채널로 메시지 발신</td></tr>
+      <tr><td>Session/Agent</td><td><code>subagents</code>, <code>session_status</code>, <code>goal</code></td><td>하위 에이전트 기동, 세션/목표 조회</td></tr>
+      <tr><td>Automation</td><td><code>cron</code>, <code>heartbeat_respond</code></td><td>예약 실행, 헬스체크 응답</td></tr>
+      <tr><td>Media</td><td><code>image</code>, <code>image_generate</code>, <code>music_generate</code>, <code>tts</code></td><td>미디어 생성</td></tr>
+    </table>
+    <div class="callout callout-tip">
+      <strong>핵심 설계 포인트:</strong> 문서는 이렇게 명시한다 — "정책이 tool을 제거하면, 모델은 그 턴에 그
+      tool의 스키마 자체를 받지 않는다(<em>If policy removes a tool, the model does not receive that tool's
+      schema for the turn</em>)." 즉 tool 정책은 "모델이 쓰려고 하면 그때 막는" 런타임 차단이 아니라, <strong>모델이
+      그 tool의 존재 자체를 모르게 만드는</strong> 더 강한 방어다. 이건 프롬프트 인젝션 방어에서 특히 중요하다 —
+      공격자가 아무리 정교하게 "exec로 이걸 실행해"라고 프롬프트를 주입해도, 모델에게 애초에 <code>exec</code>
+      스키마가 없으면 그 tool call 자체가 생성될 수 없다.
+    </div>
+
+    <h3>2) Tool Policy — allow/deny, 프로파일, provider별 예외</h3>
+    <p>
+      OpenClaw는 전역·에이전트별로 <code>tools.allow</code>/<code>tools.deny</code>를 설정한다. <strong>같은
+      tool이 allow와 deny 양쪽에 있으면 항상 deny가 이긴다.</strong> 매칭은 대소문자를 구분하지 않고
+      <code>*</code> 와일드카드와 <code>group:*</code> 같은 그룹 축약도 지원한다. 실제 적용 순서는
+      <strong>base profile → provider profile → allow/deny</strong>다 — 즉 프로파일이 먼저 기본 tool 세트를
+      정하고, provider별 예외(<code>tools.byProvider</code>, 예를 들어 특정 저가/고속 모델에는 <code>exec</code>를
+      주지 않는 식)가 그 위에 얹히고, 마지막으로 allow/deny가 최종 확정한다. <code>tools.profile: "coding"</code>은
+      기본적으로 <code>browser</code> tool을 제외하며, 필요하면 <code>tools.alsoAllow: ["browser"]</code>로
+      다시 켜야 한다.
+    </p>
+
+    <h3>3) Exec 승인 구조 — 위험한 tool은 별도의 승인 레이어를 가진다</h3>
+    <p>
+      <code>exec</code>는 가장 위험한 tool이라 <code>tools.exec.security</code>(또는 최신 <code>tools.exec.mode</code>)
+      로 별도의 보안 모드를 갖는다.
+    </p>
+    <table>
+      <tr><th>모드</th><th>동작</th></tr>
+      <tr><td><span class="badge badge-red">deny</span></td><td>호스트 명령 실행 요청을 전부 차단</td></tr>
+      <tr><td><span class="badge badge-yellow">allowlist</span></td><td>allowlist에 매칭되는 명령만 프롬프트 없이 허용, 나머지는 <code>ask</code> 모드가 완화하지 않는 한 거부</td></tr>
+      <tr><td><span class="badge badge-green">full</span></td><td>승인 게이트 없이 무제한 실행(권한 상승 모드에 준함)</td></tr>
+    </table>
+    <p>
+      여기에 <code>ask</code> 파라미터(<code>off</code>/<code>on-miss</code>/<code>always</code>)가 프롬프트
+      여부를 조절한다. allowlist는 glob 패턴을 쓰는데, <code>rg</code>처럼 맨 이름만 쓰면 PATH로 해석되는
+      바이너리만 매칭되고(<code>./rg</code> 같은 상대경로는 매칭 안 됨), <code>~/.local/bin/*</code> 같은 경로
+      glob은 특정 위치를 신뢰하는 식이다. <code>argPattern</code> 정규식으로 인자까지 제한할 수 있다 — 예를 들어
+      <code>"pattern": "python3", "argPattern": "^safe\.py$"</code>는 <code>python3 safe.py</code>만 허용한다.
+      셸 체인(<code>a &amp;&amp; b</code> 등)은 모든 세그먼트가 allowlist를 통과해야 한다. 프롬프트 UI에 접근할
+      수 없을 때(macOS 앱이 없거나 타임아웃)는 <code>askFallback</code>이 결정하는데, <strong>생략 시 기본값은
+      deny</strong>다.
+    </p>
+    <div class="callout callout-danger">
+      <strong>기본값의 비대칭이 인터뷰에서 자주 놓치는 함정이다:</strong> 문서 기준으로 <strong>샌드박스</strong>
+      안에서는 기본 <code>security=deny</code>, <code>ask=off</code>이지만, <strong>Gateway/Node(호스트)</strong>에서는
+      기본이 <code>security=full</code>, <code>ask=off</code>다. 즉 <strong>샌드박스를 켜지 않으면, 게이트웨이는
+      기본적으로 승인 없이 셸 명령을 실행하는 상태</strong>라는 뜻이다. "샌드박스를 안 쓰기로 했다"는 결정이 곧
+      "exec를 사실상 무제한으로 열어두기로 했다"는 결정과 같아진다 — 이 연결을 설명할 수 있는지가 시니어 신호다.
+      운영 시 최소권한 권장은 <strong>샌드박스를 켜고, 게이트웨이/노드 실행에도 <code>security=allowlist</code>를
+      유지</strong>하는 것이다. 전부를 완전히 열어젖히는 프리셋도 존재한다 — <code>tools.exec.security=full</code>
+      + <code>ask=off</code> + host <code>askFallback=full</code>을 한 번에 맞추는 <strong>YOLO 모드</strong>
+      (<code>openclaw exec-policy preset yolo</code>)이며, 이건 명시적으로 이름 붙여진 "위험을 알고 켜는" 프리셋이다.
+    </div>
+
+    <h3>4) 승인 바인딩 — "승인 후 몰래 바뀌는 것"을 막는 설계</h3>
+    <p>
+      명령이 한 번 승인되면, OpenClaw는 그 시점의 실행 컨텍스트(작업 디렉터리, 정확한 인자, 환경변수 바인딩,
+      고정된 실행 파일 경로)를 통째로 바인딩한다. 스크립트/인터프리터 호출(<code>python script.py</code> 등)은
+      하나의 구체적인 파일 오퍼랜드에 best-effort로 바인딩되고, <strong>승인 이후 그 내용이 바뀐 것이 감지되면
+      재승인을 요청하는 게 아니라 그냥 실행을 거부</strong>한다. 이건 "승인은 받았지만 그 사이 스크립트 내용이
+      바꿔치기 당했다" 같은 TOCTOU(Time-Of-Check to Time-Of-Use)류 공격을 구조적으로 막기 위한 설계다.
+    </p>
+
+    <h3>5) 세 가지 통제축 — Sandbox / Tool Policy / Elevated는 서로 다른 질문에 답한다</h3>
+    <p>
+      OpenClaw 공식 문서(<code>sandbox-vs-tool-policy-vs-elevated</code>)는 tool 권한을 하나의 스위치가 아니라
+      <strong>서로 독립된 세 개의 축</strong>으로 명시적으로 분리한다.
+    </p>
+    <table>
+      <tr><th>축</th><th>답하는 질문</th><th>설정</th></tr>
+      <tr><td><strong>Sandbox</strong></td><td><em>어디서</em> 실행되는가</td><td><code>agents.defaults.sandbox.mode</code>: <code>off</code>/<code>non-main</code>/<code>all</code></td></tr>
+      <tr><td><strong>Tool Policy</strong></td><td><em>어떤 tool</em>을 쓸 수 있는가</td><td>전역/에이전트별/provider별 allow-deny</td></tr>
+      <tr><td><strong>Elevated</strong></td><td><em>exec만의</em> 탈출구 — 샌드박스 세션이 host에서 명령을 실행하도록 승인</td><td>exec 전용 오버라이드</td></tr>
+    </table>
+    <div class="callout callout-danger">
+      <strong>가장 흔한 오판정 두 가지가 문서에 명시적으로 경고돼 있다:</strong><br><br>
+      1) <strong>"tool policy는 이름으로 거른다. exec 안에서 벌어지는 부작용(side effect)까지는 보지 않는다."</strong>
+      <code>write</code>/<code>edit</code> tool을 막아도 <code>exec</code>가 열려 있으면, 모델은 셸 명령
+      (<code>echo ... &gt; file</code>, <code>rm</code>, <code>curl | sh</code> 등)으로 파일을 읽고 쓰고 지울 수
+      있다 — <strong>"tool policy is the hard stop: <code>/exec</code>는 거부된 <code>exec</code> tool을 우회할
+      수 없다"</strong>지만, 반대로 <code>exec</code> 자체가 허용돼 있다면 다른 파일 tool을 다 막아도 무의미하다.<br><br>
+      2) <strong>"elevated는 추가 tool을 주는 게 아니라, exec가 어디서 도는지만 바꾼다."</strong> elevated를 켜도
+      새로운 tool이 생기지 않는다 — 다만 exec의 실행 위치가 sandbox에서 host로 넘어갈 뿐이다. 그리고 샌드박스
+      자체도 <code>/var/run/docker.sock</code> 같은 걸 마운트하면 "사실상 host 제어권 전체를 샌드박스에 넘겨주는
+      것"과 같아져, 격리라는 전제 자체가 무너진다.
+    </div>
+
+    <h3>6) 파일 tool 스코핑 — read/write/edit/apply_patch의 경로 통제</h3>
+    <p>
+      <code>tools.fs.workspaceOnly: true</code>는 read/write/edit/apply_patch 경로(및 프롬프트 이미지 자동 로드
+      경로)를 워크스페이스 디렉터리로 제한한다. <strong>중요한 건 이게 옵트인이지 기본값이 아니라는 점</strong>이다.
+    </p>
+    <div class="callout callout-danger">
+      <strong>실제 취약점 — apply_patch 경로 트래버설(#12173, CVSS 8.5):</strong> <code>src/agents/apply-patch.ts</code>의
+      <code>resolvePatchPath()</code>는 샌드박스가 있을 때는 <code>assertSandboxPath()</code>로 경로 컨테인먼트를
+      검증하지만, <strong>샌드박스가 없을 때(<code>sandboxRoot</code>가 <code>undefined</code>인 게이트웨이/베어메탈
+      모드)는 <code>resolvePathFromCwd()</code>로 빠지는데, 이 경로는 절대경로와 <code>../</code> 시퀀스를 컨테인먼트
+      체크 없이 그대로 <code>path.normalize()</code>/<code>path.resolve()</code>한다.</strong> 프롬프트 인젝션이나
+      손상된 플러그인이 <code>apply_patch</code>를 호출할 수 있는 상태에서, <code>/root/.ssh/authorized_keys</code>나
+      <code>../../../etc/cron.d/malicious-job</code> 같은 경로를 주면 임의 파일 쓰기가 가능하다. 이 이슈는
+      "closed as not planned"로 종료됐다 — 즉 <strong>전용 코드 수정 없이, "샌드박스를 안 쓰면 감수해야 할
+      리스크"로 취급</strong>됐다는 뜻이다.
+    </div>
+    <p>
+      더 흥미로운 신호는 <strong>커뮤니티가 반복적으로 요청했지만 아직 없는 기능</strong>이다. 이슈
+      <strong>#12202</strong>는 에이전트별 파일 경로 allow/deny를 tool 실행 레이어에서 강제해달라는 요청인데,
+      제출자는 신뢰 등급이 다른 세 에이전트를 같은 OS 계정으로 돌리면서 <code>SOUL.md</code> 프롬프트 지시("이
+      파일은 읽지 마라")로 막으려 했지만 <strong>"Gemini 3 Flash 모델이 그 지시를 무시하고 config 파일을 읽었다"</strong>고
+      보고했다 — <strong>프롬프트 기반 가드레일은 모델에 따라 신뢰할 수 없다는 것을 보여주는 실증 사례</strong>다.
+      이슈 <strong>#5948</strong>(Docker 없이 파일시스템 경로 제한)과 <strong>#32637</strong>(에이전트별 cwd 분리)도
+      비슷한 맥락에서 열려 있다. 즉 <strong>"tool 이름 단위"의 정책은 성숙해 있지만, "경로/인자 단위"의 세밀한
+      스코핑은 exec의 <code>argPattern</code> 정도를 빼면 아직 구조적으로 약한 영역</strong>이라는 걸 알고
+      있으면 좋은 신호가 된다.
+    </p>
+
+    <h3>7) 브라우저 tool — 프로파일 격리, SSRF 가드, 임의 JS 실행</h3>
+    <p>
+      <code>browser</code> tool은 탭을 열고, 페이지를 읽고, 클릭/입력하고, 스크린샷/PDF를 뽑고, 임의 JS를
+      평가(<code>act:evaluate</code>)할 수 있다. 세 가지 프로파일이 있다 — <code>openclaw</code>(전용 격리
+      프로필, 개인 브라우저를 전혀 건드리지 않음), <code>user</code>/<code>chrome</code>(실제 로그인된 세션을
+      그대로 사용 — 문서가 명시적으로 "고위험(higher-risk)"이라 표기). 네비게이션 전에는 SSRF 가드가 강제
+      적용되며(<code>browser.ssrfPolicy.hostnameAllowlist</code>), 사설망 접근은
+      <code>dangerouslyAllowPrivateNetwork: true</code>로만 옵트인할 수 있다. <strong>임의 JS 실행
+      (<code>act:evaluate</code>)은 기본값이 활성화 상태</strong>이며, 끄려면 명시적으로
+      <code>evaluateEnabled: false</code>를 설정해야 한다.
+    </p>
+    <div class="callout callout-warn">
+      <strong>실제 취약점 — 브라우저 업로드 경로 트래버설(GHSA-cv7m-c9jx-vg7q / CVE-2026-26329, High, CWE-22):</strong>
+      브라우저 업로드 기능이 파일 경로를 검증하지 않고 Playwright의 <code>setInputFiles()</code>에 그대로 전달해,
+      유효한 게이트웨이 인증 토큰을 가진 공격자가 <code>../../../etc/passwd</code> 같은 경로를 "업로드"라는
+      명목으로 넘겨 임의 파일을 읽고, 페이지 JS(<code>FileReader</code>)나 에이전트/브라우저 스냅샷으로 그
+      내용을 유출할 수 있었다. <strong>2026.2.14</strong>에서 업로드 경로를 임시 디렉터리로 제한하고 트래버설
+      시도를 거부하도록 수정됐다.
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+    <p>
+      이 질문은 "tool을 껐다 켰다 할 수 있다"는 사실을 아는지가 아니라, <strong>tool 권한을 하나의 온/오프
+      스위치가 아니라 서로 독립된 여러 축의 조합으로 이해하고, 그 축들이 서로를 대신해주지 않는다는 것을 아는지</strong>를
+      본다. OpenClaw 공식 보안 문서가 제시하는 계층적 접근은 명확하다 — <strong>먼저 신원(누가 봇과 대화할 수
+      있는가), 다음으로 범위(봇이 어디까지 행동할 수 있는가), 마지막으로 모델(모델은 조작될 수 있다고 가정하고
+      blast radius를 제한한다)</strong> 순서로 방어를 쌓는다. 시니어는 "tool policy가 있으니 안전하다"에서
+      멈추지 않고, "정책이 이름으로만 거른다"는 한계(#16323, exec-vs-write/edit 함정), "기본값 자체가
+      비대칭적으로 위험하다"는 사실(샌드박스 없을 때 gateway exec 기본이 full), "프롬프트 지시는 아키텍처
+      강제를 대체할 수 없다"는 실증(#12202)까지 구조적으로 설명할 수 있어야 한다.
+    </p>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+    <p>
+      Slack/Discord 봇으로 OpenClaw를 배포하는 팀을 상상해보자. 명시적인 tool 정책을 설정하지 않고 배포했다면,
+      과거 실제로 보고된 문제(<strong>#16323</strong>)와 같은 상황에 놓인다 — 그 이슈는 "정책이 명시적으로
+      정의되지 않으면 <code>exec</code>를 포함한 모든 tool이 기본적으로 허용된다"는 것과, 세션 디렉티브
+      (<code>/exec host=gateway</code> 같은)가 권한 검증 없이 세션 상태에 그대로 저장되는 문제, Windows에서
+      <code>runCommandWithTimeout</code>이 비실행파일에 대해 암묵적으로 <code>shell: true</code>를 써서 셸
+      메타문자(<code>&amp;</code>, <code>|</code>, <code>^</code> 등) 인젝션이 가능했던 문제를 함께 지적했다.
+      메인테이너는 PR #16320으로 <strong>기본값을 deny-first로 바꾸고, 권한 없는 디렉티브를 파싱 단계에서
+      명시적으로 제거하고, Windows 배치 파일 실행 시 <code>cmd.exe /c</code>를 verbatim 인자로 명시 호출</strong>하도록
+      고쳤다 — "기본값이 안전할 것"이라는 가정 자체가 실제 사고 원인이었다는 사례다.
+    </p>
+    <p>
+      또 다른 예로, 로컬 플러그인/훅을 <code>openclaw plugins install &lt;path&gt;</code>로 설치하는 것도 최소권한이
+      적용돼야 할 표면이다. <strong>GHSA-m3mh-3mpg-37hw</strong>(High, CVSS 8.6, 2026.3.24에서 수정)는 설치
+      단계에서 <code>npm install --ignore-scripts</code>를 쓰더라도, 프로젝트의 <code>.npmrc</code>가
+      <code>git=&lt;악성 프로그램&gt;</code>으로 git 실행 파일 자체를 하이재킹하고, <code>package.json</code>의
+      git 의존성이 그 악성 프로그램을 트리거해 <strong>신뢰 확립 이전에 임의 코드 실행</strong>이 벌어질 수
+      있었다. 즉 "런타임 tool 호출"만 최소권한 대상이 아니라, <strong>신뢰하지 않는 플러그인/스킬을 설치하는
+      행위 자체가 이미 공급망 공격 표면</strong>이라는 것 — 이는 Day 13(마켓플레이스 보안)에서 더 깊이 다룬다.
+    </p>
+    <div class="callout callout-info">
+      <strong>범위 밖 참고:</strong> 2026년 초에 보고된 <strong>CVE-2026-25253</strong>(Control UI가 쿼리스트링의
+      <code>gatewayUrl</code>을 검증 없이 신뢰해 게이트웨이 토큰을 자동 전송, WebSocket origin 미검증으로 1-클릭
+      RCE)과 <strong>ClawJacked</strong>(게이트웨이가 로컬 origin 연결을 과도하게 신뢰해 웹사이트 JS가 몰래
+      기기 페어링을 승인시킴)는 <strong>tool dispatch 정책 자체의 결함이 아니라 인증/원격 노출 문제</strong>다
+      (Day 10에서 다룬다). 하지만 이 두 사고가 보여주는 함의는 이 레슨과 직결된다 — <strong>인증 경계가 뚫리면
+      공격자는 그 세션에 이미 허용된 tool을 그대로 쓸 수 있으므로, tool policy는 인증/노출 경계와 반드시 함께
+      설계돼야 한다</strong>는 것이다.
+    </div>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>이 에이전트에게 진짜로 필요한 최소 tool 집합이 무엇인지 먼저 정의한다</strong>
+        프로파일(예: <code>coding</code>은 <code>browser</code> 제외)과 allow/deny로 "무엇을 줄지"를 확정한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>그 tool이 어디서 실행되는지를 별도로 결정한다</strong>
+        sandbox(off/non-main/all)로 격리 여부를 정한다 — 이건 tool policy와 완전히 다른 축이라는 것을 짚는다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>exec처럼 위험한 tool은 세 번째 레이어(승인 정책)로 한 번 더 좁힌다</strong>
+        security mode(deny/allowlist/full), allowlist+argPattern, ask/askFallback, 그리고 host별 기본값 비대칭
+        (샌드박스 없으면 gateway 기본이 full이라는 것)을 명시적으로 재설정한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>tool policy가 "이름"만 거른다는 한계를 인지하고 조합을 설계한다</strong>
+        write/edit을 막아도 exec가 열려 있으면 동일한 side effect가 가능하다는 것, elevated는 tool을 더 주는 게
+        아니라 exec의 실행 위치만 바꾼다는 것을 답변에 명시한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>설치 시점(플러그인/스킬)도 별도의 최소권한 검토 대상으로 본다</strong>
+        런타임 tool 호출뿐 아니라 신뢰하지 않는 로컬 패키지 설치 자체도 공격 표면이라는 것을 짚는다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>이 모든 설계가 "모델은 조작될 수 있다"는 전제 위에 있다는 것으로 마무리한다</strong>
+        프롬프트 지시(SOUL.md 등)는 방어가 아니라 힌트일 뿐이며, 실제 방어는 아키텍처 레벨 강제(스키마 제거,
+        workspaceOnly, allow/deny, 샌드박스)에서 나온다는 것을 강조한다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+    <p>
+      "OpenClaw에서 tool 권한은 하나의 스위치가 아니라 <strong>세 개의 독립된 축</strong>으로 설계돼 있습니다.
+      Tool Policy는 '이 모델에게 어떤 tool이 존재하는지'를 결정하고, 정책으로 제거된 tool은 모델에게 스키마
+      자체가 전달되지 않습니다 — 즉 모델이 프롬프트 인젝션을 당해도 애초에 그 tool을 호출할 방법이 없습니다.
+      Sandbox는 '그 tool이 어디서 실행되는지'를 결정하는 완전히 다른 축이고, Elevated는 exec에 한정된 탈출구로,
+      추가 tool을 주는 게 아니라 실행 위치만 host로 바꿉니다.
+      <br><br>
+      여기서 실무적으로 가장 중요한 건 이 세 축이 서로를 대신해주지 않는다는 겁니다. write/edit tool을 막아도
+      exec가 열려 있으면 셸 명령으로 똑같이 파일을 조작할 수 있고, 샌드박스를 켰어도 도커 소켓을 마운트해두면
+      격리 자체가 무의미해집니다. 그리고 기본값 자체에 비대칭이 있습니다 — 샌드박스가 없는 상태에서 게이트웨이의
+      exec 기본 보안 모드는 'full'이라, 샌드박스를 안 쓰기로 한 결정이 곧 exec를 사실상 무제한으로 열어두는
+      결정과 같아집니다. 실제로 이 기본값 문제로 인해 정책이 명시되지 않으면 모든 tool이 기본 허용되던 이슈가
+      보고된 적이 있고, 지금은 deny-first로 고쳐졌습니다.
+      <br><br>
+      그래서 저는 (1) 프로파일/allow-deny로 최소 tool 집합을 정의하고, (2) 샌드박스 모드를 명시적으로 켜고,
+      (3) exec는 allowlist + argPattern으로 한 번 더 좁히고, ask/askFallback을 deny 성향으로 유지하고, (4) 파일
+      tool은 workspaceOnly를 켜서 경로를 워크스페이스로 제한하고, (5) 브라우저 tool은 격리 프로파일을 기본으로
+      쓰고 evaluateEnabled와 SSRF allowlist를 검토하고, (6) 신뢰하지 않는 스킬/플러그인 설치 자체도 별도
+      검토 대상으로 삼습니다. 마지막으로, 이 모든 설계는 '모델이 프롬프트 지시를 항상 지킬 것'이라는 가정에
+      기대지 않습니다 — 실제로 특정 모델이 '이 파일은 읽지 마라'는 지시를 무시한 사례가 보고돼 있어서, 방어는
+      항상 아키텍처 레벨 강제로 걸어야 한다고 생각합니다."
+    </p>
+  </div>
+
+  <!-- Senior-level Follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+    <p><strong>Q. 샌드박스를 켰는데 도커 소켓(<code>/var/run/docker.sock</code>)을 마운트해뒀다면 안전합니까?</strong></p>
+    <p>
+      아니요. 그 마운트 자체가 샌드박스 밖의 도커 데몬을 조작할 수 있는 통로가 되어, 사실상 host 전체 제어권을
+      넘겨주는 것과 같습니다. 격리는 "컨테이너 경계"만으로 성립하지 않고, 그 경계 안에 무엇이 bind되는지까지
+      함께 봐야 합니다.
+    </p>
+    <p><strong>Q. write/edit tool을 다 막았는데 exec는 열어뒀습니다. 안전한가요?</strong></p>
+    <p>
+      아니요. tool policy는 tool 이름 기준으로 필터링할 뿐, exec 안에서 실행되는 셸 명령의 부작용까지는 보지
+      않습니다. <code>echo ... &gt; file</code>이나 <code>rm</code>, <code>curl | sh</code> 같은 명령으로
+      write/edit이 하던 일을 그대로 할 수 있습니다.
+    </p>
+    <p><strong>Q. system prompt에 "민감한 설정 파일은 읽지 마라"라고 써두면 충분한가요?</strong></p>
+    <p>
+      충분하지 않습니다. 실제로 커뮤니티에서 보고된 사례로, 특정 모델이 그 지시를 무시하고 config 파일을 읽은
+      경우가 있었습니다. 프롬프트 지시는 모델별로 신뢰도가 다르고 강제력이 없기 때문에, 실제 방어는
+      <code>workspaceOnly</code>나 allow/deny처럼 tool 실행 레이어에서 강제되는 통제여야 합니다.
+    </p>
+    <p><strong>Q. YOLO 모드(exec 완전 개방)를 실무에서 써도 되는 상황이 있을까요?</strong></p>
+    <p>
+      blast radius가 이미 0에 가까운 환경 — 예를 들어 일회성 CI 컨테이너나 매번 폐기되는 격리된 데모
+      환경 — 정도로 한정해야 합니다. 영구적인 워크스페이스나 실제 자격 증명에 접근 가능한 세션에서는
+      YOLO를 상시 프리셋으로 두면 안 됩니다.
+    </p>
+    <p><strong>Q. 승인된 exec 명령의 인자가 승인 후에 바뀌면 어떻게 됩니까?</strong></p>
+    <p>
+      OpenClaw는 승인 시점의 작업 디렉터리·인자·환경·실행 파일 경로를 바인딩해두고, 실행 직전에 그 컨텍스트가
+      바뀐 걸 감지하면 재승인을 요청하는 대신 그냥 거부합니다. "승인된 스크립트의 내용을 그 사이에 바꿔치기하는"
+      류의 TOCTOU 공격을 구조적으로 막기 위한 설계입니다.
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>좋은 답변</h4>
+        <ul>
+          <li>sandbox / tool policy / elevated를 서로 다른 축으로 명확히 구분해서 설명한다</li>
+          <li>"tool policy는 이름 기준이라 exec 안의 부작용까지 못 본다"는 함정을 구체적 명령 예시로 짚는다</li>
+          <li>샌드박스 없을 때 gateway exec 기본값이 full이라는 비대칭을 언급한다</li>
+          <li>프롬프트 지시가 아키텍처 강제를 대체할 수 없다는 것을 실제 사례로 든다</li>
+          <li>실행 시점뿐 아니라 설치 시점(플러그인/스킬)도 최소권한 대상이라는 것을 안다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변</h4>
+        <ul>
+          <li>"tool을 꺼두면 안전하다"는 단일 스위치 관점에서 멈춘다</li>
+          <li>샌드박스와 tool policy를 같은 것처럼 뭉뚱그려 말한다</li>
+          <li>system prompt 지시("이건 하지 마라")를 실제 보안 통제처럼 제시한다</li>
+          <li>exec와 write/edit이 사실상 겹치는 권한이라는 걸 인지하지 못한다</li>
+          <li>"tool 정책 기본값이 안전할 것"이라고 별도 확인 없이 가정한다</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 흔한 오해 정정 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+    <p>
+      <strong>오해 1 — "위험해 보이는 tool 몇 개만 꺼두면 안전하다."</strong> tool policy는 이름 기준 필터일
+      뿐이다. <code>exec</code>가 열려 있으면 <code>write</code>/<code>edit</code>/<code>read</code>가 하던
+      일을 셸 명령으로 그대로 재현할 수 있다. 위험한 조합을 함께 봐야 한다.
+    </p>
+    <p>
+      <strong>오해 2 — "system prompt로 지시하면 지켜진다."</strong> 실제로 특정 모델이 "이 파일은 읽지 마라"는
+      지시를 무시한 사례(#12202)가 보고됐다. 프롬프트는 힌트이지 강제가 아니다 — 강제는 tool 실행 레이어(스키마
+      제거, workspaceOnly, allow/deny)에서 걸어야 한다.
+    </p>
+    <p>
+      <strong>오해 3 — "샌드박스만 켜면 tool 권한은 느슨해도 된다."</strong> elevated 오남용이나
+      <code>docker.sock</code> 마운트 같은 설정 실수로 샌드박스 격리 자체가 무의미해질 수 있다. sandbox와 tool
+      policy는 독립적으로 둘 다 최소화해야 한다.
+    </p>
+    <p>
+      <strong>오해 4 — "기본 설정이 항상 안전한 쪽으로 잡혀 있을 것이다."</strong> 실제로 정책이 명시되지 않으면
+      <code>exec</code>를 포함해 모든 tool이 기본 허용되던 사고(#16323)가 있었고, 샌드박스가 없을 때 gateway
+      exec 기본값은 지금도 <code>full</code>이다. 기본값은 항상 직접 확인해야 할 대상이지, 신뢰의 근거가 아니다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Tool Dispatch 운영 시 확인할 것</h2>
+    <ul>
+      <li>에이전트별로 tool 프로파일/allow-deny가 "필요한 최소 집합"으로 명시돼 있는가(기본값에 기대지 않았는가)</li>
+      <li><code>tools.exec.security</code>/<code>mode</code>가 명시적으로 설정돼 있고, 샌드박스 유무에 따른
+      기본값 비대칭을 알고 있는가</li>
+      <li>고위험 명령에 <code>argPattern</code>까지 걸어 인자 단위로 좁혔는가</li>
+      <li><code>askFallback</code>이 deny 성향으로 유지되는가(프롬프트 UI 부재 시 자동 허용되지 않는가)</li>
+      <li><code>tools.fs.workspaceOnly</code>가 켜져 있는가, 샌드박스가 없는 배포에서 <code>apply_patch</code>류
+      경로 트래버설 리스크를 인지하고 있는가</li>
+      <li>브라우저 tool의 프로파일이 격리형(<code>openclaw</code>)인지, <code>evaluateEnabled</code>와 SSRF
+      allowlist가 검토됐는지</li>
+      <li>elevated 오버라이드나 sandbox bind mount(도커 소켓 등)로 격리가 무력화될 여지가 없는지</li>
+      <li>로컬 플러그인/훅/스킬 설치도 검토 없이 자동 신뢰하지 않는지(설치 시점 공급망 리스크)</li>
+      <li>최신 GitHub 보안 권고(GHSA)와 이슈를 정기적으로 확인해 기본값 변경 이력을 추적하는가</li>
+    </ul>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>tool 권한을 "켜고 끄는" 단일 스위치로만 설명하고, sandbox/tool policy/elevated를 구분하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>세 축이 있다는 건 알지만, exec와 write/edit이 사실상 겹치는 권한이라는 함정이나 기본값 비대칭은
+      설명 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>tool policy가 이름 기준으로만 필터링한다는 한계, 승인 바인딩(cwd/args/env 고정)의 목적까지 설명할
+      수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>세 통제축의 독립성과 그 축들이 서로를 대신해주지 않는 이유, 샌드박스 유무에 따른 exec 기본값
+      비대칭, 프롬프트 기반 가드레일의 실증적 한계(#12202), 실제 사고 사례(#16323, GHSA-m3mh, #12173,
+      GHSA-cv7m)를 근거로 들며, 이를 프로파일/allowlist/workspaceOnly/샌드박스 조합으로 방어하는 구체적 운영
+      설계까지 즉시 제시함</span>
+    </div>
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. sandbox, tool policy, elevated가 왜 서로 다른 축이고 서로를 대신해줄 수 없는지 설명할 수 있는가?<br>
+      2. write/edit을 막아도 exec가 열려 있으면 왜 무의미한지, 구체적 셸 명령으로 예를 들 수 있는가?<br>
+      3. 샌드박스가 없을 때 gateway의 exec 기본 보안 모드가 무엇이고, 그게 왜 위험한 결정으로 이어지는지 아는가?<br>
+      4. system prompt 지시가 왜 실제 보안 통제가 될 수 없는지, 실증 사례를 근거로 들 수 있는가?<br>
+      5. 실행 시점뿐 아니라 설치 시점(플러그인/스킬)도 최소권한 대상이라는 것을 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>tool 권한은 세 개의 독립된 축이다</strong> — sandbox(어디서), tool policy(무엇을),
+      elevated(exec만의 탈출구). 하나를 조여도 다른 축이 열려 있으면 방어가 성립하지 않는다.</li>
+      <li><strong>tool policy는 이름 기준 필터다</strong> — exec 안의 부작용(side effect)까지는 보지 않으므로,
+      write/edit을 막아도 exec가 열려 있으면 동일한 피해가 가능하다.</li>
+      <li><strong>기본값 자체가 비대칭적으로 위험하다</strong> — 샌드박스가 없으면 gateway/node의 exec 기본
+      보안 모드는 여전히 <code>full</code>이다. "샌드박스 안 쓰기"는 곧 "exec 사실상 무제한"과 같다.</li>
+      <li><strong>승인은 시점 바인딩된다</strong> — cwd/args/env/실행 파일 경로를 승인 시점에 고정하고, 이후
+      드리프트가 감지되면 재승인이 아니라 거부한다(TOCTOU 방지).</li>
+      <li><strong>파일 경로 스코핑은 옵트인이다</strong> — <code>workspaceOnly</code>를 켜지 않으면, 특히
+      샌드박스가 없는 배포에서 <code>apply_patch</code> 같은 tool이 경로 트래버설에 취약할 수 있다(#12173).</li>
+      <li><strong>프롬프트 지시는 보안 통제가 아니다</strong> — 모델에 따라 "이 파일은 읽지 마라" 같은 지시를
+      무시한 실증 사례가 있다(#12202). 강제는 항상 tool 실행 레이어에서 걸어야 한다.</li>
+      <li><strong>최소권한은 런타임 호출뿐 아니라 설치 시점에도 적용된다</strong> — 신뢰하지 않는 로컬
+      플러그인/훅 설치가 <code>--ignore-scripts</code>에도 불구하고 <code>.npmrc</code> git 하이재킹으로
+      임의 코드 실행에 이른 사례(GHSA-m3mh-3mpg-37hw)가 있다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 5 완료 · 다음: Day 6 — Sessions, Prompt/Memory 파일</span>
+  </div>
+
+</div>
+</body>
+</html>

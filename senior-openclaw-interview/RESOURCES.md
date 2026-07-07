@@ -99,6 +99,29 @@
 - [GitHub issue #92674 — thinking 레벨 "adaptive" 폴백으로 토큰 사용량 4~5배 증가 (open)](https://github.com/openclaw/openclaw/issues/92674)
 - [GitHub issue #88371 — Windows 온보딩 첫 채팅이 크레딧 경고 없이 유료 모델로 시작 (open)](https://github.com/openclaw/openclaw/issues/88371)
 
+## Tools / Tool Dispatch 보안 (Day 5 핵심 출처)
+
+- [GitHub raw — docs/tools/exec-approvals.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/tools/exec-approvals.md) — security mode(deny/allowlist/full), ask/askFallback, allowlist glob+argPattern, YOLO 프리셋, 승인 바인딩
+- [GitHub raw — docs/tools/exec.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/tools/exec.md) — host resolution(sandbox/gateway/node), 샌드박스 유무에 따른 exec 기본값 비대칭, least-privilege 권장 사항
+- [Tools overview — docs.openclaw.ai/tools](https://docs.openclaw.ai/tools) / [Exec approvals](https://docs.openclaw.ai/tools/exec-approvals) / [Exec tool](https://docs.openclaw.ai/tools/exec) / [Policy CLI](https://docs.openclaw.ai/cli/policy) — 자동화 접근 403 가능, raw.githubusercontent.com 경로로 교차 확인
+- [Sandbox vs tool policy vs elevated](https://docs.openclaw.ai/gateway/sandbox-vs-tool-policy-vs-elevated) — 세 통제축의 독립성, "tool policy는 이름만 거른다"는 한계, elevated가 tool을 추가하지 않는다는 명시
+- [Configuration — tools and custom providers](https://docs.openclaw.ai/gateway/config-tools) — tools.allow/deny, deny 우선, group:* 축약, base profile → provider profile → allow/deny 순서, tools.byProvider
+- [Multi-agent sandbox and tools](https://docs.openclaw.ai/tools/multi-agent-sandbox-tools)
+- [GitHub issue #16323 — Insecure Default Tool Policies, Privilege Escalation, Windows Command Injection (closed, fixed via PR #16320)](https://github.com/openclaw/openclaw/issues/16323) — Day 5 핵심 사고 사례, primary source
+- [GHSA-m3mh-3mpg-37hw — openclaw Arbitrary Malicious Code Execution via .npmrc git hijack during plugin/hook install (High, CVSS 8.6, fixed 2026.3.24)](https://github.com/openclaw/openclaw/security/advisories/GHSA-m3mh-3mpg-37hw)
+- [GitHub issue #12173 — apply_patch path traversal when sandbox disabled (High, CVSS 8.5, closed as not planned)](https://github.com/openclaw/openclaw/issues/12173)
+- [GHSA-cv7m-c9jx-vg7q / CVE-2026-26329 — browser upload path traversal via unsanitized setInputFiles() path (High, CWE-22, fixed 2026.2.14)](https://github.com/openclaw/openclaw/security/advisories/GHSA-cv7m-c9jx-vg7q)
+- [GitHub issue #12202 — Feature Request: per-agent file path access control (open) — includes real report of a model ignoring SOUL.md instructions and reading a restricted config file](https://github.com/openclaw/openclaw/issues/12202)
+- [GitHub issue #5948 — Feature: filesystem path restriction without Docker sandbox (open)](https://github.com/openclaw/openclaw/issues/5948)
+- [GitHub issue #32637 — Feature: per-agent working directory (cwd) separate from workspace (open)](https://github.com/openclaw/openclaw/issues/32637)
+- [slowmist/openclaw-security-practice-guide](https://github.com/slowmist/openclaw-security-practice-guide) — 레이어드 방어(identity → scope → model) 관점 교차 검증용 2차 자료
+- [Nebius — OpenClaw security: architecture and hardening guide](https://nebius.com/blog/posts/openclaw-security) (2차 해설 자료)
+
+### 범위 밖 참고(Day 10에서 본격적으로 다룸, Day 5에서는 tool policy와의 관계만 인용)
+
+- [CVE-2026-25253 — Control UI gatewayUrl 미검증 + WebSocket origin 미검증 1-클릭 RCE(2026.1.29에서 수정)](https://thehackernews.com/2026/02/openclaw-bug-enables-one-click-remote.html)
+- [ClawJacked — 로컬 origin 과신으로 인한 기기 페어링 무단 승인(2026.2.25에서 수정)](https://www.oasis.security/blog/openclaw-vulnerability)
+
 ## 사용 시 주의사항
 
 - `docs.openclaw.ai` 도메인은 자동화 접근(WebFetch)에 403을 반환하는 경우가 있었다. 이 트랙의 공식 문서 인용은
@@ -114,3 +137,9 @@
 - ClawHub 관련 보안 사고 수치는 서로 다른 리서치 기관(Unit 42, Bitdefender, Koi Security)이 각기 다른 시점·기준으로
   집계한 것이므로, 절대적인 수치보다 **"마켓플레이스형 스킬 배포는 구조적으로 공급망 리스크를 가진다"는 패턴**에
   집중해서 이해한다.
+- Day 5의 세 통제축(sandbox/tool policy/elevated) 구분과 exec 기본값 비대칭, 승인 바인딩 로직은 공식 문서
+  원문(exec-approvals.md, exec.md, sandbox-vs-tool-policy-vs-elevated)으로 직접 확인한 높은 확정도다. GitHub
+  이슈(#16323, #12173, #12202, #5948, #32637)와 보안 권고(GHSA-m3mh-3mpg-37hw, GHSA-cv7m-c9jx-vg7q)는
+  리서치 시점(2026-07) 기준 상태이며, 특히 #12173처럼 "closed as not planned"로 종료된 이슈는 전용 코드
+  수정 없이 종료됐을 뿐 근본 리스크(샌드박스 없는 배포에서의 경로 트래버설)가 해소됐다는 뜻이 아니므로,
+  면접 전 최신 상태를 재확인한다.
