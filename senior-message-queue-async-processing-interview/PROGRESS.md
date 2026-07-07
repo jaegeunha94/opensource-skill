@@ -11,18 +11,18 @@
 | 5 | 2026-07-04 | Idempotency (멱등성) 설계와 재시도 안전성 | [0005-idempotency-and-retry-safety.html](lessons/0005-idempotency-and-retry-safety.html) |
 | 6 | 2026-07-05 | Dead-Letter Queue 설계와 장애 격리 | [0006-dead-letter-queue-and-failure-isolation.html](lessons/0006-dead-letter-queue-and-failure-isolation.html) |
 | 7 | 2026-07-06 | 재시도 전략 — Exponential Backoff와 재시도 횟수 결정 | [0007-exponential-backoff-retry-strategy.html](lessons/0007-exponential-backoff-retry-strategy.html) |
+| 8 | 2026-07-07 | Backpressure와 Consumer Rate Control | [0008-backpressure-and-consumer-rate-control.html](lessons/0008-backpressure-and-consumer-rate-control.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Backpressure와 Consumer Rate Control | 처리량 병목, Prefetch, Consumer 수 조정, 큐 길이 모니터링 |
 | 9 | Celery와 Python 비동기 작업 설계 | Task 설계, Retry, Priority Queue, chord/chain, Worker 관리 |
 | 10 | 대규모 비동기 처리 아키텍처 종합 설계 | 전체 시나리오 설계, 처리량 산정, 장애 전파 차단, 운영 체크리스트 |
 
 ## 현재 학습 위치
 
-**Day 7 완료** — Day 8: Backpressure와 Consumer Rate Control 예정.
+**Day 8 완료** — Day 9: Celery와 Python 비동기 작업 설계 예정.
 
 ## 습득한 핵심 개념
 
@@ -52,6 +52,8 @@
 - [x] Full/Equal/Decorrelated Jitter의 차이와 선택 기준 (Day 7)
 - [x] 재시도 대상 구분(상태 코드/예외 유형)과 Idempotency와의 결합 필요성 (Day 7)
 - [x] 최대 재시도 횟수를 SLA·회복 시간·비용으로 역산하는 기준 (Day 7)
-- [ ] Backpressure 처리 패턴 (예정 Day 8)
+- [x] Backpressure 개념과 Pull(Kafka)/Push(RabbitMQ) 모델별 제어 지점 차이 (Day 8)
+- [x] Consumer Rate Control 수단 — Prefetch/poll 배치 축소, 병렬 처리, 파티션 확장, 처리 분리, Rate Limiting/Load Shedding (Day 8)
+- [x] Consumer Lag 증가율 기반 모니터링과 Lag 기반 오토스케일링의 부작용 (Day 8)
 - [ ] Celery 작업 설계 (예정 Day 9)
 - [ ] 대규모 비동기 아키텍처 종합 (예정 Day 10)
