@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — Canary 배포와 트래픽 분산 제어 | CI/CD 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* header */
+    .lesson-header {
+      border-left: 4px solid var(--accent);
+      padding: 1.5rem 1.5rem 1.5rem 2rem;
+      background: var(--surface);
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .lesson-title { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
+    .lesson-subtitle { color: var(--muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    /* section */
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 1.2rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.8rem; color: var(--text); }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.88em;
+      color: #a5b4fc;
+    }
+
+    /* cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    /* interview question highlight */
+    .interview-q {
+      background: linear-gradient(135deg, #1e2a4a 0%, #1a2035 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .interview-q .label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .interview-q .question {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.5;
+    }
+
+    /* comparison grid */
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .strategy-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .strategy-card .name {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .strategy-card.blue-green .name { color: #60a5fa; }
+    .strategy-card.rolling .name { color: #34d399; }
+    .strategy-card.canary .name { color: #f59e0b; }
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-right: 0.3rem;
+      margin-bottom: 0.3rem;
+    }
+    .tag-green { background: #14532d; color: #4ade80; }
+    .tag-red { background: #450a0a; color: #f87171; }
+    .tag-yellow { background: #422006; color: #fbbf24; }
+    .tag-blue { background: #1e3a5f; color: #93c5fd; }
+
+    /* answer example */
+    .answer-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+    .answer-block .speaker {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    /* good vs weak */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .compare-card.good {
+      background: #052e16;
+      border: 1px solid #166534;
+    }
+    .compare-card.weak {
+      background: #2d0a0a;
+      border: 1px solid #7f1d1d;
+    }
+    .compare-label {
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .compare-card.good .compare-label { color: #4ade80; }
+    .compare-card.weak .compare-label { color: #f87171; }
+
+    /* reasoning steps */
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent2);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.1rem;
+    }
+
+    /* follow-up */
+    .followup-item {
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .followup-item .q {
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 0.5rem;
+    }
+    .followup-item .a {
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    /* rubric */
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:last-child td { border-bottom: none; }
+    .rubric-table tr:nth-child(even) td { background: #12141e; }
+    .level-badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .level-1 { background: #450a0a; color: #fca5a5; }
+    .level-2 { background: #422006; color: #fcd34d; }
+    .level-3 { background: #14532d; color: #86efac; }
+    .level-4 { background: #1e3a5f; color: #93c5fd; }
+
+    /* callout */
+    .callout {
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .callout-warn {
+      background: #2d1b00;
+      border: 1px solid var(--yellow);
+      color: #fef3c7;
+    }
+    .callout-info {
+      background: #0c1a3a;
+      border: 1px solid var(--accent);
+      color: #dbeafe;
+    }
+    .callout-icon { font-weight: 700; margin-right: 0.4rem; }
+
+    /* flow diagram (ascii-style) */
+    .flow-diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #a5b4fc;
+      overflow-x: auto;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      white-space: pre;
+    }
+
+    /* nav */
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .nav-bar a {
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-bar a:hover { text-decoration: underline; }
+    .nav-center { color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-header">
+    <div class="lesson-meta">CI/CD와 배포 전략 인터뷰 · Day 8</div>
+    <div class="lesson-title">Canary 배포와 트래픽 분산 제어</div>
+    <div class="lesson-subtitle">Canary는 "일부 트래픽에만 먼저 흘려본다"는 아이디어는 쉽지만, 트래픽 비율을 어떤 곡선으로 늘릴지, 진행/중단을 사람이 아니라 지표로 어떻게 판단할지, feature flag과 무엇이 다른지까지 답하지 못하면 실무 이해로 인정받기 어렵다.</div>
+  </div>
+
+  <!-- ─── SECTION 1: 면접 질문 ─── -->
+  <section>
+    <h2>🎯 오늘의 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">주질문 (Main Question)</div>
+      <div class="question">
+        "Canary 배포에서 트래픽 비율을 어떻게 단계적으로 늘리시겠습니까?<br>
+        그리고 각 단계에서 무엇을 근거로 다음 단계로 진행할지, 혹은 중단하고 롤백할지 판단하시겠습니까?"
+      </div>
+    </div>
+
+    <div class="interview-q" style="border-color: var(--accent2);">
+      <div class="label" style="color: var(--accent2);">변형 질문 (Variation)</div>
+      <div class="question" style="font-size: 1rem;">
+        "Canary 배포와 feature flag은 어떻게 다르고, 실무에서는 왜 두 가지를 같이 씁니까?<br>
+        Canary 그룹에 배정된 사용자가 계속 같은 버전을 보게 하려면 무엇을 신경 써야 합니까?"
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 2: 왜 면접에서 묻는가 ─── -->
+  <section>
+    <h2>🔍 왜 면접에서 이 질문을 하는가</h2>
+
+    <p>Canary라는 단어는 대부분의 지원자가 안다. "일부 사용자에게 먼저 배포하고 문제 없으면 전체로 늘린다"까지도 쉽게 말한다. 그래서 이 질문은 <strong>"Canary를 들어봤는가"</strong>가 아니라 <strong>"트래픽 비율을 늘리는 기준을 사람의 감이 아니라 시스템으로 설계할 수 있는가"</strong>를 검증한다. 트래픽을 5% → 100%로 늘리는 과정에서 각 단계가 "몇 분 지켜보고 괜찮아 보이니 다음 단계"라는 감각적 판단이라면, 그 자동화는 사실 자동화가 아니다.</p>
+
+    <div class="card">
+      <div class="card-title">면접관이 실제로 평가하는 것</div>
+      <ul>
+        <li><strong>트래픽 분배 설계력:</strong> 비율을 어떤 곡선(선형/지수적)으로 늘리고, 각 단계의 지속 시간을 무엇으로 정하는가</li>
+        <li><strong>통계적 유의성 감각:</strong> 5% 트래픽만으로 문제를 감지하기에 표본이 충분한지, 트래픽이 적은 시간대의 카나리아가 왜 위험한지를 아는가</li>
+        <li><strong>Sticky routing 이해:</strong> 같은 사용자가 요청마다 다른 버전으로 튀는 문제를 어떻게 막는가</li>
+        <li><strong>Canary와 feature flag의 경계:</strong> 인프라 계층 트래픽 분배와 코드 계층 조건 분기가 다른 도구라는 것을 알고, 언제 무엇을 쓰는가</li>
+        <li><strong>Canary의 한계 인식:</strong> DB 마이그레이션처럼 카나리아로 격리할 수 없는 변경이 있다는 것을 아는가</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>주니어 vs 시니어 차이:</strong> 주니어는 "카나리아는 일부한테만 먼저 배포하는 겁니다"에서 멈춘다. 시니어는 트래픽 비율 곡선, 단계별 관찰 시간, 표본 크기의 통계적 유의성, sticky routing, feature flag과의 역할 분담까지 수치와 근거를 들어 설명한다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 3: 전제 개념 ─── -->
+  <section>
+    <h2>📚 전제 개념: Canary 배포가 실제로 하는 일</h2>
+
+    <h3>Canary 배포란 무엇인가 (쉬운 설명)</h3>
+    <p>탄광에서 카나리아 새를 데리고 들어가 유독가스를 미리 감지했다는 이야기에서 이름을 따왔다. 소프트웨어에서는 <strong>전체 트래픽 중 아주 작은 비율(예: 1~5%)만 신버전으로 보내고, 나머지는 구버전을 그대로 유지</strong>한 채로 신버전이 실제 프로덕션 트래픽 아래서 잘 동작하는지 관찰한다. 문제가 없으면 비율을 점진적으로 늘리고, 문제가 보이면 그 비율만 되돌리면 되므로 영향받는 사용자 수가 매우 적다.</p>
+
+    <h3>세 전략의 근본적인 차이 — 무엇을 "점진적"으로 바꾸는가</h3>
+    <div class="strategy-grid">
+      <div class="strategy-card blue-green">
+        <div class="name">Blue-Green</div>
+        <ul>
+          <li>바꾸는 대상: 트래픽 전체를 한 번에</li>
+          <li>안전장치: 완전히 분리된 환경</li>
+          <li>관찰 방식: 스위치 전/후 비교</li>
+        </ul>
+      </div>
+      <div class="strategy-card rolling">
+        <div class="name">Rolling</div>
+        <ul>
+          <li>바꾸는 대상: 인스턴스 개수를 점진적으로</li>
+          <li>안전장치: 배치 단위 readiness</li>
+          <li>관찰 방식: 배치마다 헬스체크</li>
+        </ul>
+      </div>
+      <div class="strategy-card canary">
+        <div class="name">Canary</div>
+        <ul>
+          <li>바꾸는 대상: <strong>트래픽 비율</strong>을 점진적으로</li>
+          <li>안전장치: 노출 사용자 수 최소화</li>
+          <li>관찰 방식: 신구 버전 지표 실시간 비교</li>
+        </ul>
+      </div>
+    </div>
+
+    <p>이 차이는 중요하다. Rolling은 "인스턴스 개수"를 늘리지만, 늘어난 인스턴스가 얼마나 트래픽을 받을지는 로드밸런서가 균등하게 정한다. Canary는 <strong>인스턴스 개수와 무관하게 "트래픽 비율" 자체를 명시적으로 제어</strong>한다. 예를 들어 신버전 인스턴스가 1대뿐이어도 트래픽 가중치를 5%로 고정할 수 있고, 이는 Rolling으로는 표현할 수 없는 제어다.</p>
+
+    <h3>트래픽 분배 방식 두 가지</h3>
+    <div class="card">
+      <ul>
+        <li><strong>확률 기반(random) 분배:</strong> 요청마다 정해진 확률(예: 5%)로 신버전을 호출한다. 구현이 단순하지만, 같은 사용자가 요청마다 다른 버전을 볼 수 있다.</li>
+        <li><strong>세그먼트 기반(sticky) 분배:</strong> 사용자 ID, 쿠키, 헤더 같은 식별자를 해시해서 같은 사용자는 항상 같은 버전으로 라우팅한다. UI가 바뀌거나 세션 상태를 갖는 서비스는 이 방식이 필수에 가깝다.</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>흔한 오해:</strong> "Canary는 그냥 트래픽 몇 %를 신버전으로 보내면 끝"이라고 단순화하기 쉽다. 하지만 확률 기반 분배만 쓰면 한 사용자가 새로고침할 때마다 다른 화면을 보는 문제가 생긴다. 실무에서는 사용자 단위로 버전을 고정하는 sticky routing이 함께 필요하다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 4: 트래픽 비율 곡선과 진행 절차 ─── -->
+  <section>
+    <h2>📈 트래픽 비율 곡선과 단계별 진행</h2>
+
+    <div class="flow-diagram">일반적인 Canary 단계 (Argo Rollouts 스타일)
+
+[1단계] 신버전 5%,  구버전 95%
+   → 관찰 기간 10분: 에러율, p99 지연시간, 비즈니스 지표 확인
+   → 자동 분석(AnalysisTemplate)이 baseline과 비교해 이상 없으면 진행
+
+[2단계] 신버전 20%, 구버전 80%
+   → 관찰 기간 10분
+   → 이상 없으면 진행
+
+[3단계] 신버전 50%, 구버전 50%
+   → 관찰 기간 15분 (표본이 커지므로 더 신뢰도 높은 비교 가능)
+   → 이상 없으면 진행
+
+[4단계] 신버전 100%
+   → 구버전 완전 제거
+
+[중단 조건 — 어느 단계에서든]
+   - 신버전 에러율이 구버전 대비 통계적으로 유의미하게 높으면
+   - 자동으로 트래픽을 0%로 되돌리고 배포 중단 알림 발송</div>
+
+    <h3>비율을 어떤 기준으로 늘리는가</h3>
+    <div class="card">
+      <div class="card-title">단계 설계 기준</div>
+      <ul>
+        <li><strong>초기 단계는 작게, 후반 단계는 크게:</strong> 처음엔 영향 반경을 최소화(1~5%)하고, 신뢰가 쌓일수록 큰 폭(20% → 50% → 100%)으로 늘려 전체 배포 시간을 관리한다.</li>
+        <li><strong>절대 트래픽량 기준으로 조정:</strong> 트래픽이 적은 심야 시간대에는 5%가 통계적으로 무의미할 만큼 적은 요청 수일 수 있다. 이 경우 비율이 아니라 "최소 N건 이상의 요청을 받을 때까지" 관찰 기간을 늘리는 방식이 필요하다.</li>
+        <li><strong>단계 지속 시간:</strong> 캐시 워밍, 배치 작업 주기, 사용자 세션 길이 등 서비스 특성에 맞춰 관찰 기간을 정한다. 너무 짧으면 저빈도 오류를 놓치고, 너무 길면 배포 전체 시간이 늘어난다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 5: 지표 기반 자동 진행과 중단 ─── -->
+  <section>
+    <h2>🚨 지표 기반 자동 진행/중단 판단</h2>
+
+    <p>Canary의 핵심 가치는 "일부에게만 먼저 보여준다"가 아니라 <strong>"신버전과 구버전을 같은 시간, 같은 조건에서 직접 비교할 수 있다"</strong>는 데 있다. 이 비교를 사람이 그래프를 보고 판단하면 반응 속도가 느리고 일관성이 없다. 그래서 실무에서는 자동 분석 단계를 둔다.</p>
+
+    <h3>비교해야 하는 지표와 판단 방식</h3>
+    <div class="card">
+      <ul>
+        <li><strong>상대 비교가 핵심:</strong> 신버전의 절대 에러율이 아니라, <strong>같은 시간대 구버전 대비 상대적으로 얼마나 나쁜가</strong>를 본다. 전체 트래픽이 튀는 외부 요인과 배포로 인한 회귀를 구분할 수 있다.</li>
+        <li><strong>표본 크기 확인:</strong> 5% 트래픽에서 에러가 3건 나왔다고 바로 중단하면 오탐이 많다. 최소 표본 수(예: 100건 이상의 요청)를 채운 뒤 판단하도록 설계한다.</li>
+        <li><strong>여러 지표의 조합 판정:</strong> 에러율만 보면 지연시간 악화나 리소스 포화를 놓친다. 에러율, p95/p99 지연시간, 리소스 사용량, 핵심 비즈니스 지표(전환율, 결제 성공률)를 함께 본다.</li>
+        <li><strong>자동 승격 vs 수동 승인:</strong> 초기 저위험 단계(5~20%)는 자동으로 다음 단계로 넘어가게 하고, 100% 직전 같은 고위험 단계는 사람이 최종 승인하는 하이브리드 방식도 실무에서 흔하다.</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>실무 팁:</strong> Argo Rollouts의 <code>AnalysisTemplate</code>, Flagger의 metric provider 연동이 이 역할을 한다. Prometheus 쿼리로 신구 버전의 지표를 비교하고, 정의된 임계치(threshold)를 벗어나면 자동으로 <code>Progressing</code> → <code>Degraded</code>로 전환해 롤아웃을 멈추거나 되돌린다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 6: Canary vs Feature Flag ─── -->
+  <section>
+    <h2>🔀 Canary 배포 vs Feature Flag — 다른 계층의 도구</h2>
+
+    <p>둘 다 "일부에게만 먼저 노출한다"는 목적이 비슷해서 자주 혼동되지만, <strong>작동하는 계층이 다르다.</strong></p>
+
+    <div class="card">
+      <div class="card-title">근본적인 차이</div>
+      <ul>
+        <li><strong>Canary 배포:</strong> 인프라/네트워크 계층에서 트래픽을 물리적으로 다른 버전의 배포본(revision)으로 라우팅한다. 코드는 하나의 조건 분기 없이 그냥 신버전 그대로다.</li>
+        <li><strong>Feature Flag:</strong> 하나의 배포본(같은 코드) 안에서, 런타임에 조건문으로 기능을 켜고 끈다. 배포와 기능 노출이 분리된다.</li>
+      </ul>
+    </div>
+
+    <table class="rubric-table">
+      <thead>
+        <tr><th>측면</th><th>Canary 배포</th><th>Feature Flag</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>제어 단위</td>
+          <td>배포본(버전) 전체</td>
+          <td>개별 기능 단위</td>
+        </tr>
+        <tr>
+          <td>되돌리는 속도</td>
+          <td>트래픽 가중치 조정 (초~분)</td>
+          <td>플래그 토글 (즉시, 재배포 불필요)</td>
+        </tr>
+        <tr>
+          <td>주로 잡는 문제</td>
+          <td>인프라 회귀, 성능 저하, 배포 자체의 안정성</td>
+          <td>비즈니스 로직 결함, 특정 기능의 부작용</td>
+        </tr>
+        <tr>
+          <td>세밀한 타겟팅</td>
+          <td>트래픽 비율/세그먼트 수준</td>
+          <td>사용자 속성, 요금제, 지역 등 세밀한 조건</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>실무에서는 <strong>이 둘을 함께 쓴다.</strong> 새 기능을 feature flag으로 꺼둔 채 신버전을 Canary로 배포해 "배포 자체의 위험"(메모리 누수, 부팅 실패, 의존성 문제)을 먼저 걷어내고, 그 다음 feature flag을 점진적으로 켜서 "기능 자체의 위험"을 별도로 검증한다. 문제가 생겼을 때도 어느 계층의 문제인지 구분해서 대응할 수 있다: 배포가 문제면 트래픽을 되돌리고, 기능이 문제면 플래그만 끄면 된다.</p>
+  </section>
+
+  <!-- ─── SECTION 7: 답변 사고 순서 ─── -->
+  <section>
+    <h2>🧠 답변 사고 순서</h2>
+    <p>"트래픽 비율을 어떻게 늘리고, 무엇을 근거로 진행/중단을 판단하시겠습니까"라는 질문을 받았을 때 아래 순서로 답변을 전개한다.</p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>트래픽 비율 곡선 제시</strong><br>
+          초기엔 작게(1~5%), 신뢰가 쌓일수록 크게(20% → 50% → 100%) 늘리는 단계 설계를 구체적인 숫자로 제시한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Sticky routing 언급</strong><br>
+          확률 기반 분배의 한계와, 사용자 단위로 버전을 고정하는 세그먼트 기반 라우팅이 필요한 이유를 설명한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>비교 기준과 표본 크기</strong><br>
+          신버전을 절대 수치가 아니라 같은 시간대 구버전과 상대 비교한다는 것, 그리고 최소 표본 크기를 채운 뒤 판단한다는 것을 명시한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>자동 분석 도구 연결</strong><br>
+          Argo Rollouts/Flagger 같은 도구가 Prometheus 지표를 기반으로 자동 진행/중단을 수행하는 구조를 설명한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Feature flag과의 역할 분담</strong><br>
+          Canary는 배포 자체의 인프라 위험을, feature flag은 기능 자체의 위험을 각각 담당한다는 계층 구분을 짚는다.
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ─── SECTION 8: 핵심 답변 예시 ─── -->
+  <section>
+    <h2>💬 핵심 답변 예시</h2>
+
+    <div class="answer-block">
+      <div class="speaker">답변 예시 (시니어 수준)</div>
+      <p>"저는 트래픽 비율을 5% → 20% → 50% → 100% 순으로 늘리고, 초기 단계일수록 관찰 시간을 길게, 후반 단계로 갈수록 신뢰가 쌓인 만큼 진행 속도를 높입니다. 트래픽이 적은 시간대라면 비율이 아니라 최소 요청 건수를 기준으로 관찰 기간을 늘려서, 표본이 통계적으로 의미 있는 크기가 될 때까지 기다립니다.</p>
+      <p>라우팅은 단순 확률 기반이 아니라 사용자 ID를 해시한 세그먼트 기반으로 합니다. 그래야 한 사용자가 요청마다 다른 버전을 보는 일 없이, 같은 사용자는 계속 같은 버전을 보게 되어 UX 일관성과 세션 상태 문제를 피할 수 있습니다.</p>
+      <p>진행/중단 판단은 절대 수치가 아니라 같은 시간대 구버전과의 상대 비교로 합니다. 에러율, p99 지연시간, 그리고 결제 성공률 같은 비즈니스 지표를 함께 보고, Argo Rollouts의 AnalysisTemplate으로 Prometheus 지표를 자동 조회해서 임계치를 넘으면 트래픽을 자동으로 0%로 되돌립니다. 초반 저위험 단계는 자동 승격시키고, 100% 직전 단계는 사람이 최종 승인하도록 해서 속도와 안전성을 같이 챙깁니다.</p>
+      <p>그리고 Canary와 feature flag은 다른 계층의 도구라고 생각합니다. Canary로는 배포 자체가 안전한지(메모리 누수, 부팅 문제, 성능 저하)를 검증하고, 새로 추가한 기능 자체의 위험은 feature flag으로 따로 켜고 끕니다. 이렇게 분리하면 문제가 생겼을 때 배포 문제인지 기능 문제인지 빠르게 구분해서 대응할 수 있습니다."</p>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 9: Senior Follow-up ─── -->
+  <section>
+    <h2>🔺 Senior-Level Follow-up 질문</h2>
+
+    <div class="followup-item">
+      <div class="q">Q. "Canary 5% 트래픽에서는 문제가 없었는데 100%로 늘리자 장애가 났습니다. 왜 이런 일이 생길 수 있습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 5%에서는 드러나지 않고 트래픽 규모나 동시성이 커져야만 나타나는 문제가 있다는 것을 떠올려야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 대표적으로 커넥션 풀 고갈, 캐시 히트율 저하로 인한 백엔드 부하 증가, 특정 저빈도 요청 패턴이 5% 표본에는 거의 포함되지 않았던 경우가 있다. 또한 신버전 인스턴스 수가 적으면 트래픽이 늘어날 때 그 소수 인스턴스에 부하가 집중되어 리소스 포화가 늦게 드러난다. 그래서 후반 단계(50% 이상)에서는 인스턴스 오토스케일링과 리소스 사용량 지표를 더 강하게 감시해야 한다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "Canary 배포 중에 DB 스키마 변경이 포함되어 있다면 문제가 됩니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> Canary는 애플리케이션 계층의 트래픽만 분리할 뿐, 대부분 DB는 신구 버전이 공유한다는 것을 전제해야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 문제가 된다. Canary는 신버전 인스턴스와 구버전 인스턴스가 같은 데이터베이스를 공유하는 구조가 일반적이기 때문에, DB 스키마 변경은 Canary 비율과 무관하게 100% 즉시 적용되는 변경이다. 따라서 Rolling과 마찬가지로 Expand-Contract 원칙과 N-1 호환성을 지켜야 하며, "트래픽을 5%만 보내니 안전하다"는 인식은 DB 변경에는 적용되지 않는다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "여러 팀이 동시에 서로 다른 기능을 Canary로 배포하고 있다면 어떤 문제가 생길 수 있습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 지표 이상이 감지됐을 때 "어느 Canary가 원인인지" 구분할 수 있는지를 따져봐야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 여러 Canary가 동시에 진행되면 지표 이상의 원인을 특정 배포로 귀속시키기 어려워지고, 하나의 Canary가 실패했을 때 다른 정상 Canary까지 함께 롤백되는 과잉 대응이 생길 수 있다. 이를 막으려면 서비스/팀 단위로 Canary를 격리하고, 배포마다 고유한 버전 태그와 대시보드를 분리해서 지표를 추적해야 하며, 동시 배포 수를 제한하는 정책(deployment freeze window, 배포 큐)을 두는 것이 실무적 해법이다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "Canary 비율을 자동으로 늘리는 시스템을 신뢰할 수 없다면 어떻게 하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 완전 자동화와 완전 수동 사이에서 리스크에 따라 개입 지점을 조절하는 절충안을 생각해야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 자동 분석 신뢰도가 낮은 초기 도입 단계라면, 저위험 단계(5~20%)까지는 자동으로 진행시키되 50% 이상 고위험 단계부터는 사람이 대시보드를 보고 수동 승인하는 하이브리드 게이트를 둔다. 동시에 자동 분석의 오탐/미탐 이력을 기록해 임계치와 지표 조합을 지속적으로 튜닝하고, 신뢰도가 검증된 이후 자동화 범위를 단계적으로 넓혀간다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 10: 좋은 답변 vs 약한 답변 ─── -->
+  <section>
+    <h2>⚖️ 좋은 답변과 약한 답변의 차이</h2>
+
+    <div class="compare-grid">
+      <div class="compare-card good">
+        <div class="compare-label">✅ 좋은 답변</div>
+        <ul>
+          <li>트래픽 비율 곡선과 단계별 지속 시간을 구체적 숫자로 제시</li>
+          <li>sticky routing의 필요성을 사용자 경험 관점에서 설명</li>
+          <li>절대 수치가 아니라 상대 비교와 표본 크기를 근거로 판단 기준 제시</li>
+          <li>Canary와 feature flag의 계층 차이를 명확히 구분</li>
+          <li>DB 스키마 변경처럼 Canary로 격리되지 않는 위험을 인지</li>
+        </ul>
+      </div>
+      <div class="compare-card weak">
+        <div class="compare-label">❌ 약한 답변</div>
+        <ul>
+          <li>"일부 사용자한테 먼저 배포하고 문제 없으면 늘립니다"에서 설명이 끝남</li>
+          <li>확률 기반 분배만 언급하고 sticky routing을 모름</li>
+          <li>"모니터링하다가 이상하면 롤백합니다"처럼 판단 기준이 모호함</li>
+          <li>Canary와 feature flag을 같은 개념으로 혼동</li>
+          <li>"트래픽을 조금만 보내니 안전합니다"라고 DB 변경까지 뭉뚱그림</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>핵심 차이:</strong> 약한 답변은 Canary를 "조심스럽게 배포하는 절차"로만 본다. 좋은 답변은 트래픽 제어, 라우팅 방식, 통계적 판단 기준, 다른 도구와의 역할 분담까지 하나의 시스템으로 설계해서 설명한다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 11: 실무 연결 ─── -->
+  <section>
+    <h2>🏭 실무 연결 — 플랫폼별 Canary 구현</h2>
+
+    <div class="card">
+      <div class="card-title">플랫폼/도구별 Canary 트래픽 제어 비교</div>
+      <table class="rubric-table">
+        <thead>
+          <tr><th>도구</th><th>트래픽 제어 방식</th><th>자동 분석/중단</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Argo Rollouts</td>
+            <td><code>steps</code>에 가중치와 대기 시간 정의</td>
+            <td><code>AnalysisTemplate</code>으로 Prometheus/Datadog 지표 자동 비교</td>
+          </tr>
+          <tr>
+            <td>Flagger (Istio/Linkerd 연동)</td>
+            <td>서비스 메시 VirtualService 가중치 자동 조정</td>
+            <td>metric template 기반 자동 승격/롤백</td>
+          </tr>
+          <tr>
+            <td>Istio / Linkerd (서비스 메시)</td>
+            <td>헤더/쿠키 기반 세그먼트 라우팅 + 가중치 분배</td>
+            <td>메시 자체는 미제공, 별도 분석 도구 연동 필요</td>
+          </tr>
+          <tr>
+            <td>AWS App Mesh / ALB weighted target group</td>
+            <td>Target Group별 가중치(weight) 설정</td>
+            <td>CloudWatch 알람 연동, 자동 롤백은 별도 구성 필요</td>
+          </tr>
+          <tr>
+            <td>LaunchDarkly / Unleash (Feature Flag)</td>
+            <td>사용자 속성/퍼센티지 기반 플래그 노출</td>
+            <td>배포와 무관, 코드 계층 킬스위치</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 12: 자기 점검 Rubric ─── -->
+  <section>
+    <h2>📋 자기 점검 Rubric</h2>
+    <p>아래 기준으로 자신의 답변 수준을 체크하라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>레벨</th>
+          <th>할 수 있는 것</th>
+          <th>부족한 것</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="level-badge level-1">Lv 1</span></td>
+          <td>"일부에게만 먼저 배포하고 문제 없으면 늘린다"고 말할 수 있다</td>
+          <td>비율 곡선, sticky routing, 판단 기준을 모름</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-2">Lv 2</span></td>
+          <td>트래픽 비율 단계와 sticky routing의 필요성을 설명할 수 있다</td>
+          <td>상대 비교/표본 크기 기반 통계적 판단 기준 부족</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-3">Lv 3</span></td>
+          <td>자동 분석 도구와 지표 기반 자동 진행/중단 구조를 설명할 수 있다</td>
+          <td>Canary와 feature flag의 계층 차이, DB 변경 한계 인식 부족</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-4">Lv 4 (목표)</span></td>
+          <td>트래픽 곡선 + sticky routing + 통계적 판단 + feature flag 역할 분담 + DB/동시 배포 한계까지 통합 설명 + 플랫폼별 구현 연결</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>셀프 체크리스트</h3>
+    <div class="card">
+      <ul>
+        <li>☐ 트래픽 비율을 어떤 곡선으로 늘리고, 단계별 관찰 시간을 어떻게 정하는지 말할 수 있는가</li>
+        <li>☐ 확률 기반 분배와 세그먼트(sticky) 기반 분배의 차이를 설명할 수 있는가</li>
+        <li>☐ 진행/중단 판단이 절대 수치가 아니라 상대 비교와 표본 크기 기준이어야 하는 이유를 설명할 수 있는가</li>
+        <li>☐ Canary 배포와 feature flag이 서로 다른 계층의 도구라는 것을 구분할 수 있는가</li>
+        <li>☐ DB 스키마 변경이 Canary 비율과 무관하게 즉시 전체 적용된다는 것을 아는가</li>
+        <li>☐ 여러 Canary가 동시에 진행될 때 생기는 원인 귀속 문제를 설명할 수 있는가</li>
+        <li>☐ 자동화 신뢰도가 낮을 때 하이브리드(자동+수동 승인) 게이트를 설계할 수 있는가</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 13: 흔한 오해 ─── -->
+  <section>
+    <h2>🚫 흔한 오해와 교정</h2>
+
+    <div class="card">
+      <div class="card-title">오해 1</div>
+      <p><strong>"Canary는 그냥 트래픽 몇 %를 신버전으로 보내면 끝이다."</strong></p>
+      <p>→ 확률 기반 분배만 쓰면 같은 사용자가 요청마다 다른 버전을 볼 수 있다. 세션 상태나 UI가 있는 서비스는 사용자 단위로 버전을 고정하는 sticky routing 없이는 일관성 문제가 생긴다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 2</div>
+      <p><strong>"Canary 배포와 feature flag은 결국 같은 것이다."</strong></p>
+      <p>→ Canary는 인프라 계층에서 배포본(revision) 자체를 트래픽 비율로 분리하는 것이고, feature flag은 하나의 배포본 안에서 코드 조건 분기로 기능을 켜고 끄는 것이다. 잡을 수 있는 문제의 종류(배포 자체의 위험 vs 기능 자체의 위험)와 되돌리는 속도가 다르다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 3</div>
+      <p><strong>"트래픽을 5%만 보내니 어떤 변경이든 안전하다."</strong></p>
+      <p>→ DB 스키마 변경처럼 신구 버전이 공유하는 자원에 대한 변경은 Canary 비율과 무관하게 100% 즉시 적용된다. Canary가 격리하는 것은 애플리케이션 계층 트래픽뿐이지, 공유 데이터 계층의 변경은 별도의 호환성 원칙(Expand-Contract, N-1)으로 관리해야 한다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 4</div>
+      <p><strong>"5% 단계에서 문제가 없었으면 100%에서도 문제 없을 것이다."</strong></p>
+      <p>→ 낮은 비율에서는 드러나지 않는 문제(커넥션 풀 고갈, 캐시 히트율 저하, 저빈도 요청 패턴 누락)가 트래픽 규모가 커지는 후반 단계에서 나타날 수 있다. 각 단계는 독립적으로 관찰해야 하며, 이전 단계 통과가 다음 단계의 안전을 보장하지 않는다.</p>
+    </div>
+  </section>
+
+  <div class="nav-bar">
+    <a href="./0007-rolling-deployment-progressive-release.html">← Day 7</a>
+    <span class="nav-center">Day 8 / 10 — CI/CD와 배포 전략 인터뷰</span>
+    <a href="./index.html">목록으로 →</a>
+  </div>
+
+</div>
+</body>
+</html>

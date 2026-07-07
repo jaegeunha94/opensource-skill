@@ -11,18 +11,18 @@
 | 5 | 2026-07-04 | Artifact 관리와 버전 관리 전략 | [0005-artifact-management-versioning-strategy.html](lessons/0005-artifact-management-versioning-strategy.html) |
 | 6 | 2026-07-05 | Blue-Green 배포 심층 분석 | [0006-blue-green-deployment-deep-dive.html](lessons/0006-blue-green-deployment-deep-dive.html) |
 | 7 | 2026-07-06 | Rolling 배포와 점진적 릴리스 | [0007-rolling-deployment-progressive-release.html](lessons/0007-rolling-deployment-progressive-release.html) |
+| 8 | 2026-07-07 | Canary 배포와 트래픽 분산 제어 | [0008-canary-deployment-traffic-control.html](lessons/0008-canary-deployment-traffic-control.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Canary 배포와 트래픽 분산 제어 | 트래픽 가중치, 지표 기반 자동 진행, feature flag 연동, 중단 기준 |
 | 9 | 롤백 판단과 인시던트 대응 | 롤백 트리거 기준, 자동 롤백, 데이터 일관성, 롤백 vs 핫픽스 판단 |
 | 10 | Release Ownership과 배포 리더십 | 배포 책임 구조, 변경 관리, 팀 커뮤니케이션, 포스트모텀, 재발 방지 |
 
 ## 현재 학습 위치
 
-**Day 7 완료** — 다음: Day 8 — Canary 배포와 트래픽 분산 제어
+**Day 8 완료** — 다음: Day 9 — 롤백 판단과 인시던트 대응
 
 ## 습득한 핵심 개념
 
@@ -36,6 +36,6 @@
 - [x] Artifact 관리와 버전 전략 (Day 5)
 - [x] Blue-Green 배포 심층 (트래픽 전환 계층, Expand-Contract, 비용 최적화, 롤백 한계) (Day 6)
 - [x] Rolling 배포 (배치 크기, readiness/liveness, 자동 실패 감지, N-1 호환성) (Day 7)
-- [ ] Canary 배포 (예정 Day 8)
+- [x] Canary 배포 (트래픽 비율 곡선, sticky routing, 통계적 판단 기준, feature flag과의 계층 차이) (Day 8)
 - [ ] 롤백 인시던트 대응 (예정 Day 9)
 - [ ] Release Ownership (예정 Day 10)
