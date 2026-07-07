@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — 분산 시스템과 일관성: CAP Theorem, BASE vs ACID, Eventual Consistency, 분산 트랜잭션</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <!-- ══════════════════════════════════════════ HEADER ══ -->
+  <div class="lesson-header">
+    <div class="day-label">Day 8 · 시스템 설계 Interview</div>
+    <h1>분산 시스템과 일관성 — CAP Theorem, BASE vs ACID, Eventual Consistency, 분산 트랜잭션</h1>
+    <p class="subtitle">Day 3~7에서 서버를 여러 대로 늘리고, DB를 복제·샤딩하고, 여러 AZ에 분산 배치했다. 그 순간 반드시 따라오는 질문이 있다 — 같은 데이터를 두고 서로 다른 노드가 서로 다른 답을 하면 어떻게 하는가? 이 레슨은 "정확한 답 하나"를 포기해야만 시스템이 계속 동작할 수 있는 이유를 다룬다</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 핵심 면접 질문 ══ -->
+  <h2>이 레슨의 핵심 면접 질문</h2>
+  <p class="section-intro">일관성 질문은 "CAP theorem이 뭔지 아는가"를 외웠는지 확인하는 질문이 아니다. 데이터를 여러 노드에 나눠 둔 순간 반드시 마주치는 트레이드오프를 실제 설계 결정에 반영할 수 있는지를 본다.</p>
+
+  <div class="callout callout-interview">
+    <div class="callout-title">면접 질문 유형</div>
+    <ul>
+      <li>"CAP theorem을 설명해보세요. 우리 서비스는 CP와 AP 중 어느 쪽을 선택해야 할까요?"</li>
+      <li>"네트워크 파티션이 발생했을 때 데이터베이스가 어떤 선택을 할 수 있는지 설명해보세요."</li>
+      <li>"Strong Consistency와 Eventual Consistency의 차이는 무엇이고, 각각 어떤 서비스에 적합한가요?"</li>
+      <li>"주문 서비스와 재고 서비스가 서로 다른 DB를 쓰는데, 결제가 성공했지만 재고 차감이 실패하면 어떻게 하시겠어요?"</li>
+      <li>"2단계 커밋(2PC)과 Saga 패턴의 차이는 무엇이고, 어떤 상황에서 각각을 선택하나요?"</li>
+    </ul>
+    <p style="margin-top:0.75rem; margin-bottom:0">
+      <strong>이 질문들의 공통점:</strong> "정확성을 100% 지키는 분산 시스템"은 존재하지 않는다는 전제를 이해하고, <strong>어떤 상황에서 어떤 정확성을 포기하는 대신 무엇을 얻는지</strong>를 비즈니스 요구사항에 맞춰 선택할 수 있는가를 본다.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 전제 개념 ══ -->
+  <h2>전제 개념 — 왜 "분산"되면 갑자기 어려워지는가부터 이해한다</h2>
+  <p class="section-intro">CAP theorem을 외우기 전에, 단일 서버에서는 당연했던 것이 왜 여러 노드로 나뉘는 순간 더 이상 당연하지 않게 되는지부터 이해해야 한다.</p>
+
+  <div class="callout callout-prereq">
+    <div class="callout-title">단일 서버에서는 왜 "일관성 문제"가 없었나?</div>
+    <p style="margin-bottom:0">
+      서버가 한 대이고 DB도 한 대일 때는, 데이터를 쓰는 순간 그 즉시 모든 읽기가 그 최신 값을 본다. 데이터의 "정답"이 한 곳에만 있기
+      때문이다. 하지만 Day 5에서 다룬 것처럼 <strong>읽기 성능과 가용성을 위해 Read Replica를 두거나, 쓰기 확장을 위해 샤딩</strong>을
+      하는 순간 데이터의 사본이 여러 곳에 존재하게 된다. 이 사본들을 네트워크로 동기화해야 하는데, <strong>네트워크는 지연되거나
+      끊길 수 있다</strong> — 이 사실 하나가 분산 시스템의 거의 모든 어려움의 근원이다.
+    </p>
+  </div>
+
+  <div class="callout callout-prereq">
+    <div class="callout-title">네트워크 파티션(Network Partition)이란? — 노드는 살아있는데 서로 통신이 끊긴 상태</div>
+    <p style="margin-bottom:0">
+      네트워크 파티션은 <strong>노드 A와 노드 B가 둘 다 정상적으로 살아있지만, 그 사이의 네트워크 연결이 끊기거나 심하게 지연되는
+      상황</strong>이다. 이때 문제는 "노드가 죽었다"가 아니라 <strong>"A는 B가 죽었는지 살았는지 알 방법이 없다"</strong>는 것이다.
+      A 입장에서는 B가 응답하지 않는 것이 B가 다운된 것인지, 네트워크가 끊긴 것인지, 아니면 그냥 느린 것인지 구분할 수 없다.
+      분산 시스템 설계는 <strong>"파티션이 일어날 수 있다"는 것을 전제로</strong>, 그 상황에서 각 노드가 무엇을 할지를 미리 정해두는 작업이다.
+    </p>
+  </div>
+
+  <div class="callout callout-prereq">
+    <div class="callout-title">CAP Theorem이란? — 파티션이 발생하면 C와 A 중 하나만 고를 수 있다</div>
+    <p style="margin-bottom:0">
+      CAP theorem은 분산 시스템이 다음 세 가지를 <strong>동시에 완벽히</strong> 만족할 수 없다고 말한다.
+    </p>
+    <ul style="margin-top:0.5rem">
+      <li><strong>Consistency(일관성):</strong> 모든 노드가 항상 가장 최신 값을 반환한다 (여기서 말하는 일관성은 DB 트랜잭션의 ACID Consistency와는 다른 개념으로, 정확히는 Linearizability에 가깝다)</li>
+      <li><strong>Availability(가용성):</strong> 장애가 없는 노드는 항상 (에러가 아닌) 응답을 반환한다</li>
+      <li><strong>Partition Tolerance(파티션 내성):</strong> 노드 간 네트워크 통신이 끊기거나 지연되어도 시스템 전체는 계속 동작한다</li>
+    </ul>
+    <p style="margin-top:0.5rem; margin-bottom:0">
+      핵심은 <strong>"셋 중 두 개를 고르라"는 표현이 정확하지 않다는 점</strong>이다. 실제 분산 시스템에서 네트워크 파티션은 확률적으로
+      반드시 발생하므로, P(파티션 내성)는 선택 사항이 아니라 <strong>전제</strong>다. 진짜 선택은 <strong>"파티션이 발생했을 때, C를 포기할지
+      A를 포기할지"</strong>이다. 파티션이 없는 평상시에는 C와 A를 둘 다 가질 수 있다 — CAP은 오직 "파티션이 실제로 벌어진 그 순간"에만
+      적용되는 트레이드오프다.
+    </p>
+  </div>
+
+  <div class="callout callout-prereq">
+    <div class="callout-title">CP vs AP — 파티션이 났을 때 무엇을 포기하는가</div>
+    <p style="margin-bottom:0">
+      파티션이 발생했다고 하자. 클라이언트가 노드 A에 쓰기를 요청했는데, A는 노드 B와 통신할 수 없다.
+    </p>
+    <ul style="margin-top:0.5rem">
+      <li><strong>CP(Consistency + Partition Tolerance)를 선택:</strong> A는 B와 동기화를 확인할 수 없으므로, <strong>안전하게 쓰기를 거부하거나 응답을 보류</strong>한다. 데이터는 항상 정확하지만, 이 순간 사용자는 에러나 타임아웃을 받는다 — 가용성을 포기.</li>
+      <li><strong>AP(Availability + Partition Tolerance)를 선택:</strong> A는 B와 통신이 안 되더라도 <strong>일단 자신이 가진 데이터로 응답</strong>한다. 사용자는 항상 응답을 받지만, 그 값이 B가 가진 최신 값과 다를 수 있다 — 일관성을 포기.</li>
+    </ul>
+    <p style="margin-top:0.5rem; margin-bottom:0">
+      대표 예시: <strong>ZooKeeper, etcd, 전통적 RDBMS의 동기 복제 구성은 CP</strong> 쪽에 가깝고, <strong>Cassandra, DynamoDB(기본 설정),
+      Riak은 AP</strong> 쪽에 가깝다. "어느 쪽이 항상 옳다"가 아니라 <strong>도메인이 정확성과 가용성 중 무엇을 더 못 견디는지</strong>에 따라 갈린다.
+    </p>
+  </div>
+
+  <div class="callout callout-prereq">
+    <div class="callout-title">ACID vs BASE — 두 개의 서로 다른 철학</div>
+    <p style="margin-bottom:0">
+      <strong>ACID</strong>(Atomicity, Consistency, Isolation, Durability)는 전통적 RDBMS 트랜잭션의 원칙으로, <strong>"항상 정확한 상태만
+      보여준다"</strong>는 철학이다. 트랜잭션이 끝나기 전에는 중간 상태를 아무도 볼 수 없고, 커밋된 데이터는 항상 제약조건을 만족한다.
+      <strong>BASE</strong>(Basically Available, Soft state, Eventually consistent)는 분산 NoSQL 시스템이 흔히 채택하는 철학으로,
+      <strong>"지금 당장은 응답 가능성을 우선하고, 데이터는 시간이 지나면 결국 일관된 상태로 수렴한다"</strong>는 것을 인정한다.
+      ACID가 "정확함을 위해 기다리게 한다"면, BASE는 "지금 응답하되 잠깐의 부정확함을 감수한다"는 철학의 차이다.
+    </p>
+  </div>
+
+  <div class="callout callout-prereq">
+    <div class="callout-title">Eventual Consistency(최종 일관성)란? — "지금은 다를 수 있지만 결국 같아진다"</div>
+    <p style="margin-bottom:0">
+      Eventual Consistency는 <strong>쓰기가 발생한 직후에는 노드마다 다른 값을 가질 수 있지만, 새로운 쓰기가 더 이상 들어오지 않는다면
+      결국 모든 노드가 같은 값으로 수렴한다</strong>는 보장이다. 예를 들어 SNS의 "좋아요" 수는 지역마다 잠깐 다르게 보일 수 있지만
+      몇 초 안에 같아진다 — 사용자는 이 몇 초의 차이를 거의 인지하지 못하고, 그 대신 어떤 리전에서 접속하든 즉시 응답을 받는다.
+      반대로 <strong>Strong Consistency(강한 일관성)</strong>는 쓰기가 완료된 직후 어느 노드에서 읽어도 항상 최신 값을 보장하지만,
+      그 보장을 위해 노드 간 확인 절차를 거치므로 지연이 늘고, 파티션 상황에서는 응답 자체를 거부할 수 있다.
+    </p>
+  </div>
+
+  <div class="callout callout-prereq">
+    <div class="callout-title">분산 트랜잭션이 필요한 이유 — 마이크로서비스는 DB를 하나만 쓰지 않는다</div>
+    <p style="margin-bottom:0">
+      단일 DB, 단일 트랜잭션이면 ACID로 간단히 해결된다. 하지만 <strong>주문 서비스와 재고 서비스가 각자 별도의 DB를 갖는 마이크로서비스
+      구조</strong>에서는, "결제 완료 + 재고 차감"이 두 개의 서로 다른 DB에 걸친 작업이 된다. 하나는 성공하고 하나는 실패하면 데이터가
+      영구적으로 어긋난 상태(예: 결제는 됐는데 재고는 그대로)로 남을 수 있다. 이 문제를 푸는 대표적인 두 접근이
+      <strong>2단계 커밋(2PC)</strong>과 <strong>Saga 패턴</strong>이다.
+    </p>
+  </div>
+
+  <div class="callout callout-prereq">
+    <div class="callout-title">2단계 커밋(2PC)과 Saga 패턴 — 분산 트랜잭션을 처리하는 두 가지 철학</div>
+    <p style="margin-bottom:0">
+      <strong>2PC</strong>는 코디네이터가 모든 참여자에게 "커밋할 준비가 됐는지" 먼저 묻고(Prepare), 전원이 "예"라고 답해야만 실제
+      커밋을 지시하는(Commit) 방식이다. 강한 일관성을 보장하지만, <strong>코디네이터가 다운되면 모든 참여자가 커밋도 롤백도 못한 채
+      락을 쥐고 대기</strong>하는 blocking 문제가 있고, 참여자 수가 늘수록 지연과 장애 확률이 커져 마이크로서비스 규모에서는 잘 쓰이지 않는다.
+      <strong>Saga 패턴</strong>은 큰 트랜잭션을 <strong>각자 로컬 커밋이 가능한 여러 단계로 쪼개고</strong>, 중간 단계가 실패하면
+      이미 완료된 이전 단계들을 <strong>보상 트랜잭션(compensating transaction)</strong>으로 되돌린다 — 예를 들어 결제 완료 후 재고
+      차감이 실패하면, "결제 취소"라는 보상 트랜잭션을 실행한다. 락을 오래 쥐지 않아 확장에 유리하지만, <strong>일시적으로 불일치
+      상태가 보이는 구간(중간 상태)을 감수</strong>해야 한다는 trade-off가 있다.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 왜 묻는가 ══ -->
+  <h2>왜 면접에서 이것을 묻는가?</h2>
+
+  <div class="callout callout-why">
+    <div class="callout-title">면접관의 관점</div>
+    <p>
+      CAP과 consistency 질문은 "이론을 외웠는가"가 아니라 <strong>"정확성이 공짜가 아니라는 것을 알고, 그 비용을 누가 지불하는지
+      설명할 수 있는가"</strong>를 본다. 이 지점에서 시니어와 주니어가 크게 갈린다.
+    </p>
+    <ul>
+      <li><strong>"완벽한 시스템"이 존재하지 않는다는 것을 인정하는가?</strong> — CP와 AP 중 하나를 고르는 것이 아니라 "둘 다 하겠다"고 답하면 파티션의 본질을 이해하지 못한 것이다</li>
+      <li><strong>같은 시스템 안에서도 도메인마다 다른 선택을 할 수 있음을 아는가?</strong> — 결제는 CP, 좋아요 수는 AP처럼, 하나의 서비스 안에서도 데이터 종류별로 다른 일관성 모델을 적용할 수 있다는 것을 아는지</li>
+      <li><strong>Eventual Consistency의 "잠깐의 불일치"가 사용자에게 실제로 어떻게 보이는지 설명하는가?</strong> — 추상적으로 "결국 같아진다"고만 하지 않고 구체적 시나리오로 설명하는지</li>
+      <li><strong>분산 트랜잭션에서 2PC의 한계를 알고 Saga 같은 대안을 아는가?</strong> — "트랜잭션을 걸겠습니다"로 끝내지 않고 분산 환경에서 왜 단순 트랜잭션이 통하지 않는지 아는지</li>
+      <li><strong>일관성 선택이 비즈니스 요구사항에서 시작되는가?</strong> — 기술적 취향이 아니라 "이 데이터가 틀리면 어떤 비용이 발생하는가"에서 출발해 선택을 정당화하는지</li>
+    </ul>
+  </div>
+
+  <div class="callout callout-realworld">
+    <div class="callout-title">실무 연결</div>
+    <p>
+      실무에서 흔한 사례는 이렇다: 한 이커머스 팀이 재고 수량을 여러 리전에 걸쳐 캐시로 복제해두고 AP 방식(Eventual Consistency)으로
+      운영했다. 평소엔 문제가 없었지만, 인기 상품이 재고 1개 남았을 때 서로 다른 리전에서 동시에 들어온 두 주문이 각자 "재고 있음"으로
+      읽고 둘 다 주문을 완료시켜 <strong>오버셀(oversell)</strong> 사고가 났다. 이 사고 이후 팀은 "재고 차감처럼 돈과 직결되고
+      중복이 곧 손실로 이어지는 연산은 CP(강한 일관성, 단일 진실 원천에서의 원자적 차감)로, 상품 상세 페이지의 조회수나 추천
+      목록처럼 약간 틀려도 괜찮은 데이터는 AP로" 분리하는 정책을 세웠다. 이처럼 <strong>하나의 서비스 안에서도 데이터 종류별로 다른
+      일관성 모델을 적용하는 것</strong>이 실무의 표준적인 접근이다.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 프레임워크 ══ -->
+  <h2>일관성 모델 선택 프레임워크</h2>
+  <p class="section-intro">일관성 문제는 "이론을 아는가"가 아니라 아래 순서로 판단해 결정한다.</p>
+
+  <ol class="steps">
+    <li>
+      <div>
+        <h4>이 데이터가 틀렸을 때 어떤 비용이 발생하는지 먼저 정의한다</h4>
+        <p>돈과 직결되는가(결제, 재고, 잔액)? 아니면 사용자 경험 저하 수준인가(좋아요 수, 조회수, 추천 목록)? 이 비용 판단이 일관성 선택의 출발점이다.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h4>비용이 크면 CP, 작으면 AP를 기본값으로 놓는다</h4>
+        <p>재고/결제/계좌 잔액처럼 중복이나 오차가 직접적 손실로 이어지는 데이터는 강한 일관성을, SNS 카운터/추천/캐시성 데이터는 최종 일관성을 기본으로 검토한다.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h4>단일 서비스 경계 안이면 ACID 트랜잭션으로 충분한지 확인한다</h4>
+        <p>같은 DB 안에서 끝나는 작업이면 분산 트랜잭션 문제 자체가 발생하지 않는다는 것을 먼저 짚는다 — 불필요하게 문제를 분산 트랜잭션으로 키우지 않는다.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h4>여러 서비스/DB에 걸친 작업이면 2PC 대신 Saga를 우선 검토한다</h4>
+        <p>마이크로서비스 규모에서는 2PC의 blocking 위험보다 Saga의 보상 트랜잭션 방식이 일반적으로 더 실용적이라는 것을 근거로 설명한다.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h4>Saga를 선택했다면 중간 상태(불일치 구간)를 어떻게 사용자에게 보여줄지 설계한다</h4>
+        <p>"결제 완료, 배송 준비 중"처럼 진행 상태를 노출하거나, 중간 상태 동안의 재고 임시 차감(reservation) 같은 완화 장치를 함께 설계한다.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h4>파티션 발생 시 어느 쪽을 포기할지 명시적으로 정의한다</h4>
+        <p>"파티션이 나면 쓰기를 거부한다(CP)" 혹은 "파티션이 나도 응답은 하되 나중에 충돌을 해소한다(AP)"를 도메인별로 미리 정책화한다.</p>
+      </div>
+    </li>
+  </ol>
+
+  <!-- ══════════════════════════════════════════ 깊이 있는 비교 ══ -->
+  <h2>2PC vs Saga — 왜 마이크로서비스는 Saga를 선호하는가</h2>
+  <p class="section-intro">"분산 트랜잭션은 그냥 2PC 쓰면 되는 것 아닌가"라는 질문을 자주 받는다. 이 둘의 차이를 blocking 여부로 설명할 수 있어야 한다.</p>
+
+  <div class="callout callout-thinking">
+    <div class="callout-title">2PC가 마이크로서비스 규모에서 잘 안 쓰이는 이유</div>
+    <p style="margin-bottom:0">
+      2PC는 Prepare 단계에서 모든 참여자가 <strong>커밋 준비 상태로 락을 걸고 코디네이터의 지시를 기다린다.</strong> 이 대기 중에
+      코디네이터가 다운되면, 참여자들은 커밋도 롤백도 스스로 결정할 수 없는 <strong>blocking 상태</strong>에 빠진다 — 자원(락)을
+      쥔 채 무기한 대기하는 것이다. 참여자가 2~3개면 감당할 수 있지만, 마이크로서비스처럼 <strong>참여자가 많고 네트워크 신뢰성이
+      낮은 환경</strong>에서는 이 blocking 위험과 지연이 누적되어 비현실적이다. Saga는 각 단계를 <strong>로컬 트랜잭션으로 즉시
+      커밋</strong>해 락을 오래 쥐지 않고, 실패 시 이미 커밋된 단계들을 보상 트랜잭션으로 되돌리는 방식으로 이 문제를 피한다.
+      대신 Saga는 <strong>"이미 커밋됐지만 전체 흐름은 아직 완료되지 않은" 중간 상태를 외부에 노출할 수 있다</strong>는 것을
+      감수해야 하는 trade-off를 갖는다.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 실전 예시 ══ -->
+  <h2>실전 예시 — 주문·결제·재고를 Saga로 설계하기</h2>
+  <p class="section-intro">
+    주문 서비스, 결제 서비스, 재고 서비스가 각자 별도의 DB를 갖는 마이크로서비스 구조에서 "주문 생성 → 결제 → 재고 차감"을
+    Saga로 설계해보자.
+  </p>
+
+  <h3>1) 각 단계를 로컬 트랜잭션으로 분리</h3>
+  <ul>
+    <li>주문 서비스: 주문을 "결제 대기" 상태로 생성 (로컬 커밋)</li>
+    <li>결제 서비스: 결제 승인 처리 (로컬 커밋)</li>
+    <li>재고 서비스: 재고 차감 (로컬 커밋)</li>
+  </ul>
+
+  <h3>2) 실패 시 보상 트랜잭션 정의</h3>
+  <ul>
+    <li>재고 차감이 실패하면(품절) → 결제 서비스에 "결제 취소" 보상 트랜잭션을 실행 → 주문 서비스는 주문 상태를 "취소됨"으로 전환</li>
+  </ul>
+
+  <h3>3) 오케스트레이션 vs 코레오그래피 선택</h3>
+  <ul>
+    <li><strong>오케스트레이션:</strong> 중앙 Saga 코디네이터가 각 단계를 순서대로 호출하고 실패 시 보상 순서도 관리 — 흐름 파악이 쉽지만 코디네이터가 단일 장애점이 될 수 있다</li>
+    <li><strong>코레오그래피:</strong> 각 서비스가 이벤트(예: "결제 완료" 이벤트)를 발행하고, 다음 서비스가 그 이벤트를 구독해 자율적으로 다음 단계를 진행 — 결합도는 낮지만 전체 흐름을 한눈에 파악하기 어렵다</li>
+  </ul>
+
+  <h3>4) 중간 상태 노출과 재고 임시 차감</h3>
+  <ul>
+    <li>재고를 "즉시 확정 차감"이 아니라 <strong>주문 생성 시점에 임시 예약(reservation)</strong>으로 걸어두고, 결제가 실제로 완료된 시점에 확정 차감으로 전환한다 — 이렇게 하면 결제 실패 시 예약을 취소하는 것만으로 오버셀을 방지할 수 있다.</li>
+  </ul>
+
+  <div class="callout callout-thinking">
+    <div class="callout-title">여기서 시니어가 반드시 짚는 포인트</div>
+    <p>
+      "Saga 패턴을 쓰겠습니다"만으로는 부족하다. <strong>왜 2PC 대신 Saga인지(blocking 회피), 보상 트랜잭션을 구체적으로 어떻게
+      설계했는지, 중간 상태를 사용자에게 어떻게 노출하거나 완화하는지(임시 예약)</strong>까지 답해야 한다. 특히 재고처럼
+      "돈과 직결되는 리소스 경합"이 있는 도메인에서는 <strong>임시 예약 같은 완화 장치 없이 Saga만 적용하면 오버셀이 그대로
+      재현될 수 있다</strong>는 것을 짚는 것이 핵심 시니어 포인트다.
+    </p>
+  </div>
+
+  <h3>답변 예시 — 이렇게 말하면 된다</h3>
+  <div class="callout callout-interview">
+    <div class="callout-title">답변 예시 — 주문/결제/재고 분산 트랜잭션 설계</div>
+    <p>
+      "주문, 결제, 재고가 각자 다른 DB를 쓰는 마이크로서비스 구조이므로 단일 ACID 트랜잭션으로 묶을 수 없습니다. 2PC는 참여자가
+      많아지고 코디네이터 장애 시 blocking 위험이 있어 이 규모에서는 Saga 패턴을 선택하겠습니다. 각 단계를 로컬 트랜잭션으로
+      나누고, 재고 차감 실패 시 결제 취소라는 보상 트랜잭션으로 되돌리겠습니다. 다만 Saga는 중간 상태를 외부에 노출할 수 있다는
+      약점이 있어서, 재고는 즉시 확정 차감이 아니라 주문 생성 시점에 임시 예약을 걸고 결제 완료 시점에 확정 차감으로 전환하는
+      방식으로 오버셀을 방지하겠습니다. 이 흐름은 코디네이터가 각 단계를 순서대로 호출하는 오케스트레이션 방식으로 구현해서
+      실패 시 보상 순서를 명확히 관리하겠습니다."
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 강한 vs 약한 ══ -->
+  <h2>강한 답변과 약한 답변의 차이</h2>
+
+  <div class="answer-compare">
+    <div class="answer-box answer-strong">
+      <div class="answer-label">강한 답변 (Senior level)</div>
+      <p>
+        "데이터마다 틀렸을 때의 비용을 먼저 구분하고, 재고/결제처럼 비용이 큰 데이터는 CP + Saga + 임시 예약으로, 좋아요 수처럼
+        비용이 작은 데이터는 AP + Eventual Consistency로 설계를 분리합니다. 2PC와 Saga의 blocking 여부 차이를 근거로 선택 이유를
+        설명하고, 중간 상태를 어떻게 완화할지까지 구체적으로 제시합니다."
+      </p>
+    </div>
+    <div class="answer-box answer-weak">
+      <div class="answer-label">약한 답변 (Junior level)</div>
+      <p>
+        "분산 트랜잭션이니까 2단계 커밋을 쓰면 됩니다. 그리고 CAP theorem에 따르면 일관성과 가용성 중 하나만 선택할 수 있으니
+        일관성을 선택하겠습니다.
+        (모든 데이터에 동일한 모델을 일괄 적용, 2PC의 blocking 문제 인식 없음, 파티션이 없는 평상시와 있을 때를 구분하지 못함)"
+      </p>
+    </div>
+  </div>
+
+  <h3>왜 약한 답변이 약한가?</h3>
+  <ul>
+    <li><strong>데이터별 비용 구분이 없음:</strong> 모든 데이터에 동일한 일관성 모델을 적용하려 해서, 과잉 설계(모든 곳에 강한 일관성)나 과소 설계(모든 곳에 최종 일관성) 중 하나로 치우친다</li>
+    <li><strong>2PC의 blocking 위험을 모름:</strong> 코디네이터 장애 시 참여자들이 락을 쥔 채 무기한 대기할 수 있다는 실무 리스크를 언급하지 못한다</li>
+    <li><strong>CAP을 평상시와 파티션 시로 구분하지 못함:</strong> "일관성과 가용성 중 하나만 가능하다"고 항상 말해서, CAP이 오직 파티션이 실제로 발생한 순간에만 적용되는 트레이드오프라는 것을 모른다</li>
+    <li><strong>중간 상태 완화 장치가 없음:</strong> Saga를 선택하더라도 중간 상태의 부작용(오버셀 등)을 막을 구체적 장치(임시 예약)를 설계하지 못한다</li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════ 사고 순서 ══ -->
+  <h2>답변 사고 순서 — 실전 적용</h2>
+
+  <div class="callout callout-thinking">
+    <div class="callout-title">머릿속 흐름 (일관성/분산 트랜잭션 설계 3~5분 기준)</div>
+    <p><strong>[0~30초]</strong> 문제의 데이터가 "틀리면 비용이 큰가(돈, 재고) 작은가(카운터, 추천)"부터 구분한다.</p>
+    <p><strong>[30초~1.5분]</strong> CAP theorem을 "파티션이 발생했을 때만 적용되는 트레이드오프"로 정확히 짚고, 이 데이터가 CP/AP 중 어디에 가까운지 판단한다.</p>
+    <p><strong>[1.5~2.5분]</strong> 단일 DB로 끝나는 작업인지, 여러 서비스에 걸친 분산 트랜잭션인지 구분한다.</p>
+    <p><strong>[2.5~3.5분]</strong> 분산 트랜잭션이면 2PC의 blocking 위험을 언급하고 Saga(오케스트레이션/코레오그래피)를 제시한다.</p>
+    <p><strong>[3.5~4.5분]</strong> Saga의 중간 상태 노출 문제와 완화 장치(임시 예약, 상태 표시)를 설명한다.</p>
+    <p><strong>[4.5~5분]</strong> 전체를 "비즈니스 비용 기준의 선택"으로 요약해 마무리한다.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ Senior Follow-up ══ -->
+  <h2>Senior-Level Follow-up 질문과 답변 방향</h2>
+  <p class="section-intro">
+    CAP과 Saga까지 답했다고 해도, 면접관은 구체적 충돌 해소 방법과 예외 상황을 파고든다.
+  </p>
+
+  <div class="callout callout-followup">
+    <div class="callout-title">Follow-up 1</div>
+    <p><strong>Q: "AP 시스템에서 두 리전이 같은 키에 서로 다른 값을 썼다면, 그 충돌을 어떻게 해소하나요?"</strong></p>
+    <p>
+      <strong>답변 방향:</strong> "대표적으로 세 가지 방법이 있습니다. 첫째, Last-Write-Wins(LWW)로 타임스탬프가 더 최신인 값을
+      채택하는 방법인데, 구현이 간단하지만 동시에 일어난 유의미한 쓰기 중 하나를 그냥 버리게 됩니다. 둘째, 애플리케이션이 두 값을
+      모두 보관하고 사용자나 도메인 로직이 병합하도록 하는 방법(예: 장바구니는 두 버전의 합집합으로 병합)입니다. 셋째, CRDT
+      (Conflict-free Replicated Data Type)처럼 데이터 구조 자체를 병합이 항상 안전하도록 설계하는 방법입니다. 결제 금액처럼
+      병합이 의미 없는 데이터는 애초에 AP가 아니라 CP로 설계해서 이 충돌 자체가 발생하지 않도록 막는 것이 우선입니다."
+    </p>
+  </div>
+
+  <div class="callout callout-followup">
+    <div class="callout-title">Follow-up 2</div>
+    <p><strong>Q: "Saga의 코레오그래피 방식에서 이벤트가 유실되면 어떻게 되나요?"</strong></p>
+    <p>
+      <strong>답변 방향:</strong> "이벤트가 유실되면 다음 단계가 영원히 트리거되지 않아 Saga 흐름이 중간에 멈춘 채로 남을 수
+      있습니다. 이를 막기 위해 Day 6에서 다룬 메시지 큐의 at-least-once 전달과 멱등성 처리를 그대로 적용하고, 추가로 일정 시간
+      안에 다음 이벤트가 도착하지 않으면 감지해 재처리하거나 사람에게 알리는 <strong>타임아웃 기반 모니터링(Saga 상태 테이블 +
+      워치독)</strong>을 둡니다. 이런 이유로 참여 단계가 많아질수록 코레오그래피의 흐름 추적이 어려워지고, 그 시점부터는
+      오케스트레이션 방식(중앙에서 상태를 명시적으로 추적)이 운영상 더 유리해집니다."
+    </p>
+  </div>
+
+  <div class="callout callout-followup">
+    <div class="callout-title">Follow-up 3</div>
+    <p><strong>Q: "CP를 선택했다고 했는데, 그러면 파티션이 났을 때 사용자는 어떤 경험을 하게 되나요? 그게 괜찮은 선택인가요?"</strong></p>
+    <p>
+      <strong>답변 방향:</strong> "CP를 선택하면 파티션이 발생한 순간 해당 데이터에 대한 쓰기(때로는 읽기도)가 실패하거나 타임아웃
+      됩니다. 예를 들어 결제 처리 중 DB 복제본과 통신이 끊기면 결제 자체를 거부하고 사용자에게 '잠시 후 다시 시도해주세요'를
+      보여주게 됩니다. 이것이 괜찮은 선택인 이유는, 결제 데이터는 <strong>'잠깐 안 되는 것'보다 '틀린 값을 승인하는 것'이 훨씬
+      큰 비용</strong>이기 때문입니다 — 이중 청구나 오버셀 같은 사고는 나중에 수동으로 복구하기 매우 어렵지만, 일시적 서비스
+      거부는 사용자가 재시도하면 해결됩니다. 다만 이 거부가 오래 지속되지 않도록 Day 7의 다중 AZ, failover 설계와 함께
+      파티션 지속 시간 자체를 최소화하는 것이 중요합니다."
+    </p>
+  </div>
+
+  <div class="callout callout-followup">
+    <div class="callout-title">Follow-up 4</div>
+    <p><strong>Q: "PACELC라는 용어를 들어보셨나요? CAP과 어떻게 다른가요?"</strong></p>
+    <p>
+      <strong>답변 방향:</strong> "PACELC는 CAP의 한계를 보완하는 확장 개념입니다. CAP은 '파티션(P)이 났을 때 가용성(A)과
+      일관성(C) 중 하나'만 다루는데, PACELC는 <strong>파티션이 없는 평상시(Else)에도 지연(Latency)과 일관성(Consistency) 사이의
+      트레이드오프가 존재한다</strong>는 것을 짚습니다. 즉 'Partition 상황이면 Availability냐 Consistency냐, 아니면(Else)
+      평상시라도 Latency냐 Consistency냐'를 묻는 것입니다. 예를 들어 동기 복제로 강한 일관성을 유지하는 시스템은 파티션이
+      없는 평상시에도 복제본 확인을 기다리느라 지연이 늘어납니다. CAP만으로는 '평상시 성능 트레이드오프'를 설명하지 못하는데,
+      PACELC는 그 부분까지 짚어준다는 점에서 실무적으로 더 완전한 모델입니다."
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 흔한 오해 ══ -->
+  <h2>Trade-off와 흔한 오해</h2>
+
+  <h3>오해 1: "CAP theorem은 항상 셋 중 두 개를 골라야 한다는 뜻이다"</h3>
+  <p>
+    <strong>실제:</strong> 파티션 내성(P)은 분산 시스템이라면 사실상 전제 조건이지 선택 사항이 아니다. 진짜 선택은 "파티션이
+    실제로 발생한 그 순간" C와 A 중 무엇을 포기하느냐이며, 파티션이 없는 평상시에는 C와 A를 둘 다 가질 수 있다.
+  </p>
+
+  <h3>오해 2: "우리 서비스는 CP다" 또는 "우리 서비스는 AP다"처럼 시스템 전체를 하나로 규정할 수 있다</h3>
+  <p>
+    <strong>실제:</strong> 하나의 서비스 안에서도 데이터 종류에 따라 다른 일관성 모델을 적용하는 것이 일반적이다. 결제/재고는
+    CP로, 조회수/추천/캐시는 AP로 나누는 것이 실무 표준이며, 시스템 전체를 하나의 CAP 선택으로 단정하는 것은 지나치게 단순화된 사고다.
+  </p>
+
+  <h3>오해 3: "Eventual Consistency는 데이터가 틀려도 된다는 뜻이다"</h3>
+  <p>
+    <strong>실제:</strong> Eventual Consistency는 "결국 수렴한다"는 보장이 있는 모델이지, 정확성을 포기한다는 뜻이 아니다.
+    다만 그 수렴까지 걸리는 짧은 시간 동안 노드마다 다른 값을 볼 수 있다는 것을 감수하는 것이며, 그 시간 동안의 불일치가
+    비즈니스적으로 허용 가능한 데이터에만 적용해야 한다.
+  </p>
+
+  <h3>오해 4: "2PC가 Saga보다 항상 더 안전한 선택이다"</h3>
+  <p>
+    <strong>실제:</strong> 2PC는 강한 일관성을 보장하지만 코디네이터 장애 시 blocking 위험이 있고, 참여자가 많아질수록 전체
+    지연과 장애 확률이 커진다. 마이크로서비스처럼 참여자가 많고 독립적으로 배포/장애가 나는 환경에서는 Saga가 더 실용적인
+    선택인 경우가 많으며, "더 강한 일관성 = 항상 더 나은 선택"은 아니다.
+  </p>
+
+  <h3>Trade-off: 일관성 강화 vs 지연/가용성</h3>
+  <p>
+    강한 일관성을 확보하려면 노드 간 확인 절차(동기 복제, 쿼럼 확인 등)가 필요하고, 이는 지연 증가와 파티션 시 가용성 저하로
+    이어진다. 최종 일관성을 택하면 지연과 가용성은 좋아지지만 잠깐의 불일치를 감수해야 한다. 이 선택은 기술 선호가 아니라
+    "이 데이터가 틀렸을 때의 비용 vs 응답이 늦거나 실패했을 때의 비용"을 비교해 결정해야 한다.
+  </p>
+
+  <!-- ══════════════════════════════════════════ Quiz ══ -->
+  <div class="quiz-section">
+    <h3>자기 점검 퀴즈</h3>
+    <p>각 문제에서 가장 적합한 답을 고르고 이유를 생각해보자.</p>
+
+    <div class="quiz-q" id="q1">
+      <p>1. CAP theorem에 대한 설명으로 가장 정확한 것은?</p>
+      <ul class="quiz-options">
+        <li><label><input type="radio" name="q1" value="a"> a) 분산 시스템은 항상 셋 중 정확히 두 개만 고르면 된다</label></li>
+        <li><label><input type="radio" name="q1" value="b"> b) 파티션 내성은 분산 시스템의 사실상 전제 조건이며, 파티션이 실제로 발생했을 때만 일관성과 가용성 중 하나를 선택하게 된다</label></li>
+        <li><label><input type="radio" name="q1" value="c"> c) 일관성과 가용성은 항상 동시에 완전히 달성 가능하다</label></li>
+        <li><label><input type="radio" name="q1" value="d"> d) CAP theorem은 단일 서버 시스템에도 동일하게 적용된다</label></li>
+      </ul>
+      <button class="check-btn" onclick="checkQ1()">답 확인</button>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+
+    <div class="quiz-q" id="q2">
+      <p>2. 2단계 커밋(2PC)이 마이크로서비스 규모에서 잘 쓰이지 않는 핵심 이유는?</p>
+      <ul class="quiz-options">
+        <li><label><input type="radio" name="q2" value="a"> a) 구현 코드가 너무 길어서</label></li>
+        <li><label><input type="radio" name="q2" value="b"> b) 코디네이터 장애 시 참여자들이 락을 쥔 채 커밋도 롤백도 못하는 blocking 상태에 빠질 수 있어서</label></li>
+        <li><label><input type="radio" name="q2" value="c"> c) 오래된 기술이라 더 이상 지원되지 않아서</label></li>
+        <li><label><input type="radio" name="q2" value="d"> d) 단일 DB에서만 동작하기 때문에</label></li>
+      </ul>
+      <button class="check-btn" onclick="checkQ2()">답 확인</button>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+
+    <div class="quiz-q" id="q3">
+      <p>3. 다음 중 강한 일관성(CP)을 우선해야 할 데이터로 가장 적절한 것은?</p>
+      <ul class="quiz-options">
+        <li><label><input type="radio" name="q3" value="a"> a) SNS 게시물의 좋아요 수</label></li>
+        <li><label><input type="radio" name="q3" value="b"> b) 상품 추천 목록</label></li>
+        <li><label><input type="radio" name="q3" value="c"> c) 한정 수량 재고의 차감 처리</label></li>
+        <li><label><input type="radio" name="q3" value="d"> d) 페이지 조회수</label></li>
+      </ul>
+      <button class="check-btn" onclick="checkQ3()">답 확인</button>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+
+  <script>
+  function checkQ1() {
+    const sel = document.querySelector('input[name="q1"]:checked');
+    const fb = document.getElementById('q1-feedback');
+    if (!sel) { fb.className = 'quiz-feedback wrong'; fb.textContent = '답을 선택해주세요.'; return; }
+    if (sel.value === 'b') {
+      fb.className = 'quiz-feedback correct';
+      fb.textContent = '정답! 분산 시스템에서 네트워크 파티션은 확률적으로 반드시 발생하므로 파티션 내성(P)은 선택 사항이 아니라 전제다. 진짜 트레이드오프는 파티션이 실제로 발생한 순간에만 적용되며, 그때 일관성(C)과 가용성(A) 중 무엇을 포기할지를 정하는 것이다. 평상시(파티션이 없을 때)는 C와 A를 둘 다 가질 수 있다.';
+    } else {
+      const wrong = {
+        a: '오답. "셋 중 두 개를 고른다"는 표현은 부정확하다. P는 사실상 전제이고, 실제 선택은 파티션이 발생했을 때 C와 A 중 하나다.',
+        c: '오답. 파티션이 없는 평상시에는 맞지만, 파티션이 실제로 발생한 순간에는 C와 A를 동시에 완전히 만족시킬 수 없다.',
+        d: '오답. CAP theorem은 데이터의 사본이 여러 노드에 분산된 시스템에 적용되는 개념이다. 단일 서버는 데이터의 정답이 한 곳에만 있어 이 트레이드오프 자체가 발생하지 않는다.'
+      };
+      fb.className = 'quiz-feedback wrong';
+      fb.textContent = wrong[sel.value] || '오답입니다.';
+    }
+  }
+
+  function checkQ2() {
+    const sel = document.querySelector('input[name="q2"]:checked');
+    const fb = document.getElementById('q2-feedback');
+    if (!sel) { fb.className = 'quiz-feedback wrong'; fb.textContent = '답을 선택해주세요.'; return; }
+    if (sel.value === 'b') {
+      fb.className = 'quiz-feedback correct';
+      fb.textContent = '정답! 2PC는 Prepare 단계에서 모든 참여자가 락을 쥔 채 코디네이터의 지시를 기다리는데, 코디네이터가 다운되면 참여자들은 커밋도 롤백도 스스로 결정할 수 없는 blocking 상태에 빠진다. 참여자가 많고 네트워크 신뢰성이 낮은 마이크로서비스 환경에서는 이 위험과 지연이 누적되어 비현실적이다.';
+    } else {
+      const wrong = {
+        a: '오답. 코드 길이는 2PC 기피의 핵심 이유가 아니다. 실제 문제는 blocking으로 인한 장애 전파 위험이다.',
+        c: '오답. 2PC가 오래된 기술이라서가 아니라, 분산 환경에서의 구조적 위험(blocking) 때문에 기피된다.',
+        d: '오답. 2PC는 오히려 여러 DB/참여자에 걸친 트랜잭션을 다루기 위한 프로토콜이다. 단일 DB라면 2PC 자체가 필요 없다.'
+      };
+      fb.className = 'quiz-feedback wrong';
+      fb.textContent = wrong[sel.value] || '오답입니다.';
+    }
+  }
+
+  function checkQ3() {
+    const sel = document.querySelector('input[name="q3"]:checked');
+    const fb = document.getElementById('q3-feedback');
+    if (!sel) { fb.className = 'quiz-feedback wrong'; fb.textContent = '답을 선택해주세요.'; return; }
+    if (sel.value === 'c') {
+      fb.className = 'quiz-feedback correct';
+      fb.textContent = '정답! 한정 수량 재고 차감은 틀리면(오버셀) 실제 금전적 손실과 고객 신뢰 저하로 직결되는 데이터다. 이런 데이터는 잠깐의 응답 지연이나 실패를 감수하더라도 강한 일관성(CP)을 우선해야 한다. 반대로 좋아요 수(a), 추천 목록(b), 조회수(d)는 약간 틀리거나 늦게 반영돼도 비즈니스적 손실이 거의 없어 AP(최종 일관성)가 더 적합하다.';
+    } else {
+      const wrong = {
+        a: '오답. 좋아요 수는 잠깐 다르게 보여도 비즈니스적 손실이 거의 없는 데이터로, 응답 속도와 가용성을 우선하는 AP가 더 적합하다.',
+        b: '오답. 추천 목록은 정확성보다 응답 속도가 더 중요한 경우가 많아 AP가 일반적으로 더 적합하다.',
+        d: '오답. 조회수는 약간의 오차나 지연이 사용자 경험에 거의 영향을 주지 않아 AP가 더 적합한 대표적인 데이터다.'
+      };
+      fb.className = 'quiz-feedback wrong';
+      fb.textContent = wrong[sel.value] || '오답입니다.';
+    }
+  }
+  </script>
+
+  <!-- ══════════════════════════════════════════ Rubric ══ -->
+  <h2>자기 점검 Rubric</h2>
+  <p class="section-intro">이 항목으로 자신의 답변이 어느 수준인지 확인하자.</p>
+
+  <table class="rubric-table">
+    <thead>
+      <tr>
+        <th>평가 항목</th>
+        <th>Junior 수준</th>
+        <th>Mid 수준</th>
+        <th>Senior 수준</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>CAP theorem 이해</strong></td>
+        <td class="level level-junior">"셋 중 두 개만 고를 수 있다"고만 암기</td>
+        <td class="level level-mid">파티션 개념은 알지만 평상시/파티션 시를 구분 못함</td>
+        <td class="level level-senior">P를 전제로, 파티션 발생 시에만 C/A 트레이드오프가 작동함을 설명</td>
+      </tr>
+      <tr>
+        <td><strong>데이터별 일관성 모델 분리</strong></td>
+        <td class="level level-junior">시스템 전체를 하나의 모델(CP 또는 AP)로 규정</td>
+        <td class="level level-mid">분리 개념은 알지만 구체적 데이터 예시를 못 듦</td>
+        <td class="level level-senior">비용 기준으로 데이터별 CP/AP를 구분해 근거를 제시</td>
+      </tr>
+      <tr>
+        <td><strong>분산 트랜잭션 대안</strong></td>
+        <td class="level level-junior">"2단계 커밋을 쓰겠다"만 언급</td>
+        <td class="level level-mid">Saga는 알지만 2PC의 blocking 문제와 연결 못함</td>
+        <td class="level level-senior">2PC의 blocking 위험을 근거로 Saga(보상 트랜잭션)를 선택하는 논리를 설명</td>
+      </tr>
+      <tr>
+        <td><strong>Saga 중간 상태 처리</strong></td>
+        <td class="level level-junior">중간 상태 문제 자체를 인지 못함</td>
+        <td class="level level-mid">중간 상태가 있다는 것은 알지만 완화 방법 없음</td>
+        <td class="level level-senior">임시 예약, 상태 노출 등 구체적 완화 장치를 설계</td>
+      </tr>
+      <tr>
+        <td><strong>Eventual Consistency 설명력</strong></td>
+        <td class="level level-junior">"결국 같아진다" 정도로만 설명</td>
+        <td class="level level-mid">개념은 알지만 실제 사용자 경험 시나리오로 설명 못함</td>
+        <td class="level level-senior">구체적 서비스 예시로 불일치 구간과 사용자 영향을 설명</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════ 핵심 정리 ══ -->
+  <h2>핵심 정리</h2>
+  <ul>
+    <li><strong>CAP theorem</strong>은 "항상 둘만 고른다"가 아니라, <strong>파티션 내성이 전제이고 파티션이 실제로 발생했을 때만 일관성과 가용성 중 하나를 포기</strong>하는 트레이드오프다</li>
+    <li><strong>ACID</strong>는 "항상 정확함"을, <strong>BASE</strong>는 "지금 응답 가능성 우선, 결국 일관성 수렴"을 추구하는 서로 다른 철학이다</li>
+    <li>일관성 모델은 <strong>시스템 전체가 아니라 데이터 종류별로</strong> 다르게 선택해야 한다 — 비용이 큰 데이터는 CP, 비용이 작은 데이터는 AP</li>
+    <li><strong>2PC</strong>는 강한 일관성을 주지만 coordinator 장애 시 blocking 위험이 있어, 마이크로서비스 규모에서는 <strong>Saga(보상 트랜잭션)</strong>가 더 실용적인 경우가 많다</li>
+    <li>Saga를 선택하면 <strong>중간 상태(불일치 구간)</strong>가 생기므로, 임시 예약이나 상태 노출 같은 완화 장치를 함께 설계해야 한다</li>
+  </ul>
+
+  <hr>
+
+  <div class="callout callout-tip">
+    <div class="callout-title">다음 스텝</div>
+    <p>
+      오늘은 여러 노드에 걸친 데이터의 정확성과 가용성 사이의 근본적 트레이드오프를 다뤘다. 이제 이 이론적 기반을 바탕으로,
+      실제 면접에서 자주 나오는 구체적 서비스를 처음부터 끝까지 설계하는 연습으로 넘어간다.
+    </p>
+    <p><strong>Day 9에서는</strong> 실전 설계 — URL 단축 서비스: Hash 전략, Collision 처리, 분산 ID 생성을 다룬다.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ NAV ══ -->
+  <div class="lesson-nav">
+    <a href="./0007-fault-isolation-high-availability.html">← Day 7: 장애 격리와 고가용성</a>
+    <a href="./index.html">목록으로</a>
+  </div>
+
+</div><!-- .container -->
+
+</body>
+</html>
