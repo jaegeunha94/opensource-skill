@@ -7,12 +7,12 @@
 | 1 | 2026-07-04 | 챗봇 서비스 요구사항과 intent/entity/context 설계 프레임워크 | [0001-chatbot-service-requirements-and-intent-entity-context-framework.html](lessons/0001-chatbot-service-requirements-and-intent-entity-context-framework.html) |
 | 2 | 2026-07-05 | Intent 분류 체계와 Utterance/동의어 사전 설계 | [0002-intent-taxonomy-utterance-synonym-dictionary-design.html](lessons/0002-intent-taxonomy-utterance-synonym-dictionary-design.html) |
 | 3 | 2026-07-06 | Entity·Slot 추출 설계와 검증 | [0003-entity-slot-extraction-design-and-validation.html](lessons/0003-entity-slot-extraction-design-and-validation.html) |
+| 4 | 2026-07-07 | NLU-LLM Hybrid Routing 아키텍처 | [0004-nlu-llm-hybrid-routing-architecture.html](lessons/0004-nlu-llm-hybrid-routing-architecture.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | NLU-LLM Hybrid Routing 아키텍처 | 비용/지연/컴플라이언스 기준 라우팅, semantic router |
 | 5 | Dialogue State 설계 | FSM vs graph 기반 state, 상태 전이 설계 |
 | 6 | Session/Context 유지와 Multi-turn Flow 설계 | Context window 관리, 요약, 메모리, 세션 만료 |
 | 7 | Fallback 전략과 Escalation/Human Handoff 설계 | Multi-signal escalation, context 전달, 큐 설계 |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — 다음: Day 4 — NLU-LLM Hybrid Routing 아키텍처
+**Day 4 완료** — 다음: Day 5 — Dialogue State 설계
 
 ## 습득한 핵심 개념
 
@@ -43,7 +43,10 @@
 - [x] LLM 구조화 출력의 한계와 span grounding 기반 hallucination 방어 (Day 3)
 - [x] Multi-value entity를 리스트 타입으로 모델링해야 하는 이유 (Day 3)
 - [x] 스키마·비즈니스 규칙·사용자 확인 3단계 검증과 위험도 기반 차등화 (Day 3)
-- [ ] NLU-LLM Hybrid Routing (예정 Day 4)
+- [x] Router(생성 전 결정) vs Cascade(생성 후 결정)의 구분과 각각의 적합 상황 (Day 4)
+- [x] 라우팅 신호의 속도-정확도 스펙트럼(규칙/임베딩/경량 분류기/LLM)과 오버헤드 관리 (Day 4)
+- [x] Confidence threshold를 실측 비용-품질 곡선 기반으로 재보정해야 하는 이유 (Day 4)
+- [x] 컴플라이언스/개인정보를 비용·지연·품질과 동등한 네 번째 라우팅 축으로 다루는 원칙 (Day 4)
 - [ ] Dialogue State 설계 (예정 Day 5)
 - [ ] Session/Context 유지와 Multi-turn Flow (예정 Day 6)
 - [ ] Fallback/Escalation/Human Handoff (예정 Day 7)
@@ -77,3 +80,11 @@
   구조화 출력을 추출의 기본값으로 삼되 span grounding 검증을 별도 계층으로
   강조하는 방향으로 레슨을 구성함. 기존 커리큘럼 방향과 상충하는 내용은
   없었음. 근거는 `RESOURCES.md` 참고.
+- 2026-07-07: Day 4 작성 전 최신 조사(vLLM Semantic Router v0.3 "Themis"
+  2026-06 기준 Kubernetes-native 배포, RouteLLM 비용 절감치, LLM cascade
+  decision-theoretic 최신 연구, AI gateway 컴플라이언스 아키텍처 사례)를
+  확인함. Day 1에서 이미 정립한 "규칙 기반은 빠른 전처리 필터, LLM은 중심
+  엔진" 프레이밍과 상충하지 않았으나, router(생성 전 결정)와 cascade(생성 후
+  결정)를 구분하지 않고 뭉뚱그리는 것이 실무에서 흔한 오개념이라는 점과,
+  컴플라이언스/개인정보를 비용·지연과 동등한 네 번째 라우팅 축으로 다뤄야
+  한다는 점을 새로 반영함. 근거는 `RESOURCES.md` 참고.

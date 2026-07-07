@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — NLU-LLM Hybrid Routing 아키텍처</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #2dd4bf;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #123230; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #0f1117;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .src-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+    .src-note a { color: var(--blue); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 4 · 챗봇 서비스 Interview</div>
+    <h1>NLU-LLM Hybrid Routing 아키텍처</h1>
+    <div class="subtitle">한 챗봇 요청이 규칙 기반 처리, 저비용 소형 모델, 고비용 프론티어 모델 중
+    어디로 흘러가야 하는지를 비용·지연·품질·컴플라이언스 신호로 판단하고, router와
+    cascade라는 서로 다른 두 설계를 언제 선택할지 결정하는 능력</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "챗봇에 들어오는 요청을 규칙 기반 로직과 LLM 중 어디로 보낼지 어떻게 결정하시겠습니까?
+      이 라우팅 아키텍처를 처음부터 설계한다면 어떤 신호들을 기준으로 삼으시겠어요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "Router와 Cascade의 차이를 설명해주시고, 각각 어떤 상황에서 더 적합한지 예를 들어
+      말씀해주세요."
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "비용을 아끼려고 저렴한 모델로 라우팅했다가 응답 품질이 떨어진 사고를 겪은 적이
+      있다면, 그 원인과 재발 방지책을 어떻게 설계하시겠습니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>왜 "하나의 모델"로 충분하지 않은가</h2>
+
+    <p>
+      챗봇 서비스에서 모든 요청을 가장 강력한(그리고 가장 비싼) 모델 하나로 처리하면
+      설계는 단순하지만, 실제 트래픽의 대부분은 그 정도의 능력이 필요 없는 단순한 요청이다.
+      "영업시간이 어떻게 되나요?" 같은 정형화된 질문에 프론티어 모델을 매번 호출하는 것은
+      <strong>비용과 지연시간을 동시에 낭비</strong>하는 설계다. 반대로 모든 요청을 규칙
+      기반 로직만으로 처리하면 복잡하거나 모호한 요청에서 실패율이 급격히 올라간다.
+      <strong>Hybrid routing은 이 둘 사이에서, 요청의 성격에 맞는 가장 저렴하고 빠른
+      경로로 각 요청을 흘려보내는 설계 문제</strong>다.
+    </p>
+
+    <div class="callout callout-info">
+      <strong>Day 1에서 이미 다룬 원칙의 재확인:</strong> "규칙 기반 트리는 정형화된
+      트래픽의 대부분을 저비용·저지연으로 처리하는 빠른 전처리 필터로, LLM은 나머지
+      복잡하고 모호한 턴을 처리하는 중심 엔진으로 재배치되었다"는 것이 2026년 실무의
+      표준적 프레이밍이다. Day 4는 이 하이브리드 구조를 <strong>구체적으로 어떻게
+      아키텍처화하는가</strong>를 다룬다.
+    </div>
+
+    <h3>① 라우팅 신호의 스펙트럼 — 속도와 정확도의 trade-off</h3>
+    <p>
+      라우팅 결정을 내리는 방법도 하나가 아니라 <strong>속도·정확도·구현 비용의
+      스펙트럼</strong> 위에 있다.
+    </p>
+
+    <table>
+      <tr>
+        <th>방법</th>
+        <th>지연시간(대략)</th>
+        <th>적합한 상황</th>
+      </tr>
+      <tr>
+        <td><strong>규칙 기반(키워드/정규식 매칭)</strong></td>
+        <td>&lt; 1ms</td>
+        <td>"환불", "결제 취소"처럼 명확한 트리거 단어가 있는 고빈도 요청</td>
+      </tr>
+      <tr>
+        <td><strong>임베딩 기반 유사도 라우팅</strong></td>
+        <td>약 5ms</td>
+        <td>표현은 다양하지만 의미상 몇 개 카테고리로 묶이는 요청 (semantic router의
+        기본 형태)</td>
+      </tr>
+      <tr>
+        <td><strong>경량 분류기(소형 신경망, GPU 가속)</strong></td>
+        <td>약 50~130ms</td>
+        <td>도메인 분류, 복잡도 추정처럼 여러 신호를 종합해야 하는 판단</td>
+      </tr>
+      <tr>
+        <td><strong>LLM 기반 라우팅(모델이 직접 판단)</strong></td>
+        <td>수백ms~수초</td>
+        <td>라우팅 자체에 문맥적 추론이 필요한 드문 경우 — 다만 이 경우 "라우팅
+        비용이 실제 처리 비용에 근접"하는 역설에 빠질 수 있음</td>
+      </tr>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>정량적 근거:</strong> vLLM Semantic Router 프로젝트의 최적화 연구에 따르면
+      GPU 가속 분류(약 4,918ms → 127ms), 프롬프트 압축(127ms → 62ms), 근-스트리밍
+      처리(62ms → 50ms)를 누적 적용해 <strong>엔드투엔드 라우팅 지연을 약 98배
+      줄일 수 있었다(4,918ms → 50ms)</strong>. 가장 정교한 라우팅 전략(SW Ranking)도
+      전체 요청 비용의 0.4% 미만을 추가하는 수준이라는 것이 확인됐다. 즉, <strong>잘
+      설계된 라우팅 계층은 그 자체의 오버헤드가 무시할 만한 수준</strong>이어야 하며,
+      라우팅이 느리면 설계가 잘못된 것이다.
+    </div>
+    <div class="src-note">
+      근거: vLLM Semantic Router 최적화 논문("98× Faster LLM Routing", arXiv 2603.12646);
+      RouteLLM 프로젝트 벤치마크 — 규칙 기반 &lt;1ms, 임베딩 기반 ~5ms, semantic/ML
+      분류기 50~100ms 근거(상세 URL은 <code>RESOURCES.md</code> 참고)
+    </div>
+
+    <h3>② Router vs Cascade — 결정 시점이 다른 두 설계</h3>
+    <p>
+      실무자들이 가장 자주 혼동하는 지점이 여기다. "여러 모델을 쓴다"는 점은 같지만,
+      <strong>router와 cascade는 결정을 내리는 시점이 근본적으로 다르다.</strong>
+    </p>
+
+    <div class="comparison">
+      <div class="cmp-box">
+        <h4>Router (생성 전 결정)</h4>
+        <ul>
+          <li>요청이 들어오면 <strong>어떤 모델/경로로 보낼지 먼저 판단</strong>하고,
+          선택된 모델만 호출한다</li>
+          <li>판단 근거: 요청의 의미·복잡도·민감도를 사전에 분류</li>
+          <li>장점: 선택되지 않은 모델을 아예 호출하지 않으므로 비용이 예측 가능</li>
+          <li>단점: 분류가 틀리면 처음부터 잘못된 경로로 간다 (되돌리기 위해 재라우팅
+          필요)</li>
+        </ul>
+      </div>
+      <div class="cmp-box">
+        <h4>Cascade (생성 후 결정)</h4>
+        <ul>
+          <li>먼저 <strong>저렴한 모델로 실제로 응답을 생성</strong>하고, 그 결과의
+          신뢰도(confidence)를 평가해 부족하면 상위 모델로 에스컬레이션한다</li>
+          <li>판단 근거: 생성된 응답의 신뢰도 점수, 토큰 확률, self-consistency 등
+          "생성 후에만 알 수 있는 신호"</li>
+          <li>장점: 실제 출력을 보고 판단하므로 사전 분류보다 더 정확한 근거로
+          에스컬레이션 가능</li>
+          <li>단점: 에스컬레이션이 발생하면 저렴한 모델 호출 비용이 "낭비"로 남고,
+          지연시간이 두 번 누적된다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>선택 기준:</strong> 요청의 카테고리를 <strong>생성 전에도 충분히 신뢰
+      있게 구분할 수 있다면 router</strong>가 유리하다(정형화된 FAQ vs 복잡한 상담
+      같은 명확한 분기). 반면 <strong>"이 요청이 쉬운지 어려운지는 실제로 풀어봐야
+      안다"</strong>는 성격의 작업(수치 추론, 코드 생성처럼 난이도 편차가 큰 케이스)은
+      cascade가 더 근거 있는 에스컬레이션을 만든다. 실무에서는 두 방식을 배타적으로
+      쓰지 않고, <strong>1차로 router가 카테고리를 나누고 그 안에서 필요 시 cascade로
+      정밀 조정</strong>하는 계층형 설계가 흔하다.
+    </div>
+    <div class="src-note">
+      근거: "Cluster, Route, Escalate" (arXiv 2606.27457); "Is Escalation Worth It? A
+      Decision-Theoretic Characterization of LLM Cascades" (arXiv 2605.06350) — cascade는
+      생성된 응답의 신뢰도·불확실성 신호를 에스컬레이션 근거로 사용한다는 점을 명시
+      (상세 URL은 <code>RESOURCES.md</code> 참고)
+    </div>
+
+    <h3>③ Confidence Threshold는 "적당히"가 없다</h3>
+    <p>
+      Cascade 설계에서 가장 어려운 결정은 "얼마나 낮은 신뢰도부터 에스컬레이션할
+      것인가"라는 임계치다. 이 값은 직관으로 튜닝할 수 있는 파라미터가 아니다.
+    </p>
+
+    <div class="callout callout-danger">
+      <strong>임계치가 너무 높으면:</strong> 거의 모든 요청이 상위 모델로 에스컬레이션돼
+      저렴한 모델을 거의 항상 거쳐가는 오버헤드만 남고, 처음부터 비싼 모델을 썼을 때보다
+      오히려 비용과 지연이 늘어난다.<br><br>
+      <strong>임계치가 너무 낮으면:</strong> 저렴한 모델이 사실 처리하지 못하는 요청까지
+      떠안아 답변 품질이 조용히 저하된다. 이 저하는 에러 로그에 남지 않고 사용자 불만이나
+      CSAT 하락으로 뒤늦게 드러난다.
+    </div>
+    <p>
+      그래서 임계치는 고정된 하이퍼파라미터로 한 번 정하고 끝내는 것이 아니라,
+      <strong>비용-품질 곡선(cost-quality frontier)을 실측 데이터로 그려보고 SLA
+      목표에 맞춰 지속적으로 재보정</strong>해야 하는 값이다.
+    </p>
+    <div class="src-note">
+      근거: "Rational Tuning of LLM Cascades via Probabilistic Modeling" (arXiv 2501.09345);
+      "UCCI: Calibrated Uncertainty for Cost-Optimal LLM Cascade Routing" (arXiv 2605.18796)
+      (상세 URL은 <code>RESOURCES.md</code> 참고)
+    </div>
+
+    <h3>④ 컴플라이언스도 라우팅 신호다 — 비용/지연만의 문제가 아니다</h3>
+    <p>
+      Hybrid routing을 "돈 아끼는 최적화 기법"으로만 이해하면 절반만 아는 것이다.
+      금융·의료·공공 분야 챗봇처럼 <strong>개인정보나 규제 데이터가 포함된 요청은
+      데이터 거주지(data residency)·감사 요건 자체가 모델 선택을 강제</strong>한다.
+    </p>
+
+    <div class="callout callout-warn">
+      <strong>실무 패턴:</strong> 프로덕션 AI 게이트웨이는 라우팅 계층에 캐싱, fallback,
+      예산(budget) 강제, <strong>컴플라이언스 로깅</strong>을 함께 두고, SaaS/VPC 전용/
+      on-prem/air-gapped 등 배포 형태별로 SOC 2·HIPAA 같은 규제 요건을 만족하는 경로로
+      요청을 분기한다. 즉 라우팅 기준은 <strong>비용(cost) · 지연(latency) · 품질
+      (quality) · 컴플라이언스/개인정보(privacy)</strong> 네 축을 함께 고려해야 하며,
+      "가장 싸고 빠른 모델"이 항상 정답은 아니다 — 규제상 그 모델을 애초에 쓸 수 없는
+      요청이 있기 때문이다.
+    </div>
+    <div class="src-note">
+      근거: "LLM router architecture: best practices for 2026" (Redis Blog); vLLM
+      Semantic Router — cost/privacy/latency/safety 신호 기반 라우팅 설계(상세 URL은
+      <code>RESOURCES.md</code> 참고)
+    </div>
+
+    <h3>⑤ 라우팅 계층은 게이트웨이 안에 산다</h3>
+    <p>
+      라우팅 로직을 각 서비스 코드에 흩어 넣으면 신호(비용/지연/컴플라이언스 정책)가
+      바뀔 때마다 여러 곳을 고쳐야 한다. 그래서 실무에서는 라우팅을 <strong>중앙
+      게이트웨이(AI gateway) 계층</strong>으로 모아, 캐싱·재시도/fallback·예산 강제·
+      감사 로그·A/B 테스트를 한곳에서 관리한다. 이 게이트웨이가 곧 이후 Day 13에서
+      다룰 observability의 1차 계측 지점이 된다.
+    </p>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <ul>
+      <li>
+        <strong>"무조건 최고 모델"이 아닌 근거 있는 비용 설계를 하는가:</strong> 비용
+        절감을 품질 희생과 동일시하지 않고, 요청 성격에 맞춰 자원을 배분하는 사고를
+        하는가
+      </li>
+      <li>
+        <strong>Router와 Cascade를 구분해서 말하는가:</strong> 두 설계를 뭉뚱그려
+        "여러 모델 쓰는 것"으로만 설명하지 않고, 결정 시점의 차이와 각각의 실패
+        모드를 아는가
+      </li>
+      <li>
+        <strong>Confidence threshold를 튜닝 문제로 진지하게 다루는가:</strong> 임계치를
+        "적당히 잡으면 된다"고 넘기지 않고, 너무 높거나 낮을 때의 구체적 실패를
+        설명할 수 있는가
+      </li>
+      <li>
+        <strong>비용/지연 외의 라우팅 신호(컴플라이언스, 개인정보)를 아는가:</strong>
+        규제 산업 경험이 있다면 데이터 거주지·감사 요건이 모델 선택을 강제하는
+        상황을 실제로 다뤄봤는가
+      </li>
+      <li>
+        <strong>라우팅을 시스템 아키텍처 문제로 보는가:</strong> 라우팅 로직을
+        코드 여기저기 흩어두지 않고 게이트웨이 계층으로 중앙화하는 설계 감각이
+        있는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      Senior 엔지니어는 hybrid routing을 "돈 아끼는 트릭"이 아니라
+      <strong>"비용·지연·품질·컴플라이언스라는 네 개의 제약을 요청 단위로
+      최적화하는 시스템 설계 문제"</strong>로 설명해야 한다는 것을 보여줘야 한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 프론티어 모델만 쓰다가 트래픽 급증으로 비용이 폭증한 경우</h3>
+    <p>
+      모든 요청을 가장 비싼 모델로 처리하도록 설계했다가, 서비스가 성장해 트래픽이
+      늘자 LLM API 비용이 인프라 비용을 역전했다. 조사해보니 요청의 상당수가
+      "배송 조회", "영업시간 안내"처럼 규칙 기반으로도 충분히 처리 가능한 정형화된
+      질문이었다. → <strong>라우팅 계층 없이 단일 모델로 설계</strong>했던 것이
+      근본 원인이며, 트래픽이 작을 때는 드러나지 않다가 규모가 커지면서 비용 구조의
+      문제로 드러난 전형적 사례다.
+    </p>
+
+    <h3>상황 2: 저렴한 모델로 라우팅했다가 조용히 품질이 떨어진 경우</h3>
+    <p>
+      비용 절감을 위해 confidence threshold를 낮게 잡고 저렴한 모델의 처리 범위를
+      넓혔는데, 복잡한 환불 정책 문의에서 저렴한 모델이 틀린 답을 자신 있게 생성하는
+      일이 늘었다. 이 실패는 에러로 남지 않고 CSAT 하락과 human handoff 건수 증가로만
+      뒤늦게 나타났다. → <strong>임계치를 실측 비용-품질 곡선 없이 감으로 설정</strong>한
+      것이 원인이며, 라우팅 결정 자체를 로깅하지 않아 원인 추적이 오래 걸렸다.
+    </p>
+
+    <h3>상황 3: 개인정보가 포함된 상담이 규제 요건과 맞지 않는 경로로 처리된 경우</h3>
+    <p>
+      해외 프론티어 모델 API로 모든 요청을 라우팅하도록 설계했는데, 금융 상담 챗봇에
+      고객의 계좌 정보가 포함된 문의가 그대로 외부 API로 전송돼 데이터 거주지 규정
+      위반 소지가 발견됐다. → <strong>라우팅 기준에 컴플라이언스/개인정보 신호가
+      아예 없었던 것</strong>이 원인이며, 비용/지연만 최적화하고 규제 요건을 뒤늦게
+      고려한 설계의 전형적 실패다.
+    </p>
+
+    <h3>상황 4: Router 오분류로 복잡한 요청이 규칙 기반 경로에 갇힌 경우</h3>
+    <p>
+      키워드 매칭 규칙이 "환불"이라는 단어만 보고 무조건 규칙 기반 환불 플로우로
+      보냈는데, 실제로는 "환불 정책이 다른 나라 결제에도 똑같이 적용되나요?"라는
+      복잡한 정책 해석 질문이었다. 규칙 기반 플로우는 이런 질문에 대응할 수 없어
+      엉뚱한 답변을 반복했다. → <strong>규칙 기반 라우팅의 낮은 재현율(recall)
+      한계를 인지하지 못하고, 규칙이 매치되면 곧바로 최종 처리로 확정</strong>한
+      것이 원인이며, 규칙 매치 이후에도 낮은 신뢰도 시 LLM 경로로 재라우팅하는
+      안전장치가 없었다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>단일 모델 설계의 한계부터 짚는다</strong>
+        "모든 요청을 하나의 모델로 처리하면 정형화된 요청에 불필요한 비용·지연이
+        발생하거나, 반대로 복잡한 요청에서 품질이 부족해집니다. 그래서 저는 요청
+        성격에 맞는 경로로 트래픽을 나누는 라우팅 계층을 둡니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>라우팅 신호를 속도-정확도 스펙트럼으로 설명한다</strong>
+        "규칙 기반은 1ms 미만으로 빠르지만 표현 변화에 취약하고, 임베딩 기반 semantic
+        routing은 약 5ms로 의미 유사도를 반영하며, 복잡한 판단이 필요하면 경량 분류기나
+        LLM 기반 판단까지 단계적으로 씁니다. 라우팅 자체가 전체 지연의 병목이 되면 안
+        되므로, 정교함과 속도 사이에서 균형을 잡습니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Router와 Cascade를 구분해서 적용 기준을 설명한다 (Senior 포인트)</strong>
+        "요청 카테고리를 생성 전에 신뢰 있게 나눌 수 있으면 router를 쓰고, 난이도
+        편차가 커서 실제로 풀어봐야 아는 작업은 cascade로 저렴한 모델의 응답 신뢰도를
+        보고 에스컬레이션합니다. 실무에서는 1차로 router가 큰 카테고리를 나누고, 그
+        안에서 cascade로 정밀 조정하는 계층형 구조를 선호합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>컴플라이언스/개인정보를 네 번째 라우팅 축으로 명시한다</strong>
+        "비용·지연·품질뿐 아니라, 개인정보나 규제 데이터가 포함된 요청은 데이터
+        거주지·감사 요건이 모델 선택 자체를 제약한다는 점을 라우팅 정책에 반영합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>Confidence threshold를 실측 기반으로 튜닝한다고 설명한다</strong>
+        "임계치를 감으로 정하지 않고, 비용-품질 곡선을 실측 데이터로 그려서 SLA 목표에
+        맞춰 조정하고, 주기적으로 재보정합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>라우팅을 게이트웨이로 중앙화하고 결정 자체를 로깅한다</strong>
+        "라우팅 로직을 여러 서비스에 흩어두지 않고 게이트웨이 계층에 모으고, 어떤
+        요청이 어떤 경로로 갔는지 로깅해서 사후 감사와 임계치 재보정의 근거로
+        씁니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "저는 모든 요청을 하나의 모델로 처리하는 설계는 지양합니다. 정형화된 요청에는
+        불필요한 비용과 지연이 발생하고, 복잡한 요청에는 오히려 품질이 부족해질 수
+        있기 때문입니다. 그래서 요청의 성격에 맞는 경로로 트래픽을 나누는 하이브리드
+        라우팅 계층을 둡니다.
+      </p>
+      <p>
+        라우팅 신호는 속도와 정확도의 스펙트럼으로 생각합니다. 명확한 트리거 단어가
+        있는 고빈도 요청은 1ms 미만의 규칙 기반으로 처리하고, 표현은 다양하지만 의미상
+        묶이는 요청은 임베딩 기반 semantic routing으로 처리합니다. 라우팅 자체가 전체
+        응답 지연의 병목이 되면 안 되기 때문에, 라우팅 계층의 오버헤드는 항상 전체
+        요청 비용의 1% 미만 수준으로 유지하는 것을 목표로 합니다.
+      </p>
+      <p>
+        여기서 저는 router와 cascade를 구분해서 씁니다. 요청 카테고리를 생성 전에
+        신뢰 있게 나눌 수 있는 경우, 예를 들어 FAQ성 질문과 복잡한 상담을 구분하는
+        경우는 router로 사전에 경로를 정합니다. 반면 난이도 편차가 커서 실제로
+        풀어봐야 쉬운지 어려운지 알 수 있는 작업은, 저렴한 모델로 먼저 응답을 생성하고
+        그 신뢰도를 평가해 부족하면 상위 모델로 에스컬레이션하는 cascade 방식을
+        씁니다. 실무에서는 이 둘을 배타적으로 쓰지 않고, 1차로 router가 큰 카테고리를
+        나누고 그 안에서 필요하면 cascade로 정밀 조정하는 계층형 구조를 선호합니다.
+      </p>
+      <p>
+        그리고 비용과 지연만이 라우팅 기준은 아니라고 생각합니다. 개인정보나 규제
+        데이터가 포함된 요청은 데이터 거주지나 감사 요건 자체가 어떤 모델을 쓸 수
+        있는지를 제약하기 때문에, 컴플라이언스 신호를 비용·지연·품질과 동등한 네
+        번째 라우팅 축으로 명시적으로 반영합니다.
+      </p>
+      <p>
+        Cascade의 confidence threshold는 감으로 정하지 않습니다. 임계치가 너무 높으면
+        거의 모든 요청이 에스컬레이션돼 처음부터 비싼 모델을 쓴 것보다 비용이 더
+        늘어나고, 너무 낮으면 저렴한 모델이 처리하지 못하는 요청까지 떠안아 품질이
+        조용히 저하됩니다. 그래서 실측 데이터로 비용-품질 곡선을 그려보고 SLA 목표에
+        맞춰 임계치를 잡은 다음, 주기적으로 재보정합니다.
+      </p>
+      <p>
+        마지막으로 이 모든 라우팅 로직은 서비스 코드 여기저기에 흩어두지 않고 중앙
+        게이트웨이 계층에 모읍니다. 캐싱, fallback, 예산 강제와 함께 라우팅을 관리하고,
+        어떤 요청이 어떤 경로로 갔는지를 반드시 로깅해서 사후 감사와 임계치 재보정의
+        근거로 삼습니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "Router 방식에서 분류가 틀리면 어떻게 복구하나요?"</h3>
+    <p><strong>약한 답변:</strong> "분류 정확도를 최대한 높여서 틀리지 않게 합니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "분류 정확도를 아무리 높여도 0%로 만들 수는 없다는 전제로 설계합니다. 규칙 기반
+      경로로 갔더라도 응답 생성 단계에서 규칙 플로우가 실제로 이 요청을 처리할 수
+      있는지 확인하는 낮은 신뢰도 신호(예: 규칙에 매치는 됐지만 슬롯 채움이 반복
+      실패하는 경우)가 감지되면, 그 시점에서 LLM 경로로 재라우팅합니다. 즉 router의
+      1차 분류를 되돌릴 수 없는 결정으로 취급하지 않고, 실행 중 신호로 재라우팅
+      가능한 구조로 둡니다."
+    </p>
+
+    <h3>F2. "Cascade에서 에스컬레이션이 너무 잦아 비용이 오히려 늘었다면 어떻게 진단하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "먼저 confidence threshold가 너무 높게 잡혀있는지 확인합니다. 그리고 저렴한
+      모델 자체가 특정 카테고리의 요청에서 구조적으로 신뢰도가 낮게 나오는지(예:
+      특정 도메인 용어에 약함) 분석해서, 그 카테고리는 아예 router 단계에서 상위
+      모델로 직행시키는 것이 cascade보다 나은지 비교합니다. 무조건 임계치만 만지는
+      것이 아니라, 그 카테고리에는 애초에 cascade가 맞지 않을 수 있다는 가능성까지
+      점검합니다."
+    </p>
+
+    <h3>F3. "라우팅 결정을 사용자에게 투명하게 공개해야 하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "사용자에게 '지금 어떤 모델이 응답 중'이라고 노출할 필요는 없다고 봅니다. 다만
+      내부적으로는 모든 라우팅 결정과 그 근거 신호를 반드시 로깅해서, 품질 이슈가
+      제기됐을 때 어떤 경로로 처리됐는지 추적할 수 있어야 합니다. 이건 사용자 경험의
+      문제가 아니라 운영 감사(observability)의 문제로 다룹니다."
+    </p>
+
+    <h3>F4. "컴플라이언스 라우팅과 비용 라우팅이 충돌하면 어떤 걸 우선하나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "컴플라이언스가 항상 우선합니다. 비용이나 지연은 성능 지표이지만 컴플라이언스는
+      법적·계약적 제약이라, 어길 수 없는 하드 제약(hard constraint)으로 취급합니다.
+      구체적으로는 라우팅 로직에서 컴플라이언스 필터를 가장 먼저 적용해 허용 가능한
+      모델 후보군을 좁힌 다음, 그 후보군 안에서만 비용/지연/품질 최적화를 수행하는
+      순서로 설계합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>Router와 Cascade를 <strong>결정 시점의 차이</strong>로 명확히 구분한다</li>
+          <li>라우팅 신호를 <strong>속도-정확도 스펙트럼</strong>으로 설명하고,
+          라우팅 자체의 오버헤드를 관리 대상으로 여긴다</li>
+          <li>비용·지연뿐 아니라 <strong>컴플라이언스/개인정보를 별도 축</strong>으로
+          명시한다</li>
+          <li>Confidence threshold를 <strong>실측 비용-품질 곡선 기반</strong>으로
+          튜닝한다고 설명한다</li>
+          <li>라우팅을 <strong>게이트웨이로 중앙화</strong>하고 결정을 로깅해 사후
+          감사가 가능하게 한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>Router와 Cascade를 <strong>구분 없이 "여러 모델 쓰는 것"</strong>으로
+          뭉뚱그린다</li>
+          <li>"저렴한 모델로 먼저 시도"라고만 말하고 <strong>속도/오버헤드 관리를
+          언급하지 않는다</strong></li>
+          <li>라우팅 기준을 <strong>비용/지연에만 국한</strong>하고 컴플라이언스를
+          놓친다</li>
+          <li>Confidence threshold를 <strong>"적당히 설정"</strong>한다고만 말하고
+          근거가 없다</li>
+          <li>라우팅 로직이 <strong>서비스 코드에 흩어져 있어도 문제로 인식하지
+          않는다</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 hybrid routing을 <strong>"비용·지연·
+      품질·컴플라이언스라는 네 제약을 요청 단위로 최적화하는 시스템 설계 문제"</strong>로
+      다루고, 약한 답변은 "저렴한 모델로 먼저 시도해서 돈을 아끼는 트릭"으로만 다룬다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "Router와 Cascade는 결국 같은 것이다"</h3>
+    <p>
+      <strong>사실:</strong> Router는 생성 전에 경로를 결정하고, Cascade는 실제로
+      생성된 응답의 신뢰도를 본 뒤 에스컬레이션 여부를 결정한다. 결정에 쓰이는 신호의
+      성격 자체가 다르기 때문에, 적합한 상황도 다르다.
+    </p>
+
+    <h3>오해 2: "라우팅은 비용 절감 기법일 뿐이다"</h3>
+    <p>
+      <strong>사실:</strong> 규제 산업에서는 데이터 거주지·감사 요건이 모델 선택
+      자체를 제약하기 때문에, 라우팅은 컴플라이언스 통제 수단이기도 하다. 비용
+      최적화 관점으로만 접근하면 규제 위반 위험을 놓친다.
+    </p>
+
+    <h3>오해 3: "Confidence threshold는 한 번 정하면 계속 유지해도 된다"</h3>
+    <p>
+      <strong>사실:</strong> 트래픽 분포, 모델 버전, 사용자 표현 패턴이 계속
+      바뀌기 때문에 임계치도 주기적으로 재보정해야 한다. 한 번 정한 값을 고정해
+      두면 시간이 지나며 조용히 최적점에서 멀어진다.
+    </p>
+
+    <h3>오해 4: "라우팅 계층은 별도 인프라 없이 프롬프트 안에서 처리해도 된다"</h3>
+    <p>
+      <strong>사실:</strong> 라우팅 판단 자체를 매번 LLM에게 맡기면 라우팅 비용이
+      실제 처리 비용에 근접하는 역설에 빠질 수 있다. 라우팅은 규칙/임베딩/경량
+      분류기 같은 저비용 계층에서 처리하고, LLM은 라우팅 결과에 따라 선택되는
+      실행자로 분리해야 한다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Hybrid Routing 설계 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>확인 항목</th>
+        <th>점검 질문</th>
+      </tr>
+      <tr>
+        <td>라우팅 오버헤드</td>
+        <td>라우팅 계층 자체가 <span class="badge badge-green">전체 지연/비용의
+        무시할 만한 비중</span>인가?</td>
+      </tr>
+      <tr>
+        <td>Router vs Cascade 선택</td>
+        <td>요청 카테고리를 <span class="badge badge-yellow">생성 전에 신뢰 있게
+        구분</span>할 수 있는가, 아니면 <span class="badge badge-yellow">실제로
+        풀어봐야</span> 아는가?</td>
+      </tr>
+      <tr>
+        <td>재라우팅 경로</td>
+        <td>1차 분류가 틀렸을 때 <span class="badge badge-green">실행 중 재라우팅</span>이
+        가능한가?</td>
+      </tr>
+      <tr>
+        <td>컴플라이언스 축</td>
+        <td>개인정보·규제 데이터가 포함된 요청에 <span class="badge badge-green">
+        데이터 거주지/감사 요건</span>이 반영되는가?</td>
+      </tr>
+      <tr>
+        <td>Threshold 재보정</td>
+        <td>Confidence threshold가 <span class="badge badge-green">실측 비용-품질
+        곡선</span> 기반으로 주기적으로 갱신되는가?</td>
+      </tr>
+      <tr>
+        <td>중앙화·로깅</td>
+        <td>라우팅 로직이 <span class="badge badge-green">게이트웨이로 중앙화</span>되고
+        결정이 로깅되는가?</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>단일 모델 대신 여러 모델을 쓴다는 것만 언급하고, router/cascade 구분이나
+      컴플라이언스 신호를 전혀 다루지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>규칙 기반과 LLM 기반 처리를 나눠야 한다는 것은 설명하지만, router와
+      cascade의 결정 시점 차이나 threshold 튜닝 근거까지는 다루지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>Router/Cascade를 구분하고 각각의 적합한 상황을 설명할 수 있음. 다만
+      컴플라이언스를 라우팅 축으로 명시하거나 threshold 재보정 절차까지는 다루지
+      못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>Router/Cascade 선택 기준, 라우팅 오버헤드 관리, 비용·지연·품질·컴플라이언스
+      네 축의 통합 설계, threshold 실측 재보정, 게이트웨이 중앙화·로깅을 모두
+      일관되게 설명하고 근거를 댐</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. Router와 Cascade의 결정 시점 차이를 한 문장으로 설명할 수 있는가?<br>
+      2. Confidence threshold가 너무 높을 때와 너무 낮을 때 각각 어떤 실패가 생기는지
+      말할 수 있는가?<br>
+      3. 컴플라이언스가 왜 비용/지연과 별개의 라우팅 축이어야 하는지 설명할 수 있는가?<br>
+      4. 라우팅 계층을 왜 게이트웨이로 중앙화하고 결정을 로깅해야 하는지 설명할 수
+      있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li>Hybrid routing은 <strong>비용·지연·품질·컴플라이언스</strong> 네 축을
+      요청 단위로 최적화하는 시스템 설계 문제다.</li>
+      <li><strong>Router(생성 전 결정)</strong>와 <strong>Cascade(생성 후 결정)</strong>는
+      결정 시점이 다르며, 실무에서는 router로 큰 분류를 나누고 그 안에서 cascade로
+      정밀 조정하는 계층형 구조가 흔하다.</li>
+      <li>라우팅 신호는 <strong>규칙(&lt;1ms) → 임베딩(~5ms) → 경량 분류기(~50~130ms)
+      → LLM 기반</strong>의 속도-정확도 스펙트럼이며, 라우팅 자체가 병목이 되면 안
+      된다.</li>
+      <li>개인정보·규제 데이터가 포함된 요청은 <strong>데이터 거주지/감사 요건이
+      모델 선택을 제약</strong>하며, 컴플라이언스는 비용보다 우선하는 하드 제약이다.</li>
+      <li>Confidence threshold는 <strong>실측 비용-품질 곡선 기반으로 주기적으로
+      재보정</strong>해야 하는 값이지, 한 번 정하고 끝내는 값이 아니다.</li>
+      <li>라우팅 로직은 <strong>게이트웨이로 중앙화</strong>하고, 모든 라우팅 결정을
+      로깅해 사후 감사와 재보정의 근거로 삼는다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 4 완료 · 다음: Day 5 — Dialogue State 설계</span>
+  </div>
+
+</div>
+</body>
+</html>

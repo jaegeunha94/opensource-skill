@@ -13,13 +13,20 @@
 - [Rasa Pro — CALM (Conversational AI with Language Models)](https://rasa.com/docs/rasa-pro/calm) — 기존 intent 분류+rule 기반 NLU 파이프라인 대신 LLM이 대화 이해를 담당하고, 결정론적 비즈니스 로직은 "flow"로 분리하는 방향으로 전환.
 - **정리**: 사람이 직접 작성한 intent tree + 완전 규칙 기반 slot filling만으로 신규 서비스를 설계하는 것은 낡은 접근으로 간주된다. 다만 완전히 사라진 것은 아니며, 정형화된 트래픽을 저비용/저지연으로 처리하는 "빠른 전처리 필터" 역할로 재배치되는 것이 2026년 현재의 표준적 프레이밍이다.
 
-## NLU/LLM Hybrid Routing
+## NLU/LLM Hybrid Routing (Day 4 보강, 2026-07-07 확인)
 
 - [vLLM Semantic Router v0.1 "Iris"](https://blog.vllm.ai/2026/01/05/vllm-sr-iris.html) (2026-01-05 production 릴리스) — cost/privacy/latency/safety 신호 기반으로 모델/경로를 라우팅하는 경량 계층.
+- [vLLM Semantic Router — 공식 사이트](https://vllm-semantic-router.com/) — 2026-06 기준 v0.3 "Themis"로 진화, Kubernetes-native 배포(Helm chart/CRD)를 지원하며 6종 신호(도메인 분류/키워드/임베딩 유사도/사실 검증 등)로 라우팅.
+- ["98× Faster LLM Routing Without a Dedicated GPU" (arXiv 2603.12646, 2026-03)](https://arxiv.org/pdf/2603.12646) — GPU 가속 분류(4,918ms→127ms)·프롬프트 압축(127ms→62ms)·근-스트리밍 처리(62ms→50ms)를 누적해 엔드투엔드 라우팅 지연을 98배 절감. 가장 정교한 라우팅 전략도 전체 요청 비용의 0.4% 미만만 추가.
 - [aurelio-labs/semantic-router](https://github.com/aurelio-labs/semantic-router) — 임베딩 기반 `HybridRouteLayer`로 LLM 호출 전에 빠른 의사결정 계층을 두는 오픈소스 구현.
+- [lm-sys/RouteLLM](https://github.com/lm-sys/RouteLLM) — 사전 학습된 라우터로 MT-Bench 등에서 GPT-4 대비 95% 성능을 유지하면서 비용을 최대 85% 절감했다고 보고.
+- [Redis — "LLM router architecture: best practices for 2026"](https://redis.io/blog/llm-router-architecture-best-practices/) — 규칙 기반 라우팅 <1ms, 임베딩 기반 ~5ms, semantic/ML 분류기 50~100ms라는 지연 벤치마크와, 프로덕션 라우터는 게이트웨이 안에 캐싱·fallback·예산 강제·컴플라이언스 로깅과 함께 존재한다는 아키텍처 정리.
+- ["Cluster, Route, Escalate: Cascaded Framework for Cost-Aware LLM Serving" (arXiv 2606.27457, 2026-06)](https://arxiv.org/html/2606.27457) — router(생성 전 결정)와 cascade(생성 후 신뢰도 기반 에스컬레이션)를 구조적으로 구분.
+- ["Is Escalation Worth It? A Decision-Theoretic Characterization of LLM Cascades" (arXiv 2605.06350, 2026-05)](https://arxiv.org/pdf/2605.06350) — confidence threshold를 고정 하이퍼파라미터로 다루는 기존 접근의 한계와, 비용-품질 프론티어 기반 튜닝 필요성.
+- ["UCCI: Calibrated Uncertainty for Cost-Optimal LLM Cascade Routing" (arXiv 2605.18796, 2026-05)](https://arxiv.org/pdf/2605.18796); ["Rational Tuning of LLM Cascades via Probabilistic Modeling" (arXiv 2501.09345)](https://arxiv.org/pdf/2501.09345) — cascade threshold 보정 관련 최신 연구.
 - ["Outcome-Aware Tool Selection for Semantic Routers" (arXiv 2603.13426, 2026-03)](https://arxiv.org/pdf/2603.13426) — semantic router 기반 도구 선택이 CPU에서 3–7ms인 반면 LLM 기반 선택은 GPU에서 500–2000ms 소요됨을 정량화. Hybrid routing의 비용/지연 근거 자료.
 - ["Toward Super Agent System with Hybrid AI Routers" (arXiv 2504.10519, 2025-04)](https://arxiv.org/pdf/2504.10519)
-- **정리**: "규칙 기반 트리는 정형화된 80%를 처리하고 LLM은 나머지 20%의 복잡한/모호한 턴을 처리한다"는 하이브리드 공존 프레이밍이 "트리는 죽었다"는 단순 대체 서사보다 더 근거가 명확하다.
+- **정리**: "규칙 기반 트리는 정형화된 80%를 처리하고 LLM은 나머지 20%의 복잡한/모호한 턴을 처리한다"는 하이브리드 공존 프레이밍이 "트리는 죽었다"는 단순 대체 서사보다 더 근거가 명확하다. 2026-07 재확인 결과 이 방향과 상충하는 내용은 없었으며, router와 cascade를 구분하지 않고 뭉뚱그리는 것과 컴플라이언스를 비용/지연에만 종속된 부차 요소로 취급하는 것이 실무에서 흔한 오개념이라는 점을 Day 4 레슨에 새로 반영함.
 
 ## Intent Taxonomy / Utterance / 동의어 사전 (Day 2 보강, 2026-07-05 확인)
 
