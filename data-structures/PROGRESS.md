@@ -17,18 +17,18 @@
 | 5 | 2026-07-04 | 트리와 균형 트리 | [interview-day05-trees-and-balanced-trees.html](lessons/interview-day05-trees-and-balanced-trees.html) |
 | 6 | 2026-07-05 | 힙과 우선순위 큐 | [interview-day06-heap-and-priority-queue.html](lessons/interview-day06-heap-and-priority-queue.html) |
 | 7 | 2026-07-06 | 트라이와 문자열 검색 | [interview-day07-trie-and-string-search.html](lessons/interview-day07-trie-and-string-search.html) |
+| 8 | 2026-07-07 | 그래프 표현과 탐색 | [interview-day08-graph-representation-and-traversal.html](lessons/interview-day08-graph-representation-and-traversal.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 8 | 그래프 표현과 탐색 | "인접 행렬과 인접 리스트를 어떤 기준으로 선택합니까?" | sparse/dense graph, traversal, memory |
 | 9 | 실무 자료구조 설계 | "캐시, rate limiter, ranking 시스템에 어떤 자료구조를 조합하겠습니까?" | HashMap+List, Heap, Tree, Queue 조합 |
 | 10 | 종합 모의 면접 | "요구사항이 바뀌는 상황에서 자료구조 선택을 재검토해보세요." | 변경 대응, trade-off, follow-up 대응 |
 
 ## 현재 학습 위치
 
-**Day 7 완료** — 다음은 Day 8: 그래프 표현과 탐색 (인접 행렬과 인접 리스트를 어떤 기준으로 선택하는가).
+**Day 8 완료** — 다음은 Day 9: 실무 자료구조 설계 (캐시, rate limiter, ranking 시스템에 어떤 자료구조를 조합할 것인가).
 
 ## Interview 답변 체크리스트
 
@@ -52,4 +52,5 @@
 - [x] BST 편향(degenerate tree), 회전(rotation), AVL vs Red-Black trade-off, in-memory tree vs 디스크 B-Tree — Day 5
 - [x] 힙의 배열 표현과 sift-up/down, decrease-key 한계와 지연 삭제/인덱스 힙, top-k/k-way merge 활용 — Day 6
 - [x] 트라이 구조와 prefix search, 알파벳 크기별 자식 표현, radix tree/DAWG 압축 — Day 7
-- [ ] 인접 행렬 vs 인접 리스트, sparse/dense graph, 탐색 메모리 비용 (예정 Day 8)
+- [x] 인접 행렬 vs 인접 리스트, sparse/dense graph, BFS/DFS 복잡도 차이, 재귀 DFS 콜스택 오버플로우 위험 — Day 8
+- [ ] 캐시/rate limiter/ranking 시스템의 자료구조 조합 설계 (예정 Day 9)
