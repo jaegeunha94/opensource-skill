@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — 파티셔닝과 샤딩 | 데이터베이스 10년차 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3148;
+      --accent: #7c6af7;
+      --accent2: #4fa3e0;
+      --success: #3ecf8e;
+      --warn: #f5a623;
+      --danger: #e05c5c;
+      --text: #e2e4f0;
+      --text2: #a0a8c0;
+      --text3: #6b738f;
+      --code-bg: #13151f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1d27 0%, #161927 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 1rem 2rem;
+      text-align: center;
+    }
+    .page-header .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .page-header h1 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .page-header p {
+      color: var(--text2);
+      font-size: 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin: 2rem 0;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+    .toc ol { padding-left: 1.25rem; color: var(--accent2); }
+    .toc ol li { margin-bottom: 0.35rem; }
+    .toc ol li a { color: var(--accent2); text-decoration: none; font-size: 0.93rem; }
+    .toc ol li a:hover { text-decoration: underline; }
+
+    section { margin: 2.5rem 0; }
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section-title .icon {
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.75rem;
+    }
+    .card p, .card li { color: var(--text2); font-size: 0.95rem; }
+    .card ul, .card ol { padding-left: 1.2rem; }
+    .card li { margin-bottom: 0.4rem; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #1e1a3a 0%, #1a1d27 100%);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+    }
+    .interview-q p {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.6;
+    }
+
+    .concept-box {
+      background: var(--surface2);
+      border-left: 4px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 1.25rem 1.5rem;
+      margin: 1rem 0;
+    }
+    .concept-box h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.6rem;
+    }
+    .concept-box p, .concept-box li { font-size: 0.93rem; color: var(--text2); }
+    .concept-box ul { padding-left: 1.2rem; }
+    .concept-box li { margin-bottom: 0.35rem; }
+
+    .step-list { counter-reset: steps; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      align-items: flex-start;
+    }
+    .step-list li::before {
+      content: counter(steps);
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-top: 0.15rem;
+    }
+    .step-list li .step-content {}
+    .step-list li .step-content strong { color: #fff; font-size: 0.97rem; display: block; margin-bottom: 0.25rem; }
+    .step-list li .step-content p { color: var(--text2); font-size: 0.92rem; }
+    .step-list li .step-content ul { color: var(--text2); font-size: 0.92rem; padding-left: 1.1rem; margin-top: 0.3rem; }
+    .step-list li .step-content li { margin-bottom: 0.25rem; }
+
+    .answer-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1rem 0;
+      font-size: 0.92rem;
+      color: var(--text2);
+      line-height: 1.8;
+    }
+    .answer-block .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-short { background: #1e3a2e; color: var(--success); }
+    .tag-deep  { background: #1a2e3a; color: var(--accent2); }
+    .tag-good  { background: #1e3a2e; color: var(--success); }
+    .tag-weak  { background: #3a1e1e; color: var(--danger); }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+    .compare-card.good { border-top: 3px solid var(--success); }
+    .compare-card.weak { border-top: 3px solid var(--danger); }
+    .compare-card h4 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; }
+    .compare-card.good h4 { color: var(--success); }
+    .compare-card.weak h4 { color: var(--danger); }
+    .compare-card p { font-size: 0.88rem; color: var(--text2); line-height: 1.7; font-style: italic; }
+    .compare-card .why { font-size: 0.82rem; color: var(--text3); margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.6rem; font-style: normal; }
+
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .followup-card .q { color: var(--accent); font-size: 0.93rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .followup-card .intent { font-size: 0.82rem; color: var(--text3); margin-bottom: 0.75rem; }
+    .followup-card .a { font-size: 0.9rem; color: var(--text2); }
+
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      border-bottom: 2px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text2);
+      vertical-align: top;
+    }
+    .rubric-table tr:last-child td { border-bottom: none; }
+    .rubric-table tr:hover td { background: var(--surface2); }
+    .level-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .level-strong { background: #1e3a2e; color: var(--success); }
+    .level-mid    { background: #2a2a10; color: var(--warn); }
+    .level-weak   { background: #3a1e1e; color: var(--danger); }
+
+    .misconception {
+      background: #2a1e1e;
+      border: 1px solid #5a2e2e;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.85rem;
+    }
+    .misconception .myth { font-size: 0.88rem; color: var(--danger); font-weight: 600; margin-bottom: 0.4rem; }
+    .misconception .myth::before { content: "✗ 오해: "; }
+    .misconception .truth { font-size: 0.88rem; color: var(--success); }
+    .misconception .truth::before { content: "✓ 실제: "; }
+
+    .nav-footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav-footer a {
+      color: var(--accent2);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .nav-footer a:hover { text-decoration: underline; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.35rem;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.85em;
+      color: #a8d8f0;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: #a8d8f0;
+      line-height: 1.65;
+      margin: 0.75rem 0;
+    }
+    .highlight-keyword { color: #c792ea; }
+    .highlight-string  { color: #c3e88d; }
+    .highlight-comment { color: #546e7a; font-style: italic; }
+    .highlight-number  { color: #f78c6c; }
+    .highlight-fn      { color: #82aaff; }
+
+    .tip {
+      background: #1a2e1e;
+      border: 1px solid #2e5e3e;
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.88rem;
+      color: #7ed9a8;
+    }
+    .tip::before { content: "💡 "; }
+    .warn-box {
+      background: #2a2010;
+      border: 1px solid #5a4e20;
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.88rem;
+      color: var(--warn);
+    }
+    .warn-box::before { content: "⚠ "; }
+
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin: 1rem 0;
+    }
+    .matrix-table th, .matrix-table td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.7rem;
+      text-align: center;
+    }
+    .matrix-table th { background: var(--surface2); color: var(--text2); }
+    .matrix-table td { color: var(--text2); }
+    .matrix-table td.yes { color: var(--danger); font-weight: 700; }
+    .matrix-table td.no { color: var(--success); font-weight: 700; }
+    .matrix-table td.maybe { color: var(--warn); font-weight: 700; }
+    .matrix-table th:first-child, .matrix-table td:first-child { text-align: left; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="day-badge">Day 8 · 인터뷰 커리큘럼</div>
+  <h1>파티셔닝과 샤딩</h1>
+  <p>한 테이블/한 노드가 감당 못 할 때, 무엇을 먼저 쪼개고 어떤 비용을 치르는가</p>
+</div>
+
+<div class="container">
+
+  <nav class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#prerequisite">전제 개념</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-flow">답변 사고 순서</a></li>
+      <li><a href="#answer-example">핵심 답변 예시</a></li>
+      <li><a href="#tradeoff">Trade-off</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followup">Senior-level Follow-up</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </nav>
+
+  <!-- ① 면접 질문 -->
+  <section id="interview-question">
+    <h2 class="section-title"><span class="icon">💬</span> 면접 질문</h2>
+    <div class="interview-q">
+      <div class="label">Core Question</div>
+      <p>"샤딩은 언제 필요하고 어떤 비용을 치릅니까?"</p>
+    </div>
+    <div class="card">
+      <h3>함께 출제되는 변형 질문</h3>
+      <ul>
+        <li>"파티셔닝만으로 해결이 안 되고 샤딩까지 가야 하는 시점을 어떻게 판단합니까?"</li>
+        <li>"샤딩 키를 잘못 고르면 어떤 문제가 생깁니까? 어떻게 다시 예를 들어 설명해보시겠어요?"</li>
+        <li>"운영 중인 샤드 클러스터에 노드를 추가/제거해야 합니다. rebalancing은 어떻게 진행하시겠습니까?"</li>
+        <li>"여러 샤드에 걸친 JOIN이나 트랜잭션이 필요한 요구사항이 들어왔습니다. 어떻게 대응하시겠습니까?"</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ② 왜 면접에서 묻는가 -->
+  <section id="why-asked">
+    <h2 class="section-title"><span class="icon">🎯</span> 왜 면접에서 묻는가</h2>
+    <div class="card">
+      <p>이 질문은 "파티셔닝과 샤딩의 정의를 구분할 수 있는가"가 아니라 <strong style="color:#fff">데이터를 쪼개는 순간부터 되돌리기 어려운 구조적 결정과 운영 비용이 시작된다는 것을 이해하는가</strong>를 확인하기 위한 것입니다.</p>
+      <br>
+      <ul>
+        <li><strong>확장의 단계를 순서대로 아는가:</strong> 인덱스 튜닝, 읽기 전용 Replica 추가, 캐싱 같은 더 저렴한 방법을 다 써본 뒤에도 부족할 때 샤딩을 고려하는지, 아니면 곧바로 "샤딩이 정답"이라고 뛰어드는지를 봅니다. 성급한 샤딩 도입은 조직에 큰 운영 부담을 지웁니다.</li>
+        <li><strong>샤딩 키 설계가 되돌리기 어려운 결정임을 아는가:</strong> 샤딩 키는 이후 모든 쿼리 패턴, 조인 가능 여부, 재조정 난이도를 결정합니다. 잘못 고르면 데이터 이관 없이는 바꿀 수 없는 경우가 많습니다.</li>
+        <li><strong>분산 시스템의 근본 제약을 실무 언어로 설명할 수 있는가:</strong> 샤딩은 "여러 노드에 걸친 JOIN, 트랜잭션, 유니크 제약, 정렬/페이지네이션"을 전부 다시 설계해야 하는 문제를 만듭니다. 이 대가를 구체적으로 말할 수 있는지 확인합니다.</li>
+        <li><strong>운영 판단력:</strong> hot shard(특정 샤드에 트래픽이 쏠리는 문제), rebalancing 중 서비스 영향, 샤드 장애 시 영향 범위를 실제로 겪어본 적이 있는지, 최소한 원리로 예측할 수 있는지를 봅니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ③ 전제 개념 -->
+  <section id="prerequisite">
+    <h2 class="section-title"><span class="icon">📚</span> 전제 개념</h2>
+
+    <div class="concept-box">
+      <h4>파티셔닝(Partitioning)이란 — 한 대의 DB 안에서 테이블을 쪼개기</h4>
+      <p>
+        <strong>파티셔닝</strong>은 하나의 큰 테이블을 <strong>같은 DB 인스턴스(같은 서버) 안에서</strong> 여러 개의 물리적 조각(파티션)으로 나누는 것입니다. 애플리케이션 입장에서는 여전히 테이블 하나로 보이지만, DB 엔진 내부적으로는 각 파티션이 별도의 파일/저장 단위로 관리됩니다.
+      </p>
+      <ul>
+        <li><strong>Range 파티셔닝:</strong> 날짜, ID 범위 등 연속된 값 기준으로 나눔 (예: 주문 테이블을 월별로 파티션)</li>
+        <li><strong>List 파티셔닝:</strong> 특정 값 목록 기준으로 나눔 (예: 국가 코드별)</li>
+        <li><strong>Hash 파티셔닝:</strong> 특정 컬럼 값을 해시해서 균등하게 분산</li>
+      </ul>
+      <p style="margin-top:0.6rem;">
+        파티셔닝의 핵심 이득은 <strong>Partition Pruning(파티션 가지치기)</strong>입니다. 쿼리가 특정 파티션 범위만 필요로 한다는 걸 옵티마이저가 알면, 나머지 파티션은 아예 스캔하지 않습니다. 오래된 데이터를 통째로 삭제/보관 이전할 때도 파티션 단위 <code>DROP</code>이 개별 행 삭제보다 훨씬 빠릅니다.
+      </p>
+    </div>
+
+    <div class="concept-box">
+      <h4>샤딩(Sharding)이란 — 여러 대의 DB로 데이터를 쪼개기</h4>
+      <p>
+        <strong>샤딩</strong>은 데이터를 <strong>서로 다른 DB 인스턴스(서로 다른 서버)</strong>에 나눠 저장하는 것입니다. 각 조각을 <strong>샤드(shard)</strong>라고 부르며, 각 샤드는 독립된 DB로서 자신만의 CPU·메모리·디스크·연결 풀을 가집니다.
+      </p>
+      <p style="margin-top:0.6rem;">
+        파티셔닝과 근본적으로 다른 점은, 파티셔닝은 "한 대의 컴퓨팅 자원 안에서" 데이터를 정리하는 것이지만 샤딩은 "여러 대의 컴퓨팅 자원으로" 데이터와 부하 자체를 분산시킨다는 것입니다. 그래서 샤딩은 단일 서버의 CPU/메모리/디스크 한계 자체를 넘어서게 해주지만, 그 대가로 애플리케이션이 "데이터가 어느 서버에 있는지"를 알아야 하는 복잡도를 떠안습니다.
+      </p>
+      <div class="tip">실무 팁: 파티셔닝은 인덱스 최적화에 가까운 "정리"이고, 샤딩은 분산 시스템으로의 전환이라는 "아키텍처 결정"입니다. 이 둘을 같은 무게로 말하면 면접관은 실전 경험이 부족하다고 판단합니다.</div>
+    </div>
+
+    <div class="concept-box">
+      <h4>샤딩 키(Shard Key) 선택 — 왜 이 결정이 되돌리기 어려운가</h4>
+      <p>
+        샤딩 키는 "이 행이 어느 샤드로 가는가"를 결정하는 컬럼(또는 컬럼 조합)입니다. 예를 들어 <code>user_id</code>를 샤딩 키로 쓰면, 같은 사용자의 데이터는 항상 같은 샤드에 모입니다.
+      </p>
+      <ul>
+        <li><strong>Hash 기반 샤딩:</strong> 샤딩 키를 해시 함수에 넣어 나온 값으로 샤드를 결정. 데이터가 통계적으로 균등하게 분산되지만, 특정 범위로 조회하는 쿼리(예: 특정 기간의 모든 주문)는 모든 샤드를 다 조회(scatter-gather)해야 할 수 있음</li>
+        <li><strong>Range 기반 샤딩:</strong> 샤딩 키의 값 범위로 샤드를 나눔. 범위 조회는 빠르지만, 특정 범위(예: 최근 데이터, 유명인 계정)에 트래픽이 몰리는 <strong>hot shard</strong> 문제가 생기기 쉬움</li>
+        <li><strong>Directory(조회 테이블) 기반 샤딩:</strong> "이 키는 이 샤드"라는 매핑을 별도의 조회 테이블/서비스로 관리. 유연하게 재배치할 수 있지만 그 조회 테이블 자체가 병목/단일 장애점이 될 수 있어 고가용성 설계가 추가로 필요함</li>
+      </ul>
+      <p style="margin-top:0.6rem;">
+        샤딩 키를 잘못 고르면 (1) 자주 함께 조회되는 데이터가 서로 다른 샤드에 흩어져 cross-shard 조회가 상시로 발생하거나, (2) 특정 키 값에 트래픽/데이터가 쏠려 그 샤드만 과부하(hot shard)에 걸립니다. 이미 수십 개 샤드에 데이터가 퍼진 뒤에 키를 바꾸는 것은 사실상 전체 데이터 재이관에 가까운 대공사입니다.
+      </p>
+    </div>
+
+    <div class="concept-box">
+      <h4>Rebalancing(재조정) — 샤드 수를 바꿀 때 무슨 일이 일어나는가</h4>
+      <p>
+        서비스가 성장해 샤드를 추가(또는 축소)해야 할 때, 기존 데이터를 새 샤드 배치에 맞게 다시 옮기는 작업이 <strong>rebalancing</strong>입니다.
+      </p>
+      <ul>
+        <li><strong>단순 Hash(mod N) 방식의 문제:</strong> <code>hash(key) % N</code> 방식은 N(샤드 수)이 바뀌면 거의 모든 키의 대상 샤드가 바뀝니다. 샤드를 4개에서 5개로 늘리는 순간 데이터의 대부분을 재이관해야 합니다.</li>
+        <li><strong>Consistent Hashing(일관 해싱):</strong> 해시 공간을 원형으로 배치해, 노드가 추가/제거될 때 그 노드 주변의 일부 데이터만 이동하도록 설계한 방식. 재조정 범위를 크게 줄여줍니다.</li>
+        <li><strong>가상 노드(Virtual Node):</strong> 물리 샤드 하나를 여러 개의 가상 슬롯으로 매핑해, 재조정 시 이동량을 더 잘게 쪼개고 샤드 간 부하를 고르게 맞추는 보조 기법입니다.</li>
+      </ul>
+      <p style="margin-top:0.6rem;">rebalancing은 대량의 데이터 복사와 이관 중 이중 쓰기(cutover) 시점의 정합성 관리가 필요해, 서비스 운영 중 가장 위험한 작업 중 하나로 취급됩니다.</p>
+    </div>
+
+    <div class="concept-box">
+      <h4>Cross-shard 쿼리와 트랜잭션 — 왜 어려운가</h4>
+      <p>
+        단일 DB에서는 당연했던 <code>JOIN</code>, 전역 <code>ORDER BY</code> + <code>LIMIT/OFFSET</code> 페이지네이션, 여러 테이블에 걸친 트랜잭션, 전역 유니크 제약(예: 이메일 중복 방지)이 샤딩 이후에는 전부 다시 설계해야 하는 문제가 됩니다.
+      </p>
+      <ul>
+        <li><strong>Cross-shard JOIN:</strong> 조인 대상 데이터가 서로 다른 샤드에 있으면 DB 엔진이 대신 조인해주지 않으므로, 애플리케이션(또는 별도 쿼리 페더레이션 레이어)이 각 샤드에서 데이터를 가져와 메모리에서 직접 합쳐야 합니다.</li>
+        <li><strong>분산 트랜잭션:</strong> 여러 샤드에 걸친 원자적 쓰기가 필요하면 2PC(2-Phase Commit) 같은 분산 트랜잭션 프로토콜이나, 이후 배울 Saga 패턴(보상 트랜잭션) 같은 대안이 필요합니다. 둘 다 단일 DB 트랜잭션보다 느리고 복잡합니다.</li>
+        <li><strong>전역 정렬/페이지네이션:</strong> 각 샤드에서 부분적으로 정렬된 결과를 가져와 애플리케이션에서 다시 병합 정렬(merge)해야 하며, <code>OFFSET</code> 기반 페이지네이션은 샤드 환경에서 사실상 쓰기 어렵습니다.</li>
+        <li><strong>전역 유니크 제약:</strong> 샤딩 키가 아닌 컬럼(예: 이메일)의 유일성을 보장하려면 별도의 전역 인덱스 서비스나 애플리케이션 레벨 조정이 필요합니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ④ 실무 연결 -->
+  <section id="real-world">
+    <h2 class="section-title"><span class="icon">🏭</span> 실무 연결</h2>
+    <div class="card">
+      <h3>시나리오: 주문 테이블이 수억 건으로 커지며 조회와 백업이 느려짐</h3>
+      <p>
+        주문 테이블이 3년간 누적되며 수억 건으로 커지자 최근 데이터 조회조차 느려지고, 매일 새벽 백업 시간이 서비스 점검 시간을 위협할 정도로 길어졌습니다. 조사해보니 조회 대부분(90% 이상)이 최근 3개월 데이터에 집중되어 있었습니다.
+        샤딩이 아니라 <code>created_at</code> 기준 월별 Range 파티셔닝을 먼저 적용했습니다. 오래된 파티션은 별도 아카이브 스토리지로 옮기고 원본에서는 <code>DROP PARTITION</code>으로 즉시 제거해, 개별 행 삭제 대비 잠금 시간과 부하를 크게 줄였습니다. 단일 서버 자원(CPU/메모리) 자체가 부족한 상황이 아니었으므로 샤딩까지 갈 필요는 없었습니다.
+      </p>
+    </div>
+    <div class="card">
+      <h3>시나리오: 특정 대형 거래처(테넌트)의 트래픽이 전체 DB를 흔듦</h3>
+      <p>
+        멀티테넌트 SaaS에서 하나의 대형 거래처가 전체 쓰기 트래픽의 40%를 차지하게 되면서, 그 거래처의 배치 작업 시간대에 다른 모든 테넌트의 응답 지연이 함께 튀는 문제가 발생했습니다. 단일 DB의 CPU/IO 자체가 한계에 도달한 상황이었습니다.
+        <code>tenant_id</code>를 샤딩 키로 채택하되, 이미 커진 대형 테넌트는 단독 샤드로 격리하고 나머지 중소 테넌트는 해시 기반으로 여러 샤드에 분산시켰습니다. 이를 통해 한 테넌트의 폭주가 다른 테넌트에 영향을 주지 않도록 <strong>장애 격리(blast radius 축소)</strong>를 확보했습니다. 다만 이후 "거래처 간 통합 리포트" 요구사항이 들어와 cross-shard 집계를 위한 별도 배치/웨어하우스 파이프라인을 새로 구축해야 했습니다.
+      </p>
+    </div>
+    <div class="card">
+      <h3>시나리오: 샤드 수를 늘리는 rebalancing 도중 일부 요청이 실패</h3>
+      <p>
+        트래픽 증가에 대비해 샤드를 8개에서 12개로 늘리는 작업을 진행했는데, 단순 <code>hash(key) % N</code> 방식으로 라우팅하고 있었던 탓에 거의 모든 키의 대상 샤드가 바뀌어 대규모 데이터 재이관이 필요했습니다. 이관 도중 "이관 완료 전 샤드"와 "이관 완료 후 샤드"를 동시에 바라보는 라우팅 레이어의 캐시 갱신 시점 차이로 일부 쓰기가 잘못된 샤드로 향해 정합성 오류가 생겼습니다.
+        이 사건 이후 라우팅 방식을 consistent hashing으로 교체하고, 이관은 이중 쓰기(dual write) + 검증 배치 + 트래픽 점진 전환(shadow traffic) 절차를 표준 런북으로 만들어 이후 재조정에서는 서비스 영향 없이 진행할 수 있었습니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ⑤ 답변 사고 순서 -->
+  <section id="answer-flow">
+    <h2 class="section-title"><span class="icon">🔍</span> 답변 사고 순서</h2>
+    <div class="tip">샤딩 질문에서 곧바로 "샤딩 키는 이렇게 잡겠습니다"로 시작하면 약한 답변입니다. 샤딩이 정말 필요한 상황인지부터 먼저 검증하는 태도가 핵심입니다.</div>
+
+    <ol class="step-list">
+      <li>
+        <div class="step-content">
+          <strong>1단계 — 병목이 무엇인지 특정: CPU/메모리/디스크 IO인가, 특정 테이블/쿼리 패턴인가</strong>
+          <p>단일 서버 자원 자체가 한계인지, 아니면 인덱스·쿼리·캐싱으로 해결 가능한 국소적 문제인지 먼저 구분한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>2단계 — 더 저렴한 대안을 먼저 소진했는지 확인</strong>
+          <p>인덱스 최적화, 읽기 전용 Replica 추가, 캐싱, 오래된 데이터 파티셔닝/아카이빙으로 해결되지 않는지 점검한다. 이 단계를 생략하고 샤딩으로 직행하는 것은 위험 신호다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>3단계 — 파티셔닝으로 충분한지, 샤딩까지 필요한지 구분</strong>
+          <p>단일 서버 자원 안에서 데이터 정리(파티셔닝)로 해결되는 문제인지, 여러 서버로 부하 자체를 분산해야 하는 문제(샤딩)인지 판단한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>4단계 — 샤딩이 필요하다면 쿼리 패턴 기준으로 샤딩 키 선정</strong>
+          <p>가장 빈번한 조회/쓰기 패턴이 어떤 컬럼을 기준으로 묶이는지 분석해, 그 기준을 샤딩 키로 삼아 cross-shard 조회를 최소화한다. hash/range/directory 중 데이터 분포와 재조정 요구에 맞는 방식을 선택한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>5단계 — cross-shard 요구사항(조인, 트랜잭션, 전역 유니크, 정렬) 설계</strong>
+          <p>샤딩 이후에도 필요한 cross-shard 기능이 무엇인지 정리하고, 애플리케이션 레벨 병합, 분산 트랜잭션/Saga, 별도 집계 파이프라인 중 무엇으로 대응할지 명시한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>6단계 — rebalancing 전략 준비</strong>
+          <p>consistent hashing 등으로 향후 샤드 증설 시 재이관 범위를 최소화할 방법을 미리 설계하고, 이관 절차(이중 쓰기, 검증, 점진 전환)를 갖춘다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>7단계 — 운영 복잡도와 조직 비용까지 인지</strong>
+          <p>샤딩은 모니터링, 스키마 마이그레이션, 장애 대응 절차를 샤드 수만큼 반복해야 하는 운영 부담을 늘린다는 것을 인정하고, 이 비용을 감당할 조직/도구가 준비됐는지 점검한다.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ⑥ 핵심 답변 예시 -->
+  <section id="answer-example">
+    <h2 class="section-title"><span class="icon">💡</span> 핵심 답변 예시</h2>
+
+    <div class="answer-block">
+      <span class="tag tag-short">짧은 버전 (1분)</span>
+      <p>
+        "샤딩은 인덱스 최적화, Replica 추가, 캐싱, 파티셔닝 같은 더 저렴한 방법으로도 단일 서버의 CPU/메모리/디스크 한계를 해결할 수 없을 때 마지막에 고려하는 방법입니다. 샤딩을 도입하면 애플리케이션이 데이터 위치를 알아야 하고, cross-shard JOIN·트랜잭션·전역 정렬을 전부 다시 설계해야 하는 비용을 치릅니다. 그래서 저는 먼저 병목이 정말 여러 서버로 분산해야만 풀리는 문제인지 확인하고, 그렇다면 실제 쿼리 패턴을 기준으로 샤딩 키를 골라 cross-shard 조회를 최소화하는 방향으로 접근합니다."
+      </p>
+    </div>
+
+    <div class="answer-block">
+      <span class="tag tag-deep">깊이 있는 버전 (3~4분)</span>
+      <p>
+        "이 질문은 '샤딩이 무엇인가'보다 '샤딩을 언제, 어떻게 도입해야 비용 대비 이득이 나는가'로 답하는 게 핵심이라고 생각합니다.<br><br>
+        <strong>첫째, 샤딩은 확장 단계의 마지막 카드입니다.</strong> 느려진 원인이 인덱스 부재, 캐싱 부재, 단일 Primary에 읽기가 몰린 것이라면 그것부터 해결하는 게 훨씬 저렴합니다. 또한 오래된 데이터가 테이블을 무겁게 만드는 문제라면 파티셔닝과 아카이빙만으로 해결되는 경우도 많습니다. 샤딩은 이 모든 걸 시도한 뒤에도 단일 서버의 물리적 자원 한계 자체에 부딪힐 때 고려합니다.<br><br>
+        <strong>둘째, 샤딩이 필요하다고 판단되면 샤딩 키를 실제 쿼리 패턴에 맞춰 고릅니다.</strong> 예를 들어 대부분의 조회가 '한 사용자/한 거래처' 단위로 일어난다면 그 컬럼을 샤딩 키로 삼아, 대부분의 요청이 단일 샤드 안에서 끝나도록 설계합니다. 이 결정은 이후 되돌리기 매우 어렵기 때문에 신중하게 검증합니다.<br><br>
+        <strong>셋째, 그럼에도 남는 cross-shard 요구사항(통합 리포트, 전역 유니크 제약 등)은 애초에 실시간 트랜잭션으로 풀지 않고, 별도의 배치/웨어하우스 파이프라인이나 전역 인덱스 서비스로 분리해 설계합니다.</strong> 실시간 경로에 cross-shard 로직을 억지로 끼워 넣으면 그 경로 전체가 가장 느린 샤드의 응답 속도에 발목 잡히게 됩니다.<br><br>
+        <strong>넷째, 향후 샤드 증설을 고려해 처음부터 consistent hashing 같은 재조정 친화적인 라우팅을 채택합니다.</strong> 단순 mod 연산 기반 라우팅은 샤드 수가 바뀔 때 거의 전체 데이터를 재이관해야 하므로, 초기 설계 단계에서 이 비용을 감안해야 합니다.<br><br>
+        <strong>마지막으로, 샤딩은 기술적 결정을 넘어 조직적 결정이라는 점도 함께 짚습니다.</strong> 스키마 변경, 모니터링, 장애 대응을 샤드 수만큼 반복해야 하는 운영 부담이 늘어나므로, 이를 감당할 자동화와 팀 역량이 준비됐는지도 도입 시점 판단에 포함시킵니다."
+      </p>
+    </div>
+  </section>
+
+  <!-- ⑦ Trade-off -->
+  <section id="tradeoff">
+    <h2 class="section-title"><span class="icon">⚖️</span> Trade-off</h2>
+    <div class="card">
+      <h3>파티셔닝 vs 샤딩</h3>
+      <ul>
+        <li><strong>파티셔닝 이득:</strong> 단일 서버 안에서 적용 가능해 애플리케이션 변경이 거의 없고, 도입/롤백이 비교적 쉬움</li>
+        <li><strong>파티셔닝 비용:</strong> 단일 서버의 CPU/메모리/디스크 한계 자체는 넘어설 수 없음</li>
+        <li><strong>샤딩 이득:</strong> 여러 서버로 데이터와 부하를 분산해 단일 서버의 물리적 한계를 넘어설 수 있음</li>
+        <li><strong>샤딩 비용:</strong> cross-shard JOIN/트랜잭션/정렬/유니크 제약을 다시 설계해야 하고, 라우팅·재조정·장애 격리 같은 분산 시스템 운영 부담이 새로 생김</li>
+        <li><strong>판단 기준:</strong> 단일 서버 자원 한계에 부딪히지 않았다면 파티셔닝(+캐싱, Replica)으로 충분한 경우가 많다. 그 한계에 실제로 도달했을 때만 샤딩을 고려한다.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Hash 샤딩 vs Range 샤딩</h3>
+      <ul>
+        <li><strong>Hash 이득:</strong> 데이터가 통계적으로 균등하게 분산되어 hot shard 위험이 낮음</li>
+        <li><strong>Hash 비용:</strong> 범위 조회(예: 특정 기간 전체 조회)가 모든 샤드를 훑어야 하는 scatter-gather가 되기 쉬움</li>
+        <li><strong>Range 이득:</strong> 범위 조회 성능이 좋고, 특정 범위만 스캔하면 됨</li>
+        <li><strong>Range 비용:</strong> 특정 범위(최근 데이터, 인기 키)에 트래픽이 몰리는 hot shard 문제가 생기기 쉬움</li>
+        <li><strong>판단 기준:</strong> 조회가 범위 기반(시계열, ID 구간)으로 이뤄지면 Range를, 조회가 개별 키 단위(사용자별, 테넌트별)로 고르게 분산되면 Hash를 우선 검토한다.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>자동 Rebalancing vs 수동 Rebalancing</h3>
+      <ul>
+        <li><strong>자동 이득:</strong> 샤드 간 부하 불균형을 빠르게 감지해 스스로 조정하므로 운영자 개입 없이 확장 가능</li>
+        <li><strong>자동 비용:</strong> 예상치 못한 시점에 대량 데이터 이동이 트리거되어 트래픽 피크 시간대와 겹치면 서비스 영향이 클 수 있음</li>
+        <li><strong>수동 이득:</strong> 이관 시점과 절차를 통제할 수 있어 트래픽이 적은 시간대에 계획적으로 진행 가능</li>
+        <li><strong>수동 비용:</strong> 불균형이 누적된 뒤에야 대응하게 되어 그 사이 hot shard로 인한 성능 저하를 감수해야 함</li>
+        <li><strong>판단 기준:</strong> 트래픽 변동이 크고 예측 가능한 서비스라면 계획된 수동 재조정을, 트래픽 패턴이 불규칙하고 자동화 성숙도가 높다면 점진적 자동 재조정을 택한다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ⑧ 흔한 오해 -->
+  <section id="misconceptions">
+    <h2 class="section-title"><span class="icon">🚫</span> 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="myth">데이터가 많아지면 무조건 샤딩부터 도입해야 한다.</div>
+      <div class="truth">데이터 양이 많은 것과 단일 서버 자원(CPU/메모리/디스크 IO)이 부족한 것은 다른 문제입니다. 인덱스, 캐싱, Replica, 파티셔닝, 아카이빙으로 해결되는 경우가 훨씬 많고, 이 단계를 건너뛰고 샤딩부터 도입하면 불필요한 운영 복잡도만 늘어납니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">파티셔닝과 샤딩은 같은 개념을 부르는 이름만 다른 표현이다.</div>
+      <div class="truth">파티셔닝은 한 대의 DB 인스턴스 안에서 데이터를 물리적으로 나누는 것이고, 샤딩은 서로 다른 DB 인스턴스(서버)에 데이터를 분산시키는 것입니다. 파티셔닝은 애플리케이션 변경이 거의 없지만, 샤딩은 라우팅·재조정·cross-shard 처리라는 애플리케이션 레벨의 새로운 책임을 만듭니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">샤딩 키는 나중에 필요하면 바꾸면 된다.</div>
+      <div class="truth">일단 다수의 샤드에 데이터가 분산된 뒤 샤딩 키를 바꾸는 것은 사실상 전체 데이터를 새 기준으로 재이관하는 대규모 마이그레이션입니다. 초기 쿼리 패턴 분석에 충분한 시간을 들여야 하는 이유입니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">샤드를 늘리면 항상 성능이 선형적으로 좋아진다.</div>
+      <div class="truth">샤딩 키 분포가 균등하지 않으면 특정 샤드에 트래픽/데이터가 쏠리는 hot shard가 발생해, 샤드 수를 늘려도 전체 처리량은 그 hot shard의 한계에 갇힙니다. 또한 cross-shard 쿼리가 많을수록 샤드 수 증가가 오히려 지연을 늘릴 수 있습니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">샤딩 이후에도 기존처럼 JOIN과 트랜잭션을 자유롭게 쓸 수 있다.</div>
+      <div class="truth">DB 엔진은 서로 다른 샤드에 걸친 JOIN이나 원자적 트랜잭션을 자동으로 처리해주지 않습니다. 애플리케이션이 각 샤드에서 데이터를 가져와 직접 병합하거나, 분산 트랜잭션/Saga 같은 별도 메커니즘을 도입해야 합니다.</div>
+    </div>
+  </section>
+
+  <!-- ⑨ 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2 class="section-title"><span class="icon">📊</span> 좋은 답변 vs 약한 답변</h2>
+    <div class="compare-grid">
+      <div class="compare-card good">
+        <h4>강한 답변</h4>
+        <p>"먼저 병목이 인덱스·캐싱·Replica·파티셔닝으로 해결되지 않는 단일 서버 자원 한계인지부터 확인합니다. 그 경우에만 샤딩을 고려하고, 실제 쿼리 패턴을 분석해 cross-shard 조회를 최소화하는 샤딩 키를 고릅니다. 남는 cross-shard 요구사항은 실시간 경로가 아닌 별도 파이프라인으로 분리하고, consistent hashing으로 향후 재조정 비용도 미리 낮춰둡니다."</p>
+        <p class="why">
+          왜 강한가: 더 저렴한 대안을 먼저 검토하는 순서를 지키고, 샤딩 키의 되돌리기 어려움과 cross-shard 비용, 재조정 전략까지 구체적으로 짚습니다.
+        </p>
+      </div>
+      <div class="compare-card weak">
+        <h4>약한 답변</h4>
+        <p>"데이터가 많아졌으니 user_id로 샤딩을 적용하면 됩니다."</p>
+        <p class="why">
+          왜 약한가: 샤딩이 정말 필요한 상황인지 검증하는 과정이 없고, 실제 쿼리 패턴 분석 없이 임의로 키를 정했으며, cross-shard 비용과 재조정 전략에 대한 고려가 전혀 없습니다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑩ Follow-up -->
+  <section id="followup">
+    <h2 class="section-title"><span class="icon">🎓</span> Senior-level Follow-up 질문</h2>
+
+    <div class="followup-card">
+      <div class="q">Q. tenant_id로 샤딩했는데, 특정 대형 테넌트 하나가 다른 모든 테넌트를 합친 것보다 큽니다. 어떻게 대응하시겠습니까?</div>
+      <div class="intent">의도: 균등 분산 전제가 깨지는 실제 상황(데이터 skew)에서 유연하게 대응할 수 있는지, "샤딩 키 = 무조건 해시"라는 고정관념에 갇혀 있지 않은지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 대형 테넌트를 나머지와 같은 샤딩 규칙에 억지로 끼워 맞추면 그 샤드만 계속 과부하 상태가 됩니다. 이런 skew가 예상되면 directory 기반 매핑을 활용해 대형 테넌트는 전용 샤드(또는 전용 클러스터)로 격리하고, 나머지 테넌트는 해시로 균등 분산하는 하이브리드 전략을 씁니다. 이렇게 하면 대형 테넌트의 트래픽 폭주가 다른 테넌트에 전이되지 않는 장애 격리 효과도 함께 얻습니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. 샤딩 이후 "이번 달 전체 매출 합계"처럼 모든 샤드를 걸치는 리포트 요구사항이 들어왔습니다. 실시간 API로 바로 구현하시겠습니까?</div>
+      <div class="intent">의도: cross-shard 집계를 실시간 트랜잭션 경로에 욱여넣는 게 왜 위험한지, 대안 아키텍처를 아는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 실시간 API에서 모든 샤드를 조회해 애플리케이션에서 합산하면, 응답 시간이 가장 느린 샤드에 의해 결정되고 샤드 하나만 장애가 나도 전체 리포트가 실패합니다. 이런 요구사항은 대개 CDC(Change Data Capture)나 배치로 각 샤드의 데이터를 별도의 분석용 저장소(데이터 웨어하우스)에 모아 집계하는 방식으로 분리하는 것이 안전합니다. 실시간성이 꼭 필요하다면 사전 집계된 요약 테이블을 별도로 유지하는 방법도 검토합니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. 샤드 하나가 완전히 장애 났습니다. 나머지 샤드는 정상인데, 서비스는 어떻게 동작해야 합니까?</div>
+      <div class="intent">의도: 샤딩의 장애 격리 이점을 실제로 살리는 설계를 하는지, 아니면 한 샤드 장애가 전체 서비스 장애로 번지게 방치하는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 이상적으로는 장애 난 샤드에 속한 데이터/사용자만 영향을 받고, 나머지 샤드의 사용자는 정상적으로 서비스가 계속되어야 합니다. 이를 위해서는 샤드별로 커넥션 풀과 타임아웃을 분리해 한 샤드의 지연이 다른 샤드 요청까지 전부 지연시키지 않도록(스레드/커넥션 풀 고갈 방지) 격리하고, cross-shard 집계 기능은 일부 샤드 데이터가 빠진 상태에서도 부분 결과와 함께 실패를 명시적으로 알리도록 설계해야 합니다. 이게 안 되어 있다면 애초에 샤딩의 장애 격리 이점을 살리지 못하고 있는 것입니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. 왜 consistent hashing이 단순 mod 연산 기반 라우팅보다 재조정에 유리한지, 원리를 설명해보세요.</div>
+      <div class="intent">의도: consistent hashing을 "재조정에 좋다더라"는 결론만 암기했는지, 원리 자체를 이해하는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> <code>hash(key) % N</code> 방식은 N이 바뀌면 대부분의 키에 대해 나머지 연산 결과 자체가 바뀌므로 거의 모든 데이터의 대상 샤드가 달라집니다. Consistent hashing은 샤드와 키를 모두 하나의 원형 해시 공간에 배치하고, 각 키를 "시계 방향으로 가장 가까운 샤드"에 매핑합니다. 샤드가 하나 추가/제거되면 그 샤드 바로 인접 구간의 키들만 이동 대상이 되고, 나머지 구간의 매핑은 그대로 유지되므로 재조정 시 이동해야 하는 데이터 양이 훨씬 적습니다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑪ Rubric -->
+  <section id="rubric">
+    <h2 class="section-title"><span class="icon">✅</span> 자기 점검 Rubric</h2>
+    <div style="overflow-x: auto;">
+      <table class="rubric-table">
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>강한 답변</th>
+            <th>중간 답변</th>
+            <th>약한 답변</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>샤딩 도입 시점 판단</td>
+            <td><span class="level-badge level-strong">더 저렴한 대안 소진 후 자원 한계 도달 시로 명확히 한정</span></td>
+            <td><span class="level-badge level-mid">"데이터가 많아지면" 정도로만 판단</span></td>
+            <td><span class="level-badge level-weak">데이터 양만 보고 즉시 샤딩 제안</span></td>
+          </tr>
+          <tr>
+            <td>파티셔닝과 샤딩 구분</td>
+            <td><span class="level-badge level-strong">단일 서버 내부 정리 vs 여러 서버로의 분산으로 명확히 구분</span></td>
+            <td><span class="level-badge level-mid">둘 다 "데이터를 나눈다" 정도로만 인지</span></td>
+            <td><span class="level-badge level-weak">두 개념을 동일시하거나 혼용</span></td>
+          </tr>
+          <tr>
+            <td>샤딩 키 설계 근거</td>
+            <td><span class="level-badge level-strong">실제 쿼리 패턴 분석 기반, 되돌리기 어려움까지 인지</span></td>
+            <td><span class="level-badge level-mid">"자주 쓰는 컬럼" 정도로만 선정 근거 제시</span></td>
+            <td><span class="level-badge level-weak">근거 없이 임의 컬럼 선택</span></td>
+          </tr>
+          <tr>
+            <td>Cross-shard 비용 인지</td>
+            <td><span class="level-badge level-strong">JOIN/트랜잭션/정렬/유니크 제약 각각의 대응 전략 제시</span></td>
+            <td><span class="level-badge level-mid">"조인이 어려워진다" 정도로만 언급</span></td>
+            <td><span class="level-badge level-weak">언급 없음</span></td>
+          </tr>
+          <tr>
+            <td>Rebalancing/운영 복잡도</td>
+            <td><span class="level-badge level-strong">consistent hashing, 이관 절차, 조직 비용까지 포함</span></td>
+            <td><span class="level-badge level-mid">"재조정이 필요할 수 있다" 정도로만 인지</span></td>
+            <td><span class="level-badge level-weak">재조정/운영 부담을 전혀 고려하지 않음</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem;">
+      <h3>이 Day 레슨 이후 스스로 확인할 것</h3>
+      <ul>
+        <li>본인이 다뤄본(또는 알고 있는) 서비스의 가장 큰 테이블이 파티셔닝만으로 충분한지, 샤딩이 필요한 수준인지 스스로 판단해보기</li>
+        <li>그 테이블에 샤딩을 적용한다면 어떤 컬럼을 샤딩 키로 고를지, 그 이유와 예상되는 cross-shard 비용을 적어보기</li>
+        <li>Day 8 면접 질문을 소리 내어 2분 내로 답변해보기. "더 저렴한 대안 확인 → 파티셔닝/샤딩 구분 → 샤딩 키 선정 → cross-shard 대응 → rebalancing 전략 → 운영 비용" 흐름이 자연스럽게 나오는지 확인하기</li>
+        <li>위 Rubric 기준으로 본인 답변을 스스로 채점하기</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="nav-footer">
+    <a href="./interview-day-007-replication-ha.html">← Day 7 — 복제와 고가용성</a>
+    <a href="./interview-day-009-rdb-vs-nosql.html">Day 9 — RDB vs NoSQL →</a>
+  </div>
+
+</div>
+</body>
+</html>
