@@ -9,12 +9,12 @@
 | 3 | 2026-07-04 | Forms 심화 — 네이티브 검증, label 연결, 접근성 있는 폼 설계 | [0003-forms-native-validation-accessible-design.html](lessons/0003-forms-native-validation-accessible-design.html) |
 | 4 | 2026-07-05 | ARIA와 Accessibility Tree — role/name/state, First Rule of ARIA, aria-hidden 함정 | [0004-aria-accessibility-tree.html](lessons/0004-aria-accessibility-tree.html) |
 | 5 | 2026-07-06 | SEO 기본 판단 — 크롤러의 렌더링 예산, semantic 마크업, CSR/SSR/SSG/하이드레이션의 SEO trade-off | [0005-seo-fundamentals-semantic-markup-rendering.html](lessons/0005-seo-fundamentals-semantic-markup-rendering.html) |
+| 6 | 2026-07-07 | CSS Cascade 심화 — Origin/Importance → Cascade Layer → Specificity → Source Order, `!important`의 실무 함정 | [0006-css-cascade-deep-dive-layers-important.html](lessons/0006-css-cascade-deep-dive-layers-important.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | CSS Cascade 심화 | Cascade Layers, `!important`의 실무 함정 |
 | 7 | Specificity 심화 | 계산법, 유지보수 가능한 selector 전략 |
 | 8 | Inheritance와 CSS 커스텀 프로퍼티 | 상속 속성/비상속 속성, CSS 변수 활용 |
 | 9 | Box Model 심화 | `box-sizing`, margin collapsing, 실무 버그 사례 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 다음: Day 6 — CSS Cascade 심화
+**Day 6 완료** — 다음: Day 7 — Specificity 심화
 
 ## 습득한 핵심 개념
 
@@ -55,4 +55,10 @@
 - [x] `robots.txt`(방문 차단)와 `meta robots`(색인 차단)의 목적 차이 (Day 5)
 - [x] `canonical` 태그로 중복 콘텐츠 문제를 해결하는 방법 (Day 5)
 - [x] 구조화 데이터(JSON-LD)가 랭킹 요인이 아니라 rich result/CTR 개선 도구라는 구분 (Day 5)
-- [ ] Cascade Layers(`@layer`)를 이용한 우선순위 통제 (예정 Day 6)
+- [x] Cascade 4단계 판정 순서 (Origin/Importance → Cascade Layer → Specificity → Source Order) (Day 6)
+- [x] Cascade Layers(`@layer`)가 specificity보다 상위 기준이라는 것과 우선순위 통제 방법 (Day 6)
+- [x] `!important`가 문제를 해결하지 않고 경쟁 구간을 이동시킬 뿐이라는 원칙 (Day 6)
+- [x] `!important` 선언끼리 경쟁할 때 레이어 우선순위가 반대로 뒤집히는 함정 (Day 6)
+- [x] User `!important`가 Author `!important`를 이길 수 있는 접근성 설계 의도 (Day 6)
+- [x] 레거시 `!important` 코드베이스를 회귀 없이 점진적으로 이관하는 절차 (Day 6)
+- [ ] Specificity 정확한 계산법과 유지보수 가능한 selector 전략 (예정 Day 7)
