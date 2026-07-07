@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — Profiling 실전: CPU/메모리/I/O 프로파일링 해석 | 성능 최적화 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; color: #c8dae8; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .flame {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .flame .row { display: flex; gap: 2px; margin-bottom: 3px; height: 1.6rem; }
+    .flame .frame {
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      padding-left: 0.5rem;
+      font-size: 0.72rem;
+      color: #0a0c12;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">성능 최적화 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 8
+  </nav>
+
+  <h1>Day 8 — Profiling 실전: CPU/메모리/I/O 프로파일링 해석</h1>
+  <p class="subtitle">"어디가 느린지"에서 "어느 함수, 어느 줄이 시간을 소모하는지"까지 파고드는 능력 · 2026-07-07</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#cpu">CPU Profiling — sampling vs instrumentation</a></li>
+      <li><a href="#flame">Flame Graph 읽는 법</a></li>
+      <li><a href="#memory">메모리 Profiling — 누수와 점유 구분</a></li>
+      <li><a href="#io">I/O Profiling — I/O wait와 CPU busy 구분</a></li>
+      <li><a href="#practice">실무 연결</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"운영 서버에서 CPU 사용률이 갑자기 치솟았습니다. 서비스를 중단하지 않고 원인을 어떻게 찾으시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"flame graph를 봤더니 어떤 함수가 가장 넓게 나타났습니다. 이것이 무엇을 의미하나요? 그 함수가 호출 횟수가 많은 것과 실행 시간이 긴 것을 어떻게 구분하시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"애플리케이션 서버의 CPU는 여유로운데 응답 시간이 느립니다. 프로파일링 도구로 이 상황에서 무엇을 확인하시겠어요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>Day 4에서 latency를 구간별로 분해해 "어느 컴포넌트가 느린가"를 좁혔고, Day 7에서 부하 테스트로 "어느 자원이 먼저 포화되는가"를 지표로 확인했다면, Day 8은 그 다음 단계입니다 — <strong>병목이 애플리케이션 코드 내부라고 판단됐을 때, 정확히 어느 함수·어느 줄이 시간을 소모하는지</strong>까지 파고드는 능력입니다. 면접관은 단순히 "프로파일러를 써봤다"가 아니라, <strong>운영 환경에서 안전하게 프로파일링할 수 있는지</strong>, 그리고 <strong>결과를 올바르게 해석할 수 있는지</strong>를 확인합니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>운영 환경에서 안전하게 프로파일링하는 방법을 아는가</strong> — 서비스를 중단하거나 큰 오버헤드를 유발하지 않고 원인을 찾는 도구와 절차를 아는지.</li>
+      <li><strong>Sampling과 Instrumentation의 차이를 이해하는가</strong> — 왜 운영에서는 sampling 방식을 쓰고, 개발 환경에서는 instrumentation을 쓰는지 오버헤드와 정확도의 trade-off로 설명할 수 있는지.</li>
+      <li><strong>Flame graph를 정확히 해석하는가</strong> — 너비가 무엇을 의미하는지, 호출 횟수가 많은 함수와 한 번 호출에 시간이 오래 걸리는 함수를 구분할 수 있는지.</li>
+      <li><strong>CPU busy와 I/O wait을 구분하는가</strong> — "느리다"의 원인이 실제로 CPU를 쓰고 있어서인지, 아니면 무언가(디스크, 네트워크, 락)를 기다리느라 CPU를 안 쓰고 있는 것인지 구분하지 못하면 엉뚱한 최적화(예: 코드 리팩터링)를 시도하게 된다는 것을 아는지.</li>
+    </ul>
+
+    <p>10년차 이하의 전형적인 약한 패턴: "cProfile 돌려서 제일 위에 있는 함수를 최적화했습니다"에서 끝남. 시니어는 "그 함수가 cumulative time 기준으로 상위에 있는지 total time 기준으로 상위에 있는지, 호출 횟수가 많아서인지 한 번 호출에 오래 걸려서인지, 그리고 운영 환경에서는 오버헤드 때문에 cProfile 대신 sampling profiler를 사용해야 하는 이유"까지 설명합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Profiling이란 — 병원 정밀검사 비유</h3>
+    <p>Day 1의 모니터링(대시보드의 CPU/메모리 지표)이 "체온계로 열이 있는지 확인하는 것"이라면, profiling은 "정밀검사로 어느 장기, 어느 조직이 문제인지 확인하는 것"에 가깝습니다. 모니터링은 "CPU 사용률이 90%다"까지만 알려주지만, profiling은 "그 90% 중 60%를 JSON 직렬화 함수가 쓰고 있다"는 수준까지 알려줍니다. 두 단계를 혼동하면 안 됩니다 — 모니터링으로 병목의 <strong>영역</strong>(CPU인지 DB인지)을 좁히고, 그다음 profiling으로 그 영역 안의 <strong>정확한 위치</strong>(어느 함수)를 찾습니다.</p>
+
+    <h3>Sampling Profiling vs Instrumentation Profiling</h3>
+    <p>프로파일러가 정보를 얻는 방식은 크게 두 가지입니다. <strong>Instrumentation(계측)</strong> 방식은 함수가 호출되고 반환될 때마다 프로파일러가 끼어들어 시작/종료 시각을 기록합니다. 정확하지만, 함수 호출마다 오버헤드가 추가되어 실제 실행 속도를 몇 배까지 느리게 만들 수 있습니다. Python의 <code>cProfile</code>이 이 방식입니다. <strong>Sampling(샘플링)</strong> 방식은 대신 일정 간격(예: 10ms마다)으로 "지금 어느 함수를 실행 중인가"를 스냅샷 찍듯 확인합니다. 정확도는 통계적이지만(짧게 실행되고 끝난 함수는 놓칠 수 있음), 오버헤드가 매우 작아 운영 중인 서비스에 붙여도 안전합니다. <code>py-spy</code>, <code>perf</code>가 이 방식입니다.</p>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> "운영 서버에서 원인을 찾아야 하는데 서비스를 멈출 수 없다"는 상황에서 cProfile을 코드에 심고 재배포하는 것은 현실적이지 않습니다. py-spy 같은 sampling profiler는 실행 중인 프로세스에 <strong>코드 변경이나 재시작 없이</strong> 외부에서 붙어(attach) 스택을 들여다볼 수 있어 장애 대응에 적합합니다.
+    </div>
+
+    <h3>Wall Time vs CPU Time — 기다림과 일함의 구분</h3>
+    <p><strong>CPU Time</strong>은 실제로 CPU가 연산을 수행한 시간이고, <strong>Wall Time(경과 시간)</strong>은 사용자가 체감하는 실제 흐른 시간입니다. 함수가 디스크 읽기나 네트워크 응답을 기다리는 동안에는 CPU를 쓰지 않지만 Wall Time은 계속 흐릅니다. 이 둘을 구분하지 못하면 "이 함수가 3초 걸렸다"는 결과만 보고 코드를 리팩터링하려 하지만, 실제로는 그 3초 중 2.9초가 DB 응답을 기다린 시간(I/O wait)이라 코드를 아무리 최적화해도 소용이 없는 상황이 생깁니다.</p>
+
+    <h3>On-CPU Profiling vs Off-CPU Profiling</h3>
+    <p>이 구분이 CPU Time/Wall Time 개념을 실전에 적용한 것입니다. <strong>On-CPU profiling</strong>은 "CPU가 실제로 어떤 코드를 실행하며 바빴는가"를 봅니다(연산이 많은 로직, 비효율적 알고리즘, 과도한 직렬화 찾기에 사용). <strong>Off-CPU profiling</strong>은 "스레드가 무엇을 기다리며 CPU를 쓰지 않고 있었는가"를 봅니다(락 대기, I/O 대기, 커넥션 풀 대기 찾기에 사용). 둘 중 하나만 보고 "프로파일링했다"고 말하면 절반만 본 것입니다 — CPU 사용률이 낮은데 응답이 느린 상황(Variant 2 질문)은 전형적으로 off-CPU 관점이 필요한 경우입니다.</p>
+
+    <h3>Flame Graph란 무엇인가 — 스택을 쌓아 그린 막대 그림</h3>
+    <p>Flame Graph는 수많은 스택 샘플을 하나의 그림으로 요약한 것입니다. 아래쪽이 스택의 바닥(진입점, 예: <code>main</code> 이나 요청 핸들러), 위로 갈수록 그 함수가 호출한 하위 함수입니다. <strong>가로 너비가 그 함수가 (자식 함수 포함해서) 샘플에 등장한 비율, 즉 시간 비중을 의미</strong>합니다 — 좌우 순서는 시간 순서가 아니라 보통 알파벳순이나 임의 순서로 정렬되므로 의미가 없습니다. 가장 넓은 함수가 곧 최적화 우선순위 후보입니다.</p>
+  </section>
+
+  <!-- 4. CPU Profiling -->
+  <section id="cpu">
+    <h2>4. CPU Profiling — sampling vs instrumentation 실전 해석</h2>
+
+    <table class="method-table">
+      <tr><th>도구</th><th>방식</th><th>오버헤드</th><th>운영 환경 사용</th><th>특징</th></tr>
+      <tr><td><code>cProfile</code></td><td>Instrumentation</td><td>높음 (2~5배 이상 느려질 수 있음)</td><td>비권장</td><td>모든 호출을 정확히 계측, 개발/스테이징에서 정밀 분석용</td></tr>
+      <tr><td><code>py-spy</code></td><td>Sampling</td><td>매우 낮음</td><td>적합</td><td>실행 중인 프로세스에 외부에서 attach 가능, flame graph 즉시 생성</td></tr>
+      <tr><td><code>perf</code></td><td>Sampling (OS 레벨)</td><td>낮음</td><td>적합</td><td>언어 무관, 커널 레벨까지 확인 가능하나 심볼 매핑 설정 필요</td></tr>
+      <tr><td><code>async-profiler</code> (JVM)</td><td>Sampling</td><td>낮음</td><td>적합</td><td>JVM 애플리케이션의 on-CPU/off-CPU/allocation 프로파일링 지원</td></tr>
+    </table>
+
+    <p>cProfile 결과를 읽을 때는 두 지표를 구분해야 합니다.</p>
+
+    <table class="method-table">
+      <tr><th>지표</th><th>의미</th><th>어떤 문제를 가리키는가</th></tr>
+      <tr><td><code>tottime</code> (total time)</td><td>그 함수 자체의 코드에서 소요된 시간 (하위 호출 제외)</td><td>그 함수 자체가 비효율적 — 알고리즘, 반복문, 직렬화 로직 확인</td></tr>
+      <tr><td><code>cumtime</code> (cumulative time)</td><td>그 함수와 그 함수가 호출한 모든 하위 함수를 합친 시간</td><td>진입점(예: 요청 핸들러) 근처에서 항상 높게 나오는 것이 정상 — 실제 원인은 자식 함수 중 tottime이 높은 곳에 있음</td></tr>
+      <tr><td>호출 횟수(<code>ncalls</code>)</td><td>그 함수가 호출된 총 횟수</td><td>tottime이 높은데 ncalls도 매우 높다면 "한 번은 빠른데 너무 자주 호출됨"(예: N+1 패턴, Day 2와 연결) 가능성</td></tr>
+    </table>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> 흔한 실수는 cumtime 기준 상위 함수(대부분 요청 핸들러나 프레임워크 진입점)를 그대로 "병목"이라고 지목하는 것입니다. 요청 핸들러는 그 안의 모든 로직 시간을 합산하기 때문에 항상 cumtime이 높게 나옵니다. 진짜 원인은 tottime이 높은 <strong>leaf에 가까운 함수</strong>를 찾는 것이고, ncalls가 비정상적으로 높다면 반복 호출 자체가 문제(N+1, 불필요한 재계산)인지도 함께 봐야 합니다.
+    </div>
+  </section>
+
+  <!-- 5. Flame Graph -->
+  <section id="flame">
+    <h2>5. Flame Graph 읽는 법</h2>
+
+    <div class="flame">
+      <div class="row">
+        <div class="frame" style="width:100%; background:#6c8eff;">handle_request (100%)</div>
+      </div>
+      <div class="row">
+        <div class="frame" style="width:15%; background:#34d399;">auth_check</div>
+        <div class="frame" style="width:70%; background:#fbbf24;">fetch_order_items</div>
+        <div class="frame" style="width:15%; background:#34d399;">render_response</div>
+      </div>
+      <div class="row">
+        <div class="frame" style="width:15%; background:#a78bfa;"></div>
+        <div class="frame" style="width:10%; background:#a78bfa;">db_query</div>
+        <div class="frame" style="width:55%; background:#f87171;">json.dumps (직렬화)</div>
+        <div class="frame" style="width:15%; background:#a78bfa;"></div>
+      </div>
+    </div>
+
+    <p>위 예시에서 <code>handle_request</code>가 전체 100%를 차지하는 것은 당연합니다(진입점이므로 cumtime과 동일한 성격). 주목할 것은 그 위 레이어에서 <code>fetch_order_items</code>가 70%를 차지하고, 그 안에서도 <code>json.dumps</code>(직렬화)가 55%를 차지한다는 점입니다 — <strong>가장 넓은 leaf 근처 프레임이 실제 최적화 대상</strong>입니다. <code>db_query</code>는 10%에 불과하므로, 이 상황에서는 DB 쿼리가 아니라 <strong>대용량 응답을 JSON으로 직렬화하는 로직</strong>이 진짜 병목입니다 — 페이지네이션 도입이나 직렬화 라이브러리 교체가 우선순위가 됩니다.</p>
+
+    <h3>Flame Graph 해석 시 자주 하는 실수</h3>
+    <ul>
+      <li><strong>좌우 위치를 시간 순서로 착각</strong>: 대부분의 flame graph는 좌우를 알파벳순으로 정렬하므로, 왼쪽에 있다고 먼저 실행된 것이 아닙니다. 시간 순서를 보려면 별도의 timeline view(예: py-spy의 <code>--format speedscope</code>)가 필요합니다.</li>
+      <li><strong>가장 위쪽 프레임만 봄</strong>: 가장 위(가장 깊은 호출)가 항상 원인이 아닙니다. 너비가 좁으면 시간 비중이 작다는 뜻이므로, 위쪽이라도 폭이 좁으면 우선순위가 낮습니다.</li>
+      <li><strong>On-CPU flame graph만 보고 I/O 문제를 진단</strong>: I/O 대기 중인 스레드는 대부분의 on-CPU sampling에서 거의 잡히지 않습니다(CPU를 안 쓰고 있으니까). I/O 병목을 의심할 때는 off-CPU flame graph나 별도 latency 분해(Day 4)가 필요합니다.</li>
+    </ul>
+  </section>
+
+  <!-- 6. 메모리 -->
+  <section id="memory">
+    <h2>6. 메모리 Profiling — 누수와 정상적인 점유 구분</h2>
+
+    <p>메모리 프로파일링에서 가장 먼저 구분해야 할 것은 <strong>"메모리 사용량이 많다"와 "메모리가 새고 있다(누수)"는 다른 문제</strong>라는 점입니다.</p>
+
+    <table class="method-table">
+      <tr><th>패턴</th><th>특징</th><th>확인 방법</th></tr>
+      <tr><td>정상적인 높은 점유</td><td>큰 데이터셋을 캐시하거나 로드해서 메모리 사용량이 높지만 안정적으로 유지됨</td><td>메모리 사용량 그래프가 특정 수준에서 평평(plateau)해지는지 확인</td></tr>
+      <tr><td>누수(Leak)</td><td>시간이 지날수록 메모리 사용량이 계속 선형으로 증가하며 회수되지 않음</td><td>Soak Test(Day 7)로 장시간 관찰, GC 이후에도 증가 추세가 유지되는지 확인</td></tr>
+      <tr><td>GC 압박(Pressure)</td><td>메모리는 결국 회수되지만 GC가 너무 자주/오래 실행되어 CPU와 응답 지연에 영향</td><td>GC 실행 빈도와 GC pause 시간 지표 확인, allocation profiling으로 과도한 객체 생성 위치 파악</td></tr>
+    </table>
+
+    <p>누수 원인을 찾을 때는 <strong>객체별 참조를 추적하는 힙 스냅샷(heap snapshot) 비교</strong>가 핵심입니다. 두 시점(예: 배포 직후, 6시간 후)의 힙 스냅샷을 비교해 어떤 타입의 객체 수가 계속 늘어나는지 확인합니다(Python의 <code>tracemalloc</code>, <code>objgraph</code>, JVM의 heap dump + Eclipse MAT 등). 실무에서 흔한 누수 원인은 다음과 같습니다.</p>
+
+    <ul>
+      <li><strong>만료 시간 없는 캐시</strong>: Day 5에서 다룬 캐시에 TTL이나 최대 크기 제한이 없으면 계속 쌓임</li>
+      <li><strong>이벤트 리스너/콜백 미해제</strong>: 등록만 하고 해제하지 않아 참조가 계속 살아남아 GC 대상에서 제외됨</li>
+      <li><strong>순환 참조와 <code>__del__</code></strong>: 일부 언어/런타임에서는 순환 참조가 있는 객체의 소멸자가 정의되어 있으면 즉시 회수되지 못하고 지연됨</li>
+      <li><strong>전역 컬렉션에 계속 append만 하고 제거하지 않는 로직</strong> (예: 요청별 로그를 전역 리스트에 누적)</li>
+    </ul>
+  </section>
+
+  <!-- 7. I/O -->
+  <section id="io">
+    <h2>7. I/O Profiling — I/O wait과 CPU busy 구분</h2>
+
+    <p>"CPU는 여유로운데 응답이 느리다"는 신호는 스레드/프로세스가 무언가를 <strong>기다리고 있다(blocked)</strong>는 뜻입니다. 이 상태를 진단하려면 CPU 프로파일링이 아니라 <strong>어디서 대기하고 있는지</strong>를 봐야 합니다.</p>
+
+    <table class="method-table">
+      <tr><th>확인 방법</th><th>보여주는 것</th></tr>
+      <tr><td>off-CPU flame graph (예: py-spy dump 반복 스냅샷, eBPF 기반 도구)</td><td>스레드가 어느 함수에서 멈춰(blocked) 있는지 — DB 드라이버 대기, 락 대기, 소켓 read 대기 등</td></tr>
+      <tr><td><code>strace -c</code> / <code>strace -T</code></td><td>시스템 콜별 호출 횟수와 소요 시간 — <code>read</code>, <code>write</code>, <code>connect</code> 같은 콜에서 오래 걸리는지 확인</td></tr>
+      <tr><td>스레드 덤프(thread dump)를 여러 번 연속 채취</td><td>같은 지점(예: 특정 락, 특정 커넥션 풀 대기)에서 반복적으로 멈춰 있는 스레드가 많은지 확인 — 여러 번 찍었을 때 같은 스택이 계속 보이면 그곳이 병목</td></tr>
+      <tr><td>DB 커넥션 풀 대기 시간 지표 (Day 10과 연결)</td><td>애플리케이션 레벨 대기가 아니라 DB 커넥션을 얻기 위한 대기인지 구분</td></tr>
+    </table>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> CPU 프로파일러(py-spy on-CPU 모드)만 돌리고 "특별한 병목이 안 보인다"고 결론 내리는 경우가 흔합니다. 이는 프로파일러가 애초에 <strong>CPU를 쓰고 있는 순간만</strong> 샘플링하기 때문입니다. 스레드가 I/O를 기다리며 blocked 상태일 때는 on-CPU 샘플에 거의 잡히지 않으므로, "프로파일링해도 안 보인다"는 결과 자체가 오히려 <strong>I/O 대기가 원인일 가능성</strong>을 가리키는 신호입니다. 이때는 Day 4의 latency 분해나 off-CPU 분석으로 전환해야 합니다.
+    </div>
+  </section>
+
+  <!-- 8. 실무 연결 -->
+  <section id="practice">
+    <h2>8. 실무 연결</h2>
+
+    <h3>상황 1: 운영 서버 CPU 100% — py-spy로 재배포 없이 원인 특정</h3>
+    <p>배포 직후 특정 인스턴스의 CPU 사용률이 100%에 도달했지만 서비스는 계속 운영해야 했습니다. <code>py-spy dump --pid &lt;pid&gt;</code>와 <code>py-spy record</code>로 재시작 없이 해당 프로세스에 attach해 30초간 flame graph를 채집했더니, 새로 추가된 로깅 로직에서 매 요청마다 정규식을 컴파일하고 있는 것이 확인됐습니다(<code>re.compile</code>이 넓은 프레임으로 나타남). 정규식을 모듈 로드 시점에 한 번만 컴파일하도록 고치자 CPU 사용률이 정상으로 돌아왔습니다.</p>
+
+    <h3>상황 2: cumtime 상위 함수를 잘못 짚어 시간을 낭비한 사례</h3>
+    <p>cProfile 결과에서 <code>process_order</code> 함수가 cumtime 1위로 나와 이 함수를 리팩터링하는 데 며칠을 썼지만 개선이 없었습니다. 다시 보니 <code>process_order</code>는 요청 핸들러 바로 아래의 진입점이라 항상 cumtime이 높게 나올 수밖에 없는 구조였고, tottime 기준으로 정렬했더니 실제 원인은 그 안에서 호출하는 세금 계산 라이브러리의 부동소수점 반복 연산이었습니다. cumtime과 tottime을 처음부터 구분했다면 며칠을 아낄 수 있었던 사례입니다.</p>
+
+    <h3>상황 3: CPU는 40%인데 응답이 느린 상황 — off-CPU 분석으로 락 경합 발견</h3>
+    <p>on-CPU 프로파일링 결과 특별히 눈에 띄는 함수가 없어 "코드 문제는 아니다"로 결론 내릴 뻔했습니다. 스레드 덤프를 5초 간격으로 5번 연속 채취해 비교하니, 여러 요청 스레드가 매번 같은 인메모리 락(전역 카운터 갱신용) 대기 지점에서 멈춰 있는 것이 반복적으로 관찰됐습니다. 그 락의 보호 범위를 좁히고 원자적 연산으로 교체하자 응답 시간이 개선됐습니다. CPU 프로파일링만으로는 발견할 수 없었던 off-CPU 병목이었습니다.</p>
+
+    <h3>상황 4: 메모리 사용량이 계속 증가하다 OOM으로 재시작되는 문제</h3>
+    <p>배포 후 12시간 간격으로 서버가 OOM(Out of Memory)으로 재시작되는 패턴이 반복됐습니다. <code>tracemalloc</code>으로 배포 직후와 8시간 후의 힙 스냅샷을 비교하니, 요청마다 생성되는 임시 캐시 객체가 특정 조건에서 TTL 없이 전역 딕셔너리에 계속 추가되고 있었습니다. 코드 리뷰만으로는 놓쳤던 부분이었고, 힙 스냅샷 diff에서 해당 딕셔너리 타입 객체 수가 시간에 정확히 비례해 증가하는 것을 보고 확정할 수 있었습니다.</p>
+  </section>
+
+  <!-- 9. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>9. 답변 사고 순서</h2>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>모니터링 지표로 영역을 먼저 좁힌다</strong>
+          <p style="margin-top:0.3rem">CPU 사용률이 높은지, 여유로운데 응답만 느린지부터 확인합니다. 이 판단이 on-CPU profiling을 쓸지 off-CPU/I/O 분석을 쓸지를 결정합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>운영 환경 안전성을 고려해 도구를 선택한다</strong>
+          <p style="margin-top:0.3rem">운영 중인 프로세스라면 오버헤드가 큰 instrumentation(cProfile) 대신 sampling profiler(py-spy, perf)로 재시작 없이 attach해서 관찰합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>flame graph에서 가장 넓은 leaf 프레임을 찾는다</strong>
+          <p style="margin-top:0.3rem">진입점이나 cumtime이 높은 함수에 속지 않고, 실제로 시간을 소모하는(tottime이 높은) 하위 함수를 찾습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>호출 횟수와 단일 실행 시간을 분리해서 본다</strong>
+          <p style="margin-top:0.3rem">문제가 "한 번 호출이 느린 것"인지 "너무 자주 호출되는 것"(N+1 패턴 등)인지 구분해 해결 방향을 다르게 잡습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>개선 후 같은 프로파일링으로 before/after를 증명한다</strong>
+          <p style="margin-top:0.3rem">"고쳤다"가 아니라 같은 조건에서 flame graph나 지표가 실제로 좁아졌는지 재측정해 증명합니다(Day 1의 Measure First 원칙).</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 10. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>10. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "운영 서버에서 CPU 사용률이 갑자기 치솟았습니다. 서비스를 중단하지 않고 원인을 어떻게 찾으시겠어요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>먼저 어느 인스턴스, 어느 프로세스에서 CPU가 치솟았는지 모니터링 대시보드로 확인합니다. 그 프로세스가 특정 컨테이너나 서버에 한정되는지, 아니면 전체적으로 발생하는지에 따라 배포 직후 코드 변경 문제인지 트래픽 패턴 변화인지 1차로 구분합니다.</p>
+      <br>
+      <p>운영 중인 프로세스이므로 cProfile처럼 오버헤드가 큰 instrumentation 방식은 쓰지 않고, py-spy 같은 sampling profiler로 실행 중인 프로세스에 코드 변경이나 재시작 없이 바로 attach해서 30초 정도 flame graph를 채집합니다. 이 방식은 오버헤드가 매우 작아 운영 트래픽에 영향을 주지 않습니다.</p>
+      <br>
+      <p>flame graph를 볼 때는 요청 핸들러처럼 항상 넓게 나오는 진입점에 속지 않고, 그 아래에서 가장 넓은 leaf에 가까운 프레임을 찾습니다. 그 함수가 cProfile 기준으로 봤을 때 tottime이 높은지, 아니면 호출 횟수 자체가 비정상적으로 많은지(예: 매 요청마다 불필요하게 재계산되는 로직)를 구분해서 봅니다. 만약 CPU 프로파일에서 특별히 눈에 띄는 함수가 없다면, 이는 오히려 CPU를 쓰는 게 아니라 무언가를 기다리는 상황일 수 있다는 신호이므로 off-CPU 관점이나 락 경합, I/O 대기 쪽으로 분석 방향을 전환합니다.</p>
+      <br>
+      <p>원인을 특정한 뒤에는 같은 방식으로 개선 전후 flame graph를 다시 채집해서, 해당 함수의 시간 비중이 실제로 줄었는지 수치로 확인하고 종료합니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>운영 환경 안전성(재시작 없이, 낮은 오버헤드)을 최우선 고려사항으로 명시</li>
+      <li>sampling과 instrumentation의 차이와 선택 이유를 설명</li>
+      <li>flame graph 해석 시 진입점의 함정을 피하고 leaf 프레임에 집중하는 절차를 제시</li>
+      <li>CPU 프로파일에서 아무것도 안 보이는 경우까지 대응 방안(off-CPU 전환)을 포함</li>
+      <li>Measure First 원칙에 따라 개선 후 재측정으로 마무리</li>
+    </ul>
+  </section>
+
+  <!-- 11. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>11. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"cProfile로 프로파일링해서 가장 위에 나오는 함수를 최적화합니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>cProfile은 오버헤드가 커서 운영 중인 서비스에 바로 적용하면 자체적으로 서비스를 느리게 만들거나 재시작이 필요할 수 있음을 고려하지 않음</li>
+        <li>"가장 위에 나오는 함수"가 cumtime 기준인지 tottime 기준인지 구분하지 않아, 진입점을 병목으로 오인할 위험이 큼</li>
+        <li>CPU 사용률이 낮은데 느린 경우(I/O 대기, 락 경합)에 대한 대응이 전혀 없음</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"flame graph에서 제일 왼쪽에 있는 함수부터 확인합니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>flame graph의 좌우 위치는 대부분 정렬 기준(알파벳순)일 뿐 시간 순서나 중요도를 의미하지 않는다는 기본 개념을 잘못 이해함</li>
+        <li>실제로 봐야 할 것은 너비(시간 비중)이지 좌우 위치가 아님</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>운영 환경에서는 오버헤드가 낮은 sampling profiler(py-spy, perf)를 우선 고려한다</li>
+        <li>flame graph의 너비가 시간 비중을 의미하고, 좌우 위치는 순서가 아니라는 것을 정확히 안다</li>
+        <li>cumtime과 tottime을 구분해 진입점이 아닌 실제 leaf 병목을 찾는다</li>
+        <li>호출 횟수와 단일 실행 시간을 분리해서 원인(비효율 로직 vs 반복 호출)을 구분한다</li>
+        <li>CPU 프로파일에 안 잡히는 상황을 off-CPU/I/O 대기 가능성으로 연결해 분석 방향을 전환한다</li>
+        <li>개선 후 같은 방법으로 재측정해 효과를 수치로 증명한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 12. Follow-up -->
+  <section id="followups">
+    <h2>12. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: flame graph를 봤더니 어떤 함수가 가장 넓게 나타났습니다. 이것이 무엇을 의미하나요? 그 함수가 호출 횟수가 많은 것과 실행 시간이 긴 것을 어떻게 구분하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> flame graph의 너비는 그 함수가 전체 샘플에서 차지하는 시간 비중을 의미하며, 호출 횟수가 많아서 넓어진 것인지 한 번 실행이 오래 걸려서 넓어진 것인지는 flame graph만으로는 구분되지 않습니다. 이를 구분하려면 cProfile 같은 instrumentation profiler의 <code>ncalls</code>(호출 횟수)와 <code>tottime</code>(총 소요 시간)을 함께 봐야 합니다. ncalls가 비정상적으로 높다면 N+1 패턴처럼 불필요하게 반복 호출되는 구조를, ncalls는 적은데 tottime이 높다면 알고리즘 자체의 비효율(예: O(n²) 연산)을 의심합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 애플리케이션 서버의 CPU는 여유로운데 응답 시간이 느립니다. 프로파일링 도구로 이 상황에서 무엇을 확인하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> CPU가 여유롭다는 것은 스레드가 CPU 연산이 아니라 무언가를 기다리고 있다는 신호이므로, on-CPU profiling 대신 off-CPU 분석으로 전환합니다. 스레드 덤프를 여러 번 연속으로 채취해서 같은 지점(DB 커넥션 풀 대기, 락, 외부 API 응답 대기)에서 반복적으로 멈춰 있는 스레드가 있는지 확인하고, DB 커넥션 풀 대기 시간 지표나 외부 의존성 latency 지표(Day 4, Day 10과 연결)를 함께 봅니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: cProfile로 로컬에서는 병목을 재현했는데, 운영에서는 같은 프로파일러를 붙였더니 오히려 응답 시간이 더 느려져서 다른 문제처럼 보였습니다. 왜 이런 일이 생기나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> cProfile은 instrumentation 방식이라 모든 함수 호출마다 계측 코드가 끼어들어 오버헤드를 유발합니다. 로컬처럼 트래픽이 적은 환경에서는 이 오버헤드가 상대적으로 티가 안 나지만, 운영처럼 동시 요청이 많은 환경에서는 오버헤드가 누적되어 실제 병목과 다른 이차적인 지연을 만들어 냅니다. 운영 환경에서는 처음부터 오버헤드가 낮은 sampling profiler(py-spy, perf)를 사용해야 이런 왜곡을 피할 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 메모리 사용량이 배포 후 꾸준히 증가하고 있습니다. 이것이 정상적인 캐시 워밍업인지 실제 누수인지 어떻게 구분하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 정상적인 캐시 워밍업이라면 메모리 사용량이 어느 시점에서 평평(plateau)해집니다. 반면 누수는 시간이 지나도 계속 선형으로 증가하며 회수되지 않습니다. 이를 구분하려면 Soak Test(Day 7)처럼 충분히 긴 시간 관찰하거나, 두 시점의 힙 스냅샷을 비교해 어떤 타입의 객체 수가 계속 늘어나는지 확인합니다. 특정 객체 타입의 수가 시간에 정확히 비례해서 증가한다면 누수로 확정하고, 해당 객체를 참조하는 코드(캐시 TTL 누락, 리스너 미해제 등)를 역추적합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 프로파일링으로 원인을 찾아 코드를 수정했습니다. 이 개선이 실제로 효과가 있었는지 어떻게 증명하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 수정 전과 동일한 조건(같은 부하 패턴, 같은 데이터 볼륨)에서 같은 프로파일링 방법으로 다시 측정합니다. flame graph에서 해당 함수의 너비(시간 비중)가 줄었는지, 그리고 실제 서비스 지표(p95 latency, CPU 사용률)가 개선됐는지 before/after 수치로 비교합니다. "체감상 빨라진 것 같다"가 아니라 같은 측정 방법으로 재현 가능한 수치 차이를 제시하는 것이 Day 1의 Measure First 원칙을 개선 검증 단계까지 확장한 것입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>13. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"프로파일러는 다 똑같으니 아무거나 써도 결과는 비슷하다"</strong></p>
+      <p>Instrumentation(cProfile)과 sampling(py-spy) 방식은 오버헤드와 정확도의 성격이 다릅니다. 운영 환경에서 instrumentation을 쓰면 오버헤드 자체가 새로운 문제를 만들거나 기존 문제를 왜곡할 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"cumtime이 가장 높은 함수가 곧 병목이다"</strong></p>
+      <p>진입점에 가까운 함수는 하위 호출을 모두 합산하기 때문에 구조적으로 cumtime이 높게 나옵니다. 실제 병목은 tottime이 높은, leaf에 가까운 함수에서 찾아야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"flame graph의 왼쪽에 있는 함수가 먼저 실행된 것이다"</strong></p>
+      <p>대부분의 flame graph는 좌우를 시간 순서가 아니라 알파벳순 등으로 정렬합니다. 의미가 있는 것은 너비(시간 비중)이지 좌우 위치가 아닙니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"CPU 프로파일링에서 특별한 함수가 안 보이면 코드에는 문제가 없다는 뜻이다"</strong></p>
+      <p>CPU 프로파일러는 CPU를 실제로 쓰고 있는 순간만 샘플링하므로, I/O 대기나 락 경합처럼 CPU를 쓰지 않고 멈춰 있는 상황은 잡히지 않습니다. 아무것도 안 보인다는 결과 자체가 off-CPU 원인을 의심해야 하는 신호입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"메모리 사용량이 계속 높으면 무조건 누수다"</strong></p>
+      <p>큰 데이터셋을 정상적으로 캐시하거나 로드해서 메모리 사용량이 높게 유지되는 것과, 회수되지 않고 계속 증가하는 누수는 다릅니다. 사용량이 특정 수준에서 안정화(plateau)되는지, 계속 선형으로 증가하는지로 구분해야 합니다.</p>
+    </div>
+  </section>
+
+  <!-- 14. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>14. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 8을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Sampling profiling과 instrumentation profiling의 차이를 오버헤드와 운영 환경 적합성 관점에서 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>cProfile의 tottime과 cumtime의 차이를 설명하고, 왜 cumtime 상위 함수만 보면 진입점을 병목으로 오인하는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Flame graph에서 너비가 무엇을 의미하는지, 좌우 위치가 왜 시간 순서가 아닌지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>On-CPU profiling과 off-CPU profiling의 차이와, 각각 어떤 상황에서 써야 하는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>CPU 프로파일에서 아무것도 안 잡히는 상황이 왜 I/O 대기나 락 경합을 의심해야 하는 신호인지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>정상적인 메모리 점유와 메모리 누수를 시간에 따른 추세와 힙 스냅샷 비교로 구분하는 절차를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>프로파일링으로 찾은 개선을 배포 후 같은 방법으로 재측정해 효과를 증명하는 습관을 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 9</h3>
+      <p><strong>성능 지표 해석 — p50/p95/p99, throughput, error rate</strong></p>
+      <p>Day 8에서 코드 레벨의 병목을 찾는 profiling을 다뤘다면, Day 9는 그 결과를 팀과 경영진에게 전달할 때 쓰는 <strong>성능 지표 자체를 정확히 해석하는 능력</strong>을 다룹니다. 평균(mean)이 왜 오해를 부르는지, percentile latency가 무엇을 보여주고 무엇을 숨기는지, SLO/SLI를 percentile 기반으로 설계하는 법을 봅니다.</p>
+      <p>면접 질문 예고: "평균 응답 시간은 200ms인데 사용자들이 느리다고 불만을 제기합니다. 어떻게 설명하시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    성능 최적화 시니어 인터뷰 · Day 8 of 20 · 2026-07-07
+  </p>
+
+</div>
+</body>
+</html>

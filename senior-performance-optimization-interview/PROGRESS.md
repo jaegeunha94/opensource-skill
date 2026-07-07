@@ -11,18 +11,18 @@
 | 5 | 2026-07-04 | 캐시 전략 설계 — 히트율, 무효화, 일관성 trade-off | [0005-cache-strategy-hit-rate-invalidation-consistency.html](lessons/0005-cache-strategy-hit-rate-invalidation-consistency.html) |
 | 6 | 2026-07-05 | 비동기 처리와 동시성 — async가 해결책인 경우와 함정 | [0006-async-concurrency-when-it-helps-and-traps.html](lessons/0006-async-concurrency-when-it-helps-and-traps.html) |
 | 7 | 2026-07-06 | 부하 테스트 설계 — 현실적인 트래픽 시뮬레이션 | [0007-load-testing-realistic-traffic-simulation.html](lessons/0007-load-testing-realistic-traffic-simulation.html) |
+| 8 | 2026-07-07 | Profiling 실전 — CPU/메모리/I/O 프로파일링 해석 | [0008-profiling-cpu-memory-io-interpretation.html](lessons/0008-profiling-cpu-memory-io-interpretation.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Profiling 실전 — CPU/메모리/I/O 해석 | py-spy, cProfile, flame graph, I/O wait |
 | 9 | 성능 지표 해석 — p50/p95/p99, throughput, error rate | percentile latency, histogram, SLO |
 | 10 | DB Connection Pool 튜닝 | pool exhaustion, deadlock, timeout 설정 |
 
 ## 현재 학습 위치
 
-**Day 7 완료** — 다음: Day 8 — Profiling 실전 (CPU/메모리/I/O 해석)
+**Day 8 완료** — 다음: Day 9 — 성능 지표 해석 (p50/p95/p99, throughput, error rate)
 
 ## 습득한 핵심 개념
 
@@ -64,4 +64,9 @@
 - [x] 현실적인 트래픽 재현 — think time, 엔드포인트 비율, 데이터 편향 (Day 7)
 - [x] 테스트 환경과 운영 환경의 격차(Environment Parity) (Day 7)
 - [x] 부하 테스트 결과에서 지표 기반 병목 판별 (Day 7)
-- [ ] Profiling 도구와 flame graph 해석 (예정 Day 8)
+- [x] Sampling vs Instrumentation profiling과 오버헤드 trade-off (Day 8)
+- [x] cProfile의 tottime/cumtime 구분과 진입점 오인 방지 (Day 8)
+- [x] Flame Graph 해석 — 너비=시간 비중, 좌우=비시간순 (Day 8)
+- [x] On-CPU vs Off-CPU profiling (Day 8)
+- [x] 메모리 누수 판별 — plateau vs 선형 증가, 힙 스냅샷 비교 (Day 8)
+- [ ] Percentile latency(p50/p95/p99)와 SLO/SLI 설계 (예정 Day 9)
