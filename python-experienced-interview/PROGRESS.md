@@ -12,12 +12,12 @@
 | 6 | 2026-07-04 | Context Manager — 리소스 관리 패턴과 `with`의 실행 모델 | [0006-context-manager.html](lessons/0006-context-manager.html) |
 | 7 | 2026-07-05 | Descriptor 프로토콜 — `__get__`/`__set__`/`__delete__`와 속성 접근의 실체 | [0007-descriptor-protocol.html](lessons/0007-descriptor-protocol.html) |
 | 8 | 2026-07-06 | Decorator — 함수형 패턴, closure, 실행 시점, 실무 활용 | [0008-decorator.html](lessons/0008-decorator.html) |
+| 9 | 2026-07-07 | Python 실행 모델 — 바이트코드, CPython 인터프리터, 네임스페이스, LEGB | [0009-execution-model.html](lessons/0009-execution-model.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | Python 실행 모델 | 바이트코드, CPython 인터프리터, 네임스페이스, LEGB |
 | 10 | Typing — 타입 힌트 심화 | `Protocol`, `Generic`, `TypeVar`, `Literal`, `overload` |
 | 11 | Testing 전략 | pytest fixture, mock, property-based testing, 테스트 격리 |
 | 12 | Debugging과 Profiling | `pdb`, `cProfile`, `memory_profiler`, flamegraph |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 8 완료** — Day 9 (Python 실행 모델)부터 계속.
+**Day 9 완료** — Day 10 (Typing 심화)부터 계속.
 
 ## 습득한 핵심 개념
 
@@ -68,5 +68,11 @@
 - [x] 인자 있는 decorator의 3단 중첩(팩토리) 구조 (Day 8)
 - [x] 데코레이터 스택의 적용 순서(아래→위) vs 실행 순서(위→아래) (Day 8)
 - [x] 클래스 기반 decorator(`__call__`)와 descriptor 상호작용 함정 (Day 8)
+- [x] CPython 실행 파이프라인 — 소스 → AST → 바이트코드 → PVM, `.pyc` 캐시 (Day 9)
+- [x] `sys.modules`를 통한 모듈 import 캐싱과 싱글턴 성질 (Day 9)
+- [x] LEGB가 런타임 동적 탐색이 아닌 컴파일 시점 정적 분석이라는 원리 (Day 9)
+- [x] `UnboundLocalError`의 근본 원인 — 함수 내 할당문에 의한 local 확정 (Day 9)
+- [x] 클로저의 cell 공유 원리와 반복문 클로저 함정 (Day 9)
+- [x] 가변 기본 인자가 함수 정의 시점에 1회만 평가되는 원리 (Day 9)
 
-- [ ] Python 실행 모델 — 바이트코드, LEGB (예정 Day 9)
+- [ ] Typing 심화 — `Protocol`, `Generic`, `TypeVar` (예정 Day 10)

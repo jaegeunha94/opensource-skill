@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 9 — Python 실행 모델 | 파이썬 경력자 Interview</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header class="lesson-header">
+    <span class="lesson-tag">Day 9</span>
+    <h1>Python 실행 모델<br><span style="font-size:0.7em;color:var(--text-muted)">바이트코드, CPython 인터프리터, 네임스페이스, LEGB</span></h1>
+    <p class="lesson-meta">파이썬 경력자 Interview · 2026-07-07 · 약 70–90분 소요</p>
+  </header>
+
+  <!-- ── 왜 이 주제인가 ── -->
+  <section>
+    <h2>왜 면접에서 Python 실행 모델을 묻는가</h2>
+    <p>
+      대부분의 파이썬 개발자는 "코드를 실행하면 결과가 나온다"는 사실만 알고, 그 사이에 무슨 일이
+      일어나는지는 신경 쓰지 않는다. 면접관이 실행 모델을 묻는 이유는 <strong>"왜 이 코드가 이렇게
+      동작하는지"를 구현 원리로 설명할 수 있는가</strong>를 보기 위해서다. 특히
+      <code>UnboundLocalError</code>처럼 처음 보면 당황스러운 에러, <code>import</code>가 두 번째부터
+      왜 빨라지는지, 같은 파이썬 코드가 PyPy에서는 왜 다르게 동작할 수 있는지 같은 질문은 전부
+      "실행 모델을 원리로 이해했는가"를 가른다.
+    </p>
+    <p>
+      이 감각은 지금까지 배운 모든 것의 토대다. Day 1의 data model, Day 7의 descriptor, Day 8의
+      decorator 모두 "이름(name)이 어떤 객체를 가리키는지", "그 이름이 언제 어떤 네임스페이스에서
+      찾아지는지"라는 실행 모델 위에서 동작한다. 이 원리를 모르면 겉으로 비슷해 보이는 코드가 실제로는
+      완전히 다르게 동작하는 이유를 설명하지 못한다.
+    </p>
+    <div class="callout tip">
+      <div class="callout-title">실무 연결</div>
+      "운영 서버에서 특정 함수만 호출하면 간헐적으로 <code>UnboundLocalError</code>가 발생합니다.
+      로컬에서는 재현이 안 됩니다. 원인을 어떻게 찾겠습니까?" — 이 질문에 "조건문 안에서만 변수가
+      할당되는 경로가 있고, 컴파일러가 함수 전체를 정적으로 분석해 그 변수를 로컬로 확정했기 때문"이라고
+      바이트코드/네임스페이스 수준에서 설명할 수 있는가가 이 레슨의 핵심이다.
+    </div>
+  </section>
+
+  <!-- ── 전제 개념 1: 실행 파이프라인 ── -->
+  <section>
+    <h2>전제 개념 ① — 소스코드는 어떻게 실행 가능한 것으로 바뀌는가</h2>
+    <p>
+      C나 Java와 달리 파이썬은 "완전한 기계어로 미리 컴파일"되지도 않고, "한 줄씩 그대로 해석"되지도
+      않는다. CPython(가장 널리 쓰이는 구현체)은 그 중간 지점에 있다: 소스코드를 사람이 읽을 수 없는
+      <strong>바이트코드(bytecode)</strong>라는 중간 표현으로 먼저 컴파일하고, 그 바이트코드를
+      <strong>파이썬 가상 머신(PVM)</strong>이 한 명령어씩 실행한다.
+    </p>
+    <div class="card accent">
+      <div class="card-label">CPython 실행 파이프라인</div>
+      <pre style="margin:0">소스코드(.py)
+   │  tokenize + parse
+   ▼
+AST(추상 구문 트리)
+   │  compile
+   ▼
+바이트코드(code object) ── .pyc로 캐시됨(__pycache__/)
+   │
+   ▼
+CPython 가상 머신(ceval 루프)이 opcode를 하나씩 실행
+   │
+   ▼
+실제 결과(객체 생성, 속성 접근, 함수 호출 ...)</pre>
+    </div>
+    <p>
+      여기서 중요한 건 <strong>"바이트코드"는 파이썬 언어 스펙이 아니라 CPython이라는 구현체의
+      내부 세부사항</strong>이라는 점이다. PyPy는 같은 파이썬 코드를 다른 방식(JIT 컴파일)으로
+      실행하고, MicroPython은 임베디드 환경에 맞춘 자체 바이트코드를 쓴다. "파이썬은 바이트코드로
+      컴파일된 뒤 인터프리터가 실행한다"는 CPython의 동작 방식이지, 파이썬 언어 자체의 정의가
+      아니라는 걸 구분하는 게 중요하다.
+    </p>
+    <pre><span class="kw">import</span> dis
+
+<span class="kw">def</span> <span class="fn">add</span>(a, b):
+    <span class="kw">return</span> a + b
+
+dis.dis(add)
+<span class="cm"># 출력 예시 (버전에 따라 약간 다를 수 있음):</span>
+<span class="cm">#   2           0 RESUME                   0</span>
+<span class="cm">#   3           2 LOAD_FAST                0 (a)</span>
+<span class="cm">#               4 LOAD_FAST                1 (b)</span>
+<span class="cm">#               6 BINARY_OP                0 (+)</span>
+<span class="cm">#              10 RETURN_VALUE</span></pre>
+    <div class="callout warn">
+      <div class="callout-title">.pyc는 언제, 왜 생성되는가</div>
+      모듈을 <code>import</code>하면 CPython은 소스를 컴파일한 바이트코드를
+      <code>__pycache__/모듈명.cpython-3XX.pyc</code>에 캐시한다. 다음 실행 때 소스 파일의
+      수정 시각(또는 해시)이 바뀌지 않았다면, <strong>파싱과 컴파일 단계를 건너뛰고 캐시된 바이트코드를
+      바로 로드</strong>한다. 단, 이건 "매번 다시 파싱하지 않는다"는 뜻이지 실행 자체가 빨라지는 건
+      아니다 — 컴파일 오버헤드만 줄여줄 뿐, 인터프리터가 바이트코드를 실행하는 속도 자체는 그대로다.
+      스크립트로 직접 실행하는 <code>__main__</code> 모듈은 기본적으로 <code>.pyc</code> 캐시가
+      생성되지 않는다는 점도 실무에서 자주 놓치는 디테일이다.
+    </div>
+  </section>
+
+  <!-- ── 면접 Q1 ── -->
+  <section>
+    <h2>면접 질문 ① — 같은 모듈을 여러 파일에서 import하면 매번 다시 실행되나요?</h2>
+    <div class="interview-q">
+      <code>a.py</code>와 <code>b.py</code> 둘 다 <code>import config</code>를 합니다.
+      <code>config.py</code> 최상위에 <code>print("로딩됨")</code>이 있다면, 프로그램을 실행했을 때
+      이 메시지가 몇 번 출력되나요? 그 이유를 설명해주세요.
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li><code>sys.modules</code>가 무엇이고 <code>import</code> 시스템에서 어떤 역할을 하는지 아는가</li>
+      <li>모듈의 최상위 코드가 "최초 1회만" 실행된다는 것과 그 근거를 설명할 수 있는가</li>
+      <li>이 캐싱이 실무에서 일으키는 문제(전역 상태 공유, 순환 import, 설정 재로딩 실패)를 연결할 수 있는가</li>
+    </ul>
+
+    <h3>답변 구조 — 생각의 순서</h3>
+    <ol>
+      <li><strong>사실 제시</strong>: 1번만 출력된다</li>
+      <li><strong>메커니즘</strong>: <code>import</code>는 먼저 <code>sys.modules</code>에 해당 모듈 이름이 있는지 확인</li>
+      <li><strong>없으면</strong>: 모듈을 찾아 컴파일하고, 새 모듈 객체를 만들어 최상위 코드를 실행한 뒤 <code>sys.modules</code>에 등록</li>
+      <li><strong>있으면</strong>: 캐시된 모듈 객체를 그대로 반환 — 코드 재실행 없음</li>
+      <li><strong>실무 함의</strong>: 모듈 최상위의 전역 변수는 프로세스 전체에서 공유되는 싱글턴처럼 동작</li>
+    </ol>
+
+    <pre><span class="cm"># config.py</span>
+<span class="fn">print</span>(<span class="st">"로딩됨"</span>)
+DEBUG = <span class="cls">False</span>
+
+<span class="cm"># a.py</span>
+<span class="kw">import</span> config
+config.DEBUG = <span class="cls">True</span>   <span class="cm"># config 모듈 객체의 속성을 변경</span>
+
+<span class="cm"># b.py — a.py보다 나중에 import되면</span>
+<span class="kw">import</span> config
+<span class="fn">print</span>(config.DEBUG)  <span class="cm"># True — a.py에서 바꾼 값이 그대로 보임(같은 객체를 공유하므로)</span></pre>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변</div>
+      <p>
+        "<code>"로딩됨"</code>은 <strong>딱 한 번만</strong> 출력됩니다. <code>import</code> 문은
+        먼저 <code>sys.modules</code>라는 딕셔너리에 해당 모듈 이름이 이미 키로 존재하는지 확인합니다.
+        존재하지 않으면 소스를 찾아 컴파일하고, 새 모듈 객체를 만들어 그 최상위 코드를 실행한 뒤
+        결과를 <code>sys.modules['config']</code>에 등록합니다. 이후 어디서 다시
+        <code>import config</code>를 하더라도 이 과정을 반복하지 않고 <strong>캐시된 동일한 모듈
+        객체를 그대로 반환</strong>합니다.
+      </p>
+      <p style="margin-bottom:0">
+        이게 실무적으로 중요한 이유는, 모듈이 <strong>사실상 프로세스 전역 싱글턴</strong>처럼
+        동작한다는 겁니다. <code>a.py</code>에서 <code>config.DEBUG</code>를 바꾸면
+        <code>b.py</code>에서 나중에 import해도 바뀐 값이 그대로 보입니다. 이 성질을 모르면 "설정을
+        다시 로드했는데 왜 값이 안 바뀌지"라는 혼란이 생기거나, 반대로 이 성질을 의도적으로 활용해
+        캐시나 커넥션 풀을 모듈 전역 변수로 구현하는 패턴도 나옵니다."
+      </p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변</div>
+      <p>
+        "import는 알아서 캐싱해줘서 한 번만 출력됩니다."
+      </p>
+      <p style="margin-bottom:0">
+        <strong>왜 약한가:</strong> "알아서 캐싱"이라는 표현은 <code>sys.modules</code>라는 구체적인
+        메커니즘을 모른다는 신호다. 이 지식이 없으면 순환 import 에러가 왜 나는지, 모듈 상태 공유로
+        인한 버그를 왜 만나는지 설명할 수 없다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── 전제 개념 2: 네임스페이스와 LEGB ── -->
+  <section>
+    <h2>전제 개념 ② — 이름(name)은 값이 아니라 "네임스페이스 안의 참조"다</h2>
+    <p>
+      파이썬에서 변수는 상자가 아니라 <strong>이름표(name)</strong>다. <code>x = 1</code>은 "x라는
+      상자에 1을 담는다"가 아니라, <strong>현재 네임스페이스라는 딕셔너리에 <code>"x"</code>라는 키로
+      정수 객체 <code>1</code>에 대한 참조를 저장한다</strong>는 뜻이다. 그래서 이름을 찾는 것(name
+      lookup)은 곧 "어느 네임스페이스에서 이 이름을 찾을 것인가"의 문제가 된다.
+    </p>
+    <p>
+      파이썬은 이름을 찾을 때 정해진 순서로 네 단계의 스코프(scope)를 검사한다. 이것이
+      <strong>LEGB 규칙</strong>이다.
+    </p>
+    <div class="card accent">
+      <div class="card-label">LEGB — 이름을 찾는 순서</div>
+      <pre style="margin:0"><span class="cls">L</span>ocal     — 현재 함수 내부 (co_varnames, LOAD_FAST로 접근)
+<span class="cls">E</span>nclosing  — 바깥을 감싸는 함수의 스코프 (클로저, LOAD_DEREF로 접근)
+<span class="cls">G</span>lobal    — 현재 모듈의 최상위 (module __dict__, LOAD_GLOBAL로 접근)
+<span class="cls">B</span>uilt-in  — len, print, range 같은 내장 이름 (builtins 모듈)</pre>
+    </div>
+    <pre><span class="cm">x = <span class="st">"global"</span>   <span class="cm"># G: 모듈 전역</span></span>
+
+<span class="kw">def</span> <span class="fn">outer</span>():
+    x = <span class="st">"enclosing"</span>   <span class="cm"># E: outer 입장에서는 local, inner 입장에서는 enclosing</span>
+    <span class="kw">def</span> <span class="fn">inner</span>():
+        x = <span class="st">"local"</span>   <span class="cm"># L: inner의 local</span>
+        <span class="fn">print</span>(x)     <span class="cm"># "local" — L에서 바로 찾음</span>
+    <span class="fn">inner</span>()
+
+<span class="fn">print</span>(<span class="fn">len</span>([<span class="num">1</span>,<span class="num">2</span>]))  <span class="cm"># len은 L/E/G 어디에도 없어 B(builtins)까지 내려가서 찾음</span></pre>
+    <div class="callout warn">
+      <div class="callout-title">여기서 놓치기 쉬운 것 — LEGB는 "실행 시점"이 아니라 "컴파일 시점"에 결정된다</div>
+      많은 사람이 LEGB를 "런타임에 이름을 못 찾으면 다음 스코프로 넘어가는 동적 탐색"으로 오해한다.
+      실제로 CPython 컴파일러는 <strong>함수 본문을 정적으로 분석해서, 각 이름이 local인지 free(enclosing
+      참조)인지 global인지를 컴파일 시점에 미리 확정</strong>한다. 그래서 이름마다 다른 바이트코드
+      명령(<code>LOAD_FAST</code>/<code>LOAD_DEREF</code>/<code>LOAD_GLOBAL</code>)이 생성되고,
+      실행 중에 "일단 local 찾아보고 없으면 global 찾아보고" 식으로 매번 스코프 종류를 다시 판단하지
+      않는다. 이 정적 분석이 다음 절의 <code>UnboundLocalError</code>를 만드는 근본 원인이다.
+    </div>
+  </section>
+
+  <!-- ── 면접 Q2 ── -->
+  <section>
+    <h2>면접 질문 ② — 아래 코드가 왜 <code>UnboundLocalError</code>를 던지는지 설명해보세요</h2>
+    <div class="interview-q">
+      <pre style="margin:0">count = <span class="num">0</span>
+
+<span class="kw">def</span> <span class="fn">increment</span>():
+    <span class="fn">print</span>(count)   <span class="cm"># 여기서 에러가 난다</span>
+    count = count + <span class="num">1</span></pre>
+      <code>count</code>는 분명 모듈 전역에 정의돼 있는데, 왜 <code>print(count)</code> 줄에서
+      <code>NameError</code>가 아니라 <code>UnboundLocalError: local variable 'count' referenced
+      before assignment</code>가 발생하나요?
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li>LEGB가 런타임 동적 탐색이 아니라 <strong>컴파일 시점 정적 분석</strong>이라는 걸 아는가</li>
+      <li>"함수 안 어딘가에 할당문이 있으면, 그 함수 전체에서 해당 이름이 local로 확정된다"는 규칙을 아는가</li>
+      <li>이걸 고치는 방법(<code>global</code> 선언, 혹은 애초에 함수 인자로 값을 전달)을 아는가</li>
+    </ul>
+
+    <h3>답변 구조 — 생각의 순서</h3>
+    <ol>
+      <li><strong>정적 분석 언급</strong>: 컴파일러가 <code>increment</code> 함수 본문 전체를 훑는다</li>
+      <li><strong>할당 발견</strong>: <code>count = count + 1</code>이라는 할당문이 존재</li>
+      <li><strong>local 확정</strong>: 이 할당 때문에 함수 전체에서 <code>count</code>는 local로 확정 (앞줄의 <code>print(count)</code>도 포함)</li>
+      <li><strong>실행 시점 문제</strong>: <code>print(count)</code>가 실행되는 시점엔 아직 local <code>count</code>에 값이 할당되지 않아 "참조는 되는데 값이 없는" 상태</li>
+      <li><strong>해결</strong>: <code>global count</code> 선언으로 이 이름을 global 스코프로 명시</li>
+    </ol>
+
+    <pre><span class="kw">import</span> dis
+dis.dis(increment)
+<span class="cm"># LOAD_FAST count   ← print(count) 부분이 LOAD_GLOBAL이 아니라 LOAD_FAST로 컴파일됨</span>
+<span class="cm"># (함수 안에 count = ... 할당이 있다는 걸 컴파일러가 이미 알고 있기 때문)</span></pre>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변</div>
+      <p>
+        "이건 런타임 문제가 아니라 <strong>컴파일 시점 정적 분석</strong>의 결과입니다. CPython
+        컴파일러는 함수를 바이트코드로 컴파일할 때, 함수 본문 전체를 미리 스캔해서 <strong>어딘가에
+        할당문이 있는 이름은 그 함수 전체에서 local 변수로 취급</strong>합니다. <code>increment</code>
+        안에 <code>count = count + 1</code>이라는 할당이 있으므로, 컴파일러는 함수 맨 위의
+        <code>print(count)</code>까지 포함해 <code>count</code>를 전부 local로 확정하고
+        <code>LOAD_FAST</code> 명령으로 컴파일합니다.
+      </p>
+      <p>
+        문제는 <strong>컴파일 시점 확정과 실행 시점 상태는 별개</strong>라는 겁니다.
+        <code>print(count)</code>가 실제로 실행되는 순간에는 아직 그 아래 줄의 할당문이 실행되지
+        않았으므로, local 슬롯에는 값이 없습니다. 그래서 "이름이 아예 없다"는
+        <code>NameError</code>가 아니라 "local로 확정된 이름인데 아직 값이 안 들어왔다"는
+        <code>UnboundLocalError</code>가 정확히 그 지점에서 발생합니다.
+      </p>
+      <p style="margin-bottom:0">
+        해결하려면 함수 안에서 전역 <code>count</code>를 수정할 의도라면 <code>global count</code>를
+        함수 맨 위에 선언해서 컴파일러에게 "이 이름은 local이 아니라 global이다"라고 명시적으로
+        알려줘야 합니다. 다만 실무에서는 함수가 전역 상태를 직접 변경하는 패턴 자체가 테스트하기 어렵고
+        부작용을 추적하기 힘드므로, 가능하면 인자로 값을 받고 반환값으로 결과를 돌려주는 순수 함수
+        형태로 리팩토링하는 걸 우선 고려합니다."
+      </p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변</div>
+      <p>
+        "global 키워드를 안 써서 그런 겁니다. <code>global count</code>를 추가하면 해결됩니다."
+      </p>
+      <p style="margin-bottom:0">
+        <strong>왜 약한가:</strong> 해결책은 맞지만 "왜" 그래야 하는지, 왜 <code>NameError</code>가
+        아니라 하필 <code>UnboundLocalError</code>인지, 왜 에러가 할당문이 아니라 그 앞의
+        <code>print</code> 줄에서 나는지를 설명하지 못한다. 이 원리를 모르면 비슷한 유형의
+        (조건문 안에서만 할당되는 변수, try/except 안에서만 할당되는 변수 등) 다른 버그를 만났을 때
+        "또 global을 안 썼나보다"는 식으로 잘못된 진단을 반복하게 된다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── 전제 개념 3: 클로저와 nonlocal ── -->
+  <section>
+    <h2>전제 개념 ③ — Enclosing 스코프는 "복사"가 아니라 "셀(cell)"을 통한 공유다</h2>
+    <p>
+      중첩 함수가 바깥 함수의 변수를 참조하면, 그 값이 <strong>복사</strong>되는 게 아니라 바깥
+      함수와 안쪽 함수가 <strong>같은 셀(cell) 객체를 공유</strong>한다. 이 셀은 값 자체가 아니라
+      "값을 담은 상자에 대한 참조"이기 때문에, 안쪽 함수가 <code>nonlocal</code>로 값을 바꾸면 바깥
+      함수 쪽에서 보이는 값도 함께 바뀐다.
+    </p>
+    <pre><span class="kw">def</span> <span class="fn">make_counter</span>():
+    count = <span class="num">0</span>            <span class="cm"># outer 입장: local / inner 입장: free variable (cell에 저장)</span>
+    <span class="kw">def</span> <span class="fn">increment</span>():
+        <span class="kw">nonlocal</span> count   <span class="cm"># "이 count는 enclosing 스코프의 것이다"라고 명시</span>
+        count += <span class="num">1</span>
+        <span class="kw">return</span> count
+    <span class="kw">return</span> increment
+
+counter = <span class="fn">make_counter</span>()
+<span class="fn">print</span>(counter())  <span class="cm"># 1</span>
+<span class="fn">print</span>(counter())  <span class="cm"># 2 — 같은 cell을 계속 참조하므로 상태가 누적됨</span>
+<span class="fn">print</span>(counter.__closure__[<span class="num">0</span>].cell_contents)  <span class="cm"># 2 — 실제 cell 객체를 직접 들여다볼 수 있음</span></pre>
+    <div class="callout warn">
+      <div class="callout-title">흔한 실수 — 반복문에서 클로저를 만들 때 "마지막 값"만 캡처되는 함정</div>
+      <pre style="margin:0">funcs = []
+<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="num">3</span>):
+    funcs.append(<span class="kw">lambda</span>: i)
+
+<span class="fn">print</span>([f() <span class="kw">for</span> f <span class="kw">in</span> funcs])  <span class="cm"># [2, 2, 2] — 0,1,2가 아니다!</span></pre>
+      각 람다는 <code>i</code>의 <strong>당시 값을 캡처</strong>하는 게 아니라, <code>i</code>라는
+      이름이 가리키는 <strong>같은 셀을 참조</strong>한다. 반복문이 끝난 시점에 그 셀에 남아 있는
+      값은 마지막 값인 <code>2</code>뿐이므로, 3개의 람다 모두 같은 셀을 보고 <code>2</code>를
+      반환한다. 해결하려면 <code>lambda i=i: i</code>처럼 <strong>기본 인자로 그 순간의 값을 즉시
+      바인딩</strong>해야 한다. 이건 Day 8에서 다룬 "함수 정의 시점 vs 호출 시점" 감각과 정확히 같은
+      뿌리에서 나오는 함정이다.
+    </div>
+  </section>
+
+  <!-- ── 면접 Q3 ── -->
+  <section>
+    <h2>면접 질문 ③ — <code>dis</code> 모듈을 실무에서 어떤 상황에 쓰시겠습니까?</h2>
+    <div class="interview-q">
+      <code>dis.dis()</code>로 바이트코드를 들여다보는 게 실제 실무에서 어떤 도움이 되나요?
+      단순히 언어 내부를 궁금해하는 것 이상의 구체적인 활용 사례를 설명해주세요.
+    </div>
+
+    <h3>인터뷰어가 평가하는 신호</h3>
+    <ul>
+      <li>바이트코드 분석을 실제 성능/버그 진단에 연결할 수 있는가</li>
+      <li>"바이트코드가 적다 = 무조건 빠르다"는 단순화의 함정을 아는가</li>
+      <li>바이트코드가 CPython 버전마다 바뀔 수 있는 구현 세부사항임을 인지하고 있는가(과도한 의존 경계)</li>
+    </ul>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변</div>
+      <p>
+        "몇 가지 구체적 상황에서 씁니다. 첫째, <strong>왜 두 코드가 겉보기엔 비슷한데 성능이 다른지</strong>
+        진단할 때입니다. 예를 들어 <code>x in [1,2,3]</code>과 <code>x in (1,2,3)</code>은 리스트/튜플
+        리터럴이라는 차이만 있어 보이지만, <code>dis</code>로 보면 튜플 쪽은 상수로 접혀서
+        <code>LOAD_CONST</code> 한 번으로 끝나는 반면 리스트는 매번 <code>BUILD_LIST</code>로
+        새로 생성되는 걸 확인할 수 있습니다.
+      </p>
+      <p>
+        둘째, <strong><code>UnboundLocalError</code>나 클로저 관련 버그를 진단</strong>할 때입니다.
+        방금 다룬 것처럼 어떤 이름이 <code>LOAD_FAST</code>, <code>LOAD_GLOBAL</code>,
+        <code>LOAD_DEREF</code> 중 무엇으로 컴파일됐는지 보면 컴파일러가 그 이름을 어느 스코프로
+        확정했는지 정확히 확인할 수 있습니다.
+      </p>
+      <p style="margin-bottom:0">
+        다만 <strong>주의할 점은 바이트코드가 파이썬 언어 스펙이 아니라 CPython 버전별 구현
+        세부사항</strong>이라는 겁니다. Python 3.11의 적응형 인터프리터(specializing adaptive
+        interpreter)나 3.12 이상에서는 opcode 구성 자체가 버전마다 달라지므로, 프로덕션 코드가 특정
+        바이트코드 패턴에 의존하게 만들면 안 됩니다. <code>dis</code>는 어디까지나 '이해와 진단
+        도구'로 쓰고, 실제 최적화 결정은 <code>timeit</code>이나 프로파일러로 측정한 실측 데이터로
+        내립니다."
+      </p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변</div>
+      <p>
+        "내부적으로 어떻게 동작하는지 궁금할 때 한 번씩 찍어봅니다."
+      </p>
+      <p style="margin-bottom:0">
+        <strong>왜 약한가:</strong> "궁금할 때"라는 표현은 실무 활용 시나리오가 없다는 뜻으로 들린다.
+        면접관은 도구를 아는 것과 도구를 실제 문제 해결에 연결하는 것의 차이를 구분해서 평가한다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Senior Follow-up ── -->
+  <section>
+    <h2>Senior-level Follow-up 질문</h2>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 1</div>
+      <p>
+        <strong>CPython과 PyPy는 같은 파이썬 코드를 어떻게 다르게 실행하나요?</strong>
+      </p>
+      <p style="margin-bottom:0">
+        CPython은 바이트코드를 <strong>ceval이라는 큰 dispatch 루프가 한 명령씩 해석</strong>하는
+        방식이다(Python 3.11부터는 자주 실행되는 코드 경로를 특수화해 다시 컴파일하는 적응형
+        인터프리터가 추가되어 순수 인터프리팅보다 빨라졌지만 여전히 인터프리터 기반이다). 반면
+        PyPy는 <strong>JIT(Just-In-Time) 컴파일러</strong>를 갖고 있어서, 반복적으로 실행되는
+        "hot path" 코드를 실행 중에 실제 기계어로 컴파일해 캐싱한다. 그래서 CPU-bound 순수 파이썬
+        루프에서는 PyPy가 훨씬 빠를 수 있지만, C 확장에 크게 의존하는 라이브러리(NumPy 등)와의
+        호환성 문제 때문에 실무에서 CPython 대체제로 쓰기엔 아직 제약이 있다는 trade-off를 함께
+        설명하는 게 중요하다.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 2</div>
+      <p>
+        <strong><code>exec()</code>나 <code>eval()</code>로 동적으로 코드를 실행하는 게 왜 위험할 수 있나요?</strong>
+      </p>
+      <p style="margin-bottom:0">
+        <code>eval(user_input)</code>은 사용자 입력을 곧바로 파이썬 표현식으로 컴파일해 실행하므로,
+        <strong>임의 코드 실행(RCE)</strong>으로 직결된다. <code>eval("__import__('os').system('rm -rf /')")</code>
+        처럼 내장 함수 접근만으로도 시스템을 장악할 수 있다. <code>globals</code>/<code>locals</code>
+        인자를 제한해서 "안전한 샌드박스"를 만들려는 시도가 흔하지만, <code>__builtins__</code>
+        재귀 접근이나 객체의 <code>__class__.__bases__</code>를 통한 우회 경로가 다수 알려져 있어
+        <strong>완벽한 샌드박싱은 사실상 불가능</strong>하다는 게 정설이다. 실무에서 동적 평가가
+        꼭 필요하면 <code>ast.literal_eval</code>(리터럴만 안전하게 파싱)처럼 범위가 제한된 대안을
+        먼저 검토하고, 진짜 임의 코드 실행이 필요하면 프로세스/컨테이너 격리 같은 OS 수준 격리를
+        병행해야 한다.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 3</div>
+      <p>
+        <strong>함수의 기본 인자(default argument)가 함수 정의 시점에 한 번만 평가된다는 것과 실행 모델은 어떻게 연결되나요?</strong>
+      </p>
+      <p style="margin-bottom:0">
+        <code>def f(x=[]):</code>처럼 가변 기본값을 쓰면 모든 호출이 <strong>같은 리스트 객체를
+        공유</strong>하는 유명한 함정이 있다. 이건 Day 8의 "데코레이터 적용은 정의 시점에 1회"와
+        같은 원리다 — <code>def</code> 문이 실행되는 순간(모듈 로드 또는 클래스 body 실행 시점) 함수
+        객체가 생성되면서 기본값 표현식이 <strong>딱 한 번 평가되어 함수 객체의
+        <code>__defaults__</code> 튜플에 저장</strong>된다. 호출할 때마다 다시 평가되는 게 아니라
+        저장된 그 객체를 계속 재사용하므로, 가변 객체를 기본값으로 쓰면 호출 간 상태가 의도치 않게
+        누적된다. 안전한 패턴은 <code>x=None</code>을 기본값으로 두고 함수 본문에서
+        <code>x = [] if x is None else x</code>로 매 호출마다 새로 생성하는 것이다.
+      </p>
+    </div>
+
+    <div class="card accent">
+      <div class="card-label">Follow-up 4</div>
+      <p>
+        <strong>클래스 본문(class body)도 함수처럼 별도의 네임스페이스인가요? LEGB와 어떻게 다른가요?</strong>
+      </p>
+      <p style="margin-bottom:0">
+        클래스 본문은 실행되는 동안 자체 네임스페이스를 갖지만, <strong>함수처럼 enclosing 스코프
+        역할을 하지는 않는다</strong>는 게 핵심 차이다. 클래스 본문 안에 정의된 메서드는 같은 클래스
+        본문에서 정의된 다른 이름(클래스 변수 등)을 LEGB의 E 단계로 자동으로 찾지 못한다 — 반드시
+        <code>self.attr</code>나 <code>ClassName.attr</code>로 명시적으로 접근해야 한다. 이건
+        "클래스는 실행이 끝나면 그 네임스페이스가 <code>__dict__</code>라는 매핑으로 굳어지고,
+        메서드 안에서의 이름 조회는 클래스 body가 아니라 모듈 레벨을 enclosing/global로 본다"는
+        규칙 때문이다. 이 차이를 모르면 "메서드 안에서 클래스 변수를 왜 그냥 이름으로 못 쓰지"라는
+        혼란을 겪는다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Trade-off와 흔한 오해 ── -->
+  <section>
+    <h2>Trade-off와 흔한 오해</h2>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 1 — "LEGB는 런타임에 못 찾으면 다음 스코프로 넘어가는 동적 탐색이다"</div>
+      <p>
+        각 이름이 local/free/global 중 무엇인지는 <strong>컴파일 시점에 정적으로 확정</strong>되고,
+        그에 맞는 전용 바이트코드 명령(<code>LOAD_FAST</code>/<code>LOAD_DEREF</code>/<code>LOAD_GLOBAL</code>)이
+        생성된다. "런타임에 스코프를 순서대로 탐색한다"는 이미지는 개념을 이해하는 데는 도움이 되지만,
+        실제 구현은 훨씬 정적이며 이 정적 분석이 <code>UnboundLocalError</code>의 직접적 원인이 된다.
+      </p>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 2 — "바이트코드가 적으면 항상 더 빠르다"</div>
+      <p>
+        opcode 개수와 실제 실행 시간은 비례하지 않는다. 각 opcode의 실제 비용(객체 생성 여부, C
+        함수 호출 여부, 메모리 할당 여부)이 서로 크게 다르기 때문에, <code>dis</code>로 opcode
+        개수만 세어 성능을 판단하는 건 오해로 이어지기 쉽다. 실제 성능 판단은 항상
+        <code>timeit</code>이나 프로파일러로 측정한 실측값을 기준으로 해야 한다.
+      </p>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 3 — "모듈은 import할 때마다 다시 실행된다"</div>
+      <p>
+        <code>sys.modules</code> 캐싱 때문에 모듈 최상위 코드는 프로세스당 최초 1회만 실행된다.
+        이 성질을 모르면 "설정 파일을 다시 읽으려고 다시 import했는데 왜 안 바뀌지"라는 혼란을
+        겪거나, 반대로 이 성질을 활용해 모듈 레벨 싱글턴을 설계하는 실무 패턴을 놓치게 된다.
+      </p>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-title">오해 4 — ".pyc 캐시가 있으면 실행 속도가 빨라진다"</div>
+      <p>
+        <code>.pyc</code> 캐시는 <strong>파싱·컴파일 단계만 건너뛰게</strong> 해줄 뿐, 바이트코드를
+        인터프리터가 실행하는 속도 자체에는 영향을 주지 않는다. "컴파일이 빨라진다"와 "실행이
+        빨라진다"를 혼동하면 잘못된 성능 기대를 하게 된다. 진짜 실행 속도를 높이려면 알고리즘 개선,
+        C 확장 사용, 혹은 캐싱/메모이제이션 같은 별도 접근이 필요하다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Self-check Rubric ── -->
+  <section>
+    <h2>Self-check Rubric</h2>
+    <table class="rubric">
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>상 (Senior)</th>
+          <th>중 (Mid)</th>
+          <th>하 (Junior)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>실행 파이프라인 이해</td>
+          <td><span class="badge high">상</span> 소스 → AST → 바이트코드 → PVM 실행 흐름을 설명하고, 바이트코드가 CPython 구현 세부사항임을 구분</td>
+          <td><span class="badge mid">중</span> "인터프리터가 한 줄씩 실행한다" 정도로만 이해</td>
+          <td><span class="badge low">하</span> 실행 파이프라인 개념 자체가 없음</td>
+        </tr>
+        <tr>
+          <td>LEGB와 정적 분석</td>
+          <td><span class="badge high">상</span> LEGB가 컴파일 시점에 정적으로 확정된다는 것과 그로 인한 <code>UnboundLocalError</code>의 근본 원인을 설명</td>
+          <td><span class="badge mid">중</span> LEGB 순서는 알지만 정적 분석이라는 사실은 모름</td>
+          <td><span class="badge low">하</span> LEGB 개념 자체가 없음</td>
+        </tr>
+        <tr>
+          <td>모듈 import 캐싱</td>
+          <td><span class="badge high">상</span> <code>sys.modules</code> 메커니즘과 모듈이 사실상 싱글턴처럼 동작함을 실무 사례로 설명</td>
+          <td><span class="badge mid">중</span> "한 번만 실행된다"는 사실은 알지만 근거를 설명 못 함</td>
+          <td><span class="badge low">하</span> import마다 재실행된다고 오해</td>
+        </tr>
+        <tr>
+          <td>클로저와 cell</td>
+          <td><span class="badge high">상</span> 클로저가 값 복사가 아닌 cell 공유임을 알고, 반복문 클로저 함정을 정확히 설명</td>
+          <td><span class="badge mid">중</span> nonlocal 문법은 쓰지만 cell 공유 원리는 모름</td>
+          <td><span class="badge low">하</span> 반복문 클로저 함정을 겪어본 적 없거나 원인을 설명 못 함</td>
+        </tr>
+        <tr>
+          <td>도구 활용(dis)과 한계</td>
+          <td><span class="badge high">상</span> <code>dis</code>를 실무 진단에 연결하면서도 바이트코드 의존의 위험성을 함께 짚음</td>
+          <td><span class="badge mid">중</span> <code>dis</code>를 써본 적은 있으나 활용 시나리오가 막연함</td>
+          <td><span class="badge low">하</span> <code>dis</code> 모듈 존재를 모름</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── 핵심 요약 ── -->
+  <section>
+    <h2>핵심 요약 — 1분 복습 카드</h2>
+    <div class="card success">
+      <div class="card-label">오늘 반드시 기억할 것</div>
+      <ol style="margin:0.5rem 0 0 1.2rem">
+        <li>CPython은 소스 → AST → 바이트코드(<code>.pyc</code>로 캐시) → PVM 실행의 파이프라인을 거치며, 바이트코드는 언어 스펙이 아니라 CPython 구현 세부사항</li>
+        <li><code>import</code>는 <code>sys.modules</code>에 캐시되어 모듈 최상위 코드는 프로세스당 최초 1회만 실행됨</li>
+        <li>LEGB(Local-Enclosing-Global-Built-in)는 런타임 동적 탐색이 아니라 <strong>컴파일 시점 정적 분석</strong>으로 확정됨</li>
+        <li>함수 본문 어딘가에 할당문이 있으면 그 이름은 함수 전체에서 local로 확정되며, 이것이 <code>UnboundLocalError</code>의 근본 원인</li>
+        <li>클로저는 값을 복사하지 않고 <strong>cell 객체를 공유</strong>하므로, 반복문에서 만든 클로저는 마지막 값만 캡처하는 함정이 있음</li>
+        <li>가변 기본 인자는 함수 정의 시점에 1회만 평가되어 모든 호출이 같은 객체를 공유함 — decorator의 "정의 시점 1회 실행"과 같은 원리</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ── Navigation ── -->
+  <nav class="lesson-nav">
+    <a href="./0008-decorator.html">← Day 8: Decorator</a>
+    <a href="./index.html">목록으로</a>
+    <span style="color:var(--text-muted)">Day 10: Typing 심화 →</span>
+  </nav>
+
+</div>
+</body>
+</html>
