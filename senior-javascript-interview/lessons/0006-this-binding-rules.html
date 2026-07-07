@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — `this` 바인딩 규칙 | JavaScript 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">JavaScript 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 6
+  </nav>
+
+  <h1>Day 6 — <code>this</code> 바인딩 규칙</h1>
+  <p class="subtitle"><code>this</code>는 함수가 "어디에 정의됐는지"가 아니라 "어떻게 호출됐는지"로 결정된다 — 4가지 바인딩 규칙과 우선순위, <code>call</code>/<code>apply</code>/<code>bind</code>, 화살표 함수라는 예외 · 2026-07-07</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#rules"><code>this</code>를 결정하는 4가지 바인딩 규칙과 우선순위</a></li>
+      <li><a href="#call-apply-bind"><code>call</code>/<code>apply</code>/<code>bind</code> — 명시적 바인딩 심화</a></li>
+      <li><a href="#arrow">화살표 함수의 <code>this</code> — 렉시컬 스코프라는 다른 규칙</a></li>
+      <li><a href="#practice">실무 연결 — 콜백·이벤트 핸들러·클래스 메서드에서 <code>this</code>를 잃어버리는 버그</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"다음 코드에서 세 개의 <code>console.log</code>는 각각 무엇을 출력하나요? 그리고 <code>btn.addEventListener('click', counter.increment)</code> 줄이 왜 문제가 되는지, 원리를 근거로 설명해주세요."</p>
+      <pre style="margin-top:0.8rem"><code>const user = {
+  name: 'Alice',
+  greet() {
+    return `Hi, I'm ${this.name}`;
+  },
+};
+
+const greetFn = user.greet;
+
+class Counter {
+  count = 0;
+  increment() {
+    this.count++;
+    console.log(this.count);
+  }
+}
+
+const counter = new Counter();
+const btn = { addEventListener: (event, cb) => cb() }; // DOM 엘리먼트를 흉내낸 객체
+
+console.log(user.greet());   // ?
+console.log(greetFn());      // ?
+btn.addEventListener('click', counter.increment); // ?</code></pre>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"<code>call</code>, <code>apply</code>, <code>bind</code>는 모두 <code>this</code>를 명시적으로 지정한다는 점에서 비슷한데, 실무에서 언제 어떤 것을 선택하나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"클래스 메서드를 이벤트 핸들러로 등록할 때 <code>this</code>가 깨지는 문제를 고치는 방법이 최소 세 가지 있습니다. 각각을 설명하고 트레이드오프를 비교해주세요."</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 3</div>
+      <p>"다음 코드에서 <code>setTimeout</code> 콜백 안의 <code>this</code>는 각각 무엇을 가리키나요? 왜 다른가요?"</p>
+      <pre style="margin-top:0.8rem"><code>const timer = {
+  label: 'A',
+  startRegular() {
+    setTimeout(function () {
+      console.log(this.label); // ?
+    }, 0);
+  },
+  startArrow() {
+    setTimeout(() => {
+      console.log(this.label); // ?
+    }, 0);
+  },
+};</code></pre>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p><code>this</code>는 자바스크립트에서 가장 자주 오해되는 개념 중 하나입니다. 많은 개발자가 "메서드 안의 <code>this</code>는 그 객체다"라는 단순화된 규칙만 외우고, 그 규칙이 <strong>왜 성립하는지, 그리고 언제 깨지는지</strong>는 설명하지 못합니다. 시니어 인터뷰가 이 주제를 묻는 이유는, <strong><code>this</code>가 함수 정의 시점이 아니라 호출 시점(call-site)에 의해 동적으로 결정된다는 원리</strong>를 정확히 알고, 그로 인해 실무에서 반복적으로 발생하는 "콜백에서 <code>this</code>가 이상해지는" 버그를 구조적으로 예방하거나 진단할 수 있는지를 확인하기 위함입니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong><code>this</code>가 "정의된 위치"가 아니라 "호출된 방식"으로 결정된다는 원리를 아는가</strong> — 같은 함수(<code>user.greet</code>)라도 어떻게 호출하느냐에 따라 <code>this</code>가 완전히 달라진다는 것을 예제로 설명할 수 있는가.</li>
+      <li><strong>4가지 바인딩 규칙과 그 우선순위를 순서대로 적용할 수 있는가</strong> — <code>new</code> 바인딩, 명시적 바인딩(<code>call</code>/<code>apply</code>/<code>bind</code>), 암시적 바인딩(<code>obj.method()</code>), 기본 바인딩(단독 호출) 중 어떤 것이 어떤 상황에서 이기는지 아는가.</li>
+      <li><strong>화살표 함수가 이 4가지 규칙에서 완전히 예외라는 것을 아는가</strong> — 화살표 함수는 자신만의 <code>this</code>를 갖지 않고, 정의된 위치의 렉시컬 스코프에서 <code>this</code>를 그대로 물려받는다는 원리, 그리고 이 때문에 <code>call</code>/<code>apply</code>/<code>bind</code>로도 화살표 함수의 <code>this</code>를 바꿀 수 없다는 것을 아는가.</li>
+      <li><strong>실무에서 이 지식을 버그 예방/디버깅에 실제로 쓸 수 있는가</strong> — 메서드를 콜백으로 전달할 때(이벤트 핸들러, <code>setTimeout</code>, 배열 메서드의 콜백 등) <code>this</code>가 끊어지는 이유를 설명하고, <code>bind</code>/화살표 함수/클래스 필드 중 상황에 맞는 해결책을 고를 수 있는가.</li>
+    </ul>
+
+    <p>10년차 이하에서 자주 나오는 답변 패턴: "메서드 안에서는 <code>this</code>가 그 객체를 가리킨다"까지만 말하고, <code>greetFn()</code>처럼 메서드를 변수에 담아 단독 호출하면 왜 깨지는지, 그리고 화살표 함수는 왜 예외인지는 설명하지 못하는 답변입니다. 시니어는 "호출 시점에 어떤 규칙이 적용되는지"를 재현 가능한 절차로 설명할 수 있어야 합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3><code>this</code>는 "누가 나를 불렀는가"에 대한 답이다</h3>
+    <p>다른 언어(Java 등)에 익숙하다면 <code>this</code>가 "내가 속한 클래스의 인스턴스"를 뜻한다고 생각하기 쉽습니다. 자바스크립트의 <code>this</code>는 다릅니다. <strong><code>this</code>는 함수가 어디에 정의되었는지가 아니라, 그 함수가 실행되는 순간 어떻게 호출되었는지(call-site)에 의해 매번 새로 결정됩니다.</strong> 같은 함수라도 <code>obj.fn()</code>처럼 부르면 <code>this</code>가 <code>obj</code>가 되고, <code>fn()</code>처럼 단독으로 부르면 <code>this</code>가 전혀 다른 값이 됩니다. 즉 <code>this</code>는 함수 본문에 "저장"되어 있는 값이 아니라, 호출될 때마다 "그 호출문이 던져주는" 값입니다.</p>
+
+    <div class="card">
+      <h4>비유 — 명함이 아니라 "지금 나를 부른 사람"</h4>
+      <p>함수를 사람이라고 생각해봅시다. 이 사람은 "나는 항상 A 회사 소속이다"라는 고정된 명함(정의 위치)을 갖고 있지 않습니다. 대신 누군가 "야, 너!" 하고 부를 때(호출할 때), <strong>그 사람은 자신을 부른 목소리가 어디서 왔는지를 보고 그 순간의 소속을 결정</strong>합니다. <code>user.greet()</code>라고 부르면 "<code>user</code>가 나를 불렀다"고 판단해 <code>this = user</code>가 되고, <code>greetFn()</code>처럼 아무 객체도 앞에 붙지 않은 채 불리면 "아무도 나를 특정 소속으로 부르지 않았다"고 판단해 <code>this</code>가 전역 객체이거나(비엄격 모드) <code>undefined</code>(엄격 모드)가 됩니다.</p>
+    </div>
+
+    <h3>Primary Question의 첫 두 줄이 다른 이유</h3>
+    <p><code>user.greet()</code>와 <code>greetFn()</code>은 <strong>완전히 동일한 함수 객체</strong>를 호출합니다(<code>greetFn</code>은 <code>user.greet</code>이 가리키던 함수를 그대로 참조만 옮긴 것이므로). 그런데도 결과가 다른 이유는, 함수 자체에는 <code>this</code>가 "저장"되어 있지 않고, <strong>호출문의 형태(<code>user.greet()</code> vs <code>greetFn()</code>)</strong>가 <code>this</code>를 결정하기 때문입니다. 이것이 이번 레슨 전체를 관통하는 핵심 원리입니다.</p>
+
+    <div class="card">
+      <h4>실무 연결 — 이 개념이 왜 프로덕션에서 중요한가</h4>
+      <p>실무에서 <code>this</code> 버그는 거의 항상 "메서드를 다른 곳으로 넘겨서 호출 형태가 바뀌는 순간"에 발생합니다. 이벤트 핸들러 등록(<code>element.addEventListener('click', obj.method)</code>), 콜백 전달(<code>array.map(obj.method)</code>), 구조 분해(<code>const { method } = obj; method()</code>) 모두 "호출 형태가 <code>obj.method()</code>에서 단독 호출로 바뀌는" 패턴입니다. 이 원리를 모르면 "분명 조금 전까지 잘 되던 코드가 리팩터링 후 <code>this</code>가 <code>undefined</code>로 깨진다"는 버그를 원인도 모른 채 <code>bind</code>를 아무 데나 붙여 임시방편으로 고치게 됩니다.</p>
+    </div>
+  </section>
+
+  <!-- 4. 4가지 바인딩 규칙 -->
+  <section id="rules">
+    <h2>4. <code>this</code>를 결정하는 4가지 바인딩 규칙과 우선순위</h2>
+
+    <p>일반 함수(화살표 함수 제외)가 호출될 때, 엔진은 다음 4가지 규칙 중 <strong>어느 것이 적용되는지를 호출문의 형태를 보고 판단</strong>합니다. 아래 순서는 <strong>우선순위 순서</strong>이기도 합니다 — 여러 규칙이 동시에 해당될 것처럼 보이면 위에 있는 규칙이 이깁니다.</p>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>우선순위</th>
+          <th>규칙</th>
+          <th>호출 형태</th>
+          <th><code>this</code> 값</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1 (최우선)</td>
+          <td><code>new</code> 바인딩</td>
+          <td><code>new Fn()</code></td>
+          <td>새로 생성된 객체. 엔진이 <code>new</code> 호출 시 빈 객체를 만들어 <code>this</code>로 주입하고, <code>Fn</code>의 <code>[[Prototype]]</code>을 이 객체의 프로토타입으로 연결한다(Day 5에서 다룬 구조).</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>명시적(Explicit) 바인딩</td>
+          <td><code>fn.call(obj)</code>, <code>fn.apply(obj)</code>, <code>fn.bind(obj)()</code></td>
+          <td>명시적으로 지정한 <code>obj</code>. 단, <code>bind</code>로 만든 "하드 바인딩된" 함수는 이후 다시 <code>call</code>/<code>apply</code>로 <code>this</code>를 바꾸려 해도 무시된다(Section 5에서 심화).</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>암시적(Implicit) 바인딩</td>
+          <td><code>obj.fn()</code></td>
+          <td>호출 시점에 <code>fn</code> 바로 앞에 붙은 객체(<code>obj</code>). 체인이 있다면(<code>a.b.fn()</code>) 가장 가까운 객체(<code>b</code>)만 본다.</td>
+        </tr>
+        <tr>
+          <td>4 (기본값)</td>
+          <td>기본(Default) 바인딩</td>
+          <td><code>fn()</code> (앞에 아무 객체도 없는 단독 호출)</td>
+          <td>엄격 모드(<code>'use strict'</code>, 모듈, 클래스 바디)에서는 <code>undefined</code>. 비엄격 모드에서는 전역 객체(브라우저의 <code>window</code>).</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Primary Question 풀이</h3>
+    <pre><code>console.log(user.greet());   // "Hi, I'm Alice" — 암시적 바인딩. 호출문이 user.greet() 형태이므로 this = user
+console.log(greetFn());      // "Hi, I'm undefined" (혹은 TypeError, 모듈/strict 모드에서 this.name 접근 시)
+                              // — 기본 바인딩. greetFn() 은 앞에 객체가 없는 단독 호출이므로
+                              //   strict mode/ESM에서는 this === undefined, this.name 은 TypeError
+btn.addEventListener('click', counter.increment);
+// counter.increment가 함수 참조만 넘겨져서 btn 내부에서 cb() 형태(단독 호출)로 실행됨
+// → 기본 바인딩이 적용되어 this는 counter가 아니게 됨 → this.count++ 에서 에러 또는 잘못된 동작</code></pre>
+
+    <div class="card">
+      <h4>핵심 원리 — <strong>메서드를 "떼어내서" 넘기는 순간 암시적 바인딩이 사라진다</strong></h4>
+      <p><code>counter.increment</code>라는 표현식은 <code>counter</code> 객체의 <code>increment</code> 프로퍼티에 있는 <strong>함수 자체</strong>를 꺼내오는 것일 뿐, "이 함수는 항상 <code>counter</code>에 묶여 있다"는 정보를 함께 가져오지 않습니다. <code>addEventListener</code>가 나중에 이 함수를 <code>cb()</code> 형태로 호출하면, 그 호출문에는 <code>counter</code>라는 객체가 전혀 등장하지 않으므로 암시적 바인딩 규칙이 적용될 수 없고, 기본 바인딩으로 떨어집니다. 이것이 "메서드를 콜백으로 넘기면 <code>this</code>가 깨진다"는 현상의 정확한 원리입니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. call/apply/bind -->
+  <section id="call-apply-bind">
+    <h2>5. <code>call</code>/<code>apply</code>/<code>bind</code> — 명시적 바인딩 심화</h2>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>메서드</th>
+          <th>동작</th>
+          <th>인자 전달 방식</th>
+          <th>실행 시점</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>fn.call(thisArg, a, b, c)</code></td>
+          <td><code>this</code>를 <code>thisArg</code>로 지정해 <strong>즉시</strong> 실행</td>
+          <td>인자를 하나씩 나열</td>
+          <td>즉시</td>
+        </tr>
+        <tr>
+          <td><code>fn.apply(thisArg, [a, b, c])</code></td>
+          <td><code>this</code>를 <code>thisArg</code>로 지정해 <strong>즉시</strong> 실행</td>
+          <td>인자를 배열로 묶어 전달</td>
+          <td>즉시</td>
+        </tr>
+        <tr>
+          <td><code>fn.bind(thisArg, a, b)</code></td>
+          <td><code>this</code>가 <code>thisArg</code>로 <strong>영구히 고정된 새 함수</strong>를 반환 (즉시 실행하지 않음)</td>
+          <td>일부 인자를 미리 고정 가능(partial application)</td>
+          <td>나중에, 반환된 함수를 호출할 때</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <pre><code>function introduce(greeting, punctuation) {
+  return `${greeting}, I'm ${this.name}${punctuation}`;
+}
+
+const alice = { name: 'Alice' };
+
+introduce.call(alice, 'Hi', '!');            // "Hi, I'm Alice!" — 즉시 실행
+introduce.apply(alice, ['Hi', '!']);         // "Hi, I'm Alice!" — 인자를 배열로
+const introduceAlice = introduce.bind(alice); // 새 함수를 반환, 아직 실행 안 됨
+introduceAlice('Hi', '!');                    // "Hi, I'm Alice!" — 이때 실행</code></pre>
+
+    <h3>실무에서의 선택 기준</h3>
+    <ul>
+      <li><strong><code>call</code>/<code>apply</code></strong>: 지금 당장 다른 <code>this</code>로 한 번 실행하고 싶을 때(예: 유사 배열 객체에 배열 메서드를 빌려 쓸 때 — <code>Array.prototype.slice.call(arguguments)</code> 같은 레거시 패턴).</li>
+      <li><strong><code>bind</code></strong>: <strong>나중에 다른 곳에서 호출될 함수</strong>를 만들어야 할 때 — 콜백/이벤트 핸들러로 넘길 함수의 <code>this</code>를 미리 고정해두는 경우가 실무에서 압도적으로 많습니다.</li>
+    </ul>
+
+    <div class="card">
+      <h4>시니어 레벨 함정 — 하드 바인딩(<code>bind</code>)은 <code>new</code>로도 재정의된 <code>this</code>를 무시하지 않는다? (스펙 뉘앙스)</h4>
+      <p><code>bind</code>로 만든 함수는 다시 <code>call</code>/<code>apply</code>로 <code>this</code>를 바꿔도 무시되어 원래 고정된 <code>this</code>가 유지됩니다(그래서 "하드(hard) 바인딩"이라 부릅니다). 하지만 <strong><code>new</code>로 호출하는 경우는 예외</strong>입니다 — <code>const Bound = fn.bind(obj); new Bound()</code>처럼 호출하면, <code>new</code> 바인딩이 적용되어 새로 생성된 객체가 <code>this</code>가 되고, <code>bind</code>로 고정했던 <code>obj</code>는 무시됩니다(대신 전달했던 인자는 그대로 유지됩니다). 즉 우선순위 표의 1번(<code>new</code>)이 2번(명시적 바인딩)보다 위에 있는 이유가 바로 이것입니다. 실무에서 <code>bind</code>된 함수를 생성자로 쓰는 경우는 드물지만, 이 규칙은 "우선순위가 왜 그 순서인가"를 검증하는 대표적인 후속 질문입니다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 화살표 함수 -->
+  <section id="arrow">
+    <h2>6. 화살표 함수의 <code>this</code> — 렉시컬 스코프라는 다른 규칙</h2>
+
+    <div class="why-box">
+      <p><strong>화살표 함수는 Section 4의 4가지 규칙에 전혀 참여하지 않습니다.</strong> 화살표 함수는 자신만의 <code>this</code> 바인딩을 아예 갖지 않습니다. 대신 화살표 함수 본문에서 <code>this</code>를 참조하면, 그 화살표 함수가 <strong>정의된(작성된) 위치를 감싸고 있는 가장 가까운 일반 함수(또는 최상위 스코프)의 <code>this</code>를 그대로, 정적으로 물려받습니다.</strong> 이것은 스코프 체인(Day 3)이 변수를 찾는 방식과 완전히 동일한 원리로, <code>this</code>도 "변수처럼" 렉시컬 스코프를 따라 바깥으로 찾아 올라간다고 이해하면 됩니다.</p>
+    </div>
+
+    <h3>Variant 3 풀이</h3>
+    <pre><code>const timer = {
+  label: 'A',
+  startRegular() {
+    setTimeout(function () {
+      console.log(this.label); // undefined (혹은 에러) — 기본 바인딩
+      // 이 익명 함수는 setTimeout이 나중에 단독으로 호출(fn())하므로
+      // Section 4의 규칙 4(기본 바인딩)가 적용되어 this가 timer가 아니다.
+    }, 0);
+  },
+  startArrow() {
+    setTimeout(() => {
+      console.log(this.label); // "A" — 화살표 함수는 자신만의 this가 없다.
+      // 이 화살표 함수가 "작성된 위치"는 startArrow 메서드 본문 안이고,
+      // startArrow가 timer.startArrow()로 호출되어 this = timer이므로,
+      // 화살표 함수는 그 this = timer를 그대로 이어받는다.
+    }, 0);
+  },
+};</code></pre>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>구분</th>
+          <th>일반 함수(<code>function</code>)</th>
+          <th>화살표 함수(<code>=&gt;</code>)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>this</code> 결정 시점</td>
+          <td>호출 시점(call-site) — 매번 다시 결정됨</td>
+          <td>정의 시점 — 작성된 위치의 렉시컬 스코프에서 한 번 고정됨</td>
+        </tr>
+        <tr>
+          <td><code>call</code>/<code>apply</code>/<code>bind</code>로 재정의 가능?</td>
+          <td>가능</td>
+          <td>불가능 — 첫 번째 인자(<code>thisArg</code>)가 조용히 무시됨</td>
+        </tr>
+        <tr>
+          <td><code>new</code>로 생성자처럼 사용 가능?</td>
+          <td>가능</td>
+          <td>불가능 — <code>[[Construct]]</code> 내부 메서드 자체가 없어 <code>TypeError</code></td>
+        </tr>
+        <tr>
+          <td>자신만의 <code>arguments</code> 객체?</td>
+          <td>있음</td>
+          <td>없음 — 감싸는 스코프의 <code>arguments</code>를 그대로 참조</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>실무 연결 — 화살표 함수는 "<code>this</code>를 신경 쓸 필요가 없는 것"이 아니라 "부모의 <code>this</code>를 그대로 쓰는 것"</h4>
+      <p>화살표 함수를 최상위 레벨(어떤 메서드 본문도 감싸지 않는 위치)에서 쓰면, 이어받을 상위 <code>this</code>가 결국 모듈 최상위(ESM에서는 <code>undefined</code>)이거나 전역 객체가 됩니다. "화살표 함수를 쓰면 <code>this</code> 문제가 항상 해결된다"는 것은 잘못된 일반화이며, 정확히는 <strong>"이 화살표 함수를 감싸는 일반 함수의 <code>this</code>가 내가 원하는 값일 때만"</strong> 문제가 해결됩니다. 클래스 필드로 화살표 함수를 정의하는 패턴(Section 7)이 잘 작동하는 이유도, 클래스 필드 초기화 시점의 <code>this</code>가 정확히 그 인스턴스(생성자 실행 중의 <code>this</code>)이기 때문입니다.</p>
+    </div>
+  </section>
+
+  <!-- 7. 실무 연결 -->
+  <section id="practice">
+    <h2>7. 실무 연결 — 콜백·이벤트 핸들러·클래스 메서드에서 <code>this</code>를 잃어버리는 버그</h2>
+
+    <p>Variant 2("클래스 메서드를 이벤트 핸들러로 등록할 때 깨지는 <code>this</code>를 고치는 세 가지 방법")에 대한 답입니다.</p>
+
+    <h3>방법 1 — 등록하는 쪽에서 화살표 함수로 감싸기</h3>
+    <pre><code>class Counter {
+  count = 0;
+  increment() {
+    this.count++;
+  }
+}
+const counter = new Counter();
+btn.addEventListener('click', () => counter.increment());
+// 화살표 함수가 counter.increment()를 "암시적 바인딩" 형태(counter.increment())로 호출하므로 문제 없음</code></pre>
+    <p><strong>트레이드오프:</strong> 등록 지점마다 매번 감싸줘야 해서 누락하기 쉽고, 코드가 늘어난다. 다만 원본 클래스는 건드리지 않아도 된다.</p>
+
+    <h3>방법 2 — 생성자에서 <code>bind</code>로 하드 바인딩</h3>
+    <pre><code>class Counter {
+  count = 0;
+  constructor() {
+    this.increment = this.increment.bind(this); // 인스턴스 프로퍼티로 "하드 바인딩된" 함수를 덮어씀
+  }
+  increment() {
+    this.count++;
+  }
+}
+const counter = new Counter();
+btn.addEventListener('click', counter.increment); // 이제 안전 — 이미 this가 고정된 함수이므로</code></pre>
+    <p><strong>트레이드오프:</strong> 생성자가 장황해진다(핸들러가 많으면 <code>bind</code> 줄이 계속 늘어남). 다만 클래스 밖 어디로 넘겨도 안전하다는 것이 명확한 장점.</p>
+
+    <h3>방법 3 — 클래스 필드에 화살표 함수로 메서드 정의(실무에서 가장 흔한 패턴)</h3>
+    <pre><code>class Counter {
+  count = 0;
+  increment = () => {       // 클래스 필드 — 인스턴스마다 생성되는 화살표 함수
+    this.count++;           // 정의 시점(생성자 실행 중)의 this, 즉 이 인스턴스를 렉시컬로 고정
+  };
+}
+const counter = new Counter();
+btn.addEventListener('click', counter.increment); // 안전 — increment 자체가 이미 this가 고정된 화살표 함수</code></pre>
+    <p><strong>트레이드오프:</strong> 프로토타입이 아니라 <strong>인스턴스마다</strong> 새 함수 객체가 생성되므로(Day 5에서 다룬 "메서드는 프로토타입에 두어야 메모리 효율적" 원칙과 정면으로 충돌), 인스턴스를 대량으로 만드는 상황(예: 리스트의 각 행마다 생성되는 뷰모델)에서는 메모리 비용이 누적된다. 다만 이벤트 핸들러처럼 인스턴스 수가 적고(페이지당 컴포넌트 인스턴스 등) <code>this</code> 안전성이 더 중요한 상황에서는 실무적으로 널리 쓰이는 절충안이다.</p>
+
+    <div class="card">
+      <h4>세 가지 방법의 선택 기준 요약</h4>
+      <ul>
+        <li>호출부가 한두 곳뿐이고 클래스를 건드리기 부담스럽다 → <strong>방법 1</strong></li>
+        <li>클래스 밖으로 메서드가 여러 곳에 전달되고, 프로토타입 메모리 공유를 유지하고 싶다 → <strong>방법 2</strong></li>
+        <li>인스턴스 수가 적고(예: 리액트 클래스 컴포넌트, 싱글턴에 가까운 컨트롤러) 가독성과 안전성이 우선이다 → <strong>방법 3</strong></li>
+      </ul>
+    </div>
+
+    <h3>배열 메서드 콜백에서도 동일한 원리가 적용된다</h3>
+    <pre><code>class Logger {
+  prefix = '[APP]';
+  log(msg) {
+    console.log(`${this.prefix} ${msg}`);
+  }
+}
+const logger = new Logger();
+['a', 'b'].forEach(logger.log); // this.prefix에서 에러 — forEach가 콜백을 fn(item) 형태(단독 호출)로 부르기 때문
+['a', 'b'].forEach((msg) => logger.log(msg)); // 안전 — 화살표 함수가 logger.log(msg) 형태로 호출
+['a', 'b'].forEach(logger.log.bind(logger));  // 안전 — 하드 바인딩</code></pre>
+    <p>이벤트 핸들러뿐 아니라 <code>forEach</code>/<code>map</code>/<code>setTimeout</code>/Promise 콜백 등 <strong>"함수를 값으로 넘겨서 나중에 다른 곳에서 호출되는" 모든 상황</strong>이 같은 원리로 <code>this</code>를 잃어버릴 수 있다는 것을 아는 것이 핵심입니다.</p>
+  </section>
+
+  <!-- 8. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>8. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>문제의 함수가 화살표 함수인지 먼저 확인합니다.</strong> 화살표 함수라면 4가지 규칙이 아니라, 정의된 위치를 감싸는 스코프의 <code>this</code>를 그대로 따라간다는 별도 규칙을 적용합니다.</li>
+      <li><strong>일반 함수라면 실제 호출문의 형태를 봅니다.</strong> <code>new Fn()</code>인지, <code>fn.call/apply/bind(obj)</code>인지, <code>obj.fn()</code>인지, 아니면 앞에 아무 객체도 없는 단독 호출인지 구분합니다.</li>
+      <li><strong>우선순위 순서(new → 명시적 → 암시적 → 기본)로 어떤 규칙이 적용되는지 판단합니다.</strong> 특히 메서드가 변수에 담기거나 콜백으로 전달되는 순간 "암시적 바인딩을 잃고 기본 바인딩으로 떨어진다"는 패턴을 우선 의심합니다.</li>
+      <li><strong>엄격 모드 여부를 확인합니다.</strong> 기본 바인딩이 적용될 때 결과가 <code>undefined</code>인지 전역 객체인지는 모듈/클래스/<code>'use strict'</code> 여부에 달려 있습니다.</li>
+      <li><strong>필요하다면 실무 해결책까지 제시합니다.</strong> <code>bind</code>, 화살표 함수로 감싸기, 클래스 필드 화살표 함수 중 상황에 맞는 방법과 그 트레이드오프를 짚습니다.</li>
+    </ol>
+  </section>
+
+  <!-- 9. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>9. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "Primary Question 코드에서 세 줄의 결과를 설명하고, <code>btn.addEventListener('click', counter.increment)</code>가 왜 문제가 되는지 말해주세요."</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p><code>this</code>는 함수가 정의된 위치가 아니라 <strong>호출된 형태(call-site)</strong>로 결정됩니다. <code>user.greet()</code>는 <code>greet</code> 앞에 <code>user</code>라는 객체가 붙어 호출되므로 암시적 바인딩 규칙이 적용되어 <code>this = user</code>가 되고, <code>"Hi, I'm Alice"</code>가 출력됩니다.</p>
+      <br>
+      <p>반면 <code>greetFn</code>은 <code>user.greet</code>가 가리키던 <strong>같은 함수 객체</strong>를 그대로 참조만 옮긴 것이지만, <code>greetFn()</code>으로 호출하는 순간 호출문 앞에는 아무 객체도 없습니다. 이건 기본 바인딩 규칙이 적용되는 단독 호출이므로, 모듈이나 strict mode 환경에서는 <code>this</code>가 <code>undefined</code>가 되어 <code>this.name</code>에 접근하는 순간 <code>TypeError</code>가 납니다.</p>
+      <br>
+      <p><code>btn.addEventListener('click', counter.increment)</code>도 같은 원리입니다. <code>counter.increment</code>는 함수 자체만 넘겨지고, 그 함수가 항상 <code>counter</code>에 묶여 있다는 정보는 함께 전달되지 않습니다. <code>addEventListener</code> 내부에서 이 콜백을 실행할 때는 <code>cb()</code> 형태로 단독 호출하므로, 다시 기본 바인딩이 적용되어 <code>this</code>가 <code>counter</code>가 아니게 되고, <code>this.count++</code>에서 에러가 발생하거나 잘못된 대상을 건드리게 됩니다. 이걸 고치려면 <code>counter.increment.bind(counter)</code>로 하드 바인딩하거나, <code>() =&gt; counter.increment()</code>처럼 화살표 함수로 감싸 호출 형태를 <code>counter.increment()</code>로 유지해야 합니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>"메서드니까 <code>this</code>가 객체다"가 아니라 <strong>호출 형태 → 적용되는 바인딩 규칙</strong>이라는 인과관계로 설명함</li>
+      <li>같은 함수 객체인데 왜 두 줄의 결과가 다른지를 정확히 짚음(함수에 <code>this</code>가 저장되어 있지 않다는 것)</li>
+      <li>콜백 전달 상황(<code>addEventListener</code>)까지 같은 원리로 일반화해서 설명함</li>
+      <li>구체적인 해결책(<code>bind</code>, 화살표 함수 래핑)까지 제시함</li>
+    </ul>
+  </section>
+
+  <!-- 10. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>10. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"<code>greetFn()</code>은 <code>this</code>가 없어서 에러가 나요. 그리고 <code>addEventListener</code> 줄도 <code>this</code> 문제 때문에 <code>bind</code>를 걸어줘야 해요."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"<code>this</code>가 없다"는 표현은 정확하지 않습니다 — <code>this</code>는 항상 어떤 값(기본 바인딩이면 <code>undefined</code> 혹은 전역 객체)을 갖고, 그 값이 왜 그렇게 결정되는지가 질문의 핵심입니다.</li>
+        <li>"<code>bind</code>를 걸어줘야 한다"는 결론만 있고, <strong>왜</strong> 그 상황에서 기본 바인딩이 적용되는지, <code>addEventListener</code>가 콜백을 어떻게 호출하기에 문제가 생기는지에 대한 근거가 없습니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"화살표 함수를 쓰면 <code>this</code> 문제가 다 해결되니까 항상 화살표 함수로 메서드를 만들면 돼요."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>과도한 일반화입니다. 화살표 함수는 "자신만의 <code>this</code>를 만들지 않고 감싸는 스코프의 <code>this</code>를 그대로 이어받을 뿐"이며, 그 이어받은 <code>this</code>가 원하는 값이 아니면(예: 최상위 레벨에서 화살표 함수로 메서드를 정의하면 <code>this</code>가 <code>undefined</code>) 여전히 문제가 됩니다. 또한 클래스 필드 화살표 함수는 인스턴스마다 함수가 재생성되는 메모리 비용(Section 7)도 있어 "항상 화살표"가 정답은 아닙니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li><code>this</code>가 정의 위치가 아니라 호출 형태(call-site)로 결정된다는 원리를 먼저 세운다</li>
+        <li>4가지 바인딩 규칙과 그 우선순위(new &gt; 명시적 &gt; 암시적 &gt; 기본)를 근거로 각 줄을 설명한다</li>
+        <li>화살표 함수가 이 규칙들과 별개로 렉시컬 스코프의 <code>this</code>를 물려받는다는 예외를 정확히 구분한다</li>
+        <li>콜백/이벤트 핸들러로 함수가 전달되는 순간 호출 형태가 바뀐다는 것을 근본 원인으로 짚는다</li>
+        <li>해결책을 최소 2가지 이상 제시하고 각각의 트레이드오프까지 언급한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11. Follow-up -->
+  <section id="followups">
+    <h2>11. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: 객체 리터럴 안에 화살표 함수로 메서드를 정의하면 어떻게 되나요? (<code>const obj = { name: 'A', greet: () =&gt; this.name }</code>)</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 화살표 함수는 자신만의 <code>this</code>가 없으므로, 이 <code>greet</code>가 참조하는 <code>this</code>는 객체 리터럴을 <strong>감싸는 스코프</strong>(대부분 모듈 최상위 또는 함수 스코프)의 <code>this</code>입니다. 객체 리터럴 <code>{}</code> 자체는 <code>this</code>를 새로 만드는 스코프가 아니기 때문에, 이 <code>greet</code>를 <code>obj.greet()</code>로 호출해도 <code>this</code>는 <code>obj</code>가 되지 않습니다. 모듈 최상위에서는 <code>this</code>가 <code>undefined</code>이므로 <code>this.name</code>은 에러가 납니다. 이것은 "메서드는 화살표 함수로 정의하면 안 되는" 대표적인 이유입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 중첩된 화살표 함수(화살표 함수 안에 또 화살표 함수)의 <code>this</code>는 어떻게 결정되나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 화살표 함수는 계속 "바깥으로" <code>this</code>를 찾아 올라갑니다 — 스코프 체인에서 변수를 찾는 것과 동일한 원리입니다. 화살표 함수가 여러 겹 중첩되어 있어도, 결국 이 체인을 타고 올라가다가 <strong>가장 먼저 만나는 일반 함수의 <code>this</code></strong>(또는 그런 함수가 없으면 최상위 스코프의 <code>this</code>)로 귀결됩니다. 몇 겹이 중첩되어 있는지는 상관없이, "가장 가까운 일반 함수가 어떻게 호출됐는가"만 확인하면 됩니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: <code>this</code>가 예상과 다르게 동작하는 버그를 리뷰나 디버깅에서 어떻게 빠르게 짚어낼 수 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> "이 함수가 호출되는 실제 코드 줄"을 찾아서 그 줄의 형태만 봅니다. 함수가 정의된 위치나 클래스 구조를 보는 것은 함정입니다 — 화살표 함수가 아니라면 <code>this</code>는 오직 호출문의 형태(<code>new</code>/<code>call</code>·<code>apply</code>·<code>bind</code>/<code>obj.fn()</code>/단독 호출)로만 결정됩니다. 실무에서는 특히 "함수가 어딘가로 전달되어(콜백, 이벤트 핸들러, 구조 분해) 나중에 호출되는 지점"을 의심하는 것이 가장 빠른 진단 경로입니다. 필요하면 문제가 되는 지점에 <code>console.log(this)</code>를 임시로 찍어 실제 호출 형태의 결과를 직접 확인하는 것도 유효한 절차입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: TypeScript는 <code>this</code> 관련 버그를 컴파일 타임에 막아줄 수 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 부분적으로만 가능합니다. TypeScript는 함수 선언에 <code>this</code> 타입을 명시(<code>function fn(this: MyType, ...)</code>)하는 기능을 제공해, "이 함수는 반드시 <code>MyType</code>을 <code>this</code>로 해서 호출되어야 한다"는 것을 컴파일 타임에 강제할 수 있습니다. 클래스 메서드를 콜백으로 전달하려는 코드도 <code>strictBindCallApply</code>, <code>noImplicitThis</code> 옵션이 켜져 있으면 타입 에러로 잡히는 경우가 많습니다. 하지만 <code>addEventListener</code>처럼 런타임에 함수를 호출하는 외부 API 내부까지 TypeScript가 추적하지는 못하므로, 여전히 <code>this</code> 바인딩 원리 자체를 이해하고 있어야 이런 타입 에러가 뜨는 이유와 올바른 수정 방법(단순히 <code>as any</code>로 덮는 것이 아니라)을 판단할 수 있습니다. 이 경계 판단은 Day 19에서 더 다룹니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>12. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"메서드 안의 <code>this</code>는 그 메서드가 속한 객체를 항상 가리킨다"</strong></p>
+      <p>메서드가 <strong>정의된</strong> 객체와, 그 메서드가 <strong>호출된</strong> 형태는 별개입니다. <code>obj.method()</code> 형태로 호출될 때만 <code>this = obj</code>가 되고, 같은 함수라도 변수에 담겨 단독 호출되거나 콜백으로 전달되면 완전히 다른 <code>this</code>가 됩니다(Section 4).</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"화살표 함수는 <code>this</code>를 자동으로 <code>window</code>/전역으로 고정한다"</strong></p>
+      <p>정반대에 가깝습니다. 화살표 함수는 전역이 아니라 <strong>자신을 감싸는 가장 가까운 스코프의 <code>this</code>를 그대로 물려받습니다</strong>. 최상위 레벨에서 정의된 화살표 함수라면 결과적으로 전역/undefined에 가까운 값을 물려받을 뿐이지, "화살표라서 전역"이라는 별도 규칙이 있는 것이 아닙니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"<code>bind</code>로 한 번 고정한 <code>this</code>는 어떤 경우에도 절대 바뀌지 않는다"</strong></p>
+      <p>대부분의 경우 맞지만, Section 5에서 다룬 대로 <strong><code>new</code>로 호출하면 예외</strong>입니다. <code>bind</code>된 함수를 <code>new</code>로 호출하면 <code>new</code> 바인딩이 우선순위상 더 위에 있어 새로 생성된 객체가 <code>this</code>가 되고, <code>bind</code>로 고정했던 값은 무시됩니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"<code>this</code> 문제는 항상 <code>bind</code>나 화살표 함수로 감싸기만 하면 다 해결되므로 원리를 몰라도 패턴만 외우면 된다"</strong></p>
+      <p>패턴을 아는 것과 언제 어떤 패턴을 골라야 하는지 판단하는 것은 다릅니다. Section 7에서 다뤘듯 세 가지 해결책은 각각 메모리(인스턴스당 함수 재생성 여부), 코드 위치(등록부 vs 생성자), 안전성 범위(어디까지 넘겨도 안전한지)에서 트레이드오프가 다릅니다. 원리 없이 패턴만 외우면 상황에 안 맞는 해결책을 고르거나, 새로운 변형(예: 배열 메서드 콜백, Promise 콜백)에서 같은 원리를 알아보지 못합니다.</p>
+    </div>
+  </section>
+
+  <!-- 13. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>13. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 6을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>this</code>가 함수의 정의 위치가 아니라 호출 시점의 형태(call-site)로 결정된다는 원리를, 같은 함수를 다르게 호출하는 예제로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>4가지 바인딩 규칙(<code>new</code>, 명시적, 암시적, 기본)과 그 우선순위를 순서대로 나열하고, 각 규칙이 적용되는 호출 형태를 예로 들 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>call</code>/<code>apply</code>/<code>bind</code>의 차이(즉시 실행 vs 나중에 실행, 인자 전달 방식)를 설명하고, 하드 바인딩이 <code>new</code> 호출에는 예외적으로 재정의된다는 것까지 안다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>화살표 함수가 4가지 규칙에 참여하지 않고, 정의된 위치의 렉시컬 스코프에서 <code>this</code>를 물려받는다는 것을 <code>setTimeout</code> 예제로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>메서드를 콜백/이벤트 핸들러로 넘길 때 <code>this</code>가 깨지는 이유를 설명하고, 최소 두 가지 해결책과 그 트레이드오프를 비교할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 7</h3>
+      <p><strong>Module 시스템</strong></p>
+      <p>Day 6까지는 함수/객체 내부의 실행 원리(스코프, 클로저, 프로토타입, <code>this</code>)를 다뤘다면, Day 7에서는 시야를 파일 단위로 넓혀 <strong>CommonJS와 ESM의 차이, 순환 참조가 실제로 어떻게 처리되는지, 트리쉐이킹이 왜 ESM에서만 가능한지, 번들러가 그 사이 경계를 어떻게 다루는지</strong>를 살펴봅니다.</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    JavaScript 시니어 인터뷰 · Day 6 of 20 · 2026-07-07
+  </p>
+
+</div>
+</body>
+</html>

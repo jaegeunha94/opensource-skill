@@ -9,12 +9,12 @@
 | 3 | 2026-07-04 | Scope Chain과 Lexical Scoping — 스코프 체인 조회 규칙, 함수/블록 스코프, 섀도잉 | [0003-scope-chain-lexical-scoping.html](lessons/0003-scope-chain-lexical-scoping.html) |
 | 4 | 2026-07-05 | Closure 심화 — 클로저의 실제 메모리 모델, 반복문 클로저 버그, 실무 활용 패턴 | [0004-closure-memory-model-deep-dive.html](lessons/0004-closure-memory-model-deep-dive.html) |
 | 5 | 2026-07-06 | Prototype과 객체 모델 — Prototype chain 조회 알고리즘, `class`는 syntactic sugar, `Object.create`로 체인 직접 다루기 | [0005-prototype-object-model.html](lessons/0005-prototype-object-model.html) |
+| 6 | 2026-07-07 | `this` 바인딩 규칙 — 4가지 바인딩 규칙과 우선순위, `call`/`apply`/`bind`, 화살표 함수의 `this` 예외 | [0006-this-binding-rules.html](lessons/0006-this-binding-rules.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | `this` 바인딩 규칙 | 4가지 바인딩 규칙, `call`/`apply`/`bind`, 화살표 함수의 `this` |
 | 7 | Module 시스템 | CommonJS vs ESM, 순환 참조, 트리쉐이킹, 번들러 경계 |
 | 8 | Event Loop 심화 — Microtask vs Macrotask | 큐 우선순위, `requestAnimationFrame`, 렌더링 타이밍과의 관계 |
 | 9 | Promise 내부 동작 | 상태 머신(pending/fulfilled/rejected), 체이닝, 에러 전파 규칙 |
@@ -32,7 +32,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 다음: Day 6 — `this` 바인딩 규칙
+**Day 6 완료** — 다음: Day 7 — Module 시스템
 
 ## 습득한 핵심 개념
 
@@ -53,7 +53,9 @@
 - [x] Prototype chain 조회 알고리즘과 섀도잉(shadowing) 원리 (Day 5)
 - [x] `class`가 실제로 만드는 프로토타입 링크 구조와 ES5 방식과의 차이 (Day 5)
 - [x] `Object.create(null)`과 프로토타입 오염(prototype pollution)의 관계 (Day 5)
-- [ ] `this` 4가지 바인딩 규칙과 화살표 함수 예외 (예정 Day 6)
+- [x] `this` 4가지 바인딩 규칙(new/명시적/암시적/기본)과 우선순위 (Day 6)
+- [x] 화살표 함수가 렉시컬 스코프의 `this`를 물려받는 예외 원리 (Day 6)
+- [x] `call`/`apply`/`bind`의 차이와 하드 바인딩이 `new`에는 예외적으로 재정의되는 규칙 (Day 6)
 - [ ] Promise 상태 머신과 에러 전파 규칙 (예정 Day 9)
 - [ ] Promise가 취소 불가능한 근본 이유 (예정 Day 11)
 - [ ] 메모리 누수 진단 절차 (예정 Day 15)
