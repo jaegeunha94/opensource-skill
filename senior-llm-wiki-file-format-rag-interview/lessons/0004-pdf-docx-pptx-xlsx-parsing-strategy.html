@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 4 — PDF/DOCX/PPTX/XLSX 파싱 전략</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #3aa0e2;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: #e2523a; border: 1px solid #e2523a; }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .src-note {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 4 · LLM Wiki / File Format RAG Interview</div>
+    <h1>PDF/DOCX/PPTX/XLSX 파싱 전략</h1>
+    <div class="subtitle">"구조가 없는" PDF와 "구조가 이미 있는" DOCX/PPTX/XLSX를 다르게 다뤄야 하는 이유, 레이아웃 분석·VLM 직접 파싱·하이브리드 파이프라인의 2026년 현재 트레이드오프, 그리고 벤더 벤치마크를 그대로 믿으면 안 되는 이유</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "PDF, DOCX, PPTX, XLSX처럼 내부 구조가 완전히 다른 포맷을 RAG 파이프라인에
+      넣어야 합니다. 각 포맷을 어떻게 파싱하시겠습니까? 도구는 어떤 기준으로
+      선택하시겠습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "요즘 PDF 페이지를 통째로 이미지로 만들어서 멀티모달 LLM(비전 모델)에
+      바로 넣는 방식이 유행인데, 그냥 이 방식만 쓰면 안 되나요? 전통적인
+      레이아웃 분석 파서가 아직도 필요한 이유가 있습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "특정 파싱 벤더가 '우리가 벤치마크에서 1위'라고 주장하는 자료를
+      보여준다면, 그 숫자를 어느 정도까지 신뢰하시겠습니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>왜 PDF와 DOCX는 "같은 문서 파싱"이 아닌가</h2>
+
+    <p>
+      많은 지원자가 "문서 파싱"을 하나의 문제로 뭉뚱그려 생각한다. 하지만 PDF와
+      DOCX/PPTX/XLSX는 <strong>근본적으로 다른 종류의 문제</strong>다. 이 차이를
+      먼저 이해하지 못하면 이후의 도구 선택도, VLM 트렌드에 대한 판단도 표면적인
+      암기에 그친다.
+    </p>
+
+    <h3>PDF: "문서"가 아니라 "인쇄 결과물"이다</h3>
+    <p>
+      PDF는 원래 <strong>화면이나 프린터에 어떻게 그릴지</strong>를 기록하는
+      포맷이다. "이 글자를 (120, 340) 좌표에 이 폰트로 그려라"는 명령의 나열에
+      가깝고, "이것은 제목이다", "이것은 표의 3번째 열이다" 같은 <strong>의미
+      구조(semantic structure)는 원래 PDF 안에 존재하지 않는다.</strong> 그래서
+      PDF 파싱은 "이미 있는 구조를 읽어내는" 문제가 아니라, <strong>흩어진 텍스트
+      조각과 좌표로부터 문단·제목·표·목록 같은 구조를 역으로 추론(reconstruct)하는
+      문제</strong>다. 같은 표라도 셀 경계선이 그림으로만 그려져 있거나, 병합된
+      셀이 실제로는 여러 개의 겹친 텍스트 상자일 수 있다.
+    </p>
+    <div class="callout callout-warn">
+      <strong>흔한 착각:</strong> "PDF에서 텍스트를 뽑는 건 <code>pip install
+      pypdf</code> 한 줄이면 되는 거 아닌가요?" — 텍스트를 <em>추출</em>하는
+      것과, 그 텍스트가 <em>어떤 구조(제목/본문/표/각주)에 속하는지 복원</em>하는
+      것은 완전히 다른 난이도의 문제다. RAG 품질에 영향을 주는 것은 후자다.
+    </div>
+
+    <h3>DOCX/PPTX/XLSX: 구조가 "이미" 파일 안에 있다</h3>
+    <p>
+      반면 DOCX/PPTX/XLSX는 내부적으로 ZIP 컨테이너 안에 <strong>XML로 구조를
+      명시적으로 기록</strong>한다(Day 3에서 다룬 OOXML 컨테이너 포맷). "이
+      문단은 Heading 1 스타일이다", "이 셀은 (2,3) 위치이고 병합 범위는 여기까지다"
+      같은 정보가 이미 태그로 존재한다. 그래서 DOCX/PPTX/XLSX 파싱의 핵심 난이도는
+      "구조를 추론하는 것"이 아니라 <strong>"이미 있는 구조를 놓치지 않고 충실히
+      읽어내는 것"</strong>이다 — 병합 셀, 트랙 변경(추적된 수정 내용), 중첩된
+      표, 수식(formula) vs 계산된 값(cached value)의 차이, 임베디드 객체(차트,
+      다른 문서) 같은 엣지 케이스가 문제가 된다.
+    </p>
+
+    <table>
+      <tr>
+        <th>구분</th>
+        <th>PDF</th>
+        <th>DOCX / PPTX / XLSX</th>
+      </tr>
+      <tr>
+        <td>구조의 존재 여부</td>
+        <td>없음 — 좌표/폰트 나열, 구조는 추론해야 함</td>
+        <td>있음 — XML 태그로 명시</td>
+      </tr>
+      <tr>
+        <td>핵심 난이도</td>
+        <td>레이아웃 분석(layout analysis), reading order 복원</td>
+        <td>엣지 케이스 충실히 반영(병합 셀, 수식, 임베디드 객체)</td>
+      </tr>
+      <tr>
+        <td>스캔본 문제</td>
+        <td>있음 — 이미지로만 존재하면 OCR 필요</td>
+        <td>거의 없음 — 텍스트 레이어가 항상 존재</td>
+      </tr>
+      <tr>
+        <td>대표 실패 유형</td>
+        <td>다단 레이아웃에서 읽는 순서가 뒤섞임, 표 셀 경계 오인식</td>
+        <td>병합 셀을 단일 셀로 오인, 수식 대신 캐시된 값만 읽음</td>
+      </tr>
+    </table>
+
+    <h3>레이아웃 분석의 3가지 접근: Rule-based, ML 레이아웃 모델, VLM 직접 파싱</h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Rule-based (규칙 기반)</strong> — <code>pdfminer</code>,
+        <code>PyMuPDF</code> 같은 라이브러리가 폰트 크기·좌표·간격 같은 휴리스틱
+        규칙으로 문단/제목을 추정한다. 빠르고 저렴하지만 복잡한 다단 레이아웃이나
+        표에서 쉽게 무너진다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>ML 기반 레이아웃 탐지 모델</strong> — Docling, Unstructured의
+        <code>hi_res</code> 전략처럼, 페이지 이미지에 대해 객체 탐지(object
+        detection) 모델을 돌려 "이 영역은 제목", "이 영역은 표"라고 레이블링한
+        다음 그 영역만 텍스트 추출한다. Rule-based보다 정확하지만 GPU/모델 서빙
+        비용이 든다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>VLM 직접 파싱(Vision-Language Model)</strong> — 페이지 전체를
+        이미지로 바꿔 멀티모달 LLM에 "이 페이지를 Markdown으로 옮겨줘"라고
+        직접 시킨다. 레이아웃 탐지·OCR·표 인식을 모델 하나가 한 번에 처리한다는
+        점이 매력적이지만, <strong>모델이 실제로 없는 내용을 "그럴듯하게
+        지어내는" hallucination 위험</strong>이 구조가 복잡한 표에서 특히
+        크다는 것이 2026년 현재까지도 반복적으로 보고되는 문제다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+    <ul>
+      <li><strong>"파싱은 다 똑같다"는 착각이 있는지</strong> — PDF의 구조 추론
+      문제와 DOCX/PPTX/XLSX의 구조 보존 문제를 구분하지 못하면, 포맷별로 다른
+      전략이 필요하다는 것 자체를 이해하지 못한 것으로 본다.</li>
+      <li><strong>최신 트렌드를 맹신하지 않고 트레이드오프로 판단하는지</strong> —
+      "요즘은 VLM에 이미지만 넣으면 다 된다"는 마케팅 문구를 그대로 반복하는지,
+      아니면 표/수치 데이터에서 hallucination이 실제로 보고되고 있다는 것까지
+      알고 하이브리드 전략을 제시하는지를 본다.</li>
+      <li><strong>벤더 벤치마크를 비판적으로 읽을 수 있는지</strong> — 파싱 도구
+      시장은 벤더마다 자사에 유리하게 설계한 벤치마크를 내놓는다. 숫자를
+      그대로 인용만 하는지, 아니면 "누가 측정했는가", "내 도메인 문서로도
+      같은 결과가 나올까"를 따지는지가 시니어 판단력의 핵심 신호다.</li>
+      <li><strong>비용/정확도/지연/자체호스팅 여부를 함께 고려하는 실무 감각이
+      있는지</strong> — "정확도가 제일 높은 도구"만 고르는 게 아니라, 문서
+      규모·비용 구조·데이터 residency 요구사항까지 함께 판단하는지를 본다.</li>
+    </ul>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>2026년 현재 도구 지형과 벤치마크</h2>
+
+    <h3>도구 지형: 레이어별로 나눠서 이해하기</h3>
+    <p>
+      2026년 기준 PDF/오피스 문서 파싱 도구는 크게 세 계층으로 나뉜다.
+    </p>
+    <table>
+      <tr>
+        <th>계층</th>
+        <th>대표 도구</th>
+        <th>특징</th>
+      </tr>
+      <tr>
+        <td>오픈소스 · 자체호스팅</td>
+        <td>Docling(IBM, MIT 라이선스), Marker(Datalab), MinerU(OpenDataLab)</td>
+        <td>무료·데이터 residency 확보 가능하지만 GPU 인프라와 운영 부담을
+        스스로 짊어져야 함</td>
+      </tr>
+      <tr>
+        <td>관리형 문서 파싱 API</td>
+        <td>LlamaParse(LlamaIndex), Reducto, Unstructured(Serverless/Ingest)</td>
+        <td>페이지당 과금, 표/차트 특화 기능(Agentic 모드 등) 제공, 운영 부담을
+        벤더에 위임</td>
+      </tr>
+      <tr>
+        <td>범용 클라우드 OCR</td>
+        <td>AWS Textract, Google Document AI, Azure Document Intelligence</td>
+        <td>클라우드 생태계 통합이 쉽지만, 표 추출 정확도는 문서 벤치마크
+        전용 도구보다 낮게 나오는 경우가 많음</td>
+      </tr>
+    </table>
+
+    <h3>벤치마크 숫자 — 그대로 믿지 말고 "누가 쟀는가"부터 봐라</h3>
+    <p>
+      2026년 문서 파싱 벤치마크 생태계에는 참고할 만한 공개 벤치마크가 여럿
+      있지만, 숫자를 그대로 인용하면 안 되는 이유가 명확하다.
+    </p>
+    <div class="callout callout-info">
+      <strong>OmniDocBench (CVPR 2025, arXiv:2412.07626)</strong> — 학술 표준
+      벤치마크. 2026년 4월 v1.6 기준 상위권은 <strong>MinerU2.5-Pro(1.2B) 95.75</strong>,
+      <strong>GLM-OCR(0.9B) 95.22</strong>, <strong>PaddleOCR-VL-1.5(0.9B) 94.93</strong>다.
+      흥미로운 점은 GPT-4o·Gemini 3 Pro 같은 <strong>범용 프론티어 모델(86~93점대)이
+      오히려 훨씬 작은 문서 전용 특화 모델보다 낮은 점수</strong>를 받는다는
+      것이다 — "제일 큰 모델이 제일 잘한다"는 직관이 문서 파싱에서는 틀릴 수
+      있다.
+    </div>
+    <div class="callout callout-warn">
+      <strong>ParseBench (LlamaIndex, 2026년 6월 공개)</strong> — 엔터프라이즈
+      문서 2,078페이지로 표 정확도·차트 추출·근거 충실도(faithfulness)를
+      측정. <strong>LlamaParse Agentic가 84.88점으로 1위</strong>를 차지했지만,
+      <strong>이 벤치마크 자체를 LlamaIndex가 설계하고 자사 제품을 채점</strong>했다는
+      점을 반드시 함께 언급해야 한다. 데이터셋은 공개돼 있어 재현 가능하지만,
+      2026년 7월 기준 독립된 제3자가 재검증한 사례는 아직 없다.
+    </div>
+    <div class="callout callout-danger">
+      <strong>실제로 발생한 벤더 간 숫자 왜곡 사례:</strong> Mistral이 공개한
+      olmOCR-Bench 비교 차트에서 경쟁 모델(Chandra)의 점수가 실제보다 낮게
+      잘못 표기된 사실이 해당 모델 개발자에 의해 지적된 바 있다. 또한 Mistral
+      OCR API는 olmOCR-Bench의 표(table) 세부 항목에서 29.3점에 그쳐, 경쟁
+      모델(Chandra 50.4점)과 큰 격차를 보였다 — 벤더가 강조하는 "종합 1위"
+      숫자 뒤에 표처럼 구체적인 세부 항목에서는 취약점이 숨어 있을 수 있다.
+    </div>
+    <p>
+      독립적으로 수행된 비교 실험(문서 800건 이상, 프론티어 모델 7종 테스트)에서는
+      <strong>도메인에 따라 파서 정확도가 55점 이상 차이</strong> 났고, <strong>텍스트
+      추출 정확도와 "구조 복원" 정확도는 서로 다른 지표</strong>라서 어떤 파서는
+      텍스트는 75% 맞히면서도 문서 구조(표/목록/계층)는 13%만 복원하기도 했다.
+      즉, 벤치마크 하나의 종합 점수만으로 도구를 고르면 안 되고, <strong>내
+      도메인의 실제 문서 샘플</strong>로 표/차트/스캔본별 정확도를 따로 측정해야
+      한다는 것이 2026년 실무의 공통된 결론이다.
+    </p>
+
+    <h3>VLM 직접 파싱 — 유행하지만 hallucination은 여전히 미해결 문제다</h3>
+    <p>
+      Anthropic 공식 문서 자체도 흥미로운 신호를 준다. Claude의 PDF 처리는
+      "페이지 이미지만 보고 파싱"하는 순수 vision 방식이 아니라, <strong>각
+      페이지를 이미지로 변환하는 동시에 텍스트 레이어도 함께 추출해 나란히
+      모델에 제공</strong>하는 하이브리드 구조다. 문서를 실제로 만드는 모델
+      제공사조차 "이미지만 믿고 텍스트 레이어를 버리지 않는" 이유는, 순수
+      VLM 파싱의 hallucination 위험이 실제로 존재하기 때문이다.
+    </p>
+    <table>
+      <tr>
+        <th>사례</th>
+        <th>내용</th>
+      </tr>
+      <tr>
+        <td>독립 벤치마크(Reducto RD-FormsBench)</td>
+        <td>밀도 높은 재무 표·손글씨 의료 양식에서 특정 VLM-OCR이 약 45%
+        정확도에 그쳐, 같은 세트에서 약 80%를 기록한 모델과 큰 격차 발생</td>
+      </tr>
+      <tr>
+        <td>LlamaIndex 자체 분석("OmniDocBench is Saturated")</td>
+        <td>2026년 최상위 파싱 방법도 근거 충실도(faithfulness)가 약 90%
+        수준 — 바꿔 말하면 <strong>SOTA 방법조차 약 10페이지 중 1페이지꼴로
+        의미 있는 누락/hallucination이 발생</strong></td>
+      </tr>
+      <tr>
+        <td>Reducto 자체 공개 수치</td>
+        <td>자사의 "Agentic OCR"(CV+VLM+다중 패스 결합) 파이프라인도 토큰
+        recall은 1위였지만, "추가된(존재하지 않는) 토큰" 비율에서는 3번째로
+        높아 hallucination이 하이브리드 방식에서도 완전히 사라지지 않았음을
+        스스로 인정</td>
+      </tr>
+    </table>
+    <div class="callout callout-tip">
+      <strong>2026년 실무 컨센서스:</strong> 순수 VLM 단일 패스보다 <strong>구조
+      기반 1차 파싱(레이아웃 분석 또는 텍스트 레이어 추출) + VLM을 보정/폴백
+      용도로 결합</strong>하는 하이브리드 파이프라인이 프로덕션 표준이다. VLM
+      단독 파싱은 저위험·탐색적 용도이거나, 레이아웃이 극도로 불규칙해 규칙
+      기반 접근이 아예 통하지 않는 예외적 케이스에 한정해서 쓰는 경우가 많다.
+    </div>
+
+    <h3>DOCX/PPTX/XLSX 전용 라이브러리의 유지보수 리스크</h3>
+    <p>
+      의외의 실무 함정이 있다. 오랫동안 표준으로 쓰여온 <code>python-docx</code>
+      (PyPI 최신 1.2.0, 2025-06 릴리스 이후 정체), <code>python-pptx</code>
+      (PyPI 최신 1.0.2, 2024-08 릴리스 이후 정체)는 2026년 기준 <strong>1년
+      이상 새 릴리스가 없어</strong> 여러 의존성 위험 추적 도구에서 "사실상
+      유지보수 중단"으로 지적되고 있다. <code>openpyxl</code>도 PyPI 기준으로는
+      비슷하게 오래됐지만, 실제 원본 저장소는 GitHub가 아니라 Heptapod
+      (Mercurial 기반)이라 GitHub 활동만으로 유지보수 상태를 판단하면 잘못된
+      결론에 이를 수 있다 — <strong>"저장소를 어디서 확인했는가"까지 검증하는
+      습관</strong>이 시니어 수준의 조사력이다. 실무에서는 이 개별 라이브러리를
+      직접 쓰기보다, Docling·Marker·MinerU처럼 DOCX/PPTX/XLSX를 함께 지원하는
+      통합 파서로 옮겨가는 흐름이 뚜렷하다.
+    </p>
+
+    <h3>실제 GitHub 이슈로 확인되는 구체적 함정</h3>
+    <p>
+      "병합 셀이 문제"라고 추상적으로 말하는 것과, 실제로 어떤 증상으로
+      나타나는지 아는 것은 다르다. 아래는 공식 이슈 트래커에서 확인되는
+      구체적 사례다.
+    </p>
+    <table>
+      <tr>
+        <th>도구</th>
+        <th>증상</th>
+        <th>상태</th>
+      </tr>
+      <tr>
+        <td>openpyxl (XLSX)</td>
+        <td><code>data_only=True</code>로 열었는데 수식 셀 값이 <code>None</code>으로
+        나옴 — 프로그램으로 만들거나 수정한 파일을 Excel이 아직 재계산하지
+        않았기 때문. 병합 셀의 좌상단이 아닌 셀은 <code>MergedCell</code>
+        객체가 되어 값을 쓰려 하면 <code>AttributeError</code> 발생</td>
+        <td>라이브러리의 설계상 한계 — openpyxl은 수식을 직접 계산하지 않음
+        (공식 튜토리얼에 명시)</td>
+      </tr>
+      <tr>
+        <td>python-docx (DOCX)</td>
+        <td>추적된 변경 내용(track changes, <code>&lt;w:ins&gt;</code>/<code>&lt;w:del&gt;</code>)의
+        승인/거부 로직을 지원하지 않아, 삭제 예정 텍스트까지 그대로 추출될
+        수 있음</td>
+        <td>2016년부터 열려 있는 미해결 이슈 (GitHub #340)</td>
+      </tr>
+      <tr>
+        <td>Unstructured (DOCX)</td>
+        <td>병합 셀이 있는 표에서 셀 텍스트가 <strong>병합된 셀 개수만큼
+        중복 출력</strong>되는 것으로 확인됨</td>
+        <td>공개 이슈로 리포트됨 (GitHub #2106), 부분 수정 PR 존재</td>
+      </tr>
+      <tr>
+        <td>Unstructured (XLSX)</td>
+        <td>캐시된 값이 없는 수식 셀이 있으면 해당 영역이 통째로 텍스트
+        추출에서 누락될 수 있음 — 우회책은 Excel로 다시 저장해 캐시 값을
+        강제로 채우는 것</td>
+        <td>공개 이슈로 리포트되고 종료됨 (GitHub #2485)</td>
+      </tr>
+    </table>
+    <div class="callout callout-warn">
+      <strong>공통 패턴:</strong> 오피스 포맷의 "구조가 이미 있다"는 장점은,
+      <strong>그 구조를 라이브러리가 실제로 얼마나 충실하게 반영하는가</strong>에
+      의해 실제 가치가 결정된다. 수식-값 관계, 병합 셀, 추적된 변경 내용처럼
+      "사람이 보기엔 당연한" 정보도 파서 구현에 따라 유실되거나 왜곡될 수
+      있다는 것을 실제 이슈 사례로 알고 있으면 답변의 신뢰도가 올라간다.
+    </div>
+
+    <h3>최근 deprecation/migration — 알아두면 감점을 피할 수 있는 것들</h3>
+    <ul>
+      <li><strong>PyPDF2 → pypdf</strong>: PyPDF2는 더 이상 권장되지 않고
+      <code>pypdf</code> 네임스페이스로 통합됐다. <code>PdfFileReader</code>
+      →<code>PdfReader</code> 같은 API 이름도 스네이크케이스로 정리됐다.</li>
+      <li><strong>langchain-community 저장소가 2026-05-26 아카이브(읽기 전용)
+      처리</strong>됐다 — LangChain은 문서 로더 등 커뮤니티 통합을 개별
+      파트너 패키지(<code>langchain-openai</code> 등) 구조로 이전 중이다.
+      오래된 <code>from langchain.document_loaders import ...</code> import
+      경로를 그대로 쓰고 있다면 마이그레이션이 필요하다.</li>
+      <li><strong>LlamaParse V2 tier 개편</strong>: 기존 fast/balanced/premium
+      명명 체계가 Fast/Cost-Effective/Agentic/Agentic Plus 4단계로 재편됐다.
+      오래된 모드 이름을 그대로 언급하면 최신성 부족으로 비칠 수 있다.</li>
+      <li><strong>Docling은 v2.70.0부터 Python 3.9 지원을 중단</strong>했고,
+      2026년 7월 기준 v2.110.0까지 거의 매일 단위로 릴리스되며 OCR/VLM
+      백엔드(NVIDIA Nemotron OCR, vLLM 기반 모델 등)를 계속 추가하고 있다.</li>
+    </ul>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>포맷별로 문제의 본질이 다르다는 것부터 짚는다</strong>
+        "PDF는 구조가 없는 인쇄 결과물이라 레이아웃을 역으로 추론해야 하고,
+        DOCX/PPTX/XLSX는 XML로 구조가 이미 있어서 그걸 놓치지 않고 충실히
+        읽어내는 게 핵심입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>레이아웃 분석의 3가지 접근을 트레이드오프로 설명</strong>
+        "Rule-based는 빠르지만 복잡한 표에서 무너지고, ML 레이아웃 모델은
+        정확하지만 GPU 비용이 들고, VLM 직접 파싱은 통합적이지만 표에서
+        hallucination 위험이 있습니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>벤치마크는 참고만 하고 자체 검증을 강조</strong>
+        "공개 벤치마크(OmniDocBench 등)로 큰 그림은 파악하되, 벤더 자체
+        벤치마크는 설계·채점 주체를 확인하고, 최종적으로는 저희 도메인
+        문서 샘플로 표/차트/스캔본별 정확도를 직접 측정합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>비용/자체호스팅/지연까지 포함한 선택 기준 제시</strong>
+        "정확도만이 아니라 페이지당 비용, 자체호스팅 가능 여부(데이터
+        residency), 처리 지연을 함께 고려합니다. 예를 들어 대량 배치 처리는
+        자체호스팅 오픈소스가 유리하고, 정확도가 중요한 소량 고가치 문서는
+        관리형 API의 Agentic/Premium 모드가 나을 수 있습니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>하이브리드 파이프라인으로 결론 (Senior 포인트)</strong>
+        "VLM 단독보다는 구조 기반 1차 파싱 + VLM 보정/폴백의 하이브리드
+        전략을 기본으로 하고, 표처럼 hallucination 위험이 큰 영역은 별도
+        검증 로직(합계 검증 등)을 추가합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "저는 먼저 PDF와 DOCX/PPTX/XLSX를 다른 문제로 봅니다. PDF는 좌표와
+        폰트 나열일 뿐 문단·표·제목 같은 구조가 원래 없어서, 파싱은 그 구조를
+        역으로 추론하는 문제입니다. 반면 DOCX/PPTX/XLSX는 ZIP 안에 XML로
+        구조가 이미 있어서, 병합 셀이나 수식처럼 이미 있는 정보를 놓치지 않고
+        충실히 읽어내는 게 핵심입니다.
+      </p>
+      <p>
+        PDF 레이아웃 분석은 크게 세 갈래로 나눠서 생각합니다. 규칙 기반
+        파서는 빠르고 저렴하지만 다단 레이아웃이나 복잡한 표에서 쉽게
+        무너집니다. ML 기반 레이아웃 탐지 모델은 이미지에 대해 객체 탐지를
+        돌려 제목·표 영역을 인식하는 방식으로, 정확도는 더 높지만 GPU
+        서빙 비용이 듭니다. 최근에는 페이지 이미지를 통째로 멀티모달 LLM에
+        넣는 방식도 유행하지만, 이건 완전한 해결책이 아니라고 봅니다.
+        LlamaIndex 자체 분석에서도 2026년 SOTA 방법조차 근거 충실도가
+        약 90% 수준이라, 여전히 페이지 10개 중 1개꼴로 의미 있는
+        hallucination이나 누락이 발생한다고 나와 있습니다. 특히 표처럼
+        구조가 복잡한 데이터에서 이 위험이 두드러집니다. 그래서 저는 순수
+        VLM 단일 패스보다, 구조 기반 1차 파싱과 VLM 보정을 결합한 하이브리드
+        파이프라인을 기본으로 둡니다. 실제로 Claude의 공식 PDF 처리 방식도
+        이미지만 쓰는 게 아니라 텍스트 레이어를 함께 추출해서 나란히
+        제공하는 하이브리드 구조입니다.
+      </p>
+      <p>
+        도구 선택에서는 공개 벤치마크를 참고하되 맹신하지 않습니다.
+        OmniDocBench 같은 학술 벤치마크로 전체적인 경향은 파악하지만,
+        벤더가 자체 공개한 벤치마크는 누가 설계하고 채점했는지부터
+        확인합니다. 실제로 한 벤더의 비교 차트에서 경쟁 모델 점수가 잘못
+        표기된 사례도 있었고, 종합 점수가 높아도 표 항목에서만 유독 낮은
+        점수를 받는 경우도 있었습니다. 그래서 최종 결정 전에는 반드시
+        저희 도메인의 실제 문서 샘플로 표·차트·스캔본별 정확도를 직접
+        측정합니다.
+      </p>
+      <p>
+        마지막으로 도구 선택은 정확도 하나만 보지 않습니다. 대량 배치라면
+        자체호스팅 오픈소스(Docling, Marker 등)로 비용을 낮추고, 소량이지만
+        정확도가 중요한 고가치 문서라면 관리형 API의 프리미엄/Agentic 모드를
+        씁니다. DOCX/PPTX 같은 오피스 포맷은 python-docx/python-pptx 같은
+        개별 라이브러리가 유지보수가 정체된 상태라, 최근에는 Docling처럼
+        여러 포맷을 함께 지원하는 통합 파서로 옮겨가는 추세를 반영합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "VLM이 표에서 hallucination을 일으킨다는 걸 어떻게 검증하고, 프로덕션에서는 어떻게 막으시겠습니까?"</h3>
+    <p><strong>약한 답변:</strong> "최신 모델은 성능이 좋아서 괜찮을 것 같습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "먼저 파싱 결과에 대해 자체 검증 규칙을 겁니다 — 예를 들어 표라면 각
+      행의 합계가 표시된 총계와 일치하는지 같은 정합성 체크를 자동화합니다.
+      다음으로 파싱 신뢰도 점수(confidence)가 낮거나 검증 규칙을 통과하지
+      못한 페이지는 사람이 검토하는 큐로 보냅니다. 그리고 애초에 표처럼
+      hallucination 위험이 높은 영역은 순수 VLM 대신 표 전용 구조 인식
+      모델(table structure recognition)을 우선 적용하고, VLM은 셀 내용을
+      보정하는 역할로만 씁니다."
+    </p>
+
+    <h3>F2. "벤더가 '올해 벤치마크 1위'라고 홍보하는 파싱 도구를 도입하자는 요청을 받으면 어떻게 대응하시겠습니까?"</h3>
+    <p><strong>약한 답변:</strong> "1위라니까 검증 없이 바로 도입합니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "먼저 그 벤치마크를 누가 설계하고 채점했는지 확인합니다 — 벤더 자체
+      벤치마크라면 자사에 유리하게 설계됐을 가능성을 염두에 둡니다. 다음으로
+      종합 점수 뒤에 숨은 세부 항목(특히 표/차트처럼 어려운 항목)의 점수를
+      따로 확인합니다. 마지막으로 반드시 저희 도메인 문서 100~200건 정도의
+      골든셋을 만들어 실제로 비교 테스트를 돌린 뒤에 결정합니다. 공개
+      벤치마크 순위와 저희 도메인에서의 실제 순위가 다를 수 있다는 것을
+      전제로 접근합니다."
+    </p>
+
+    <h3>F3. "DOCX 파일에 수식(예: Excel의 <code>=SUM(A1:A10)</code>)이 있을 때, 어떤 값을 인덱싱하시겠습니까?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "수식 자체가 아니라 <strong>캐시된 계산 값</strong>을 우선 인덱싱합니다.
+      사용자가 질의할 때 필요한 건 '수식이 어떻게 생겼는가'가 아니라 '실제
+      값이 무엇인가'이기 때문입니다. 다만 수식 자체를 물어보는 질의(예: '이
+      시트의 계산 로직을 설명해줘')를 지원해야 한다면, 수식 문자열도 별도
+      메타데이터로 함께 보존해서 필요할 때 참조할 수 있게 합니다."
+    </p>
+
+    <h3>F4. "PPTX 슬라이드처럼 텍스트가 거의 없고 다이어그램·이미지 위주인 문서는 어떻게 다루시겠습니까?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "슬라이드는 텍스트 레이어(제목, 불릿)만 추출하면 다이어그램에 담긴
+      핵심 정보를 놓치기 쉽습니다. 그래서 슬라이드 이미지 자체를 멀티모달
+      모델에 넣어 다이어그램 내용을 설명하는 캡션을 생성하고, 이 캡션을
+      슬라이드의 텍스트 레이어와 함께 하나의 청크로 묶습니다. 이렇게 하면
+      '이 슬라이드가 뭘 말하는지'에 대한 검색이 가능해집니다."
+    </p>
+
+    <h3>F5. "XLSX 파일을 파싱했는데 수식이 들어간 셀 값이 전부 비어 있습니다. 원인이 뭘까요?"</h3>
+    <p><strong>약한 답변:</strong> "파싱 라이브러리 버그인 것 같습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "openpyxl 같은 라이브러리는 <strong>수식을 직접 계산하지 않고</strong>,
+      Excel이 마지막으로 저장할 때 캐싱해둔 계산 결과만 읽습니다. 만약 파일이
+      프로그램(예: pandas, 다른 스크립트)으로 생성되거나 수정된 뒤 Excel에서
+      한 번도 열려서 재계산되지 않았다면, 캐시된 값 자체가 없어서 <code>None</code>이
+      반환됩니다. 그래서 데이터 파이프라인에서 XLSX를 생성할 때는 반드시
+      Excel이나 자동화 도구(xlwings 등)로 한 번 열어 재계산 값을 채워 저장하는
+      단계를 넣거나, 애초에 계산 결과를 별도 값 필드로 함께 기록하도록
+      요구합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>PDF(구조 추론)와 DOCX/PPTX/XLSX(구조 보존)의 <strong>문제
+          본질 차이</strong>를 먼저 짚는다</li>
+          <li>VLM 직접 파싱 트렌드를 알면서도, <strong>표/수치 데이터
+          hallucination 위험을 구체적 수치나 사례로 근거</strong>를 든다</li>
+          <li>벤더 벤치마크를 <strong>설계·채점 주체 기준으로 비판적으로
+          해석</strong>하고, 자체 도메인 검증을 강조한다</li>
+          <li>도구 선택을 정확도 하나가 아니라 <strong>비용/자체호스팅/
+          지연을 함께 고려한 다차원 판단</strong>으로 설명한다</li>
+          <li>수식 vs 캐시된 값, 병합 셀 같은 <strong>구체적 엣지 케이스</strong>를
+          언급한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"파싱 라이브러리로 텍스트만 뽑으면 됩니다"처럼 <strong>구조
+          복원 문제를 인식하지 못한다</strong></li>
+          <li>"요즘은 VLM에 이미지 넣으면 다 됩니다"라고 <strong>트렌드를
+          검증 없이 그대로 반복</strong>한다</li>
+          <li>벤더 벤치마크 숫자를 <strong>출처 검증 없이 그대로 인용</strong>한다</li>
+          <li>"정확도가 제일 높은 도구를 씁니다"처럼 <strong>비용/운영
+          측면을 고려하지 않는다</strong></li>
+          <li>포맷별 엣지 케이스(병합 셀, 수식 등)를 구체적으로 말하지 못한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 "파싱 도구"를 유행이나 마케팅
+      문구로 고르지 않고, <strong>문제의 본질(구조 추론 vs 구조 보존)과
+      검증 가능한 트레이드오프</strong>로 판단한다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "PDF 텍스트 추출과 구조 복원은 같은 문제다"</h3>
+    <p>
+      <strong>사실:</strong> 텍스트 추출은 <code>pypdf</code> 한 줄로도 되지만,
+      그 텍스트가 어떤 제목/표/문단에 속하는지 <strong>구조를 복원</strong>하는
+      것은 완전히 다른 난이도다. 텍스트 추출 정확도가 높아도 구조 복원
+      정확도는 크게 낮을 수 있다(한 비교 실험에서 텍스트 75% vs 구조 13%
+      정확도 격차가 보고됨).
+    </p>
+
+    <h3>오해 2: "가장 큰(똑똑한) 모델이 문서 파싱도 제일 잘한다"</h3>
+    <p>
+      <strong>사실:</strong> OmniDocBench 2026년 상위권은 오히려 10억 개
+      파라미터 안팎의 <strong>문서 전용 특화 모델</strong>이 차지했고, 훨씬
+      큰 범용 프론티어 모델은 그보다 낮은 점수를 받았다. 범용 능력과 문서
+      구조 인식 능력은 비례하지 않는다.
+    </p>
+
+    <h3>오해 3: "VLM에 페이지 이미지를 넣으면 레이아웃 분석·OCR·표 인식이 다 해결된다"</h3>
+    <p>
+      <strong>사실:</strong> 2026년 SOTA 파싱 방법조차 근거 충실도가 약 90%
+      수준으로 보고되며, 표처럼 구조가 복잡한 데이터에서 hallucination
+      위험이 특히 크다. 그래서 문서를 실제로 만드는 모델 제공사조차 순수
+      이미지 방식이 아니라 텍스트 레이어를 함께 제공하는 하이브리드 구조를
+      쓴다.
+    </p>
+
+    <h3>오해 4: "벤더가 공개한 벤치마크 1위 숫자는 그대로 믿어도 된다"</h3>
+    <p>
+      <strong>사실:</strong> 벤치마크를 설계하고 채점하는 주체가 벤더 자신인
+      경우가 흔하고, 실제로 경쟁 모델 점수가 잘못 표기된 사례도 보고됐다.
+      종합 점수가 높아도 특정 세부 항목(표 등)에서는 크게 낮을 수 있으므로
+      항상 세부 항목과 측정 주체를 확인해야 한다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>문서 파싱 도구 선택 전 확인 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>확인 항목</th>
+        <th>정상 신호</th>
+        <th>이상 신호 → 의심 지점</th>
+      </tr>
+      <tr>
+        <td>포맷별 파싱 전략을 구분했는가</td>
+        <td><span class="badge badge-green">PDF/오피스 포맷별 별도 전략</span></td>
+        <td><span class="badge badge-red">모든 포맷에 동일 파이프라인 → 오피스 포맷의 구조 정보 유실</span></td>
+      </tr>
+      <tr>
+        <td>도메인 골든셋으로 자체 검증했는가</td>
+        <td><span class="badge badge-green">직접 측정함</span></td>
+        <td><span class="badge badge-yellow">벤더 공개 벤치마크만 신뢰 → 실제 도메인에서 다른 결과 가능</span></td>
+      </tr>
+      <tr>
+        <td>표/수치 데이터에 별도 검증 규칙이 있는가</td>
+        <td><span class="badge badge-green">합계/정합성 자동 검증</span></td>
+        <td><span class="badge badge-red">VLM 출력 그대로 신뢰 → hallucination 유입</span></td>
+      </tr>
+      <tr>
+        <td>수식 vs 캐시된 값 처리 방침이 있는가</td>
+        <td><span class="badge badge-green">명시적으로 결정됨</span></td>
+        <td><span class="badge badge-yellow">기본값 그대로 사용 → 질의 의도와 불일치 가능</span></td>
+      </tr>
+      <tr>
+        <td>사용 중인 라이브러리의 유지보수 상태를 확인했는가</td>
+        <td><span class="badge badge-green">최근 릴리스 확인됨</span></td>
+        <td><span class="badge badge-red">1년 이상 무갱신 라이브러리 의존 → 보안/호환성 리스크</span></td>
+      </tr>
+      <tr>
+        <td>비용/자체호스팅/지연 요구사항을 함께 고려했는가</td>
+        <td><span class="badge badge-green">다차원 비교 완료</span></td>
+        <td><span class="badge badge-yellow">정확도만 기준 → 운영 비용/데이터 residency 문제 뒤늦게 발견</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"라이브러리로 텍스트만 뽑으면 됩니다" 수준으로만 설명하고,
+      포맷별 차이나 구조 복원 문제를 전혀 언급하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>PDF는 어렵고 DOCX는 쉽다는 정도는 알지만, VLM 직접 파싱의
+      hallucination 위험이나 벤치마크 신뢰성 문제는 언급하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>Rule-based/ML 레이아웃/VLM의 3갈래 접근과 각각의 트레이드오프를
+      설명할 수 있고, VLM에 hallucination 위험이 있다는 것을 인식함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>구조 추론(PDF) vs 구조 보존(오피스 포맷)의 본질적 차이를 설명하고,
+      벤더 벤치마크를 설계·채점 주체 기준으로 비판적으로 해석하며, 도메인
+      골든셋 검증·표 정합성 자동 검증·비용/자체호스팅/지연을 포함한 다차원
+      도구 선택 기준을 구체적으로 제시하고, follow-up 질문에 구체적
+      메커니즘으로 대응한다</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. PDF와 DOCX/PPTX/XLSX 파싱이 왜 "같은 문제"가 아닌지 설명할 수 있는가?<br>
+      2. VLM 직접 파싱이 왜 완전한 해결책이 아닌지, 구체적 근거(수치나 사례)와
+      함께 설명할 수 있는가?<br>
+      3. 벤더가 공개한 벤치마크 숫자를 받았을 때 무엇부터 확인해야 하는지
+      말할 수 있는가?<br>
+      4. 문서 파싱 도구를 선택할 때 정확도 외에 어떤 기준들을 함께 고려해야
+      하는지 말할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>PDF는 구조를 추론</strong>해야 하고, <strong>DOCX/PPTX/XLSX는
+      이미 있는 구조를 충실히 보존</strong>해야 한다 — 근본적으로 다른 문제다.</li>
+      <li>레이아웃 분석은 <strong>Rule-based → ML 레이아웃 모델 → VLM 직접
+      파싱</strong> 순으로 정확도와 비용이 함께 올라가는 스펙트럼이다.</li>
+      <li>VLM 직접 파싱은 유행하지만 <strong>2026년 현재까지도 표/수치
+      데이터에서 hallucination이 반복적으로 보고</strong>되는 미해결 문제다.
+      프로덕션 컨센서스는 <strong>구조 기반 파싱 + VLM 보정의 하이브리드</strong>다.</li>
+      <li>벤더 벤치마크는 <strong>설계·채점 주체를 확인하고 도메인 골든셋으로
+      자체 검증</strong>해야 한다. 종합 순위와 세부 항목(특히 표) 순위가
+      다를 수 있다.</li>
+      <li>도구 선택은 정확도만이 아니라 <strong>비용, 자체호스팅 여부(데이터
+      residency), 지연, 라이브러리 유지보수 상태</strong>까지 함께 고려하는
+      다차원 판단이다.</li>
+      <li>오늘 다룬 표/hallucination 문제는 Day 6(OCR과 Table/Image
+      Extraction)에서 더 깊이 다루고, 벤치마크 회의주의는 Day 14(평가 지표)의
+      기반이 된다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 4 완료 · 다음: Day 5 — HTML/Markdown/코드/CSV/JSON/YAML 파싱과 구조화 데이터 처리</span>
+  </div>
+
+</div>
+</body>
+</html>

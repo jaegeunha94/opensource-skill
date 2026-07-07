@@ -7,12 +7,12 @@
 | 1 | 2026-07-04 | LLM Wiki와 파일 형식 RAG 시스템 설계/운영 프레임워크 | [0001-llm-wiki-file-format-rag-architecture-operations-framework.html](lessons/0001-llm-wiki-file-format-rag-architecture-operations-framework.html) |
 | 2 | 2026-07-05 | LLM Wiki 지식 큐레이션과 Skill 문서 관리 | [0002-llm-wiki-knowledge-curation-and-skill-document-management.html](lessons/0002-llm-wiki-knowledge-curation-and-skill-document-management.html) |
 | 3 | 2026-07-06 | 이기종 문서 수집 아키텍처와 커넥터 설계 | [0003-heterogeneous-document-ingestion-connector-architecture.html](lessons/0003-heterogeneous-document-ingestion-connector-architecture.html) |
+| 4 | 2026-07-07 | PDF/DOCX/PPTX/XLSX 파싱 전략 | [0004-pdf-docx-pptx-xlsx-parsing-strategy.html](lessons/0004-pdf-docx-pptx-xlsx-parsing-strategy.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | PDF/DOCX/PPTX/XLSX 파싱 전략 | 레이아웃 분석, 구조 보존, Docling/Unstructured/LlamaParse/Reducto 선택 기준 |
 | 5 | HTML/Markdown/코드/CSV/JSON/YAML 파싱과 구조화 데이터 처리 | 시맨틱 태그 활용, AST 기반 코드 파싱, 스키마 인식 |
 | 6 | OCR과 Table/Image Extraction | 레이아웃 인식 모델, 병합 셀 표, 멀티모달 추출, 품질 검증 |
 | 7 | Metadata와 Provenance 설계 | 근거 추적, lineage, freshness, 출처 시스템 매핑 |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 3 완료** — 다음: Day 4 — PDF/DOCX/PPTX/XLSX 파싱 전략
+**Day 4 완료** — 다음: Day 5 — HTML/Markdown/코드/CSV/JSON/YAML 파싱과 구조화 데이터 처리
 
 ## 습득한 핵심 개념
 
@@ -42,7 +42,10 @@
 - [x] Extract-Stage-Transform 분리로 파싱 실패와 수집 실패를 격리하는 아키텍처 원칙 (Day 3)
 - [x] 확장자/클라이언트 MIME을 신뢰하지 않는 내용 기반 포맷 감지와 ZIP 기반 컨테이너 포맷(DOCX/PPTX/XLSX/EPUB/JAR)의 매직 바이트 모호성 (Day 3)
 - [x] Push(웹훅)/Pull(폴링) 하이브리드 증분 동기화 설계와 커넥터 단위 실패 격리(bulkhead, 서킷 브레이커, DLQ) (Day 3)
-- [ ] PDF/DOCX/PPTX/XLSX 파싱 전략 (예정 Day 4)
+- [x] PDF(구조 추론)와 DOCX/PPTX/XLSX(구조 보존)의 파싱 문제 본질 차이, Rule-based/ML 레이아웃/VLM 3갈래 레이아웃 분석 접근 (Day 4)
+- [x] VLM 직접 파싱의 hallucination 위험(표/수치 데이터 중심)과 2026년 하이브리드 파이프라인 컨센서스 (Day 4)
+- [x] 벤더 벤치마크(ParseBench, RD-TableBench 등)를 설계·채점 주체 기준으로 비판적으로 해석하고 도메인 골든셋으로 자체 검증하는 판단력 (Day 4)
+- [x] openpyxl 수식 캐싱, 병합 셀, python-docx 추적 변경 내용 같은 오피스 포맷 파싱의 구체적 엣지 케이스 (Day 4)
 - [ ] HTML/Markdown/코드/CSV/JSON/YAML 파싱 (예정 Day 5)
 - [ ] OCR과 Table/Image Extraction (예정 Day 6)
 - [ ] Metadata와 Provenance 설계 (예정 Day 7)

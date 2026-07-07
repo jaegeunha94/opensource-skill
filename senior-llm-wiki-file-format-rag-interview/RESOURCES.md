@@ -91,6 +91,29 @@
 > 레슨 작성 시점(2026년 7월) 기준 공개 정보를 반영한 것이다. 실제 벤더/도구 선택 전에는
 > 각 공식 문서로 재검증해야 한다.
 
+## Day 4 최신 근거 (2026년 7월 조사 반영)
+
+- [PyMuPDF-Layout v1.28.0 (Artifex, 2026-06-29)](https://pymupdf.io/blog/pymupdf-layout-10-faster-pdf-parsing-without-gpus) — 이미지 기반 VLM 파싱 대신 PDF의 네이티브 구조(폰트/줄간격/들여쓰기)를 먼저 활용하는 CPU 전용 하이브리드 레이아웃 모델, GPU 기반 파서 대비 10배 속도
+- [Docling GitHub (docling-project/docling)](https://github.com/docling-project/docling) — MIT 라이선스, v2.110.0(2026-07-04) 기준 거의 매일 릴리스, Heron 레이아웃 모델 + TableFormer + CodeFormula VLM 파이프라인
+- [Docling Technical Report (arXiv 2501.17887)](https://arxiv.org/abs/2501.17887) — PDF는 `StandardPdfPipeline`(AI 기반 구조 복원), Office/HTML/Markdown은 `SimplePipeline`(이미 있는 구조를 python-docx/python-pptx/openpyxl로 보존)으로 이원화한 근거
+- [Unstructured CHANGELOG (raw, GitHub)](https://raw.githubusercontent.com/Unstructured-IO/unstructured/main/CHANGELOG.md) — v0.24.0(2026-07-06) SSRF 방어 강화, `table_extraction_method` 메타데이터가 `grid`/`tatr`/`vlm`을 동급 방법으로 추적, `partition_pdf` strategy(`fast`/`hi_res`/`ocr_only`/`vlm`/`auto`) 구성
+- [OmniDocBench (opendatalab, CVPR 2025, arXiv 2412.07626)](https://github.com/opendatalab/OmniDocBench) — 2026년 4월 v1.6 기준 MinerU2.5-Pro(1.2B) 95.75, GLM-OCR(0.9B) 95.22 등 소형 특화 모델이 GPT-4o/Gemini 3 Pro 같은 범용 프론티어 모델(86~93점대)보다 높은 점수를 받는 현상
+- [ParseBench (LlamaIndex, 2026년 6월)](https://www.llamaindex.ai/blog/parsebench) — LlamaParse Agentic 84.88점으로 자사 벤치마크 1위, 단 LlamaIndex가 벤치마크를 설계·채점한 벤더 자체 벤치마크라는 편향 존재
+- [olmOCR-Bench (Allen Institute for AI)](https://github.com/allenai/olmocr) — Mistral OCR API가 표(Tables) 세부 항목에서 29.3점에 그쳐 Chandra(50.4점)와 큰 격차, 벤더의 "종합 1위" 주장 뒤 세부 항목 취약점이 숨을 수 있음을 보여주는 사례
+- [Reducto RD-TableBench / RD-FormsBench](https://reducto.ai/) — Reducto 자체 "Agentic OCR"(CV+VLM+다중 패스)도 토큰 recall 1위였지만 hallucination("추가된 토큰") 비율은 3번째로 높음을 스스로 공개, Mistral OCR은 밀도 높은 재무 표·손글씨 양식에서 약 45% 정확도(vs Gemini 2.0 Flash 약 80%)
+- [LlamaIndex — OmniDocBench is Saturated](https://www.llamaindex.ai/blog/omnidocbench-is-saturated-what-s-next-for-ocr-benchmarks) — 2026년 SOTA 파싱 방법도 근거 충실도(faithfulness)가 약 90% 수준 → 약 10페이지 중 1페이지꼴로 의미 있는 hallucination/누락 발생
+- [Anthropic — PDF support 공식 문서](https://platform.claude.com/docs/en/build-with-claude/pdf-support) — Claude의 PDF 처리는 페이지를 이미지로 변환하는 동시에 텍스트 레이어도 함께 추출해 나란히 제공하는 하이브리드 구조(순수 vision 방식이 아님), 최대 600페이지/32MB, 고밀도 페이지는 페이지 수 제한 전에 컨텍스트가 소진될 수 있음
+- [python-docx GitHub Issue #340](https://github.com/python-openxml/python-docx/issues/340), [Issue #566](https://github.com/python-openxml/python-docx/issues/566) — 추적된 변경 내용(track changes) 승인/거부 미지원이 2016년부터 미해결
+- [Unstructured GitHub Issue #2106](https://github.com/Unstructured-IO/unstructured/issues/2106) — DOCX 병합 셀 텍스트가 병합 셀 개수만큼 중복 출력되는 현상
+- [Unstructured GitHub Issue #2485](https://github.com/Unstructured-IO/unstructured/issues/2485) — 캐시된 값이 없는 XLSX 수식 셀이 텍스트 추출에서 통째로 누락되는 현상
+- [openpyxl 공식 튜토리얼](https://openpyxl.readthedocs.io/en/3.1/tutorial.html) — openpyxl은 수식을 직접 계산하지 않으며 `data_only=True`는 Excel이 마지막으로 캐싱한 값만 반환한다는 공식 설명
+- [langchain-community README (raw, GitHub)](https://raw.githubusercontent.com/langchain-ai/langchain-community/main/README.md) — 저장소가 2026-05-26 아카이브 처리되며 문서 로더 등 커뮤니티 통합이 개별 파트너 패키지로 이전
+
+> 참고: 문서 파싱 벤더의 벤치마크(ParseBench, RD-TableBench 등)는 벤더가 자체
+> 설계·채점한 경우가 많아 자사 상위 티어 제품이 1위로 나오는 경향이 있다.
+> 위 자료는 레슨 작성 시점(2026년 7월) 기준 공개 정보를 반영한 것이며,
+> 실제 도구 선택 전에는 반드시 도메인 골든셋으로 자체 검증해야 한다.
+
 ## 인터뷰 준비
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 검색 시스템 설계 문제와 유사한 사고 프레임
