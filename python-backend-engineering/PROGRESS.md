@@ -12,16 +12,17 @@
 | 6 | 2026-07-04 | 인증과 인가 — JWT 구조와 검증, OAuth2 Password Flow, RBAC, 토큰 갱신 전략 | [0006-authentication-and-authorization.html](lessons/0006-authentication-and-authorization.html) |
 | 7 | 2026-07-05 | 백그라운드 작업 — Celery + Redis 아키텍처, 재시도 전략, 태스크 멱등성 | [0007-background-jobs.html](lessons/0007-background-jobs.html) |
 | 8 | 2026-07-06 | 관측성 — 구조화 로깅, Prometheus 메트릭, OpenTelemetry 트레이싱 | [0008-observability.html](lessons/0008-observability.html) |
+| 9 | 2026-07-07 | 배포와 운영 — Docker 최적화, Compose, 헬스체크, 환경 변수, CI/CD | [0009-deployment-and-operations.html](lessons/0009-deployment-and-operations.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | 배포와 운영 | Docker 이미지 최적화, Compose, 헬스체크, 환경 변수 관리, CI/CD |
+| 10 | 캐싱과 성능 최적화 | Redis 캐싱 전략과 무효화, 캐시 스탬피드 방지, 응답 압축, 커넥션 풀 튜닝, 쿼리 성능 프로파일링 |
 
 ## 현재 학습 위치
 
-**Day 8 완료** — Day 9 (배포와 운영)로 진행 예정.
+**Day 9 완료** — MISSION.md의 핵심 목표(API 설계 ~ 배포/운영)를 1주기 완주. 계획된 학습 경로가 모두 소진되어, 배포된 서비스를 실제로 운영하며 다음으로 마주치는 실무 주제인 Day 10(캐싱과 성능 최적화)으로 확장.
 
 ## 습득한 핵심 개념
 
@@ -64,4 +65,10 @@
 - [x] Prometheus Counter/Gauge/Histogram과 라벨 cardinality 설계 (Day 8)
 - [x] OpenTelemetry 분산 트레이싱과 trace/span 모델 (Day 8)
 - [x] SLI/SLO/Error Budget과 알림 설계(alert fatigue 방지) (Day 8)
-- [ ] Docker 배포 패턴 (예정 Day 9)
+- [x] Multi-stage Dockerfile과 레이어 캐싱 최적화 (Day 9)
+- [x] Docker Compose 헬스체크 기반 서비스 기동 순서 제어 (Day 9)
+- [x] Liveness vs Readiness 구분과 재시작 폭풍 방지 (Day 9)
+- [x] Graceful Shutdown — SIGTERM 처리와 커넥션 정리 (Day 9)
+- [x] 12-Factor Config와 시크릿 런타임 주입 (Day 9)
+- [x] CI/CD 파이프라인 — 테스트/린트 게이팅, 불변 이미지 태깅, 마이그레이션-배포 순서 (Day 9)
+- [ ] Redis 캐싱 전략과 캐시 무효화 (예정 Day 10)

@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 9 — 배포와 운영: Docker 최적화 · Compose · 헬스체크 · 환경 변수 · CI/CD</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="lesson-wrap">
+
+  <!-- ── Header ────────────────────────────────────── -->
+  <header class="lesson-header">
+    <div class="lesson-meta">
+      <span class="tag tag-day">Day 9</span>
+      <span class="tag tag-level">실무자 기준</span>
+      <span class="tag tag-time">약 70분</span>
+    </div>
+    <h1 class="lesson-title">배포와 운영<br>Docker 최적화 · Compose · 헬스체크 · 환경 변수 · CI/CD</h1>
+    <p class="lesson-subtitle">
+      Day 1~8에서 API, 데이터, 서비스 경계, 트랜잭션, 인증, 백그라운드 작업, 관측성을 다뤘다.
+      이 모든 코드가 "정확히 동작한다"는 것과 "프로덕션에 안전하게 올라간다"는 것은 다른 문제다.
+      코드는 완벽해도 이미지 빌드가 느리고, 배포 중 요청이 끊기고, 시크릿이 이미지에 새어 나가고,
+      배포와 마이그레이션 순서가 어긋나면 장애가 난다. 이 레슨은 "동작하는 코드"를 "안전하게
+      반복 배포 가능한 서비스"로 만드는 마지막 단계 — 컨테이너화, 로컬 재현 환경, 헬스체크,
+      설정 관리, CI/CD 파이프라인을 다룬다.
+    </p>
+  </header>
+
+  <!-- ── 1. 왜 "로컬에서는 됩니다"가 통하지 않는가 ──── -->
+  <h2>1. "제 컴퓨터에서는 됩니다"가 배포에서 무너지는 지점</h2>
+
+  <p>
+    아래는 실무에서 흔히 보이는, 겉보기엔 문제없어 보이는 배포 구성이다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# 절대 이렇게 하지 말 것 — 문제가 있는 예시
+FROM python:3.12
+COPY . /app
+WORKDIR /app
+RUN pip install -r requirements.txt
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0"]
+</pre>
+  </div>
+
+  <blockquote class="callout danger">
+    <div class="callout-title">이 Dockerfile이 프로덕션에서 문제가 되는 이유</div>
+    <ul style="margin:0;padding-left:1.4rem;">
+      <li><code>python:3.12</code> 풀 이미지는 900MB 이상 — 빌드/배포마다 네트워크와 시간 낭비</li>
+      <li><code>COPY . /app</code>을 먼저 하면 소스 코드 한 줄만 바뀌어도 의존성 설치 레이어부터
+        다시 캐시가 깨져 매번 전체 재설치</li>
+      <li>root 유저로 프로세스가 실행되어, 컨테이너가 뚫리면 호스트 권한 상승 위험이 커짐</li>
+      <li><code>--host 0.0.0.0</code>만 있고 워커 수, 헬스체크, graceful shutdown 처리가 없어
+        배포 중 요청이 강제로 끊길 수 있음</li>
+      <li>환경 변수, DB 접속 정보, 시크릿이 이미지 어디에도 명시되지 않아 팀마다 다르게 주입 —
+        재현 불가능한 배포</li>
+    </ul>
+  </blockquote>
+
+  <p>
+    이번 레슨은 이 다섯 가지 문제를 하나씩 실무 패턴으로 교체한다.
+  </p>
+
+  <!-- ── 2. Dockerfile 최적화 ─────────────────────────── -->
+  <h2>2. Dockerfile 최적화 — Multi-stage Build와 레이어 캐싱</h2>
+
+  <p>
+    이미지 크기와 빌드 속도는 배포 빈도에 직접 영향을 준다. 핵심 원칙은 두 가지다 —
+    <strong>변하지 않는 것을 먼저 COPY해서 캐시를 최대한 재사용</strong>하고,
+    <strong>빌드 도구와 런타임을 분리</strong>해 최종 이미지에는 실행에 필요한 것만 남긴다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# Dockerfile
+# ── Stage 1: 의존성 빌드 ─────────────────────────
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+RUN pip install --no-cache-dir poetry==1.8.3
+
+# 소스 코드보다 먼저 의존성 정의만 복사 — requirements가 안 바뀌면 이 레이어는 캐시 재사용
+COPY pyproject.toml poetry.lock ./
+RUN poetry export -f requirements.txt --without-hashes -o requirements.txt \
+    && pip install --no-cache-dir --user -r requirements.txt
+
+# ── Stage 2: 런타임 이미지 ───────────────────────
+FROM python:3.12-slim AS runtime
+
+# 빌드 도구(poetry, gcc 등)는 최종 이미지에 포함되지 않음 — 이미지 크기와 공격 표면 축소
+COPY --from=builder /root/.local /root/.local
+ENV PATH=/root/.local/bin:$PATH
+
+# 비root 유저 생성 — 컨테이너 탈취 시 권한 상승 방지
+RUN useradd --create-home --uid 1000 appuser
+WORKDIR /app
+COPY --chown=appuser:appuser . .
+USER appuser
+
+EXPOSE 8000
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')" || exit 1
+
+CMD ["gunicorn", "main:app", \
+     "--workers", "4", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--bind", "0.0.0.0:8000", \
+     "--graceful-timeout", "30"]
+</pre>
+  </div>
+
+  <div class="code-block">
+<pre>
+# .dockerignore — 빌드 컨텍스트에서 불필요한 파일 제외 (캐시 효율 + 이미지 크기)
+.git
+.venv
+__pycache__
+*.pyc
+tests/
+.env
+*.md
+</pre>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>기법</th><th>효과</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Multi-stage build</td>
+        <td>빌드 도구(컴파일러, poetry 등)를 최종 이미지에서 제거 — 이미지 크기 및 CVE 표면 축소</td>
+      </tr>
+      <tr>
+        <td>의존성 파일을 소스보다 먼저 COPY</td>
+        <td>소스 코드만 바뀐 배포에서는 <code>pip install</code> 레이어가 캐시되어 빌드 시간 급감</td>
+      </tr>
+      <tr>
+        <td><code>python:3.12-slim</code></td>
+        <td>풀 이미지 대비 크기 대폭 축소 (필요 시 <code>-alpine</code>은 glibc 비호환 이슈로 신중히 선택)</td>
+      </tr>
+      <tr>
+        <td>비root 유저(<code>USER appuser</code>)</td>
+        <td>컨테이너 탈취 시에도 호스트 권한 상승 경로 차단</td>
+      </tr>
+      <tr>
+        <td><code>.dockerignore</code></td>
+        <td><code>.git</code>, 테스트, <code>.env</code> 등이 빌드 컨텍스트/이미지에 포함되지 않음</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <blockquote class="callout warn">
+    <div class="callout-title">gunicorn + uvicorn worker를 함께 쓰는 이유</div>
+    <code>uvicorn</code> 단독 실행은 단일 프로세스라 CPU 코어를 하나만 쓴다. <code>gunicorn</code>이
+    여러 <code>UvicornWorker</code> 프로세스를 관리하게 하면 멀티코어를 활용하면서, 워커가 죽었을 때
+    gunicorn이 자동으로 재기동해준다. 워커 개수는 보통 <code>(2 × CPU 코어 수) + 1</code>을
+    시작점으로 삼고 부하 테스트로 조정한다.
+  </blockquote>
+
+  <!-- ── 3. Docker Compose ───────────────────────────── -->
+  <h2>3. Docker Compose — 로컬에서 프로덕션과 같은 구성 재현하기</h2>
+
+  <p>
+    API 서버 하나만 띄워서는 실제 서비스를 재현할 수 없다. Postgres, Redis, Celery 워커까지
+    포함한 전체 스택을 로컬에서 동일하게 띄워야 "로컬에서는 됨" 문제를 줄일 수 있다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# docker-compose.yml
+services:
+  api:
+    build: .
+    ports: ["8000:8000"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://app:app@db:5432/appdb
+      REDIS_URL: redis://redis:6379/0
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  worker:
+    build: .
+    command: celery -A app.worker worker --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://app:app@db:5432/appdb
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: appdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
+</pre>
+  </div>
+
+  <blockquote class="callout info">
+    <div class="callout-title">왜 <code>depends_on</code>에 <code>condition: service_healthy</code>가 필요한가</div>
+    <code>depends_on</code>만 쓰면 Compose는 "컨테이너가 시작되었다"는 것만 보장하고, DB가
+    "연결을 받을 준비가 됐다"는 것은 보장하지 않는다. Postgres 컨테이너는 뜨자마자 초기화
+    스크립트를 실행하느라 몇 초간 연결을 거부할 수 있는데, 이때 API가 먼저 연결을 시도하면
+    첫 배포/재기동마다 연결 에러가 재현된다. <code>condition: service_healthy</code>는 각 서비스의
+    <code>healthcheck</code>가 통과할 때까지 의존 서비스의 기동을 미룬다.
+  </blockquote>
+
+  <!-- ── 4. 헬스체크와 우아한 종료 ────────────────────── -->
+  <h2>4. 헬스체크와 Graceful Shutdown — 배포 중 요청을 끊기지 않게</h2>
+
+  <p>
+    오케스트레이터(Kubernetes, ECS, Compose)는 "이 컨테이너가 트래픽을 받을 준비가 됐는지",
+    "이 컨테이너가 살아있는지"를 자체적으로 알 수 없다. 애플리케이션이 직접 답해야 한다.
+    이때 <strong>liveness</strong>와 <strong>readiness</strong>를 구분하지 않으면 흔한 장애가 생긴다.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>체크 종류</th><th>질문</th><th>실패 시 동작</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Liveness</strong></td>
+        <td>이 프로세스가 살아있는가? (데드락, 무한 루프 등으로 멈추지 않았는가)</td>
+        <td>컨테이너를 강제 재시작</td>
+      </tr>
+      <tr>
+        <td><strong>Readiness</strong></td>
+        <td>지금 트래픽을 받아도 되는가? (DB/Redis 연결 등 의존성이 준비됐는가)</td>
+        <td>재시작하지 않고, 로드밸런서에서 트래픽만 제외</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="code-block">
+<pre>
+# presentation/routers/health_router.py
+router = APIRouter(prefix="/health", tags=["health"])
+
+@router.get("/live")
+async def liveness() -> dict:
+    # 프로세스 자체가 응답 가능한지만 확인 — 외부 의존성 체크 금지
+    return {"status": "alive"}
+
+@router.get("/ready")
+async def readiness(db: AsyncSession = Depends(get_db), redis: Redis = Depends(get_redis)) -> dict:
+    # 실제 트래픽을 처리할 수 있는 상태인지 확인
+    try:
+        await db.execute(text("SELECT 1"))
+        await redis.ping()
+    except Exception:
+        raise HTTPException(status_code=503, detail="dependency not ready")
+    return {"status": "ready"}
+</pre>
+  </div>
+
+  <blockquote class="callout danger">
+    <div class="callout-title">liveness에 DB 체크를 넣으면 안 되는 이유</div>
+    DB가 일시적으로 느려졌다고 해서 <strong>애플리케이션 프로세스 자체는 죽지 않았다</strong>.
+    liveness에 DB 체크를 넣으면 DB 장애 시 오케스트레이터가 멀쩡한 컨테이너를 계속 재시작시켜
+    커넥션 풀을 새로 맺고 끊기를 반복하며 DB 부하를 오히려 가중시킨다("재시작 폭풍"). 의존성
+    상태는 readiness에서만 확인하고, liveness는 프로세스 생존 여부만 확인한다.
+  </blockquote>
+
+  <p>
+    배포 시 컨테이너가 종료될 때도 처리 중인 요청을 끊으면 안 된다. 오케스트레이터는 종료 시
+    <code>SIGTERM</code>을 보내고 일정 유예 시간 후 <code>SIGKILL</code>로 강제 종료한다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# main.py — FastAPI lifespan으로 종료 시퀀스 제어
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    # SIGTERM 수신 후 여기 도달 — 새 요청은 이미 로드밸런서에서 제외된 상태여야 함
+    logger.info("shutdown_started")
+    await engine.dispose()          # DB 커넥션 풀 정리
+    await redis_client.aclose()     # Redis 연결 정리
+    logger.info("shutdown_completed")
+
+app = FastAPI(lifespan=lifespan)
+</pre>
+  </div>
+
+  <div class="diagram">
+안전한 배포 종료 순서:
+
+1. 오케스트레이터가 이 인스턴스를 로드밸런서 대상에서 제외 (신규 트래픽 차단)
+2. SIGTERM 전송 → 애플리케이션은 "새 요청은 안 받지만 처리 중인 요청은 끝까지" 처리
+3. gunicorn --graceful-timeout 만큼 대기 (Section 2 예시: 30초)
+4. 시간 내 처리 완료 → 정상 종료 / 초과 → SIGKILL 강제 종료
+
+이 순서가 깨지면: 배포 중 요청이 중간에 끊기거나(5xx 급증),
+DB 커넥션이 정리되지 않고 좀비로 남는 문제가 생긴다.
+  </div>
+
+  <!-- ── 5. 환경 변수와 시크릿 관리 ────────────────────── -->
+  <h2>5. 환경 변수와 시크릿 관리 — 12-Factor 원칙</h2>
+
+  <p>
+    같은 이미지가 로컬/스테이징/프로덕션에서 동일하게 동작해야 한다. 환경별 차이(DB 주소,
+    시크릿 키 등)는 이미지 안에 굽지 않고 <strong>실행 시점에 환경 변수로 주입</strong>한다
+    (12-Factor App의 Config 원칙).
+  </p>
+
+  <div class="code-block">
+<pre>
+# infrastructure/config/settings.py
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    database_url: str
+    redis_url: str
+    jwt_secret_key: str
+    environment: str = "development"
+    log_level: str = "INFO"
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
+
+settings = Settings()  # 누락된 필수 값은 앱 기동 시점에 즉시 에러로 실패 (fail fast)
+</pre>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>환경</th><th>주입 방식</th><th>이유</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>로컬 개발</td>
+        <td><code>.env</code> 파일 + <code>env_file</code></td>
+        <td>빠른 반복, 단 <code>.env</code>는 반드시 <code>.gitignore</code>에 포함</td>
+      </tr>
+      <tr>
+        <td>CI</td>
+        <td>CI 플랫폼의 encrypted secrets</td>
+        <td>레포에 시크릿을 두지 않고 실행 시점에만 주입</td>
+      </tr>
+      <tr>
+        <td>프로덕션</td>
+        <td>Secret Manager(AWS Secrets Manager, Vault 등) → 컨테이너 환경 변수</td>
+        <td>접근 감사(audit log), 로테이션, 최소 권한 원칙 적용 가능</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <blockquote class="callout danger">
+    <div class="callout-title">이미지에 시크릿을 굽는 것이 왜 치명적인가</div>
+    <code>ENV JWT_SECRET_KEY=abc123</code>처럼 Dockerfile에 값을 직접 쓰거나, 빌드 시
+    <code>--build-arg</code>로 시크릿을 넘기면 그 값이 이미지 레이어에 영구히 남는다. 이미지를
+    누구나 pull할 수 있는 레지스트리에 올리면 <code>docker history</code>만으로 과거 레이어의
+    값까지 노출될 수 있다. 시크릿은 반드시 <strong>런타임 환경 변수</strong>나 마운트된 시크릿
+    파일로만 주입한다.
+  </blockquote>
+
+  <!-- ── 6. CI/CD 파이프라인 ──────────────────────────── -->
+  <h2>6. CI/CD 파이프라인 — 테스트부터 배포까지 자동화</h2>
+
+  <p>
+    수동 배포는 사람이 실수하기 쉬운 단계(테스트 스킵, 잘못된 이미지 태그, 마이그레이션 누락)를
+    항상 포함한다. CI/CD는 이 단계를 코드로 고정해 매번 동일하게 반복한다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# .github/workflows/deploy.yml
+name: build-and-deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_PASSWORD: test, POSTGRES_DB: testdb }
+        ports: ["5432:5432"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt
+      - run: pytest --cov=app --cov-fail-under=80    # 커버리지 미달 시 파이프라인 중단
+      - run: ruff check .                              # 린트 실패도 배포 차단
+
+  build-and-push:
+    needs: test                                       # 테스트 통과해야만 이미지 빌드
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: registry.example.com/app:${{ github.sha }}   # latest가 아니라 커밋 SHA로 태깅
+          cache-from: type=registry,ref=registry.example.com/app:buildcache
+          cache-to: type=registry,ref=registry.example.com/app:buildcache,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run DB migration                        # 마이그레이션은 앱 배포 "전에" 별도 실행
+        run: |
+          docker run --rm registry.example.com/app:${{ github.sha }} \
+            alembic upgrade head
+      - name: Rolling update
+        run: ./deploy.sh registry.example.com/app:${{ github.sha }}
+</pre>
+  </div>
+
+  <blockquote class="callout info">
+    <div class="callout-title">이미지 태그를 <code>latest</code>가 아니라 커밋 SHA로 고정하는 이유</div>
+    <code>latest</code>는 시간이 지나면 가리키는 이미지가 계속 바뀌는 가변 태그다. 롤백할 때
+    "어제의 latest"를 다시 가져올 방법이 없다. 커밋 SHA로 태깅하면 특정 배포가 정확히 어떤
+    코드였는지 항상 추적 가능하고, 문제 발생 시 이전 SHA 태그로 즉시 롤백할 수 있다.
+  </blockquote>
+
+  <p>
+    Day 3에서 다룬 무중단 마이그레이션 원칙(하위 호환 스키마 변경 → 배포 → 정리)이 배포
+    파이프라인 순서에도 그대로 적용된다. 마이그레이션은 새 애플리케이션 코드가 트래픽을 받기
+    <strong>전에</strong> 끝나 있어야 하며, 롤링 배포 중에는 신버전과 구버전 코드가 동시에
+    같은 DB 스키마를 봐야 하므로 파괴적 변경(컬럼 삭제, NOT NULL 즉시 추가 등)을 배포와
+    같은 단계에서 수행하면 안 된다.
+  </p>
+
+  <div class="diagram">
+안전한 배포 순서 (Day 3 무중단 마이그레이션 원칙과 연결):
+
+1. CI: 테스트 + 린트 통과
+2. 이미지 빌드 → 커밋 SHA로 태깅 → 레지스트리 푸시
+3. 마이그레이션 실행 (하위 호환 변경만 — 구버전 코드도 여전히 정상 동작해야 함)
+4. 롤링 배포 시작:
+   [구버전 3대] → [신버전 1대, 구버전 2대] → [신버전 2대, 구버전 1대] → [신버전 3대]
+   각 단계마다 새 인스턴스의 readiness 통과를 확인한 뒤 다음 단계 진행
+5. 배포 완료 후 문제 없음을 확인한 다음 릴리스에서 이전 스키마 정리(컬럼 삭제 등) 수행
+  </div>
+
+  <!-- ── 7. 배포 전 셀프 리뷰 체크리스트 ─────────────── -->
+  <h2>7. 배포 전 셀프 리뷰 체크리스트</h2>
+
+  <blockquote class="callout info">
+    <div class="callout-title">배포하기 전에 확인할 것</div>
+    <ul style="margin:0;padding-left:1.4rem;">
+      <li>Dockerfile이 multi-stage build를 쓰고, 비root 유저로 실행된다</li>
+      <li>의존성 설치 레이어가 소스 코드 COPY보다 먼저 와서 캐시를 재사용한다</li>
+      <li><code>.dockerignore</code>에 <code>.git</code>, <code>.env</code>, 테스트 코드가 포함되어 있다</li>
+      <li>liveness와 readiness 엔드포인트가 분리되어 있고, liveness는 외부 의존성을 체크하지 않는다</li>
+      <li>SIGTERM 수신 시 처리 중인 요청을 끝까지 마치고 커넥션을 정리하는 graceful shutdown이 있다</li>
+      <li>시크릿이 이미지나 레포에 하드코딩되지 않고 런타임에 주입된다</li>
+      <li>이미지 태그가 <code>latest</code>가 아니라 커밋 SHA 등 불변 식별자로 고정된다</li>
+      <li>마이그레이션이 하위 호환 방식으로 배포 전에 별도 실행되고, 파괴적 변경은 다음 릴리스로 분리된다</li>
+      <li>CI에서 테스트/린트가 실패하면 배포 파이프라인이 자동으로 중단된다</li>
+      <li>롤백 절차(이전 SHA 태그로 재배포)가 문서화되어 있다</li>
+    </ul>
+  </blockquote>
+
+  <!-- ── 8. 퀴즈 ─────────────────────────────────────── -->
+  <section class="quiz-section">
+    <h2>🧠 이해도 점검</h2>
+
+    <div class="quiz-question"
+         data-answer="b"
+         data-explanation="Dockerfile에서 레이어 캐시는 위에서부터 순서대로 이전 레이어가 바뀌지 않아야 재사용된다. 의존성 정의 파일(pyproject.toml/requirements.txt)만 먼저 COPY하고 설치하면, 소스 코드만 바뀐 이후 배포에서는 의존성 설치 레이어가 캐시되어 재사용되고 소스 COPY 이후 레이어만 새로 빌드된다. 반대로 전체 소스를 먼저 COPY하면 한 줄만 바뀌어도 그 이후 모든 레이어(의존성 설치 포함)가 캐시 무효화된다.">
+      <p>Q1. Dockerfile에서 의존성 정의 파일(requirements.txt 등)을 소스 코드보다 먼저 COPY하는 이유는?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>Docker가 파일을 알파벳 순서로만 복사할 수 있기 때문</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>소스 코드만 바뀐 배포에서 의존성 설치 레이어의 캐시를 재사용해 빌드 시간을 줄이기 위해서</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>requirements.txt가 없으면 이미지가 빌드되지 않기 때문</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>보안 스캐너가 의존성 파일을 먼저 읽어야 하기 때문</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="c"
+         data-explanation="liveness는 프로세스가 살아있는지만 확인해야 하며, 실패하면 오케스트레이터가 컨테이너를 강제 재시작한다. 여기에 DB 체크를 넣으면 DB가 일시적으로 느려지거나 장애가 났을 때 멀쩡한 애플리케이션 프로세스까지 계속 재시작되어 커넥션을 맺고 끊기를 반복하며 DB 부하를 오히려 가중시키는 재시작 폭풍이 발생한다. 의존성 상태 확인은 readiness의 역할이다.">
+      <p>Q2. liveness 체크에 DB 연결 확인을 포함시키면 안 되는 이유로 가장 정확한 것은?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>liveness 엔드포인트는 인증이 필요 없어야 하기 때문</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>DB 체크는 readiness보다 응답 속도가 느리기 때문</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>DB 장애 시 오케스트레이터가 멀쩡한 프로세스까지 계속 강제 재시작시켜 DB 부하를 가중시키는 재시작 폭풍이 발생하기 때문</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>liveness는 HTTP가 아니라 TCP 체크만 지원하기 때문</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="a"
+         data-explanation="latest 태그는 시간이 지나면 가리키는 이미지 내용이 계속 바뀌는 가변 태그라서, 특정 시점에 배포된 코드가 정확히 무엇이었는지 추적할 수 없고 이전 상태로 되돌릴 방법도 없다. 커밋 SHA처럼 불변 식별자로 태깅하면 어떤 배포가 어떤 코드였는지 항상 특정할 수 있고, 문제 발생 시 이전 SHA로 즉시 롤백할 수 있다.">
+      <p>Q3. 배포 이미지 태그를 latest 대신 커밋 SHA로 고정해야 하는 이유는?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>latest는 가리키는 이미지가 계속 바뀌는 가변 태그라서, 특정 배포를 추적하거나 이전 상태로 정확히 롤백할 수 없기 때문</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>레지스트리가 latest라는 이름을 예약어로 금지하기 때문</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>커밋 SHA 태그만 압축 저장이 가능해서 용량이 줄어들기 때문</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>latest 태그는 CI에서 자동 빌드를 지원하지 않기 때문</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="d"
+         data-explanation="롤링 배포 중에는 신버전과 구버전 애플리케이션 코드가 한동안 동시에 같은 DB 스키마를 봐야 한다. 컬럼 삭제나 즉시 NOT NULL 추가 같은 파괴적 변경을 배포와 같은 단계에서 실행하면, 아직 트래픽을 처리 중인 구버전 코드가 삭제된 컬럼을 참조하거나 제약조건 위반으로 실패한다. 그래서 하위 호환 변경만 배포 전에 적용하고, 파괴적 정리는 모든 인스턴스가 신버전으로 전환된 이후의 별도 릴리스로 분리해야 한다.">
+      <p>Q4. 롤링 배포 도중에 컬럼 삭제 같은 파괴적 마이그레이션을 함께 실행하면 안 되는 이유는?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>Alembic이 롤링 배포 환경을 기술적으로 인식하지 못하기 때문</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>파괴적 마이그레이션은 항상 다운타임 없이 실행할 수 없기 때문</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>CI/CD 파이프라인이 마이그레이션 단계를 병렬로 실행하지 못하기 때문</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>배포 도중에는 신버전과 구버전 코드가 동시에 같은 스키마를 참조하는데, 구버전 코드가 삭제된 컬럼이나 위반된 제약조건 때문에 실패할 수 있기 때문</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </section>
+
+  <!-- ── 1차 자료 ────────────────────────────────────── -->
+  <h2>권장 1차 자료</h2>
+  <ul>
+    <li>
+      <a href="https://docs.docker.com/build/building/best-practices/" target="_blank" rel="noopener">Docker 공식 문서 — Dockerfile Best Practices</a> —
+      Multi-stage build, 레이어 캐싱, 이미지 크기 최적화의 공식 가이드.
+    </li>
+    <li>
+      <a href="https://docs.docker.com/compose/compose-file/05-services/#healthcheck" target="_blank" rel="noopener">Docker Compose 공식 문서 — Healthcheck</a> —
+      <code>depends_on</code>과 <code>condition: service_healthy</code>의 정확한 동작.
+    </li>
+    <li>
+      <a href="https://12factor.net/ko/config" target="_blank" rel="noopener">The Twelve-Factor App — Config (한국어)</a> —
+      환경 변수 기반 설정 관리의 원전.
+    </li>
+    <li>
+      <a href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/" target="_blank" rel="noopener">Kubernetes 공식 문서 — Liveness, Readiness, Startup Probes</a> —
+      liveness/readiness 개념은 Kubernetes 표준 정의를 따른다.
+    </li>
+    <li>
+      <a href="https://docs.github.com/actions" target="_blank" rel="noopener">GitHub Actions 공식 문서</a> —
+      워크플로우 문법과 secrets 관리 전체 가이드.
+    </li>
+  </ul>
+
+  <!-- ── Ask teacher ────────────────────────────────── -->
+  <div class="ask-teacher">
+    <strong>질문이 있으신가요?</strong><br>
+    Blue-Green 배포와 Canary 배포 중 어떤 것을 선택할지, 또는 Kubernetes에서 이 레슨의
+    healthcheck/graceful shutdown 패턴이 Probe 설정과 어떻게 매핑되는지 궁금하면 질문하세요.
+    예시: "이 readiness 엔드포인트를 Kubernetes readinessProbe로 그대로 옮기려면 어떻게 하나요?"
+  </div>
+
+  <!-- ── Footer ─────────────────────────────────────── -->
+  <footer class="lesson-footer">
+    <a href="./0008-observability.html">← Day 8: 관측성</a>
+    <span style="color:var(--text-dim);font-size:0.85rem;">Day 9 — 배포와 운영</span>
+    <a href="./index.html">레슨 목록 →</a>
+  </footer>
+
+</main>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
