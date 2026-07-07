@@ -9,12 +9,12 @@
 | 3 | 2026-07-04 | Component Boundary 설계 — Server/Client 컴포넌트 경계, "use client" 전이 문제, composition pattern | [0003-component-boundary-server-client-composition.html](lessons/0003-component-boundary-server-client-composition.html) |
 | 4 | 2026-07-05 | Hooks 심화 — `useEffect`/`useMemo`/`useCallback`의 실무 함정, 의존성 배열 사고, stale closure | [0004-hooks-deep-dive-dependency-array-pitfalls.html](lessons/0004-hooks-deep-dive-dependency-array-pitfalls.html) |
 | 5 | 2026-07-06 | State Management 아키텍처 — 로컬 상태 vs 서버 상태 vs 전역 상태 vs URL 상태 구분과 도구 선택 | [0005-state-management-architecture-local-server-global.html](lessons/0005-state-management-architecture-local-server-global.html) |
+| 6 | 2026-07-07 | Data Fetching 패턴 — 서버 fetch vs 클라이언트 fetch, 워터폴 방지, request memoization | [0006-data-fetching-patterns-waterfall-request-memoization.html](lessons/0006-data-fetching-patterns-waterfall-request-memoization.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | Data Fetching 패턴 | 서버 fetch vs 클라이언트 fetch, 워터폴 방지, request memoization |
 | 7 | Suspense와 동시성 렌더링 | concurrent rendering, transition, 우선순위 스케줄링 |
 | 8 | Error Boundary와 장애 격리 | 컴포넌트 트리 단위 장애 격리 설계 |
 | 9 | Hydration 심화 | hydration mismatch의 원인, 디버깅, 예방 |
@@ -22,7 +22,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 다음: Day 6 — Data Fetching 패턴
+**Day 6 완료** — 다음: Day 7 — Suspense와 동시성 렌더링
 
 ## 습득한 핵심 개념
 
@@ -51,4 +51,9 @@
 - [x] 서버 상태를 Redux/Context로 관리할 때 생기는 구조적 누락 (Day 5)
 - [x] Context API의 리렌더링 전파 원리와 관심사 분리 원칙 (Day 5)
 - [x] URL 상태 판단 기준(북마크/공유/새로고침 재현성)과 파생 상태를 별도 저장하지 않는 원칙 (Day 5)
-- [ ] 서버 fetch vs 클라이언트 fetch 판단 기준과 워터폴 방지 (예정 Day 6)
+- [x] 서버 fetch vs 클라이언트 fetch 판단 기준 — "렌더링 이전에 필요가 확정되는가" (Day 6)
+- [x] 진짜 의존 관계와 우연한(가짜) 의존 관계를 구분해 워터폴을 진단하는 방법 (Day 6)
+- [x] 컴포넌트 트리 계층이 만드는 암묵적 워터폴과 preload 패턴 (Day 6)
+- [x] Request Memoization의 동작 범위(단일 렌더링, URL/옵션 기반)와 `cache()`의 필요성 (Day 6)
+- [x] Request Memoization과 Data Cache의 생존 범위·목적 차이 (Day 6)
+- [ ] Suspense와 concurrent rendering, transition의 우선순위 스케줄링 (예정 Day 7)
