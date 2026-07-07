@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — CloudWatch와 운영 가시성</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #222538;
+      --border: #2e3150;
+      --accent: #7c83ff;
+      --accent2: #50e3c2;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #e2e4f0;
+      --text2: #9da3c8;
+      --text3: #6b7099;
+      --good: #50e3c2;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card {
+      border-left: 4px solid var(--accent);
+    }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card {
+      border-left: 4px solid var(--accent2);
+      background: #1a2430;
+    }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card {
+      border-left: 4px solid var(--warn);
+      background: #1f1d10;
+    }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card {
+      border-left: 4px solid #a07bff;
+      background: #1a1828;
+    }
+    .answer-card .card-label { color: #a07bff; }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box {
+      background: #0f2420;
+      border: 1px solid var(--good);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box {
+      background: #28100f;
+      border: 1px solid var(--weak);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.91rem;
+      margin-top: 0.5rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:nth-child(odd) td { background: #15182a; }
+    .rubric-table tr:nth-child(even) td { background: #1a1d2e; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .pillar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1.2rem;
+    }
+    .pillar-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+    }
+    .pillar-name { font-weight: 700; color: var(--accent); margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .pillar-key { font-size: 0.83rem; color: var(--text2); }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.2rem;
+      margin-bottom: 0.7rem;
+    }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.1rem;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.78rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .misconception {
+      background: #1f1520;
+      border: 1px solid #6e3880;
+      border-radius: 8px;
+      padding: 1rem 1.3rem;
+      margin-bottom: 0.9rem;
+    }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 0.75rem;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      margin: 0.15rem 0.15rem 0.15rem 0;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 8 · AWS / Cloud Architecture 인터뷰 대비</div>
+    <h1>CloudWatch와 운영 가시성</h1>
+    <p class="subtitle">
+      메트릭 vs 로그 vs 알람 · 커스텀 메트릭과 해상도 · Auto Scaling과 알람 연동 · 로그 인사이트로 근본 원인 추적 · 비용 효율적 모니터링 설계
+    </p>
+  </header>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "Multi-AZ, Auto Scaling, ELB로 웹 서비스를 구성했습니다. 이 서비스가 실제로 건강한 상태인지, 장애 조짐이 있는지를 어떻게 관측하고, 장애가 나기 전에 미리 알아채도록 설계하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"CPU 사용률 알람만으로 충분한가요? 놓치는 장애 유형이 있다면 무엇인가요?"</li>
+        <li>"CloudWatch 메트릭과 CloudWatch Logs의 차이는 무엇이고, 각각 언제 쓰나요?"</li>
+        <li>"알람이 새벽 3시마다 울리는데 실제로는 문제가 없습니다. 어떻게 접근하시겠습니까?"</li>
+        <li>"운영 가시성을 위한 모니터링 비용이 계속 늘어나고 있습니다. 어떻게 줄이면서도 관측력을 유지하나요?"</li>
+        <li>"장애가 발생했을 때, 로그를 어떻게 뒤져서 근본 원인을 찾나요?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">CloudWatch Metrics</span>
+      <span class="tag">CloudWatch Logs</span>
+      <span class="tag">CloudWatch Alarms</span>
+      <span class="tag">Composite Alarm</span>
+      <span class="tag">Anomaly Detection</span>
+      <span class="tag">Logs Insights</span>
+      <span class="tag">Auto Scaling 연동</span>
+      <span class="tag">비용 효율적 모니터링</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>CloudWatch의 세 축 — "숫자, 이야기, 반응"</h3>
+    <p>
+      CloudWatch는 하나의 서비스처럼 보이지만 실제로는 <strong>서로 다른 목적을 가진 세 가지 데이터</strong>를 다룬다. 이 구분을 못 하면 "모니터링 하고 있다"는 답이 구체성 없는 말로 끝난다.
+    </p>
+    <div class="pillar-grid">
+      <div class="pillar-box">
+        <div class="pillar-name">Metrics — "숫자로 요약된 상태"</div>
+        <div class="pillar-key">CPU 사용률, 요청 수, 지연 시간처럼 시간에 따라 변하는 숫자 데이터. "지금 얼마나 바쁜가"를 초 단위로 압축해서 보여준다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">Logs — "무슨 일이 있었는지의 이야기"</div>
+        <div class="pillar-key">애플리케이션이 남긴 텍스트 기록. "왜 그 숫자가 이렇게 됐는가"를 설명해주는 원본 증거.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">Alarms — "숫자가 기준을 넘으면 반응하는 규칙"</div>
+        <div class="pillar-key">메트릭이 특정 조건을 만족할 때 사람에게 알리거나(SNS), 자동으로 조치(Auto Scaling, Lambda)를 취하게 만드는 트리거.</div>
+      </div>
+    </div>
+    <div class="card concept-card">
+      <div class="card-label">비유로 이해하기</div>
+      <p>
+        메트릭은 <strong>자동차 계기판의 숫자</strong>(속도, RPM, 온도)이고, 로그는 <strong>블랙박스 영상</strong>(무슨 일이 있었는지 재생 가능한 기록)이며, 알람은 <strong>경고등과 자동 브레이크</strong>(기준을 넘으면 즉시 반응하는 규칙)다. 셋 중 하나만 갖추고 "관측하고 있다"고 말하는 것은 계기판만 보고 사고 원인을 설명하려는 것과 같다.
+      </p>
+    </div>
+
+    <h3>표준 메트릭의 한계 — "인스턴스는 살아있지만 서비스는 죽어있을 수 있다"</h3>
+    <p>
+      EC2의 기본(표준) 메트릭은 <strong>하이퍼바이저 바깥에서 관측 가능한 값</strong>(CPU 사용률, 네트워크 In/Out, 디스크 I/O)만 제공한다. 여기서 시니어 면접이 자주 파고드는 함정은 <strong>메모리 사용률과 디스크 사용량(퍼센트)이 기본 메트릭에 포함되지 않는다</strong>는 점이다. 인스턴스 내부 OS 상태를 봐야 알 수 있는 값이기 때문이다. 메모리 누수로 서비스가 서서히 느려지고 있어도, CPU와 네트워크만 보고 있으면 "정상"으로 보일 수 있다.
+    </p>
+    <div class="card why-card">
+      <div class="card-label">CloudWatch Agent — 인스턴스 내부를 들여다보는 방법</div>
+      <p>
+        메모리 사용률, 디스크 사용량(퍼센트), 프로세스별 리소스 사용 등 <strong>OS 내부 정보</strong>가 필요하면 인스턴스에 CloudWatch Agent를 설치해 커스텀 메트릭으로 수집해야 한다. "표준 메트릭만으로 장애를 다 잡아낼 수 있다"고 답하면, 인스턴스 내부와 외부 관측의 경계를 이해하지 못한 것으로 비친다.
+      </p>
+    </div>
+
+    <h3>메트릭 해상도 — "표준(1분)과 고해상도(1초 단위)의 trade-off"</h3>
+    <p>
+      기본 메트릭은 <strong>1분 간격(표준 해상도)</strong>으로 수집되고, 필요하면 <strong>고해상도(최소 1초 간격)</strong>로 커스텀 메트릭을 보낼 수 있다. 고해상도는 짧은 스파이크나 급격한 트래픽 변화를 더 빠르게 감지할 수 있지만, 데이터 포인트 수가 늘어나는 만큼 <strong>비용이 커진다</strong>. 대부분의 워크로드는 1분 해상도로 충분하고, 초 단위 반응이 실제로 사용자 경험을 좌우하는 특정 구간(예: 결제 API 지연)에만 고해상도를 선별적으로 적용하는 것이 실무 판단이다.
+    </p>
+
+    <h3>알람의 실제 동작 — "한 번 넘었다고 바로 울리지 않는다"</h3>
+    <p>
+      CloudWatch Alarm은 <strong>평가 기간(period)</strong>과 <strong>연속 위반 횟수(evaluation periods)</strong>를 조합해 "일시적인 튐"과 "지속적인 문제"를 구분한다. 예를 들어 "1분 평균 CPU가 5번 연속 80%를 넘으면 알람"으로 설정하면, 짧은 순간의 스파이크에는 반응하지 않고 5분 이상 지속되는 부하만 알람으로 잡는다. 이 값을 너무 민감하게(예: 1회 위반) 설정하면 <strong>알람 피로(alert fatigue)</strong>가 생기고, 팀은 결국 알람을 무시하게 된다.
+    </p>
+    <div class="card why-card">
+      <div class="card-label">Composite Alarm — 여러 신호를 합쳐서 판단</div>
+      <p>
+        CPU 알람 하나만 보면 "CPU는 높지만 실제로는 정상 트래픽 증가"인 상황과 "CPU도 높고 5xx 에러율도 높은 실제 장애"를 구분할 수 없다. <strong>Composite Alarm</strong>은 여러 개별 알람을 AND/OR로 조합해, "CPU 높음 AND 5xx 에러율 높음"일 때만 진짜 알람을 울리게 해 노이즈를 줄인다. 단일 지표에 의존하는 알람 설계는 미드레벨 수준이고, 여러 신호를 조합해 신호 대 잡음비를 높이는 것이 시니어 설계다.
+      </p>
+    </div>
+
+    <h3>CloudWatch Logs와 Logs Insights — "왜 그 숫자가 그렇게 됐는가"</h3>
+    <p>
+      메트릭은 "무엇이 이상한지"를 알려주지만 "왜 이상한지"는 알려주지 못한다. 5xx 에러율이 치솟았다는 메트릭을 봤다면, 그 다음은 애플리케이션 로그를 뒤져 <strong>어떤 요청이, 어떤 예외로, 어떤 의존성 때문에</strong> 실패했는지를 찾아야 한다. CloudWatch Logs Insights는 로그 그룹 전체를 쿼리 언어로 검색·집계할 수 있게 해주는 도구로, "지난 30분간 5xx를 반환한 요청 중 가장 많이 등장한 에러 메시지 top 5"처럼 근본 원인 추적에 필요한 질문에 답할 수 있게 해준다.
+    </p>
+
+    <h3>Anomaly Detection — "정적인 임계값의 한계를 보완"</h3>
+    <p>
+      트래픽에 뚜렷한 시간대별/요일별 패턴(예: 낮에는 높고 새벽엔 낮음, 평일과 주말이 다름)이 있는 서비스에서 <strong>고정된 임계값</strong>(예: "요청 수가 1000 이하로 떨어지면 알람")은 새벽 시간대에는 정상인데도 계속 오탐(false positive)을 일으키거나, 반대로 평소보다 급격히 떨어진 이상 상황을 못 잡을 수 있다. CloudWatch Anomaly Detection은 과거 패턴을 학습해 <strong>시간대별로 달라지는 "정상 범위 밴드"</strong>를 자동으로 만들고, 그 밴드를 벗어날 때만 알람을 울린다. 다만 학습 초기(며칠~몇 주)에는 데이터가 부족해 오탐이 있을 수 있고, 트래픽 패턴이 근본적으로 바뀌는 이벤트(대규모 마케팅, 서비스 확장)가 있으면 재학습이 필요하다는 한계를 함께 알아야 한다.
+    </p>
+
+    <h3>Auto Scaling과 알람의 연동 — "관측이 곧 행동으로 이어지는 고리"</h3>
+    <p>
+      Day 4에서 다룬 Target Tracking Scaling Policy는 사실 내부적으로 CloudWatch 알람을 자동 생성해 동작한다. 예를 들어 "평균 CPU 사용률을 50%로 유지"라는 정책은 CloudWatch에 CPU 메트릭 알람을 만들고, 그 알람이 위반되면 Auto Scaling API를 호출해 인스턴스를 늘리거나 줄인다. 즉 <strong>CloudWatch는 관측 도구이면서 동시에 Auto Scaling의 "감각 기관"</strong>이다. 이 연결 구조를 이해하지 못하면 "Auto Scaling이 반응이 느리다"는 문제를 진단할 때 실제로는 메트릭 수집 지연이나 알람 평가 기간 설정이 원인이라는 것을 놓친다.
+    </p>
+
+    <h3>비용 효율적 모니터링 — "다 보되, 다 비싸게 보지는 않는다"</h3>
+    <p>
+      커스텀 메트릭 수, 고해상도 데이터포인트, 로그 보관 기간, Logs Insights 쿼리 스캔량은 모두 비용에 직결된다. 시니어 수준의 모니터링 설계는 "가능한 모든 것을 수집"이 아니라, <strong>사용자 영향(SLO)과 직결되는 핵심 지표를 우선순위화</strong>하고, 로그는 디버깅에 필요한 최소 기간만 CloudWatch Logs에 남긴 뒤 장기 보관은 저렴한 S3(수명 주기 정책으로 Glacier 이전)로 옮기는 방식으로 비용과 관측력의 균형을 맞춘다.
+    </p>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>메트릭·로그·알람을 목적별로 구분하는가:</strong> "무엇이 이상한가(메트릭)"와 "왜 이상한가(로그)"를 구분하지 못하면 장애 대응 시간이 길어진다.</li>
+        <li><strong>표준 메트릭의 한계를 아는가:</strong> 메모리, 디스크 사용률처럼 인스턴스 내부 정보가 기본 메트릭에 없다는 것, 그리고 CloudWatch Agent가 왜 필요한지 아는가.</li>
+        <li><strong>알람 설계 감각이 있는가:</strong> 단일 임계값 알람의 노이즈 문제를 이해하고, evaluation period·Composite Alarm으로 신호 대 잡음비를 높이는 실무 판단을 하는가.</li>
+        <li><strong>관측과 행동의 연결을 이해하는가:</strong> CloudWatch가 Auto Scaling과 어떻게 연동되는지, 관측이 단순히 "보는 것"을 넘어 자동 대응으로 이어지는 구조를 아는가.</li>
+        <li><strong>비용 감각이 있는가:</strong> 모니터링도 무한정 확장하면 비용이 되고, SLO 기반 우선순위화와 로그 보관 정책으로 비용을 통제할 수 있는가.</li>
+      </ul>
+    </div>
+
+    <p>
+      Day 4~7에서 컴퓨트, 데이터, 스토리지, 트래픽 계층을 각각 설계했다면, Day 8은 <strong>그 모든 계층이 실제로 잘 작동하고 있는지 어떻게 아는가</strong>를 묻는다. 아무리 잘 설계된 아키텍처도 "지금 정상인지 아닌지 모른다"면 장애를 사후에야 인지하게 된다. 인터뷰어는 지원자가 아키텍처를 "만드는 것"과 "운영하는 것"을 모두 사고할 수 있는지 이 주제로 확인한다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 1 — CPU는 정상인데 서비스가 느려지는 문제</div>
+      <p>
+        CPU 사용률 알람만 설정돼 있던 서비스에서 메모리 누수로 GC가 점점 잦아지며 응답 지연이 늘었지만, CPU는 표준 메트릭 기준 정상 범위였다. 사용자 불만이 접수되고서야 문제를 알아챘다.
+        이후 CloudWatch Agent를 설치해 메모리 사용률을 커스텀 메트릭으로 수집하고, 메모리 사용률과 GC 관련 애플리케이션 로그를 함께 관측하도록 개선했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 2 — 새벽마다 울리는 오탐 알람으로 인한 알람 피로</div>
+      <p>
+        트래픽이 적은 새벽 시간대에 고정 임계값 기반 알람(요청 수 하한선)이 매일 오탐을 일으켰고, 온콜 담당자가 결국 알람을 음소거해두는 습관이 생겼다. 정작 실제 장애가 났을 때도 알람을 늦게 확인했다.
+        Anomaly Detection으로 전환해 시간대별 정상 범위 밴드를 자동 학습하게 하고, CPU·에러율·지연시간을 함께 보는 Composite Alarm으로 재구성한 뒤 오탐이 크게 줄었다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 3 — Auto Scaling 반응이 느리다는 오해</div>
+      <p>
+        트래픽 급증 시 Auto Scaling이 "반응이 느리다"는 불만이 있었는데, 실제 원인은 표준 해상도(1분) 메트릭과 평가 기간(연속 3회)의 조합으로 인해 스케일 아웃 판단까지 최소 3~4분이 걸리는 구조였다.
+        결제 API처럼 지연에 민감한 일부 지표만 고해상도로 전환하고 평가 기간을 재조정해, 실제 급증 상황에서의 반응 시간을 사용자 영향이 커지기 전 수준으로 단축했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 4 — 5xx 급증의 근본 원인을 로그로 추적</div>
+      <p>
+        ALB의 5xx 에러율 메트릭이 급증했지만 메트릭만으로는 원인을 알 수 없었다. CloudWatch Logs Insights로 해당 시간대 애플리케이션 로그를 쿼리해 특정 외부 결제 API 타임아웃 예외가 집중적으로 발생했음을 확인했고, 그 의존성에 대한 서킷 브레이커와 타임아웃 값을 조정해 재발을 막았다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 5 — 모니터링 비용이 인프라 비용만큼 커진 사례</div>
+      <p>
+        모든 인스턴스에 다수의 커스텀 고해상도 메트릭과 상세 애플리케이션 로그를 무기한 보관하도록 설정해두었더니, CloudWatch 비용이 EC2 비용에 육박했다.
+        SLO에 실제로 연결된 핵심 지표만 고해상도로 남기고 나머지는 표준 해상도로 낮췄으며, 로그는 CloudWatch에는 14일만 보관하고 이후는 S3로 내보내 Glacier로 수명 주기 전환하도록 바꿔 비용을 크게 줄이면서도 필요한 장기 감사 기록은 유지했다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>면접에서 "운영 가시성을 어떻게 설계하시겠습니까"라는 질문을 받으면, 아래 순서로 생각하고 답변하라.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>SLO 기준으로 핵심 지표 선정</strong>
+        <p>사용자 경험에 직결되는 지표(에러율, 지연시간, 가용성)를 먼저 정하고, 그 다음 인프라 지표(CPU, 메모리, 커넥션 수)를 붙인다. "다 본다"가 아니라 "무엇이 사용자 영향과 직결되는가"에서 시작한다.</p>
+      </li>
+      <li>
+        <strong>표준 메트릭의 한계 보완</strong>
+        <p>메모리, 디스크 사용률처럼 인스턴스 내부 정보가 필요하면 CloudWatch Agent로 커스텀 메트릭을 수집한다.</p>
+      </li>
+      <li>
+        <strong>알람을 노이즈 없이 설계</strong>
+        <p>평가 기간과 연속 위반 횟수로 일시적 스파이크를 걸러내고, 여러 지표를 조합한 Composite Alarm 또는 Anomaly Detection으로 신호 대 잡음비를 높인다.</p>
+      </li>
+      <li>
+        <strong>알람과 자동 대응 연결</strong>
+        <p>스케일 아웃/인은 Auto Scaling 정책과 연동하고, 사람이 대응해야 하는 알람은 SNS로 온콜에 전달한다.</p>
+      </li>
+      <li>
+        <strong>로그로 근본 원인 추적 경로 확보</strong>
+        <p>메트릭이 "무엇이 이상한가"를 알려주면, Logs Insights로 "왜 이상한가"까지 추적할 수 있는 구조화된 로그(요청 ID, 타임스탬프, 에러 유형)를 남긴다.</p>
+      </li>
+      <li>
+        <strong>비용 효율화</strong>
+        <p>고해상도 메트릭은 지연에 민감한 일부 지표에만 선별 적용하고, 로그는 단기는 CloudWatch, 장기는 S3/Glacier로 계층화한다.</p>
+      </li>
+    </ol>
+
+    <div class="card why-card">
+      <div class="card-label">핵심 팁</div>
+      <p>"CloudWatch로 모니터링하겠다"에서 멈추지 말고, <strong>"어떤 신호가 알람을 울리고, 그 알람이 사람에게 가는지 자동화로 가는지, 그리고 원인 추적은 어떻게 하는지"</strong>까지 하나의 흐름으로 설명하라. 그것이 관측을 운영 프로세스로 사고하고 있다는 신호다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — Multi-AZ 웹 서비스의 운영 가시성 설계</div>
+      <p>
+        "먼저 사용자 영향과 직결되는 SLO 지표부터 정하겠습니다. ALB의 5xx 에러율, p99 지연시간, 타겟 그룹의 Healthy Host 수를 핵심 지표로 삼고, 그 다음 인프라 지표로 EC2 CPU와 커넥션 수를 봅니다.
+      </p>
+      <p>
+        표준 메트릭에는 메모리와 디스크 사용률이 빠져있으므로, 인스턴스에 CloudWatch Agent를 설치해 이 값들을 커스텀 메트릭으로 수집하겠습니다. 메모리 누수처럼 CPU에는 드러나지 않는 문제를 놓치지 않기 위해서입니다.
+      </p>
+      <p>
+        알람은 단일 임계값 하나에 의존하지 않겠습니다. 예를 들어 "CPU 5분 연속 80% 초과 AND 5xx 에러율 동시 상승"을 Composite Alarm으로 묶어서, 트래픽이 정상적으로 늘어나는 상황과 실제 장애를 구분하겠습니다. 트래픽 패턴이 시간대별로 뚜렷하게 다른 지표는 고정 임계값 대신 Anomaly Detection을 적용해 오탐을 줄이겠습니다.
+      </p>
+      <p>
+        스케일 관련 알람은 Auto Scaling 정책과 자동 연동시키고, 사람이 판단해야 하는 알람은 SNS를 통해 온콜 담당자에게 전달하겠습니다.
+      </p>
+      <p>
+        메트릭만으로는 "왜" 이상이 생겼는지 알 수 없으므로, 애플리케이션 로그에 요청 ID와 에러 유형을 구조화해서 남기고, 장애 시 CloudWatch Logs Insights로 실패한 요청들의 공통 원인(특정 예외, 특정 의존성 타임아웃)을 빠르게 좁힐 수 있게 하겠습니다.
+      </p>
+      <p>
+        마지막으로 비용을 고려해, 고해상도 메트릭은 지연에 민감한 소수 핵심 지표에만 적용하고, 로그는 CloudWatch에 2주 정도만 남긴 뒤 나머지는 S3로 내보내 수명 주기 정책으로 Glacier에 저장해 장기 감사 요구는 충족하면서도 비용을 통제하겠습니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① SLO 기준으로 지표 우선순위를 정함 ② 표준 메트릭의 한계와 보완 방법(Agent)을 구체적으로 제시함 ③ 단일 임계값의 노이즈 문제를 Composite Alarm/Anomaly Detection으로 해결함 ④ 알람을 자동 대응과 사람 대응으로 구분함 ⑤ 메트릭과 로그의 역할 차이를 근본 원인 추적 흐름으로 연결함 ⑥ 비용 효율화까지 구체적인 정책으로 마무리함
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "모든 인스턴스에 고해상도 커스텀 메트릭을 다 켜두면 안 되나요? 비용이 얼마나 차이 나길래 그런가요?"</div>
+      <div class="followup-a">
+        <p>고해상도(1초 단위) 메트릭은 표준 해상도(1분)보다 데이터 포인트 수가 최대 60배 많아지고, 커스텀 메트릭 자체도 표준 메트릭과 달리 건당 과금된다. 인스턴스 수와 메트릭 종류가 많아지면 이 차이가 누적되어 인프라 비용에 육박하는 모니터링 비용으로 이어질 수 있다.</p>
+        <p>모든 것을 초 단위로 볼 필요는 없다 — 대부분의 운영 판단은 1분 해상도로도 충분하고, 실제로 초 단위 반응이 사용자 경험을 좌우하는 소수의 지표(예: 결제 API 지연)에만 고해상도를 선별 적용하는 것이 비용 대비 효과적이다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "Composite Alarm과 여러 개별 알람을 두는 것의 차이는 정확히 무엇인가요?"</div>
+      <div class="followup-a">
+        <p>개별 알람을 여러 개 두면 각각 독립적으로 울리기 때문에, 하나의 실제 장애가 여러 개의 알림으로 중복 발송되거나(예: CPU 알람과 에러율 알람이 동시에 울림), 반대로 각 지표는 정상 범위 안에 있지만 조합했을 때만 의미 있는 이상 신호(CPU는 약간 높고 지연시간도 약간 높은 상태의 동시 발생)를 개별 알람으로는 못 잡을 수 있다.</p>
+        <p>Composite Alarm은 여러 알람의 상태를 AND/OR 논리로 조합해 하나의 최종 신호로 만든다. 이를 통해 "진짜 장애"라고 판단할 조합 조건을 명시적으로 설계할 수 있고, 알림 채널로 나가는 노이즈도 줄어든다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "Anomaly Detection이 항상 고정 임계값보다 나은가요?"</div>
+      <div class="followup-a">
+        <p>아니다. Anomaly Detection은 과거 패턴을 학습하는 데 시간이 걸리고(보통 며칠~몇 주), 학습 데이터가 부족한 신규 서비스나 트래픽 패턴이 아직 안정화되지 않은 서비스에는 오히려 예측 밴드가 부정확할 수 있다. 또한 이벤트성 트래픽 급증(대규모 프로모션 등)처럼 "의도된 이상 상황"에서는 과거 패턴 기반 예측이 오히려 오탐을 일으킬 수 있다.</p>
+        <p>안정적이고 예측 가능한 절대적 한계(예: "동시 접속자가 DB 커넥션 풀 최대치를 넘으면 반드시 문제")가 있는 지표는 고정 임계값이 더 명확하고, 시간대·요일별로 변동성이 큰 지표(요청 수, 트래픽 패턴)는 Anomaly Detection이 더 적합하다. 둘은 대체 관계가 아니라 지표 성격에 따른 선택이다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "CloudWatch Logs Insights 쿼리가 느리거나 비용이 많이 나온다는 불만이 있습니다. 어떻게 접근하나요?"</div>
+      <div class="followup-a">
+        <p>Logs Insights는 스캔한 로그 데이터량 기준으로 과금되고 속도도 그에 비례한다. 넓은 시간 범위나 여러 로그 그룹을 한 번에 스캔하면 비용과 속도 모두 나빠진다.</p>
+        <p>실무적으로는 (1) 쿼리 시간 범위를 필요한 만큼만 좁히고, (2) 자주 조회하는 패턴이 있다면 구조화된 로그 필드(JSON 형태, 요청 ID 등)로 남겨 필터링 효율을 높이고, (3) 정말 자주 반복되는 대시보드성 질의는 Logs Insights 애드혹 쿼리 대신 메트릭 필터로 사전에 메트릭화해 알람/대시보드에 연결하는 방식으로 전환하는 것이 비용과 속도를 함께 개선하는 방법이다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "CloudWatch가 다운되거나 메트릭 수집이 지연되면 Auto Scaling도 영향을 받나요?"</div>
+      <div class="followup-a">
+        <p>그렇다. Auto Scaling의 Target Tracking 정책은 CloudWatch 알람에 의존하므로, 메트릭 수집이 지연되거나 CloudWatch 자체에 장애가 있으면 스케일링 판단도 지연될 수 있다. 이는 "관측 시스템 자체가 단일 장애점이 될 수 있다"는 것을 보여준다.</p>
+        <p>이를 완화하기 위해 최소 인스턴스 수(min capacity)를 평상시 최저 트래픽을 여유 있게 감당할 수 있는 수준으로 설정해, 스케일링 신호가 일시적으로 늦어져도 서비스가 즉시 무너지지 않도록 기본 여유 용량을 확보하는 것이 실무 관행이다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>메트릭·로그·알람의 역할을 구분하고 근본 원인 추적까지 흐름으로 연결한다</li>
+          <li>표준 메트릭에 메모리·디스크 사용률이 빠진다는 것을 알고 Agent로 보완한다</li>
+          <li>단일 임계값 알람의 노이즈 문제를 Composite Alarm/Anomaly Detection으로 해결한다</li>
+          <li>CloudWatch와 Auto Scaling의 연동 구조(알람이 스케일링을 촉발)를 설명한다</li>
+          <li>모니터링 비용을 SLO 우선순위와 로그 보관 정책으로 통제한다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"CloudWatch로 모니터링하겠다"는 말만 하고 무엇을 어떻게 보는지 말하지 못한다</li>
+          <li>CPU 사용률만 알람으로 걸어두면 충분하다고 가정한다</li>
+          <li>알람이 자주 울려도 임계값을 조정하지 않고 그대로 방치한다</li>
+          <li>메트릭과 로그를 구분하지 못하고 둘 다 "로그"라고 뭉뚱그린다</li>
+          <li>모니터링 비용을 전혀 고려하지 않고 모든 것을 무기한 고해상도로 수집하려 한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        "CloudWatch를 쓰겠다"는 답은 도구 이름만 나열한 것이지, <strong>어떤 신호를 우선순위화하고, 어떻게 노이즈를 걸러내며, 이상 발견 후 원인을 어떻게 좁혀가는지</strong>에 대한 설계가 빠져 있다. 시니어는 관측을 "모든 것을 켜두는 것"이 아니라 "사용자 영향과 대응 가능성 기준으로 설계하는 것"으로 이해해야 한다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"EC2 표준 메트릭만 보면 인스턴스 상태를 다 알 수 있다."</p>
+      <div class="mc-right">실제</div>
+      <p>메모리 사용률, 디스크 사용량(퍼센트)처럼 OS 내부 정보는 하이퍼바이저 바깥에서 관측할 수 없어 기본 메트릭에 포함되지 않는다. 이런 지표가 필요하면 CloudWatch Agent를 인스턴스에 설치해 커스텀 메트릭으로 수집해야 한다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"알람 임계값을 낮게 잡을수록 장애를 더 빨리 잡을 수 있어 안전하다."</p>
+      <div class="mc-right">실제</div>
+      <p>임계값을 지나치게 민감하게 잡으면 일시적인 스파이크에도 알람이 울려 알람 피로(alert fatigue)를 유발하고, 결국 팀이 알람을 무시하는 역효과가 난다. 평가 기간과 연속 위반 횟수, Composite Alarm을 조합해 "일시적 튐"과 "지속적 문제"를 구분하는 설계가 필요하다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"메트릭 대시보드만 잘 갖추면 장애 원인도 빠르게 찾을 수 있다."</p>
+      <div class="mc-right">실제</div>
+      <p>메트릭은 "무엇이 이상한지"는 보여주지만 "왜 이상한지"는 로그를 봐야 알 수 있다. 구조화된 로그(요청 ID, 에러 유형)와 CloudWatch Logs Insights 같은 검색·집계 도구가 함께 있어야 근본 원인 추적이 실제로 빨라진다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"Anomaly Detection이 있으면 고정 임계값 알람은 더 이상 필요 없다."</p>
+      <div class="mc-right">실제</div>
+      <p>Anomaly Detection은 학습에 시간이 걸리고 트래픽 패턴이 급격히 바뀌면 오탐/미탐이 생길 수 있다. 절대적 한계가 명확한 지표(DB 커넥션 풀 최대치 등)는 고정 임계값이 더 적합하며, 두 방식은 지표 성격에 따라 함께 쓰는 것이 실무적이다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"모니터링은 많이 수집할수록 무조건 좋다."</p>
+      <div class="mc-right">실제</div>
+      <p>커스텀 메트릭 수, 고해상도 데이터포인트, 로그 보관 기간이 늘어날수록 비용도 함께 늘어난다. SLO에 직결되는 핵심 지표를 우선순위화하고, 로그는 단기 CloudWatch·장기 S3/Glacier로 계층화하는 것이 비용과 관측력의 균형을 맞추는 시니어 설계다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>메트릭/로그/알람 구분</strong></td>
+          <td>세 가지의 역할 차이를 근본 원인 추적 흐름으로 연결해 설명한다</td>
+          <td>세 가지가 다르다는 것은 알지만 흐름으로 연결하지 못한다</td>
+          <td>메트릭·로그·알람을 구분하지 않고 "모니터링"으로 뭉뚱그린다</td>
+        </tr>
+        <tr>
+          <td><strong>표준 메트릭 한계 이해</strong></td>
+          <td>메모리/디스크 사용률이 기본 메트릭에 없다는 것과 Agent 보완을 구체적으로 설명한다</td>
+          <td>CPU 외에 다른 지표가 필요하다는 것은 알지만 이유를 설명하지 못한다</td>
+          <td>CPU 사용률만으로 인스턴스 상태를 다 판단할 수 있다고 가정한다</td>
+        </tr>
+        <tr>
+          <td><strong>알람 노이즈 관리</strong></td>
+          <td>평가 기간, Composite Alarm, Anomaly Detection을 상황에 맞게 조합해 설계한다</td>
+          <td>알람 임계값 조정이 필요하다는 것은 알지만 구체적 기법을 모른다</td>
+          <td>임계값을 낮출수록 안전하다고 가정하거나 알람 피로 문제를 인지하지 못한다</td>
+        </tr>
+        <tr>
+          <td><strong>관측-행동 연결</strong></td>
+          <td>CloudWatch 알람이 Auto Scaling을 어떻게 촉발하는지 연동 구조로 설명한다</td>
+          <td>Auto Scaling과 CloudWatch가 관련 있다는 것은 알지만 구조는 설명하지 못한다</td>
+          <td>모니터링과 자동 대응을 별개로 취급한다</td>
+        </tr>
+        <tr>
+          <td><strong>비용 효율화</strong></td>
+          <td>SLO 우선순위, 고해상도 선별 적용, 로그 계층화(CloudWatch→S3/Glacier)를 구체적으로 제시한다</td>
+          <td>모니터링에 비용이 든다는 것은 알지만 구체적 절감 방법을 모른다</td>
+          <td>모니터링 비용을 전혀 고려하지 않는다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면, Day 9 비용 최적화 전략에서 지금까지 다룬 컴퓨트·데이터·스토리지·트래픽·관측 계층 전반의 비용을 구조적으로 낮추는 방법(예약 인스턴스, Savings Plans, Spot, 태깅, Trusted Advisor)을 이어서 다룬다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./0007-elb-traffic-design.html">← Day 7</a>
+    <a href="./index.html">목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>

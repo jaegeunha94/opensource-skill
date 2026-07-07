@@ -11,18 +11,18 @@
 | 5 | 2026-07-04 | RDS 고가용성과 데이터 보호 | [0005-rds-high-availability-data-protection.html](lessons/0005-rds-high-availability-data-protection.html) |
 | 6 | 2026-07-05 | S3 설계와 보안 | [0006-s3-design-and-security.html](lessons/0006-s3-design-and-security.html) |
 | 7 | 2026-07-06 | ELB와 트래픽 설계 | [0007-elb-traffic-design.html](lessons/0007-elb-traffic-design.html) |
+| 8 | 2026-07-07 | CloudWatch와 운영 가시성 | [0008-cloudwatch-operational-visibility.html](lessons/0008-cloudwatch-operational-visibility.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | CloudWatch와 운영 가시성 | 메트릭, 로그, 알람, 대시보드, Auto Scaling 연동, 비용 효율적 모니터링 |
 | 9 | 비용 최적화 전략 | 예약 인스턴스, Savings Plans, Spot, 리소스 태깅, Trusted Advisor, 비용 이상 탐지 |
 | 10 | 종합 아키텍처 설계 면접 — 웹 서비스 고가용성 설계 | 전 주제 통합, Multi-AZ + ASG + RDS + S3 + CloudFront 조합 설계 |
 
 ## 현재 학습 위치
 
-**Day 7 완료** — Day 8: CloudWatch와 운영 가시성으로 진행 예정.
+**Day 8 완료** — Day 9: 비용 최적화 전략으로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -58,6 +58,9 @@
 - [x] Deregistration Delay를 통한 무중단 교체 (Day 7)
 - [x] 스티키 세션의 한계와 stateless 설계 (Day 7)
 - [x] TLS 종료 위치와 Cross-Zone Load Balancing (Day 7)
-- [ ] CloudWatch 운영 가시성 (예정 Day 8)
+- [x] 메트릭/로그/알람의 역할 구분과 표준 메트릭의 한계 (Day 8)
+- [x] Composite Alarm과 Anomaly Detection을 통한 알람 노이즈 관리 (Day 8)
+- [x] CloudWatch와 Auto Scaling의 연동 구조 (Day 8)
+- [x] Logs Insights를 통한 근본 원인 추적과 비용 효율적 모니터링 설계 (Day 8)
 - [ ] 비용 최적화 전략 (예정 Day 9)
 - [ ] 종합 아키텍처 설계 (예정 Day 10)
