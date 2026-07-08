@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 9 — 롤백 판단과 인시던트 대응 | CI/CD 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* header */
+    .lesson-header {
+      border-left: 4px solid var(--accent);
+      padding: 1.5rem 1.5rem 1.5rem 2rem;
+      background: var(--surface);
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .lesson-title { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
+    .lesson-subtitle { color: var(--muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    /* section */
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 1.2rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.8rem; color: var(--text); }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.88em;
+      color: #a5b4fc;
+    }
+
+    /* cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    /* interview question highlight */
+    .interview-q {
+      background: linear-gradient(135deg, #1e2a4a 0%, #1a2035 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .interview-q .label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .interview-q .question {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.5;
+    }
+
+    /* comparison grid */
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .strategy-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .strategy-card .name {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .strategy-card.blue-green .name { color: #60a5fa; }
+    .strategy-card.rolling .name { color: #34d399; }
+    .strategy-card.canary .name { color: #f59e0b; }
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-right: 0.3rem;
+      margin-bottom: 0.3rem;
+    }
+    .tag-green { background: #14532d; color: #4ade80; }
+    .tag-red { background: #450a0a; color: #f87171; }
+    .tag-yellow { background: #422006; color: #fbbf24; }
+    .tag-blue { background: #1e3a5f; color: #93c5fd; }
+
+    /* answer example */
+    .answer-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+    .answer-block .speaker {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    /* good vs weak */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .compare-card.good {
+      background: #052e16;
+      border: 1px solid #166534;
+    }
+    .compare-card.weak {
+      background: #2d0a0a;
+      border: 1px solid #7f1d1d;
+    }
+    .compare-label {
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .compare-card.good .compare-label { color: #4ade80; }
+    .compare-card.weak .compare-label { color: #f87171; }
+
+    /* reasoning steps */
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent2);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.1rem;
+    }
+
+    /* follow-up */
+    .followup-item {
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .followup-item .q {
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 0.5rem;
+    }
+    .followup-item .a {
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    /* rubric */
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:last-child td { border-bottom: none; }
+    .rubric-table tr:nth-child(even) td { background: #12141e; }
+    .level-badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .level-1 { background: #450a0a; color: #fca5a5; }
+    .level-2 { background: #422006; color: #fcd34d; }
+    .level-3 { background: #14532d; color: #86efac; }
+    .level-4 { background: #1e3a5f; color: #93c5fd; }
+
+    /* callout */
+    .callout {
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .callout-warn {
+      background: #2d1b00;
+      border: 1px solid var(--yellow);
+      color: #fef3c7;
+    }
+    .callout-info {
+      background: #0c1a3a;
+      border: 1px solid var(--accent);
+      color: #dbeafe;
+    }
+    .callout-icon { font-weight: 700; margin-right: 0.4rem; }
+
+    /* flow diagram (ascii-style) */
+    .flow-diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #a5b4fc;
+      overflow-x: auto;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      white-space: pre;
+    }
+
+    /* nav */
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .nav-bar a {
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-bar a:hover { text-decoration: underline; }
+    .nav-center { color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-header">
+    <div class="lesson-meta">CI/CD와 배포 전략 인터뷰 · Day 9</div>
+    <div class="lesson-title">롤백 판단과 인시던트 대응</div>
+    <div class="lesson-subtitle">Blue-Green, Rolling, Canary는 모두 "문제가 생기면 되돌린다"는 안전망을 전제로 설계된다. 그런데 정작 "되돌릴지 말지, 되돌릴 수 있는지"를 판단하는 기준이 없다면 그 안전망은 장식일 뿐이다. 이번 레슨은 지금까지 배운 배포 전략들의 마지막 방어선, 즉 롤백 판단 프레임워크를 다룬다.</div>
+  </div>
+
+  <!-- ─── SECTION 1: 면접 질문 ─── -->
+  <section>
+    <h2>🎯 오늘의 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">주질문 (Main Question)</div>
+      <div class="question">
+        "배포 후 이상 징후가 감지되었을 때, 롤백할지 말지를 어떤 기준으로 판단하시겠습니까?<br>
+        그 판단을 자동화한다면 무엇을 근거로 자동 롤백을 트리거하시겠습니까?"
+      </div>
+    </div>
+
+    <div class="interview-q" style="border-color: var(--accent2);">
+      <div class="label" style="color: var(--accent2);">변형 질문 (Variation)</div>
+      <div class="question" style="font-size: 1rem;">
+        "롤백보다 핫픽스(hotfix)가 더 나은 상황은 언제입니까?<br>
+        그리고 롤백이 불가능하거나 오히려 위험해지는 경우는 언제입니까?"
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 2: 왜 면접에서 묻는가 ─── -->
+  <section>
+    <h2>🔍 왜 면접에서 이 질문을 하는가</h2>
+
+    <p>"문제가 생기면 롤백합니다"는 누구나 할 수 있는 답이다. 실제로 면접관이 궁금한 것은 <strong>"문제가 생겼다"를 무엇으로 판정하고, 그 판정을 몇 분 안에 내릴 수 있는 구체적인 절차가 있는가</strong>이다. 새벽 3시에 알림이 울렸을 때 "일단 지켜보자"와 "5분 안에 롤백 여부를 결정한다" 사이에서, 후자를 가능하게 하는 것은 감이 아니라 사전에 정의된 트리거 기준과 의사결정 트리다. 이 질문은 지원자가 배포 전략을 설계만 할 수 있는 사람인지, 실제 장애 상황에서 초 단위로 판단하고 책임질 수 있는 사람인지를 가른다.</p>
+
+    <div class="card">
+      <div class="card-title">면접관이 실제로 평가하는 것</div>
+      <ul>
+        <li><strong>트리거 기준의 구체성:</strong> "이상하면"이 아니라 어떤 지표가 어떤 임계치를 얼마나 지속했을 때 롤백을 트리거하는지 수치로 말할 수 있는가</li>
+        <li><strong>롤백 vs 핫픽스 판단력:</strong> 두 선택지의 트레이드오프(속도 vs 근본 해결)를 이해하고 상황별로 다르게 선택하는가</li>
+        <li><strong>롤백 불가능 상황 인식:</strong> 데이터 마이그레이션, 스키마 변경처럼 코드를 되돌려도 상태가 되돌아가지 않는 경우를 아는가</li>
+        <li><strong>자동화의 함정 이해:</strong> 자동 롤백이 오탐으로 반복 실행(flapping)되거나, 부분 실패를 만들 수 있다는 것을 아는가</li>
+        <li><strong>사후 프로세스 연결:</strong> 롤백은 사고 대응의 끝이 아니라 시작이며, 원인 분석과 재발 방지로 이어져야 한다는 것을 아는가</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>주니어 vs 시니어 차이:</strong> 주니어는 "모니터링하다가 이상하면 이전 버전으로 롤백합니다"에서 멈춘다. 시니어는 구체적인 트리거 임계치, 롤백이 통하지 않는 상황(데이터 비호환), 롤백과 핫픽스 사이의 의사결정 기준, 자동화의 부작용까지 하나의 판단 프레임워크로 설명한다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 3: 전제 개념 ─── -->
+  <section>
+    <h2>📚 전제 개념: 롤백이 실제로 하는 일과 하지 못하는 일</h2>
+
+    <h3>롤백이란 무엇인가 (쉬운 설명)</h3>
+    <p>롤백은 <strong>현재 실행 중인 신버전을 멈추고, 바로 이전에 정상 동작이 확인된 버전(known-good state)으로 되돌리는 행위</strong>다. 여기서 핵심은 "되돌린다"는 말이 정확히 무엇을 되돌리는지다. 대부분의 배포 도구가 되돌리는 것은 <strong>애플리케이션 코드와 실행 환경</strong>뿐이다. 데이터베이스에 이미 기록된 데이터, 발송된 이메일, 외부 API에 전달된 요청은 롤백으로 되돌아가지 않는다. "롤백하면 원래대로 돌아간다"는 생각은 절반만 맞다.</p>
+
+    <h3>배포 전략별로 롤백이 실제로 실행되는 방식</h3>
+    <div class="strategy-grid">
+      <div class="strategy-card blue-green">
+        <div class="name">Blue-Green</div>
+        <ul>
+          <li>실행: 트래픽 스위치를 이전 환경으로 되돌림</li>
+          <li>속도: 매우 빠름 (초 단위)</li>
+          <li>전제: 이전 환경(Blue)이 아직 살아있어야 함</li>
+        </ul>
+      </div>
+      <div class="strategy-card rolling">
+        <div class="name">Rolling</div>
+        <ul>
+          <li>실행: 이전 ReplicaSet/버전으로 배치 단위 재배포</li>
+          <li>속도: 느림 (배포와 같은 속도로 되돌아감)</li>
+          <li>전제: 이전 이미지가 레지스트리에 남아있어야 함</li>
+        </ul>
+      </div>
+      <div class="strategy-card canary">
+        <div class="name">Canary</div>
+        <ul>
+          <li>실행: 신버전 트래픽 가중치를 0%로 조정</li>
+          <li>속도: 매우 빠름 (라우팅 설정 변경)</li>
+          <li>전제: 구버전 인스턴스가 트래픽 감소 없이 유지 중이어야 함</li>
+        </ul>
+      </div>
+    </div>
+
+    <p>여기서 알 수 있듯이, 이전 Day에서 배운 세 전략은 각각 "롤백을 빠르게 하기 위한 구조"이기도 하다. Blue-Green과 Canary는 구버전을 살려둔 채로 전환하기 때문에 롤백이 스위치 조작 수준으로 빠르고, Rolling은 이전 버전을 다시 배포해야 하므로 롤백 자체도 하나의 배포 과정을 거친다.</p>
+
+    <h3>롤백이 되돌리지 못하는 것 — 데이터 일관성 문제</h3>
+    <div class="card">
+      <ul>
+        <li><strong>스키마가 이미 변경된 경우:</strong> 신버전 배포 시 DB 컬럼을 추가/변경했고, 신버전이 그 컬럼에 데이터를 기록하기 시작했다면, 코드를 구버전으로 되돌려도 신버전이 쓴 데이터는 그대로 남는다. 구버전 코드가 그 컬럼을 모른다면 데이터 불일치가 생긴다.</li>
+        <li><strong>파괴적 마이그레이션(destructive migration)의 경우:</strong> 컬럼을 삭제하거나 이름을 바꾸는 배포였다면, 코드를 되돌려도 구버전이 참조하던 컬럼은 이미 사라진 상태다. 이 경우 롤백은 오히려 즉시 장애를 유발한다.</li>
+        <li><strong>외부 부수 효과(side effect):</strong> 결제 승인, 이메일 발송, 외부 시스템 호출처럼 되돌릴 수 없는 행위는 코드 롤백과 무관하게 이미 실행되어 있다.</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>흔한 오해:</strong> "롤백하면 배포 이전 상태로 완전히 돌아간다"고 생각하기 쉽다. 실제로는 코드와 실행 환경만 되돌아갈 뿐, 데이터베이스 상태는 신버전이 기록한 그대로 남는다. 이것이 Day 6~8에서 배운 Expand-Contract 원칙과 N-1 호환성이 롤백 안전성과 직결되는 이유다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 4: 롤백 트리거 기준 ─── -->
+  <section>
+    <h2>🚨 롤백 트리거 기준 — "이상하다"를 수치로 정의하기</h2>
+
+    <p>실무에서 신뢰할 수 있는 롤백 판단은 "느낌"이 아니라 <strong>사전에 합의된 임계치와 지속 시간</strong>으로 만들어진다. 아래는 실제로 자동/수동 롤백 트리거를 설계할 때 쓰이는 기준의 구조다.</p>
+
+    <div class="flow-diagram">롤백 트리거 조건 설계 예시
+
+[지표 1] 에러율
+   조건: 5xx 응답 비율이 baseline 대비 3배 이상, 2분 연속
+   근거: 순간 스파이크(1건)와 지속적 회귀를 구분하기 위해 "연속 지속"을 요구
+
+[지표 2] 지연시간
+   조건: p99 latency가 SLO 기준치의 150%를 5분 연속 초과
+   근거: 짧은 지연 튐은 GC pause 등 정상 변동일 수 있어 관찰 기간을 둠
+
+[지표 3] 비즈니스 지표
+   조건: 결제 성공률이 절대 기준 95% 미만으로 하락
+   근거: 인프라 지표는 정상이어도 비즈니스 로직 결함은 이 지표에서만 드러남
+
+[지표 4] 헬스체크/가용성
+   조건: readiness probe 실패율 30% 이상
+   근거: 애플리케이션이 아예 시작되지 못하는 치명적 결함을 즉시 감지
+
+[중요] 위 조건 중 하나라도 충족되면 "롤백 후보"로 인시던트 채널에 자동 알림
+       치명도가 높은 지표(헬스체크 실패, 5xx 급증)는 사람 승인 없이 자동 롤백
+       비즈니스 지표 이상은 사람이 원인을 먼저 확인 후 판단 (오탐 가능성이 높음)</div>
+
+    <h3>왜 "즉시"가 아니라 "지속 시간"을 요구하는가</h3>
+    <div class="card">
+      <ul>
+        <li><strong>순간 스파이크와 회귀의 구분:</strong> 배포 직후 커넥션 재수립, 캐시 워밍 등으로 짧은 지표 튐은 정상이다. 지속 시간 조건이 없으면 정상 배포도 계속 롤백된다.</li>
+        <li><strong>지표별로 다른 신뢰 수준:</strong> 인프라 지표(에러율, 지연시간)는 상대적으로 노이즈가 있어 지속 조건이 필요하지만, 헬스체크 실패나 부팅 실패처럼 명확한 신호는 즉시 반응해야 한다.</li>
+        <li><strong>자동 vs 수동의 경계:</strong> 명확하고 되돌리기 쉬운 신호는 자동화하고, 해석이 필요한 지표(비즈니스 지표 하락의 원인이 배포인지 외부 요인인지)는 사람이 개입하는 게이트를 둔다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 5: 롤백 vs 핫픽스 판단 ─── -->
+  <section>
+    <h2>⚔️ 롤백 vs 핫픽스 — 무엇을 기준으로 선택하는가</h2>
+
+    <p>장애가 배포와 관련 있다고 확인되면 다음 갈림길은 "되돌릴 것인가, 고쳐서 전진할 것인가"다. 이 선택은 취향이 아니라 세 가지 축으로 결정된다.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr><th>판단 축</th><th>롤백이 유리한 경우</th><th>핫픽스(roll-forward)가 유리한 경우</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>원인 파악 소요 시간</td>
+          <td>원인을 아직 모르거나 조사에 시간이 걸림</td>
+          <td>원인이 명확하고 수정이 1줄 수준으로 작음</td>
+        </tr>
+        <tr>
+          <td>데이터/스키마 상태</td>
+          <td>신버전이 기존 호환 데이터만 사용 중 (되돌려도 안전)</td>
+          <td>신버전 배포 후 마이그레이션이 이미 적용되어 구버전이 깨짐</td>
+        </tr>
+        <tr>
+          <td>영향 범위</td>
+          <td>전체 기능이 광범위하게 영향받음</td>
+          <td>특정 기능 하나만 문제이고 feature flag로 즉시 차단 가능</td>
+        </tr>
+        <tr>
+          <td>복구 속도 요구</td>
+          <td>지금 당장 서비스 정상화가 최우선</td>
+          <td>롤백 자체가 더 위험하거나 느린 상황(예: Rolling에서 대규모 배치)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>실무 원칙:</strong> "원인을 모르면 일단 롤백, 원인을 알고 수정이 즉시 가능하면 핫픽스"가 기본 원칙이다. 롤백은 원인 조사와 무관하게 서비스를 즉시 정상 상태로 되돌리는 가장 안전한 기본값이고, 핫픽스는 롤백 자체가 더 큰 위험을 만드는 예외 상황에서 선택하는 대안이다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 6: 자동 롤백의 함정 ─── -->
+  <section>
+    <h2>🤖 자동 롤백을 설계할 때의 함정</h2>
+
+    <p>"자동으로 롤백되게 만들면 안전하다"는 생각은 절반만 맞다. 자동화는 반응 속도를 높이지만, 잘못 설계하면 스스로 장애를 만드는 원인이 된다.</p>
+
+    <div class="card">
+      <div class="card-title">자동 롤백 설계 시 반드시 고려할 것</div>
+      <ul>
+        <li><strong>Flapping(반복 롤백) 방지:</strong> 오탐으로 롤백 → 재배포 → 다시 같은 오탐으로 롤백이 반복될 수 있다. 최소 냉각 시간(cooldown), 연속 실패 횟수 제한, N회 이상 반복 시 자동화를 멈추고 사람에게 에스컬레이션하는 회로 차단기(circuit breaker) 패턴이 필요하다.</li>
+        <li><strong>부분 실패 인식:</strong> 롤백 명령이 모든 인스턴스에 100% 적용되지 않을 수 있다. 일부는 신버전, 일부는 구버전이 섞인 상태가 오히려 더 예측 불가능한 장애를 만들 수 있어, 롤백 완료 여부를 확인하는 검증 단계가 필요하다.</li>
+        <li><strong>캐시/CDN/클라이언트 잔존:</strong> 서버는 롤백됐지만 CDN에 캐시된 신버전 정적 자산, 클라이언트에 남은 신버전 API 응답 캐시 때문에 사용자 입장에서는 문제가 계속될 수 있다.</li>
+        <li><strong>알림 폭주:</strong> 자동 롤백이 실행되는 순간에도 사람에게는 명확한 알림(무엇이, 왜, 언제 롤백됐는지)이 가야 하며, 그렇지 않으면 이후 원인 분석에 필요한 컨텍스트를 놓친다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 7: 답변 사고 순서 ─── -->
+  <section>
+    <h2>🧠 답변 사고 순서</h2>
+    <p>"롤백을 어떤 기준으로 판단하시겠습니까"라는 질문을 받았을 때 아래 순서로 답변을 전개한다.</p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>이상 징후 감지 기준 제시</strong><br>
+          어떤 지표(에러율, 지연시간, 비즈니스 지표, 헬스체크)가 어떤 임계치를 얼마나 지속했을 때 "롤백 후보"로 판단하는지 구체적으로 말한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>배포와의 상관관계 확인</strong><br>
+          지표 이상이 배포 시점과 실제로 겹치는지 배포 타임라인과 대조해, 외부 요인(트래픽 급증, 의존 서비스 장애)과 구분한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>롤백 가능성 평가</strong><br>
+          이번 배포에 데이터 마이그레이션이나 파괴적 스키마 변경이 포함됐는지 확인해, 코드 롤백만으로 안전한지 판단한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>롤백 vs 핫픽스 결정</strong><br>
+          원인 파악 소요 시간과 수정 범위를 근거로 즉시 롤백할지, 최소 수정으로 전진할지 결정한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>실행과 커뮤니케이션</strong><br>
+          자동/수동 실행 여부, 인시던트 채널 개설, 이해관계자 알림까지 포함해 실행 절차를 설명한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>사후 조치 연결</strong><br>
+          롤백 완료가 끝이 아니라 원인 분석과 포스트모텀으로 이어진다는 것을 언급한다.
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ─── SECTION 8: 핵심 답변 예시 ─── -->
+  <section>
+    <h2>💬 핵심 답변 예시</h2>
+
+    <div class="answer-block">
+      <div class="speaker">답변 예시 (시니어 수준)</div>
+      <p>"저는 롤백 판단을 사람의 감이 아니라 사전에 정의된 트리거 조건으로 자동화합니다. 5xx 에러율이 baseline 대비 3배 이상 2분 연속 지속되거나, 헬스체크 실패율이 30%를 넘으면 사람 승인 없이 자동으로 롤백을 트리거합니다. 반면 결제 성공률처럼 비즈니스 지표가 흔들리는 경우는 인프라 지표는 정상일 수 있어서, 자동 롤백 후보로만 알림을 보내고 사람이 원인을 확인한 뒤 최종 판단하게 합니다.</p>
+      <p>롤백을 실행하기 전에 가장 먼저 확인하는 것은 이번 배포에 데이터 마이그레이션이 포함됐는지입니다. 신버전이 이미 새 스키마에 데이터를 기록하기 시작했다면 코드만 되돌리는 것은 오히려 데이터 불일치를 만들 수 있어서, 이 경우엔 롤백 대신 문제가 된 기능만 feature flag으로 끄거나, 원인이 명확하고 수정이 작다면 핫픽스로 전진하는 것을 우선 검토합니다. 원인을 모르거나 조사에 시간이 걸릴 것 같으면, 데이터 안전이 확인된 선에서 롤백을 기본값으로 선택합니다.</p>
+      <p>자동 롤백을 설계할 때는 반복 롤백(flapping)을 막는 것도 신경 씁니다. 롤백 후 재배포가 같은 조건으로 또 실패하면 무한 반복될 수 있어서, 연속 롤백 횟수에 제한을 두고 그 이상이면 자동화를 멈추고 사람에게 에스컬레이션합니다. 그리고 롤백은 인시던트의 끝이 아니라 시작이라고 생각합니다. 롤백으로 서비스가 정상화된 뒤에는 반드시 근본 원인을 분석하고 포스트모텀을 작성해서, 같은 문제가 다음 배포에서 재발하지 않도록 CI 파이프라인에 검증 단계를 추가하는 것까지가 롤백 대응의 완성이라고 봅니다."</p>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 9: Senior Follow-up ─── -->
+  <section>
+    <h2>🔺 Senior-Level Follow-up 질문</h2>
+
+    <div class="followup-item">
+      <div class="q">Q. "Canary 배포 중 DB 마이그레이션이 이미 적용된 상태에서 신버전에 심각한 버그가 발견됐습니다. 어떻게 하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 코드 롤백과 데이터 상태 롤백이 별개라는 점에서 출발해야 한다. 스키마가 이미 바뀐 상태에서 구버전 코드로 되돌리면 무슨 일이 생기는지 먼저 따진다.
+        <br><br>
+        <strong>핵심 답변:</strong> 이 상황에서는 단순 롤백이 오히려 위험하다. 구버전 코드가 새 스키마를 모른다면 즉시 에러가 나거나 데이터를 잘못 해석할 수 있다. 따라서 코드를 되돌리는 대신 문제가 된 기능을 feature flag으로 즉시 차단하거나, 트래픽 비율을 0%로 낮춰 신버전 노출을 멈추면서 원인을 수정한 핫픽스를 준비한다. 애초에 이런 상황을 피하려면 Day 6~7에서 다룬 Expand-Contract 원칙에 따라 마이그레이션을 하위 호환되게 설계했어야 한다는 점도 함께 짚는다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "자동 롤백 시스템이 오탐으로 계속 롤백과 재배포를 반복합니다(flapping). 어떻게 막으시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 자동화 자체를 신뢰할 수 없는 상태에서 무한 루프를 끊는 안전장치를 어떻게 설계할지 생각해야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 롤백 이후 일정 냉각 시간(cooldown) 동안은 재배포를 막고, 동일 조건으로 N회 연속 롤백이 발생하면 자동화를 자동으로 비활성화하고 사람에게 에스컬레이션하는 회로 차단기 패턴을 둔다. 동시에 트리거 임계치가 너무 민감하게 설정되어 있지는 않은지(예: 순간 스파이크에도 반응), 지속 시간 조건이 충분한지 재검토한다. 오탐 이력을 로그로 남겨 이후 임계치 튜닝의 근거로 쓴다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "여러 마이크로서비스가 동시에 배포된 상태에서 장애가 발생했습니다. 어느 배포가 원인인지 어떻게 판단하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 지표 이상과 배포 이벤트를 시간축에서 정확히 매칭할 수 있는 구조가 있는지를 따진다.
+        <br><br>
+        <strong>핵심 답변:</strong> 모든 배포 이벤트를 타임스탬프와 함께 관측성 시스템(예: Grafana annotation, 배포 이벤트 로그)에 기록해 지표 그래프 위에 표시하고, 분산 트레이싱으로 에러가 발생한 서비스 호출 체인을 추적해 어느 서비스에서 처음 이상이 시작됐는지 특정한다. 근본적으로는 동시 배포 수를 제한하는 배포 큐나 변경 동결 기간(freeze window)을 두어, 여러 배포가 겹쳐 원인 특정이 어려워지는 상황 자체를 줄이는 것이 예방책이다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "롤백을 실행했는데도 에러율이 떨어지지 않습니다. 무엇을 의심하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> "롤백 = 즉시 해결"이라는 전제를 의심하고, 롤백이 실제로 완전히 적용됐는지, 원인이 애초에 배포가 아니었는지를 나눠서 점검해야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 먼저 롤백이 모든 인스턴스에 실제로 완료됐는지 확인한다(일부 Pod가 여전히 신버전으로 남아있는 부분 실패 가능성). 다음으로 CDN이나 클라이언트에 캐시된 신버전 자산·응답이 남아있는지 확인한다. 그래도 에러가 지속된다면 원인이 배포가 아니라 외부 의존 서비스 장애, 인프라 문제(DB 커넥션 풀 고갈, 네트워크 이슈)였을 가능성을 열어두고 조사 방향을 전환한다. 즉, 롤백 후에도 문제가 지속되면 "배포 문제"라는 최초 가설 자체를 재검증해야 한다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 10: 좋은 답변 vs 약한 답변 ─── -->
+  <section>
+    <h2>⚖️ 좋은 답변과 약한 답변의 차이</h2>
+
+    <div class="compare-grid">
+      <div class="compare-card good">
+        <div class="compare-label">✅ 좋은 답변</div>
+        <ul>
+          <li>롤백 트리거를 구체적인 지표, 임계치, 지속 시간으로 정의</li>
+          <li>데이터 마이그레이션 상태에 따라 롤백 가능 여부가 달라진다는 것을 인지</li>
+          <li>롤백과 핫픽스를 상황(원인 파악 시간, 데이터 상태, 영향 범위)에 따라 구분해서 선택</li>
+          <li>자동 롤백의 flapping, 부분 실패 같은 부작용까지 설계에 반영</li>
+          <li>롤백을 인시던트 대응의 끝이 아니라 포스트모텀으로 이어지는 과정으로 설명</li>
+        </ul>
+      </div>
+      <div class="compare-card weak">
+        <div class="compare-label">❌ 약한 답변</div>
+        <ul>
+          <li>"모니터링하다가 이상하면 롤백합니다"에서 설명이 끝남</li>
+          <li>롤백하면 항상 배포 이전 상태로 완전히 돌아간다고 가정</li>
+          <li>롤백과 핫픽스를 구분하지 못하고 항상 롤백만 언급</li>
+          <li>자동 롤백을 걸어두면 그것으로 끝이라고 생각</li>
+          <li>롤백 이후 원인 분석이나 재발 방지 언급 없이 답변이 종료됨</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>핵심 차이:</strong> 약한 답변은 롤백을 "버튼 하나로 되돌리는 동작"으로 본다. 좋은 답변은 트리거 설계, 데이터 안전성 검증, 롤백/핫픽스 의사결정, 자동화의 부작용 관리, 사후 프로세스까지 하나의 인시던트 대응 시스템으로 설명한다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 11: 실무 연결 ─── -->
+  <section>
+    <h2>🏭 실무 연결 — 배포 전략별 롤백 메커니즘과 도구</h2>
+
+    <div class="card">
+      <div class="card-title">전략/도구별 롤백 실행 방식</div>
+      <table class="rubric-table">
+        <thead>
+          <tr><th>전략/도구</th><th>롤백 실행 메커니즘</th><th>속도</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Kubernetes Rolling (Deployment)</td>
+            <td><code>kubectl rollout undo</code> — 이전 ReplicaSet으로 재배포</td>
+            <td>배포와 동일한 속도 (배치 단위)</td>
+          </tr>
+          <tr>
+            <td>Blue-Green (ALB / Ingress 스위치)</td>
+            <td>로드밸런서 타겟 그룹을 이전 환경으로 전환</td>
+            <td>초 단위</td>
+          </tr>
+          <tr>
+            <td>Argo Rollouts / Flagger (Canary)</td>
+            <td><code>AnalysisTemplate</code> 실패 시 트래픽 가중치 자동 0%로 조정</td>
+            <td>초~분 단위, 자동 실행 가능</td>
+          </tr>
+          <tr>
+            <td>GitHub Actions / CI 파이프라인</td>
+            <td>이전 태그로 재배포 워크플로 트리거 (revert 커밋 또는 이전 아티팩트 재배포)</td>
+            <td>파이프라인 실행 시간에 종속</td>
+          </tr>
+          <tr>
+            <td>Feature Flag 플랫폼</td>
+            <td>배포와 무관하게 플래그만 즉시 토글</td>
+            <td>즉시 (재배포 불필요)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>실무 팁:</strong> 롤백 절차는 장애가 나기 전에 미리 연습(게임데이, chaos engineering)해봐야 실전에서 통한다. "롤백 명령을 몰라서 문서를 찾는 데 5분을 썼다"는 흔한 실패 패턴이며, 이는 롤백 절차 자체를 runbook으로 문서화하고 정기적으로 리허설하는 것으로 예방한다.
+    </div>
+  </section>
+
+  <!-- ─── SECTION 12: 자기 점검 Rubric ─── -->
+  <section>
+    <h2>📋 자기 점검 Rubric</h2>
+    <p>아래 기준으로 자신의 답변 수준을 체크하라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>레벨</th>
+          <th>할 수 있는 것</th>
+          <th>부족한 것</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="level-badge level-1">Lv 1</span></td>
+          <td>"이상하면 이전 버전으로 롤백한다"고 말할 수 있다</td>
+          <td>구체적 트리거 기준, 데이터 안전성, 핫픽스와의 구분을 모름</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-2">Lv 2</span></td>
+          <td>지표 기반 트리거 조건과 롤백/핫픽스 선택 기준을 설명할 수 있다</td>
+          <td>데이터 마이그레이션으로 인한 롤백 불가 상황 인식 부족</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-3">Lv 3</span></td>
+          <td>데이터 일관성 문제와 자동 롤백의 flapping/부분 실패까지 설계에 반영할 수 있다</td>
+          <td>배포 전략별 롤백 메커니즘 차이, 사후 프로세스 연결 부족</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-4">Lv 4 (목표)</span></td>
+          <td>트리거 설계 + 데이터 안전성 + 롤백/핫픽스 판단 + 자동화 부작용 관리 + 배포 전략별 실행 방식 + 포스트모텀까지 통합 설명</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>셀프 체크리스트</h3>
+    <div class="card">
+      <ul>
+        <li>☐ 롤백을 트리거하는 지표, 임계치, 지속 시간을 구체적 숫자로 말할 수 있는가</li>
+        <li>☐ 롤백이 애플리케이션 코드만 되돌릴 뿐 데이터베이스 상태는 되돌리지 못한다는 것을 설명할 수 있는가</li>
+        <li>☐ 파괴적 마이그레이션이 이미 적용된 경우 롤백이 왜 위험한지 설명할 수 있는가</li>
+        <li>☐ 롤백과 핫픽스 중 무엇을 선택할지 판단하는 세 가지 축(원인 파악 시간, 데이터 상태, 영향 범위)을 말할 수 있는가</li>
+        <li>☐ 자동 롤백이 반복 실행(flapping)되는 상황을 막는 설계를 제시할 수 있는가</li>
+        <li>☐ 배포 전략(Blue-Green/Rolling/Canary)마다 롤백 실행 방식과 속도가 다르다는 것을 아는가</li>
+        <li>☐ 롤백 이후 원인 분석과 포스트모텀으로 이어지는 사후 프로세스를 설명할 수 있는가</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 13: 흔한 오해 ─── -->
+  <section>
+    <h2>🚫 흔한 오해와 교정</h2>
+
+    <div class="card">
+      <div class="card-title">오해 1</div>
+      <p><strong>"롤백하면 배포 이전 상태로 완전히 돌아간다."</strong></p>
+      <p>→ 코드와 실행 환경만 되돌아갈 뿐, 신버전이 이미 기록한 데이터베이스 상태, 발송된 이메일, 외부 API 호출 같은 부수 효과는 되돌아가지 않는다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 2</div>
+      <p><strong>"에러가 조금이라도 늘면 무조건 롤백해야 한다."</strong></p>
+      <p>→ 배포 직후 짧은 지표 튐은 정상적인 재수립 과정일 수 있다. 순간 스파이크와 지속적 회귀를 구분하지 않으면 정상 배포까지 계속 롤백되는 flapping이 발생한다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 3</div>
+      <p><strong>"자동 롤백을 걸어두면 사람이 신경 쓸 필요 없다."</strong></p>
+      <p>→ 자동화는 오탐, 반복 롤백, 부분 실패 같은 새로운 실패 모드를 만들 수 있다. 냉각 시간, 반복 횟수 제한, 사람에게 에스컬레이션하는 경로가 함께 설계되어야 안전하다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 4</div>
+      <p><strong>"롤백에 성공하면 인시던트는 끝난 것이다."</strong></p>
+      <p>→ 롤백은 서비스를 정상화했을 뿐, 왜 문제가 생겼는지는 아직 모른다. 근본 원인을 분석하지 않으면 같은 버그가 담긴 코드가 다음 배포에서 다시 배포될 수 있다. 포스트모텀과 재발 방지책 수립까지가 인시던트 대응의 완성이다.</p>
+    </div>
+  </section>
+
+  <div class="nav-bar">
+    <a href="./0008-canary-deployment-traffic-control.html">← Day 8</a>
+    <span class="nav-center">Day 9 / 10 — CI/CD와 배포 전략 인터뷰</span>
+    <a href="./index.html">목록으로 →</a>
+  </div>
+
+</div>
+</body>
+</html>
