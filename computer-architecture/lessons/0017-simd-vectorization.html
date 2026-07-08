@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — SIMD와 배치 처리 | 컴퓨터 구조 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">컴퓨터 구조 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 7
+  </nav>
+
+  <h1>Day 7 — SIMD와 배치 처리</h1>
+  <p class="subtitle">vectorization으로 "대량 데이터를 빠르게 처리할 때 CPU 특성을 어떻게 활용하는가"에 답하기 · 2026-07-08</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#deep">SIMD, 자동 벡터화, alignment를 깊이 이해하기</a></li>
+      <li><a href="#example">구체 예시 — 배열 합산이 SIMD로 몇 배 빨라지는 과정</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"대량의 숫자 배열을 빠르게 처리해야 한다면, CPU의 어떤 특성을 활용할 수 있습니까?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"단순 for 루프로 배열 100만 개를 더하는 코드가 있는데, 컴파일러 옵션만 바꿨더니 몇 배 빨라졌습니다. 어떤 일이 일어난 걸까요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"SIMD(Single Instruction Multiple Data)란 무엇이고, 이것이 왜 명령어 수준 병렬성(ILP)이나 멀티코어와는 다른 종류의 병렬성인가요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"코어를 늘리는 것(멀티코어)"과 "한 코어가 한 번에 처리하는 데이터 양을 늘리는 것(SIMD)"이 완전히 다른 종류의 병렬성이라는 것</strong>을 구분해서 설명할 수 있는지를 확인합니다. 면접관은 "병렬화 = 스레드를 늘리는 것"이라는 단순한 사고에서 멈추지 않고, <strong>단일 스레드 안에서도 하드웨어가 제공하는 데이터 수준 병렬성(data-level parallelism)</strong>을 활용할 수 있다는 것을 아는지 보고 싶어합니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>SIMD의 정확한 동작 원리를 아는가</strong> — 하나의 명령어가 여러 데이터(예: float 8개)를 동시에 처리한다는 것, 그리고 이것이 레지스터 폭(register width)의 확장(SSE 128비트, AVX2 256비트, AVX-512 512비트)에서 나온다는 것을 아는가.</li>
+      <li><strong>ILP, SIMD, 멀티코어를 구분하는 능력</strong> — 파이프라이닝/슈퍼스칼라(ILP)는 "서로 다른 명령어를 겹쳐 실행", SIMD는 "한 명령어로 여러 데이터를 동시 처리", 멀티코어는 "여러 실행 흐름을 물리적으로 병렬 실행"이라는 서로 다른 축의 병렬성이라는 것을 설명하는가.</li>
+      <li><strong>왜 컴파일러가 항상 자동으로 벡터화해주지 않는지 아는가</strong> — 데이터 의존성, 메모리 접근 패턴(연속/불연속), aliasing 가능성, 조건 분기 같은 요인이 자동 벡터화를 막을 수 있다는 것을 아는가.</li>
+      <li><strong>"빠른 배열 처리"를 데이터 배치와 연결하는가</strong> — SIMD가 최대 효과를 내려면 데이터가 메모리에 연속적으로(contiguous), 가능하면 정렬된(aligned) 상태로 있어야 한다는 것, 즉 Day 4에서 배운 cache locality와 SIMD가 서로 맞물려 있다는 것을 짚는가.</li>
+    </ul>
+
+    <p>주니어 답변의 전형적인 패턴: "루프를 병렬로 돌리면 됩니다" 하고 스레드/멀티코어로만 답을 몰아갑니다. 10년차 이상은 <strong>"코어 하나 안에서도 벡터 레지스터로 데이터를 묶어 처리할 수 있고, 이게 스레드를 늘리는 것보다 오버헤드 없이 먼저 시도할 수 있는 최적화"</strong>라는 것을 짚고, 컴파일러 자동 벡터화의 한계와 데이터 배치 조건까지 연결합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>일반 연산 — 명령어 하나가 데이터 하나를 처리한다</h3>
+    <p>보통의 CPU 명령어(scalar instruction)는 <code>c = a + b</code> 같은 연산 하나를 실행할 때, 레지스터에 담긴 숫자 <strong>하나</strong>와 숫자 <strong>하나</strong>를 더해 결과 <strong>하나</strong>를 냅니다. 배열 1,000개를 더하려면 이 덧셈 명령어를 1,000번 반복해야 합니다. 이것이 우리가 지금까지 당연하게 생각해온 실행 방식입니다.</p>
+
+    <h3>SIMD란 무엇인가 — 명령어 하나로 여러 데이터를 동시에</h3>
+    <p>SIMD는 <strong>Single Instruction, Multiple Data</strong>의 줄임말로, 명령어 하나가 여러 개의 데이터를 동시에 처리하는 하드웨어 기능입니다. 예를 들어 CPU가 256비트짜리 벡터 레지스터를 갖고 있다면, 그 안에 32비트 float 8개를 한꺼번에 담아서, <strong>덧셈 명령어 한 번</strong>으로 8개의 덧셈을 동시에 끝낼 수 있습니다. 배열 1,000개를 더하는 데 필요한 명령어 수가 1,000번이 아니라 (이론상) 125번으로 줄어듭니다.</p>
+
+    <p>공장 비유가 도움이 됩니다. 일반 연산은 컨베이어 벨트에서 상자를 <strong>하나씩</strong> 포장하는 작업자와 같습니다. SIMD는 같은 작업자가 <strong>한 번의 동작으로 상자 8개를 동시에</strong> 포장하는 도구를 손에 쥔 것과 같습니다. 작업자(코어) 자체는 하나지만, 한 번의 손동작(명령어)이 처리하는 물량이 늘어난 것입니다.</p>
+
+    <h3>벡터 레지스터와 명령어 집합 확장 — SSE, AVX2, AVX-512</h3>
+    <p>x86 CPU는 시간이 지나면서 이 벡터 레지스터의 폭을 계속 넓혀왔습니다. SSE는 128비트(float 4개), AVX2는 256비트(float 8개), AVX-512는 512비트(float 16개)까지 한 번에 처리합니다. 레지스터가 넓을수록 명령어 한 번에 처리하는 데이터 양이 늘어나지만, 모든 CPU가 최신 확장(AVX-512 등)을 지원하는 것은 아니므로 배포 환경의 CPU가 어떤 명령어 집합을 지원하는지가 실제 성능에 영향을 줍니다.</p>
+
+    <h3>Vectorization(벡터화)이란 무엇인가</h3>
+    <p>벡터화는 원래 하나씩 처리하도록 짜여진 스칼라 루프를 SIMD 명령어를 사용하는 코드로 바꾸는 과정입니다. 이 작업은 <strong>컴파일러가 자동으로</strong> 해줄 수도 있고(auto-vectorization), 개발자가 <strong>SIMD intrinsic 함수나 라이브러리</strong>를 직접 사용해 수동으로 할 수도 있습니다. 자동 벡터화는 편하지만 조건이 맞지 않으면 실패할 수 있고, 수동 벡터화는 확실하지만 코드가 CPU 아키텍처에 종속되고 복잡해집니다.</p>
+  </section>
+
+  <!-- 4. 심화 -->
+  <section id="deep">
+    <h2>4. SIMD, 자동 벡터화, alignment를 깊이 이해하기</h2>
+
+    <h3>ILP · SIMD · 멀티코어 — 세 가지 다른 축의 병렬성</h3>
+    <table class="method-table">
+      <thead><tr><th>종류</th><th>병렬화 단위</th><th>핵심 아이디어</th></tr></thead>
+      <tbody>
+        <tr><td>ILP (Day 5의 파이프라인/슈퍼스칼라)</td><td>서로 다른 명령어</td><td>서로 의존성 없는 명령어들을 겹쳐서/동시에 실행 (하나의 실행 흐름 안에서)</td></tr>
+        <tr><td>SIMD (이번 Day)</td><td>같은 연산, 여러 데이터</td><td>명령어 한 개가 벡터 레지스터에 담긴 여러 데이터를 동시에 연산</td></tr>
+        <tr><td>멀티코어 (Day 6)</td><td>서로 다른 실행 흐름(스레드)</td><td>물리적으로 분리된 코어가 각자 독립적인 명령어 스트림을 동시에 실행</td></tr>
+      </tbody>
+    </table>
+    <p>이 세 가지는 서로 배타적이지 않고 <strong>동시에</strong> 적용될 수 있습니다. 예를 들어 4개 코어가 각자 SIMD로 8개씩 묶어 처리하고, 그 안에서 파이프라인이 여러 명령어를 겹쳐 실행하면, 이론적으로는 4 × 8 × (파이프라인 처리량)만큼의 데이터를 동시에 처리하는 셈입니다. 면접에서 이 세 층을 구분하지 못하면 "그냥 다 병렬 처리입니다"라는 뭉뚱그린 답변으로 들립니다.</p>
+
+    <h3>왜 컴파일러가 항상 자동으로 벡터화하지 못하는가</h3>
+    <p>컴파일러의 자동 벡터화는 다음과 같은 조건이 깨지면 실패하거나 보수적으로 동작합니다.</p>
+    <ul>
+      <li><strong>데이터 의존성(loop-carried dependency)</strong> — <code>a[i] = a[i-1] + x[i]</code>처럼 이번 반복이 직전 반복의 결과를 필요로 하면, 여러 원소를 동시에 계산할 수 없어 벡터화가 불가능하거나 크게 제한됩니다.</li>
+      <li><strong>메모리 접근 패턴</strong> — 배열을 순차적으로(stride 1) 접근하면 벡터 레지스터에 한 번에 로드하기 좋지만, 인덱스가 불규칙하거나 간격이 크면(pointer chasing, gather 패턴) SIMD 이득이 크게 줄어듭니다. Day 4의 locality 논의와 정확히 맞물립니다.</li>
+      <li><strong>Aliasing 가능성</strong> — 컴파일러는 포인터 두 개가 같은 메모리를 가리킬 수도 있다고 보수적으로 가정하면, 안전하게 재배열할 수 없어 벡터화를 포기합니다. C/C++에서 <code>restrict</code> 키워드로 "이 포인터들은 겹치지 않는다"고 알려주면 벡터화 가능성이 높아집니다.</li>
+      <li><strong>루프 내부의 조건 분기</strong> — 원소마다 다른 분기를 타는 코드는 SIMD 레인마다 다른 실행 경로를 요구하므로, 마스킹(masking) 같은 기법이 필요하거나 벡터화 효율이 떨어집니다.</li>
+    </ul>
+
+    <h3>Alignment — 벡터 레지스터에 데이터를 로드하는 비용</h3>
+    <p>SIMD 명령어 중 일부는 데이터가 벡터 레지스터 폭(예: 32바이트)의 배수 주소에 정렬되어 있을 때 더 빠르게 로드됩니다. 정렬되지 않은 데이터는 추가적인 처리(unaligned load)가 필요해 약간의 성능 손실이 있을 수 있습니다. 최신 CPU는 이 차이를 상당히 줄였지만, 성능에 극도로 민감한 코드에서는 여전히 <code>alignas</code>나 정렬된 메모리 할당으로 데이터를 벡터 레지스터 경계에 맞추는 최적화가 유효합니다.</p>
+  </section>
+
+  <!-- 5. 구체 예시 -->
+  <section id="example">
+    <h2>5. 구체 예시 — 배열 합산이 SIMD로 몇 배 빨라지는 과정</h2>
+
+    <pre><code>// (A) 스칼라 루프 — 원소 하나씩 순서대로 더함
+float sum_scalar(const float* a, int n) {
+    float sum = 0.0f;
+    for (int i = 0; i < n; i++) {
+        sum += a[i];        // 명령어 1번 = 덧셈 1번
+    }
+    return sum;
+}</code></pre>
+
+    <pre><code>// (B) 컴파일러 자동 벡터화가 가능한 형태 — 의존성을 끊어 병렬 누적
+float sum_vectorizable(const float* a, int n) {
+    float partial[8] = {0};              // 8개의 독립적인 누적 슬롯
+    int i = 0;
+    for (; i + 8 <= n; i += 8) {
+        for (int lane = 0; lane < 8; lane++) {
+            partial[lane] += a[i + lane]; // 8개 lane이 서로 독립적 -> SIMD로 묶기 좋음
+        }
+    }
+    float sum = 0.0f;
+    for (int lane = 0; lane < 8; lane++) sum += partial[lane];
+    for (; i < n; i++) sum += a[i];       // 8의 배수로 안 나눠떨어지는 나머지 처리
+    return sum;
+}</code></pre>
+
+    <p>(A)는 <code>sum</code> 하나에 계속 누적하기 때문에, 이번 반복이 직전 반복의 결과(<code>sum</code>)에 의존합니다. 컴파일러 입장에서는 "다음 원소를 더하려면 앞 원소의 덧셈이 끝나야 한다"는 순서를 지켜야 하므로, 자동 벡터화가 제한되거나(컴파일러가 reduction 패턴을 인식해 일부 벡터화하기도 하지만) 최적이 아닐 수 있습니다. (B)는 누적 슬롯을 8개로 나눠서, 각 lane이 서로 다른 원소만 담당하고 서로의 결과에 의존하지 않게 만들었습니다. 이렇게 <strong>의존성을 끊은 형태</strong>는 컴파일러가 <code>partial[0..7]</code>을 벡터 레지스터 하나에 담아 SIMD 덧셈 한 번으로 8개 lane을 동시에 갱신하기 훨씬 쉽습니다. 실무에서는 (B)와 같은 구조를 컴파일러 최적화 플래그(예: <code>-O3 -march=native</code>)와 함께 쓰거나, 필요하면 SIMD intrinsic(<code>_mm256_add_ps</code> 등)으로 명시적으로 작성해 확실한 벡터화를 보장합니다. Trade-off는 (B)가 (A)보다 코드가 복잡해지고, 수동 intrinsic까지 가면 특정 CPU 아키텍처에 종속된다는 점입니다.</p>
+  </section>
+
+  <!-- 6. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>6. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>병렬성의 종류를 먼저 구분합니다.</strong> "스레드를 늘리는 것(멀티코어)과 별개로, 한 코어 안에서도 SIMD로 데이터 수준 병렬성을 얻을 수 있습니다."</li>
+      <li><strong>SIMD의 동작 원리를 짚습니다.</strong> "벡터 레지스터에 여러 데이터를 담아, 명령어 한 번으로 동시에 연산합니다."</li>
+      <li><strong>자동 벡터화가 되는 조건과 안 되는 조건을 설명합니다.</strong> "연속 메모리 접근, 낮은 데이터 의존성, aliasing 없음이 필요합니다."</li>
+      <li><strong>데이터 배치(locality)와의 연결을 짚습니다.</strong> "SIMD 이득은 데이터가 연속적으로 배치되어 있을 때 극대화되므로, cache-friendly한 배치와 같은 방향의 최적화입니다."</li>
+      <li><strong>측정과 검증으로 마무리합니다.</strong> "컴파일러 벡터화 리포트(<code>-fopt-info-vec</code> 등)나 벤치마크로 실제 벡터화 여부와 성능 개선을 확인하고, 필요하면 intrinsic으로 수동 개입합니다."</li>
+    </ol>
+  </section>
+
+  <!-- 7. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>7. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "대량의 숫자 배열을 빠르게 처리해야 한다면, CPU의 어떤 특성을 활용할 수 있습니까?"</p>
+    </div>
+
+    <h3>짧은 버전 (엘리베이터 피치)</h3>
+    <div class="good-answer">
+      <div class="tag">SHORT ANSWER</div>
+      <p>현대 CPU는 SIMD(Single Instruction Multiple Data)라는 벡터 레지스터를 갖고 있어서, 명령어 하나로 여러 개의 데이터(예: float 8개)를 동시에 연산할 수 있습니다. 배열 연산처럼 같은 작업을 반복하는 코드는 이 벡터화를 통해 명령어 수를 줄이고 처리량을 크게 늘릴 수 있습니다. 다만 데이터가 메모리에 연속적으로 배치되어 있고, 반복 사이에 의존성이 없어야 컴파일러가 자동으로 벡터화하거나 수동 벡터화의 이득이 극대화됩니다.</p>
+    </div>
+
+    <h3>깊이 있는 버전</h3>
+    <div class="good-answer">
+      <div class="tag">DEEP ANSWER</div>
+      <p>병렬성은 층이 다른 세 가지가 있습니다. 파이프라이닝/슈퍼스칼라 같은 명령어 수준 병렬성(ILP)은 서로 의존성 없는 명령어들을 겹쳐 실행하는 것이고, 멀티코어는 물리적으로 분리된 실행 흐름을 동시에 돌리는 것입니다. SIMD는 이 둘과 다른 축으로, <strong>하나의 실행 흐름 안에서 하나의 명령어가 여러 데이터를 동시에 처리</strong>하는 것입니다. x86 기준으로 SSE는 128비트, AVX2는 256비트, AVX-512는 512비트 벡터 레지스터를 제공하며, float라면 각각 4개, 8개, 16개를 한 명령어로 처리합니다.</p>
+      <br>
+      <p>이 이득을 실제로 얻으려면 몇 가지 조건이 맞아야 합니다. 첫째, 반복 사이에 데이터 의존성이 없어야 컴파일러가 여러 원소를 동시에 계산해도 안전하다고 판단합니다. 예를 들어 단순 누적합처럼 이번 반복이 직전 결과에 의존하는 코드는 그대로는 벡터화가 제한되고, 누적 슬롯을 여러 개로 나눠 의존성을 끊어줘야 벡터화가 잘 됩니다. 둘째, 메모리 접근이 연속적(stride 1)이어야 합니다. 이건 Day 4에서 다룬 cache locality와 정확히 같은 방향의 요구사항입니다 — 캐시 친화적인 데이터 배치가 SIMD 친화적인 배치이기도 합니다. 셋째, 포인터 aliasing 가능성이 없어야 컴파일러가 안전하게 재배열할 수 있습니다. 저는 실제로 대량의 센서 데이터를 정규화하는 루프에서 <code>restrict</code> 키워드와 배열의 연속 배치를 보장한 뒤, 컴파일러 벡터화 리포트로 실제 AVX2 명령어가 생성됐는지 확인하고, 벤치마크로 3~4배 처리량 개선을 확인한 경험이 있습니다. 벡터화가 안 되는 핫패스는 SIMD intrinsic으로 직접 작성했지만, 그 경우 코드가 특정 CPU 아키텍처에 종속되므로 배포 대상 CPU의 명령어 집합 지원 여부를 함께 고려했습니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>ILP, SIMD, 멀티코어를 명확히 다른 축으로 구분함</li>
+      <li>자동 벡터화가 되는/안 되는 조건을 구체적으로 제시함</li>
+      <li>SIMD와 cache locality(Day 4)를 연결해 지식이 파편화되지 않음을 보여줌</li>
+      <li>측정 도구(벡터화 리포트)와 실제 개선 수치, intrinsic의 이식성 trade-off까지 근거로 제시함</li>
+    </ul>
+  </section>
+
+  <!-- 8. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"멀티스레드로 나눠서 각 스레드가 배열의 일부분을 처리하게 하면 됩니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>질문의 핵심인 "CPU 특성을 활용"에서 SIMD라는 단일 코어 내부의 하드웨어 기능을 완전히 놓치고 멀티코어로만 답을 몰아갑니다.</li>
+        <li>멀티스레드는 스레드 생성/동기화 오버헤드가 있는 반면, SIMD는 같은 코어 안에서 오버헤드 없이 먼저 시도할 수 있는 최적화라는 우선순위를 놓칩니다.</li>
+        <li>SIMD와 멀티코어가 배타적이지 않고 함께 적용 가능하다는 것도 언급하지 못합니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"컴파일러 최적화 옵션을 올리면 알아서 빨라집니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>"왜" 빨라지는지에 대한 원리(벡터 레지스터, 명령어당 처리 데이터 증가)를 전혀 설명하지 못합니다.</li>
+        <li>자동 벡터화가 항상 성공하는 것이 아니라는 것, 그리고 실패할 때 코드를 어떻게 바꿔야 하는지에 대한 이해가 없습니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>SIMD를 ILP, 멀티코어와 구분되는 별도의 병렬성 축으로 설명한다</li>
+        <li>벡터 레지스터가 명령어 한 번에 여러 데이터를 처리한다는 메커니즘을 설명한다</li>
+        <li>자동 벡터화가 되는 조건(의존성 없음, 연속 메모리, no aliasing)을 구체적으로 짚는다</li>
+        <li>SIMD 이득이 cache locality와 같은 방향이라는 것을 연결한다</li>
+        <li>측정 도구(벡터화 리포트, 벤치마크)와 intrinsic 사용의 이식성 trade-off를 근거로 든다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9. Follow-up -->
+  <section id="followups">
+    <h2>9. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: 배열이 아니라 연결 리스트(linked list)를 순회하는 코드도 SIMD로 벡터화할 수 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 실질적으로 어렵습니다. SIMD는 여러 데이터를 벡터 레지스터에 한 번에 로드해야 하는데, 연결 리스트는 각 노드가 메모리 어디에 있을지 예측할 수 없는 pointer chasing 구조라서(Day 4 참고) 연속된 데이터를 한 번에 가져올 수 없습니다. 이것이 바로 대량 데이터 처리 성능을 중시하는 코드에서 연결 리스트보다 배열(또는 연속 메모리 컨테이너)을 선호하는 이유 중 하나이며, cache locality 문제와 SIMD 벡터화 문제가 같은 근본 원인(불연속 메모리 접근)에서 나온다는 것을 보여줍니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: SIMD intrinsic을 직접 쓰는 것과 컴파일러 자동 벡터화에 맡기는 것, 언제 어떤 걸 선택해야 하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 우선 코드를 벡터화 친화적인 형태(의존성 최소화, 연속 메모리 접근, <code>restrict</code> 힌트)로 작성하고 컴파일러 자동 벡터화를 먼저 시도하는 것이 유지보수성과 이식성 측면에서 낫습니다. 벡터화 리포트로 확인했을 때 컴파일러가 벡터화를 포기하는데도 그 루프가 실측으로 확인된 핫패스라면, 그때 SIMD intrinsic이나 라이브러리(예: 표준 SIMD 지원, 벤더 제공 커널)로 수동 개입을 검토합니다. 수동 벡터화는 성능은 확실하지만 코드 복잡도가 크게 늘고 특정 명령어 집합(AVX2 vs AVX-512 등)에 종속되므로, 배포 대상 CPU가 다양하다면 런타임에 지원 여부를 감지해 여러 경로를 두는 dispatch 전략이 필요할 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: SIMD를 쓰면 항상 처리량이 N배(레인 수만큼) 늘어나나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 아닙니다. 이론상 최대 배수는 레인 수(예: AVX2 float면 8배)이지만, 실제로는 메모리 대역폭이 병목인 memory-bound 연산(Day 3의 roofline 모델 참고)이라면 연산 자체를 빨리 해도 데이터를 가져오는 속도가 한계이므로 이득이 훨씬 작습니다. 또한 정렬되지 않은 메모리 접근, 나머지 처리(레인 수로 안 나눠떨어지는 원소), 조건 분기로 인한 마스킹 오버헤드도 실제 이득을 이론값보다 낮춥니다. 그래서 "SIMD를 쓰면 8배 빨라집니다"라고 단정하지 않고, 벤치마크로 실제 개선 폭을 확인해야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 인터프리터 언어(Python, JavaScript)에서도 이 지식이 쓸모가 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 예. 직접 SIMD 코드를 작성하지는 않지만, NumPy, Pandas 같은 라이브러리의 벡터화된 연산(예: <code>a + b</code>가 내부적으로 C로 구현된 SIMD 루프를 호출)이 왜 순수 Python <code>for</code> 루프보다 수십~수백 배 빠른지 설명할 수 있는 배경 지식이 됩니다. 성능이 중요한 데이터 처리 코드를 리뷰할 때 "이 연산이 벡터화된 라이브러리 호출인가, 아니면 인터프리터 레벨 반복문인가"를 구분하는 감각으로 이어집니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: GPU 병렬 처리와 CPU SIMD는 어떻게 다른가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 둘 다 데이터 수준 병렬성을 활용한다는 점은 비슷하지만 규모와 목적이 다릅니다. CPU SIMD는 코어 하나가 한 번에 처리하는 데이터를 4~16개 수준으로 넓히는 것이고, GPU는 수천 개의 단순한 코어가 SIMT(Single Instruction Multiple Thread) 방식으로 동시에 동작해 훨씬 큰 규모의 데이터 병렬성을 제공합니다. 대신 CPU SIMD는 일반적인 순차 로직과 섞어 쓰기 쉽고 데이터 전송 오버헤드가 없는 반면, GPU는 호스트-디바이스 간 데이터 전송 비용과 프로그래밍 모델의 제약이 있어, 아주 큰 배치의 동질적인 연산(행렬 곱, 딥러닝 등)에서 이득이 극대화됩니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>10. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"SIMD는 멀티스레드의 다른 이름이다"</strong></p>
+      <p>SIMD는 하나의 실행 흐름(스레드) 안에서 명령어 하나가 여러 데이터를 처리하는 것이고, 멀티스레드/멀티코어는 여러 실행 흐름을 물리적으로 동시에 돌리는 것입니다. 서로 다른 축의 병렬성이며, 함께 적용할 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"-O3만 켜면 모든 루프가 자동으로 벡터화된다"</strong></p>
+      <p>자동 벡터화는 데이터 의존성, 메모리 접근 패턴, aliasing, 조건 분기 같은 조건이 맞아야 성공합니다. 조건이 깨지면 최적화 플래그를 최대로 켜도 컴파일러는 벡터화를 포기하고 스칼라 코드를 생성합니다. 벡터화 리포트로 실제 여부를 확인해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"벡터 레지스터가 넓을수록(AVX-512 등) 무조건 더 좋다"</strong></p>
+      <p>레지스터 폭이 넓을수록 이론적 처리량은 늘지만, 일부 CPU는 넓은 벡터 명령어 사용 시 클럭 속도를 낮추는 경우가 있어 다른 코드 구간에 영향을 줄 수 있고, memory-bound 연산에서는 연산 폭을 넓혀도 병목(메모리 대역폭)이 그대로라 이득이 제한적입니다. 항상 실측으로 판단해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"SIMD는 부동소수점 연산에만 쓸 수 있다"</strong></p>
+      <p>정수 연산, 문자열 처리(예: 대량 텍스트 검색), 이미지/비디오 처리, 암호화 등 다양한 정수·바이트 단위 작업에도 SIMD가 널리 쓰입니다. 부동소수점은 흔한 예시일 뿐 SIMD의 적용 범위를 한정하지 않습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"코드를 벡터화하면 데이터 배치는 신경 쓰지 않아도 된다"</strong></p>
+      <p>SIMD의 이득은 데이터가 연속적으로 배치되어 있을 때 극대화됩니다. 불연속적이거나 포인터를 따라가야 하는 데이터 구조는 벡터화 자체가 어렵거나, 되더라도 gather/scatter 같은 비싼 명령어가 필요해 이득이 크게 줄어듭니다. SIMD는 cache-friendly한 데이터 설계(Day 4)를 대체하는 것이 아니라 그 위에서 추가 이득을 얻는 최적화입니다.</p>
+    </div>
+  </section>
+
+  <!-- 11. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>11. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 7을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>SIMD가 무엇인지(명령어 하나가 여러 데이터를 동시에 처리)를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>ILP, SIMD, 멀티코어를 서로 다른 축의 병렬성으로 구분해서 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>자동 벡터화가 실패하는 조건(데이터 의존성, 불연속 메모리, aliasing, 조건 분기)을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>SIMD 이득과 cache locality(Day 4)가 왜 같은 방향의 최적화인지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>자동 벡터화와 수동 intrinsic 사용의 trade-off(이식성 vs 확실한 성능)를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"SIMD를 쓰면 항상 N배 빨라진다"는 단정이 왜 틀린지, memory-bound 상황을 들어 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>벡터화 여부를 실제로 확인하는 방법(벡터화 리포트, 벤치마크)을 말할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 8</h3>
+      <p><strong>프로파일링과 성능 측정</strong></p>
+      <p>Day 7까지 CPU 실행 모델, 메모리 계층, 캐시, 파이프라인, 멀티코어, SIMD를 각각 다뤘습니다. Day 8에서는 "이 지식들을 실제 코드에서 어떻게 확인하고 병목을 진단하는가"로 넘어가, CPU-bound와 memory-bound를 구분하는 프로파일링 방법을 다룹니다.</p>
+      <p>면접 질문 예고: "CPU-bound와 memory-bound를 어떻게 구분합니까?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    컴퓨터 구조 시니어 인터뷰 · Day 7 of 10 · 2026-07-08
+  </p>
+
+</div>
+</body>
+</html>

@@ -16,29 +16,29 @@
 | 4 | 2026-07-05 | 캐시와 데이터 배치 | [0014-cache-line-data-layout.html](lessons/0014-cache-line-data-layout.html) |
 | 5 | 2026-07-06 | 파이프라인과 분기 예측 | [0015-pipeline-branch-prediction.html](lessons/0015-pipeline-branch-prediction.html) |
 | 6 | 2026-07-07 | 멀티코어와 캐시 일관성 | [0016-multicore-cache-coherence-false-sharing.html](lessons/0016-multicore-cache-coherence-false-sharing.html) |
+| 7 | 2026-07-08 | SIMD와 배치 처리 | [0017-simd-vectorization.html](lessons/0017-simd-vectorization.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 7 | SIMD와 배치 처리 | "대량 데이터를 빠르게 처리할 때 CPU 특성을 어떻게 활용합니까?" | vectorization, batch, alignment, trade-off |
 | 8 | 프로파일링과 성능 측정 | "CPU-bound와 memory-bound를 어떻게 구분합니까?" | profiling, perf 지표, flame graph, cache miss |
 | 9 | 컴퓨터 구조와 시스템 설계 | "하드웨어 특성이 DB, queue, cache 설계에 어떤 영향을 줍니까?" | storage hierarchy, index, serialization |
 | 10 | 종합 모의 면접 | "성능이 느린 코드를 받고 하드웨어 관점에서 개선안을 제시해보세요." | 측정 기반 추론, 개선안 비교, 한계 설명 |
 
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음은 Day 7 SIMD와 배치 처리부터 진행한다.
+**Day 7 완료** — 다음은 Day 8 프로파일링과 성능 측정부터 진행한다.
 
 ## Interview 답변 체크리스트
 
-- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6)
-- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6)
-- [x] 실제 운영 상황과 연결한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6)
-- [x] 답변 순서를 단계적으로 제시한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6)
-- [x] trade-off를 최소 2개 이상 비교한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6)
-- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6)
-- [x] follow-up 질문까지 대비한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6)
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6, Day 7)
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6, Day 7)
+- [x] 실제 운영 상황과 연결한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6, Day 7)
+- [x] 답변 순서를 단계적으로 제시한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6, Day 7)
+- [x] trade-off를 최소 2개 이상 비교한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6, Day 7)
+- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6, Day 7)
+- [x] follow-up 질문까지 대비한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6, Day 7)
 
 ## 습득한 핵심 개념
 
@@ -56,7 +56,8 @@
 - [x] misprediction penalty, pipeline flush, branchless 코드의 trade-off (Day 5)
 - [x] cache coherence(MESI), 캐시 라인 단위 무효화, false sharing과 data race의 구분 (Day 6)
 - [x] padding/alignment를 통한 false sharing 해결과 메모리 비용 trade-off (Day 6)
-- [ ] SIMD와 벡터화 (예정 Day 7)
+- [x] SIMD와 벡터화, ILP/SIMD/멀티코어의 구분, 자동 벡터화 조건 (Day 7)
+- [x] SIMD 이득과 cache locality의 연결, alignment, memory-bound 상황에서의 SIMD 한계 (Day 7)
 - [ ] profiling과 성능 측정 (예정 Day 8)
 - [ ] 컴퓨터 구조와 시스템 설계 연결 (예정 Day 9)
 - [ ] 종합 모의 면접 (예정 Day 10)
