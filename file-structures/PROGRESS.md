@@ -18,28 +18,28 @@
 | 6 | 2026-07-05 | 클러스터링과 보조 인덱스 (Data Locality, Write Amplification, Secondary Lookup) | [interview-day06-clustered-secondary-index.html](lessons/interview-day06-clustered-secondary-index.html) |
 | 7 | 2026-07-06 | 외부 정렬 (Run Generation, K-way Merge, I/O Pass 비용) | [interview-day07-external-sort.html](lessons/interview-day07-external-sort.html) |
 | 8 | 2026-07-07 | 파일 시스템 구조 (inode vs FAT Trade-off) | [interview-day08-file-systems.html](lessons/interview-day08-file-systems.html) |
+| 9 | 2026-07-08 | 대용량 로그/이벤트 저장 (Append-only 구조, WAL, LSM-Tree) | [interview-day09-append-only-structures.html](lessons/interview-day09-append-only-structures.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 9 | 대용량 로그/이벤트 저장 | "append-only 파일 구조는 어떤 장점과 단점이 있습니까?" | sequential write, compaction, index, recovery |
 | 10 | 종합 모의 면접 | "검색 요구사항을 받고 저장 구조와 인덱스를 설계해보세요." | 접근 패턴 분석, 구조 선택, 운영 비용 |
 
 ## 현재 학습 위치
 
-**Day 8 완료** — 파일 시스템 구조 (inode의 포인터 배열 vs FAT의 연결 리스트, 랜덤 접근/손상 복구/단편화 trade-off).
-**다음: Day 9** — 대용량 로그/이벤트 저장 (Append-only 구조, WAL, LSM-Tree).
+**Day 9 완료** — 대용량 로그/이벤트 저장 (append-only의 순차 쓰기 원리, tombstone, compaction, WAL, LSM-Tree, Read/Write/Space amplification trade-off).
+**다음: Day 10** — 종합 모의 면접 (Day 1~9 통합 설계 답변).
 
 ## Interview 답변 체크리스트
 
-- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. *(Day 1~8 완료)*
-- [x] 왜 면접에서 이 질문을 묻는지 설명한다. *(Day 1~8 완료)*
-- [x] 실제 운영 상황과 연결한다. *(Day 1~8 완료)*
-- [x] 답변 순서를 단계적으로 제시한다. *(Day 1~8 완료)*
-- [x] trade-off를 최소 2개 이상 비교한다. *(Day 1~8 완료)*
-- [x] 흔한 오해와 약한 답변을 구분한다. *(Day 1~8 완료)*
-- [x] follow-up 질문까지 대비한다. *(Day 1~8 완료)*
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. *(Day 1~9 완료)*
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. *(Day 1~9 완료)*
+- [x] 실제 운영 상황과 연결한다. *(Day 1~9 완료)*
+- [x] 답변 순서를 단계적으로 제시한다. *(Day 1~9 완료)*
+- [x] trade-off를 최소 2개 이상 비교한다. *(Day 1~9 완료)*
+- [x] 흔한 오해와 약한 답변을 구분한다. *(Day 1~9 완료)*
+- [x] follow-up 질문까지 대비한다. *(Day 1~9 완료)*
 
 ## 습득한 핵심 개념
 
@@ -59,5 +59,5 @@
 - [x] Clustered vs Secondary Index — data locality, bookmark lookup, write amplification, covering index (Day 6)
 - [x] External Sort — run generation, replacement selection, k-way merge, I/O pass 비용 공식 (Day 7)
 - [x] inode vs FAT — 연결 리스트 vs 포인터 배열, 랜덤 접근 복잡도, 저널링/손상 복구, extent 기반 단편화 완화 (Day 8)
-- [ ] Append-only 구조 — WAL, LSM-Tree (예정 Day 9)
+- [x] Append-only 구조 — tombstone, compaction, WAL, LSM-Tree(memtable/SSTable), Bloom filter, Read/Write/Space amplification (Day 9)
 - [ ] 종합 설계 모의 면접 (예정 Day 10)

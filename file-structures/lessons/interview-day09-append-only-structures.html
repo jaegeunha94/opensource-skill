@@ -1,0 +1,1034 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 9 — 대용량 로그/이벤트 저장 (Append-only, WAL, LSM-Tree) | 파일구조 면접 준비</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222535;
+      --border: #2e3147;
+      --accent: #5b8dee;
+      --accent2: #7c5cbf;
+      --green: #3ecf8e;
+      --red: #e25c5c;
+      --yellow: #f5a623;
+      --text: #e2e4f0;
+      --muted: #8b90a8;
+      --code-bg: #12141f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1f3c 0%, #12141f 100%);
+      border-bottom: 2px solid var(--accent2);
+      padding: 2.5rem 2rem;
+      margin: 0 -1rem 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent2);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .icon-q  { background: #2b1f4a; color: var(--accent2); }
+    .icon-pre { background: #1a2f3a; color: var(--accent); }
+    .icon-why { background: #2a2010; color: var(--yellow); }
+    .icon-real { background: #112a1f; color: var(--green); }
+    .icon-think { background: #1f2a3a; color: #a8c5f0; }
+    .icon-ans  { background: #1a2a1a; color: var(--green); }
+    .icon-trade { background: #2a1a1a; color: var(--red); }
+    .icon-myth  { background: #2a1f10; color: var(--yellow); }
+    .icon-follow { background: #1a1a2a; color: var(--accent2); }
+    .icon-diff  { background: #202020; color: #c0c0c0; }
+    .icon-rub  { background: #0e1e1a; color: var(--green); }
+
+    h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 1.25rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.85rem; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    li { margin-bottom: 0.35rem; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #2b1f4a 0%, #1a1d27 100%);
+      border: 1.5px solid var(--accent2);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #d4c8f5;
+      margin-bottom: 0.75rem;
+    }
+    .interview-sub {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.88rem;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+      font-size: 0.87rem;
+      line-height: 1.6;
+    }
+    pre code { background: none; border: none; padding: 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.85rem 0;
+      font-size: 0.92rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    td {
+      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+    .answer-block {
+      border-left: 3px solid;
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin: 0.85rem 0;
+    }
+    .answer-strong { border-color: var(--green); background: rgba(62,207,142,0.06); }
+    .answer-weak   { border-color: var(--red);   background: rgba(226,92,92,0.06); }
+    .answer-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+    .label-strong { color: var(--green); }
+    .label-weak   { color: var(--red); }
+
+    .step-list { counter-reset: step; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .step-list li:last-child { border-bottom: none; }
+    .step-list li::before {
+      content: counter(step);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 0.75rem 0;
+    }
+    .followup-q {
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+    }
+
+    .rubric-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .score-high { background: rgba(62,207,142,0.2); color: var(--green); }
+    .score-mid  { background: rgba(245,166,35,0.2); color: var(--yellow); }
+    .score-low  { background: rgba(226,92,92,0.2);  color: var(--red); }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.85rem 0;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+    .callout-info { background: rgba(91,141,238,0.08); border-left: 3px solid var(--accent); }
+    .callout-warn { background: rgba(245,166,35,0.08); border-left: 3px solid var(--yellow); }
+    .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin: 0.1rem;
+    }
+    .tag-blue { background: rgba(91,141,238,0.15); color: var(--accent); }
+    .tag-green { background: rgba(62,207,142,0.15); color: var(--green); }
+    .tag-yellow { background: rgba(245,166,35,0.15); color: var(--yellow); }
+
+    .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      color: #c9d0e8;
+      margin: 0.85rem 0;
+      white-space: pre;
+    }
+
+    nav.breadcrumb {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    nav.breadcrumb a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <nav class="breadcrumb">
+      <a href="../">파일구조 면접 준비</a> › <a href="./index.html">레슨 목록</a>
+    </nav>
+    <div class="day-badge">Interview Day 9</div>
+    <h1>대용량 로그/이벤트 저장 — Append-only 구조, WAL, LSM-Tree</h1>
+    <p class="subtitle">"수정을 허용하지 않고 끝에만 쓴다"는 제약이 오히려 쓰기 성능·복구·동시성을 어떻게 단순화하는지, 그리고 그 대가로 무엇을 잃는지</p>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-q">Q</div>
+      <h2>면접 질문</h2>
+    </div>
+    <div class="interview-q">
+      "Append-only 파일 구조는 어떤 장점과 단점이 있습니까?"
+    </div>
+    <p class="interview-sub">변형 질문 유형</p>
+    <ul>
+      <li>"DB는 왜 데이터를 바로 갱신하지 않고 WAL(Write-Ahead Log)에 먼저 기록합니까?"</li>
+      <li>"LSM-Tree는 B+Tree와 비교해 쓰기 성능이 왜 더 좋다고 알려져 있습니까? 대신 무엇을 희생합니까?"</li>
+      <li>"Append-only 구조에서 삭제(delete)나 갱신(update)은 실제로 어떻게 처리됩니까?"</li>
+      <li>"Kafka 같은 메시지 로그는 왜 append-only 구조를 쓰고, 그게 대용량 이벤트 처리에 왜 유리합니까?"</li>
+    </ul>
+  </div>
+
+  <!-- 2. 전제 개념 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">📖</div>
+      <h2>전제 개념 — 쉬운 한국어로 먼저 이해하기</h2>
+    </div>
+
+    <h3>9-1. "제자리 수정(in-place update)"이 디스크에서 왜 비싼가</h3>
+    <p>
+      Day 1에서 다뤘듯 디스크(특히 HDD)는 <strong>순차 접근이 랜덤 접근보다 훨씬 빠릅니다.</strong> 전통적인
+      파일이나 B+Tree 기반 저장 구조는 "레코드를 바꾸려면 그 레코드가 있는 원래 위치를 다시 찾아가서
+      덮어쓴다"는 in-place update 방식을 씁니다. 문제는 갱신이 몰릴수록 디스크 여기저기를 <strong>랜덤하게
+      찾아가서 쓰는(random write)</strong> 패턴이 반복된다는 점입니다. HDD는 이때마다 헤드가 이동(seek)해야
+      하고, SSD도 랜덤 쓰기가 순차 쓰기보다 느리고 쓰기 증폭(write amplification)이 커지는 특성이 있습니다.
+    </p>
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span>
+        <strong>Append-only의 핵심 아이디어:</strong> "기존 데이터를 절대 덮어쓰지 않고, 항상 파일의 맨 끝에만
+        새로 쓴다." 갱신도, 삭제도 전부 "새로운 레코드를 끝에 추가하는 것"으로 표현합니다. 그 결과 모든 쓰기가
+        순차 쓰기가 되어 디스크에 가장 유리한 접근 패턴만 사용하게 됩니다.
+      </span>
+    </div>
+
+    <div class="divider"></div>
+    <h3>9-2. Append-only가 갱신/삭제를 표현하는 방법 — Tombstone과 최신 버전 우선</h3>
+    <p>
+      키 <code>user:42</code>의 값을 "서울"에서 "부산"으로 바꾼다고 해봅시다. In-place 구조라면 기존 레코드를
+      찾아 덮어쓰지만, append-only 구조는 <strong>같은 키로 새 값을 파일 끝에 하나 더 씁니다.</strong> 읽을
+      때는 "그 키로 기록된 것 중 가장 최근 것"을 유효한 값으로 취급합니다. 삭제는 값 대신
+      <strong>tombstone(묘비 마커)</strong>이라는 특별한 레코드를 끝에 추가해서 "이 키는 삭제됨"을 표시합니다.
+    </p>
+    <div class="diagram">[ Append-only 로그 예시 — 시간 순으로 쌓임 ]
+
+offset 0: PUT user:42 = "서울"
+offset 1: PUT user:7  = "대전"
+offset 2: PUT user:42 = "부산"      <- user:42 갱신 (기존 값은 그대로 남아있음)
+offset 3: DEL user:7               <- user:7 삭제 (tombstone)
+offset 4: PUT user:42 = "인천"      <- 다시 갱신
+
+=> user:42 조회 시: offset 4("인천")가 가장 최근 값이므로 이것이 유효값
+=> user:7 조회 시: offset 3에 tombstone이 있으므로 "삭제됨"으로 처리
+=> offset 0, 1, 2는 더 이상 유효하지 않지만 파일에는 그대로 남아 공간을 차지함</div>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span>
+        <strong>핵심 문제:</strong> 이렇게 쌓기만 하면 무효화된 옛날 레코드가 파일에 계속 쌓여
+        <strong>파일이 무한히 커지고, 같은 키를 여러 번 읽어 최신 값을 찾는 비용도 늘어납니다.</strong>
+        이것을 정리하는 과정이 <strong>compaction</strong>입니다.
+      </span>
+    </div>
+
+    <div class="divider"></div>
+    <h3>9-3. Compaction — 쌓인 로그에서 "유효한 최신 값만" 남기기</h3>
+    <p>
+      Compaction은 append-only 로그(또는 여러 개의 로그 파일)를 읽어서, <strong>같은 키에 대해 가장 최신
+      값만 남기고 나머지(무효화된 값, tombstone까지 포함해 충분히 오래된 것)를 제거한 새 파일을 만드는
+      백그라운드 작업</strong>입니다. 이 작업도 결과물을 새 파일로 순차 쓰기 때문에, compaction 자체도
+      random write를 유발하지 않습니다.
+    </p>
+    <div class="diagram">[ Compaction 전/후 ]
+
+Compaction 전 (원본 로그, 4개 레코드):
+  user:42="서울", user:42="부산", user:7="대전", user:42="인천"
+
+Compaction 후 (같은 키는 최신 값만 남김, 2개 레코드):
+  user:7="대전", user:42="인천"
+
+=> 파일 크기 감소, 특정 키를 찾을 때 훑어야 할 레코드 수 감소</div>
+
+    <div class="divider"></div>
+    <h3>9-4. WAL(Write-Ahead Log) — "데이터를 바꾸기 전에, 바꾸겠다는 사실부터 순차 기록"</h3>
+    <p>
+      WAL은 append-only 아이디어를 <strong>장애 복구(durability)</strong>에 적용한 것입니다. DB가 실제
+      데이터 파일(보통 B+Tree 기반, in-place update)을 바로 수정하기 전에, "무엇을 바꿀 것인지"를
+      먼저 별도의 append-only 로그 파일에 순차적으로 기록합니다. 커밋은 "WAL에 순차 쓰기 + fsync가
+      끝났을 때" 완료된 것으로 간주하고, 실제 데이터 파일 반영(체크포인트)은 나중에 몰아서 처리해도
+      됩니다.
+    </p>
+    <div class="diagram">[ WAL을 사용하는 쓰기 흐름 ]
+
+1. 트랜잭션: "계좌 A에서 1000원 차감" 요청
+2. WAL에 순차 append: "계좌A -= 1000" 기록 + fsync
+3. 클라이언트에 커밋 완료 응답 (이 시점에 durability 보장됨)
+4. (나중에, 배치로) 실제 데이터 페이지(B+Tree 등)에 반영 = 체크포인트
+
+정전 발생 시 복구:
+  마지막 체크포인트 이후의 WAL 레코드를 순서대로 재생(replay)하면
+  정전 직전 상태를 그대로 복원할 수 있음</div>
+    <p>
+      즉 WAL은 "느린 랜덤 쓰기(실제 데이터 파일 반영)"를 커밋 경로에서 빼고, <strong>커밋의 durability를
+      빠른 순차 쓰기(로그)만으로 보장</strong>하는 기법입니다. 이는 Day 8에서 다룬 저널링 파일 시스템의
+      저널과 정확히 같은 원리를 DBMS 레벨에 적용한 것입니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>9-5. LSM-Tree — Append-only 쓰기와 인덱스를 결합한 저장 엔진 구조</h3>
+    <p>
+      LSM-Tree(Log-Structured Merge-Tree)는 "쓰기는 항상 순차적으로, 읽기는 인덱스로 빠르게"를 동시에
+      노리는 저장 엔진 설계입니다. B+Tree가 "쓰기 시점에 정렬된 구조를 바로 유지"하는 것과 달리, LSM-Tree는
+      <strong>쓰기를 메모리에 먼저 모았다가, 다 차면 정렬된 파일로 통째로 순차 디스크에 쓰고, 여러 개의 그런
+      파일을 나중에 백그라운드에서 병합(merge)</strong>합니다.
+    </p>
+    <div class="diagram">[ LSM-Tree 쓰기 경로 ]
+
+1. 쓰기 요청 -> WAL에 순차 append (durability 확보)
+2. 동시에 메모리 내 정렬 구조(memtable, 보통 skip list/균형트리)에 반영
+3. memtable이 일정 크기를 넘으면 -> 정렬된 상태 그대로
+   디스크에 하나의 불변(immutable) 파일로 순차 쓰기 = SSTable
+4. SSTable이 여러 개 쌓이면 -> 백그라운드 compaction이
+   여러 SSTable을 병합해 더 적은 수의, 최신 값만 남은 SSTable로 재구성
+
+[ LSM-Tree 읽기 경로 ]
+  1. memtable 확인 (가장 최신)
+  2. 최근 SSTable부터 오래된 순서로 확인
+  3. 각 SSTable 탐색 전 Bloom filter로 "이 SSTable에 키가 없을 가능성"을 빠르게 걸러냄
+  4. 발견하면 그 값이 최신값 (더 최신 SSTable/memtable에 없었으므로)</div>
+    <p>
+      핵심은 <strong>쓰기 경로에는 랜덤 디스크 쓰기가 전혀 없다</strong>는 것입니다. WAL도, SSTable 생성도
+      전부 순차 쓰기입니다. 대신 읽기는 memtable + 여러 SSTable을 순서대로 확인해야 할 수 있어 B+Tree
+      단일 구조보다 느려질 수 있고, 이를 Bloom filter와 compaction으로 완화합니다.
+    </p>
+
+    <div class="divider"></div>
+    <h3>9-6. RUM Conjecture — Read, Update(Write), Memory/Space 세 마리 토끼를 동시에 잡을 수 없다</h3>
+    <p>
+      저장 구조를 비교할 때 시니어 면접에서 특히 유용한 프레임이 <strong>Read amplification, Write
+      amplification, Space amplification</strong> 세 가지입니다.
+    </p>
+    <ul>
+      <li><strong>Read amplification</strong> — 논리적으로 1개의 값을 찾기 위해 실제로 몇 개의 파일/블록을 읽어야 하는가 (LSM-Tree는 여러 SSTable을 뒤질 수 있어 이 값이 큼)</li>
+      <li><strong>Write amplification</strong> — 논리적으로 1바이트를 쓰기 위해 실제로 디스크에 몇 바이트가 쓰이는가 (compaction이 반복되며 같은 데이터를 여러 번 다시 씀)</li>
+      <li><strong>Space amplification</strong> — 논리적 데이터 크기 대비 실제 디스크 사용량 (무효화된 옛 버전이 compaction 전까지 공간을 차지)</li>
+    </ul>
+    <p>
+      B+Tree(in-place)는 read amplification이 낮고 space amplification도 낮지만 random write 비용이
+      크고, LSM-Tree는 write 경로가 순차적이라 쓰기는 빠르지만 compaction으로 인한 write amplification과
+      다중 SSTable 탐색으로 인한 read amplification을 대가로 치릅니다. <strong>셋을 동시에 최소화할 수
+      없고, 워크로드에 맞춰 어느 것을 희생할지 선택하는 것</strong>이 저장 엔진 설계의 핵심입니다.
+    </p>
+  </div>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-why">?</div>
+      <h2>왜 면접에서 이 질문을 묻는가</h2>
+    </div>
+    <p>
+      "LSM-Tree라는 단어를 아는가"가 아니라, <strong>"쓰기 성능을 높이기 위해 어떤 것을 포기해야 하는지
+      스스로 추론하고, 그것이 실제 대용량 로그/이벤트/DB 시스템 설계에서 어떤 선택으로 이어지는지 설명할
+      수 있는가"</strong>를 봅니다. 이는 Day 1의 순차/랜덤 접근 비용 모델, Day 4의 B+Tree 구조 이해를
+      "쓰기가 매우 잦은 워크로드"라는 새로운 제약 조건에 적용할 수 있는지 확인하는 질문입니다.
+    </p>
+    <ol>
+      <li>
+        <strong>왜 순차 쓰기만 허용하면 쓰기 성능이 좋아지는지 원리를 설명할 수 있는가</strong><br>
+        random write를 제거해 디스크/SSD의 물리적 특성에 맞춘 설계라는 점을 근거로 들 수 있어야 합니다.
+      </li>
+      <li>
+        <strong>"공짜 점심은 없다"를 이해하는가 — 무엇을 대가로 치르는지 아는가</strong><br>
+        Read/Write/Space amplification 중 무엇을 얻고 무엇을 잃는지 설명할 수 있어야 합니다.
+      </li>
+      <li>
+        <strong>WAL과 LSM-Tree가 같은 원리(순차 쓰기 우선)의 서로 다른 적용이라는 것을 연결할 수 있는가</strong><br>
+        WAL은 durability, LSM-Tree는 저장 엔진 전체 구조라는 적용 범위 차이를 구분해야 합니다.
+      </li>
+      <li>
+        <strong>실제 시스템(Kafka, RocksDB, Cassandra, DB의 redo log)과 연결해 말할 수 있는가</strong><br>
+        추상적 정의가 아니라 실무에서 마주치는 구체적 시스템의 설계 이유로 답할 수 있어야 합니다.
+      </li>
+    </ol>
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <span>
+        주니어 수준 답변: "append-only는 그냥 계속 뒤에 쓰는 거고, 로그 파일 같은 거예요."<br>
+        10년차 기대 답변: "append-only는 random write를 없애 순차 쓰기 성능(HDD의 seek 제거, SSD의 쓰기
+        증폭 완화)을 얻는 대신, 무효화된 옛 버전이 계속 쌓여 공간과 읽기 비용이 늘어나는 문제가 생깁니다.
+        이를 compaction으로 주기적으로 정리하고, 그 과정에서 write amplification이라는 새로운 비용이
+        발생합니다. WAL은 이 아이디어를 durability에, LSM-Tree는 저장 엔진 전체 구조에 적용한 것이고,
+        쓰기가 매우 잦고 읽기는 상대적으로 덜 민감한 워크로드(로그 수집, 이벤트 스트림, 쓰기 위주 DB)에서
+        B+Tree 기반 in-place 구조보다 유리합니다."
+      </span>
+    </div>
+  </div>
+
+  <!-- 4. 실무 연결 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-real">⚙</div>
+      <h2>실무 연결</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>실무 상황</th>
+          <th>Append-only / WAL / LSM-Tree 판단</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>RDBMS의 durability 보장 (PostgreSQL WAL, MySQL InnoDB redo log)</strong></td>
+          <td>
+            트랜잭션 커밋 시 실제 데이터 페이지가 아니라 WAL을 순차 fsync하는 것만으로 커밋을 확정합니다.
+            정전 후에는 마지막 체크포인트 이후 WAL을 재생해 복구합니다. "왜 커밋이 상대적으로 빠른가"를
+            설명할 때 핵심 근거가 됩니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>쓰기 위주(write-heavy) 워크로드의 저장 엔진 선택 (RocksDB, Cassandra, LevelDB)</strong></td>
+          <td>
+            시계열 데이터, 이벤트 로그, IoT 센서 데이터처럼 쓰기 비율이 압도적으로 높고 최신 데이터 위주로
+            조회하는 워크로드는 LSM-Tree 기반 스토리지가 B+Tree 기반보다 쓰기 처리량에서 유리한 경우가
+            많습니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Kafka 같은 메시지/이벤트 로그 저장</strong></td>
+          <td>
+            Kafka의 파티션 로그는 append-only이며 메시지는 절대 수정되지 않고 offset으로만 참조됩니다.
+            순차 쓰기/읽기 위주로 설계되어 있어 매우 높은 처리량을 낼 수 있고, 오래된 세그먼트는 시간/용량
+            기준으로 통째로 삭제(로그 세그먼트 단위 정리)하는 방식으로 "compaction"과 유사한 정리를
+            수행합니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Compaction 전략으로 인한 운영 이슈 대응</strong></td>
+          <td>
+            LSM-Tree 기반 DB(RocksDB, Cassandra 등)를 운영하다 보면 compaction이 CPU/디스크 I/O를
+            급격히 소모해 지연시간 스파이크를 유발하는 경우가 있습니다. compaction 전략(leveled vs
+            size-tiered)과 throttling 설정을 조정해 이 trade-off를 관리하는 것이 실무 튜닝 포인트입니다.
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Event Sourcing / 감사 로그(audit log) 설계</strong></td>
+          <td>
+            "상태를 직접 갱신하지 않고 발생한 이벤트를 append-only로 쌓은 뒤 현재 상태를 재생으로
+            계산한다"는 아키텍처는 append-only 파일 구조의 아이디어를 애플리케이션 데이터 모델 레벨로
+            확장한 것입니다. 변경 이력이 그대로 보존되어 감사·재현·디버깅에 유리합니다.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 5. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-think">→</div>
+      <h2>답변 사고 순서 — 면접에서 이렇게 생각하면서 말한다</h2>
+    </div>
+    <ol class="step-list">
+      <li>
+        <div>
+          <strong>왜 순차 쓰기가 유리한지 원리부터 짚는다</strong><br>
+          Day 1의 sequential vs random access 비용 차이를 다시 소환해 "append-only = random write 제거"라는
+          핵심 아이디어로 연결합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>갱신/삭제를 어떻게 표현하는지 설명한다</strong><br>
+          같은 키의 새 레코드 추가, tombstone을 통한 삭제 표현, "최신 값 우선" 규칙을 짚습니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>쌓인 무효 데이터를 어떻게 정리하는지(compaction) 설명한다</strong><br>
+          compaction이 공간을 회수하고 읽기 비용을 낮추지만 새로운 I/O(write amplification)를 유발한다는
+          점을 짚습니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>같은 원리의 두 가지 적용(WAL, LSM-Tree)으로 확장한다</strong><br>
+          WAL은 durability에, LSM-Tree는 저장 엔진 전체 구조에 적용된 사례임을 구분해 설명합니다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Read/Write/Space amplification trade-off로 마무리한다</strong><br>
+          "무엇을 얻고 무엇을 잃는가"를 명시적으로 말하고, 워크로드 특성(쓰기 위주 vs 읽기 위주)에 따라
+          선택이 달라진다는 결론을 냅니다.
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-ans">✓</div>
+      <h2>핵심 답변 예시</h2>
+    </div>
+
+    <h3>짧은 버전 (1~2분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Short)</div>
+      <p>
+        Append-only 구조는 기존 데이터를 절대 덮어쓰지 않고 항상 파일 끝에만 씁니다. 갱신은 같은 키로 새
+        레코드를 추가하고, 삭제는 tombstone을 추가하는 방식으로 표현하며, 읽을 때는 가장 최신 레코드를
+        유효값으로 취급합니다. 모든 쓰기가 순차 쓰기가 되어 랜덤 쓰기 비용을 없애는 대신, 무효화된 옛
+        버전이 계속 쌓이므로 compaction으로 주기적으로 정리해야 합니다. WAL은 이 아이디어를 트랜잭션
+        durability에, LSM-Tree는 저장 엔진 전체 구조에 적용한 사례이고, 쓰기가 매우 잦은 워크로드에서
+        B+Tree 기반 in-place 구조보다 쓰기 성능이 유리한 대신 읽기와 공간 사용에서 대가를 치릅니다.
+      </p>
+    </div>
+
+    <h3>깊이 있는 버전 (3~5분 답변)</h3>
+    <div class="answer-block answer-strong">
+      <div class="answer-label label-strong">강한 답변 (Deep)</div>
+      <p>
+        Append-only 구조의 출발점은 "디스크는 순차 접근이 랜덤 접근보다 훨씬 빠르다"는 물리적 특성입니다.
+        전통적인 in-place update 구조는 갱신할 때마다 원래 레코드 위치를 찾아가 덮어써야 해서, 갱신이
+        잦을수록 랜덤 쓰기가 반복됩니다. Append-only는 이 문제를 근본적으로 없앱니다 — 갱신도 삭제도
+        전부 "파일 끝에 새 레코드를 추가하는 것"으로 표현하기 때문에 디스크에는 오직 순차 쓰기만
+        발생합니다.
+      </p>
+      <p>
+        구체적으로는 같은 키에 대해 새 값을 append하면 그것이 최신값이 되고, 삭제는 tombstone이라는
+        특수 레코드를 append해서 표현합니다. 읽을 때는 그 키에 대해 기록된 것 중 가장 최근 것을 유효값으로
+        판단합니다. 문제는 이렇게 쌓기만 하면 무효화된 과거 버전이 파일에 계속 남아 공간을 낭비하고,
+        특정 키의 최신 값을 찾기 위해 훑어야 할 데이터도 늘어난다는 점입니다. 이를 해결하는 것이
+        compaction — 여러 레코드/파일을 읽어 키별 최신 값만 남긴 새 파일을 만드는 백그라운드 작업입니다.
+        compaction 자체도 결과물을 순차 쓰기 때문에 랜덤 쓰기를 유발하지 않지만, 같은 데이터를 여러 번
+        다시 쓰게 되므로 write amplification이라는 비용이 발생합니다.
+      </p>
+      <p>
+        이 원리는 두 가지 층위에 적용됩니다. 첫째, WAL(Write-Ahead Log)은 DBMS가 실제 데이터 페이지를
+        수정하기 전에 "무엇을 바꿀 것인지"를 먼저 순차 로그에 기록하고, 그 로그의 fsync가 끝나면 커밋을
+        확정합니다. 실제 데이터 파일 반영(체크포인트)은 나중에 몰아서 처리해도 되므로, 커밋 경로에서
+        느린 랜덤 쓰기를 제거하면서도 정전 시에는 로그를 재생해 durability를 보장할 수 있습니다. 둘째,
+        LSM-Tree는 이 아이디어를 저장 엔진 전체 구조로 확장한 것입니다. 쓰기는 메모리 내 정렬 구조
+        (memtable)에 먼저 반영되고, 일정 크기가 차면 정렬된 상태 그대로 디스크에 불변 파일(SSTable)로
+        순차 저장됩니다. 이 SSTable들이 쌓이면 백그라운드 compaction이 병합해 최신 값만 남은 더 적은
+        수의 SSTable로 재구성합니다. 읽기는 memtable부터 최근 SSTable 순으로 확인하며, Bloom filter로
+        불필요한 SSTable 탐색을 걸러냅니다.
+      </p>
+      <p>
+        결국 이것은 Read amplification, Write amplification, Space amplification 세 가지를 동시에
+        최소화할 수 없다는 trade-off로 요약됩니다. B+Tree 기반 in-place 구조는 read/space amplification이
+        낮은 대신 random write 비용이 크고, LSM-Tree는 순차 쓰기로 쓰기 처리량은 높이지만 compaction으로
+        인한 write amplification과 다중 SSTable 탐색으로 인한 read amplification을 대가로 치릅니다.
+        그래서 쓰기가 매우 잦고 최신 데이터 위주로 조회하는 워크로드(로그 수집, 이벤트 스트림, 시계열
+        데이터)는 LSM-Tree/append-only 계열이 유리하고, 읽기 비율이 높고 갱신이 상대적으로 적은
+        워크로드는 B+Tree 기반이 여전히 유리한 경우가 많습니다.
+      </p>
+    </div>
+
+    <div class="answer-block answer-weak">
+      <div class="answer-label label-weak">약한 답변</div>
+      <p>
+        "append-only는 그냥 파일 뒤에 계속 쓰는 거라 빠릅니다. 로그 파일이나 Kafka 같은 데서 씁니다."
+      </p>
+      <p>
+        <strong>왜 약한가:</strong> "빠르다"의 근거(random write 제거)를 설명하지 못했고, 갱신/삭제를
+        어떻게 표현하는지, 쌓인 무효 데이터를 어떻게 정리하는지(compaction), 그 대가로 무엇을 잃는지
+        (write/read/space amplification)를 전혀 다루지 못했습니다. "빠르다"는 결론만 있고 trade-off가
+        없는 답변은 10년차 기준에서 정의 암기 수준으로 평가됩니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 7. Trade-off -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-trade">⇄</div>
+      <h2>Trade-off 정리</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>In-place update (B+Tree 등)</th>
+          <th>Append-only / LSM-Tree</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>쓰기 패턴</td>
+          <td>갱신 위치를 찾아 덮어씀 — random write 발생 가능</td>
+          <td>항상 파일 끝에 추가 — 순차 쓰기만 발생</td>
+        </tr>
+        <tr>
+          <td>쓰기 처리량(특히 쓰기 위주 워크로드)</td>
+          <td>랜덤 쓰기 비용에 제약받음</td>
+          <td>순차 쓰기 위주라 일반적으로 더 높음</td>
+        </tr>
+        <tr>
+          <td>Read amplification</td>
+          <td>낮음 — 인덱스로 바로 위치 확인</td>
+          <td>높아질 수 있음 — memtable + 여러 SSTable 확인 필요</td>
+        </tr>
+        <tr>
+          <td>Write amplification</td>
+          <td>상대적으로 낮음 — 필요한 페이지만 갱신</td>
+          <td>compaction으로 같은 데이터를 반복해서 다시 씀</td>
+        </tr>
+        <tr>
+          <td>Space amplification</td>
+          <td>낮음 — 최신 값만 저장</td>
+          <td>compaction 전까지 무효화된 옛 버전이 공간 차지</td>
+        </tr>
+        <tr>
+          <td>삭제/갱신 표현</td>
+          <td>제자리 수정/삭제</td>
+          <td>새 레코드 추가 / tombstone 추가</td>
+        </tr>
+        <tr>
+          <td>백그라운드 유지보수 비용</td>
+          <td>상대적으로 적음</td>
+          <td>compaction이 CPU/I/O를 상당히 소모</td>
+        </tr>
+        <tr>
+          <td>대표 사용처</td>
+          <td>읽기 비율 높은 OLTP, 전통적 RDBMS 인덱스</td>
+          <td>쓰기 위주 워크로드(시계열, 로그, 이벤트), RocksDB/Cassandra/LevelDB, Kafka</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span>
+        면접에서는 "LSM-Tree가 B+Tree보다 항상 좋다"가 아니라, <strong>"쓰기/읽기/공간 중 무엇을
+        우선하느냐에 따라 선택이 달라진다"</strong>(RUM conjecture)는 점을 강조하는 것이 중요합니다.
+      </span>
+    </div>
+  </div>
+
+  <!-- 8. 흔한 오해 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-myth">✗</div>
+      <h2>흔한 오해와 바로잡기</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 1: "append-only는 그냥 순차로 쓰기만 하니 인덱스가 필요 없다"</div>
+      <p>
+        Append-only 로그만 있으면 특정 키를 찾기 위해 파일 전체를 훑어야(O(n)) 합니다. 실무 시스템은
+        append-only 로그 위에 별도의 인메모리 인덱스(hash map, memtable의 skip list 등)나 SSTable 내부
+        정렬 + sparse index를 결합해서 조회 성능을 확보합니다. "순차 쓰기 = 인덱스 불필요"는 잘못된
+        일반화입니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 2: "LSM-Tree는 무조건 B+Tree보다 빠르다"</div>
+      <p>
+        LSM-Tree는 <strong>쓰기</strong> 처리량에서 유리한 경우가 많을 뿐, 읽기(특히 점 조회 read 비율이
+        높은 워크로드)에서는 여러 SSTable을 확인해야 해서 오히려 B+Tree보다 느릴 수 있습니다. Bloom
+        filter, 캐싱, compaction 전략으로 이를 완화하지만 근본적인 read amplification trade-off는
+        여전히 존재합니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 3: "WAL이 있으면 체크포인트(실제 데이터 반영)는 안 해도 된다"</div>
+      <p>
+        WAL만 계속 쌓이고 체크포인트가 없으면 로그가 무한히 커지고, 장애 복구 시 재생해야 할 로그 양도
+        늘어나 복구 시간이 길어집니다. 체크포인트는 "이 시점까지의 WAL 내용은 데이터 파일에 이미
+        반영됐다"는 지점을 만들어 로그를 자를 수 있게 하는 필수 과정입니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">오해 4: "compaction은 선택 사항이며, 안 해도 정합성에는 문제가 없다"</div>
+      <p>
+        정합성(어떤 값이 최신인가) 자체는 compaction 없이도 "가장 최근 레코드 우선" 규칙으로 유지됩니다.
+        하지만 compaction 없이는 파일이 무한히 커지고 조회 시 훑어야 할 무효 레코드가 계속 늘어나
+        실질적으로 운영이 불가능해집니다. compaction은 정합성이 아니라 <strong>공간/성능 유지</strong>를
+        위한 필수 유지보수 작업입니다.
+        <span class="tag tag-yellow">미신</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- 9. Follow-up 질문 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-follow">↓</div>
+      <h2>Senior-Level Follow-up 질문과 답변 방향</h2>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "Leveled compaction과 Size-tiered compaction은 어떤 trade-off 차이가 있습니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        Size-tiered는 비슷한 크기의 SSTable들을 모아 하나로 합치는 방식으로, 쓰기 증폭은 상대적으로 적지만
+        같은 키가 여러 레벨의 SSTable에 중복될 수 있어 space amplification과 read amplification이
+        커지기 쉽습니다. Leveled compaction(RocksDB의 기본 전략 등)은 각 레벨 내에서는 키 범위가 겹치지
+        않도록 유지해 read/space amplification을 줄이지만, 데이터를 레벨 간 이동시키며 다시 쓰는 빈도가
+        높아 write amplification이 커집니다. 쓰기 위주 워크로드는 size-tiered, 읽기/공간 효율이 중요한
+        워크로드는 leveled를 선호하는 경향이 있습니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "Bloom filter는 LSM-Tree의 읽기 성능을 어떻게, 왜 개선합니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        Bloom filter는 "이 키가 이 SSTable에 확실히 없다" 또는 "있을 수도 있다"를 매우 빠르게(디스크 접근
+        없이 메모리에서) 판단하는 확률적 자료구조입니다. false negative는 없고 false positive만 존재하므로,
+        "없다"는 답이 나오면 그 SSTable을 디스크에서 읽을 필요 없이 건너뛸 수 있습니다. SSTable이 많을수록
+        불필요한 디스크 접근을 크게 줄여 read amplification을 완화하는 핵심 도구입니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "WAL을 쓰는 DB에서 fsync를 매 커밋마다 하지 않으면 무엇을 잃습니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        fsync는 OS 버퍼 캐시에 있는 데이터를 실제 물리 디스크에 확실히 내려쓰도록 강제하는 호출입니다.
+        매 커밋마다 fsync하지 않으면 "커밋 완료" 응답 이후에도 데이터가 실제로는 아직 디스크가 아니라
+        메모리(OS 캐시)에만 있을 수 있고, 그 사이 정전이 나면 커밋했다고 응답받은 트랜잭션이 사라질 수
+        있습니다. 이는 durability(ACID의 D)를 잃는 것이며, 대신 커밋 지연시간과 처리량을 얻는 명시적인
+        trade-off(예: PostgreSQL의 <code>synchronous_commit</code> 옵션)입니다.
+      </p>
+    </div>
+
+    <div class="followup">
+      <div class="followup-q">
+        "Kafka 파티션 로그가 append-only라는 것이 컨슈머(consumer) 설계에 어떤 영향을 줍니까?"
+      </div>
+      <p>
+        <strong>답변 방향:</strong>
+        메시지가 절대 수정되지 않고 순서가 고정된 offset으로만 참조되므로, 컨슈머는 "어디까지 읽었는지"를
+        단순한 offset 커밋만으로 추적할 수 있고, 장애 후에도 마지막 커밋 offset부터 재개하면 됩니다.
+        또한 여러 컨슈머가 같은 로그를 독립적으로, 서로 다른 속도로 읽어도 로그 자체는 변하지 않으므로
+        재처리(replay)나 여러 소비자 그룹 지원이 자연스럽게 가능해집니다. 이는 append-only가 동시성
+        제어를 단순화하는 대표적인 사례입니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 10. 좋은 답변과 약한 답변 차이 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-diff">≠</div>
+      <h2>좋은 답변과 약한 답변의 차이</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>약한 답변 (5년차 이하)</th>
+          <th>강한 답변 (10년차 이상)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>append-only가 빠른 이유</td>
+          <td>"그냥 뒤에 쓰니까 빠르다"</td>
+          <td>"random write를 제거해 순차 쓰기만 발생시키는 것이 근본 원리"</td>
+        </tr>
+        <tr>
+          <td>갱신/삭제 처리</td>
+          <td>모르거나 언급 없음</td>
+          <td>"같은 키의 새 레코드 추가 + tombstone, 최신 레코드 우선 규칙으로 표현"</td>
+        </tr>
+        <tr>
+          <td>쌓인 데이터 정리</td>
+          <td>없음</td>
+          <td>"compaction으로 정리하지만 그 자체가 write amplification을 유발"</td>
+        </tr>
+        <tr>
+          <td>대가(trade-off) 인식</td>
+          <td>"빠르기만 하다"</td>
+          <td>"Read/Write/Space amplification 중 어떤 것을 얻고 잃는지 명확히 구분"</td>
+        </tr>
+        <tr>
+          <td>실제 시스템 연결</td>
+          <td>"로그 파일에서 쓴다" 수준</td>
+          <td>WAL(durability), LSM-Tree(저장 엔진), Kafka(이벤트 로그)를 구분해 설명</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 11. Self-check Rubric -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-rub">✓</div>
+      <h2>자기 점검 Rubric</h2>
+    </div>
+    <p>답변 연습 후 아래 기준으로 자신을 평가하세요.</p>
+
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>append-only가 왜 순차 쓰기만 유발하는지 설명했다</strong><br>
+        random write 제거가 핵심 원리라는 것을 Day 1의 접근 패턴 비용 모델과 연결했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>갱신/삭제를 tombstone과 최신 레코드 우선 규칙으로 설명했다</strong><br>
+        in-place 수정 없이도 논리적 갱신/삭제가 가능한 원리를 짚었다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-high">필수</span>
+      <div>
+        <strong>compaction의 역할과 그로 인한 write amplification을 설명했다</strong><br>
+        정리 작업이 공짜가 아니라는 것을 인지했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>WAL과 LSM-Tree를 같은 원리의 서로 다른 적용으로 구분했다</strong><br>
+        durability 목적(WAL)과 저장 엔진 구조(LSM-Tree)의 차이를 명확히 했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>Read/Write/Space amplification trade-off를 언급했다</strong><br>
+        세 가지를 동시에 최소화할 수 없다는 것을 워크로드 선택 기준으로 연결했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-mid">권장</span>
+      <div>
+        <strong>실제 시스템(Kafka, RocksDB/Cassandra, PostgreSQL WAL 등)과 연결했다</strong><br>
+        추상 개념이 아니라 구체적 운영 사례로 설명했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>Leveled vs Size-tiered compaction 전략의 차이를 설명했다</strong><br>
+        compaction 전략 선택이 워크로드에 따라 달라진다는 것까지 이해했다.
+      </div>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-score score-low">심화</span>
+      <div>
+        <strong>Bloom filter가 read amplification을 완화하는 원리를 설명했다</strong><br>
+        확률적 자료구조가 LSM-Tree 읽기 경로에 어떻게 결합되는지 구체적으로 말했다.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="callout callout-info">
+      <span class="callout-icon">📊</span>
+      <span>
+        <strong>자가 평가:</strong>
+        '필수' 3개 모두 → 합격 수준 |
+        '권장' 3개 추가 → 좋은 인상 |
+        '심화' 포함 → 탑티어 후보
+      </span>
+    </div>
+  </div>
+
+  <!-- 12. 다음 레슨 예고 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-pre">→</div>
+      <h2>다음 레슨 예고 — Day 10: 종합 모의 면접</h2>
+    </div>
+    <p>
+      다음 레슨에서는 "검색 요구사항을 받고 저장 구조와 인덱스를 설계해보세요"라는 종합 설계 질문을
+      다룹니다. Day 1~9에서 배운 접근 패턴 분석, 파일 조직 선택, 인덱스 구조, B-Tree/B+Tree, 해싱,
+      클러스터링, 외부 정렬, 파일 시스템, append-only 구조를 하나의 설계 답변으로 통합하는 연습입니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th>주제</th><th>면접 핵심 질문</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>요구사항 분석</td>
+          <td>주어진 조회/쓰기 패턴에서 어떤 정보를 먼저 확인해야 하는가?</td>
+        </tr>
+        <tr>
+          <td>구조 선택</td>
+          <td>Day 1~9의 구조 중 어떤 조합이 이 요구사항에 맞는가?</td>
+        </tr>
+        <tr>
+          <td>비용 추정과 커뮤니케이션</td>
+          <td>선택한 설계의 I/O 비용과 trade-off를 면접관에게 어떻게 설명하는가?</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <span class="tag tag-blue">종합 설계</span>
+      <span class="tag tag-green">접근 패턴 분석</span>
+      <span class="tag tag-yellow">운영 비용</span>
+      Day 1~9의 개념을 하나의 설계 답변으로 통합하는 마무리 레슨입니다.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>
