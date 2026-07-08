@@ -12,17 +12,17 @@
 | 6 | 2026-07-05 | S3 설계와 보안 | [0006-s3-design-and-security.html](lessons/0006-s3-design-and-security.html) |
 | 7 | 2026-07-06 | ELB와 트래픽 설계 | [0007-elb-traffic-design.html](lessons/0007-elb-traffic-design.html) |
 | 8 | 2026-07-07 | CloudWatch와 운영 가시성 | [0008-cloudwatch-operational-visibility.html](lessons/0008-cloudwatch-operational-visibility.html) |
+| 9 | 2026-07-08 | 비용 최적화 전략 | [0009-cost-optimization-strategy.html](lessons/0009-cost-optimization-strategy.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | 비용 최적화 전략 | 예약 인스턴스, Savings Plans, Spot, 리소스 태깅, Trusted Advisor, 비용 이상 탐지 |
 | 10 | 종합 아키텍처 설계 면접 — 웹 서비스 고가용성 설계 | 전 주제 통합, Multi-AZ + ASG + RDS + S3 + CloudFront 조합 설계 |
 
 ## 현재 학습 위치
 
-**Day 8 완료** — Day 9: 비용 최적화 전략으로 진행 예정.
+**Day 9 완료** — Day 10: 종합 아키텍처 설계 면접으로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -62,5 +62,8 @@
 - [x] Composite Alarm과 Anomaly Detection을 통한 알람 노이즈 관리 (Day 8)
 - [x] CloudWatch와 Auto Scaling의 연동 구조 (Day 8)
 - [x] Logs Insights를 통한 근본 원인 추적과 비용 효율적 모니터링 설계 (Day 8)
-- [ ] 비용 최적화 전략 (예정 Day 9)
+- [x] On-Demand vs RI vs Savings Plans vs Spot 구매 모델 트레이드오프 (Day 9)
+- [x] 커밋먼트 리스크와 Right-sizing 우선순위 (Day 9)
+- [x] 비용 태깅과 Cost Explorer를 통한 비용 가시성 확보 (Day 9)
+- [x] Trusted Advisor와 Cost Anomaly Detection을 통한 지속적 비용 관리 (Day 9)
 - [ ] 종합 아키텍처 설계 (예정 Day 10)
