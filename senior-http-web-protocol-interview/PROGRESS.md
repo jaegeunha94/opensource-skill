@@ -10,19 +10,19 @@
 | 4 | 2026-07-05 | HTTP Headers 심화 — 요청/응답 헤더로 트래픽을 읽는 법 | [0004-http-headers-deep-dive.html](lessons/0004-http-headers-deep-dive.html) |
 | 5 | 2026-07-06 | Content Negotiation과 Vary 캐시 오염 — Accept/Vary가 만드는 캐시 사고 | [0005-content-negotiation-vary-cache-pollution.html](lessons/0005-content-negotiation-vary-cache-pollution.html) |
 | 6 | 2026-07-07 | Cookies & Session 관리 — SameSite, Secure, HttpOnly, 세션 vs 토큰 trade-off | [0006-cookies-session-management.html](lessons/0006-cookies-session-management.html) |
+| 7 | 2026-07-08 | CORS 심화 — Preflight, credentials, Vary: Origin과 실전 트러블슈팅 | [0007-cors-preflight-credentials.html](lessons/0007-cors-preflight-credentials.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | CORS 심화 | Preflight 요청, credentials, 실전 CORS 장애 트러블슈팅 |
 | 8 | Cache-Control 심화 | freshness, private/public, no-cache vs no-store, 캐시 계층별 해석 |
 | 9 | ETag와 조건부 요청 | If-None-Match, If-Modified-Since, 검증 캐시와 대역폭 절감 |
 | 10 | Compression | gzip/br, Content-Encoding, CPU-대역폭 trade-off |
 
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음: Day 7 — CORS 심화
+**Day 7 완료** — 다음: Day 8 — Cache-Control 심화
 
 ## 습득한 핵심 개념
 
@@ -48,4 +48,9 @@
 - [x] HttpOnly/Secure/SameSite가 각각 다른 공격을 막는 인과관계 (Day 6)
 - [x] SameSite=Strict/Lax/None 차이와 브라우저 기본값 변화 (Day 6)
 - [x] 세션 vs 토큰 trade-off와 Access+Refresh Token 절충 설계 (Day 6)
-- [ ] CORS Preflight가 발생하는 조건 (예정 Day 7)
+- [x] Same-Origin Policy와 CORS의 관계, CORS가 브라우저에서 강제되는 규칙이라는 것 (Day 7)
+- [x] Simple Request vs Preflighted Request 판단 기준 (Day 7)
+- [x] credentials 포함 요청에서 Access-Control-Allow-Origin: *가 불가능한 이유 (Day 7)
+- [x] Vary: Origin으로 CORS 응답의 캐시 오염을 막는 원리 (Day 7)
+- [x] Origin 무조건 반사 + Allow-Credentials 조합의 보안 취약점 (Day 7)
+- [ ] Cache-Control의 freshness, private/public, no-cache vs no-store 구분 (예정 Day 8)
