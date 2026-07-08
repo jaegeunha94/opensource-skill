@@ -12,17 +12,17 @@
 | 6 | 2026-07-05 | 대시보드 설계 원칙 | [0006-dashboard-design-principles.html](lessons/0006-dashboard-design-principles.html) |
 | 7 | 2026-07-06 | SLO / SLI / SLA와 Error Budget | [0007-slo-sli-sla-error-budget.html](lessons/0007-slo-sli-sla-error-budget.html) |
 | 8 | 2026-07-07 | Postmortem 작성과 재발 방지 | [0008-postmortem-and-recurrence-prevention.html](lessons/0008-postmortem-and-recurrence-prevention.html) |
+| 9 | 2026-07-08 | 장애 커뮤니케이션 | [0009-incident-communication.html](lessons/0009-incident-communication.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | 장애 커뮤니케이션 | 이해관계자 보고, 에스컬레이션, 장애 브리핑 |
 | 10 | 대규모 관측성 아키텍처 | 파이프라인 설계, 비용 trade-off, 카디널리티 |
 
 ## 현재 학습 위치
 
-**Day 8 완료** — Day 9 (장애 커뮤니케이션) 예정.
+**Day 9 완료** — Day 10 (대규모 관측성 아키텍처) 예정.
 
 ## 습득한 핵심 개념
 
@@ -55,4 +55,8 @@
 - [x] 장애 보고서 표준 구조(요약/임팩트/타임라인/근본원인/액션아이템) (Day 8)
 - [x] 액션 아이템 방치("postmortem 무덤") 방지 구조(담당자/기한/추적) (Day 8)
 - [x] 심각도별 postmortem 프로세스 차등화 (Day 8)
-- [ ] 이해관계자 보고와 에스컬레이션 기준 (예정 Day 9)
+- [x] Incident Commander 역할 분리와 이유 (Day 9)
+- [x] 심각도별 Who/What/When/How 커뮤니케이션 매트릭스 (Day 9)
+- [x] 정량적 에스컬레이션 기준 설계 (Day 9)
+- [x] 내부/외부 커뮤니케이션 언어 차이 (Day 9)
+- [ ] 대규모 관측성 파이프라인과 카디널리티 trade-off (예정 Day 10)
