@@ -12,17 +12,17 @@
 | 6 | 2026-07-05 | API 보안 — 인증, 속도 제한, 데이터 노출 | [0006-api-security.html](lessons/0006-api-security.html) |
 | 7 | 2026-07-06 | 비밀번호 저장과 크리덴셜 보호 | [0007-password-storage-credential-protection.html](lessons/0007-password-storage-credential-protection.html) |
 | 8 | 2026-07-07 | Secret 관리와 환경 변수 전략 | [0008-secret-management.html](lessons/0008-secret-management.html) |
+| 9 | 2026-07-08 | Secure Coding 원칙과 코드 리뷰 | [0009-secure-coding-principles-code-review.html](lessons/0009-secure-coding-principles-code-review.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | Secure Coding 원칙 | 입력 검증, 최소 권한, 보안 기본값, 코드 리뷰 |
 | 10 | 종합 케이스 스터디 | 실제 침해 사례 분석, 설계 리뷰 |
 
 ## 현재 학습 위치
 
-**Day 8 완료** — Day 9 (Secure Coding 원칙과 코드 리뷰)이 다음 차례.
+**Day 9 완료** — Day 10 (종합 보안 설계 케이스 스터디)이 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -69,4 +69,8 @@
 - [x] 정적 vs 동적 Secret과 무중단 로테이션(overlap window) 설계 (Day 8)
 - [x] CI/CD Secret 노출 위험 — fork PR, pull_request_target, 서드파티 액션 공급망 침해 (Day 8)
 - [x] Envelope Encryption — KEK/DEK 계층 구조와 HSM 기반 키 관리 (Day 8)
-- [ ] Secure Coding 원칙 — 입력 검증, 최소 권한, 보안 기본값, 코드 리뷰 (예정 Day 9)
+- [x] 입력 검증 — 화이트리스트 vs 블랙리스트, 클라이언트 검증과 신뢰 경계의 차이 (Day 9)
+- [x] 최소 권한 원칙의 코드/인프라 레벨 적용 — DB 계정, 서비스 간 통신, IAM 세분화 (Day 9)
+- [x] 보안 기본값 — Fail-Open vs Fail-Closed, 기능 민감도에 따른 trade-off (Day 9)
+- [x] 코드 리뷰 프로세스의 구조적 방어 — SAST/SCA, 조건부 체크리스트, 표준 테스트 템플릿 (Day 9)
+- [ ] 종합 보안 설계 케이스 스터디 — 실제 침해 사례 분석, 재발 방지 설계 (예정 Day 10)

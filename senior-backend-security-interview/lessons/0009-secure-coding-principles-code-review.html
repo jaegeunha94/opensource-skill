@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 9 — Secure Coding 원칙과 코드 리뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #252836;
+      --border: #2e3147;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --blue: #3b82f6;
+      --cyan: #06b6d4;
+      --orange: #f97316;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 0 2rem;
+      margin-bottom: 3rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      margin-bottom: 1rem;
+    }
+    h1 { font-size: 2rem; font-weight: 800; line-height: 1.25; margin-bottom: 0.75rem; }
+    .subtitle { color: var(--muted); font-size: 1rem; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 3rem 0 1.25rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--accent-light);
+    }
+    h3 { font-size: 1.1rem; font-weight: 700; margin: 2rem 0 0.75rem; color: var(--cyan); }
+    h4 { font-size: 0.95rem; font-weight: 700; margin: 1.5rem 0 0.5rem; color: var(--yellow); }
+    p { margin-bottom: 1rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.4rem; }
+    strong { color: #fff; font-weight: 700; }
+    code {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.88em;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      color: var(--cyan);
+    }
+    pre {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    pre code { background: none; border: none; padding: 0; color: var(--text); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin: 1.25rem 0;
+    }
+    .card-accent { border-left: 4px solid var(--accent); }
+    .card-green { border-left: 4px solid var(--green); }
+    .card-red { border-left: 4px solid var(--red); }
+    .card-yellow { border-left: 4px solid var(--yellow); }
+    .card-blue { border-left: 4px solid var(--blue); }
+    .card-cyan { border-left: 4px solid var(--cyan); }
+    .card-orange { border-left: 4px solid var(--orange); }
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+    .card-title.green { color: var(--green); }
+    .card-title.red { color: var(--red); }
+    .card-title.yellow { color: var(--yellow); }
+    .card-title.blue { color: var(--blue); }
+    .card-title.accent { color: var(--accent-light); }
+    .card-title.cyan { color: var(--cyan); }
+    .card-title.orange { color: var(--orange); }
+    .interview-q {
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin: 2rem 0 1rem;
+    }
+    .interview-q .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent-light);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q .q-text {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.4;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+    .step-list { counter-reset: steps; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .step-list li::before {
+      content: counter(steps);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .rubric-table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    .rubric-table th, .rubric-table td {
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    .rubric-table th { background: var(--surface2); font-size: 0.85rem; color: var(--muted); }
+    .rubric-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .tag {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 0.1rem;
+    }
+    .tag-purple { background: rgba(99,102,241,0.2); color: var(--accent-light); border: 1px solid rgba(99,102,241,0.3); }
+    .tag-green { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    .tag-red { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .toc h2 { margin: 0 0 1rem; border: none; font-size: 1rem; color: var(--muted); }
+    .toc ol { margin: 0; }
+    .toc a { color: var(--accent-light); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
+    .misconception {
+      background: rgba(239,68,68,0.05);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-left: 4px solid var(--red);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin: 1rem 0;
+    }
+    .misconception .label { color: var(--red); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="day-badge">DAY 9</div>
+  <h1>Secure Coding 원칙과 코드 리뷰<br>— "취약점을 아는 것"에서 "취약점이 생기지 않는 구조를 만드는 것"으로</h1>
+  <p class="subtitle">백엔드 보안 / Secure Coding — 10년차 이상 개발자 Interview 대비</p>
+</header>
+
+<nav class="toc">
+  <h2>목차</h2>
+  <ol>
+    <li><a href="#why-matters">왜 "Secure Coding 원칙"이 개별 취약점 지식과 다른 인터뷰 주제인가</a></li>
+    <li><a href="#input-validation">입력 검증(Input Validation) — 어디서, 무엇을, 어떻게 검증할 것인가</a></li>
+    <li><a href="#least-privilege-code">최소 권한 원칙의 코드 레벨 적용</a></li>
+    <li><a href="#secure-by-default">보안 기본값(Secure by Default) — Fail-Open vs Fail-Closed</a></li>
+    <li><a href="#code-review">코드 리뷰에서 보안 이슈를 잡아내는 프로세스</a></li>
+    <li><a href="#interview-q1">면접 질문 1 — "입력 검증은 프론트에서 하는데 왜 서버에서도 또 해야 하나요?"</a></li>
+    <li><a href="#interview-q2">면접 질문 2 — "결제 승인 API가 외부 서비스 장애로 응답이 안 옵니다. 어떻게 처리하시겠습니까?"</a></li>
+    <li><a href="#interview-q3">면접 질문 3 — "코드 리뷰에서 보안 이슈를 놓친 적이 있다면, 프로세스를 어떻게 바꾸시겠습니까?"</a></li>
+    <li><a href="#rubric">자기 점검 Rubric</a></li>
+  </ol>
+</nav>
+
+<!-- ===== SECTION 1 ===== -->
+<section id="why-matters">
+  <h2>1. 왜 "Secure Coding 원칙"이 개별 취약점 지식과 다른 인터뷰 주제인가</h2>
+
+  <p>
+    Day 1부터 Day 8까지는 인증/인가, 세션, JWT, SQL Injection, XSS/CSRF, 파일 업로드, API 보안, 비밀번호와
+    Secret 관리라는 <strong>구체적인 취약점 카테고리</strong>를 다뤘다. Day 9는 시야를 한 단계 더 넓혀
+    "그 모든 취약점이 애초에 왜 코드에 들어가는가"라는 더 근본적인 질문을 다룬다. 시니어 면접관이 이 주제를
+    묻는 이유는, <strong>개별 취약점을 외우는 개발자와 취약점이 생기지 않는 코드 구조를 설계하는 개발자를
+    구분</strong>하기 위해서다.
+  </p>
+
+  <div class="card card-yellow">
+    <div class="card-title yellow">실무 상황</div>
+    <p>
+      2017년 Equifax 침해 사고는 Apache Struts의 알려진 취약점(CVE-2017-5638)이 패치 공개 후 <strong>2개월간
+      방치</strong>되어 발생했다. 취약점 자체는 이미 공개적으로 알려져 있었고 패치도 나와 있었다. 문제는 취약점을
+      "몰라서"가 아니라, <strong>"패치를 적용해야 한다는 것을 조직적으로 강제하는 프로세스가 없었기 때문"</strong>에
+      1억 4,700만 명의 개인정보가 유출됐다. 이 사례가 보여주는 건, 개별 개발자가 SQL Injection이나 XSS를 안다고
+      해서 조직의 보안 수준이 결정되지 않는다는 것이다. <strong>입력 검증을 어디서 강제할지, 실패 시 어떻게
+      동작할지, 코드 리뷰가 이런 실수를 걸러낼 수 있는지</strong> — 이런 구조적 설계가 실제 침해 여부를 가른다.
+    </p>
+  </div>
+
+  <div class="card card-accent">
+    <div class="card-title accent">이 주제가 평가하는 것</div>
+    <ul class="step-list">
+      <li><div><strong>단발성 방어가 아닌 반복 가능한 원칙으로 사고하는가</strong> — "이 API는 이렇게 막았다"가 아니라 "우리 코드베이스 전체에 이 원칙을 어떻게 강제할 것인가"로 확장해서 답하는가.</div></li>
+      <li><div><strong>실패 상황을 먼저 설계하는가</strong> — 정상 흐름뿐 아니라 "검증이 실패하면", "외부 서비스가 죽으면", "리뷰어가 놓치면" 각각의 실패 지점에서 시스템이 안전한 방향으로 무너지도록 설계하는가.</div></li>
+      <li><div><strong>보안을 프로세스와 조직 문제로 확장할 수 있는가</strong> — 코드 한 줄의 문제가 아니라, 코드 리뷰 체크리스트·정적 분석 도구·팀 관행처럼 사람이 실수해도 잡아낼 수 있는 안전망을 설계하는가.</div></li>
+    </ul>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 2 ===== -->
+<section id="input-validation">
+  <h2>2. 입력 검증(Input Validation) — 어디서, 무엇을, 어떻게 검증할 것인가</h2>
+
+  <h3>전제 개념: "검증"과 "이스케이프/인코딩"은 다른 방어다</h3>
+  <p>
+    Day 3(SQL Injection)과 Day 4(XSS)에서 이미 "이스케이프/인코딩"과 "파라미터화된 쿼리"를 다뤘다. 입력 검증은
+    이것과 <strong>목적이 다른 별도의 방어 계층</strong>이다. 이스케이프는 "위험한 문자가 들어와도 명령어로
+    해석되지 않게 만드는 것"이고, 입력 검증은 <strong>"애초에 그 값이 이 필드에 들어올 수 있는 정상적인 값인지를
+    판단"</strong>하는 것이다. 예를 들어 나이 필드에 <code>-999</code>가 들어오면 SQL Injection도 XSS도 아니지만,
+    비즈니스 로직상 명백히 잘못된 값이다. 입력 검증은 이런 <strong>"기술적으로는 안전하지만 의미적으로는
+    잘못된 값"</strong>까지 걸러낸다.
+  </p>
+
+  <div class="card card-red">
+    <div class="card-title red">핵심 원리 — 화이트리스트(Allowlist) vs 블랙리스트(Denylist)</div>
+    <p>
+      <strong>블랙리스트</strong> 방식은 "이런 값/패턴은 금지"라고 나쁜 것을 나열하는 방식이다.
+      <code>&lt;script&gt;</code>를 걸러내는 필터를 만들면 공격자는 <code>&lt;ScRiPt&gt;</code>,
+      <code>&lt;scr&lt;script&gt;ipt&gt;</code> 같은 변형으로 우회한다. 나쁜 패턴은 무한히 많고 새로운 우회
+      기법이 계속 나오기 때문에, 블랙리스트는 <strong>구조적으로 완전할 수 없다</strong>.
+      <strong>화이트리스트</strong> 방식은 반대로 "허용되는 값/패턴"만 명시하고 그 외는 전부 거부한다. 예를 들어
+      전화번호 필드는 <code>^\d{2,3}-\d{3,4}-\d{4}$</code> 형태만 허용하면, 공격자가 어떤 새로운 우회 문자열을
+      만들어와도 이 패턴에 맞지 않으면 자동으로 거부된다. 시니어 면접에서 "왜 화이트리스트가 더 근본적인
+      방어인가"를 물을 때 기대하는 답은 <strong>"모든 공격 패턴을 다 알 필요가 없다"</strong>는 점이다 —
+      화이트리스트는 알려진 공격을 막는 게 아니라 정상 범위를 벗어난 모든 것을 막는다.
+    </p>
+  </div>
+
+  <h3>전제 개념: 왜 클라이언트 검증만으로는 부족한가?</h3>
+  <p>
+    프론트엔드에서 이미 폼 검증(필수 입력, 이메일 형식 등)을 했는데 왜 서버에서 또 검증해야 하는지는 주니어와
+    시니어를 가르는 대표적인 질문이다. 핵심은 <strong>"클라이언트는 공격자가 완전히 통제할 수 있는 환경"</strong>이라는
+    것이다. 브라우저 개발자 도구로 JavaScript 검증 코드를 비활성화하거나, <code>curl</code>/Postman으로 프론트엔드를
+    거치지 않고 API를 직접 호출하면 클라이언트 검증은 전혀 실행되지 않는다.
+  </p>
+
+  <div class="card card-accent">
+    <div class="card-title accent">검증은 어느 레이어에서 해야 하는가</div>
+    <ul class="step-list">
+      <li><div><strong>클라이언트(프론트엔드) 검증</strong> — 사용자 경험(UX) 목적. 즉각적인 피드백으로 불필요한 서버 왕복을 줄인다. <strong>보안 방어로는 취급하지 않는다.</strong></div></li>
+      <li><div><strong>API 경계(서버 진입점) 검증</strong> — 신뢰 경계(trust boundary)가 실제로 시작되는 지점. 여기서 타입, 길이, 형식, 범위를 화이트리스트 기준으로 강제한다. 여기가 <strong>보안상 반드시 있어야 하는 지점</strong>이다.</div></li>
+      <li><div><strong>도메인/비즈니스 로직 검증</strong> — 형식은 맞지만 비즈니스 규칙상 불가능한 값(예: 이미 취소된 주문에 대한 환불 요청)을 걸러낸다.</div></li>
+    </ul>
+  </div>
+
+  <div class="misconception">
+    <div class="label">흔한 오해 — "프론트에서 검증했으니 서버 검증은 형식적으로만 해도 된다"</div>
+    <p>
+      이 사고방식이 위험한 이유는, <strong>서버 API를 호출하는 클라이언트가 하나라고 가정</strong>하기 때문이다.
+      실제로는 모바일 앱, 서드파티 연동, 내부 배치 스크립트, 그리고 무엇보다 <strong>공격자의 직접 요청</strong>이
+      전부 같은 API 엔드포인트를 호출한다. "신뢰할 수 없는 모든 입력은 서버 경계에서 검증한다"는 원칙에 예외를
+      두는 순간, 그 예외가 곧 공격 표면이 된다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 3 ===== -->
+<section id="least-privilege-code">
+  <h2>3. 최소 권한 원칙의 코드 레벨 적용</h2>
+
+  <h3>전제 개념: Day 1에서 다룬 "최소 권한"을 코드에서는 어떻게 구현하는가?</h3>
+  <p>
+    Day 1에서 최소 권한 원칙(Principle of Least Privilege)을 인가 설계 관점에서 다뤘다면, Day 9에서는 이
+    원칙을 <strong>코드와 인프라 구성요소 단위</strong>로 확장한다. "사용자가 필요한 권한만 갖는다"는 것과
+    동일한 논리로, <strong>DB 계정, 서비스 간 통신, 함수/모듈 하나하나가 실제로 필요한 권한 이상을 갖지
+    않아야 한다</strong>.
+  </p>
+
+  <div class="card card-blue">
+    <div class="card-title blue">코드 레벨 최소 권한의 대표 패턴</div>
+    <ul class="step-list">
+      <li><div><strong>DB 계정 권한 분리</strong> — 조회만 하는 서비스는 <code>SELECT</code>만 가능한 DB 계정을 쓰고, 배치 작업용 계정과 API 서버용 계정을 분리한다. API 서버 계정이 <code>DROP TABLE</code> 권한까지 갖고 있으면, SQL Injection 한 건이 곧 전체 테이블 삭제로 이어질 수 있다.</div></li>
+      <li><div><strong>마이크로서비스 간 통신 권한</strong> — 서비스 A가 서비스 B의 특정 엔드포인트만 호출할 수 있도록 서비스 메시/네트워크 정책으로 제한한다. 모든 내부 서비스가 서로를 무제한으로 호출할 수 있으면, 한 서비스가 침해됐을 때 전체 내부망으로 공격이 확산(lateral movement)된다.</div></li>
+      <li><div><strong>클라우드 IAM 역할의 세분화</strong> — Lambda 함수나 컨테이너에 <code>AdministratorAccess</code> 같은 포괄적 정책을 붙이지 않고, 그 함수가 실제로 호출하는 API만 명시적으로 허용한다.</div></li>
+      <li><div><strong>서드파티 라이브러리/의존성 최소화</strong> — 불필요한 패키지를 추가할수록 공급망 공격 표면이 늘어난다. 기능 하나를 위해 대형 의존성을 통째로 들여오기보다, 필요한 코드만 직접 구현하거나 유지보수가 활발한 최소 의존성을 선택한다.</div></li>
+    </ul>
+  </div>
+
+  <div class="card card-green">
+    <div class="card-title green">왜 이게 "심층 방어"의 핵심 축인가</div>
+    <p>
+      최소 권한은 취약점을 <strong>막는 방어가 아니라, 취약점이 뚫렸을 때의 피해 반경(blast radius)을 줄이는
+      방어</strong>다. SQL Injection 자체를 완전히 막았다고 확신할 수 없기 때문에(Day 3에서 다룬 ORM raw query
+      잔존 위험처럼), "설령 뚫리더라도 그 계정으로 할 수 있는 일이 제한적이도록" 만드는 것이 시니어 레벨
+      설계의 핵심이다. 이 관점은 Day 1의 Defense in Depth 원칙과 정확히 연결된다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 4 ===== -->
+<section id="secure-by-default">
+  <h2>4. 보안 기본값(Secure by Default) — Fail-Open vs Fail-Closed</h2>
+
+  <h3>전제 개념: 시스템이 "실패"할 때 어느 방향으로 무너지는가?</h3>
+  <p>
+    모든 시스템은 언젠가 예외 상황을 만난다 — 외부 인증 서버가 응답하지 않거나, 권한 확인 쿼리가 타임아웃되거나,
+    설정값을 못 읽어온다. 이때 코드가 <strong>"판단할 수 없으면 허용한다"</strong>로 동작하는 것을
+    <strong>Fail-Open</strong>, <strong>"판단할 수 없으면 거부한다"</strong>로 동작하는 것을
+    <strong>Fail-Closed</strong>라고 한다. 보안이 걸린 코드 경로는 원칙적으로 <strong>Fail-Closed</strong>여야
+    한다 — 예외 상황이 곧 공격자가 만들어낼 수 있는 상황이기도 하기 때문이다.
+  </p>
+
+  <div class="card card-red">
+    <div class="card-title red">Fail-Open의 실제 위험 사례</div>
+    <pre><code>// 위험한 패턴 — 인가 확인 중 예외 발생 시 통과시킴 (Fail-Open)
+try {
+  const hasPermission = await checkPermission(userId, resourceId);
+  if (!hasPermission) {
+    return res.status(403).send();
+  }
+} catch (err) {
+  // 권한 서비스 장애 시 로그만 남기고 요청은 계속 진행 — 매우 위험
+  logger.error(err);
+}
+return handleRequest(req, res);</code></pre>
+    <p>
+      권한 확인 서비스가 타임아웃되거나 죽으면, 이 코드는 <strong>모든 요청을 인가 없이 통과</strong>시킨다.
+      공격자 입장에서는 권한 서비스에 부하를 걸어 응답을 지연시키는 것만으로 인가 우회가 가능해진다 — 이는
+      의도적인 DoS를 통한 인가 우회 공격 벡터가 된다.
+    </p>
+  </div>
+
+  <div class="card card-green">
+    <div class="card-title green">올바른 패턴 — Fail-Closed</div>
+    <pre><code>try {
+  const hasPermission = await checkPermission(userId, resourceId);
+  if (!hasPermission) {
+    return res.status(403).send();
+  }
+} catch (err) {
+  logger.error(err);
+  // 판단할 수 없으면 거부 — 가용성보다 보안을 우선
+  return res.status(503).send("Authorization service unavailable");
+}
+return handleRequest(req, res);</code></pre>
+  </div>
+
+  <div class="card card-yellow">
+    <div class="card-title yellow">Trade-off — Fail-Closed가 항상 정답은 아니다</div>
+    <p>
+      Fail-Closed는 <strong>가용성을 희생</strong>한다. 권한 서비스가 잠깐 흔들릴 때마다 전체 서비스가 503을
+      반환하면, 보안 사고는 막았지만 장애 대응 관점에서는 다른 문제가 된다. 시니어 면접에서 좋은 답변은
+      "무조건 Fail-Closed"가 아니라, <strong>기능의 민감도에 따라 다르게 설계</strong>하는 것이다 — 결제·인가·
+      비밀번호 검증처럼 <strong>보안이 걸린 경로는 Fail-Closed</strong>, 추천 상품 표시처럼 <strong>보안과
+      무관한 부가 기능은 Fail-Open(기본값으로 대체하고 계속 진행)</strong>이 합리적이다. 이 구분을 못 하고
+      모든 곳에 Fail-Closed를 적용하면 사소한 장애가 전면 서비스 중단으로 번지는 과잉 설계가 된다.
+    </p>
+  </div>
+
+  <div class="misconception">
+    <div class="label">흔한 오해 — "예외 처리를 촘촘히 하면 안전하다"</div>
+    <p>
+      예외를 <code>catch</code>해서 로그를 남기는 것 자체는 좋은 습관이지만, <strong>catch 블록 안에서 무엇을
+      할지(그대로 진행할지, 거부할지)가 보안을 결정</strong>한다. "에러가 안 나게 막는 것"과 "에러가 났을 때
+      안전한 방향으로 무너지는 것"은 완전히 다른 문제다. 코드 리뷰에서 흔히 놓치는 지점이 바로 이 catch 블록
+      내부의 기본 동작이다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== SECTION 5 ===== -->
+<section id="code-review">
+  <h2>5. 코드 리뷰에서 보안 이슈를 잡아내는 프로세스</h2>
+
+  <h3>전제 개념: 왜 보안을 "리뷰어 개인의 실력"에만 맡기면 안 되는가?</h3>
+  <p>
+    앞서 다룬 모든 원칙(입력 검증, 최소 권한, Fail-Closed)은 개발자가 코드를 작성하는 순간 지켜지지 않으면
+    프로덕션까지 그대로 흘러간다. 이 마지막 방어선이 <strong>코드 리뷰</strong>인데, "리뷰어가 보안에 밝기를
+    기대"하는 것만으로는 지속 가능하지 않다 — 사람은 피곤하고, 급하고, 도메인 로직에 집중하다 보안 이슈를
+    놓친다. 시니어가 설계해야 하는 것은 <strong>사람의 실수를 구조적으로 잡아내는 프로세스</strong>다.
+  </p>
+
+  <div class="card card-accent">
+    <div class="card-title accent">계층화된 보안 리뷰 프로세스</div>
+    <ul class="step-list">
+      <li><div><strong>1. 자동화된 정적 분석(SAST)을 CI 파이프라인에 통합</strong> — SQL 문자열 결합, 하드코딩된 Secret, 알려진 취약 패턴을 사람이 보기 전에 자동으로 걸러낸다. 사람은 이미 걸러진 것을 또 확인하는 데 시간을 쓰지 않는다.</div></li>
+      <li><div><strong>2. 의존성 취약점 스캔(SCA)</strong> — 사용 중인 라이브러리에 알려진 CVE가 있는지 자동으로 확인하고, PR 단계에서 차단한다. Equifax 사례처럼 "패치가 있는데 적용을 못 한" 상황을 조직 프로세스로 방지한다.</div></li>
+      <li><div><strong>3. 보안 특화 체크리스트를 PR 템플릿에 명시</strong> — "이 변경이 새 입력을 받는가? 서버 측 검증이 있는가?", "인가 확인 로직이 변경됐는가?", "예외 발생 시 fail-open인가 fail-closed인가?" 같은 질문을 리뷰어가 매번 새로 떠올리지 않아도 되게 만든다.</div></li>
+      <li><div><strong>4. 민감한 변경에는 보안 담당자/시니어 리뷰어 필수 지정</strong> — 인증, 인가, 결제, 암호화 관련 코드는 일반 코드 리뷰와 별도로 최소 한 명의 시니어가 추가 승인하도록 CODEOWNERS 같은 장치로 강제한다.</div></li>
+      <li><div><strong>5. 사후 학습 루프</strong> — 보안 사고나 침투 테스트에서 발견된 이슈를 체크리스트와 SAST 룰에 다시 반영해, 같은 실수가 반복되지 않게 한다.</div></li>
+    </ul>
+  </div>
+
+  <div class="misconception">
+    <div class="label">흔한 오해 — "정적 분석 도구를 도입하면 사람 리뷰는 줄여도 된다"</div>
+    <p>
+      SAST/SCA 도구는 <strong>알려진 패턴</strong>만 잡아낸다. 비즈니스 로직 자체의 결함(예: 할인 쿠폰 로직에서
+      음수 금액 처리 누락, BOLA처럼 인가 체크가 아예 빠진 엔드포인트)은 정적 분석이 거의 잡아내지 못한다.
+      도구는 <strong>사람이 저지르는 "알려진 실수"를 줄여 사람이 "새로운/맥락적인 실수"에 집중할 여력을
+      만들어주는 역할</strong>이지, 사람 리뷰를 대체하지 않는다.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== INTERVIEW Q1 ===== -->
+<section id="interview-q1">
+  <h2>6. 면접 질문 1 — "입력 검증은 프론트에서 하는데 왜 서버에서도 또 해야 하나요?"</h2>
+
+  <div class="interview-q">
+    <div class="label">면접 질문</div>
+    <div class="q-text">
+      "저희는 이미 프론트엔드 폼에서 필수 입력, 형식, 길이를 다 검증하고 있습니다. 서버에서 똑같은 검증을
+      또 하는 건 중복 아닌가요? 개발 리소스도 아낄 겸 서버 검증은 최소화하면 안 될까요?"
+    </div>
+  </div>
+
+  <h3>왜 면접에서 묻는가?</h3>
+  <p>
+    "클라이언트를 신뢰할 수 없다"는 보안의 가장 기본적인 전제를 실제로 이해하고 있는지, 그리고
+    <strong>"중복 제거"라는 엔지니어링 본능과 "신뢰 경계"라는 보안 원칙이 충돌할 때 우선순위를 어떻게
+    설명</strong>하는지를 본다.
+  </p>
+
+  <h3>답변 사고 순서</h3>
+  <ol class="step-list">
+    <li><div><strong>클라이언트 검증의 실제 목적을 재정의</strong> — UX 개선이지 보안 방어가 아님을 짚는다.</div></li>
+    <li><div><strong>클라이언트를 우회할 수 있는 구체적 경로 제시</strong> — 개발자 도구, curl/Postman 직접 호출, 모바일 앱 리버스 엔지니어링 등.</div></li>
+    <li><div><strong>절충안 제시</strong> — "검증 로직 중복"이라는 실제 우려를 인정하고, 공유 스키마(예: JSON Schema, Zod)로 중복 유지보수 비용을 줄이는 방법을 제안한다.</div></li>
+  </ol>
+
+  <div class="card card-green">
+    <div class="card-title green">강한 답변 예시</div>
+    <p>
+      "프론트엔드 검증은 사용자 경험을 위한 것이지 보안 방어가 아닙니다. 브라우저 개발자 도구로 JavaScript
+      검증을 끄거나, curl이나 Postman으로 프론트엔드를 거치지 않고 API를 직접 호출하면 그 검증은 아예 실행되지
+      않습니다. 게다가 저희 API를 호출하는 게 웹 프론트엔드 하나만이 아닙니다 — 모바일 앱, 파트너사 연동,
+      내부 배치 작업까지 같은 엔드포인트를 씁니다. 그래서 서버 API 경계는 저희가 통제할 수 있는 유일한 신뢰
+      지점이고, 여기서 검증을 생략하면 그 경로 자체가 취약점이 됩니다. 다만 '중복'이라는 우려는 타당한
+      부분이 있어서, 검증 로직 자체는 프론트와 백엔드가 같은 스키마 정의(예: Zod, JSON Schema)를 공유하게
+      만들면 유지보수 부담 없이 두 계층에서 동일한 규칙을 강제할 수 있습니다."
+    </p>
+  </div>
+
+  <div class="card card-red">
+    <div class="card-title red">약한 답변 예시</div>
+    <p>"보안 원칙이니까 서버에서도 검증을 해야 합니다."</p>
+    <p><strong>왜 약한가?</strong> "원칙이니까"는 근거가 아니라 결론의 반복이다. 클라이언트가 왜 신뢰할 수 없는 환경인지, 구체적으로 어떻게 우회되는지를 설명하지 못했고, 질문자가 제기한 "리소스 낭비" 우려에 대한 실질적인 절충안도 제시하지 못했다.</p>
+  </div>
+
+  <h3>Senior-level Follow-up 질문들</h3>
+  <div class="card card-accent">
+    <div class="card-title accent">Follow-up: "GraphQL처럼 클라이언트가 쿼리 구조를 직접 정의하는 API에서는 입력 검증을 어떻게 다르게 접근해야 할까요?"</div>
+    <p>
+      <strong>모범 답변 방향:</strong> "GraphQL은 필드/타입 검증이 스키마 레벨에서 어느 정도 자동으로 강제된다는
+      장점이 있지만, 그것만으로는 부족합니다. 쿼리 depth와 복잡도를 제한하지 않으면 중첩 쿼리로 서버에 과도한
+      부하를 주는 공격이 가능하고(입력 '값'은 정상이어도 입력 '구조'가 공격이 되는 경우), 필드 단위 인가도
+      별도로 검증해야 합니다. 즉 GraphQL에서는 값의 형식 검증뿐 아니라 쿼리 구조 자체에 대한 검증(depth
+      limiting, cost analysis)이 REST보다 더 중요해집니다."
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== INTERVIEW Q2 ===== -->
+<section id="interview-q2">
+  <h2>7. 면접 질문 2 — "결제 승인 API가 외부 서비스 장애로 응답이 안 옵니다. 어떻게 처리하시겠습니까?"</h2>
+
+  <div class="interview-q">
+    <div class="label">면접 질문</div>
+    <div class="q-text">
+      "결제 승인 전 사기 탐지(fraud detection) 외부 API를 호출하는데, 이 서비스가 타임아웃되는 장애가 발생했습니다.
+      이때 결제를 그냥 승인시킬지, 거부할지 어떻게 설계하시겠습니까?"
+    </div>
+  </div>
+
+  <h3>왜 면접에서 묻는가?</h3>
+  <p>
+    Fail-Open/Fail-Closed 개념을 실제 비즈니스 시나리오에 적용할 수 있는지, 그리고 <strong>"보안"과 "가용성/매출"이라는
+    상충하는 목표 사이에서 근거 있는 판단</strong>을 내릴 수 있는지를 확인한다. 정답이 단순히 "무조건 거부"가
+    아니라는 점에서 판단력을 시험하는 질문이다.
+  </p>
+
+  <h3>답변 사고 순서</h3>
+  <ol class="step-list">
+    <li><div><strong>기본 원칙 제시</strong> — 사기 탐지처럼 손실 방지가 목적인 보안 경로는 원칙적으로 Fail-Closed에 가깝게 설계한다.</div></li>
+    <li><div><strong>단순 이분법의 한계 지적</strong> — 무조건 거부하면 정상 결제까지 전부 막혀 매출 손실과 고객 불만이 발생함을 짚는다.</div></li>
+    <li><div><strong>리스크 기반의 절충 설계 제시</strong> — 거래 금액, 사용자 신뢰도에 따라 차등 대응하는 방법을 제안한다.</div></li>
+  </ol>
+
+  <div class="card card-green">
+    <div class="card-title green">강한 답변 예시</div>
+    <p>
+      "사기 탐지는 손실을 막기 위한 보안 경로이니 원칙적으로는 Fail-Closed, 즉 판단이 안 되면 거부하는 쪽이
+      맞습니다. 하지만 무조건 전체 거부로 가면 정상 사용자의 결제까지 전부 막혀서 장애 하나가 전체 매출
+      중단으로 번지는 과잉 대응이 됩니다. 그래서 저라면 이진 판단이 아니라 리스크 기반의 단계적 대응을
+      설계하겠습니다. 예를 들어 거래 금액이 일정 임계값 이하이고, 해당 사용자가 과거 정상 결제 이력이 충분한
+      '저위험' 사용자라면 사기 탐지 서비스 장애 중에도 승인하되 사후 비동기 검증 큐에 넣어 재검증합니다.
+      반대로 고액 거래이거나 신규/이력이 부족한 사용자라면 장애 중에는 거부하거나 수동 검토로 넘깁니다.
+      이렇게 하면 리스크가 낮은 거래는 가용성을 유지하고, 리스크가 높은 거래는 보안을 우선하는 균형을
+      맞출 수 있습니다."
+    </p>
+  </div>
+
+  <div class="card card-red">
+    <div class="card-title red">약한 답변 예시</div>
+    <p>"보안이 더 중요하니까 무조건 거부하겠습니다."</p>
+    <p><strong>왜 약한가?</strong> 안전해 보이지만 비즈니스 임팩트를 전혀 고려하지 않은 극단적 답변이다. 외부 서비스 하나의 장애가 전체 결제 시스템 중단으로 이어지는 설계는 실무에서 용납되기 어렵고, 면접관은 이 답변에서 리스크를 세분화해서 판단하는 능력이 없다고 평가한다.</p>
+  </div>
+
+  <h3>Senior-level Follow-up 질문들</h3>
+  <div class="card card-accent">
+    <div class="card-title accent">Follow-up: "비동기 재검증 큐에서 사후에 사기로 판정되면 어떻게 처리하나요?"</div>
+    <p>
+      <strong>모범 답변 방향:</strong> "이미 배송이 시작되지 않았다면 결제를 취소하고 주문을 보류시키고, 이미
+      배송된 경우라면 별도의 사기 대응 워크플로(회수, 법적 조치, 사용자 계정 제재)로 넘어갑니다. 중요한 건 이
+      경로를 사후에 급하게 만드는 게 아니라, 애초에 '조건부 승인 후 사후 검증'이라는 정책을 설계할 때
+      함께 정의해둬야 한다는 점입니다. 그래야 장애 상황에서 임기응변이 아니라 미리 합의된 프로세스로
+      대응할 수 있습니다."
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== INTERVIEW Q3 ===== -->
+<section id="interview-q3">
+  <h2>8. 면접 질문 3 — "코드 리뷰에서 보안 이슈를 놓친 적이 있다면, 프로세스를 어떻게 바꾸시겠습니까?"</h2>
+
+  <div class="interview-q">
+    <div class="label">면접 질문</div>
+    <div class="q-text">
+      "리뷰를 통과한 PR에서 나중에 BOLA(객체 단위 인가 누락) 취약점이 발견됐습니다. 리뷰어도, 작성자도 시니어
+      개발자였는데 놓쳤습니다. 이런 일이 재발하지 않도록 팀 프로세스를 어떻게 바꾸시겠습니까?"
+    </div>
+  </div>
+
+  <h3>왜 면접에서 묻는가?</h3>
+  <p>
+    실패를 <strong>개인의 부주의 탓으로 돌리지 않고 프로세스/시스템 문제로 재구성</strong>할 수 있는지를 본다.
+    이는 시니어 개발자가 팀 전체의 보안 수준을 끌어올리는 리더십을 보여줄 수 있는지를 확인하는 질문이기도
+    하다.
+  </p>
+
+  <h3>답변 사고 순서</h3>
+  <ol class="step-list">
+    <li><div><strong>왜 시니어도 놓쳤는지 구조적 원인 분석</strong> — 사람의 주의력에만 의존하는 리뷰 방식의 한계를 짚는다.</div></li>
+    <li><div><strong>재발 방지를 "사람 강화"가 아니라 "시스템 강화"로 설계</strong> — 체크리스트, 자동화, 테스트로 이전한다.</div></li>
+    <li><div><strong>구체적 실행 방안 제시</strong> — 이번 사례(BOLA)에 특화된 방어까지 연결한다.</div></li>
+  </ol>
+
+  <div class="card card-green">
+    <div class="card-title green">강한 답변 예시</div>
+    <p>
+      "시니어 두 명이 함께 놓쳤다는 건, 이게 개인의 실력 문제가 아니라 <strong>리뷰 과정에 이 종류의 이슈를
+      떠올리게 하는 장치가 없었다</strong>는 프로세스 문제라고 봅니다. 사람은 도메인 로직과 코드 스타일에
+      집중하다 보면 '이 엔드포인트가 리소스 ID를 받는데 소유권 확인이 있는가'처럼 반복적으로 확인해야 할
+      항목을 놓치기 쉽습니다. 그래서 세 가지를 바꾸겠습니다. 첫째, PR 템플릿에 '이 변경이 사용자 소유
+      리소스에 접근하는 새 엔드포인트를 추가하는가? 소유권/권한 검증이 있는가?'라는 항목을 명시적으로
+      추가해서 리뷰어가 매번 스스로 떠올리지 않아도 되게 만듭니다. 둘째, 통합 테스트 스위트에 '다른 사용자
+      소유의 리소스 ID로 요청했을 때 403이 반환되는가'를 검증하는 표준 테스트 템플릿을 만들어서, 새 엔드포인트를
+      추가할 때 이 테스트를 빠뜨리면 CI가 실패하도록 강제합니다. 셋째, 이번 사고를 팀 회고에서 공유해서
+      비슷한 패턴의 다른 엔드포인트가 있는지 전체적으로 점검합니다."
+    </p>
+  </div>
+
+  <div class="card card-red">
+    <div class="card-title red">약한 답변 예시</div>
+    <p>"앞으로 리뷰할 때 더 꼼꼼하게 보겠습니다."</p>
+    <p><strong>왜 약한가?</strong> "더 꼼꼼히"는 재발 방지 대책이 아니라 다짐이다. 이미 시니어 두 명이 꼼꼼히 보려고 했음에도 놓쳤다는 게 질문의 전제인데, 이 답변은 문제의 원인을 다시 개인의 주의력으로 되돌려서 같은 실패가 반복될 구조를 그대로 남겨둔다.</p>
+  </div>
+
+  <h3>Senior-level Follow-up 질문들</h3>
+  <div class="card card-accent">
+    <div class="card-title accent">Follow-up: "체크리스트가 길어지면 리뷰어가 형식적으로 체크만 하고 넘어가는 부작용이 있지 않나요?"</div>
+    <p>
+      <strong>모범 답변 방향:</strong> "맞습니다, 그게 체크리스트 방식의 실제 약점입니다. 그래서 체크리스트는
+      '모든 PR에 적용되는 범용 목록'이 아니라, <strong>변경 내용에 따라 조건부로 나타나는 항목</strong>으로
+      설계하는 게 낫습니다. 예를 들어 새 API 엔드포인트를 추가하는 PR에서만 인가 관련 체크리스트가 뜨게
+      하거나, 더 나아가서는 체크리스트조차 사람이 채우게 두지 않고 앞서 말한 통합 테스트처럼 <strong>기계가
+      검증할 수 있는 부분은 최대한 자동화</strong>로 옮깁니다. 사람에게 맡기는 체크리스트는 최후의 안전망
+      정도로 남기고, 실질적인 방어는 테스트와 정적 분석으로 이전하는 게 형식화 부작용을 줄이는 방향입니다."
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ===== RUBRIC ===== -->
+<section id="rubric">
+  <h2>9. 자기 점검 Rubric</h2>
+
+  <p>아래 기준으로 오늘 학습한 내용을 점검한다. 각 항목을 스스로 말로 설명할 수 있어야 한다.</p>
+
+  <table class="rubric-table">
+    <thead>
+      <tr><th>점검 항목</th><th>미달 (주니어 수준)</th><th>달성 (시니어 수준)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>입력 검증의 위치</td>
+        <td>"프론트에서 검증했으니 충분하다"</td>
+        <td>클라이언트는 신뢰 경계 밖이라는 전제 아래, API 경계에서의 화이트리스트 검증이 필수인 이유를 우회 경로(curl, 모바일 앱 등)로 설명</td>
+      </tr>
+      <tr>
+        <td>화이트리스트 vs 블랙리스트</td>
+        <td>"나쁜 패턴을 필터링하면 된다"</td>
+        <td>블랙리스트가 구조적으로 불완전할 수밖에 없는 이유와, 화이트리스트가 "알려진 공격을 몰라도" 방어되는 원리를 설명</td>
+      </tr>
+      <tr>
+        <td>최소 권한의 코드 레벨 적용</td>
+        <td>"권한은 사용자 인가에서만 다루면 된다"</td>
+        <td>DB 계정, 서비스 간 통신, IAM 역할까지 최소 권한을 확장하고, 이것이 "뚫렸을 때 피해 반경을 줄이는" 방어임을 설명</td>
+      </tr>
+      <tr>
+        <td>Fail-Open vs Fail-Closed</td>
+        <td>"예외 처리만 잘하면 안전하다"</td>
+        <td>보안 경로는 원칙적으로 Fail-Closed이되, 기능의 민감도에 따라 가용성과의 trade-off를 다르게 판단하는 근거를 제시</td>
+      </tr>
+      <tr>
+        <td>코드 리뷰 프로세스</td>
+        <td>"리뷰어가 더 꼼꼼히 보면 된다"</td>
+        <td>개인의 주의력에 의존하지 않고 SAST/SCA 자동화, 조건부 체크리스트, 표준 테스트 템플릿으로 재발을 구조적으로 방지하는 설계 제시</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card card-green">
+    <div class="card-title green">다음 레슨 예고 — Day 10: 종합 보안 설계 케이스 스터디</div>
+    <p>
+      Day 1부터 Day 9까지 다룬 인증/인가, 세션/JWT, SQL Injection, XSS/CSRF, 파일 업로드/SSRF, API 보안,
+      비밀번호/Secret 관리, Secure Coding 원칙을 하나로 통합해, <strong>실제 침해 사례를 위협 모델링 → 근본
+      원인 분석 → 재발 방지 설계</strong> 순서로 리뷰하는 종합 케이스 스터디로 이 트랙을 마무리한다.
+    </p>
+    <ul>
+      <li>대표 침해 사례(예: Capital One, Uber, Equifax) 구조 분석</li>
+      <li>단일 취약점이 아니라 "여러 방어가 동시에 뚫린" 사고 흐름 재구성</li>
+      <li>면접에서 "지금까지 배운 걸 종합해서 설계해보라"는 오픈형 질문에 답하는 프레임워크</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
