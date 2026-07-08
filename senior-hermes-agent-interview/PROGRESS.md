@@ -9,12 +9,12 @@
 | 3 | 2026-07-05 | Self-Learning과 Skill Capture | [0003-self-learning-skill-capture.html](lessons/0003-self-learning-skill-capture.html) |
 | 4 | 2026-07-06 | Model/Tool/Runtime 경계와 Provider 추상화 | [0004-model-tool-runtime-boundary-provider-abstraction.html](lessons/0004-model-tool-runtime-boundary-provider-abstraction.html) |
 | 5 | 2026-07-07 | MCP와 API 통합, ACP 기반 IDE 연동 | [0005-mcp-api-integration-acp-ide-integration.html](lessons/0005-mcp-api-integration-acp-ide-integration.html) |
+| 6 | 2026-07-08 | Gateway와 채널 통합 | [0006-gateway-channel-integration.html](lessons/0006-gateway-channel-integration.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | Gateway와 채널 통합 | 단일 gateway의 다중 채널 팬아웃(Telegram/Discord/Slack/WhatsApp/Signal), 채널 간 대화 연속성, 신뢰 경계 |
 | 7 | 메모리와 세션 설계 | FTS5 전문 검색 + LLM 요약, Honcho 기반 dialectic user modeling, 세션 영속성 vs 컨텍스트 예산 |
 | 8 | 스케줄링과 반복 작업 | 내장 cron, 자연어 반복 작업 정의, 실패한 예약 작업의 복구/알림 설계 |
 | 9 | Replay와 평가 루프 | batch 모드, ShareGPT 포맷 trajectory, trajectory compression, eval harness/파인튜닝 데이터 재활용 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 다음: Day 6 — Gateway와 채널 통합
+**Day 6 완료** — 다음: Day 7 — 메모리와 세션 설계
 
 ## 습득한 핵심 개념
 
@@ -50,7 +50,12 @@
 - [x] ACP(Agent Client Protocol)가 core `AIAgent` loop을 감싼 stdio 진입점이라는 위치, stdout=JSON-RPC 전용/stderr=로그 분리 (Day 5)
 - [x] ACP 세션 상태(인메모리, 재시작 시 소실) vs 영속 설정/스킬/메모리/영구 승인의 수명 주기 구분 (Day 5)
 - [x] 신생 프로젝트에서 공식 문서와 GitHub 이슈트래커가 상충할 때 출처 우선순위를 판단하는 원칙 (Day 5)
-- [ ] Gateway/채널 통합 (예정 Day 6)
+- [x] Gateway는 core `AIAgent` loop의 진입점이며 플랫폼 어댑터는 공통 `MessageEvent`로 정규화한다 (Day 6)
+- [x] 신뢰 경계 5단계 판단 순서(allow-all→allowlist→DM 페어링→전역 allow-all→기본 거부)와 admin/user 티어 (Day 6)
+- [x] 채널별 세션 키(`agent:main:{platform}:{chat_type}:{chat_id}`)로 인한 채널 간 비연속성과 메모리 설계와의 구분 (Day 6)
+- [x] webhook vs polling의 방향성과 로컬-first 배포 토폴로지(방화벽/터널링) 판단 (Day 6)
+- [x] CVE-2026-7396 등 실제 사례를 어댑터 위협 모델링 체크리스트(입력 검증/rate limit/자격증명 격리)로 일반화 (Day 6)
+- [x] 어댑터별 circuit breaker 장애 격리와 재시작 시 세션 자동 재개(`restart_interrupted`) (Day 6)
 - [ ] 메모리/세션 설계, dialectic user modeling (예정 Day 7)
 - [ ] 스케줄링(cron) (예정 Day 8)
 - [ ] Replay/평가 루프 (예정 Day 9)

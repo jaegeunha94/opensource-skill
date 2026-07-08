@@ -94,6 +94,76 @@
 - [GitHub Releases — v0.18.0 "The Judgment Release"](https://github.com/NousResearch/hermes-agent/releases/tag/v2026.7.1) —
   2026-07-07 기준 재확인해도 최신 릴리스 동일
 
+## Day 6 리서치 — Gateway와 채널 통합 (1차 출처 우선, 2026-07-08 확인)
+
+- [Messaging Gateway 공식 문서](https://hermes-agent.nousresearch.com/docs/user-guide/messaging) 및
+  GitHub 미러 [`website/docs/user-guide/messaging/index.md`](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/messaging/index.md) —
+  20개 이상 메시징 플랫폼(Telegram/Discord/Slack/Google Chat/WhatsApp/Signal/SMS/Email/Home
+  Assistant/Mattermost/Matrix/DingTalk/Feishu·Lark/WeCom/WeCom Callback/Weixin/BlueBubbles/QQ/
+  Yuanbao/Microsoft Teams/LINE/ntfy/Raft/IRC/범용 Webhooks/API Server) 목록과 플랫폼별 기능 비교표,
+  아키텍처 다이어그램(어댑터 → per-chat 세션 스토어 → `AIAgent`, cron 스케줄러 60초 tick), 기본값
+  "allowlist/DM 페어링 안 되면 전부 거부" 보안 원칙, allowlist 환경변수 표, DM 페어링 흐름
+  (`hermes pairing approve/list/revoke`, 코드 1시간 만료·rate-limit), admin/일반 사용자 2단계 티어
+  (스코프별 `allow_admin_from`/`user_allowed_commands`), 플랫폼별 toolset 표(대부분
+  "터미널 포함 전체 툴"), `/platform list/pause/resume` 명령과 circuit breaker(자동 정지·수동 재개),
+  게이트웨이 재시작 시 `restart_interrupted` 세션 자동 재개 — **주의:** 이 문서는
+  `user-guide/features/`가 아니라 별도의 `user-guide/messaging/` 디렉터리 하위에 있고,
+  "messaging-gateway.md"/"channels.md" 같은 단일 파일명을 가정하면 404가 난다(다수 경로 프로빙 후
+  `tree` 페이지 열람으로 실제 경로 확인) — WebFetch로 GitHub raw 미러 원문 확인
+- [Gateway Internals 개발자 문서](https://hermes-agent.nousresearch.com/docs/developer-guide/gateway-internals)
+  및 GitHub 미러 `website/docs/developer-guide/gateway-internals.md` — 메시지 처리 4단계
+  파이프라인(어댑터 정규화 → `MessageEvent` → 세션 가드 → `GatewayRunner._handle_message()`), 세션 키
+  포맷 `agent:main:{platform}:{chat_type}:{chat_id}`(`build_session_key()` 강제, 수동 조립 금지),
+  권한 판단 5단계 순서(플랫폼 allow-all → 플랫폼 allowlist → DM 페어링 → 전역 allow-all → 기본 거부),
+  플랫폼 어댑터 공통 인터페이스(`connect`/`disconnect`/`send`/`on_message`) — WebFetch로 GitHub raw
+  미러 원문 확인
+- [Adding a Platform Adapter 개발자 문서](https://hermes-agent.nousresearch.com/docs/developer-guide/adding-platform-adapters)
+  및 GitHub 미러 `website/docs/developer-guide/adding-platform-adapters.md` — 플러그인 경로
+  (`~/.hermes/plugins/<name>/`, 코어 코드 수정 불필요) vs 빌트인 경로(20개 이상 파일 수정) 구분, long-poll
+  vs callback/webhook 어댑터 패턴 예시 코드, 콜백형 어댑터의 "즉시 ACK 후 비동기 전달"(WeCom 5초 응답
+  데드라인 예시), 토큰 스코프드 락(`acquire_scoped_lock`), 참고 구현 표에서 `weixin.py`(long-poll+CDN,
+  미디어 처리·암호화 참고용)와 `wecom_callback.py`(callback/webhook, HTTP 서버·AES crypto·multi-app
+  참고용)를 명시 — WebFetch로 GitHub raw 미러 원문 확인
+- 개별 채널 문서(GitHub raw 미러로 원문 확인, `website/docs/user-guide/messaging/` 하위) —
+  [`telegram.md`](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/messaging/telegram.md)
+  (기본 long polling vs 선택적 webhook 모드, `TELEGRAM_WEBHOOK_SECRET` 필수 및 근거로 직접 인용된
+  보안 어드바이저리 `GHSA-3vpc-7q5r-276h`, 서버리스 배포에서 webhook이 유리한 이유),
+  [`discord.md`](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/messaging/discord.md)
+  (게이트웨이 기반 지속 연결, 기본 `group_sessions_per_user: true`로 같은 채널 내 사용자별 세션 분리),
+  [`slack.md`](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/messaging/slack.md)
+  (Socket Mode — "공개 엔드포인트 없음 = 공격 표면 감소"),
+  [`whatsapp.md`](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/messaging/whatsapp.md)
+  (비공식 브리지 vs WhatsApp Business Cloud API의 공개 webhook 요구),
+  [`weixin.md`](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/messaging/weixin.md)
+  (개인 WeChat, iLink Bot API long-polling, "공개 엔드포인트/webhook 불필요" 명시, AES-128-ECB 암호화
+  CDN, "SSRF protection — 아웃바운드 미디어 URL 다운로드 전 검증" 명시),
+  [`wecom.md`](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/messaging/wecom.md)
+  (기업용 WeChat Work, AES-256-CBC 미디어 복호화),
+  [`webhooks.md`](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/messaging/webhooks.md)
+  (범용 GitHub/GitLab webhook 어댑터, HMAC 서명 3방식 GitHub/GitLab/Generic V1·V2, 시크릿 필수 및
+  `INSECURE_NO_AUTH`는 loopback 바인딩에서만 허용, rate limit 분당 30회 기본, idempotency 1시간,
+  body size 1MB 기본, "인증됐다는 것과 신뢰할 수 있다는 것은 다르다" 경고 섹션)
+- CVE-2026-7396(WeCom `gateway/platforms/wecom.py` path traversal, 인증 불필요·원격·낮은 복잡도)은
+  이번 리서치에서 다수의 독립 취약점 데이터베이스로 교차검증했다 — [SentinelOne](https://www.sentinelone.com/vulnerability-database/cve-2026-7396/),
+  [Tenable](https://www.tenable.com/cve/CVE-2026-7396), [VulDB](https://vuldb.com/vuln/360120)
+  (제목에서 `wecom.py`를 명시적으로 지목), [OffSeq Threat Radar](https://radar.offseq.com/threat/cve-2026-7396-path-traversal-in-nousresearch-herme-04c10dff) —
+  전부 2차 출처이며 패치 커밋 diff는 직접 확인하지 못했다. 오늘 재확인한 `weixin.md`/`wecom.md`
+  공식 문서에는 SSRF 방지·AES 암호화 같은 강화된 미디어 처리가 명시돼 있어 v0.18.0 시점에는 관련 계층이
+  강화된 것으로 보이나, "이 CVE가 정확히 이렇게 패치됐다"는 changelog 문장은 찾지 못했다 — 레슨 본문에
+  이 부분을 추론으로 명시했다
+- GitHub 이슈 [`#8127`](https://github.com/NousResearch/hermes-agent/issues/8127)("Feature: Cloudflare
+  Tunnel controller"), [`#361`](https://github.com/NousResearch/hermes-agent/issues/361)("Feature:
+  Pinggy Skill — Zero-Install Localhost Tunnels via SSH") — 둘 다 WebSearch로 존재만 확인(제목
+  스니펫 기준), 2026-07-08 기준 열려 있는 것으로 보이며 로컬-first 배포에서 webhook 필수 채널을 받을 때
+  터널링이 아직 1급 내장 기능이 아니라 운영자가 직접 구성해야 하는 수동 단계임을 뒷받침하는 정황
+  증거로만 사용했다 — 실제 이슈 상태·본문은 실제 도입 전 브라우저로 재확인 필요
+- 릴리스 검색 스니펫(2차 출처, WebSearch 기준) — v0.18.0 "The Judgment Release"가 게이트웨이의
+  scale-to-zero 운영(유휴 시 dormant, 재시작/마이그레이션/자동 업데이트 전 진행 중 대화를 끊지 않고
+  quiesce)을 도입했다고 서술하는 검색 결과가 다수 있었으나, GitHub Releases 원문 페이지에서 이 구체
+  문장을 직접 인용 확인하지는 못했다 — 레슨 본문에 2차 출처임을 명시했다
+- [GitHub Releases — v0.18.0 "The Judgment Release"](https://github.com/NousResearch/hermes-agent/releases/tag/v2026.7.1) —
+  2026-07-08 기준 재확인해도 최신 릴리스 동일
+
 ## 보안 감사 / CVE
 
 - 독립 보안 감사(연구자 @Anic888, 2026-04-11) — 기본 설정 기준 Critical 4건 + High 9건: 무제한 셸 실행, 컨테이너 승인 우회, 지속적인 skill-injection 벡터
