@@ -18,24 +18,24 @@
 | 6 | 2026-07-05 | 로드밸런싱과 프록시 | `lessons/interview-day-06-load-balancing-and-proxy.html` |
 | 7 | 2026-07-06 | 클라우드 네트워킹(VPC) | `lessons/interview-day-07-vpc-cloud-networking.html` |
 | 8 | 2026-07-07 | 네트워크 보안(방화벽/NAT/VPN/Zero Trust) | `lessons/interview-day-08-firewall-nat-vpn-zerotrust.html` |
+| 9 | 2026-07-08 | 네트워크 성능 최적화(RTT/keep-alive/CDN/HTTP/2·3) | `lessons/interview-day-09-network-performance-optimization.html` |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 9 | 성능 최적화 | "RTT가 큰 환경에서 API 성능을 어떻게 개선합니까?" | keep-alive, batching, compression, CDN, protocol 선택 |
 | 10 | 종합 모의 면접 | "실제 장애 시나리오를 받아 네트워크 관점 RCA를 수행해보세요." | 구조화된 답변, follow-up 대응, 재발 방지 |
 
 ## 현재 학습 위치
 
-**Day 8 완료, Day 9 예정** — 네트워크 성능 최적화(RTT, keep-alive, CDN, HTTP/2·3).
+**Day 9 완료, Day 10 예정** — 종합 모의 면접(네트워크 장애 RCA).
 
 ## Interview 답변 체크리스트
 
-- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1~8 적용)
-- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1~8 적용)
-- [x] 실제 운영 상황과 연결한다. (Day 1~8 적용)
-- [x] 답변 순서를 단계적으로 제시한다. (Day 1~8 적용)
-- [x] trade-off를 최소 2개 이상 비교한다. (Day 1~8 적용)
-- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1~8 적용)
-- [x] follow-up 질문까지 대비한다. (Day 1~8 적용)
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1~9 적용)
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1~9 적용)
+- [x] 실제 운영 상황과 연결한다. (Day 1~9 적용)
+- [x] 답변 순서를 단계적으로 제시한다. (Day 1~9 적용)
+- [x] trade-off를 최소 2개 이상 비교한다. (Day 1~9 적용)
+- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1~9 적용)
+- [x] follow-up 질문까지 대비한다. (Day 1~9 적용)

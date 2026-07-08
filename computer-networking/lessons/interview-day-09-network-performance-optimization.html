@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interview Day 9 — 네트워크 성능 최적화(RTT, keep-alive, CDN, HTTP/2·3)</title>
+  <style>
+    :root { color-scheme: light; }
+    body { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.72; color: #1a1d23; background: #fff; }
+    h1 { margin: 0 0 8px; font-size: 2rem; line-height: 1.25; }
+    .subtitle { color: #57606a; margin: 0 0 32px; font-size: 1.05rem; }
+    h2 { margin-top: 48px; padding-top: 12px; border-top: 2px solid #e5e7eb; font-size: 1.4rem; }
+    h3 { margin-top: 32px; color: #1a1d23; }
+    h4 { margin-top: 20px; color: #444; font-size: 1rem; }
+    a { color: #0b57d0; }
+    table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.93rem; }
+    th, td { border: 1px solid #d8dee4; padding: 9px 12px; vertical-align: top; }
+    th { background: #f6f8fa; font-weight: 600; }
+    pre { overflow-x: auto; padding: 18px; background: #0d1117; color: #e6edf3; border-radius: 8px; font-size: 0.88rem; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+    p code, li code, td code { background: #f6f8fa; padding: 0.1em 0.35em; border-radius: 4px; border: 1px solid #d8dee4; }
+    blockquote { margin: 20px 0; padding: 4px 20px; border-left: 4px solid #0b57d0; background: #f0f4ff; color: #2d3748; }
+    blockquote.warn { border-left-color: #e3a008; background: #fffbeb; }
+    blockquote.good { border-left-color: #16a34a; background: #f0fdf4; }
+    blockquote.bad  { border-left-color: #dc2626; background: #fef2f2; }
+    details { margin: 20px 0; padding: 14px 18px; border: 1px solid #d8dee4; border-radius: 8px; background: #fafafa; }
+    summary { cursor: pointer; font-weight: 600; font-size: 1rem; }
+    hr { border: 0; border-top: 1px solid #e5e7eb; margin: 36px 0; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-right: 6px; }
+    .badge-senior { background: #dbeafe; color: #1d4ed8; }
+    .badge-tool   { background: #fce7f3; color: #9d174d; }
+    .badge-trap   { background: #fee2e2; color: #991b1b; }
+    .badge-tip    { background: #dcfce7; color: #15803d; }
+    .back { margin-bottom: 32px; font-size: 0.95rem; }
+    .rubric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+    .rubric-col { padding: 16px; border-radius: 8px; }
+    .rubric-col.weak  { background: #fef2f2; border: 1px solid #fca5a5; }
+    .rubric-col.strong { background: #f0fdf4; border: 1px solid #86efac; }
+    .rubric-col h4 { margin-top: 0; }
+    @media (max-width: 640px) { .rubric-grid { grid-template-columns: 1fr; } }
+    .step-list { counter-reset: step; padding: 0; list-style: none; }
+    .step-list li { counter-increment: step; padding: 10px 0 10px 52px; position: relative; border-bottom: 1px solid #f0f0f0; }
+    .step-list li::before { content: counter(step); position: absolute; left: 0; top: 10px; width: 32px; height: 32px; background: #0b57d0; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+    .interview-q { background: #1a1d23; color: #e6edf3; padding: 20px 24px; border-radius: 8px; margin: 20px 0; font-size: 1.05rem; font-style: italic; }
+    .interview-q::before { content: "💬 면접 질문"; display: block; font-size: 0.78rem; font-style: normal; font-weight: 700; color: #8b949e; margin-bottom: 8px; letter-spacing: 0.05em; }
+    .toc { background: #f6f8fa; border: 1px solid #d8dee4; border-radius: 8px; padding: 20px 24px; margin: 24px 0 40px; }
+    .toc h3 { margin-top: 0; font-size: 1rem; }
+    .toc ol { margin: 0; padding-left: 20px; }
+    .toc li { margin: 4px 0; font-size: 0.93rem; }
+  </style>
+</head>
+<body>
+  <nav class="back"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+
+  <h1>Interview Day 9</h1>
+  <p class="subtitle">네트워크 성능 최적화 — "느린 API의 범인은 대부분 서버가 아니라 왕복이다"</p>
+
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#interview-q">면접 질문</a></li>
+      <li><a href="#prerequisite">전제 개념 — 알아야 할 기초</a></li>
+      <li><a href="#why-asked">왜 면접에서 이걸 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#thinking-order">답변 사고 순서</a></li>
+      <li><a href="#answer-example">핵심 답변 예시</a></li>
+      <li><a href="#tradeoff">Trade-off</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#followup">Senior-level Follow-up 질문</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <h2 id="interview-q">1. 면접 질문</h2>
+
+  <div class="interview-q">
+    "미국 서버에서 서비스하는 API를 한국/일본 사용자가 호출하면 응답이 400ms 넘게 걸리는데, 같은 API를 미국 사용자가 호출하면 40ms 만에 끝납니다. 서버 CPU, 메모리, DB 쿼리 시간을 다 확인했는데 전부 정상입니다. 이 지연을 네트워크 관점에서 어떻게 진단하고, RTT가 근본적으로 큰 상황에서 API 성능을 어떻게 개선하겠습니까? CDN, keep-alive, HTTP/2·3, 압축 중 무엇을 우선 적용하고 그 이유는 무엇입니까?"
+  </div>
+
+  <p>이 질문이 어려운 이유는, "서버가 느리다"와 "네트워크 왕복이 느리다"를 구분하지 못하면 엉뚱한 곳(DB 튜닝, 서버 스케일 아웃)에서 원인을 찾다가 시간을 낭비하기 때문이다. 물리적으로 서울-미국 동부는 광속 기준으로도 편도 약 70~80ms, 왕복(RTT)만 150ms 안팎이 걸린다 — 이건 어떤 서버 최적화로도 줄일 수 없는 <strong>물리적 하한선</strong>이다. 면접관은 지원자가 "줄일 수 없는 지연(propagation delay)"과 "줄일 수 있는 지연(연결 수립 왕복 횟수, 페이로드 크기, 프로토콜 오버헤드)"을 구분하고, 후자를 어떤 순서로 줄여나갈지 실무 판단으로 설명할 수 있는지를 확인하려 한다.</p>
+
+  <hr>
+
+  <!-- 2. 전제 개념 -->
+  <h2 id="prerequisite">2. 전제 개념 — 알아야 할 기초</h2>
+
+  <h3>2-1. RTT(Round Trip Time) — "말을 걸고 대답을 들을 때까지 걸리는 시간"</h3>
+  <p>RTT는 패킷이 클라이언트에서 서버로 갔다가 응답이 다시 돌아오기까지 걸리는 왕복 시간이다. 친구에게 전화를 걸어 질문하고 답을 듣는 것과 같다 — 거리가 멀수록(물리적 광케이블 길이), 그리고 중간에 전화가 여러 번 오가야 할수록(왕복 횟수) 전체 시간이 길어진다. 핵심은 RTT의 대부분은 <strong>전파 지연(propagation delay)</strong>, 즉 빛의 속도로 광케이블을 통과하는 물리적 거리 때문에 생기며, 이는 서버 코드를 아무리 최적화해도 줄어들지 않는다.</p>
+
+  <table>
+    <thead>
+      <tr><th>지연 구간(대략)</th><th>서울 ↔ 도쿄</th><th>서울 ↔ 미국 서부</th><th>서울 ↔ 미국 동부/유럽</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>편도 전파 지연</td><td>~15~20ms</td><td>~50~60ms</td><td>~80~100ms</td></tr>
+      <tr><td>RTT(왕복)</td><td>~30~40ms</td><td>~100~120ms</td><td>~160~200ms</td></tr>
+    </tbody>
+  </table>
+
+  <blockquote class="warn">
+    <strong>핵심:</strong> API가 "느리다"고 할 때, 응답 시간(latency) = 네트워크 왕복 지연(RTT × 왕복 횟수) + 서버 처리 시간(compute) + 대역폭에 따른 전송 시간이다. 서버 처리 시간만 보고 "정상"이라 판단하면, RTT가 큰 사용자 그룹의 체감 성능 문제를 놓친다.
+  </blockquote>
+
+  <h3>2-2. 왜 "왕복 횟수"가 지연을 배로 키우는가 — 연결 수립의 숨은 비용</h3>
+  <p>하나의 API 호출이 실제로 발생시키는 왕복은 요청 하나가 아니다. TCP 연결과 TLS 핸드셰이크까지 포함하면 여러 번의 왕복이 먼저 쌓인다.</p>
+
+  <table>
+    <thead>
+      <tr><th>단계</th><th>왕복(RTT) 수</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>TCP 3-way handshake</td><td>1 RTT</td><td>SYN → SYN-ACK → ACK, 연결을 맺기 위한 최소 왕복</td></tr>
+      <tr><td>TLS 1.2 핸드셰이크</td><td>+2 RTT</td><td>ClientHello/ServerHello + 인증서 교환 + 키 교환이 순차적으로 왕복</td></tr>
+      <tr><td>TLS 1.3 핸드셰이크</td><td>+1 RTT (재접속 시 0-RTT 가능)</td><td>핸드셰이크 메시지를 한 번의 왕복으로 압축, session resumption 시 0-RTT까지 가능</td></tr>
+      <tr><td>실제 HTTP 요청/응답</td><td>+1 RTT (최소)</td><td>여기서부터가 진짜 "API 호출"</td></tr>
+    </tbody>
+  </table>
+
+  <p>즉 TLS 1.2를 새 연결마다 맺으면 실제 데이터를 주고받기도 전에 <strong>3~4번의 왕복</strong>이 이미 소모된다. RTT가 160ms인 구간이라면 연결 수립만으로 500ms 이상이 날아가는 셈이다. 이것이 "keep-alive로 연결을 재사용해야 한다"는 요구가 나오는 근본 이유다 — 연결을 매번 새로 맺지 않으면 이 비용을 요청마다 반복하지 않아도 된다.</p>
+
+  <h3>2-3. Keep-alive와 Connection Pooling — "전화를 끊지 않고 계속 통화하기"</h3>
+  <p>HTTP Keep-Alive는 하나의 TCP 연결 위에서 여러 요청/응답을 순차적으로 재사용하는 것이다. 매번 전화를 끊고 다시 거는 대신, 통화를 유지한 채 여러 질문을 이어서 하는 것과 같다. 연결 수립(TCP+TLS)의 왕복 비용을 최초 1회로 상각(amortize)할 수 있다. Connection Pooling은 여기서 한 걸음 더 나아가, 클라이언트가 여러 개의 재사용 가능한 연결을 미리 만들어 풀(pool)로 유지하며 요청마다 새로 맺지 않고 풀에서 꺼내 쓰는 방식이다.</p>
+
+  <h3>2-4. HTTP/1.1 → HTTP/2 → HTTP/3 — "한 줄로 순서대로 말하기"에서 "동시에 여러 줄로 말하기"로</h3>
+  <p>HTTP/1.1은 하나의 연결에서 요청을 순서대로 처리해야 해서(파이프라이닝이 있어도 응답은 순서를 지켜야 함), 브라우저는 병렬성을 얻으려고 도메인당 6개 안팎의 TCP 연결을 동시에 열어 우회했다. 이는 연결마다 각각 3-way handshake + TLS 핸드셰이크 비용이 중복되는 비효율을 낳는다.</p>
+
+  <table>
+    <thead>
+      <tr><th>버전</th><th>핵심 개선</th><th>남은 한계</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>HTTP/1.1</td><td>Keep-Alive로 연결 재사용</td><td>한 연결 안에서 요청이 순차 처리(Head-of-Line Blocking), 병렬성을 위해 다중 연결로 우회</td></tr>
+      <tr><td>HTTP/2</td><td>하나의 TCP 연결 위에서 여러 요청/응답을 스트림으로 다중화(multiplexing), 헤더 압축(HPACK), 서버 푸시</td><td>TCP 계층에서 패킷 하나가 손실되면 그 연결의 모든 스트림이 재전송을 기다림(TCP 레벨 HoL Blocking)</td></tr>
+      <tr><td>HTTP/3 (QUIC 기반)</td><td>전송 계층을 TCP에서 UDP 기반 QUIC으로 교체해 스트림별 독립 재전송, TLS 1.3을 전송 계층에 통합해 연결+보안 핸드셰이크를 최소 1 RTT(재접속 시 0-RTT)로 단축</td><td>QUIC을 막는 방화벽/미들박스 존재, 서버·클라이언트 생태계 지원이 아직 완전하지 않음, UDP 기반이라 일부 네트워크에서 우회/차단 이슈</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2-5. CDN — "물리적 거리를 줄일 수 없다면, 서버를 사용자 가까이 복제한다"</h3>
+  <p>CDN(Content Delivery Network)은 원본 서버(origin)의 콘텐츠를 전 세계 여러 지점(edge/PoP, Point of Presence)에 캐싱해두고, 사용자를 지리적으로 가장 가까운 edge로 라우팅하는 방식이다. RTT의 물리적 하한선 자체는 못 줄이지만, "사용자와 origin 사이의 거리"를 "사용자와 가장 가까운 edge 사이의 거리"로 바꿔서 실질적인 RTT를 크게 줄인다. 정적 자산(이미지, JS, CSS)뿐 아니라, 최근에는 API 응답도 조건부로 edge에서 캐싱하거나(예: 짧은 TTL의 GET 응답), edge에서 동적 로직을 실행하는 edge compute로 확장되고 있다.</p>
+
+  <table>
+    <thead>
+      <tr><th>기법</th><th>줄이는 대상</th><th>줄이지 못하는 것</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>CDN</td><td>정적 콘텐츠의 왕복 거리(edge가 origin보다 가까움)</td><td>origin까지 가야 하는 동적/개인화 요청의 RTT</td></tr>
+      <tr><td>Keep-alive / Connection Pooling</td><td>요청마다 반복되는 연결 수립 왕복(TCP+TLS)</td><td>이미 열린 연결에서의 순수 데이터 왕복(1 RTT는 여전히 필요)</td></tr>
+      <tr><td>HTTP/2·3 Multiplexing</td><td>여러 리소스를 순차/다중 연결로 가져오며 낭비되는 시간</td><td>단일 요청-응답 자체의 RTT</td></tr>
+      <tr><td>압축(gzip/br), Batching</td><td>전송해야 할 바이트 양, 왕복 횟수(여러 요청을 하나로 묶음)</td><td>연결이 처음 맺어질 때의 핸드셰이크 비용</td></tr>
+    </tbody>
+  </table>
+
+  <blockquote class="warn">
+    <strong>핵심:</strong> 성능 최적화 기법들은 각각 "지연의 다른 부분"을 줄인다. CDN은 물리적 거리를, keep-alive는 연결 수립 반복 비용을, HTTP/2·3은 다중 요청의 병렬성을, 압축과 batching은 데이터 양과 왕복 횟수를 줄인다. 이 넷을 뭉뚱그려 "네트워크를 빠르게 한다"고 답하면 얕은 답변이 된다.
+  </blockquote>
+
+  <hr>
+
+  <!-- 3. 왜 면접에서 묻는가 -->
+  <h2 id="why-asked">3. 왜 면접에서 이걸 묻는가</h2>
+
+  <ol>
+    <li><strong>1단계 필터 (지연의 구성 요소 분해 능력)</strong> — "느리다"는 증상을 전파 지연, 연결 수립 왕복, 서버 처리 시간, 전송량으로 분해해서 진단할 수 있는지 확인한다. 이걸 못하면 엉뚱한 곳(DB, 서버 스케일링)에서 원인을 찾는다.</li>
+    <li><strong>2단계 필터 (물리적 한계 vs 개선 가능 영역 구분)</strong> — RTT의 전파 지연 부분은 어떤 코드 최적화로도 줄일 수 없다는 것을 인지하고, "줄일 수 없는 것을 줄이려 하지 않고, 줄일 수 있는 부분(왕복 횟수, 페이로드 크기)에 집중"하는 실무적 판단력을 확인한다.</li>
+    <li><strong>3단계 필터 (측정 기반 우선순위 판단)</strong> — CDN, keep-alive, HTTP/2·3, 압축 중 무엇을 먼저 적용할지, 어떤 지표(TTFB, 연결 재사용률, 캐시 히트율)로 효과를 검증할지 구체적으로 설명할 수 있는지 확인한다. "다 적용하면 됩니다"는 우선순위 판단이 없는 답변이다.</li>
+  </ol>
+
+  <blockquote class="warn">
+    <strong>면접관이 피하고 싶은 답변:</strong> "서버를 스케일 아웃하면 됩니다" 또는 "CDN을 붙이면 다 해결됩니다." 두 답변 모두 지연이 물리적 거리(전파 지연) 때문인지, 반복되는 연결 수립 비용 때문인지, 순수 처리 시간 때문인지 구분하지 않은 채 하나의 해법으로 뭉뚱그린다.
+  </blockquote>
+
+  <hr>
+
+  <!-- 4. 실무 연결 -->
+  <h2 id="real-world">4. 실무 연결</h2>
+
+  <h3>실제 장애/성능 사례 A — 모바일 앱이 매 요청마다 새 연결을 맺어 해외 사용자만 느림</h3>
+  <p>모바일 앱의 HTTP 클라이언트가 커넥션 풀을 쓰지 않고 요청마다 새 TCP+TLS 연결을 맺도록 설정돼 있었다. 국내 사용자는 RTT가 작아 체감이 크지 않았지만, 해외 사용자는 요청마다 3~4 RTT의 핸드셰이크 비용이 반복되면서 API 하나 호출에 500ms 이상이 소요됐다. 원인은 서버가 아니라 클라이언트 쪽 HTTP 클라이언트 설정(연결 재사용 미적용)이었고, keep-alive와 connection pooling을 활성화한 뒤 반복 요청의 지연이 크게 줄었다.</p>
+
+  <h3>실제 성능 개선 사례 B — 정적 자산은 CDN으로, API는 오리진에 남겨두고도 체감 성능 개선</h3>
+  <p>글로벌 서비스에서 이미지/JS/CSS 같은 정적 자산을 CDN으로 옮기자 페이지 초기 로딩 시간이 크게 줄었다. 다만 개인화된 API 응답까지 CDN으로 옮기지는 못했는데(캐시 불가능한 동적 데이터이므로), 이 경우 API 서버를 사용자 밀집 지역에 가까운 리전에 추가 배치하거나, GraphQL/BFF 계층에서 여러 API 호출을 하나로 묶어 왕복 횟수 자체를 줄이는 방식으로 대응했다.</p>
+
+  <h3>실제 장애 시나리오 C — HTTP/2로 전환했는데 오히려 일부 사용자의 성능이 나빠짐</h3>
+  <p>서버를 HTTP/2로 전환한 뒤 대부분의 사용자는 성능이 개선됐지만, 패킷 손실률이 높은 모바일 네트워크 사용자 일부는 오히려 체감 성능이 나빠졌다. 원인은 HTTP/2가 하나의 TCP 연결 위에서 여러 스트림을 다중화하는데, TCP 특성상 패킷 하나가 손실되면 그 연결의 모든 스트림이 재전송을 기다리는 Head-of-Line Blocking이 발생했기 때문이다. 이후 HTTP/3(QUIC) 지원을 추가해, 패킷 손실이 잦은 네트워크에서는 스트림별로 독립적인 재전송이 가능하도록 개선했다.</p>
+
+  <hr>
+
+  <!-- 5. 답변 사고 순서 -->
+  <h2 id="thinking-order">5. 답변 사고 순서</h2>
+
+  <ol class="step-list">
+    <li>
+      <strong>"느리다"를 지연의 구성 요소로 분해한다</strong>
+      <br>전파 지연(물리적, RTT) + 연결 수립 왕복(TCP+TLS) + 서버 처리 시간 + 전송 데이터량으로 나누고, 각 구간의 소요 시간을 측정 도구(브라우저 Network 탭의 Timing, TTFB, curl -w, tcpdump/Wireshark)로 확인한다는 것을 먼저 밝힌다.
+    </li>
+    <li>
+      <strong>물리적으로 줄일 수 없는 부분과 줄일 수 있는 부분을 구분한다</strong>
+      <br>편도 전파 지연은 광속 제약이라 코드로 못 줄이지만, 연결 수립 왕복 횟수와 전송 데이터량은 프로토콜/아키텍처 선택으로 줄일 수 있다는 것을 명시한다.
+    </li>
+    <li>
+      <strong>연결 재사용 최적화(keep-alive, connection pooling, TLS 1.3)를 우선 검토한다</strong>
+      <br>요청마다 반복되는 핸드셰이크 비용을 없애는 것이 가장 비용 대비 효과가 크다는 것을 짚는다.
+    </li>
+    <li>
+      <strong>프로토콜 레벨 개선(HTTP/2·3)과 페이로드 최적화(압축, batching)를 검토한다</strong>
+      <br>다중 요청의 병렬성과 전송량을 줄이는 방식이며, 네트워크 특성(패킷 손실률)에 따라 HTTP/2와 HTTP/3의 유불리가 갈린다는 것을 짚는다.
+    </li>
+    <li>
+      <strong>물리적 거리 자체를 줄이는 방안(CDN, 멀티 리전 배포)을 검토한다</strong>
+      <br>정적 콘텐츠는 CDN으로, 동적/개인화 응답은 리전 확장이나 API 호출 통합(BFF, GraphQL)으로 대응한다는 것을 구분해서 설명한다.
+    </li>
+    <li>
+      <strong>적용 후 측정 지표로 효과를 검증하고 재발 방지 원칙을 제시한다</strong>
+      <br>TTFB, 연결 재사용률, 캐시 히트율, p50/p95/p99 지연을 배포 전후로 비교해 실제 효과를 확인하고, 신규 API/클라이언트 설계 시 이 원칙(연결 재사용 기본값, 응답 압축 기본값)을 표준으로 삼는다는 것을 밝힌다.
+    </li>
+  </ol>
+
+  <hr>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <h2 id="answer-example">6. 핵심 답변 예시</h2>
+
+  <h3>짧은 답변 (60초 버전)</h3>
+  <blockquote class="good">
+    "먼저 지연을 전파 지연(물리적 거리), 연결 수립 왕복(TCP+TLS 핸드셰이크), 서버 처리 시간, 전송 데이터량으로 나눠서 어느 구간이 큰지 측정하겠습니다. 서울-미국 간 RTT는 편도로도 80ms 안팎이라 물리적으로 줄일 수 없는 하한선이 있는데, 문제는 여기에 TCP+TLS 핸드셰이크로 3~4 RTT가 추가로 붙는 경우가 많다는 겁니다. 그래서 가장 먼저 클라이언트가 keep-alive와 connection pooling으로 연결을 재사용하는지, TLS 1.3을 쓰는지부터 확인하겠습니다. 그다음 HTTP/2나 HTTP/3로 다중 요청의 병렬성을 확보하고, 응답을 압축해서 전송량을 줄이겠습니다. 정적 자산이 있다면 CDN으로 옮겨 물리적 거리 자체를 줄이고, 개인화된 API 응답은 여러 호출을 하나로 묶는 BFF 계층이나 API 서버의 리전 확장을 고려하겠습니다."
+  </blockquote>
+
+  <h3>깊이 있는 답변 (면접관이 "더 자세히"라고 물을 때)</h3>
+  <blockquote class="good">
+    "조금 더 구체적으로 진단 순서를 말씀드리면, 먼저 curl -w나 브라우저 Network 탭에서 DNS lookup, TCP connect, TLS handshake, TTFB(Time To First Byte), Content download를 구간별로 쪼개서 어디서 시간이 소요되는지 봅니다. 만약 TCP connect와 TLS handshake에서 대부분의 시간이 소요된다면, 이는 서버 처리 문제가 아니라 클라이언트가 연결을 재사용하지 못하고 있다는 신호입니다. 이 경우 HTTP 클라이언트의 커넥션 풀 설정을 확인하고, TLS 1.2를 쓰고 있다면 1.3으로 올려 핸드셰이크 왕복을 1 RTT로 줄이는 것부터 시작합니다.
+
+    TTFB 자체가 크다면 이건 순수 네트워크 왕복 + 서버 처리 시간이 섞여 있는 지표라, 서버 측 APM(Application Performance Monitoring)으로 실제 처리 시간을 분리해서 봐야 합니다. 서버 처리 시간이 작은데 TTFB가 크다면 물리적 RTT 문제이므로, 이 경우엔 CDN이나 리전 확장을 검토합니다. 다만 CDN은 캐시 가능한 콘텐츠에만 유효하기 때문에, 사용자별로 달라지는 API 응답이라면 origin까지 왕복해야 하는 구조적 한계가 있습니다. 이럴 때는 GraphQL이나 BFF 계층에서 여러 개별 API 호출을 하나의 요청으로 묶어 왕복 횟수 자체를 줄이는 방향을 우선 고려하고, 그래도 부족하면 해당 리전에 read replica나 edge compute를 배치하는 방향으로 확장합니다.
+
+    프로토콜 선택은 네트워크 특성에 따라 달라지는데, 패킷 손실률이 낮은 안정적인 환경(사내망, 유선)이라면 HTTP/2의 다중화 이점이 크지만, 모바일처럼 손실률이 높은 환경이라면 HTTP/2의 TCP 레벨 Head-of-Line Blocking이 오히려 체감 성능을 떨어뜨릴 수 있어 HTTP/3(QUIC)이 유리합니다. 마지막으로 이런 최적화는 배포 전후 p50뿐 아니라 p95/p99 지연을 반드시 비교해서, 평균은 개선됐지만 특정 네트워크 조건의 사용자에게는 오히려 나빠지지 않았는지 확인하는 것까지가 제 답변의 마무리입니다."
+  </blockquote>
+
+  <hr>
+
+  <!-- 7. Trade-off -->
+  <h2 id="tradeoff">7. Trade-off</h2>
+
+  <table>
+    <thead>
+      <tr><th>선택</th><th>장점</th><th>단점 / 주의사항</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Keep-alive / Connection Pooling 강화</strong></td>
+        <td>연결 수립 왕복(2~3 RTT)을 요청마다 반복하지 않아 비용 대비 효과가 가장 큼</td>
+        <td>서버가 오래 열린 연결을 많이 유지해야 해서 파일 디스크립터·메모리 사용량 증가, 유휴 연결 정리(idle timeout) 정책 필요</td>
+      </tr>
+      <tr>
+        <td><strong>HTTP/2 도입</strong></td>
+        <td>단일 연결에서 다중 요청 병렬 처리, 헤더 압축으로 오버헤드 감소</td>
+        <td>TCP 레벨 Head-of-Line Blocking이 패킷 손실 환경에서 오히려 불리, 일부 레거시 프록시/미들박스 호환성 문제</td>
+      </tr>
+      <tr>
+        <td><strong>HTTP/3(QUIC) 도입</strong></td>
+        <td>스트림별 독립 재전송으로 손실 환경에서 유리, TLS 통합으로 핸드셰이크 최소화(0-RTT 재접속 가능)</td>
+        <td>UDP 기반이라 일부 방화벽/기업망에서 차단, 서버·CDN·클라이언트 생태계 지원 성숙도 확인 필요, 구현 복잡도 높음</td>
+      </tr>
+      <tr>
+        <td><strong>CDN 도입</strong></td>
+        <td>정적 콘텐츠의 물리적 왕복 거리를 크게 줄임, origin 부하 감소</td>
+        <td>캐시 무효화(invalidation) 관리 복잡도, 개인화/동적 콘텐츠에는 효과 제한적, 비용 발생</td>
+      </tr>
+      <tr>
+        <td><strong>응답 압축(gzip/br) 적용</strong></td>
+        <td>전송 데이터량 감소로 특히 저대역폭 환경에서 효과 큼</td>
+        <td>압축/해제에 CPU 비용 발생, 이미 압축된 포맷(이미지, 동영상)에는 효과 없거나 역효과</td>
+      </tr>
+      <tr>
+        <td><strong>API 호출 batching / BFF 계층 도입</strong></td>
+        <td>여러 개별 요청을 하나로 묶어 왕복 횟수 자체를 줄임</td>
+        <td>추가 계층으로 인한 아키텍처 복잡도, 캐싱 전략을 다시 설계해야 함, 부분 실패 처리 로직 필요</td>
+      </tr>
+      <tr>
+        <td><strong>멀티 리전 배포</strong></td>
+        <td>물리적 거리를 근본적으로 줄여 RTT 자체를 개선</td>
+        <td>데이터 동기화/일관성 문제(Day 7 VPC/클라우드 네트워킹과 연결), 운영 복잡도와 비용 급증</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 8. 흔한 오해 -->
+  <h2 id="misconceptions">8. 흔한 오해</h2>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 1</span> "서버 CPU/메모리가 정상이면 네트워크 문제가 아니다"</summary>
+    <p>서버 리소스 지표는 "서버 처리 시간"만 보여줄 뿐, 전파 지연이나 연결 수립 왕복 같은 네트워크 구간의 지연은 반영하지 않는다. 해외 사용자만 느리고 서버 지표가 정상이라면 오히려 네트워크 왕복 구간을 의심해야 하는 강한 신호다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 2</span> "HTTP/2·3으로 전환하면 무조건 빨라진다"</summary>
+    <p>HTTP/2는 TCP 기반이라 패킷 손실이 잦은 네트워크(특히 모바일)에서는 Head-of-Line Blocking으로 오히려 체감 성능이 나빠질 수 있다. 프로토콜 선택은 네트워크 조건(손실률, 지연 안정성)을 고려해서 판단해야 한다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 3</span> "CDN을 붙이면 API 응답도 다 빨라진다"</summary>
+    <p>CDN은 캐시 가능한 콘텐츠(정적 자산, TTL이 있는 공개 데이터)에 효과적이다. 사용자별로 달라지는 개인화된 API 응답은 origin까지 왕복해야 하므로 CDN만으로는 해결되지 않으며, 리전 확장이나 API 호출 통합 같은 별도 전략이 필요하다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 4</span> "RTT는 대역폭을 늘리면 줄어든다"</summary>
+    <p>대역폭(bandwidth)은 단위 시간당 전송 가능한 데이터량이고, RTT(latency)는 왕복에 걸리는 시간으로 서로 다른 개념이다. 대역폭을 늘려도 물리적 거리에 의한 전파 지연은 줄어들지 않는다. 파이프를 굵게 만드는 것과 파이프의 길이를 줄이는 것은 다른 문제다.</p>
+  </details>
+
+  <details>
+    <summary><span class="badge badge-trap">오해 5</span> "압축은 항상 도움이 된다"</summary>
+    <p>이미 압축된 포맷(JPEG, MP4, 이미 gzip된 데이터)을 다시 압축하면 CPU만 소모하고 크기는 거의 줄지 않거나 오히려 늘어날 수 있다. 압축은 텍스트 기반 데이터(JSON, HTML, CSS, JS)에 효과적이며, 압축 대상과 압축/해제 비용 대비 전송 절감 효과를 함께 판단해야 한다.</p>
+  </details>
+
+  <hr>
+
+  <!-- 9. Follow-up 질문 -->
+  <h2 id="followup">9. Senior-level Follow-up 질문</h2>
+
+  <table>
+    <thead>
+      <tr><th>Follow-up 질문</th><th>면접관의 의도</th><th>답변 포인트</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>"TTFB가 크게 나온다면 어떤 도구로 어떤 순서로 원인을 좁히시겠습니까?"</td>
+        <td>구체적인 진단 도구와 절차를 실제로 다뤄봤는지 확인</td>
+        <td>curl -w로 DNS/connect/TLS/TTFB 구간을 쪼개서 측정하고, 서버 측은 APM으로 처리 시간을 분리하며, 필요하면 Wireshark/tcpdump로 실제 패킷 왕복을 확인한다는 절차를 구체적으로 설명한다.</td>
+      </tr>
+      <tr>
+        <td>"HTTP/2 다중화가 있는데 왜 아직도 도메인 샤딩(domain sharding)을 하면 안 됩니까?"</td>
+        <td>과거 HTTP/1.1 최적화 관행이 HTTP/2에서 왜 역효과인지 이해</td>
+        <td>도메인 샤딩은 HTTP/1.1의 연결당 병렬 요청 제한을 우회하려던 기법인데, HTTP/2는 이미 하나의 연결에서 다중화가 가능하므로 도메인을 나누면 오히려 연결(및 핸드셰이크)이 불필요하게 늘어나 성능이 나빠진다는 점을 설명한다.</td>
+      </tr>
+      <tr>
+        <td>"TLS 1.3의 0-RTT는 어떤 위험을 가지고 있습니까?"</td>
+        <td>성능 최적화가 보안과 어떻게 trade-off되는지 통합 판단력 확인</td>
+        <td>0-RTT는 이전 세션 정보를 재사용해 첫 요청부터 데이터를 보내지만, 이 초기 데이터가 재전송 공격(replay attack)에 취약할 수 있어 상태 변경(state-changing) 요청에는 0-RTT를 쓰지 않는 등 신중한 적용이 필요하다는 점을 짚는다.</td>
+      </tr>
+      <tr>
+        <td>"CDN 캐시 히트율이 낮게 나온다면 무엇을 의심하시겠습니까?"</td>
+        <td>CDN 캐싱 동작 원리에 대한 실무 이해도 확인</td>
+        <td>Cache-Control/ETag 헤더 설정, 쿼리 스트링/쿠키 포함 여부에 따른 캐시 키 분산, TTL이 너무 짧게 설정된 경우, 개인화 헤더(Authorization 등)가 캐시를 무력화하는 경우를 점검한다는 점을 설명한다.</td>
+      </tr>
+      <tr>
+        <td>"멀티 리전으로 확장할 때 네트워크 관점에서 가장 먼저 고려할 것은 무엇입니까?"</td>
+        <td>단일 최적화를 넘어 아키텍처 레벨 트레이드오프 사고 확인</td>
+        <td>사용자를 가장 가까운 리전으로 라우팅하는 방식(GeoDNS, Anycast), 리전 간 데이터 동기화 지연과 일관성 모델(강한 일관성 vs 최종 일관성), 리전 장애 시 failover 전략을 함께 설계해야 한다는 점을 짚는다.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- 10. Rubric -->
+  <h2 id="rubric">10. 자기 점검 Rubric</h2>
+
+  <div class="rubric-grid">
+    <div class="rubric-col weak">
+      <h4>약한 답변 (Junior 수준)</h4>
+      <ul>
+        <li>"서버를 스케일 아웃하겠다" 또는 "CDN을 붙이겠다"처럼 원인 분해 없이 하나의 해법으로 답함</li>
+        <li>대역폭과 지연(RTT)을 구분하지 못하고 "네트워크를 빠르게 한다"고 뭉뚱그려 말함</li>
+        <li>연결 수립(TCP+TLS) 왕복 비용이 반복되는 문제를 인지하지 못함</li>
+        <li>HTTP/2·3, CDN, 압축을 무조건 다 적용하면 좋다는 식으로 답하며 각 기법이 줄이는 지연의 종류를 구분하지 못함</li>
+        <li>측정 지표(TTFB, p95/p99) 없이 "빨라졌다"는 감각적 판단으로 마무리함</li>
+      </ul>
+    </div>
+    <div class="rubric-col strong">
+      <h4>강한 답변 (Senior 수준)</h4>
+      <ul>
+        <li>지연을 전파 지연/연결 수립 왕복/서버 처리 시간/전송량으로 분해해서 진단함</li>
+        <li>물리적으로 줄일 수 없는 부분(전파 지연)과 줄일 수 있는 부분을 명확히 구분함</li>
+        <li>keep-alive/connection pooling → HTTP/2·3 → 압축·batching → CDN/멀티 리전 순으로 비용 대비 효과가 큰 것부터 접근함</li>
+        <li>프로토콜 선택이 네트워크 조건(패킷 손실률)에 따라 달라진다는 것을 설명함</li>
+        <li>CDN이 개인화 API 응답에는 한계가 있다는 것을 인지하고 대안(BFF, 리전 확장)을 제시함</li>
+        <li>curl -w, APM, Wireshark 같은 구체적 진단 도구를 언급하고, 배포 후 p50뿐 아니라 p95/p99로 검증함</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>자기 점검 체크리스트</h3>
+  <ul>
+    <li>☐ 지연을 전파 지연/연결 수립/서버 처리/전송량으로 분해해서 설명했는가?</li>
+    <li>☐ 물리적 하한선(전파 지연)과 개선 가능 영역을 구분했는가?</li>
+    <li>☐ 연결 재사용(keep-alive, TLS 1.3)이 왜 비용 대비 효과가 큰지 설명했는가?</li>
+    <li>☐ HTTP/2와 HTTP/3의 유불리가 네트워크 조건에 따라 달라진다는 것을 짚었는가?</li>
+    <li>☐ CDN의 한계(개인화 콘텐츠)와 대안(BFF, 멀티 리전)을 함께 제시했는가?</li>
+    <li>☐ 구체적 진단 도구와 검증 지표(TTFB, p95/p99)를 언급했는가?</li>
+  </ul>
+
+  <hr>
+
+  <h2>다음 레슨 예고</h2>
+  <blockquote>
+    <strong>Interview Day 10</strong> — 종합 모의 면접: 네트워크 장애 RCA
+    <br>핵심 질문: "실제 장애 시나리오를 받아 네트워크 관점 RCA를 수행해보세요."
+    <br>지금까지 배운 계층별 트러블슈팅, TCP/UDP, DNS, TLS, 로드밸런싱, 보안, 성능 최적화를 하나의 장애 시나리오에 통합해 구조화된 답변과 follow-up 대응, 재발 방지까지 훈련한다.
+  </blockquote>
+
+  <nav class="back" style="margin-top:48px;"><a href="./index.html">← 네트워크 학습 목록</a></nav>
+</body>
+</html>
