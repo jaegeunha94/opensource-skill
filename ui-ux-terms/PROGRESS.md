@@ -20,6 +20,7 @@
 | 14 | 2026-07-05 | 폼 & 인풋 UX 용어 — Progressive Disclosure·Inline Validation·Error Prevention | [0014-form-input-ux.html](lessons/0014-form-input-ux.html) |
 | 15 | 2026-07-06 | 알림 & 피드백 UI 컴포넌트 용어 — Toast·Snackbar·Banner·Modal vs Non-modal Dialog | [0015-notification-feedback-ui.html](lessons/0015-notification-feedback-ui.html) |
 | 16 | 2026-07-07 | 로딩 상태 & 스켈레톤 UI 용어 — Skeleton Screen·Spinner·Progress Indicator·Optimistic UI | [0016-loading-states-skeleton-ui.html](lessons/0016-loading-states-skeleton-ui.html) |
+| 17 | 2026-07-08 | 온보딩 & 첫 사용자 경험(FTUE) 용어 — Coach Mark·Product Tour·Aha Moment·Time-to-Value | [0017-onboarding-ftue.html](lessons/0017-onboarding-ftue.html) |
 
 ## 다음 예정 학습
 
@@ -28,7 +29,7 @@
 
 ## 현재 학습 위치
 
-**Day 16 완료** — 다음 주제 미정. 다음 세션에서 MISSION.md와 완료 내용을 바탕으로 새 주제를 선정 예정.
+**Day 17 완료** — 다음 주제 미정. 다음 세션에서 MISSION.md와 완료 내용을 바탕으로 새 주제를 선정 예정.
 
 ## 습득한 핵심 개념
 
@@ -146,3 +147,12 @@
 - [x] Optimistic UI (옵티미스틱 UI) — Day 16
 - [x] Lazy Loading (지연 로딩) — Day 16
 - [x] Perceived Performance (체감 성능) — Day 16
+- [x] Onboarding (온보딩) — Day 17
+- [x] FTUE (First-Time User Experience) — Day 17
+- [x] Coach Mark (코치마크) — Day 17
+- [x] Product Tour / Tooltip Tour (프로덕트 투어) — Day 17
+- [x] Progressive Onboarding (점진적 온보딩) — Day 17
+- [x] Aha Moment (아하 모먼트) — Day 17
+- [x] Time-to-Value / TTV (가치 도달 시간) — Day 17
+- [x] Checklist Onboarding (체크리스트형 온보딩) — Day 17
+- [x] Onboarding Drop-off (온보딩 이탈) — Day 17

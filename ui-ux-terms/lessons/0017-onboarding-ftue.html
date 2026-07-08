@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 17 — 온보딩 & 첫 사용자 경험(FTUE) 용어</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; font-size: 16px; line-height: 1.7; color: #1a1a2e; background: #f8f9fc; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+    /* header */
+    header { background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%); color: #fff; border-radius: 12px; padding: 2rem 2rem 1.75rem; margin-bottom: 2rem; }
+    header .day-badge { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-bottom: 0.5rem; }
+    header h1 { font-size: 1.7rem; font-weight: 700; line-height: 1.3; }
+    header p.subtitle { margin-top: 0.6rem; opacity: 0.9; font-size: 0.95rem; }
+
+    /* nav breadcrumb */
+    .breadcrumb { font-size: 0.82rem; color: #6c757d; margin-bottom: 1.5rem; }
+    .breadcrumb a { color: #3a7bd5; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* section */
+    section { background: #fff; border-radius: 10px; padding: 1.75rem 2rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    section h2 { font-size: 1.15rem; font-weight: 700; color: #3a7bd5; margin-bottom: 1rem; border-left: 4px solid #3a7bd5; padding-left: 0.75rem; }
+    section h3 { font-size: 1rem; font-weight: 700; color: #2d3436; margin: 1.4rem 0 0.5rem; }
+    section p { margin-bottom: 0.85rem; }
+    section ul, section ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    section ul li, section ol li { margin-bottom: 0.4rem; }
+
+    /* term card */
+    .term-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+    .term-card .term-title { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.25rem; }
+    .term-card .term-eng { font-size: 0.82rem; color: #6c757d; margin-bottom: 0.5rem; font-style: italic; }
+    .term-card .term-body { font-size: 0.93rem; }
+
+    /* table */
+    .table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+    th { background: #f0f4ff; color: #3a7bd5; font-weight: 700; text-align: left; padding: 0.6rem 0.9rem; border-bottom: 2px solid #d0d9f5; }
+    td { padding: 0.55rem 0.9rem; border-bottom: 1px solid #eee; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fbff; }
+
+    /* callout */
+    .callout { border-left: 4px solid #00d2ff; background: #f0faff; border-radius: 0 8px 8px 0; padding: 0.9rem 1.1rem; margin: 1rem 0; font-size: 0.9rem; }
+    .callout.warn { border-color: #f39c12; background: #fffbf0; }
+    .callout.tip  { border-color: #27ae60; background: #f0fff4; }
+
+    /* code */
+    code { background: #f4f4f8; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.85em; font-family: 'Fira Code', monospace; }
+
+    /* copy compare */
+    .compare-row { display: flex; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .compare-col { flex: 1 1 240px; border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.9rem; }
+    .compare-col.bad { background: #fff4f4; border-left: 4px solid #e74c3c; }
+    .compare-col.good { background: #f0fff4; border-left: 4px solid #27ae60; }
+    .compare-col .label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+    .compare-col.bad .label { color: #e74c3c; }
+    .compare-col.good .label { color: #27ae60; }
+
+    /* quiz */
+    .quiz { background: #fafbfe; border: 1px solid #d0d9f5; border-radius: 8px; padding: 1.25rem 1.4rem; margin-top: 1.5rem; }
+    .quiz h3 { font-size: 1rem; color: #3a7bd5; margin-bottom: 0.75rem; }
+    .quiz .q { font-weight: 600; margin-bottom: 0.6rem; }
+    .quiz .options li { margin-bottom: 0.3rem; cursor: pointer; padding: 0.3rem 0.5rem; border-radius: 4px; transition: background 0.15s; }
+    .quiz .options li:hover { background: #e8f0ff; }
+    .quiz details { margin-top: 0.75rem; }
+    .quiz details summary { cursor: pointer; color: #3a7bd5; font-size: 0.9rem; }
+    .quiz details p { margin-top: 0.5rem; font-size: 0.9rem; background: #f0fff4; border-left: 3px solid #27ae60; padding: 0.6rem 0.8rem; border-radius: 0 6px 6px 0; }
+
+    /* footer */
+    footer { text-align: center; font-size: 0.82rem; color: #aaa; margin-top: 2.5rem; }
+    footer a { color: #3a7bd5; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="breadcrumb">
+    <a href="./index.html">← UI/UX 용어 학습 목록</a>
+  </div>
+
+  <header>
+    <div class="day-badge">Day 17 · UI/UX 용어</div>
+    <h1>온보딩 & 첫 사용자 경험(FTUE) 용어</h1>
+    <p class="subtitle">Onboarding · FTUE · Coach Mark · Product Tour · Aha Moment · Time-to-Value</p>
+  </header>
+
+  <!-- ───────────────── 1. 왜 이 용어가 중요한가 ───────────────── -->
+  <section>
+    <h2>1. 왜 이 용어들이 중요한가</h2>
+    <p>
+      지금까지 다룬 용어들이 "사용 중인" 화면(폼, 알림, 로딩)을 설명했다면,
+      이번 Day는 사용자가 제품을 <strong>처음 만나는 순간</strong>을 설명하는
+      용어다. "신규 유저 이탈률이 높으니 온보딩 좀 손봐야 할 것 같아요"라는
+      말은 실무에서 매우 흔하지만, 실제로는 화면 위에 말풍선으로 안내하는
+      <strong>Coach Mark</strong>를 붙이는 문제인지, 가입부터 핵심 가치를
+      느끼기까지 걸리는 시간(<strong>Time-to-Value</strong>)을 줄이는
+      문제인지에 따라 해결 방법이 완전히 다르다.
+    </p>
+    <p>
+      온보딩 용어를 정확히 쓰면 "이 화면은 Progressive Onboarding으로 필요한
+      시점에만 안내하고, 우리 목표는 가입 후 Aha Moment까지의 Time-to-Value를
+      3분 이내로 줄이는 것"처럼 디자이너·개발자·PM이 지표와 화면 설계를 같은
+      언어로 논의할 수 있다. 용어가 뒤섞이면 "온보딩을 강화하자"는 말이
+      화면에 말풍선을 더 붙이는 것으로 오해되어, 정작 이탈의 진짜 원인인 핵심
+      가치 도달 지연 문제는 그대로 남는 경우가 많다.
+    </p>
+  </section>
+
+  <!-- ───────────────── 2. 핵심 용어 카드 ───────────────── -->
+  <section>
+    <h2>2. 핵심 용어 카드</h2>
+
+    <div class="term-card">
+      <div class="term-title">온보딩</div>
+      <div class="term-eng">Onboarding</div>
+      <div class="term-body">
+        신규 사용자가 제품 사용법과 핵심 가치를 <strong>처음 배우고 적응하도록
+        돕는 안내 과정</strong>. 회원가입 직후 화면, 튜토리얼, 첫 설정 마법사
+        등 특정 화면·플로우를 가리킬 때 주로 쓴다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">FTUE (첫 사용자 경험)</div>
+      <div class="term-eng">First-Time User Experience</div>
+      <div class="term-body">
+        신규 사용자가 앱을 설치·가입한 순간부터 <strong>제품의 핵심 가치를
+        처음 이해하기까지 겪는 경험 전체</strong>를 가리키는 더 넓은 개념.
+        Onboarding 화면뿐 아니라 앱스토어 설명, 첫 로딩, 첫 빈 화면, 첫 알림까지
+        모두 FTUE에 포함된다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">코치마크</div>
+      <div class="term-eng">Coach Mark</div>
+      <div class="term-body">
+        화면 위에 <strong>특정 요소를 화살표나 말풍선으로 가리키며 한 가지
+        기능을 설명</strong>하는 일회성 오버레이. "여기를 눌러 새 항목을
+        추가하세요" 같은 짧은 안내가 대표적이며, 보통 처음 한 번만 노출되고
+        다시 보이지 않는다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">프로덕트 투어</div>
+      <div class="term-eng">Product Tour (Tooltip Tour)</div>
+      <div class="term-body">
+        여러 개의 Coach Mark를 <strong>순서대로 이어 붙여 화면 곳곳의 주요
+        기능을 연속으로 소개</strong>하는 가이드 흐름. "다음" 버튼으로 단계를
+        넘기며 진행하며, 기능이 많은 대시보드형 제품의 첫 진입 시 자주 쓰인다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">점진적 온보딩</div>
+      <div class="term-eng">Progressive Onboarding</div>
+      <div class="term-body">
+        모든 기능을 처음에 한꺼번에 안내하지 않고, <strong>사용자가 실제로 그
+        기능이 필요한 시점에 맞춰 조금씩 안내</strong>하는 방식. 예를 들어
+        고급 필터 기능은 사용자가 검색 결과가 많아 필터 버튼 근처에 머무를 때
+        처음 안내한다. 첫 화면에서 정보 과부하를 주지 않는 것이 목적이다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">아하 모먼트</div>
+      <div class="term-eng">Aha Moment</div>
+      <div class="term-body">
+        사용자가 제품을 써보다가 <strong>"아, 이래서 쓰는 거구나"라고 핵심
+        가치를 처음으로 체감하는 순간</strong>. 예를 들어 협업 툴이라면 첫
+        댓글에 동료가 실시간으로 반응하는 순간, 사진 편집 앱이라면 첫 필터
+        적용 결과를 본 순간이 Aha Moment가 될 수 있다. 온보딩 설계의 최종
+        목표는 이 순간까지 최대한 빨리, 자연스럽게 도달시키는 것이다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">Time-to-Value (TTV)</div>
+      <div class="term-eng">Time-to-Value</div>
+      <div class="term-body">
+        가입·설치 시점부터 <strong>Aha Moment에 도달하기까지 걸리는 시간</strong>을
+        측정하는 지표. TTV가 길수록 그 사이 이탈할 확률이 높아지므로, 온보딩
+        개선의 성공 여부는 화면이 예뻐졌는지가 아니라 <strong>TTV가 실제로
+        줄었는지</strong>로 판단한다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">체크리스트형 온보딩</div>
+      <div class="term-eng">Checklist Onboarding</div>
+      <div class="term-body">
+        "프로필 사진 등록", "첫 프로젝트 생성" 같은 <strong>초기 설정 항목을
+        할 일 목록 형태로 보여주고 진행률을 시각화</strong>하는 온보딩 패턴.
+        완료율(예: "3/5 완료")을 보여줘 사용자가 남은 단계를 스스로 진행하도록
+        유도하며, Coach Mark보다 사용자의 능동적 참여를 더 많이 요구한다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">온보딩 이탈</div>
+      <div class="term-eng">Onboarding Drop-off</div>
+      <div class="term-body">
+        온보딩 단계 중간에 <strong>사용자가 다음 단계로 넘어가지 않고
+        이탈하는 지점</strong>. 온보딩 퍼널(Funnel)의 각 단계별 완료율을
+        분석해 어느 단계에서 이탈이 집중되는지 찾아내고, 그 단계의 안내
+        방식이나 입력 부담을 줄이는 것이 개선의 출발점이다.
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ───────────────── 3. 헷갈리기 쉬운 개념 비교 ───────────────── -->
+  <section>
+    <h2>3. 헷갈리기 쉬운 개념 비교</h2>
+
+    <h3>① Onboarding vs FTUE</h3>
+    <div class="compare-row">
+      <div class="compare-col good">
+        <div class="label">Onboarding</div>
+        신규 사용자에게 <strong>사용법을 안내하는 특정 화면·플로우</strong>.
+        튜토리얼, 첫 설정 마법사 등 구체적인 산출물을 가리킨다.
+      </div>
+      <div class="compare-col bad">
+        <div class="label">FTUE</div>
+        설치부터 첫 가치 체감까지 <strong>경험 전체</strong>를 가리키는 상위
+        개념. 온보딩 화면은 FTUE를 구성하는 여러 요소 중 하나일 뿐이다.
+      </div>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d; margin-top:-0.5rem;">
+      실무 팁: "온보딩만 고치면 이탈이 줄 것"이라고 단정하기 전에, 앱스토어
+      설명이나 첫 로딩 속도 같은 FTUE의 다른 구간도 함께 점검해야 한다.
+    </p>
+
+    <h3>② Coach Mark vs Product Tour vs Progressive Onboarding</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>구분</th><th>노출 방식</th><th>정보량</th><th>적합한 상황</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Coach Mark</td><td>특정 요소 1개를 즉시 안내</td><td>매우 적음</td><td>새 기능 1개를 짧게 알릴 때</td></tr>
+          <tr><td>Product Tour</td><td>여러 요소를 순서대로 연속 안내</td><td>많음, 한 번에 전달</td><td>기능이 많은 대시보드 첫 진입</td></tr>
+          <tr><td>Progressive Onboarding</td><td>필요한 시점마다 분산 안내</td><td>단계별로 적당량씩</td><td>기능은 많지만 첫 화면 과부하를 피하고 싶을 때</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d;">
+      실무 팁: Product Tour는 한 번에 많은 정보를 전달해 완료율이 낮게 나오는
+      경우가 많다. 기능이 5개를 넘어가면 Product Tour보다 Progressive
+      Onboarding으로 분산하는 것이 대체로 완료율과 기억 정착률이 높다.
+    </p>
+
+    <h3>③ Aha Moment vs Time-to-Value</h3>
+    <div class="compare-row">
+      <div class="compare-col good">
+        <div class="label">Aha Moment</div>
+        사용자가 가치를 체감하는 <strong>정성적 순간(개념)</strong>. "어떤
+        행동을 했을 때 사용자가 가치를 느끼는가"를 정의하는 데 쓴다.
+      </div>
+      <div class="compare-col bad">
+        <div class="label">Time-to-Value</div>
+        그 순간까지 걸리는 <strong>정량적 시간(지표)</strong>. Aha Moment를
+        먼저 정의해야 TTV를 측정할 수 있다.
+      </div>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d; margin-top:-0.5rem;">
+      실무 팁: Aha Moment를 정의하지 않은 채 "온보딩을 빠르게 만들자"고 하면
+      무엇을 줄여야 할지 기준이 없다. 데이터 분석팀과 함께 "어떤 행동을 한
+      사용자의 리텐션이 유의미하게 높은가"를 찾아 Aha Moment부터 합의해야 한다.
+    </p>
+  </section>
+
+  <!-- ───────────────── 4. 실전 체크리스트 ───────────────── -->
+  <section>
+    <h2>4. 온보딩 리뷰 실전 체크리스트</h2>
+    <p>디자인 리뷰나 온보딩 개편 논의 전, 아래 항목을 팀과 함께 확인한다.</p>
+    <ol>
+      <li><strong>Aha Moment 정의 여부</strong> — 우리 제품에서 사용자가 핵심 가치를 처음 느끼는 행동이 무엇인지 합의되어 있는가?</li>
+      <li><strong>Time-to-Value 측정 여부</strong> — 가입부터 Aha Moment까지 실제로 몇 분/몇 단계가 걸리는지 데이터로 확인했는가, 아니면 화면 개수만 세고 있는가?</li>
+      <li><strong>안내 방식 선택 근거</strong> — Coach Mark, Product Tour, Progressive Onboarding 중 지금 상황에 맞는 방식을 골랐는가, 아니면 관성적으로 Product Tour부터 붙이고 있는가?</li>
+      <li><strong>Drop-off 지점 파악</strong> — 온보딩 퍼널 각 단계의 완료율을 확인해 이탈이 집중되는 단계를 알고 있는가?</li>
+      <li><strong>건너뛰기(Skip) 허용 여부</strong> — 숙련 사용자나 재설치 사용자가 온보딩을 건너뛸 수 있는 경로가 있는가?</li>
+      <li><strong>반복 노출 방지</strong> — Coach Mark나 Product Tour가 이미 본 사용자에게 다시 뜨지 않도록 처리되어 있는가?</li>
+    </ol>
+    <div class="callout tip">
+      <strong>Tip — 온보딩의 성공 지표는 완주율이 아니라 TTV다:</strong>
+      온보딩 화면을 끝까지 본 비율이 높아도 Aha Moment에 도달한 사용자가
+      늘지 않았다면 실패한 개편이다. "온보딩 완료율"과 "Aha Moment 도달률"을
+      함께 추적해야 한다.
+    </div>
+    <div class="callout warn">
+      <strong>주의 — Product Tour 남용:</strong>
+      신규 기능이 생길 때마다 Product Tour 단계를 계속 추가하면, 정작 중요한
+      핵심 기능 안내가 부가 기능 설명에 묻혀 Aha Moment 도달이 오히려
+      늦어질 수 있다.
+    </div>
+  </section>
+
+  <!-- ───────────────── 5. 용어 요약 ───────────────── -->
+  <section>
+    <h2>5. 용어 요약</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>용어</th><th>한국어</th><th>한 줄 설명</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Onboarding</td><td>온보딩</td><td>신규 사용자에게 사용법·가치를 안내하는 화면·플로우</td></tr>
+          <tr><td>FTUE</td><td>첫 사용자 경험</td><td>설치부터 첫 가치 체감까지의 경험 전체</td></tr>
+          <tr><td>Coach Mark</td><td>코치마크</td><td>특정 요소 1개를 화살표·말풍선으로 안내하는 오버레이</td></tr>
+          <tr><td>Product Tour</td><td>프로덕트 투어</td><td>여러 Coach Mark를 순서대로 이어 붙인 안내 흐름</td></tr>
+          <tr><td>Progressive Onboarding</td><td>점진적 온보딩</td><td>필요한 시점마다 나눠서 안내하는 방식</td></tr>
+          <tr><td>Aha Moment</td><td>아하 모먼트</td><td>핵심 가치를 처음 체감하는 순간</td></tr>
+          <tr><td>Time-to-Value</td><td>가치 도달 시간</td><td>가입부터 Aha Moment까지 걸리는 시간</td></tr>
+          <tr><td>Checklist Onboarding</td><td>체크리스트형 온보딩</td><td>초기 설정 항목을 할 일 목록으로 보여주는 패턴</td></tr>
+          <tr><td>Onboarding Drop-off</td><td>온보딩 이탈</td><td>온보딩 중간에 사용자가 이탈하는 지점</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───────────────── 6. 셀프 체크 퀴즈 ───────────────── -->
+  <section>
+    <h2>6. 셀프 체크 퀴즈</h2>
+
+    <div class="quiz">
+      <h3>Q1</h3>
+      <p class="q">협업 툴에서 사용자가 첫 댓글을 남기자 동료가 실시간으로 반응하는 것을 보고 "이래서 쓰는 거구나"라고 느꼈다. 이 순간을 가리키는 용어는?</p>
+      <ol class="options" type="A">
+        <li>A. Coach Mark</li>
+        <li>B. Time-to-Value</li>
+        <li>C. Aha Moment</li>
+        <li>D. Onboarding Drop-off</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: C — Aha Moment</strong><br>
+          사용자가 제품의 핵심 가치를 처음 체감하는 순간이 Aha Moment다.
+          A(Coach Mark)는 특정 요소를 가리키는 안내 오버레이, B(Time-to-Value)는
+          그 순간까지 걸리는 시간(지표)이지 순간 자체가 아니며, D(Onboarding
+          Drop-off)는 이탈 지점을 뜻해 이 상황과 반대된다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q2</h3>
+      <p class="q">기능이 15개가 넘는 대시보드 제품에서, 첫 화면에 모든 기능을 한 번에 안내하지 않고 사용자가 실제로 그 기능 근처에 도달했을 때마다 짧게 안내하려고 한다. 가장 적합한 온보딩 방식은?</p>
+      <ol class="options" type="A">
+        <li>A. Product Tour</li>
+        <li>B. Progressive Onboarding</li>
+        <li>C. Checklist Onboarding</li>
+        <li>D. FTUE</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — Progressive Onboarding</strong><br>
+          필요한 시점마다 나눠서 안내하는 방식이 Progressive Onboarding이다.
+          A(Product Tour)는 여러 요소를 한 번에 순서대로 안내해 기능이 많으면
+          정보 과부하를 줄 수 있고, C(Checklist Onboarding)는 초기 설정
+          항목을 할 일 목록으로 보여주는 별개 패턴이며, D(FTUE)는 특정 안내
+          방식이 아니라 경험 전체를 가리키는 상위 개념이라 방식 선택의 답이
+          될 수 없다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q3</h3>
+      <p class="q">온보딩 개편 후 화면을 끝까지 본 사용자 비율은 늘었지만, 리텐션에는 변화가 없었다. 이 결과를 제대로 진단하려면 추가로 확인해야 할 지표는?</p>
+      <ol class="options" type="A">
+        <li>A. 온보딩 화면 로딩 속도</li>
+        <li>B. Aha Moment 도달률과 Time-to-Value</li>
+        <li>C. Coach Mark의 애니메이션 종류</li>
+        <li>D. 화면 배경색</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — Aha Moment 도달률과 Time-to-Value</strong><br>
+          온보딩 완주율이 올라도 사용자가 핵심 가치를 체감하지 못했다면 개편은
+          실패다. Aha Moment 도달률과 그때까지 걸린 시간(TTV)을 확인해야
+          실제로 가치 전달이 개선됐는지 알 수 있다. A, C, D는 온보딩의
+          핵심 성공 여부와 직접적인 인과관계가 약한 부수적 요소다.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ───────────────── 7. 다음 학습 예고 ───────────────── -->
+  <section>
+    <h2>7. 다음 학습 예고</h2>
+    <p>
+      다음 Day에서는 지금까지 다룬 기초 개념, 정보 구조, 컴포넌트 시스템, 인터랙션,
+      접근성, 협업 툴, 사용자 조사, 프로토타이핑, 사용성 테스트, 반응형/모바일,
+      UX 라이팅, 다크 패턴, 디자인 리뷰 프로세스, 폼/인풋 UX, 알림/피드백 UI,
+      로딩/스켈레톤 UI, 온보딩/FTUE를 바탕으로 실무 심화 주제나 인접 영역으로
+      계속 확장할 예정이다.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      <a href="./index.html">← 전체 목록</a> &nbsp;|&nbsp;
+      UI/UX 용어 학습 워크스페이스 · Day 17 · 2026-07-08
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>
