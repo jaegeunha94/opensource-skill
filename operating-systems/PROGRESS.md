@@ -18,18 +18,18 @@
 | 6 | 2026-07-05 | 가상 메모리와 Page Fault | [0016-day6-virtual-memory-and-page-fault.html](lessons/0016-day6-virtual-memory-and-page-fault.html) |
 | 7 | 2026-07-06 | 파일 시스템과 I/O | [0017-day7-file-io-and-buffer-cache.html](lessons/0017-day7-file-io-and-buffer-cache.html) |
 | 8 | 2026-07-07 | 비동기 I/O와 이벤트 루프 | [0018-day8-async-io-and-event-loop.html](lessons/0018-day8-async-io-and-event-loop.html) |
+| 9 | 2026-07-08 | 컨테이너와 OS 격리 | [0019-day9-container-os-isolation.html](lessons/0019-day9-container-os-isolation.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 9 | 컨테이너와 OS 격리 | "컨테이너는 VM과 무엇이 다르고, 운영상 어떤 문제가 생길 수 있습니까?" | namespace, cgroup, resource limit, noisy neighbor |
 | 10 | 종합 모의 면접 | "운영체제 지표를 바탕으로 성능 저하 RCA를 수행해보세요." | 지표 기반 추론, 해결안 비교, 재발 방지 |
 
 ## 현재 학습 위치
 
-**Day 8 완료** (2026-07-07) — 비동기 I/O와 이벤트 루프
-**다음**: Day 9 — 컨테이너와 OS 격리
+**Day 9 완료** (2026-07-08) — 컨테이너와 OS 격리
+**다음**: Day 10 — 종합 모의 면접
 
 ## Interview 답변 체크리스트
 
@@ -56,4 +56,5 @@
 - [x] virtual memory, TLB, major/minor page fault, swap/thrashing 진단 (available memory, vmstat, cgroup 메모리 한도) — Day 6
 - [x] page cache, dirty page, write-back, fsync/fdatasync, 저널링 오버헤드 — Day 7
 - [x] blocking I/O, non-blocking I/O, select/poll/epoll, 이벤트 루프 블로킹, io_uring, cgroup CPU throttling과 이벤트 루프 — Day 8
-- [ ] namespace, cgroup, noisy neighbor (예정 Day 9)
+- [x] VM vs 컨테이너 구조, namespace(시야 격리)와 cgroup(자원 제한) 구분, noisy neighbor, OOM kill, CPU throttling, User namespace, gVisor/Kata — Day 9
+- [ ] 지표 기반 종합 RCA와 해결안 비교 (예정 Day 10)
