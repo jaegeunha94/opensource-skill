@@ -12,17 +12,17 @@
 | 6 | 2026-07-05 | 비동기 처리와 동시성 — async가 해결책인 경우와 함정 | [0006-async-concurrency-when-it-helps-and-traps.html](lessons/0006-async-concurrency-when-it-helps-and-traps.html) |
 | 7 | 2026-07-06 | 부하 테스트 설계 — 현실적인 트래픽 시뮬레이션 | [0007-load-testing-realistic-traffic-simulation.html](lessons/0007-load-testing-realistic-traffic-simulation.html) |
 | 8 | 2026-07-07 | Profiling 실전 — CPU/메모리/I/O 프로파일링 해석 | [0008-profiling-cpu-memory-io-interpretation.html](lessons/0008-profiling-cpu-memory-io-interpretation.html) |
+| 9 | 2026-07-08 | 성능 지표 해석 — p50/p95/p99, throughput, error rate | [0009-performance-metrics-percentile-throughput-error-rate.html](lessons/0009-performance-metrics-percentile-throughput-error-rate.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | 성능 지표 해석 — p50/p95/p99, throughput, error rate | percentile latency, histogram, SLO |
 | 10 | DB Connection Pool 튜닝 | pool exhaustion, deadlock, timeout 설정 |
 
 ## 현재 학습 위치
 
-**Day 8 완료** — 다음: Day 9 — 성능 지표 해석 (p50/p95/p99, throughput, error rate)
+**Day 9 완료** — 다음: Day 10 — DB Connection Pool 튜닝 (pool 고갈과 deadlock)
 
 ## 습득한 핵심 개념
 
@@ -69,4 +69,10 @@
 - [x] Flame Graph 해석 — 너비=시간 비중, 좌우=비시간순 (Day 8)
 - [x] On-CPU vs Off-CPU profiling (Day 8)
 - [x] 메모리 누수 판별 — plateau vs 선형 증가, 힙 스냅샷 비교 (Day 8)
-- [ ] Percentile latency(p50/p95/p99)와 SLO/SLI 설계 (예정 Day 9)
+- [x] 평균(mean)의 함정과 long-tail latency 분포 (Day 9)
+- [x] Percentile(p50/p90/p95/p99/p99.9) 해석과 SLO 기준 선택 (Day 9)
+- [x] Tail Latency Amplification — fan-out과 반복 요청에서의 체감 확률 (Day 9)
+- [x] Percentile 합산의 함정과 mergeable histogram(HdrHistogram, t-digest) (Day 9)
+- [x] Throughput-Latency 비선형 관계와 큐잉 이론상 포화(Saturation) (Day 9)
+- [x] SLI/SLO/SLA 구분과 Error Budget을 통한 신뢰성-속도 trade-off 관리 (Day 9)
+- [ ] DB Connection Pool 크기 산정과 pool exhaustion, deadlock (예정 Day 10)
