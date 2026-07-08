@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — Ingress vs Gateway API: 트래픽 라우팅 설계</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #222538;
+      --border: #2e3150;
+      --accent: #7c83ff;
+      --accent2: #50e3c2;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #e2e4f0;
+      --text2: #9da3c8;
+      --text3: #6b7099;
+      --good: #50e3c2;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card { border-left: 4px solid var(--accent); }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card { border-left: 4px solid var(--accent2); background: #1a2430; }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card { border-left: 4px solid var(--warn); background: #1f1d10; }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card { border-left: 4px solid #a07bff; background: #1a1828; }
+    .answer-card .card-label { color: #a07bff; }
+    .alert-card { border-left: 4px solid var(--weak); background: #241214; }
+    .alert-card .card-label { color: var(--weak); }
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.2rem; }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box { background: #0f2420; border: 1px solid var(--good); border-radius: 8px; padding: 1.1rem 1.3rem; }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box { background: #28100f; border: 1px solid var(--weak); border-radius: 8px; padding: 1.1rem 1.3rem; }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1.1rem 1.4rem; margin-bottom: 0.9rem; }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table { width: 100%; border-collapse: collapse; font-size: 0.91rem; margin-top: 0.5rem; }
+    .rubric-table th { background: var(--surface2); color: var(--text2); font-weight: 700; padding: 0.6rem 0.8rem; text-align: left; border: 1px solid var(--border); }
+    .rubric-table td { padding: 0.6rem 0.8rem; border: 1px solid var(--border); vertical-align: top; }
+    .rubric-table tr:nth-child(odd) td { background: #15182a; }
+    .rubric-table tr:nth-child(even) td { background: #1a1d2e; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .pillar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.9rem; margin-bottom: 1.2rem; }
+    .pillar-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; }
+    .pillar-name { font-weight: 700; color: var(--accent); margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .pillar-key { font-size: 0.83rem; color: var(--text2); }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li { counter-increment: step; position: relative; padding-left: 2.2rem; margin-bottom: 0.7rem; }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute; left: 0; top: 0.1rem;
+      background: var(--accent); color: #fff; font-weight: 700; font-size: 0.78rem;
+      width: 1.5rem; height: 1.5rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .misconception { background: #1f1520; border: 1px solid #6e3880; border-radius: 8px; padding: 1rem 1.3rem; margin-bottom: 0.9rem; }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 0.88rem; }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag { display: inline-block; background: var(--surface2); color: var(--text2); font-size: 0.75rem; padding: 0.2em 0.6em; border-radius: 4px; margin: 0.15rem 0.15rem 0.15rem 0; }
+    .source-note { font-size: 0.82rem; color: var(--text3); margin-top: 0.4rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 7 · Kubernetes 인터뷰 대비</div>
+    <h1>Ingress vs Gateway API — 트래픽 라우팅 설계</h1>
+    <p class="subtitle">
+      Ingress는 API일 뿐 실행 주체는 Ingress Controller · ingress-nginx 은퇴(2026-03 EOL, CVE-2025-1974)라는 현재진행형 사건 · Gateway API의 GatewayClass/Gateway/HTTPRoute 역할 분리 · 마이그레이션 판단 기준
+    </p>
+  </header>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "우리 클러스터는 지금 <code>ingress-nginx</code>로 모든 외부 트래픽을 라우팅하고 있습니다. 그런데 이 컨트롤러가 2026년 3월에 사실상 은퇴(retirement)했다는 걸 방금 알게 됐습니다. 당장 뭐가 위험하고, 어떤 순서로, 무엇으로 마이그레이션하시겠습니까? 그리고 애초에 Ingress 대신 Gateway API로 새로 설계했다면 이 문제를 피할 수 있었을까요?"
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"Ingress 리소스를 <code>kubectl apply</code>하면 실제로 트래픽을 처리하는 건 누구입니까? Ingress 오브젝트 자체가 서버입니까?"</li>
+        <li>"같은 Ingress YAML을 nginx 컨트롤러에서 다른 컨트롤러(예: Traefik)로 옮겼더니 동작이 달라졌습니다. 왜 이런 일이 생깁니까?"</li>
+        <li>"Gateway API가 Ingress보다 나은 점을 딱 하나만 꼽는다면 무엇이고, 왜 그게 '역할 분리'와 관련 있습니까?"</li>
+        <li>"HTTPRoute, GRPCRoute, TCPRoute는 왜 따로 나뉘어 있습니까? 그냥 하나의 Route 타입으로 통합하면 안 됐습니까?"</li>
+        <li>"우리 서비스는 지금 Ingress로 잘 돌아가고 있는데, 굳이 Gateway API로 마이그레이션할 이유가 있습니까?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">Ingress = API, Ingress Controller = 실행 주체</span>
+      <span class="tag">ingress-nginx 은퇴(2026-03 EOL)</span>
+      <span class="tag">CVE-2025-1974 IngressNightmare</span>
+      <span class="tag">Gateway API GA</span>
+      <span class="tag">GatewayClass/Gateway/HTTPRoute 역할 분리</span>
+      <span class="tag">GRPCRoute/TCPRoute/UDPRoute/TLSRoute</span>
+      <span class="tag">annotation 파편화 vs 표준 필드</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Ingress는 "약속"일 뿐이고, 실제로 일하는 건 Ingress Controller다</h3>
+    <p>
+      Day 6에서 Service가 데이터 플레인 실체 없는 규칙 추상화라는 걸 봤다. Ingress도 같은 구조다. <code>kind: Ingress</code> 오브젝트를 클러스터에 넣는다고 해서 그 자체가 HTTP 요청을 받아 처리하는 서버가 되는 게 아니다. Ingress는 "이 호스트/경로로 오는 트래픽은 이 Service로 보내라"는 <strong>선언(의도)</strong>일 뿐이고, 이 선언을 읽어서 실제로 리버스 프록시를 띄우고 라우팅 규칙을 반영하는 별도의 프로그램이 <strong>Ingress Controller</strong>다(nginx, Traefik, HAProxy, Envoy 기반 등). Ingress Controller가 클러스터에 하나도 없으면 Ingress 오브젝트를 아무리 만들어도 트래픽은 그냥 어디로도 가지 않는다.
+    </p>
+    <p>
+      여기서 시니어가 짚어야 하는 함정은, <strong>Ingress라는 API 스펙 자체는 표준이지만 그걸 구현하는 컨트롤러마다 동작과 확장 방식이 다르다</strong>는 점이다. 표준 스펙이 커버하는 건 호스트/경로 기반의 아주 기본적인 라우팅뿐이고, TLS 세부 설정, 리다이렉트, 헤더 조작, rate limiting, 트래픽 분할(canary) 같은 실무에 필요한 대부분의 기능은 각 컨트롤러가 <strong>annotation</strong>이라는, 사실상 문자열 키-값 확장으로 구현한다. 그래서 nginx 컨트롤러용으로 짠 <code>nginx.ingress.kubernetes.io/...</code> annotation이 가득한 Ingress YAML을 Traefik으로 그대로 옮기면 대부분 무시되거나 깨진다 — Ingress "표준"을 쓴다고 착각하지만 실제로는 특정 벤더 확장에 강하게 락인돼 있었던 것이다.
+    </p>
+
+    <div class="card alert-card">
+      <div class="card-label">2026년 현재진행형 사건 — ingress-nginx 은퇴</div>
+      <p>
+        가장 널리 쓰이던 구현체인 <strong><code>ingress-nginx</code></strong> 프로젝트(F5의 상용 NGINX Ingress Controller와는 다른, Kubernetes SIG Network 산하 오픈소스 프로젝트)가 <strong>2025년 11월 11일 은퇴가 공식 발표</strong>됐고, <strong>2026년 3월을 끝으로 best-effort 유지보수마저 종료</strong>됐다. 즉 2026-07 현재는 신규 릴리스도, 버그 수정도, <strong>새로 발견되는 보안 취약점에 대한 패치도 없는 상태</strong>다.
+      </p>
+      <p>
+        은퇴 사유는 단순한 "인기 하락"이 아니라 구조적인 문제였다. ① 압도적으로 많이 쓰이는 프로젝트인데도 실제 유지보수는 소수 인원이 퇴근 후·주말에 하는 수준에 불과했고, ② 2025년 초 공개된 <strong>CVE-2025-1974("IngressNightmare")</strong> — admission webhook을 통해 인증 없이 클러스터 전체를 장악할 수 있는 치명적 취약점 — 이 이 지속가능성 문제를 더는 외면할 수 없게 만들었으며, ③ 임의의 NGINX 설정을 주입할 수 있는 <code>snippets</code> annotation 같은, "유연함을 위해 열어둔 기능"이 사실은 심각한 보안 결함이었다는 것이 재확인됐다.
+      </p>
+      <p class="source-note">https://kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/</p>
+    </div>
+
+    <p>
+      여기서 중요한 개념적 구분: <strong>Ingress API 자체는 지금도 GA이고 폐기(deprecated)되지 않았다.</strong> 폐기·은퇴된 건 "Ingress라는 스펙"이 아니라 "ingress-nginx라는 특정 구현체(컨트롤러)"다. 이 구분을 못 하면 "Ingress를 이제 아예 쓰면 안 되는 건가요?" 같은 혼란스러운 결론에 이른다 — 정확히는 "그 API를 쓰더라도, 유지보수가 끊긴 특정 구현체를 계속 프로덕션에서 돌리면 안 된다"는 것이다.
+    </p>
+
+    <h3>Gateway API — Ingress의 한계를 구조적으로 다시 설계한 후속 표준</h3>
+    <p>
+      Gateway API는 "Ingress 2.0"이 아니라, Ingress가 안고 있던 "표준 스펙은 얕고 실전 기능은 벤더 annotation에 의존한다"는 근본 문제를 <strong>API 자체를 여러 리소스로 쪼개서</strong> 해결하려는 설계다. 세 계층으로 나뉜다.
+    </p>
+    <div class="pillar-grid">
+      <div class="pillar-box">
+        <div class="pillar-name">GatewayClass</div>
+        <div class="pillar-key">클러스터 전역 리소스. "이 클래스는 어떤 컨트롤러 구현체가 처리한다"는 선언(예: Envoy Gateway, Cilium, 클라우드 벤더 LB). <strong>인프라 제공자</strong>가 정의.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">Gateway</div>
+        <div class="pillar-key">실제 트래픽 진입점(리스너, 포트, TLS 인증서, 어떤 네임스페이스의 Route를 붙여도 되는지)을 정의. <strong>플랫폼/클러스터 운영팀</strong>이 관리.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">HTTPRoute / GRPCRoute / TCPRoute 등</div>
+        <div class="pillar-key">실제 라우팅 규칙(경로, 헤더 매칭, 백엔드, 트래픽 가중치). <strong>애플리케이션 팀</strong>이 자신의 네임스페이스에서 관리.</div>
+      </div>
+    </div>
+    <p>
+      이 3계층 분리가 만드는 실무적 효과는 <strong>권한 경계와 책임 소재를 API 레벨에서 강제할 수 있다는 것</strong>이다. Ingress 시절에는 "TLS 인증서 설정"과 "이 경로는 저 서비스로 보내라"는 규칙이 하나의 오브젝트 안에 섞여 있어서, 애플리케이션 팀에게 Ingress를 쓸 권한을 주면 사실상 인프라 설정(리스너, 인증서, 어떤 네임스페이스까지 노출할지)까지 건드릴 권한을 같이 준 셈이었다. Gateway API에서는 애플리케이션 팀에게 HTTPRoute만 RBAC로 허용하면, Gateway(인프라 설정)는 건드릴 수 없으면서도 자신의 라우팅 규칙은 self-service로 관리할 수 있다.
+    </p>
+
+    <h3>Route 타입이 프로토콜별로 나뉜 이유</h3>
+    <p>
+      Ingress는 사실상 HTTP(S) 전용으로 설계됐다. 순수 TCP/UDP 트래픽(예: 데이터베이스 프록시, 게임 서버)이나 gRPC 같은 HTTP/2 기반이지만 라우팅 매칭 방식이 다른 프로토콜을 다루려면 각 컨트롤러가 또 자체 annotation을 만들어야 했다. Gateway API는 애초에 프로토콜별로 Route 종류를 나눴다 — <code>HTTPRoute</code>(경로/헤더 기반 L7), <code>GRPCRoute</code>(gRPC 서비스/메서드 매칭), <code>TCPRoute</code>/<code>UDPRoute</code>(순수 L4), <code>TLSRoute</code>(TLS SNI 기반 패스스루). 각 프로토콜의 "매칭 기준"이 근본적으로 다르기 때문에, 하나의 범용 Route 타입에 모든 프로토콜의 필드를 욱여넣는 대신 <strong>타입을 나눠서 각 프로토콜에 맞는 필드만 노출</strong>하는 쪽을 택한 것이다. 이는 뒤에서 볼 "표준 필드로 커버되는 범위를 넓힌다"는 Gateway API의 설계 철학과 같은 방향이다.
+    </p>
+
+    <h3>Ingress vs Gateway API — 나란히 비교</h3>
+    <div class="pillar-grid">
+      <div class="pillar-box">
+        <div class="pillar-name">확장 방식</div>
+        <div class="pillar-key">Ingress: annotation(비표준, 컨트롤러마다 다름) → Gateway API: 표준 필드 확대 + 필요 시 컨트롤러별 정책 CRD(<code>policy attachment</code>)로 확장, 이식성이 더 높음</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">권한 경계</div>
+        <div class="pillar-key">Ingress: 인프라 설정과 라우팅 규칙이 한 오브젝트에 혼재 → Gateway API: Gateway(인프라)와 Route(애플리케이션)로 RBAC 경계 분리</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">프로토콜 범위</div>
+        <div class="pillar-key">Ingress: 사실상 HTTP(S) 전용 → Gateway API: HTTP/gRPC/TCP/UDP/TLS를 타입별 Route로 네이티브 지원</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">트래픽 분할</div>
+        <div class="pillar-key">Ingress: 컨트롤러별 canary annotation에 의존 → Gateway API: <code>HTTPRoute</code>의 backendRefs 가중치가 표준 필드로 지원</div>
+      </div>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">2026-07 기준 확인 사항</div>
+      <p>
+        Ingress API 자체는 여전히 GA이며 공식적으로 폐기(deprecated)되지 않았다 — "Ingress를 쓰면 안 된다"가 아니라 "특정 구현체(ingress-nginx)의 유지보수가 끊겼다"는 것이 정확한 사실이다. Gateway API는 이미 GA(Standard channel 다수 리소스가 stable)이며, AWS·GCP·Cilium·Istio·Envoy Gateway·Traefik 등 주요 구현체가 지원한다. ingress-nginx의 대체로는 ① Gateway API 구현체로 신규 전환, ② Traefik/HAProxy/F5 NGINX Ingress Controller(OSS) 같은 계속 유지보수되는 다른 Ingress 컨트롤러로 우선 교체 후 장기적으로 Gateway API 전환, 두 경로가 모두 실무에서 쓰인다. "새 클러스터라면 Gateway API를 기본으로 설계하라"가 커뮤니티의 대체적인 권고 방향이다.
+      </p>
+      <p class="source-note">https://kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/ , https://gateway-api.sigs.k8s.io/</p>
+    </div>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>API와 구현체를 분리해서 사고하는가:</strong> "Ingress가 망했다"가 아니라 "특정 컨트롤러 구현체의 유지보수가 끊겼다"로 정확히 문제를 정의할 수 있는가.</li>
+        <li><strong>공급망/의존성 리스크를 스스로 탐지할 수 있는가:</strong> 프로덕션 클러스터의 핵심 트래픽 진입점이 유지보수 중단 상태라는 걸 사전에 인지하고, 패치 없는 상태로 얼마나 방치되고 있었는지 스스로 점검할 수 있는가.</li>
+        <li><strong>마이그레이션을 리스크로 관리할 수 있는가:</strong> "그냥 다 바꾸자"가 아니라, 트래픽 영향 범위·다운타임·롤백 계획을 갖춘 단계적 전환을 설계할 수 있는가.</li>
+        <li><strong>아키텍처 설계의 이유를 설명할 수 있는가:</strong> Gateway API의 역할 분리가 왜 "더 세련됐다" 정도가 아니라 실제 권한 경계·이식성 문제를 해결하는지 구체적으로 말할 수 있는가.</li>
+      </ul>
+    </div>
+
+    <p>
+      이 주제가 2026년 시니어 인터뷰에서 특히 중요한 이유는, 이게 이론적 비교가 아니라 <strong>지금 실제로 프로덕션 클러스터를 운영하는 사람이라면 반드시 마주치는 의사결정</strong>이기 때문이다. 신입/미드레벨은 "Ingress 리소스 문법"을 안다. 시니어는 그 위에서 "이 의존성이 계속 안전한가", "바꿔야 한다면 언제, 어떻게, 얼마나 위험을 감수하며 바꿀 것인가"를 판단해야 한다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 1 — ingress-nginx 은퇴 소식을 뒤늦게 알게 된 클러스터</div>
+      <p>
+        운영 중인 프로덕션 클러스터가 2년 전 구성한 ingress-nginx를 그대로 쓰고 있었고, 은퇴 발표를 뒤늦게 인지했다. 가장 먼저 한 일은 "지금 당장 불이 났는가"와 "구조적으로 위험한가"를 나눠서 판단하는 것이었다 — 당장 알려진 미패치 치명적 CVE가 없다면 즉시 전체 트래픽이 끊기는 응급 상황은 아니지만, <strong>앞으로 발견될 취약점에 대한 패치가 영구히 오지 않는다</strong>는 것 자체가 구조적 리스크였다. 그래서 "당장 24시간 내 교체"가 아니라, 마이그레이션 대상 선정 → 스테이징에서 병행 검증 → 트래픽 일부 전환 → 전체 전환의 단계적 로드맵을 세우고, 그 기간 동안은 ingress-nginx의 공격 표면을 줄이는 임시 조치(불필요한 <code>snippets</code> annotation 제거, admission webhook 네트워크 노출 최소화)로 리스크를 관리했다.
+      </p>
+      <p>
+        여기서 배운 것은, 오픈소스 핵심 인프라 컴포넌트의 <strong>유지보수 상태 자체를 정기적으로 점검하는 프로세스</strong>가 없으면 이런 은퇴 소식을 몇 달씩 놓칠 수 있다는 것이다. 이후 클러스터의 핵심 의존성(Ingress Controller, CNI, CSI 드라이버 등) 목록과 각각의 유지보수 상태를 분기별로 리뷰하는 절차를 추가했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 2 — 컨트롤러를 교체했더니 일부 경로 라우팅이 깨짐</div>
+      <p>
+        ingress-nginx에서 다른 Ingress 컨트롤러로 옮기는 과정에서, <code>nginx.ingress.kubernetes.io/rewrite-target</code> 같은 벤더 annotation에 의존하던 경로 재작성 규칙들이 새 컨트롤러에서 조용히 무시돼 일부 API 경로가 404를 반환하기 시작했다. YAML의 구조(<code>kind: Ingress</code>, 호스트/경로 매칭)는 표준이라 그대로 옮겨졌지만, <strong>실제 동작을 결정하던 건 표준이 아닌 annotation이었다</strong>는 게 드러난 사례다. 이후 팀은 애초에 컨트롤러 종속적인 annotation을 최소화하고, 가능한 기능은 Gateway API의 표준 필드(예: <code>HTTPRoute</code>의 <code>URLRewrite</code> filter)로 옮겨 특정 벤더에 대한 락인을 줄이는 방향으로 설계를 바꿨다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 3 — 여러 팀이 하나의 클러스터를 공유하며 겪은 Ingress 권한 문제</div>
+      <p>
+        멀티테넌트 클러스터에서 각 애플리케이션 팀에게 자신의 네임스페이스 안에서 Ingress를 자유롭게 만들 권한을 줬는데, 한 팀이 실수로 다른 팀이 쓰던 호스트명과 충돌하는 Ingress를 만들어 트래픽이 엉뚱한 서비스로 새는 사고가 있었다. Ingress는 오브젝트 하나에 라우팅 규칙과 사실상 인프라 수준 영향(호스트 점유)이 같이 있어 이런 충돌을 API 레벨에서 막기 어려웠다. Gateway API로 전환한 뒤에는 플랫폼팀이 <code>Gateway</code> 리스너에서 어떤 네임스페이스의 <code>HTTPRoute</code>만 붙을 수 있는지(<code>allowedRoutes</code>)를 명시적으로 제한하고, 호스트명 점유 자체는 Gateway 리스너 레벨에서 플랫폼팀이 통제하도록 구조를 바꿔 같은 종류의 충돌을 API 레벨에서 원천 차단했다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>"Ingress Controller 마이그레이션/트래픽 라우팅 설계" 질문을 받으면 아래 순서로 답하라. 문제를 API 문제와 구현체 문제로 분리 → 현재 리스크 등급 판단 → 대체재 선정 기준 → 단계적 전환 계획 → 재발 방지 순서다.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>"Ingress API가 문제인가, 특정 구현체가 문제인가"부터 구분한다</strong>
+        <p>ingress-nginx 은퇴는 구현체 유지보수 중단 문제이지, Ingress라는 API 스펙 자체가 폐기된 게 아니라는 것을 먼저 명확히 한다. 이 구분이 이후 판단(교체 대상은 컨트롤러이지 반드시 API 자체를 바꿔야 하는 건 아니다)의 근거가 된다.</p>
+      </li>
+      <li>
+        <strong>현재 리스크 등급을 판단한다</strong>
+        <p>알려진 미패치 치명적 CVE가 있는지, snippets 같은 위험한 확장 기능을 실제로 쓰고 있는지, 이 컨트롤러가 외부 인터넷에 직접 노출돼 있는지를 확인해 "당장 응급 조치가 필요한가, 계획된 마이그레이션이면 충분한가"를 정한다.</p>
+      </li>
+      <li>
+        <strong>대체재를 "유지보수 지속성" 기준으로 먼저 거른다</strong>
+        <p>기능이 화려한지보다 커뮤니티/벤더가 실제로 지속적인 보안 패치를 낼 수 있는 구조인지를 우선 본다. 그다음 Gateway API 네이티브 지원 여부, 팀의 기존 운영 경험, 필요한 프로토콜 범위(순수 HTTP만인지 gRPC/TCP도 필요한지)로 좁힌다.</p>
+      </li>
+      <li>
+        <strong>단계적 전환 계획을 세운다</strong>
+        <p>전체 트래픽을 한 번에 옮기지 않고, 트래픽이 적은 서비스나 내부용 경로부터 새 컨트롤러로 옮겨 검증한 뒤 점진적으로 확대한다. annotation에 숨어 있던 벤더 종속 동작(rewrite, 리다이렉트, rate limit)을 표준 필드나 새 컨트롤러의 대응 기능으로 하나씩 검증한다.</p>
+      </li>
+      <li>
+        <strong>재발 방지책을 답에 포함한다</strong>
+        <p>핵심 인프라 의존성(Ingress Controller, CNI, CSI 등)의 유지보수 상태를 정기적으로 점검하는 프로세스, 그리고 애초에 신규 구축이라면 Gateway API를 기본값으로 채택해 컨트롤러 종속성과 권한 경계 문제를 설계 단계에서 줄이는 방향을 제시한다.</p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — "ingress-nginx 은퇴, 지금 무엇을 어떻게 마이그레이션할 것인가"</div>
+      <p>
+        "먼저 문제를 정확히 정의하겠습니다. 은퇴한 건 Ingress라는 API 스펙이 아니라 <code>ingress-nginx</code>라는 특정 구현체입니다. 이 구분이 중요한 이유는, '무조건 Ingress를 다 걷어내야 한다'가 아니라 '유지보수가 끊긴 컨트롤러 프로세스를 안전한 것으로 바꿔야 한다'는 훨씬 구체적인 문제로 좁혀지기 때문입니다.
+      </p>
+      <p>
+        다음으로 리스크 등급을 판단하겠습니다. 알려진 미패치 CVE가 있는지, <code>snippets</code>처럼 공격 표면이 큰 기능을 쓰고 있는지, 이 컨트롤러가 외부에 직접 노출돼 있는지를 확인해서 당장 응급 조치가 필요한 수준인지, 계획된 전환으로 충분한지를 정합니다. 응급 상황이 아니라면 몇 주 단위의 단계적 마이그레이션 로드맵을 짜겠습니다.
+      </p>
+      <p>
+        대체재 선정은 기능 화려함보다 <strong>지속가능한 유지보수 구조</strong>를 최우선 기준으로 하겠습니다. 신규로 설계한다면 저는 Gateway API를 기본값으로 가져가겠습니다. Gateway API가 좋다고 생각하는 핵심 이유는 단순히 '더 최신이라서'가 아니라, GatewayClass/Gateway/HTTPRoute로 인프라 설정과 애플리케이션 라우팅 규칙의 <strong>권한 경계를 API 레벨에서 분리</strong>해준다는 점입니다. Ingress는 이 둘이 한 오브젝트에 섞여 있어서, 애플리케이션 팀에 라우팅 권한을 주는 순간 사실상 인프라 설정 권한까지 함께 새는 구조적 문제가 있었습니다.
+      </p>
+      <p>
+        마이그레이션은 트래픽이 적은 서비스부터 새 컨트롤러로 옮겨 annotation에 숨어 있던 벤더 종속 동작(리다이렉트, rewrite, rate limit)을 하나씩 검증하고, 문제없이 안정화된 뒤 점진적으로 트래픽 비중을 늘리겠습니다. 그리고 이번 일을 계기로, Ingress Controller나 CNI처럼 클러스터의 핵심 트래픽 경로를 담당하는 의존성의 유지보수 상태를 정기적으로 점검하는 프로세스를 팀에 만들겠습니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① API와 구현체를 정확히 구분해 문제를 재정의 ② 감정적 대응이 아니라 리스크 등급에 따른 단계적 판단 ③ Gateway API 선호의 근거를 "최신 유행"이 아닌 구체적 권한 경계 문제로 설명 ④ 마이그레이션을 다운타임/검증 계획이 있는 단계적 프로세스로 제시 ⑤ 재발 방지(의존성 점검 프로세스)까지 포함해 일회성 대응에 그치지 않음
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "지금 잘 쓰고 있는 Ingress를 Gateway API로 반드시 지금 바꿔야 합니까?"</div>
+      <div class="followup-a">
+        <p>아닙니다. Ingress API 자체는 여전히 GA이고 폐기되지 않았으므로, 유지보수가 지속되는 Ingress Controller(F5 NGINX Ingress Controller OSS, Traefik, HAProxy 등)를 쓰고 있다면 당장 API를 바꿔야 할 강제 사유는 없습니다. 다만 신규로 설계하는 클러스터나 트래픽 라우팅 아키텍처를 다시 짜야 하는 시점이라면, 앞으로의 권한 경계·프로토콜 확장성을 생각했을 때 Gateway API를 기본값으로 채택하는 쪽이 장기적으로 유리하다고 판단합니다. '지금 당장 전면 전환'과 '신규 설계 시 기본값 변경'을 구분해서 답해야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "ingress-nginx의 은퇴가 Kubernetes 생태계 전반에 어떤 의미라고 생각합니까?"</div>
+      <div class="followup-a">
+        <p>가장 많이 쓰이는 컴포넌트가 반드시 가장 잘 지원되는 컴포넌트는 아니라는 것을 보여준 사례라고 봅니다. 인기와 실제 유지보수 인력·자금은 별개이고, 오픈소스 핵심 인프라를 프로덕션에 쓸 때는 '얼마나 많이 쓰이는가'뿐 아니라 '누가, 어떤 구조로 이 프로젝트를 지속가능하게 유지하는가'를 함께 평가해야 한다는 교훈입니다. 그래서 최근에는 CNCF 프로젝트 성숙도 단계(Sandbox/Incubating/Graduated)나 상용 벤더의 백업 여부도 핵심 인프라 선택 기준에 포함시키는 팀이 늘고 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "HTTPRoute와 GRPCRoute를 굳이 나눈 이유가 뭡니까? gRPC도 결국 HTTP/2 위에서 동작하지 않습니까?"</div>
+      <div class="followup-a">
+        <p>전송 프로토콜(HTTP/2) 층위에서는 같지만, 라우팅에서 중요한 '무엇을 기준으로 매칭하는가'가 다릅니다. HTTPRoute는 URL 경로·헤더·쿼리 파라미터 같은 HTTP 시맨틱으로 매칭하는 반면, gRPC 클라이언트는 서비스/메서드 이름(예: <code>package.Service/Method</code>) 기준으로 라우팅되길 기대합니다. 이걸 하나의 Route 타입에 모두 넣으면 필드가 뒤섞여 어떤 필드가 어떤 프로토콜에만 유효한지 API 사용자가 매번 확인해야 하는 복잡도가 생깁니다. 타입을 분리하면 각 프로토콜에 맞는 필드만 노출되므로 API 자체가 사용 실수를 줄여줍니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "Gateway API로 넘어가면 annotation 문제가 완전히 사라집니까?"</div>
+      <div class="followup-a">
+        <p>완전히는 아닙니다. Gateway API는 표준 필드로 커버하는 범위를 크게 넓혔지만, 모든 컨트롤러별 세부 기능(예: 특정 로드밸런서의 고급 헬스체크 옵션)까지 표준화하지는 못합니다. 다만 그런 확장이 필요할 때도 Ingress 시절의 임의 문자열 annotation 대신, <code>policy attachment</code>라는 공식 확장 패턴(Gateway나 Route에 정책 CRD를 연결하는 구조화된 방식)을 쓰도록 설계돼 있어, 확장하더라도 최소한 타입이 있는 리소스로 다루게 됩니다. '벤더 종속성이 0이 된다'가 아니라 '벤더 종속 확장이 훨씬 구조화된 방식으로 이뤄진다'가 정확한 설명입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "멀티테넌트 클러스터에서 Gateway API가 실제로 권한 사고를 막아준다는 걸 어떻게 증명하시겠습니까?"</div>
+      <div class="followup-a">
+        <p>핵심은 RBAC과 <code>allowedRoutes</code>를 결합하는 것입니다. 플랫폼팀만 <code>Gateway</code> 리소스에 대한 쓰기 권한을 갖고, 각 애플리케이션 팀에는 자신의 네임스페이스 안에서 <code>HTTPRoute</code>만 만들 수 있는 RBAC Role을 부여합니다. Gateway 리스너 쪽에서는 <code>allowedRoutes.namespaces</code>로 어떤 네임스페이스의 Route가 이 리스너에 붙을 수 있는지 명시적으로 제한합니다. 이렇게 하면 애플리케이션 팀이 실수로 다른 팀의 호스트명을 침범하거나 인프라 레벨 설정(TLS 인증서, 포트)을 바꾸는 것이 API 서버의 인가 단계에서 원천적으로 막힙니다 — 코드 리뷰나 컨벤션에 의존하는 대신 시스템이 강제하는 경계라는 게 핵심입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>"Ingress API 폐기"와 "ingress-nginx 구현체 은퇴"를 명확히 구분해서 문제를 정의한다</li>
+          <li>당장의 리스크 등급(미패치 CVE, 외부 노출 여부)을 판단 근거로 제시하고, 감정적으로 "전부 급하게 교체"하지 않는다</li>
+          <li>Gateway API 선호 이유를 "역할 분리 → 권한 경계"라는 구체적 메커니즘으로 설명한다</li>
+          <li>마이그레이션을 다운타임/검증 단계가 있는 점진적 프로세스로 설계한다</li>
+          <li>재발 방지(핵심 의존성 유지보수 상태 정기 점검)까지 답에 포함한다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"Ingress는 이제 못 쓰는 거 아니냐"처럼 API와 구현체를 혼동한다</li>
+          <li>"당장 오늘 다 바꾸자"는 식으로 리스크 판단 없이 반응한다</li>
+          <li>Gateway API를 "더 최신이라서", "더 트렌디해서"로만 설명하고 구체적 메커니즘을 말하지 못한다</li>
+          <li>annotation 문제를 "Gateway API로 가면 완전히 사라진다"고 과장한다</li>
+          <li>Ingress Controller 하나 교체하는 걸로 끝내고, 다른 핵심 의존성의 유지보수 상태 점검으로 확장해서 생각하지 못한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        트래픽 라우팅 계층은 클러스터의 모든 외부 요청이 지나가는 단일 관문이다. 이 계층의 변화를 감정적으로("빨리 다 바꾸자") 또는 피상적으로("최신이니까 좋다") 다루면, 마이그레이션 자체가 새로운 장애의 원인이 된다. 시니어는 이 계층의 변경을 "왜 필요한가(구조적 문제)", "얼마나 급한가(리스크 등급)", "어떻게 안전하게 바꾸는가(단계적 검증)"를 분리해서 판단할 수 있어야 한다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"ingress-nginx가 은퇴했으니 Kubernetes의 Ingress API 자체가 이제 deprecated다."</p>
+      <div class="mc-right">실제</div>
+      <p>Ingress API는 여전히 GA이며 공식 폐기 상태가 아니다. 은퇴한 건 그 API를 구현하던 특정 컨트롤러 프로젝트인 ingress-nginx다. API와 구현체는 별개다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"Ingress YAML은 표준이니 어떤 컨트롤러로 옮겨도 동일하게 동작한다."</p>
+      <div class="mc-right">실제</div>
+      <p>표준 필드(호스트/경로 기반 기본 라우팅)만 그렇다. rewrite, 리다이렉트, rate limit 같은 실무 기능은 대부분 컨트롤러별 annotation으로 구현돼 있어 컨트롤러를 바꾸면 조용히 깨질 수 있다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"Gateway API로 가면 벤더 종속성과 annotation 문제가 완전히 없어진다."</p>
+      <div class="mc-right">실제</div>
+      <p>표준 필드가 커버하는 범위가 크게 넓어졌을 뿐이다. 컨트롤러 고유 기능은 여전히 존재하며, 다만 policy attachment라는 구조화된 확장 패턴을 쓴다는 점이 Ingress의 임의 annotation과 다르다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"Gateway API가 더 최신이니 무조건 지금 당장 전면 전환해야 한다."</p>
+      <div class="mc-right">실제</div>
+      <p>유지보수가 지속되는 Ingress Controller를 쓰고 있다면 당장 전환할 강제 사유는 없다. 신규 설계나 아키텍처 재구성 시점에 기본값으로 채택하는 것이 일반적으로 권장되는 접근이다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"Ingress Controller 교체는 트래픽 진입점 하나만 바꾸면 끝나는 단순 작업이다."</p>
+      <div class="mc-right">실제</div>
+      <p>컨트롤러별 annotation에 숨어 있던 동작(리다이렉트, rewrite, TLS 세부 설정, rate limit)을 하나씩 검증해야 하고, 클러스터의 모든 외부 요청이 지나가는 경로이므로 단계적 트래픽 전환과 롤백 계획 없이 진행하면 전체 서비스 장애로 이어질 수 있다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>API vs 구현체 구분</strong></td>
+          <td>Ingress API와 Ingress Controller 구현체를 명확히 분리해 문제를 정의한다</td>
+          <td>Ingress가 문제라는 건 알지만 API와 구현체를 뒤섞어 설명한다</td>
+          <td>Ingress 자체가 폐기됐다고 오해한다</td>
+        </tr>
+        <tr>
+          <td><strong>리스크 판단</strong></td>
+          <td>CVE·외부 노출 여부로 리스크 등급을 판단하고 그에 맞는 대응 속도를 정한다</td>
+          <td>위험하다는 건 알지만 등급을 나누지 않고 일괄 대응한다</td>
+          <td>감정적으로 "당장 전부 교체"만 반복한다</td>
+        </tr>
+        <tr>
+          <td><strong>Gateway API 이해</strong></td>
+          <td>GatewayClass/Gateway/Route의 역할 분리와 그로 인한 권한 경계 효과를 구체적으로 설명한다</td>
+          <td>Gateway API가 더 낫다는 건 알지만 구체적 메커니즘은 설명 못한다</td>
+          <td>"최신이라서 좋다" 수준의 피상적 답변에 그친다</td>
+        </tr>
+        <tr>
+          <td><strong>마이그레이션 설계</strong></td>
+          <td>단계적 트래픽 전환, annotation 동작 검증, 롤백 계획을 포함한 로드맵을 제시한다</td>
+          <td>교체가 필요하다는 것은 알지만 구체적 절차는 설명 못한다</td>
+          <td>한 번에 전면 교체하는 방식만 떠올린다</td>
+        </tr>
+        <tr>
+          <td><strong>재발 방지/시스템 사고</strong></td>
+          <td>핵심 인프라 의존성의 유지보수 상태를 정기 점검하는 프로세스까지 답에 포함한다</td>
+          <td>이번 컨트롤러 교체로 답을 마무리하고 확장해서 생각하지 못한다</td>
+          <td>재발 방지에 대한 언급이 전혀 없다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면, Day 8(CNI 네트워킹과 클러스터 네트워크 트러블슈팅)에서 Ingress/Gateway API가 최종적으로 딛고 서 있는 Pod 네트워크 계층 자체를 이어서 다루고, Day 14(Admission Control과 보안 하드닝)에서 이번에 나온 admission webhook 취약점(IngressNightmare) 같은 공급망 보안 문제를 더 깊이 다룬다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./0006-service-coredns-service-discovery.html">← Day 6</a>
+    <a href="./index.html">목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>

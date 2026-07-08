@@ -10,12 +10,12 @@
 | 4 | 2026-07-05 | StatefulSet과 상태 유지 워크로드 설계 | [0004-statefulset-stateful-workload-design.html](lessons/0004-statefulset-stateful-workload-design.html) |
 | 5 | 2026-07-06 | DaemonSet과 노드 레벨 운영 | [0005-daemonset-node-level-operations.html](lessons/0005-daemonset-node-level-operations.html) |
 | 6 | 2026-07-07 | Service, CoreDNS, 서비스 디스커버리 | [0006-service-coredns-service-discovery.html](lessons/0006-service-coredns-service-discovery.html) |
+| 7 | 2026-07-08 | Ingress vs Gateway API — 트래픽 라우팅 설계 | [0007-ingress-gateway-api-traffic-routing.html](lessons/0007-ingress-gateway-api-traffic-routing.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | Ingress vs Gateway API — 트래픽 라우팅 설계 | Ingress Controller 구조, Gateway API 역할 분리(GatewayClass/Gateway/HTTPRoute), 마이그레이션 판단 |
 | 8 | CNI 네트워킹과 클러스터 네트워크 트러블슈팅 | Pod 네트워크 모델, CNI 플러그인 비교, NetworkPolicy, DNS/연결 장애 진단 순서 |
 | 9 | Storage/Volume 설계 (PV/PVC, StorageClass, CSI) | 동적 프로비저닝, 접근 모드, Reclaim Policy, StatefulSet과 볼륨, CSI 장애 패턴 |
 | 10 | ConfigMap/Secret과 설정/시크릿 관리 | 마운트 vs 환경변수, 갱신 전파 지연, Secret 암호화(etcd encryption at rest), 외부 시크릿 매니저 연동 |
@@ -31,7 +31,7 @@
 
 ## 현재 학습 위치
 
-**Day 6 완료** — Day 7: Ingress vs Gateway API — 트래픽 라우팅 설계로 진행 예정.
+**Day 7 완료** — Day 8: CNI 네트워킹과 클러스터 네트워크 트러블슈팅으로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -63,7 +63,9 @@
 - [x] kube-proxy 모드(iptables 기본/IPVS/nftables GA v1.33)의 trade-off와 eBPF 기반 kube-proxy-free 대체제의 관계 (Day 6)
 - [x] externalTrafficPolicy/internalTrafficPolicy(client IP 보존 vs 트래픽 드롭)와 trafficDistribution(PreferSameNode/PreferSameZone, GA v1.35)의 비용/가용성 trade-off (Day 6)
 - [x] CoreDNS의 ndots:5 쿼리 증폭 문제, lameduck을 통한 graceful 종료, NodeLocal DNSCache의 트레이드오프 (Day 6)
-- [ ] Ingress vs Gateway API (예정 Day 7)
+- [x] Ingress는 API, Ingress Controller는 실행 주체라는 구분과 annotation 기반 벤더 종속의 구조적 한계 (Day 7)
+- [x] ingress-nginx 은퇴(2026-03 EOL, CVE-2025-1974 IngressNightmare)의 배경과 API vs 구현체를 분리한 리스크 대응 판단 (Day 7)
+- [x] Gateway API의 GatewayClass/Gateway/Route 역할 분리와 이것이 만드는 RBAC 권한 경계 효과, Route 타입이 프로토콜별로 나뉜 이유 (Day 7)
 - [ ] CNI 네트워킹/NetworkPolicy (예정 Day 8)
 - [ ] Storage/Volume/CSI (예정 Day 9)
 - [ ] ConfigMap/Secret 관리 (예정 Day 10)
