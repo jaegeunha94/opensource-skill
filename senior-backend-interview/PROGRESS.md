@@ -13,6 +13,7 @@
 | 7 | 2026-07-05 | 신뢰성 & 장애 대응 | [0007-reliability-and-incident-response.html](lessons/0007-reliability-and-incident-response.html) |
 | 8 | 2026-07-06 | 보안 | [0008-security.html](lessons/0008-security.html) |
 | 9 | 2026-07-07 | 관측성 | [0009-observability.html](lessons/0009-observability.html) |
+| 10 | 2026-07-08 | 배포 & DevOps | [0010-deployment-and-devops.html](lessons/0010-deployment-and-devops.html) |
 
 ## 다음 예정 학습
 
@@ -26,13 +27,13 @@
 | ~~7~~ | ~~신뢰성 & 장애 대응~~ | ~~완료~~ |
 | ~~8~~ | ~~보안~~ | ~~완료~~ |
 | ~~9~~ | ~~관측성~~ | ~~완료~~ |
-| 10 | 배포 & DevOps | CI/CD, 블루-그린, 카나리, 피처 플래그, 롤백 |
+| ~~10~~ | ~~배포 & DevOps~~ | ~~완료~~ |
 | 11 | 기술 리딩 | 설계 리뷰, 기술 부채 관리, RFC 프로세스, 멘토링 |
 | 12 | 커뮤니케이션 & 케이스 스터디 | 비즈니스 번역, 갈등 해결, 실전 케이스 종합 |
 
 ## 현재 학습 위치
 
-**Day 9 완료** — Day 10 (배포 & DevOps)이 다음 차례.
+**Day 10 완료** — Day 11 (기술 리딩)이 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -72,6 +73,9 @@
 - [x] 메트릭 라벨 카디널리티 폭발 방지 (Day 9)
 - [x] 분산 트레이싱(trace/span/context propagation)과 Head/Tail-based 샘플링 (Day 9)
 - [x] SLI/SLO/SLA 구분과 에러 예산, burn rate 기반 알림 설계 (Day 9)
-- [ ] 배포 전략 (예정 Day 10)
+- [x] CI/CD 파이프라인 단계별 검증 목적과 배포 배치 크기 축소 (Day 10)
+- [x] 블루-그린/롤링/카나리 선택 기준과 카나리 다축 중단 조건 (Day 10)
+- [x] 피처 플래그로 배포/릴리스 분리, 플래그 부채 방지 라이프사이클 (Day 10)
+- [x] Expand-Contract 패턴과 코드 전용 롤백 안전성, 자동 롤백 설계 위험 (Day 10)
 - [ ] 기술 리딩 역량 (예정 Day 11)
 - [ ] 커뮤니케이션 & 케이스 스터디 (예정 Day 12)

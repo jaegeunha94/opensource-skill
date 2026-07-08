@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 — 배포 &amp; DevOps</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #232635;
+      --border: #2e3248;
+      --text: #e2e4f0;
+      --muted: #8b8fa8;
+      --accent: #7c83f5;
+      --accent2: #56cfb2;
+      --warn: #f5a623;
+      --danger: #f56060;
+      --success: #56cf8a;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    .header {
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+    h1 { font-size: 1.9rem; font-weight: 700; line-height: 1.3; }
+    .subtitle { color: var(--muted); margin-top: 0.4rem; font-size: 0.95rem; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--accent2);
+      font-size: 0.72rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      margin: 0.2rem 0.1rem;
+      border: 1px solid var(--border);
+    }
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+      padding-left: 0.75rem;
+      margin-bottom: 1.2rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 0.6rem;
+      margin-top: 1.2rem;
+    }
+    h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--warn);
+      margin-bottom: 0.4rem;
+      margin-top: 1rem;
+    }
+    p { margin-bottom: 0.8rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.3rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card.question { border-left: 4px solid var(--warn); }
+    .card.followup  { border-left: 4px solid var(--accent); }
+    .card.good      { border-left: 4px solid var(--success); }
+    .card.weak      { border-left: 4px solid var(--danger); }
+    .card.rubric    { border-left: 4px solid var(--accent2); }
+    .card.info      { border-left: 4px solid var(--muted); }
+
+    .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .label.q { color: var(--warn); }
+    .label.f { color: var(--accent); }
+    .label.g { color: var(--success); }
+    .label.w { color: var(--danger); }
+    .label.r { color: var(--accent2); }
+    .label.i { color: var(--muted); }
+
+    .quote {
+      font-style: italic;
+      color: var(--text);
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.88rem;
+      color: var(--accent2);
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .step-body { flex: 1; }
+
+    .rubric-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score { display: flex; gap: 0.3rem; }
+    .dot {
+      width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+    }
+    .dot.filled { background: var(--accent2); border-color: var(--accent2); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--accent2);
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    td {
+      padding: 0.55rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 2rem;
+    }
+    .toc ol { margin-bottom: 0; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    .highlight-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .nav-bottom a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .nav-bottom a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ───────────── HEADER ───────────── -->
+  <div class="header">
+    <div class="day-badge">DAY 10</div>
+    <h1>배포 &amp; DevOps</h1>
+    <p class="subtitle">10년차 이상 백엔드 엔지니어 Interview 대비 — 실무 판단력 중심</p>
+    <div style="margin-top:0.8rem;">
+      <span class="tag">CI/CD 파이프라인</span>
+      <span class="tag">블루-그린 / 롤링 / 카나리</span>
+      <span class="tag">피처 플래그</span>
+      <span class="tag">DB 마이그레이션 호환성</span>
+      <span class="tag">자동 롤백</span>
+      <span class="tag">배포 소유권</span>
+    </div>
+  </div>
+
+  <!-- ───────────── TOC ───────────── -->
+  <div class="toc">
+    <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.6rem;">목차</p>
+    <ol>
+      <li><a href="#section-overview">오늘 레슨 개요</a></li>
+      <li><a href="#section-cicd">CI/CD 파이프라인 — 배포를 "사건"에서 "일상"으로</a></li>
+      <li><a href="#section-strategy">배포 전략 — 블루-그린 / 롤링 / 카나리</a></li>
+      <li><a href="#section-flags">피처 플래그 — 배포와 릴리스의 분리</a></li>
+      <li><a href="#section-rollback">롤백 전략과 DB 마이그레이션 호환성</a></li>
+      <li><a href="#section-scenario">종합 시나리오 — 금요일 오후 배포 후 에러율 급증</a></li>
+      <li><a href="#section-rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- ───────────── 1. OVERVIEW ───────────── -->
+  <section id="section-overview">
+    <h2>1. 오늘 레슨 개요</h2>
+    <p>
+      배포(Deployment)를 주니어와 시니어가 가장 다르게 이해하는 지점은 "배포 명령어를 실행하는 방법"이 아니라
+      <strong>"배포가 실패했을 때 사용자 피해를 얼마나 좁은 범위로, 얼마나 빨리 되돌릴 수 있는가"</strong>입니다.
+      배포는 본질적으로 <strong>확률적 실험</strong>입니다 — 스테이징에서 통과한 코드도 프로덕션 트래픽 패턴, 실제 데이터 분포, 다른 서비스와의 상호작용에서는 다르게 동작할 수 있습니다.
+      10년차 이상 면접에서 배포/DevOps를 묻는 이유는, "배포는 위험할 수 있다"는 전제를 받아들이고 <strong>그 위험을 설계로 통제하는 사고방식</strong>을 가졌는지 확인하기 위해서입니다.
+    </p>
+    <div class="highlight-box">
+      <strong>면접관이 실제로 보는 신호</strong>
+      <ul style="margin-top:0.5rem;">
+        <li>"CI에서 테스트를 돌리고 배포합니다"라는 선언 ↔ <strong>어떤 단계에서 무엇을 검증하고, 실패 시 어디서 멈추는지</strong>까지 구조화한 파이프라인 설계</li>
+        <li>"카나리 배포를 씁니다"라는 용어 나열 ↔ <strong>왜 이 상황에는 블루-그린이 아니라 카나리가 맞는지</strong>, 트래픽 비율을 어떻게 늘려가는지 근거 있는 선택</li>
+        <li>"문제 생기면 이전 버전으로 롤백합니다" ↔ <strong>DB 스키마 변경이 껴 있을 때도 롤백이 안전한지</strong>까지 고려한 설계</li>
+        <li>배포를 "인프라 팀의 일"로 여기는 태도 ↔ <strong>배포 실행 버튼을 누른 사람이 그 배포의 신뢰성을 끝까지 책임지는</strong> 소유권 문화</li>
+      </ul>
+    </div>
+    <p>이 레슨은 <strong>CI/CD 파이프라인 설계 → 배포 전략(블루-그린/롤링/카나리) → 피처 플래그 → 롤백과 DB 호환성</strong> 순서로 진행하며, 각 영역마다 배경 개념 → 면접 질문 → 답변 구조 → senior follow-up → 좋은/약한 답변 비교 → 자기 점검을 다룹니다.</p>
+  </section>
+
+  <!-- ───────────── 2. CI/CD ───────────── -->
+  <section id="section-cicd">
+    <h2>2. CI/CD 파이프라인 — 배포를 "사건"에서 "일상"으로</h2>
+
+    <h3>배경 개념: 왜 "배포"가 무서운 일이 되면 안 되는가</h3>
+    <p>
+      배포가 한 달에 한 번, 새벽 시간에, 여러 팀의 변경 사항을 한꺼번에 묶어서 이뤄진다면 그 자체가 위험 요소입니다. 변경 사항이 많이 쌓일수록 <strong>무엇이 문제를 일으켰는지 원인을 좁히기 어렵고</strong>, 실패 시 되돌릴 범위도 커집니다.
+      <strong>지속적 통합(Continuous Integration, CI)</strong>은 개발자가 코드를 메인 브랜치에 자주(하루에도 여러 번) 병합하고, 그때마다 자동으로 빌드·테스트해 <strong>문제를 병합 직후 아주 작은 변경 단위에서 발견</strong>하는 관행입니다.
+      <strong>지속적 배포/전달(Continuous Deployment/Delivery, CD)</strong>은 그렇게 검증된 코드를 <strong>사람이 수동으로 서버에 올리는 대신 자동화된 파이프라인이 프로덕션까지 내보내는</strong> 것입니다(Delivery는 마지막 승인 버튼만 사람이 누르고, Deployment는 그마저 자동입니다).
+      핵심은 배포를 "크고 위험한 이벤트"에서 <strong>"작고 자주 일어나는, 실패해도 영향이 작은 일상적 활동"</strong>으로 바꾸는 것입니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"현재 팀은 2주에 한 번, 여러 기능을 모아서 배포하고 있고, 배포 때마다 몇 시간씩 수동 QA를 거칩니다. 이 배포 프로세스를 개선해달라는 요청을 받았습니다. 어떻게 접근하시겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"배포 자동화 스크립트를 짜겠다"는 도구 중심 답변에서 멈추는지, 아니면 <strong>파이프라인의 각 단계가 무엇을 검증하고 왜 그 순서인지</strong>를 구조적으로 설계하는지를 봅니다.</p>
+
+    <h4>CI/CD 파이프라인의 단계별 검증 목적</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>단계</th>
+          <th>검증 대상</th>
+          <th>실무 판단 기준</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>정적 분석 / Lint</strong></td>
+          <td>코드 스타일, 명백한 버그 패턴</td>
+          <td>가장 빠르고 저렴하므로 맨 앞에 배치 — 여기서 걸러지면 이후 단계 자원을 아낌</td>
+        </tr>
+        <tr>
+          <td><strong>단위 테스트</strong></td>
+          <td>함수/모듈 단위 로직 정확성</td>
+          <td>빠르게 실행되어야 함(수 분 이내). 느려지면 개발자가 스킵하려는 유혹이 생김</td>
+        </tr>
+        <tr>
+          <td><strong>통합/계약 테스트</strong></td>
+          <td>서비스 간 인터페이스, DB 연동</td>
+          <td>단위 테스트보다 느리지만 "서비스 A가 B의 API를 깨뜨렸는가"를 잡아냄(Day 5 계약 테스트 연결)</td>
+        </tr>
+        <tr>
+          <td><strong>보안 스캔(SAST/의존성 스캔)</strong></td>
+          <td>알려진 취약점, 시크릿 하드코딩</td>
+          <td>Day 8에서 다룬 보안 취약점을 배포 전에 자동으로 차단하는 게이트</td>
+        </tr>
+        <tr>
+          <td><strong>스테이징 배포 + E2E 테스트</strong></td>
+          <td>실제와 유사한 환경에서 전체 흐름 동작</td>
+          <td>프로덕션과 최대한 유사한 데이터/설정을 써야 신뢰도가 있음</td>
+        </tr>
+        <tr>
+          <td><strong>프로덕션 점진 배포</strong></td>
+          <td>실제 트래픽에서의 동작</td>
+          <td>3장에서 다룰 카나리/블루-그린으로 위험을 통제하며 진행</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>배포 단위를 작게 쪼갤 수 있는 구조로 바꿉니다.</strong> 여러 기능을 모아 2주에 한 번 배포하는 대신, 기능 개발이 끝나는 즉시 병합·배포할 수 있도록 <strong>트렁크 기반 개발(trunk-based development)</strong>과 짧은 수명의 브랜치를 도입합니다. 아직 사용자에게 노출하면 안 되는 미완성 기능은 배포와 릴리스를 분리하는 <strong>피처 플래그</strong>(4장)로 감춥니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>수동 QA가 반복적으로 확인하는 항목을 자동화된 테스트로 전환합니다.</strong> 매번 사람이 같은 시나리오를 클릭해서 확인한다면 그것은 자동화 가능한 회귀 테스트 후보입니다. 사람은 <strong>탐색적 테스트(자동화가 어려운 새로운 시나리오 발굴)</strong>에 집중하도록 역할을 재배치합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>파이프라인 단계를 빠르고 저렴한 검증부터 느리고 비싼 검증 순서로 배치합니다.</strong> Lint → 단위 테스트 → 통합 테스트 → 보안 스캔 → 스테이징 E2E 순으로 배치해, <strong>문제가 있는 커밋을 가장 빠른 단계에서 조기에 실패(fail fast)</strong>시켜 개발자 피드백 시간을 최소화합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>프로덕션 배포 자체를 3장에서 다룰 점진적 전략(카나리 등)으로 자동화하고, 이상 감지 시 자동 롤백을 연결합니다.</strong> 이렇게 하면 "배포"라는 행위 자체가 사람의 수작업이 아니라 <strong>검증된 파이프라인이 통과시킨 결과물을 안전하게 내보내는 절차</strong>가 됩니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"먼저 배포를 2주 단위의 큰 묶음에서 병합될 때마다 자동으로 흘러가는 파이프라인으로 바꿉니다. 트렁크 기반 개발로 전환해 짧은 수명의 브랜치만 쓰고, 아직 완성되지 않은 기능은 피처 플래그로 꺼둔 채 메인에 병합합니다. 파이프라인은 Lint → 단위 테스트 → 통합 테스트 → 의존성 취약점 스캔 → 스테이징 E2E 순으로 배치해 저렴한 검증에서 먼저 실패하게 합니다. 반복되는 수동 QA 체크리스트 중 결정론적으로 검증 가능한 항목은 회귀 테스트로 자동화하고, 사람은 새로운 엣지 케이스를 탐색하는 데 집중하도록 역할을 바꿉니다. 마지막으로 프로덕션 배포는 카나리 방식으로 자동화해 이상 지표 감지 시 자동 롤백되도록 연결해, 배포 빈도는 늘리면서 실패 시 노출 범위는 오히려 줄어들게 만듭니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"Jenkins나 GitHub Actions로 빌드와 배포를 자동화하는 스크립트를 작성하겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 어떤 도구를 쓸지는 부수적인 문제입니다. 진짜 질문은 "왜 2주에 한 번, 큰 묶음으로 배포하는 것이 위험한가"와 "그 위험을 줄이려면 배포 단위, 테스트 자동화 범위, 검증 순서를 어떻게 재설계해야 하는가"입니다. 도구 이름만 나열하면 문제의 근본 원인(배포 배치 크기와 수동 검증 의존)을 건드리지 못합니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"CI 파이프라인의 통합 테스트 단계가 평균 25분이 걸려서, 개발자들이 병합 전 로컬에서 기다리다 지쳐 리뷰 승인만 받고 병합 후 CI 결과를 확인하지 않는 습관이 생겼습니다. 이 상황을 어떻게 개선하시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 이 상황은 <strong>파이프라인 속도가 개발자 행동을 왜곡시켜, CI가 존재하는 이유(문제를 조기에 발견)를 무력화</strong>시키고 있다는 신호입니다.
+        1) 먼저 25분이 걸리는 원인을 분해합니다 — 테스트가 실제로 25분이 필요한 양인지, 아니면 <strong>병렬화되지 않고 순차 실행</strong>되고 있는지, 매번 <strong>불필요하게 전체 스위트를 재실행</strong>하고 있는지 확인합니다.
+        2) <strong>변경된 파일과 연관된 테스트만 우선 실행</strong>하는 선택적 테스트 실행(test impact analysis)이나, 독립적인 테스트를 여러 워커에 <strong>병렬 분산</strong>하는 것으로 상당 부분을 줄일 수 있는 경우가 많습니다.
+        3) 근본적으로는 <strong>"병합 전에 반드시 통과해야 하는 필수 게이트"와 "병합 후 비동기로 확인해도 되는 검증"을 구분</strong>합니다. 빠른 단위 테스트와 핵심 통합 테스트는 병합을 막는 필수 게이트로 유지하되, 느리고 덜 치명적인 일부 검증은 병합 후 비동기로 돌리고 실패 시 알림을 보내는 방식으로 조정할 수 있습니다.
+        4) 다만 이 조정이 <strong>"느린 테스트는 아무도 안 본다"는 문화로 굳어지지 않도록</strong>, 병합 후 실패 알림에 대한 소유권(누가 확인하고 되돌릴 책임을 지는가)을 명확히 합니다.
+        핵심은 파이프라인 속도 문제를 "더 기다리라"고 요구하는 대신, <strong>테스트 실행 자체의 효율화와 게이트의 재설계</strong>로 풀어야 한다는 것이고, 그러지 않으면 개발자들은 항상 안전장치를 우회하는 방향으로 적응한다는 점입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 3. DEPLOYMENT STRATEGY ───────────── -->
+  <section id="section-strategy">
+    <h2>3. 배포 전략 — 블루-그린 / 롤링 / 카나리</h2>
+
+    <h3>배경 개념: "한 번에 전체 교체"는 왜 위험한가</h3>
+    <p>
+      가장 단순한 배포 방식은 기존 서버를 멈추고 새 버전으로 <strong>한 번에 전체 교체(in-place)</strong>하는 것입니다. 문제는 새 버전에 버그가 있으면 <strong>100%의 사용자가 즉시 영향</strong>을 받고, 되돌리려면 다시 이전 버전을 배포하는 시간만큼 장애가 지속됩니다.
+      이를 완화하는 세 가지 대표 전략이 <strong>블루-그린(Blue-Green)</strong>, <strong>롤링(Rolling)</strong>, <strong>카나리(Canary)</strong>입니다. 셋 다 "한 번에 전체를 바꾸지 않는다"는 공통 철학을 갖지만, <strong>무엇을 최적화하는지(전환 속도 vs 자원 비용 vs 위험 노출 범위)</strong>가 다릅니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"핵심 결제 서비스를 배포하는데 블루-그린, 롤링, 카나리 중 하나를 선택해야 합니다. 어떤 기준으로 선택하고, 왜 그 선택이 결제 서비스에 적합한지 설명해주세요."</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>세 방식의 정의를 나열하는 데서 멈추는지, 아니면 <strong>서비스의 위험 민감도, 상태 유무, 롤백 속도 요구사항</strong>에 따라 근거 있는 선택을 하는지를 봅니다.</p>
+
+    <h4>세 전략 비교</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>전략</th>
+          <th>동작 방식</th>
+          <th>장점</th>
+          <th>단점</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>블루-그린</strong></td>
+          <td>기존 환경(Blue)과 동일한 새 환경(Green)을 통째로 준비해 트래픽을 한 번에(또는 매우 빠르게) 전환</td>
+          <td>롤백이 즉시(트래픽을 다시 Blue로 돌리기만 하면 됨), 새 버전이 완전히 검증된 후 전환</td>
+          <td>두 배의 인프라 자원이 순간적으로 필요, 전환 순간 여전히 100%가 한 번에 바뀜(트래픽 전환 자체의 리스크는 남음)</td>
+        </tr>
+        <tr>
+          <td><strong>롤링</strong></td>
+          <td>서버 인스턴스를 몇 대씩 순차적으로 새 버전으로 교체</td>
+          <td>추가 인프라 비용이 적음(기존 자원 재사용), 점진적</td>
+          <td>배포 중 신-구 버전이 동시에 떠 있어 <strong>API 하위 호환성이 반드시 보장</strong>되어야 함, 롤백도 다시 순차적으로 되돌려야 해 시간이 걸림</td>
+        </tr>
+        <tr>
+          <td><strong>카나리</strong></td>
+          <td>새 버전을 아주 적은 비율(예: 1%)의 실제 트래픽에만 노출하고, 지표를 보며 점진적으로 비율을 늘림</td>
+          <td><strong>실제 프로덕션 트래픽으로 검증하되 위험 노출을 최소화</strong>, 이상 감지 시 극소수 사용자만 영향받고 즉시 중단 가능</td>
+          <td>트래픽 분할·지표 비교를 위한 추가 인프라(트래픽 라우팅, 자동 비교 분석)가 필요, 전체 전환까지 시간이 오래 걸릴 수 있음</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>서비스의 위험 민감도와 "새 버전이 실제 트래픽에서 검증되지 않은 채 100%로 갈 때의 피해 규모"를 먼저 평가합니다.</strong> 결제처럼 실패 시 직접적인 금전 피해와 신뢰 손상이 큰 서비스는, 소수의 사용자로 실제 검증을 거치는 <strong>카나리를 기본으로 고려</strong>합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>API 하위 호환성이 보장되는지 확인합니다.</strong> 카나리와 롤링 모두 신-구 버전이 <strong>동시에 살아있는 기간</strong>이 존재하므로, 이 기간 동안 클라이언트나 다른 서비스가 두 버전 중 어느 쪽에 요청이 가더라도 정상 동작해야 합니다(Day 5의 breaking/non-breaking 판단과 연결).
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>카나리의 트래픽 비율을 늘리는 기준을 사전에 정의합니다.</strong> "1% → 10% → 50% → 100%"처럼 단계별 비율과, 각 단계에서 <strong>몇 분 이상 관찰하고 어떤 지표(에러율, p99, 결제 성공률)가 신버전과 구버전 간 통계적으로 유의미한 차이가 없어야 다음 단계로 진행</strong>하는지를 명시합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>카나리 배포가 실질적으로 안전하려면 자동화된 지표 비교와 자동 롤백(5장)이 함께 있어야 합니다.</strong> 사람이 대시보드를 계속 지켜보며 수동으로 판단하는 방식은 야간 배포나 빠른 확산 상황에서 대응이 늦어질 수 있습니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"결제 서비스는 실패 시 금전적 피해와 신뢰 손상이 직접적이므로, 실제 트래픽으로 검증하되 노출 범위를 최소화할 수 있는 <strong>카나리</strong>를 기본으로 선택합니다. 먼저 API가 신-구 버전 동시 운영 기간 동안 하위 호환되는지 계약 테스트로 확인합니다. 배포 시 신버전에 1%의 실제 트래픽만 보내고, 결제 성공률과 p99 응답 시간을 구버전과 자동으로 비교해 5분간 통계적으로 유의미한 차이가 없으면 10% → 50% → 100%로 단계적으로 늘립니다. 각 단계에서 지표가 임계치를 벗어나면 자동으로 트래픽을 구버전으로 되돌리는 자동 롤백을 연결해, 사람이 밤에 대시보드를 계속 지켜보지 않아도 안전하게 동작하도록 설계합니다. 블루-그린은 결제처럼 소수 트래픽으로 미리 검증하는 단계 없이 전체 전환으로 넘어가는 방식이라, 이 서비스에는 카나리보다 위험 노출이 더 크다고 판단했습니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"카나리 배포가 요즘 많이 쓰이는 방식이니 카나리로 하겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: "요즘 많이 쓰인다"는 유행을 따르는 이유일 뿐, 결제 서비스라는 구체적 맥락(위험 민감도, 하위 호환성 요구, 트래픽 비율 조정 기준, 자동 롤백 필요성)에 근거한 선택이 아닙니다. 인터뷰어는 왜 그 전략이 이 상황에 맞는지를 듣고 싶어합니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"카나리 배포 중 신버전이 결제 실패율은 정상인데, 응답 시간이 구버전보다 눈에 띄게 느려졌습니다(에러는 없음). 트래픽 비율을 계속 늘려도 될까요, 멈춰야 할까요? 어떻게 판단하시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 에러율만 보는 카나리 분석은 <strong>"실패하지는 않지만 느려지는 회귀"를 놓칠 수 있는 함정</strong>입니다. 응답 시간 저하는 당장 에러로 이어지지 않아도 사용자 경험 저하, 커넥션 풀 점유 증가로 인한 연쇄 지연(Day 7의 Bulkhead 논의와 연결), SLO 위반(Day 9) 위험으로 이어질 수 있습니다.
+        1) 먼저 <strong>이 지연이 일시적(콜드 스타트, JIT 워밍업 등)인지 지속적인 회귀인지</strong> 몇 분 더 관찰해 구분합니다.
+        2) 지속적이라면 <strong>비율을 늘리지 않고 현재 단계에서 멈추거나, 오히려 비율을 낮춰</strong> 영향받는 사용자 수를 줄인 채로 트레이싱(Day 9)을 통해 어느 구간에서 지연이 발생했는지 조사합니다.
+        3) 카나리 자동화 규칙 자체에 <strong>에러율뿐 아니라 응답 시간 percentile 회귀도 자동 중단 조건으로 포함</strong>되어 있어야 하며, 이번 상황을 계기로 그 규칙이 없었다면 추가합니다.
+        4) 결제처럼 민감한 서비스는 "에러가 없으니 괜찮다"는 판단 대신 <strong>보수적으로 먼저 멈추고 원인을 확인한 뒤 재개</strong>하는 태도가 맞습니다. 비율을 계속 늘리는 판단은 실패 시 되돌리기 어려운(더 많은 사용자가 이미 느린 경험을 한) 비가역적 방향이기 때문입니다.
+        핵심은 카나리 판단 기준을 <strong>"에러가 있는가"라는 단일 축이 아니라 사용자 체감과 직결된 여러 지표(에러율 + 지연 percentile)로 다축 설계</strong>해야 한다는 것과, 애매하면 <strong>확산이 아니라 보수적 정지</strong>를 택하는 판단력입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 4. FEATURE FLAGS ───────────── -->
+  <section id="section-flags">
+    <h2>4. 피처 플래그 — 배포와 릴리스의 분리</h2>
+
+    <h3>배경 개념: "배포"와 "릴리스"는 같은 것이 아니다</h3>
+    <p>
+      많은 팀이 "코드가 프로덕션 서버에 올라가는 것(배포)"과 "사용자가 그 기능을 실제로 쓸 수 있게 되는 것(릴리스)"을 같은 순간이라고 여깁니다. 이 둘을 하나로 묶으면, <strong>아직 완성되지 않은 큰 기능은 배포 자체를 미룰 수밖에 없어</strong> 앞서 CI/CD에서 말한 "작고 자주 배포"가 어려워집니다.
+      <strong>피처 플래그(Feature Flag / Feature Toggle)</strong>는 코드에 조건문을 두어, <strong>배포는 이미 끝났지만 플래그가 꺼져 있는 동안은 사용자에게 보이지 않는</strong> 상태를 만듭니다. 플래그를 켜는 것은 코드를 다시 배포하지 않고 <strong>설정값만 바꾸는 순간적인 작업</strong>이라, 릴리스 시점을 배포 시점과 독립적으로 통제할 수 있습니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"3개월짜리 대형 기능을 개발 중인데, 완성될 때까지 메인 브랜치에 병합하지 않고 별도 브랜치에서 작업하다 보니 병합 시점에 충돌이 많고 통합 테스트도 뒤늦게야 이뤄집니다. 이 문제를 어떻게 개선하시겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"브랜치 전략을 바꾸겠다"는 표면적 답변에서 멈추는지, 아니면 <strong>배포와 릴리스를 분리하는 피처 플래그로 미완성 코드도 안전하게 자주 병합할 수 있게</strong> 만드는 근본 해법을 제시하는지를 봅니다.</p>
+
+    <h4>피처 플래그의 대표 용도</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>용도</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>릴리스 토글(Release Toggle)</strong></td>
+          <td>미완성 기능을 배포는 하되 감춤. 트렁크 기반 개발을 가능하게 하는 핵심 장치</td>
+        </tr>
+        <tr>
+          <td><strong>실험 토글(Experiment Toggle)</strong></td>
+          <td>A/B 테스트처럼 사용자군을 나눠 서로 다른 동작을 노출하고 지표 비교</td>
+        </tr>
+        <tr>
+          <td><strong>운영 토글(Ops Toggle)</strong></td>
+          <td>부하가 몰릴 때 특정 무거운 기능(추천, 부가 배너)을 즉시 끄는 킬 스위치(kill switch)</td>
+        </tr>
+        <tr>
+          <td><strong>권한 토글(Permission Toggle)</strong></td>
+          <td>특정 요금제/베타 사용자에게만 기능 노출</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>대형 기능을 작은 단위로 쪼개 각 단위를 플래그 뒤에 두고 자주 메인에 병합하도록 개발 방식을 바꿉니다.</strong> 예를 들어 새로운 결제 흐름 전체를 한 번에 완성해서 병합하는 대신, "결제 화면 UI 변경", "새 PG 연동", "기존 흐름과의 전환 로직"을 각각 독립된 플래그로 나눠 완성되는 대로 병합합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>플래그가 꺼진 상태에서도 기존 코드 경로가 정상 동작하는지 CI에서 검증합니다.</strong> 플래그를 도입한다고 테스트가 줄어드는 게 아니라, <strong>"켜짐"과 "꺼짐" 두 경로 모두</strong> 검증 대상이 된다는 점을 팀에 명확히 합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>내부 검증(사내 사용자) → 소수 실사용자 → 점진 확대 순으로 플래그를 릴리스 토글로 활용해 카나리처럼 통제된 노출을 합니다.</strong> 이 단계에서 배포(3장)의 트래픽 비율 조정과 피처 플래그의 사용자 비율 조정은 서로 다른 층위의 도구지만 같은 철학(점진적 노출)을 공유합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>기능이 완전히 안정화되고 100% 릴리스된 후에는 플래그와 옛 코드 경로를 제거하는 정리 작업을 반드시 계획합니다.</strong> 플래그를 치우지 않고 방치하면 코드베이스에 <strong>죽은 분기와 조합 폭발(플래그 여러 개의 켜짐/꺼짐 조합)</strong>이 쌓여 오히려 유지보수성을 해치는 <strong>"플래그 부채(flag debt)"</strong>가 됩니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"근본 원인은 '배포'와 '완성된 기능을 사용자에게 노출하는 것'이 같은 시점으로 묶여 있다는 점입니다. 대형 기능을 결제 화면 UI, 새 PG 연동, 전환 로직처럼 작은 단위로 쪼개고 각각을 피처 플래그 뒤에 두어, 완성되는 대로 즉시 메인 브랜치에 병합합니다. CI에서는 플래그가 꺼진 경로와 켜진 경로 모두를 테스트해, 플래그 도입이 테스트 커버리지를 줄이지 않도록 합니다. 릴리스 시점에는 사내 사용자 → 1% 실사용자 → 점진 확대 순으로 플래그를 열어 카나리처럼 통제된 검증을 거칩니다. 그리고 기능이 100% 안정화되면 플래그와 옛 코드 경로를 제거하는 정리 작업을 스프린트 계획에 명시적으로 포함해, 플래그가 계속 쌓여 조합 폭발이 생기는 것을 방지합니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"브랜치를 더 자주 리베이스하고 병합 전에 코드 리뷰를 꼼꼼히 하겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 리베이스와 리뷰는 병합 충돌의 증상을 완화할 뿐, "왜 3개월짜리 브랜치가 존재하게 됐는가"라는 근본 원인(배포와 릴리스가 묶여 있어 미완성 기능을 병합할 수 없다는 제약)을 해결하지 않습니다. 브랜치 수명이 길면 결국 같은 문제가 반복됩니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"피처 플래그를 도입한 지 1년이 지났는데, 코드베이스에 200개가 넘는 플래그가 쌓여 있고 어떤 플래그가 아직 필요한지 아무도 모릅니다. 어떻게 관리 체계를 세우시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 이것은 전형적인 <strong>플래그 부채</strong> 상황으로, 플래그가 "임시 장치"라는 본질을 잊고 영구적인 설정값처럼 방치된 결과입니다.
+        1) 모든 플래그에 <strong>소유자, 생성일, 목적(릴리스/실험/운영/권한), 예상 제거 시점</strong>을 메타데이터로 강제합니다. 이 메타데이터가 없는 플래그는 생성 자체를 막는 정책을 CI 게이트로 둘 수 있습니다.
+        2) 릴리스 토글은 <strong>100% 릴리스 후 일정 기간(예: 2주) 지나면 자동으로 "제거 대상" 알림</strong>이 담당 팀에 가도록 합니다. 실험 토글은 실험 종료와 동시에 제거를 스프린트 작업으로 티켓화합니다.
+        3) 이미 쌓인 200개는 <strong>일괄 감사(audit)</strong>를 통해 "항상 켜짐" 또는 "항상 꺼짐" 상태로 몇 개월째 고정된 플래그부터 우선 제거 대상으로 분류합니다. 이런 플래그는 사실상 실험이나 점진 릴리스 목적을 다했는데 코드만 남아있는 경우가 많습니다.
+        4) 장기적으로는 <strong>운영 토글(킬 스위치)만 영구적으로 유지</strong>하고, 릴리스/실험 토글은 "임시"라는 원칙을 조직 문화로 명문화해, 플래그 생성 자체에 만료 계획이 없으면 승인되지 않게 합니다.
+        핵심은 피처 플래그를 도입할 때부터 <strong>"제거는 선택이 아니라 라이프사이클의 필수 단계"</strong>로 설계해야 하며, 그러지 않으면 배포 유연성을 얻는 대신 장기적인 코드 복잡도 부채를 떠안게 된다는 트레이드오프입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 5. ROLLBACK ───────────── -->
+  <section id="section-rollback">
+    <h2>5. 롤백 전략과 DB 마이그레이션 호환성</h2>
+
+    <h3>배경 개념: "이전 버전으로 되돌리면 된다"는 DB가 껴 있으면 틀린 말이 된다</h3>
+    <p>
+      애플리케이션 코드만 배포한다면 롤백은 단순히 <strong>이전 이미지/바이너리를 다시 배포</strong>하면 됩니다. 그러나 실무 배포의 상당수는 <strong>DB 스키마 변경(마이그레이션)</strong>을 동반하고, 이 경우 "코드만 되돌리기"는 위험합니다.
+      예를 들어 새 버전이 컬럼 이름을 바꾸는 마이그레이션과 함께 배포됐는데 문제가 생겨 <strong>애플리케이션 코드만 이전 버전으로 롤백</strong>하면, 구버전 코드는 이미 이름이 바뀐 컬럼을 찾지 못해 <strong>더 큰 장애</strong>가 납니다. 안전한 롤백을 보장하려면 <strong>스키마 변경과 코드 변경을 같은 배포에 원자적으로 묶지 않고, 여러 단계로 쪼개 항상 하위 호환을 유지</strong>해야 합니다. 이를 흔히 <strong>확장-수축(Expand-Contract) 패턴</strong>이라 부릅니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"사용자 테이블의 <code>name</code> 컬럼을 <code>first_name</code>과 <code>last_name</code>으로 분리해야 합니다. 이 마이그레이션을 배포하는 도중이나 직후에 문제가 생겨도 안전하게 롤백할 수 있으려면 어떻게 단계를 나누시겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"마이그레이션 스크립트를 짜서 한 번에 배포하겠다"는 답에서 멈추는지, 아니면 <strong>신-구 코드가 공존하는 기간 동안 양쪽 모두가 정상 동작하도록 여러 단계로 쪼개는</strong> 설계를 하는지를 봅니다.</p>
+
+    <h4>Expand-Contract 패턴 단계</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Expand(확장) — 기존 컬럼은 그대로 두고 새 컬럼을 추가만 합니다.</strong> <code>first_name</code>, <code>last_name</code> 컬럼을 추가하되 <code>name</code>은 삭제하지 않습니다. 이 시점에는 구버전 코드(<code>name</code>만 읽고 씀)와 신버전 코드가 각자 자신이 아는 컬럼만 쓰므로 <strong>어느 버전이 떠 있어도 안전</strong>합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Migrate(이행) — 애플리케이션이 두 컬럼 모두를 쓰도록(dual write) 배포하고, 기존 데이터를 배치로 백필(backfill)합니다.</strong> 새 코드는 쓰기 시 <code>name</code>과 <code>first_name</code>/<code>last_name</code>을 모두 갱신해, 이 시점에 롤백해도 <code>name</code> 컬럼이 여전히 최신 상태로 유지됩니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Cutover(전환) — 읽기 경로를 새 컬럼으로 전환한 코드를 배포합니다.</strong> 이 시점에도 <code>name</code> 컬럼은 dual write로 계속 갱신되고 있으므로, 문제가 생기면 <strong>애플리케이션 코드만 이전 단계로 롤백</strong>해도 안전합니다(구버전은 여전히 <code>name</code>을 읽고 그 값은 최신이기 때문).
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>Contract(수축) — 충분한 안정화 기간(예: 몇 주)이 지나 롤백 가능성이 사실상 사라졌다고 판단되면, dual write를 제거하고 마지막으로 <code>name</code> 컬럼을 삭제합니다.</strong> 이 마지막 단계는 <strong>가장 되돌리기 어려운 단계</strong>이므로 앞의 세 단계보다 훨씬 보수적으로, 모니터링 기간을 충분히 두고 진행합니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"컬럼 분리를 한 번의 배포로 묶지 않고 Expand-Contract 4단계로 나눕니다. 1단계에서 <code>first_name</code>, <code>last_name</code> 컬럼을 추가만 하고 <code>name</code>은 그대로 둬 어느 버전이 떠 있어도 안전하게 합니다. 2단계에서 애플리케이션이 두 컬럼 모두에 쓰도록(dual write) 배포하고 기존 데이터를 배치로 백필합니다. 3단계에서 읽기를 새 컬럼으로 전환하되, dual write는 유지해 이 단계에서 문제가 생기면 애플리케이션 코드만 이전 단계로 되돌려도 <code>name</code>이 최신 상태라 안전합니다. 마지막 4단계인 <code>name</code> 컬럼 삭제는 몇 주간 안정화를 확인한 뒤, 가장 되돌리기 어려운 단계이므로 별도로 보수적으로 진행합니다. 이렇게 하면 매 단계마다 코드만 롤백해도 데이터 정합성이 깨지지 않습니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"마이그레이션 스크립트로 컬럼을 분리하고 데이터를 옮긴 뒤, <code>name</code> 컬럼을 삭제하는 배포를 한 번에 진행하겠습니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 컬럼 삭제까지 한 배포에 묶으면, 배포 직후 문제가 발견돼도 애플리케이션 코드만 롤백하는 것이 불가능합니다(구버전 코드가 이미 삭제된 <code>name</code> 컬럼을 찾기 때문). 결국 롤백을 위해 <strong>삭제된 데이터를 백업에서 복구</strong>해야 하는, 훨씬 느리고 위험한 복구 절차로 이어집니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"자동 롤백 시스템을 구축하려 합니다. '에러율이 5분간 평소보다 3배 이상'이면 자동으로 이전 버전으로 되돌리는 규칙을 넣으려는데, 이 자동화에서 어떤 위험을 고려해야 할까요?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 자동 롤백은 강력하지만 <strong>잘못 설계하면 오히려 상황을 악화시키는 새로운 실패 모드</strong>를 만듭니다.
+        1) <strong>DB 마이그레이션이 이미 Contract 단계까지 진행된 배포라면, 코드만 되돌리는 자동 롤백은 데이터 정합성을 깨뜨립니다.</strong> 자동 롤백 시스템은 "이 배포가 코드만 롤백해도 안전한 단계인지"를 배포 메타데이터로 알고 있어야 하며, 안전하지 않다면 자동 롤백 대신 사람에게 에스컬레이션해야 합니다.
+        2) <strong>지표 자체가 배포와 무관한 이유(외부 결제사 장애, 트래픽 급증)로 나빠졌을 때 잘못 롤백</strong>하면, 실제 원인은 해결되지 않은 채 정상 배포만 되돌리는 낭비가 생깁니다. 카나리(3장)처럼 신버전과 구버전을 같은 시간대에 동시 비교하는 방식이면 이 문제를 줄일 수 있습니다(동일 시점의 외부 요인은 양쪽에 공평하게 영향을 주므로).
+        3) <strong>롤백 자체도 실패할 수 있다</strong>는 것을 감안해, 롤백이 반복적으로 트리거되어 배포-롤백을 오가는 진동(flapping)이 생기지 않도록 롤백 후 일정 시간 재배포를 잠그는 쿨다운을 둡니다.
+        4) 자동 롤백이 실행됐다는 사실 자체가 <strong>사람에게 즉시 알림으로 전달</strong>되어야 하며, "자동으로 처리됐으니 괜찮다"고 방치하지 않고 반드시 사후 분석(Day 7의 포스트모템)으로 이어져야 합니다.
+        핵심은 자동 롤백을 <strong>"코드 되돌리기"라는 단순 동작이 아니라, 데이터 안전성·오판 가능성·반복 트리거 위험까지 고려한 시스템</strong>으로 설계해야 한다는 것입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 6. SCENARIO ───────────── -->
+  <section id="section-scenario">
+    <h2>6. 종합 시나리오 — 금요일 오후 배포 후 에러율 급증</h2>
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"금요일 오후 4시에 배포한 지 10분 후, 결제 성공률이 평소보다 크게 떨어졌다는 알림을 받았습니다. 이 배포에는 애플리케이션 코드 변경과 함께 DB 마이그레이션(새 컬럼 추가, dual write 단계)이 포함되어 있습니다. 지금부터 어떻게 대응하시겠습니까?"</p>
+    </div>
+    <p>이 질문은 오늘 배운 배포 전략·롤백·DB 호환성·조직 소통을 <strong>시간 압박이 있는 실제 장애 상황에서 순서대로 조합하는 능력</strong>을 봅니다.</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>이 배포가 카나리 방식이었다면 먼저 카나리 트래픽 비율부터 확인합니다.</strong> 아직 일부(예: 10%)만 신버전이라면 <strong>영향받는 사용자 범위가 이미 제한</strong>되어 있다는 것을 확인하고, 즉시 카나리를 0%로 되돌려 신버전 트래픽을 차단합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>이번 배포의 DB 마이그레이션 단계가 Expand-Contract 중 어느 단계인지 확인합니다.</strong> 문제 설명에 "dual write 단계"라고 명시되어 있으므로, 구버전 코드가 여전히 읽는 원래 컬럼도 최신 상태로 유지되고 있어 <strong>애플리케이션 코드만 이전 버전으로 롤백해도 데이터 정합성이 깨지지 않는다</strong>는 것을 확인한 뒤 롤백을 실행합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>롤백 직후 결제 성공률이 정상으로 돌아오는지 확인해, 이번 배포가 실제 원인이었는지(우연히 같은 시각 외부 PG 장애와 겹친 것이 아닌지) 검증합니다.</strong> 만약 롤백 후에도 지표가 회복되지 않는다면, 원인은 이번 배포가 아니라 다른 곳(외부 의존성)에 있다는 뜻이므로 조사 방향을 전환합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>영향받은 결제 건에 대한 데이터 후처리를 확인합니다.</strong> 실패로 기록된 결제 중 실제로는 PG사에서 처리됐지만 응답을 못 받은 건(멱등키로 재시도 처리, Day 6 연결)이 있는지 확인해, 이중 청구나 누락이 없는지 점검합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>"금요일 오후 배포"라는 시점 자체를 조직적으로 되돌아봅니다.</strong> 오늘 배운 점진 배포와 안전한 롤백 설계가 갖춰져 있었기에 빠르게 복구할 수 있었지만, 만약 이런 안전장치가 없었다면 금요일 오후·주말 온콜 인력이 적은 시간대의 배포는 더 큰 위험을 안고 있었을 것입니다. 배포 시점 정책(위험도가 높은 변경은 금요일 오후 배포를 지양하는 등)을 팀 차원에서 재논의합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>블레임리스 포스트모템(Day 7)을 진행해, 이번 회귀가 스테이징에서 발견되지 않은 이유(테스트 커버리지 공백, 실제 프로덕션 트래픽 패턴과의 차이)를 분석하고 재발 방지책을 CI/CD 파이프라인에 반영합니다.</strong>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <strong>시니어가 반드시 언급해야 하는 것</strong>: 배포와 DB 마이그레이션이 얽힌 장애에서 <strong>"코드만 롤백해도 안전한 단계인가"를 먼저 확인</strong>하는 판단, 카나리처럼 <strong>이미 제한된 노출 범위를 활용</strong>하는 신속한 대응, 롤백 후에도 <strong>원인이 정말 이 배포였는지 검증</strong>하는 태도, 그리고 데이터 정합성(이중 청구/누락) 후처리와 <strong>배포 시점·문화적 재발 방지</strong>까지 연결하는 넓은 시야입니다. 이 네 가지가 없으면 "일단 롤백 버튼을 눌렀다"는 즉흥 대응으로만 보입니다.
+    </div>
+  </section>
+
+  <!-- ───────────── 7. RUBRIC ───────────── -->
+  <section id="section-rubric">
+    <h2>7. 자기 점검 Rubric</h2>
+    <p>각 항목을 솔직하게 채점하세요. ●●●=잘 설명할 수 있음, ●●○=부분적으로 앎, ●○○=어렴풋이 앎, ○○○=모름</p>
+
+    <div class="card rubric">
+      <div class="rubric-item">
+        <span>CI/CD 파이프라인의 각 단계가 무엇을 검증하고 왜 그 순서(빠르고 저렴한 검증부터)로 배치되는지 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>트렁크 기반 개발과 배포 배치 크기를 줄이는 것이 왜 배포 위험을 낮추는지 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>블루-그린/롤링/카나리의 차이와, 서비스 위험 민감도에 따라 어떤 전략을 선택할지 근거를 들어 판단할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>카나리 배포의 자동 중단 기준을 에러율뿐 아니라 지연 percentile 등 다축으로 설계해야 하는 이유를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>피처 플래그로 배포와 릴리스를 분리하는 이유와, 플래그 부채를 방지하는 라이프사이클 관리 방법을 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>Expand-Contract 패턴의 4단계와, 각 단계에서 코드만 롤백해도 데이터 정합성이 유지되는 이유를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>자동 롤백 시스템이 데이터 정합성, 외부 요인 오판, 반복 트리거(flapping)를 어떻게 고려해야 하는지 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>배포 관련 장애 발생 시 롤백 안전성 판단 → 원인 검증 → 데이터 후처리 → 조직적 재발 방지까지 순서대로 대응할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+    </div>
+
+    <h3>점수 해석</h3>
+    <ul>
+      <li><strong>7~8개 ●●●</strong>: 배포/DevOps 영역 시니어 수준. Day 11로 진행해도 됩니다.</li>
+      <li><strong>4~6개 ●●●</strong>: 핵심은 알지만 ●●○ 항목을 다시 읽고, 자신이 겪은 실제 배포 장애 사례와 Expand-Contract 단계를 비교해 보세요.</li>
+      <li><strong>3개 이하 ●●●</strong>: 배포 전략 비교 표와 Expand-Contract 4단계, 종합 시나리오의 6단계를 소리 내어 다시 설명해보세요.</li>
+    </ul>
+
+    <h3>추천 복습 방법</h3>
+    <p>오늘 배운 내용 중 가장 자신 없는 질문 하나를 골라, 면접관 앞에서 말하듯 2~3분간 소리 내어 설명해보세요. 막히는 부분이 실제로 모르는 부분입니다.</p>
+  </section>
+
+  <!-- ───────────── NAVIGATION ───────────── -->
+  <div class="nav-bottom">
+    <a href="./0009-observability.html">← Day 9: 관측성</a>
+    <a href="./index.html">목록으로</a>
+    <span style="color:var(--muted);font-size:0.9rem;">Day 11: 기술 리딩 →</span>
+  </div>
+
+</div>
+</body>
+</html>
