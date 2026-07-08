@@ -8,12 +8,12 @@
 | 2 | 2026-07-05 | LLM Wiki 지식 큐레이션과 Skill 문서 관리 | [0002-llm-wiki-knowledge-curation-and-skill-document-management.html](lessons/0002-llm-wiki-knowledge-curation-and-skill-document-management.html) |
 | 3 | 2026-07-06 | 이기종 문서 수집 아키텍처와 커넥터 설계 | [0003-heterogeneous-document-ingestion-connector-architecture.html](lessons/0003-heterogeneous-document-ingestion-connector-architecture.html) |
 | 4 | 2026-07-07 | PDF/DOCX/PPTX/XLSX 파싱 전략 | [0004-pdf-docx-pptx-xlsx-parsing-strategy.html](lessons/0004-pdf-docx-pptx-xlsx-parsing-strategy.html) |
+| 5 | 2026-07-08 | HTML/Markdown/코드/CSV/JSON/YAML 파싱과 구조화 데이터 처리 | [0005-html-markdown-code-csv-json-yaml-parsing-structured-data.html](lessons/0005-html-markdown-code-csv-json-yaml-parsing-structured-data.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | HTML/Markdown/코드/CSV/JSON/YAML 파싱과 구조화 데이터 처리 | 시맨틱 태그 활용, AST 기반 코드 파싱, 스키마 인식 |
 | 6 | OCR과 Table/Image Extraction | 레이아웃 인식 모델, 병합 셀 표, 멀티모달 추출, 품질 검증 |
 | 7 | Metadata와 Provenance 설계 | 근거 추적, lineage, freshness, 출처 시스템 매핑 |
 | 8 | 문서 구조 기반 Semantic Chunking | Structure-aware/table-aware chunking, 계층적 chunk, contextual retrieval |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — 다음: Day 5 — HTML/Markdown/코드/CSV/JSON/YAML 파싱과 구조화 데이터 처리
+**Day 5 완료** — 다음: Day 6 — OCR과 Table/Image Extraction
 
 ## 습득한 핵심 개념
 
@@ -46,7 +46,12 @@
 - [x] VLM 직접 파싱의 hallucination 위험(표/수치 데이터 중심)과 2026년 하이브리드 파이프라인 컨센서스 (Day 4)
 - [x] 벤더 벤치마크(ParseBench, RD-TableBench 등)를 설계·채점 주체 기준으로 비판적으로 해석하고 도메인 골든셋으로 자체 검증하는 판단력 (Day 4)
 - [x] openpyxl 수식 캐싱, 병합 셀, python-docx 추적 변경 내용 같은 오피스 포맷 파싱의 구체적 엣지 케이스 (Day 4)
-- [ ] HTML/Markdown/코드/CSV/JSON/YAML 파싱 (예정 Day 5)
+- [x] HTML 시맨틱 태그(article/nav/main)와 휴리스틱 본문 추출(Trafilatura)로 본문/잡음 분리 (Day 5)
+- [x] Markdown 헤더 계층 보존 분할과 frontmatter 메타데이터 분리 (Day 5)
+- [x] AST(tree-sitter) 기반 코드 청킹의 4대 설계 원칙(문법 완결성/정보 밀도/언어 불변성/재조립 가능성)과 cAST 실증 성과 (Day 5)
+- [x] 구조적 검색(호출 그래프 순회)으로 임베딩 검색을 보완하는 하이브리드 코드 검색 (Day 5)
+- [x] CSV/JSON/YAML 구조화 데이터가 임베딩에 원래 적합하지 않은 이유와 서술형/사실형 데이터 분리, Text-to-SQL 하이브리드 (Day 5)
+- [x] YAML `yaml.load()`/`unsafe_load()`의 원격 코드 실행(RCE) 위험과 `safe_load()` 강제의 필요성 (Day 5)
 - [ ] OCR과 Table/Image Extraction (예정 Day 6)
 - [ ] Metadata와 Provenance 설계 (예정 Day 7)
 - [ ] 문서 구조 기반 Semantic Chunking (예정 Day 8)

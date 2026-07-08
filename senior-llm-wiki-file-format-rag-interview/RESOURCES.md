@@ -114,6 +114,18 @@
 > 위 자료는 레슨 작성 시점(2026년 7월) 기준 공개 정보를 반영한 것이며,
 > 실제 도구 선택 전에는 반드시 도메인 골든셋으로 자체 검증해야 한다.
 
+## Day 5 최신 근거 (2026년 7월 조사 반영)
+
+- [cAST: Enhancing Code Retrieval-Augmented Generation with Structural Chunking via Abstract Syntax Tree (arXiv 2506.15655)](https://arxiv.org/abs/2506.15655) — AST 기반 청킹의 4대 설계 원칙(문법 완결성/정보 밀도/언어 불변성/재조립 가능성), RepoEval Recall@5 +4.3점, SWE-bench Pass@1 +2.67점, CrossCodeEval +4.3점
+- [Trafilatura 공식 문서 — Evaluation](https://trafilatura.readthedocs.io/en/latest/evaluation.html) — ScrapingHub 벤치마크 F1 0.958, SIGIR 2023 평가에서 8개 데이터셋 평균 F1 최고 기록
+- [WCXB: A Multi-Type Web Content Extraction Benchmark (arXiv 2605.21097)](https://arxiv.org/abs/2605.21097) — 휴리스틱 추출기가 대형 신경망 기반 추출기보다 강건하다는 SIGIR 2023 평가 결과의 후속 검증
+- [PixelRAG — snackonai.com](https://www.snackonai.com/p/pixelrag-your-rag-pipeline-is-losing-40-of-the-evidence-before-the-llm-ever-sees-it-the-fix-is-scree) — 페이지 스크린샷을 비전 모델로 직접 임베딩하는 접근, SimpleQA에서 text-RAG(Trafilatura) 71.6% 대비 78.8%지만 근거 인용(citation grounding)이 어려워지는 트레이드오프
+- [LangChain — MarkdownHeaderTextSplitter 레퍼런스](https://python.langchain.com/api_reference/text_splitters/markdown/langchain_text_splitters.markdown.MarkdownHeaderTextSplitter.html) / [RecursiveJsonSplitter 가이드](https://docs.langchain.com/oss/python/integrations/splitters) — 헤더 계층·중첩 JSON 구조를 보존하며 분할하는 공식 구현
+- [PyYAML 보안 권고 — Sourcery Vulnerability DB](https://www.sourcery.ai/vulnerabilities/python-pyyaml-unsafe-load-rce) / [Datadog 정적 분석 규칙](https://docs.datadoghq.com/security/code_security/static_analysis/static_analysis_rules/python-security/yaml-load/) — `yaml.load()`/`yaml.unsafe_load()`의 `!python/object/apply` 태그를 통한 원격 코드 실행(RCE) 위험과 `yaml.safe_load()` 강제 권고
+- [Optimizing Tabular Data for High-Fidelity Retrieval — Fahad Siddique Faisal (Medium)](https://fahadsid1770.medium.com/optimizing-tabular-data-for-high-fidelity-retrieval-a-deep-dive-into-structuring-vectorization-82e906629d00) — 서술적 콘텐츠(임베딩 대상)와 사실적 메타데이터(필터 대상)를 분리해 의미 희석(semantic dilution)을 막는 전략
+- [CSR-RAG: An Efficient Retrieval System for Text-to-SQL on the Enterprise Scale (arXiv 2601.06564)](https://arxiv.org/abs/2601.06564) — 질의의 의미적 문맥·DB 스키마·테이블 간 연결성을 분리해 검색하는 엔터프라이즈 Text-to-SQL 하이브리드 구조
+- [pandas 3.0.0 릴리스 노트 (2026-01-21)](https://pandas.pydata.org/docs/whatsnew/v3.0.0.html) / [문자열 dtype 마이그레이션 가이드](https://pandas.pydata.org/docs/user_guide/migration-3-strings.html) — `read_csv` 등에서 문자열 컬럼 기본 dtype이 object에서 PyArrow 기반 전용 string dtype으로 변경, 비문자열 값 저장 시 에러 발생
+
 ## 인터뷰 준비
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 검색 시스템 설계 문제와 유사한 사고 프레임
