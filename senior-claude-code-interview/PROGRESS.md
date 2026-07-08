@@ -9,12 +9,12 @@
 | 3 | 2026-07-05 | 코드베이스 컨텍스트 설계 — CLAUDE.md와 Auto Memory | [0003-codebase-context-claude-md-auto-memory.html](lessons/0003-codebase-context-claude-md-auto-memory.html) |
 | 4 | 2026-07-06 | 권한 모델 심화 — permission mode와 규칙 문법 | [0004-permission-model-modes-and-rule-syntax.html](lessons/0004-permission-model-modes-and-rule-syntax.html) |
 | 5 | 2026-07-07 | 샌드박싱과 shell/file 도구 실행 경계 | [0005-sandboxing-shell-file-tool-execution-boundary.html](lessons/0005-sandboxing-shell-file-tool-execution-boundary.html) |
+| 6 | 2026-07-08 | 보안 — 위협 모델과 prompt injection 방어 | [0006-security-threat-model-prompt-injection-defense.html](lessons/0006-security-threat-model-prompt-injection-defense.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | 보안 — 위협 모델과 prompt injection 방어 | 신뢰 경계, 프롬프트 인젝션, MCP 공급망 리스크, secure deployment 패턴 |
 | 7 | MCP — Model Context Protocol 통합과 운영 | MCP 서버 연결, tool search(온디맨드 로드), 권한 규칙, 조직 단위 managed MCP |
 | 8 | Skills — 재사용 워크플로우 설계와 컨텍스트 비용 | on-demand 로드, disable-model-invocation, 팀 표준화 |
 | 9 | Hooks — 실행 시점 자동화와 안전장치 | PreToolUse/PostToolUse/SessionStart/Stop, 결정론적 통제 vs CLAUDE.md의 비강제성 |
@@ -34,7 +34,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — Day 6: 보안 — 위협 모델과 prompt injection 방어로 진행 예정.
+**Day 6 완료** — Day 7: MCP — Model Context Protocol 통합과 운영으로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -61,7 +61,15 @@
 - [x] sandbox.credentials의 deny vs mask(sentinel 치환, network.tlsTerminate 전제조건, 프로젝트 설정에서는 무시됨) (Day 5)
 - [x] 네트워크 격리(프록시가 hostname만 보고 기본적으로 TLS 미검사 → domain fronting 리스크), dangerouslyDisableSandbox 탈출구와 Strict sandbox mode (Day 5)
 - [x] 격리 스펙트럼(Sandboxed Bash tool < sandbox-runtime < devcontainer/custom container < VM < Claude Code on the web)과 --dangerously-skip-permissions는 전체 프로세스 격리 안에서만 써야 한다는 원칙, managed settings 강제와 excludedCommands의 잠금 불가 한계 (Day 5)
-- [ ] 보안/위협 모델 (예정 Day 6)
+- [x] Threat model의 재정의("행동이 처리하는 콘텐츠에 좌우될 수 있다")와 SQL Injection 대비 구조적 차이(자연어에는 parameterized query 같은 데이터/명령 분리가 없음) (Day 6)
+- [x] Lethal Trifecta(민감 데이터 접근 + 비신뢰 콘텐츠 노출 + 외부 통신 능력) 프레임과, 세 요소 중 하나만 제거해도 리스크가 급감한다는 실무 함의 (Day 6)
+- [x] 탐지(detection) 방어와 경계(boundary) 방어의 구분 — 탐지는 확률적 한계가 있고, 경계(네트워크/credential/파일시스템)가 인젝션 성공 여부와 무관하게 피해를 제한한다는 시니어 프레이밍 (Day 6)
+- [x] Claude Code 내장 방어 계층(permission system, command AST parsing="permission gate이지 샌드박스가 아님", context-aware analysis, 격리된 WebFetch 컨텍스트, 웹검색 요약, trust verification, fail-closed matching) (Day 6)
+- [x] MCP가 콘텐츠 유입 통로이자 서드파티 코드라는 이중 리스크, 워크스페이스 신뢰 다이얼로그가 `.mcp.json` 승인을 게이트하는 구조(v2.1.196), `requiresUserInteraction` 메타데이터(v2.1.199+) (Day 6)
+- [x] 공급망 사고 사례(CVE-2025-59536 훅 RCE/신뢰 다이얼로그 우회, CVE-2026-21852 env var 기반 API 키 유출) — 신뢰 검증 절차 자체도 구현 결함이 있으면 공격 표면이 된다는 통찰 (Day 6)
+- [x] Secure deployment 3원칙(Security boundary/Least privilege/Defense in depth)과 credential proxy 패턴(`ANTHROPIC_BASE_URL` vs `HTTP_PROXY`/`HTTPS_PROXY`의 TLS 내용 검사 불가 vs TLS-terminating proxy) (Day 6)
+- [x] security-guidance 플러그인의 3단계 리뷰(per-edit 패턴 매칭/end-of-turn diff 리뷰/commit-push 리뷰)와 "같은 인스턴스 자기 채점이 아닌 독립 컨텍스트" 설계, 그리고 그 한계(쓰기/커밋을 막지 않음) (Day 6)
+- [x] 계층형 보안 스택(세션 내 플러그인 → 온디맨드 `/security-review` → PR 단계 Code Review → CI 정적 분석)이 서로 다른 것을 잡아내는 구조 (Day 6)
 - [ ] MCP (예정 Day 7)
 - [ ] Skills (예정 Day 8)
 - [ ] Hooks (예정 Day 9)
