@@ -18,17 +18,17 @@
 | 6 | 2026-07-05 | 힙과 우선순위 큐 | [interview-day06-heap-and-priority-queue.html](lessons/interview-day06-heap-and-priority-queue.html) |
 | 7 | 2026-07-06 | 트라이와 문자열 검색 | [interview-day07-trie-and-string-search.html](lessons/interview-day07-trie-and-string-search.html) |
 | 8 | 2026-07-07 | 그래프 표현과 탐색 | [interview-day08-graph-representation-and-traversal.html](lessons/interview-day08-graph-representation-and-traversal.html) |
+| 9 | 2026-07-08 | 실무 자료구조 설계 (캐시·Rate Limiter·랭킹) | [interview-day09-cache-rate-limiter-ranking-design.html](lessons/interview-day09-cache-rate-limiter-ranking-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 9 | 실무 자료구조 설계 | "캐시, rate limiter, ranking 시스템에 어떤 자료구조를 조합하겠습니까?" | HashMap+List, Heap, Tree, Queue 조합 |
 | 10 | 종합 모의 면접 | "요구사항이 바뀌는 상황에서 자료구조 선택을 재검토해보세요." | 변경 대응, trade-off, follow-up 대응 |
 
 ## 현재 학습 위치
 
-**Day 8 완료** — 다음은 Day 9: 실무 자료구조 설계 (캐시, rate limiter, ranking 시스템에 어떤 자료구조를 조합할 것인가).
+**Day 9 완료** — 다음은 Day 10: 종합 모의 면접 (요구사항 변경에 따른 자료구조 재검토, trade-off와 follow-up 대응).
 
 ## Interview 답변 체크리스트
 
@@ -53,4 +53,5 @@
 - [x] 힙의 배열 표현과 sift-up/down, decrease-key 한계와 지연 삭제/인덱스 힙, top-k/k-way merge 활용 — Day 6
 - [x] 트라이 구조와 prefix search, 알파벳 크기별 자식 표현, radix tree/DAWG 압축 — Day 7
 - [x] 인접 행렬 vs 인접 리스트, sparse/dense graph, BFS/DFS 복잡도 차이, 재귀 DFS 콜스택 오버플로우 위험 — Day 8
-- [ ] 캐시/rate limiter/ranking 시스템의 자료구조 조합 설계 (예정 Day 9)
+- [x] LRU 캐시(해시 맵 + 이중 연결 리스트), sliding window/token bucket rate limiter, 스킵 리스트+해시 맵 기반 랭킹 조합 설계 — Day 9
+- [ ] 요구사항 변경에 따른 자료구조 재검토, 종합 trade-off 대응 (예정 Day 10)
