@@ -10,19 +10,19 @@
 | 4 | 2026-07-05 | ARIA와 Accessibility Tree — role/name/state, First Rule of ARIA, aria-hidden 함정 | [0004-aria-accessibility-tree.html](lessons/0004-aria-accessibility-tree.html) |
 | 5 | 2026-07-06 | SEO 기본 판단 — 크롤러의 렌더링 예산, semantic 마크업, CSR/SSR/SSG/하이드레이션의 SEO trade-off | [0005-seo-fundamentals-semantic-markup-rendering.html](lessons/0005-seo-fundamentals-semantic-markup-rendering.html) |
 | 6 | 2026-07-07 | CSS Cascade 심화 — Origin/Importance → Cascade Layer → Specificity → Source Order, `!important`의 실무 함정 | [0006-css-cascade-deep-dive-layers-important.html](lessons/0006-css-cascade-deep-dive-layers-important.html) |
+| 7 | 2026-07-08 | Specificity 심화 — A-B-C 3열 비교 계산법, `:is()`/`:where()`/`:not()`의 specificity 규칙, BEM 기반 유지보수 가능한 selector 전략 | [0007-specificity-deep-dive-maintainable-selectors.html](lessons/0007-specificity-deep-dive-maintainable-selectors.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | Specificity 심화 | 계산법, 유지보수 가능한 selector 전략 |
 | 8 | Inheritance와 CSS 커스텀 프로퍼티 | 상속 속성/비상속 속성, CSS 변수 활용 |
 | 9 | Box Model 심화 | `box-sizing`, margin collapsing, 실무 버그 사례 |
 | 10 | Flexbox 심화 | 실무 레이아웃 패턴, 흔한 버그 |
 
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음: Day 7 — Specificity 심화
+**Day 7 완료** — 다음: Day 8 — Inheritance와 CSS 커스텀 프로퍼티
 
 ## 습득한 핵심 개념
 
@@ -61,4 +61,10 @@
 - [x] `!important` 선언끼리 경쟁할 때 레이어 우선순위가 반대로 뒤집히는 함정 (Day 6)
 - [x] User `!important`가 Author `!important`를 이길 수 있는 접근성 설계 의도 (Day 6)
 - [x] 레거시 `!important` 코드베이스를 회귀 없이 점진적으로 이관하는 절차 (Day 6)
-- [ ] Specificity 정확한 계산법과 유지보수 가능한 selector 전략 (예정 Day 7)
+- [x] Specificity가 자릿수 올림 없는 A(ID)-B(class류)-C(태그류) 3열 독립 비교라는 것 (Day 7)
+- [x] class를 아무리 조합해도 ID selector 1개를 이길 수 없는 이유 (Day 7)
+- [x] `:not()`/`:is()`는 괄호 안 최고 specificity를 가져오고 `:where()`는 항상 0이라는 차이 (Day 7)
+- [x] 결합자(`>`, `+`, `~`, 공백)와 `*`가 specificity에 기여하지 않는다는 것 (Day 7)
+- [x] BEM으로 계층을 클래스 명명으로 표현해 specificity를 평평하게 만드는 원리 (Day 7)
+- [x] `:where()`를 CSS 리셋/유틸리티/공용 컴포넌트의 override 가능성 보장 도구로 쓰는 이유 (Day 7)
+- [ ] Inheritance(상속 속성/비상속 속성)와 CSS 커스텀 프로퍼티 활용 (예정 Day 8)

@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — Specificity 심화 | HTML / CSS 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .prod-box {
+      background: #182518;
+      border-left: 4px solid var(--green);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .spec-tuple { display: inline-flex; gap: 0.4rem; font-family: 'Cascadia Code', 'Fira Code', monospace; }
+    .spec-col { background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.15em 0.5em; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">HTML / CSS 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 7
+  </nav>
+
+  <h1>Day 7 — Specificity 심화</h1>
+  <p class="subtitle">정확한 계산법(A-B-C 3열 비교), <code>:is()</code>/<code>:where()</code>/<code>:not()</code>의 specificity 규칙, 유지보수 가능한 selector 전략 · 2026-07-08</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#production">실무 연결</a></li>
+      <li><a href="#framework">판단 프레임워크 — Specificity 안정화 절차</a></li>
+      <li><a href="#area-checklist">항목별 판단 체크리스트</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"코드 리뷰 중 <code>#app .container .card .title</code>처럼 selector가 계속 길어지고 있는 것을 발견했습니다. 이런 패턴이 왜 문제이고, 어떤 컨벤션으로 예방하시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"class를 11개 조합하면 ID selector 1개를 specificity로 이길 수 있나요? 왜 그런가요, 혹은 왜 아닌가요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p><code>:is()</code>와 <code>:where()</code>는 둘 다 여러 selector를 그룹으로 묶어주는데, specificity 관점에서 어떤 차이가 있고 실무에서 언제 <code>:where()</code>를 선택하시겠어요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"specificity 계산 공식을 외웠는가"가 아니라 "명시도가 코드베이스 전체의 유지보수 비용을 어떻게 결정하는지, 그리고 그 비용이 커지기 전에 구조적으로 막을 수 있는가"</strong>를 테스트합니다. Specificity 자체는 브라우저가 규칙을 하나 고르기 위한 단순한 비교 규칙일 뿐이지만, <strong>팀이 이 규칙을 정확히 이해하지 못하면 "안 먹히면 selector를 더 구체적으로" 만드는 습관이 쌓여 코드베이스 전체의 selector가 나선형으로 길어지는 유지보수 재앙</strong>으로 이어집니다. Day 6에서 다룬 <code>!important</code> 지옥의 뿌리도 대부분 이 specificity 오해에서 출발합니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>Specificity를 10진수 하나의 숫자가 아니라 자릿수가 섞이지 않는 3열(ID / class류 / 태그류) 비교로 정확히 이해하는가</strong> — class를 아무리 많이 조합해도 ID 1개를 절대 이길 수 없다는 것을 근거와 함께 설명할 수 있는가.</li>
+      <li><strong><code>:not()</code>, <code>:is()</code>, <code>:where()</code>, 결합자(<code>&gt;</code>, <code>+</code>, <code>~</code>, 공백)의 specificity 기여도를 정확히 아는가</strong> — 특히 <code>:where()</code>가 항상 specificity 0을 반환한다는 최신 스펙 지식이 있는가.</li>
+      <li><strong>selector가 길어지는 것이 "증상"이지 "원인"이 아니라는 것을 아는가</strong> — 근본 원인이 selector 자체가 아니라 우선순위를 통제할 다른 수단(레이어, 컴포넌트 격리, 컨벤션)이 없었다는 것을 진단할 수 있는가.</li>
+      <li><strong>실무에서 검증된 low-specificity 전략(BEM, 단일 class 원칙, <code>:where()</code> 활용)을 구체적으로 아는가</strong>.</li>
+    </ul>
+
+    <p>10년차 이하에서 자주 나오는 답변 패턴: "ID selector를 쓰지 말라고 하면 됩니다." 이 답변은 <strong>왜 ID selector가 문제인지(다시 ID로만 override 가능해지는 경직성), 그리고 class 기반 selector라도 nesting이 깊어지면 같은 문제가 재발한다는 것</strong>을 놓칩니다. 시니어는 "specificity를 낮고 평평하게 유지하는 것 자체가 목표"라는 원칙 수준의 답변을 하고, 그 원칙을 구현하는 구체적 컨벤션(BEM의 단일 class, <code>:where()</code>로 감싼 리셋/유틸리티)까지 제시합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Specificity란 무엇인가 — "같은 레이어, 같은 출처 안에서 selector끼리 싸울 때의 심판 규칙"</h3>
+    <p>Day 6에서 봤듯이 Cascade는 출처/중요도 → Cascade Layer → Specificity → 작성 순서 순으로 승부를 가립니다. Specificity(명시도)는 이 중 <strong>세 번째 기준</strong>으로, 앞의 두 기준(출처/레이어)이 같을 때만 비교됩니다. 즉 selector를 아무리 구체적으로 써도, 더 낮은 Cascade Layer에 있으면 절대 이길 수 없습니다 — specificity는 "레이어 안에서의 싸움"이라는 점을 먼저 기억해야 합니다.</p>
+
+    <h3>Specificity는 "숫자 하나"가 아니라 "3열(자릿수가 섞이지 않는) 튜플"이다</h3>
+    <p>많은 개발자가 specificity를 "ID=100점, class=10점, 태그=1점"처럼 점수를 더해서 비교하는 하나의 숫자로 착각합니다. 이 착각이 바로 "class 11개를 조합하면 110점이 되어 ID(100점)를 이긴다"는 <strong>가장 흔하고 위험한 오해</strong>로 이어집니다. 실제로는 아래처럼 <strong>세 개의 독립된 열(column)을 순서대로, 자릿수 올림 없이(carry 없이) 비교</strong>합니다.</p>
+
+    <div class="card">
+      <p style="margin-bottom:0.6rem"><strong>A-B-C 3열 비교 구조</strong> (CSS Selectors Level 4 명세 기준):</p>
+      <p class="spec-tuple">
+        <span class="spec-col">A = ID selector 개수</span>
+        <span class="spec-col">B = class/속성 selector/가상 클래스 개수</span>
+        <span class="spec-col">C = 태그/가상 요소 개수</span>
+      </p>
+      <p style="margin-top:0.8rem">비교는 <strong>A열을 먼저 비교하고, A가 같을 때만 B열을, B도 같을 때만 C열을 비교</strong>합니다. <strong>B열이나 C열의 값이 아무리 커도 A열을 절대 뒤집을 수 없습니다.</strong> 마치 국가대표 선발전에서 "국가대표 경력자 1명"이 "동네 대회 우승 100번"보다 항상 우선하는 것과 비슷한 구조입니다 — 급이 다른 항목은 아무리 쌓아도 상위 항목을 이길 수 없습니다.</p>
+    </div>
+
+    <h3>구체적인 계산 예시</h3>
+    <pre><code>#header .nav .item.active a:hover
+→ A=1(#header), B=3(.nav, .item, .active, :hover 중 class류 4개... 실제로는 4개)
+→ 정확히: ID 1개, class류(.nav .item .active :hover) 4개, 태그류(a) 1개
+→ (1, 4, 1)
+
+.button.button--primary
+→ ID 0개, class류 2개, 태그류 0개
+→ (0, 2, 0)
+
+div#app > section.card p
+→ ID 1개(#app), class류 1개(.card), 태그류 3개(div, section, p)
+→ (1, 1, 3)</code></pre>
+    <p>(1, 4, 1)과 (0, 2, 0)을 비교하면 A열에서 1 &gt; 0으로 즉시 승부가 납니다. class류 개수(B열)는 전혀 비교되지 않습니다. 이것이 <strong>"class를 아무리 많이 써도 ID 1개를 이길 수 없다"</strong>는 규칙의 정확한 근거입니다.</p>
+
+    <h3>specificity에 기여하지 않는 것들 — 결합자와 전체 선택자</h3>
+    <p>자손 결합자(공백), 자식 결합자(<code>&gt;</code>), 형제 결합자(<code>+</code>, <code>~</code>)는 selector를 구조적으로 연결할 뿐 specificity에 <strong>전혀 기여하지 않습니다.</strong> 전체 선택자 <code>*</code>도 마찬가지로 기여도가 0입니다. 그래서 <code>.card .title</code>과 <code>.card &gt; .title</code>은 구조는 다르지만 specificity는 완전히 동일하게 (0, 2, 0)입니다.</p>
+
+    <h3><code>:not()</code>, <code>:is()</code>는 "괄호 안에서 가장 명시적인 것"의 specificity를 가져온다</h3>
+    <p><code>:not()</code>과 <code>:is()</code> 자체는 가상 클래스이지만, 예외적으로 <strong>자기 자신이 아니라 괄호 안 selector 목록 중 가장 specificity가 높은 항목의 값을 그대로 가져옵니다.</strong> 예를 들어 <code>:not(#foo, .bar)</code>는 <code>#foo</code>(A=1)와 <code>.bar</code>(B=1) 중 더 큰 쪽인 (1, 0, 0)을 가져옵니다. 이 규칙을 모르면 "가상 클래스니까 specificity가 낮을 것"이라고 잘못 예측하게 됩니다.</p>
+
+    <h3><code>:where()</code>는 항상 specificity 0 — 실무에서 가장 유용한 최신 기능</h3>
+    <p><code>:where()</code>는 <code>:is()</code>와 문법·동작은 거의 같지만, <strong>괄호 안에 무엇이 들어있든 항상 specificity (0, 0, 0)으로 계산됩니다.</strong> 즉 <code>:where(#header .nav .item)</code>는 ID가 들어있어도 specificity 기여도가 0입니다. 이 특성 덕분에 <code>:where()</code>는 <strong>"selector 구조는 복잡하게 지정하고 싶지만, 나중에 한 개의 일반 class로도 쉽게 override할 수 있게 만들고 싶을 때"</strong>(CSS 리셋, 컴포넌트 라이브러리, 유틸리티 코드)에 표준적으로 쓰입니다.</p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="production">
+    <h2>4. 실무 연결</h2>
+
+    <div class="prod-box">
+      <p>"이 버튼만 다른 색으로 바꾸고 싶은데 class를 아무리 추가해도 안 먹혀요"라는 제보의 상당수는, 어딘가에 ID selector나 깊게 중첩된 descendant selector가 이미 박혀 있어서 발생합니다. 이 문제의 재발을 막는 것이 바로 low-specificity 전략의 실무 목표입니다.</p>
+    </div>
+
+    <h3>Selector가 나선형으로 길어지는 실제 발생 과정</h3>
+    <p>새 기능을 급하게 추가하던 개발자가 기존 스타일을 override하지 못하자, 임시로 <code>.card .header .title.active</code>처럼 descendant selector를 더 깊게 쌓아 specificity를 높여 "일단 이기는" 방식으로 문제를 해결합니다. 다음 개발자는 이 코드를 다시 override해야 할 때, 더 깊은 selector를 또 쌓습니다. 이 과정이 반복되면 팀이 마지막으로 만든 지 6개월 안 된 컴포넌트의 selector 깊이가 5단계, 6단계로 늘어나 있는 것을 발견하게 됩니다 — Day 6의 <code>!important</code> 지옥과 정확히 같은 메커니즘이 selector 길이에서 벌어지는 것입니다.</p>
+
+    <h3>BEM(Block Element Modifier)이 specificity를 "평평하게" 유지하는 방법</h3>
+    <p>BEM 컨벤션은 <code>.card</code>, <code>.card__title</code>, <code>.card--highlighted</code>처럼 <strong>계층 관계를 selector의 중첩이 아니라 클래스 이름 자체의 명명 규칙으로 표현</strong>합니다. 그 결과 실무 스타일 규칙의 대부분이 <strong>단일 class selector, 즉 항상 (0, 1, 0)</strong>이 됩니다. 모든 규칙의 specificity가 같은 층에 있으므로, 승부는 대부분 작성 순서(Source Order)로 결정되고, 이는 selector 자체보다 훨씬 예측 가능하고 통제하기 쉽습니다.</p>
+
+    <h3>CSS 리셋/유틸리티 라이브러리가 <code>:where()</code>를 쓰는 이유</h3>
+    <p>Tailwind의 preflight 리셋이나 여러 디자인 시스템의 기본 스타일은 <code>:where(ul, ol) { margin: 0; }</code>처럼 <code>:where()</code>로 selector를 감쌉니다. 리셋 스타일은 "가장 먼저 적용되고 가장 쉽게 덮어써져야 하는" 역할이기 때문에, specificity를 의도적으로 0으로 만들어 <strong>이후에 오는 어떤 프로젝트 코드(단일 class 하나)도 별도의 노력 없이 리셋을 이길 수 있도록</strong> 설계된 것입니다.</p>
+
+    <h3>디자인 시스템 컴포넌트 라이브러리가 override 가능성을 보장하는 방법</h3>
+    <p>사내 공용 컴포넌트 라이브러리를 만들 때, 컴포넌트 내부 구조가 복잡해 selector가 깊어지더라도 <code>:where()</code>로 내부 구조 selector를 감싸면, 라이브러리를 소비하는 팀이 <strong>단일 class 하나만으로도 항상 override할 수 있다는 계약(contract)</strong>을 제공할 수 있습니다. 이는 Day 6의 Cascade Layers와 함께 "라이브러리 코드를 안전하게 override 가능한 상태로 배포"하는 두 가지 핵심 도구입니다.</p>
+  </section>
+
+  <!-- 5. 판단 프레임워크 -->
+  <section id="framework">
+    <h2>5. 판단 프레임워크 — Specificity 안정화 절차</h2>
+
+    <p>"selector가 계속 길어지고 있다"는 문제를 받았을 때 아래 순서로 접근합니다.</p>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>현재 코드베이스의 specificity 분포를 진단</strong>
+          <p style="margin-top:0.3rem">stylelint의 <code>no-descending-specificity</code>나 specificity 그래프 도구(예: specificity-graph)로 ID selector 사용 빈도, 평균 nesting 깊이를 측정합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>ID selector를 스타일링 용도에서 제거</strong>
+          <p style="margin-top:0.3rem">ID는 JS 훅이나 프래그먼트 앵커(<code>#section-2</code>) 용도로만 남기고, 스타일은 항상 class로 작성하도록 컨벤션을 정합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>BEM 등으로 nesting을 클래스 명명 규칙으로 대체</strong>
+          <p style="margin-top:0.3rem">계층 관계를 descendant selector 중첩이 아니라 <code>.block__element--modifier</code> 이름으로 표현해, 대부분의 규칙을 (0, 1, 0) 수준으로 평평하게 만듭니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>리셋/유틸리티/공용 컴포넌트는 <code>:where()</code>로 격리</strong>
+          <p style="margin-top:0.3rem">override되어야 하는 기반 스타일은 specificity 0으로 감싸, 이후 어떤 팀의 단일 class도 추가 노력 없이 이길 수 있게 만듭니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>Cascade Layers와 조합해 이중 안전망 구성</strong>
+          <p style="margin-top:0.3rem">Day 6의 레이어 구조와 결합하면, specificity가 평평해도 레이어 순서로 우선순위를 한 번 더 명시적으로 통제할 수 있습니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div>
+          <strong>린트 규칙으로 재발 방지</strong>
+          <p style="margin-top:0.3rem">stylelint의 <code>selector-max-specificity</code>, <code>selector-max-id</code>, <code>selector-max-compound-selectors</code> 규칙을 CI에 추가해 새 selector가 기준을 넘으면 리뷰에서 걸리도록 만듭니다.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 6. 항목별 판단 체크리스트 -->
+  <section id="area-checklist">
+    <h2>6. 항목별 판단 체크리스트</h2>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>항목</th>
+          <th>올바른 방법</th>
+          <th>흔한 오용</th>
+          <th>오용 시 실제 영향</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>ID selector</td>
+          <td>JS 훅/앵커 전용으로만 사용, 스타일링에는 미사용</td>
+          <td>"확실히 이기려고" ID로 스타일 지정</td>
+          <td>이후 override에 또 다른 ID나 <code>!important</code> 필요</td>
+        </tr>
+        <tr>
+          <td>계층 표현</td>
+          <td>BEM 등 클래스 명명 규칙으로 계층 표현</td>
+          <td>descendant selector를 계속 중첩</td>
+          <td>selector 깊이와 specificity가 나선형으로 증가</td>
+        </tr>
+        <tr>
+          <td>리셋/유틸리티</td>
+          <td><code>:where()</code>로 specificity 0으로 격리</td>
+          <td>일반 selector로 작성해 specificity가 발생</td>
+          <td>프로젝트 코드가 리셋을 override하기 위해 불필요하게 구체적인 selector 필요</td>
+        </tr>
+        <tr>
+          <td>selector 그룹핑</td>
+          <td><code>:is()</code>/<code>:where()</code>로 중복 제거하며 의도에 맞게 specificity 선택</td>
+          <td><code>:not()</code>/<code>:is()</code>가 항상 specificity 0이라고 가정</td>
+          <td>예상보다 높은 specificity로 의도치 않은 override 실패</td>
+        </tr>
+        <tr>
+          <td>재발 방지</td>
+          <td>stylelint로 selector 깊이/ID 사용 제한을 CI에 강제</td>
+          <td>코드 리뷰 시 육안으로만 확인</td>
+          <td>팀 규모가 커지면 규칙이 지켜지지 않고 재누적</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 7. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>7. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>Specificity가 Cascade의 세 번째 기준이며, 앞선 출처/레이어가 같을 때만 비교된다는 것을 먼저 짚습니다.</strong> selector 문제가 항상 specificity만의 문제는 아니라는 것을 분명히 합니다.</li>
+      <li><strong>Specificity는 하나의 숫자가 아니라 자릿수 올림이 없는 3열(A-ID, B-class류, C-태그류) 비교라는 것을 정확히 설명합니다.</strong> class를 아무리 쌓아도 ID를 이길 수 없는 이유를 여기서 근거로 제시합니다.</li>
+      <li><strong>selector가 길어지는 근본 원인이 "우선순위를 통제할 다른 수단이 없었다"는 것임을 진단합니다.</strong> Day 6의 <code>!important</code> 지옥과 같은 뿌리라는 것을 연결합니다.</li>
+      <li><strong>BEM 같은 클래스 명명 규칙으로 specificity를 평평하게 만들고, <code>:where()</code>로 리셋/유틸리티를 격리하는 구체적 전략을 제시합니다.</strong></li>
+      <li><strong>린트/CI로 재발을 방지하는 프로세스까지 언급해 마무리합니다.</strong></li>
+    </ol>
+  </section>
+
+  <!-- 8. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>8. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "코드 리뷰 중 <code>#app .container .card .title</code>처럼 selector가 계속 길어지고 있는 것을 발견했습니다. 이런 패턴이 왜 문제이고, 어떤 컨벤션으로 예방하시겠어요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>이 selector가 문제인 이유는 길이 자체가 아니라, ID(<code>#app</code>)를 포함하고 있어서 A열 specificity가 1로 고정된다는 점입니다. Specificity는 하나의 점수로 합산되는 게 아니라 ID 개수(A) → class류 개수(B) → 태그류 개수(C) 순으로 자릿수 올림 없이 비교되는 3열 구조라서, 이후 어떤 개발자가 이 스타일을 override하려 해도 class를 아무리 조합해도 이 ID를 절대 이길 수 없고, 결국 또 다른 ID나 <code>!important</code>를 쓰게 되는 악순환이 시작됩니다.</p>
+      <br>
+      <p>근본 원인은 이 팀에 "계층을 selector 중첩 없이 표현하는 방법"이 없었다는 것입니다. 그래서 BEM 같은 명명 규칙을 도입해 <code>.card</code>, <code>.card__title</code>, <code>.card--highlighted</code>처럼 계층 관계를 클래스 이름 자체로 표현하도록 리팩터링합니다. 이렇게 하면 대부분의 규칙이 단일 class, 즉 동일한 specificity (0, 1, 0)를 가지게 되어, 승부가 예측 불가능한 selector 경쟁이 아니라 예측 가능한 작성 순서로 결정됩니다.</p>
+      <br>
+      <p>리셋 스타일이나 공용 유틸리티처럼 "항상 쉽게 override되어야 하는" 코드는 <code>:where()</code>로 감싸 specificity를 의도적으로 0으로 만듭니다. 마지막으로 stylelint의 <code>selector-max-id</code>, <code>selector-max-specificity</code> 규칙을 CI에 추가해, 새로운 ID 기반 스타일이나 깊은 nesting이 리뷰 없이 병합되지 않도록 프로세스로 막습니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>Specificity를 3열 비교 구조로 정확히 설명함</li>
+      <li>문제의 근본 원인을 selector 길이가 아니라 ID 포함 여부로 정확히 짚음</li>
+      <li>BEM으로 specificity를 평평하게 만드는 구체적 전략을 제시함</li>
+      <li><code>:where()</code>의 실무 활용처를 정확히 앎</li>
+      <li>린트/CI를 통한 재발 방지까지 프로세스 레벨로 마무리함</li>
+    </ul>
+  </section>
+
+  <!-- 9. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>9. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"selector가 너무 기니까 짧게 줄이면 됩니다. <code>.title</code> 하나로 바꾸죠."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>왜 길어졌는지(ID 포함, nesting 습관) 원인 분석이 없습니다.</li>
+        <li>단순히 짧게 줄이면 다른 곳의 <code>.title</code>과 충돌해 새로운 문제가 생길 수 있다는 것을 고려하지 않았습니다.</li>
+        <li>재발 방지 컨벤션이나 도구가 전혀 언급되지 않았습니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"class를 충분히 많이 추가하면 ID보다 specificity가 높아져서 문제없이 override할 수 있습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>Specificity가 3열 독립 비교라는 것을 모르는 상태에서, class는 절대 ID를 이길 수 없다는 사실 자체를 틀리게 알고 있습니다.</li>
+        <li>이 오해대로 실무에 적용하면 실제로는 override가 계속 실패해 원인을 찾지 못하는 상황에 빠집니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>Specificity를 A-B-C 3열 독립 비교로 정확히 설명한다</li>
+        <li>class가 아무리 많아도 ID를 이길 수 없는 이유를 근거와 함께 설명한다</li>
+        <li>문제의 근본 원인을 selector 길이가 아니라 ID 포함/중첩 습관으로 짚는다</li>
+        <li>BEM 등으로 specificity를 평평하게 유지하는 구체적 전략을 제시한다</li>
+        <li><code>:where()</code>를 override 가능성 보장 도구로 정확히 활용할 줄 안다</li>
+        <li>린트/CI 재발 방지책까지 언급한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. Follow-up -->
+  <section id="followups">
+    <h2>10. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: class를 11개 조합하면 ID selector 1개를 specificity로 이길 수 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 아닙니다. Specificity는 10진수처럼 자릿수가 섞이는 하나의 숫자가 아니라, ID 개수(A) → class/속성/가상클래스 개수(B) → 태그/가상요소 개수(C) 순서로 <strong>독립적으로, 자릿수 올림 없이</strong> 비교되는 3열 구조입니다. class가 11개든 100개든 B열의 값일 뿐이고, A열에서 ID 1개(1)와 ID 0개(0)를 비교하는 순간 이미 승부가 나기 때문에 B열은 비교조차 되지 않습니다. "class 10개 = 100점, ID 1개 = 100점"처럼 점수를 합산해서 비교한다는 것은 CSS 명세와 다른 잘못된 멘탈 모델입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: <code>:not()</code>과 <code>:is()</code>의 specificity는 어떻게 계산되나요? 가상 클래스니까 항상 낮은 값인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 아닙니다. <code>:not()</code>과 <code>:is()</code>는 자기 자신의 specificity를 따로 갖지 않고, <strong>괄호 안 selector 목록 중 가장 specificity가 높은 항목의 값을 그대로 가져옵니다.</strong> 예를 들어 <code>:is(#foo, .bar)</code>는 <code>#foo</code>(A=1)가 <code>.bar</code>(B=1)보다 높으므로 (1, 0, 0)이 됩니다. "가상 클래스니까 무조건 낮은 specificity"라고 가정하면 실무에서 예상치 못한 override 실패를 겪게 됩니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 그럼 <code>:where()</code>는 <code>:is()</code>와 뭐가 다른가요? 실무에서 언제 <code>:where()</code>를 선택해야 하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 문법과 매칭 동작은 거의 동일하지만, <code>:where()</code>는 괄호 안에 무엇이 들어있든 <strong>항상 specificity (0, 0, 0)</strong>으로 계산된다는 점이 유일하고 결정적인 차이입니다. 실무에서는 "이후에 오는 코드가 항상 쉽게 override할 수 있어야 하는" 코드 — CSS 리셋, 공용 컴포넌트 라이브러리의 내부 구조 스타일, 유틸리티 기본값 — 를 작성할 때 <code>:where()</code>를 선택합니다. 반대로 "이 그룹 중 어느 하나라도 매칭되면 이 specificity를 유지하고 싶다"는 의도라면 <code>:is()</code>가 맞습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 결합자(<code>&gt;</code>, <code>+</code>, <code>~</code>, 공백)나 전체 선택자 <code>*</code>는 specificity에 영향을 주나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 전혀 영향을 주지 않습니다. 이들은 selector를 구조적으로 연결하거나 "아무 요소나"를 의미할 뿐, A/B/C 어느 열에도 기여하지 않습니다. 그래서 <code>.card .title</code>과 <code>.card &gt; .title</code>은 DOM 구조를 매칭하는 방식은 다르지만 specificity는 동일하게 (0, 2, 0)입니다. 다만 인라인 스타일(<code>style="..."</code>)은 이 3열 비교 체계 밖에 있는 별개의 상위 기준으로, Origin/Importance 단계에서 이미 대부분의 author selector보다 우선한다는 점(Day 6)과 혼동하지 않아야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: BEM을 도입하면 specificity 문제가 완전히 사라지나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 완전히 사라지지는 않습니다. BEM은 "계층을 표현하기 위해 selector를 중첩할 필요가 없게" 만들어 대부분의 규칙을 (0, 1, 0) 수준으로 평평하게 유지하는 <em>컨벤션</em>일 뿐, 강제 장치는 아닙니다. 팀원이 BEM 클래스를 쓰면서도 습관적으로 <code>.page .card--highlighted .card__title</code>처럼 다시 중첩하면 동일한 문제가 재발합니다. 그래서 컨벤션과 함께 stylelint 같은 도구로 selector 깊이나 specificity 상한을 강제하는 것이 실무에서 함께 필요합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>11. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"Specificity는 ID=100, class=10, 태그=1처럼 점수를 더한 하나의 숫자다"</strong></p>
+      <p>실제로는 자릿수 올림이 없는 3열(A-B-C) 독립 비교입니다. class를 아무리 많이 조합해도(B열) ID 1개(A열)를 절대 이길 수 없습니다. "10진수처럼 자릿수가 넘어간다"는 가정 자체가 틀렸습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>":not()과 :is()는 가상 클래스이므로 specificity가 낮다"</strong></p>
+      <p>이 둘은 예외적으로 괄호 안 selector 목록 중 가장 specificity가 높은 항목의 값을 그대로 가져옵니다. ID가 들어있으면 ID의 specificity를 그대로 가집니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>":is()와 :where()는 사실상 같은 기능이다"</strong></p>
+      <p>매칭 동작은 같지만 specificity 계산이 다릅니다. <code>:is()</code>는 괄호 안 가장 높은 값을 가져오고, <code>:where()</code>는 무엇이 들어있든 항상 0입니다. 이 차이가 override 가능 여부를 결정하는 실무적으로 매우 중요한 차이입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"ID selector는 무조건 나쁘고 절대 쓰면 안 된다"</strong></p>
+      <p>ID 자체가 나쁜 것이 아니라, ID를 <em>스타일링</em> 용도로 쓰면 이후 override 경직성이 생기는 것이 문제입니다. JS 훅(<code>getElementById</code>)이나 페이지 내 앵커(<code>#section-2</code>) 용도의 ID는 문제가 없습니다. "스타일은 class로, 식별은 ID로"라는 역할 분리가 핵심입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"BEM을 쓰면 specificity 문제가 자동으로 완전히 해결된다"</strong></p>
+      <p>BEM은 규칙(컨벤션)일 뿐 강제 장치가 아닙니다. 팀원이 컨벤션을 지키지 않고 다시 selector를 중첩하면 동일한 문제가 재발하므로, 린트 도구로 강제하는 프로세스가 함께 필요합니다.</p>
+    </div>
+  </section>
+
+  <!-- 12. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>12. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 7을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Specificity가 Cascade의 세 번째 기준이며, 앞선 출처/중요도·Cascade Layer가 같을 때만 비교된다는 것을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Specificity가 하나의 합산 숫자가 아니라 자릿수 올림 없는 A-B-C 3열 독립 비교라는 것을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>class를 아무리 조합해도 ID selector 1개를 절대 이길 수 없는 이유를 근거와 함께 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>:not()</code>/<code>:is()</code>가 괄호 안 가장 높은 specificity를 가져오고, <code>:where()</code>는 항상 0이라는 차이를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>결합자(<code>&gt;</code>, <code>+</code>, <code>~</code>, 공백)와 전체 선택자 <code>*</code>가 specificity에 기여하지 않는다는 것을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>BEM이 계층을 selector 중첩이 아니라 클래스 명명으로 표현해 specificity를 평평하게 만드는 원리를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>:where()</code>를 CSS 리셋/유틸리티/공용 컴포넌트의 override 가능성 보장 도구로 활용하는 이유를 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 8</h3>
+      <p><strong>Inheritance와 CSS 커스텀 프로퍼티</strong></p>
+      <p>Day 7에서 Cascade의 세 번째 기준(specificity)을 다뤘다면, Day 8에서는 Cascade가 값을 하나도 정해주지 못했을 때 적용되는 Inheritance(상속) 메커니즘과, 상속을 CSS 커스텀 프로퍼티(변수)와 결합해 대규모 코드베이스의 유지보수성을 높이는 실무 설계를 다룹니다.</p>
+      <p>면접 질문 예고: "<code>color</code>는 자식 요소에 상속되는데 <code>border</code>는 왜 상속되지 않을까요? 이 차이를 design token 설계에 어떻게 활용하시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    HTML / CSS 시니어 인터뷰 · Day 7 of 20 · 2026-07-08
+  </p>
+
+</div>
+</body>
+</html>
