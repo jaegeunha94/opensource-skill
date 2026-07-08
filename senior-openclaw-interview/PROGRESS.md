@@ -9,12 +9,12 @@
 | 3 | 2026-07-05 | 온보딩과 업데이트/마이그레이션 흐름 | [0003-onboarding-update-migration-flow.html](lessons/0003-onboarding-update-migration-flow.html) |
 | 4 | 2026-07-06 | Model Provider 설정과 Auth Profile Rotation/Failover | [0004-model-provider-auth-profile-rotation-failover.html](lessons/0004-model-provider-auth-profile-rotation-failover.html) |
 | 5 | 2026-07-07 | Tools와 Tool Dispatch 보안 | [0005-tools-tool-dispatch-security.html](lessons/0005-tools-tool-dispatch-security.html) |
+| 6 | 2026-07-08 | Sessions, Prompt/Memory 파일 | [0006-sessions-prompt-memory-files.html](lessons/0006-sessions-prompt-memory-files.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | Sessions, Prompt/Memory 파일 | SOUL.md/AGENTS.md/USER.md, agentDir 격리, daily memory, 부트스트랩 주입, 컨텍스트 예산 |
 | 7 | Skills와 ClawHub | SKILL.md 구조, skill install/update, clawhub CLI, 벡터 검색, moderation hook |
 | 8 | Multi-Agent 라우팅과 격리 | 다중 에이전트 workspace 분리, agentDir 충돌 방지, per-agent 세션 스토어 |
 | 9 | 샌드박싱 아키텍처 | host/Docker/none 실행 모드, 네트워크 없는 컨테이너 격리, 절대경로 파일 접근 위험 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 다음: Day 6 — Sessions, Prompt/Memory 파일
+**Day 6 완료** — 다음: Day 7 — Skills와 ClawHub
 
 ## 습득한 핵심 개념
 
@@ -39,7 +39,12 @@
 - [x] `onboard`(quickstart/manual/import) vs `migrate`(타 도구 import 전용 dry-run/backup) vs `doctor --fix`(사후 복구)의 경계, 버전 간 config 스키마 변경에 대한 proactive diff 도구 공백(GitHub #35957/#38249) (Day 3)
 - [x] 2단계 failover 구조(auth profile 로테이션 → model fallback), 정렬 로직(타입 우선순위 + lastUsed 라운드로빈, lastGood 의도적 배제), 세션 pin, retryable/terminal 에러 분류, 2026.6.x JSON→SQLite auth 저장소 마이그레이션 리스크, 실제 비용/신뢰성 사고 사례(GitHub #100067/#48623/#99809/#99993/#92864/#74395/#73182/#92674/#88371) (Day 4)
 - [x] tool policy는 모델 호출 전에 스키마 자체를 제거하는 방식으로 작동, sandbox/tool policy/elevated의 3축 독립성, exec vs write/edit 부작용 함정, 샌드박스 유무에 따른 exec 기본값 비대칭(gateway 기본 full), 승인 바인딩(cwd/args/env/실행파일 경로 고정 후 drift 시 거부), workspaceOnly 옵트인, 프롬프트 기반 가드레일의 실증적 한계, 실제 사고 사례(GitHub #16323, GHSA-m3mh-3mpg-37hw, #12173, GHSA-cv7m-c9jx-vg7q/CVE-2026-26329, #12202/#5948/#32637) (Day 5)
-- [ ] Sessions, prompt/memory 파일 (예정 Day 6)
+- [x] 세션 키 패턴(`agent:<agentId>:<mainKey>`)과 소스별(DM/그룹/방/cron/webhook) 스코핑, 세션 가시성 통제(`tools.sessions.visibility`)가 CVE-2026-27004 리트로핏으로 도입된 배경 (Day 6)
+- [x] 부트스트랩 파일 8종(AGENTS/SOUL/TOOLS/IDENTITY/USER/HEARTBEAT/BOOTSTRAP/MEMORY)의 순차 주입(병합 아님) 순서, 서브 에이전트 필터링, 캐시 경계 배치 (Day 6)
+- [x] workspace vs agentDir 구분과 혼동 시 보안 규칙이 조용히 무효화되는 실제 사고(#29387) (Day 6)
+- [x] 메모리 3계층(MEMORY.md/daily notes/DREAMS.md) 증류 구조, 무한 증가 방지(디스크 무제한 vs 주입 사본 예산 내 절단), compaction-memoryFlush 연결 (Day 6)
+- [x] compaction(보이는 것만 변경, 전체 이력 보존)과 session pruning(캐시 TTL+크기 임계값 동시 충족)의 구분, 압축 경계에서 세션 오버라이드 미리셋으로 인한 실제 비용 사고(#92864, $300/일) (Day 6)
+- [x] 부트스트랩/메모리 파일 로딩의 인젝션 탐지 공백(#66350), 압축 위장 프롬프트 인젝션 실제 페이로드(#30111), 공식 위협 모델의 커버리지 공백, 관련 CVE(CVE-2026-27004/53844/53825) (Day 6)
 - [ ] Skills, ClawHub (예정 Day 7)
 - [ ] Multi-agent 라우팅과 격리 (예정 Day 8)
 - [ ] 샌드박싱 아키텍처 (예정 Day 9)

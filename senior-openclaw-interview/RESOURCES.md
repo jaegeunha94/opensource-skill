@@ -122,6 +122,25 @@
 - [CVE-2026-25253 — Control UI gatewayUrl 미검증 + WebSocket origin 미검증 1-클릭 RCE(2026.1.29에서 수정)](https://thehackernews.com/2026/02/openclaw-bug-enables-one-click-remote.html)
 - [ClawJacked — 로컬 origin 과신으로 인한 기기 페어링 무단 승인(2026.2.25에서 수정)](https://www.oasis.security/blog/openclaw-vulnerability)
 
+## Sessions / Prompt·Memory 파일 / Context 예산 (Day 6 핵심 출처)
+
+- [GitHub raw — docs/concepts/session.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/session.md) — 세션 키 패턴(`agent:<agentId>:<mainKey>`), 소스별 스코핑, 저장 경로(`sessions.json`/`<sessionId>.jsonl`), `session.reset`
+- [GitHub raw — docs/concepts/multi-agent.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/multi-agent.md) — agentDir 재사용 금지 경고, OAuth 토큰 크로스 에이전트 폴백
+- [GitHub raw — docs/concepts/session-tool.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/session-tool.md) — `sessions_list`/`sessions_history`/`sessions_send`/`session_status`/`sessions_spawn`/`sessions_yield`/`subagents`, `tools.sessions.visibility`
+- [GitHub raw — docs/concepts/soul.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/soul.md) / [docs/concepts/agent-workspace.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/agent-workspace.md) / [docs/concepts/system-prompt.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/system-prompt.md) — 부트스트랩 파일 8종, 주입 순서, 서브 에이전트 필터링, `bootstrapMaxChars`/`bootstrapTotalMaxChars`
+- [GitHub raw — docs/concepts/memory.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/memory.md) / [docs/concepts/memory-builtin.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/memory-builtin.md) / [docs/concepts/dreaming.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/dreaming.md) — MEMORY.md/daily notes/DREAMS.md 3계층, 내장 메모리 인덱싱, Dreaming 파이프라인
+- [GitHub raw — docs/concepts/context.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/context.md) / [docs/concepts/context-engine.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/context-engine.md) / [docs/concepts/compaction.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/compaction.md) / [docs/concepts/session-pruning.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/concepts/session-pruning.md) — 컨텍스트 예산 구성요소, 컨텍스트 엔진 4단계, compaction/pruning 트리거 및 가드레일
+- [GitHub raw — docs/security/THREAT-MODEL-ATLAS.md](https://raw.githubusercontent.com/openclaw/openclaw/main/docs/security/THREAT-MODEL-ATLAS.md) — MITRE ATLAS 매핑, 메모리/프롬프트 파일 포이즈닝 커버리지 공백(T-PERSIST-001/T-DISC-002 인접 항목)
+- [GitHub issue #29387 — agentDir에 배치된 부트스트랩 파일이 조용히 무시되는 사고 (open, P1)](https://github.com/openclaw/openclaw/issues/29387)
+- [GitHub issue #24693 — 훅 완료 이벤트가 크로스 에이전트로 이메일 내용을 유출 (closed via PR #73228)](https://github.com/openclaw/openclaw/issues/24693)
+- [GitHub issue #92864 — 세션 모델 오버라이드가 압축 이후에도 유지되어 하루 $300 청구 (closed, not_planned) — Day 4에서도 인용](https://github.com/openclaw/openclaw/issues/92864)
+- [GitHub issue #30111 — 가짜 `[System Message]` 블록을 통한 프롬프트 인젝션 (closed, not-planned)](https://github.com/openclaw/openclaw/issues/30111)
+- [GitHub issue #30448 — 유사 인젝션 페이로드가 실제로 유포된 정황 (2차 확인 필요)](https://github.com/openclaw/openclaw/issues/30448)
+- [GitHub issue #66350 — 부트스트랩 파일 로딩(`buildProjectContextSection`)에 인젝션 패턴 탐지가 없다는 것을 메인테이너가 인정 (closed, 미머지)](https://github.com/openclaw/openclaw/issues/66350)
+- [GHSA-6hf3-mhgc-cm65 / CVE-2026-27004 — 세션 tool 가시성 하드닝, `tools.sessions.visibility` 도입 계기 (High, 2026.2.15 수정)](https://github.com/openclaw/openclaw/security/advisories/GHSA-6hf3-mhgc-cm65)
+- [GHSA-72fw-cqh5-f324 / CVE-2026-53844 — memory-wiki 공유 검색이 세션 가시성 검사를 누락 (2026.4.29 수정, 중간 확정도)](https://github.com/openclaw/openclaw/security/advisories/GHSA-72fw-cqh5-f324)
+- [GHSA-p2fh-f5fc-44hr / CVE-2026-53825 — memory-wiki ingest 경로 트래버설, `operator.write` 스코프 오남용 (2026.4.7 수정, 중간 확정도)](https://github.com/openclaw/openclaw/security/advisories/GHSA-p2fh-f5fc-44hr)
+
 ## 사용 시 주의사항
 
 - `docs.openclaw.ai` 도메인은 자동화 접근(WebFetch)에 403을 반환하는 경우가 있었다. 이 트랙의 공식 문서 인용은
@@ -143,3 +162,13 @@
   리서치 시점(2026-07) 기준 상태이며, 특히 #12173처럼 "closed as not planned"로 종료된 이슈는 전용 코드
   수정 없이 종료됐을 뿐 근본 리스크(샌드박스 없는 배포에서의 경로 트래버설)가 해소됐다는 뜻이 아니므로,
   면접 전 최신 상태를 재확인한다.
+- Day 6의 세션 키 패턴, 부트스트랩 파일 8종과 주입 순서, workspace/agentDir 구분, 메모리 3계층 구조,
+  compaction/session pruning 메커니즘은 공식 문서 원문(session.md, multi-agent.md, session-tool.md, soul.md,
+  agent-workspace.md, system-prompt.md, memory.md, memory-builtin.md, dreaming.md, context.md,
+  context-engine.md, compaction.md, session-pruning.md)으로 직접 확인한 높은 확정도다. GitHub 이슈
+  (#29387, #24693, #92864, #30111, #66350)와 GHSA-6hf3-mhgc-cm65/CVE-2026-27004는 원문을 직접 확인했지만,
+  GHSA-72fw-cqh5-f324/CVE-2026-53844와 GHSA-p2fh-f5fc-44hr/CVE-2026-53825는 GitHub 권고 페이지 접근이
+  403으로 막혀 검색 스니펫과 2차 출처(DailyCVE 등)로 교차 검증한 중간 확정도이므로, 면접 전 원문으로
+  최종 확인한다. THREAT-MODEL-ATLAS.md가 메모리/프롬프트 파일 포이즐링을 명시적으로 모델링하지 않는다는
+  관찰은 문서 원문 직접 확인이지만, "공백"이라는 평가 자체는 리서치 시점의 해석이므로 최신 버전에서
+  보강됐는지 재확인이 필요하다.
