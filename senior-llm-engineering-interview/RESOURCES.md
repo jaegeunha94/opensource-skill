@@ -58,6 +58,17 @@
 | "Don't Overthink It" 계열 서베이 (arXiv, 2025) | R1류 reasoning model의 overthinking 현상, 정확도-비용 역-U자 곡선 실증 |
 | "OverThink: Slowdown Attacks on Reasoning LLMs" (arXiv:2502.02542, 2025) | 외부 입력에 디코이 추론 문제를 심어 사고 토큰을 부풀리는 슬로다운/DoS 공격 |
 
+## Structured Output & Constrained Decoding
+
+| 자료 | 설명 |
+|------|------|
+| Anthropic — Structured Outputs 공식 문서 (platform.claude.com/docs) | `output_config.format`, strict tool use, 지원 JSON Schema 범위와 한계(재귀 불가, 정규식 제한, 복잡도 한도), refusal/길이초과 시 예외 사례 |
+| OpenAI — Structured Outputs / Strict Mode 공식 가이드 | 디코더 레벨 스키마 강제 원리, 레거시 JSON mode와의 차이, refusal 필드, 지원 모델 |
+| OpenAI — "Introducing Structured Outputs in the API" (2024) | 네이티브 구조화 출력 도입 전후 스키마 준수 정확도 비교(40% 미만 → 100%) — 프롬프트 유도와 constrained decoding 격차의 역사적 근거 |
+| Google — Gemini 구조화 출력 공식 문서 (`response_schema`, `propertyOrdering`) | JSON Schema 지원 확대, Pydantic/Zod 연동, 필드 순서 보장 |
+| Outlines / llguidance (오픈소스) | 오픈웨이트 모델 자체 호스팅 시 grammar 기반 constrained decoding을 구현하는 표준 라이브러리 |
+| Instructor (오픈소스, Jason Liu) | 스키마 검증 실패 시 에러를 모델에 되돌려 재시도시키는 retry-with-error-feedback 패턴의 대표 구현체 |
+
 ## Fine-tuning, RFT & Embedding
 
 | 자료 | 설명 |
