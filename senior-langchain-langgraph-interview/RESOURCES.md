@@ -66,6 +66,20 @@
 - [Postmortem: How a LangGraph Multi-Agent Bug Broke a 2026 Customer Support Bot (dev.to)](https://dev.to/johalputt/postmortem-how-a-langgraph-01-multi-agent-bug-broke-our-2026-customer-support-bot-37pp) — context 한도 초과와 무분별한 재시도로 인한 실제 장애 사례(Day 6 근거, 개인 개발 블로그로 출처 신뢰도 낮음에 유의)
 - [SubAgentMiddleware does not propagate recursion_limit (GitHub Issue langchain-ai/deepagents#1698)](https://github.com/langchain-ai/deepagents/issues/1698) — sub-agent가 부모의 recursion_limit을 물려받지 못해 기본 25 스텝에서 예상치 못하게 실패하는 사례(Day 6 근거)
 - [LangChain/LangGraph 1.0 공식 발표](https://www.langchain.com/blog/langchain-langgraph-1dot0) — `AgentExecutor`/`LLMChain`/`ConversationBufferMemory` 등이 `langchain-classic` 패키지로 분리되고 2.0 전까지 breaking change 없음을 약속한 공지(Day 6 근거)
+- [`graph/state.py` — langgraph 소스 (GitHub raw)](https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/langgraph/graph/state.py) — `StateGraph` 생성자(`state_schema`/`context_schema`/`input_schema`/`output_schema`), `add_node`/`add_edge`/`add_conditional_edges`/`compile` 실제 시그니처와 deprecated 인자(`config_schema`/`input`/`output`/`retry`) 원본(Day 7 근거)
+- [`graph/message.py` — langgraph 소스 (GitHub raw)](https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/langgraph/graph/message.py) — `add_messages` reducer의 id 기반 병합과 `format="langchain-openai"` 옵션 원본(Day 7 근거)
+- [`types.py` — langgraph 소스 (GitHub raw)](https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/langgraph/types.py) — `Command`/`Send`/`Overwrite`/`Runtime` 정의 원본(Day 7 근거)
+- [`errors.py` — langgraph 소스 (GitHub raw)](https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/langgraph/errors.py) — `InvalidUpdateError`/`ErrorCode.INVALID_CONCURRENT_GRAPH_UPDATE` 원본(Day 7 근거)
+- [`channels/binop.py` — langgraph 소스 (GitHub raw)](https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/langgraph/channels/binop.py) — `BinaryOperatorAggregate`의 fold 동작과 `Overwrite` 충돌 처리 원본(Day 7 근거)
+- [`channels/last_value.py` — langgraph 소스 (GitHub raw)](https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/langgraph/channels/last_value.py) — `LastValue` 채널이 스텝당 값 하나만 허용하는 원본 동작(Day 7 근거)
+- [`libs/langgraph/pyproject.toml` — 버전 확인 (GitHub raw)](https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/langgraph/pyproject.toml) — `main` 브랜치 기준 LangGraph 1.2.8 버전 확인(Day 7 근거)
+- [Parallel subgraphs writing shared unreduced key raise InvalidUpdateError (GitHub Issue langgraph#6446, #7099, #2336)](https://github.com/langchain-ai/langgraph/issues/6446) — reducer 없이 병렬 노드가 같은 키에 쓸 때 재현되는 실제 사례(Day 7 근거)
+- [`todos` field INVALID_CONCURRENT_GRAPH_UPDATE fixed via operator.add (GitHub Issue deepagents#96)](https://github.com/langchain-ai/deepagents/issues/96) — reducer 누락 수정 사례(Day 7 근거)
+- [Command(goto=...) breaks with ParentCommand error at 3+ nested subgraph levels (GitHub Issue langgraph#6409)](https://github.com/langchain-ai/langgraph/issues/6409) — 깊은 subgraph 중첩에서 `Command` 라우팅 실패 사례(Day 7 근거)
+- [defer=True + Command + conditional edges produces broken graph (GitHub Issue langgraph#5182)](https://github.com/langchain-ai/langgraph/issues/5182) — `defer` 옵션과 `Command` 조합 문제(Day 7 근거)
+- [Possible regression: agent loops until recursion limit on 1.0.6 (GitHub Issue langgraph#6731)](https://github.com/langchain-ai/langgraph/issues/6731) — 버전 간 recursion 관련 회귀 의심 사례(Day 7 근거, 2차 서술)
+- [recursionLimit silently reset during config merge (GitHub Issue langgraph#7313)](https://github.com/langchain-ai/langgraph/issues/7313) — 명시적으로 올린 `recursion_limit`이 조용히 리셋되는 사례(Day 7 근거, 2차 서술)
+- [Pydantic state schema validation surprises / unhelpful traceback (GitHub Issue langgraph#1977, #1978, #4060, #2555, #6401, #2804)](https://github.com/langchain-ai/langgraph/issues/1977) — Pydantic state schema의 alias 무시·generic 검증·불친절한 traceback 사례 모음(Day 7 근거)
 
 ## 아키텍처 딥다이브 / 엔지니어링 블로그
 

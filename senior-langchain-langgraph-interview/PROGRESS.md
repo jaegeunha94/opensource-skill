@@ -10,12 +10,12 @@
 | 4 | 2026-07-05 | Structured Output과 Streaming | [0004-langchain-structured-output-streaming.html](lessons/0004-langchain-structured-output-streaming.html) |
 | 5 | 2026-07-06 | Retrieval과 Memory | [0005-langchain-retrieval-memory.html](lessons/0005-langchain-retrieval-memory.html) |
 | 6 | 2026-07-07 | Guardrails와 Context Engineering | [0006-langchain-guardrails-context-engineering.html](lessons/0006-langchain-guardrails-context-engineering.html) |
+| 7 | 2026-07-08 | LangGraph StateGraph 설계 | [0007-langgraph-stategraph-design.html](lessons/0007-langgraph-stategraph-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | LangGraph StateGraph 설계 | node/edge, conditional edge, state schema(TypedDict/Pydantic), reducer |
 | 8 | Persistence와 Checkpointer | MemorySaver/SqliteSaver/PostgresSaver, thread-scoped state, time travel/replay |
 | 9 | Store, Interrupt, Human-in-the-loop | 장기 메모리용 Store vs 세션용 Checkpointer, `interrupt()`, 승인 게이트 설계 |
 | 10 | Subgraph와 Multi-agent 설계 | subgraph 합성, supervisor/swarm/handoff 패턴, 상태 격리 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음: Day 7 — LangGraph StateGraph 설계
+**Day 7 완료** — 다음: Day 8 — Persistence와 Checkpointer
 
 ## 습득한 핵심 개념
 
@@ -54,7 +54,12 @@
 - [x] `ToolCallLimitMiddleware`/`ModelCallLimitMiddleware`의 thread_limit vs run_limit, exit_behavior 트레이드오프 (Day 6)
 - [x] Prompt injection의 3층 방어(입력 소독/행동 평가/환경적 봉쇄)와 LangChain core의 현재 공백 인지 (Day 6)
 - [x] Context engineering — Anthropic(Right altitude/JIT/Compaction/Isolation) vs LangChain(Write/Select/Compress/Isolate) 프레임 비교 (Day 6)
-- [ ] StateGraph 설계(node/edge/reducer) (예정 Day 7)
+- [x] StateGraph = Pregel 기반 superstep 모델과 병렬 쓰기 시 `InvalidUpdateError` (Day 7)
+- [x] State schema 4종 분리 — `state_schema`/`input_schema`/`output_schema`/`context_schema`(구 `config_schema`)와 `Runtime[Context]` (Day 7)
+- [x] TypedDict/dataclass/Pydantic state schema 선택 기준과 Pydantic 검증 보장 범위(그래프 입력 한정)의 함정 (Day 7)
+- [x] `Annotated[Type, reducer_fn]`/`BinaryOperatorAggregate`/`add_messages`/`Overwrite`와 reducer의 결합·교환 법칙 요구사항 (Day 7)
+- [x] Conditional edge(라우팅만) vs `Command(update=, goto=)`(업데이트+라우팅) vs `Send`(동적 map-reduce fan-out) 선택 기준 (Day 7)
+- [x] `set_entry_point`/`set_finish_point`는 비-deprecated, `MessageGraph`/`NodeInterrupt`/`config_schema`가 실제 deprecated 대상이라는 정정 (Day 7)
 - [ ] Checkpointer / Persistence (예정 Day 8)
 - [ ] Store / Interrupt / Human-in-the-loop (예정 Day 9)
 - [ ] Subgraph / Multi-agent (예정 Day 10)
