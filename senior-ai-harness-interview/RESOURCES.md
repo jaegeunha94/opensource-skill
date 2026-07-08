@@ -130,6 +130,24 @@
 - [anthropics/claude-code Issue #27281 — 텍스트 반복 루프로 context window 소진 사례](https://github.com/anthropics/claude-code/issues/27281)
 - [bytedance/deer-flow Issue #1055 — 반복적 tool call 루프로 recursion limit 도달](https://github.com/bytedance/deer-flow/issues/1055)
 
+## Sandboxed Execution / 권한 스코핑 (Day 6)
+
+- [Claude Code — Configure the sandboxed Bash tool](https://code.claude.com/docs/en/sandboxing) — bubblewrap(Linux/WSL2)/Seatbelt(macOS), filesystem/network isolation, `sandbox.credentials`의 deny/mask, `enableWeakerNestedSandbox` (직접 접근해 확인한 1차 출처, 2026-04 최신화)
+- [Anthropic — Making Claude Code more secure and autonomous with sandboxing (Engineering)](https://www.anthropic.com/engineering/claude-code-sandboxing)
+- [Claude Code — Sandbox environments (dev container/컨테이너/VM 비교)](https://code.claude.com/docs/en/sandbox-environments)
+- [Claude API — Securely deploying AI agents](https://platform.claude.com/docs/en/agent-sdk/secure-deployment)
+- [OpenAI — The next evolution of the Agents SDK (2026-04-15, harness-compute 분리, sandbox session)](https://openai.com/index/the-next-evolution-of-the-agents-sdk/)
+- [OpenAI Agents SDK — Sandbox Agents 가이드](https://developers.openai.com/api/docs/guides/agents/sandboxes)
+- [The New Stack — OpenAI's Agents SDK separates the harness from the compute](https://thenewstack.io/openai-agents-sdk-sandboxes/)
+- [E2B — Enterprise AI Agent Cloud (Firecracker microVM)](https://e2b.dev/)
+- [Daytona — Secure Infrastructure for AI-generated code](https://www.daytona.io/)
+- [Northflank — Daytona vs E2B in 2026: which sandbox for AI code execution?](https://northflank.com/blog/daytona-vs-e2b-ai-code-execution-sandboxes)
+- [Fortune — AI-powered coding tool wiped out a software company's database (Replit, 2025-07)](https://fortune.com/2025/07/23/ai-coding-tool-replit-wiped-database-called-it-a-catastrophic-failure/)
+- [AI Incident Database — Incident 1152 (Replit 프로덕션 데이터 삭제, 공식 인시던트 기록)](https://incidentdatabase.ai/cite/1152/)
+- [Zenity — AI Agent Destroys Production Database in 9 Seconds (PocketOS/Railway, 2026-04)](https://zenity.io/blog/current-events/ai-agent-database-deletion-pocketos)
+- [Dev|Journal — Why Scoped Access is Critical for AI Agents: The Railway Incident Analysis](https://earezki.com/ai-news/2026-04-26-the-agent-didnt-malfunction-the-access-was-wrong/)
+- [Oso — How to Prevent Over-Permissioned Agents](https://www.osohq.com/learn/how-to-prevent-over-permissioned-agents)
+
 ## Provider 추상화 레이어 (Day 2)
 
 - [Vercel AI SDK](https://ai-sdk.dev/docs/introduction) / [AI SDK 6 — ToolLoopAgent](https://vercel.com/blog/ai-sdk-6)
@@ -148,3 +166,4 @@
 - Day 3의 `platform.claude.com`(compaction/context-editing/memory-tool) 문서는 직접 접근해 확인한 1차 출처다. 반면 Anthropic "Effective context engineering" 블로그와 Chroma의 "Context Rot" 연구는 원문 접근(403)이 안 되어 검색 스니펫과 다수의 2차 출처(요약 블로그, 커뮤니티 글)로 교차검증했다 — 특히 Context Rot의 정확한 수치(30%p, 7.9% 등)와 MINJA/멀티에이전트 오염 통계(95% 이상, 4시간 87%)는 정확한 원문 인용이 필요하면 실제 브라우저로 재확인한다.
 - Day 4의 `code.claude.com/docs/en/agent-sdk/agent-loop`는 직접 접근해 확인한 1차 출처이며, `max_turns`/`max_budget_usd`/에러 subtype 설명은 이 문서를 근거로 한다. 반면 `anthropic.com`(Effective harnesses for long-running agents)과 `letta.com` 블로그는 403으로 막혀 검색 스니펫으로만 교차검증했다. 2026년 비용 폭주 사례(DN42 $6,531, CRM 6시간 $4,200, 멀티에이전트 순환호출 $30,000)는 여러 2차 블로그 출처에서 유사하게 인용되지만 1차 인시던트 리포트는 확인하지 못했으므로, 정확한 금액·날짜가 필요하면 실제 브라우저로 원문을 재확인해야 한다.
 - Day 5의 `platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks`는 직접 접근해 확인한 1차 출처이며, direct/indirect 위협 모델 구분, harmlessness screen, tool_result 격리·JSON 인코딩·tool 출력 스크리닝 기법 설명은 이 문서를 근거로 한다. Simon Willison의 lethal trifecta 원문, Anthropic "How we built Claude Code auto mode" 블로그, OWASP ASI Top 10 원문은 403 또는 자동화 접근 제한으로 검색 스니펫과 다수의 2차 출처(정리 블로그)로 교차검증했다 — Claude Code Auto Mode의 false positive 수치(8.5%→0.4%)와 ASI01~ASI10 정확한 명칭·순서는 정확한 인용이 필요하면 실제 브라우저로 원문을 재확인해야 한다.
+- Day 6의 `code.claude.com/docs/en/sandboxing`은 직접 접근해 확인한 1차 출처이며, bubblewrap/Seatbelt 아키텍처, filesystem/network isolation, `sandbox.credentials`의 deny/mask 모드 설명은 이 문서를 근거로 한다(2026-04 최신화 확인). `anthropic.com`의 Claude Code sandboxing 엔지니어링 블로그, OpenAI의 "next evolution of the Agents SDK" 공식 발표, `thenewstack.io` 분석 글은 403으로 원문 접근이 막혀 검색 스니펫과 다수의 2차 출처(기술 블로그, 뉴스 사이트)로 교차검증했다 — harness-compute 분리의 정확한 API 형태와 발표 세부 문구는 실제 면접 전 재확인이 필요하다. E2B(Firecracker microVM)와 Daytona(컨테이너, ~90ms 콜드스타트)의 아키텍처 비교는 다수의 2026년 비교 블로그(Northflank, ZenML, PkgPulse 등)에서 일치하는 내용으로 교차검증했다. Replit 프로덕션 DB 삭제(2025-07)는 AI Incident Database(incidentdatabase.ai 인시던트 #1152)와 Fortune 보도로 검증된 1차급 사건이다. 반면 Railway/PocketOS 사고(2026-04)는 Zenity 블로그와 2차 분석 글 하나에만 의존했으므로, 정확한 회사명·타임라인·피해 규모는 실제 면접 전 원문 재확인이 필요하다.

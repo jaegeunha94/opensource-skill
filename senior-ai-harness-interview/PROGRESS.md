@@ -9,12 +9,12 @@
 | 3 | 2026-07-05 | Prompt/Context/Memory Scaffolding | [0003-prompt-context-memory-scaffolding.html](lessons/0003-prompt-context-memory-scaffolding.html) |
 | 4 | 2026-07-06 | Control-Flow Scaffolding과 루프 안정성 | [0004-control-flow-scaffolding-loop-stability.html](lessons/0004-control-flow-scaffolding-loop-stability.html) |
 | 5 | 2026-07-07 | Guardrail과 Prompt Injection 방어 | [0005-guardrail-prompt-injection-defense.html](lessons/0005-guardrail-prompt-injection-defense.html) |
+| 6 | 2026-07-08 | Sandboxed Workspace Execution과 권한 스코핑 | [0006-sandboxed-workspace-execution-permission-scoping.html](lessons/0006-sandboxed-workspace-execution-permission-scoping.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | Sandboxed Workspace Execution과 권한 스코핑 | OS 레벨 샌드박스(bubblewrap/Seatbelt), hosted code execution, E2B/Daytona, least-privilege 권한 설계 |
 | 7 | Model Context Protocol(MCP) | tools/resources/prompts/sampling, stdio/streamable HTTP, stateless 전환, 거버넌스(AAIF) |
 | 8 | Handoff와 Multi-Agent Coordination | orchestrator-worker, manager(agents-as-tools) vs handoff 패턴, 토큰 비용 구조(15x), multi-agent를 쓰지 말아야 할 때 |
 | 9 | Streaming과 Structured Output | SSE 스트리밍, fine-grained tool streaming, 지연시간 vs UX trade-off, structured output 설계 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 다음: Day 6 — Sandboxed Workspace Execution과 권한 스코핑
+**Day 6 완료** — 다음: Day 7 — Model Context Protocol(MCP)
 
 ## 습득한 핵심 개념
 
@@ -54,7 +54,12 @@
 - [x] Tool-result 격리, JSON 인코딩, tool 출력 스크리닝(Anthropic 공식 가이드) (Day 5)
 - [x] 계단식(cascade) 분류기 비용 최적화(Claude Code Auto Mode 사례) (Day 5)
 - [x] OWASP ASI Top 10 2026 개관과 defense-in-depth 원칙 (Day 5)
-- [ ] Sandboxed execution, 권한 스코핑 (예정 Day 6)
+- [x] 판단(prompt) vs 강제(OS/인프라) 권한 통제 구분 (Day 6)
+- [x] 로컬 OS 샌드박스(bubblewrap/Seatbelt) 파일시스템/네트워크 격리, credential deny/mask (Day 6)
+- [x] Hosted 샌드박스 격리 스펙트럼: E2B(Firecracker microVM) vs Daytona(컨테이너, ~90ms 콜드스타트) (Day 6)
+- [x] OpenAI Agents SDK harness-compute 분리(2026-04-15), 상태 외부화/재수화 (Day 6)
+- [x] Least-privilege: standing credential vs just-in-time 권한, 거버넌스는 추론 루프 밖 (Day 6)
+- [x] Replit 프로덕션 DB 삭제(2025-07), Railway/PocketOS 권한 사고(2026-04) 근본 원인 분석 (Day 6)
 - [ ] MCP (예정 Day 7)
 - [ ] Handoff, multi-agent coordination (예정 Day 8)
 - [ ] Streaming, structured output (예정 Day 9)
