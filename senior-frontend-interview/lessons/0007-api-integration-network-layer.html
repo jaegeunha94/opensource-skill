@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — API 통합 &amp; 네트워크 계층 | 프론트엔드 10년차 이상 개발자 Interview</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">프론트엔드 10년차 이상 개발자 Interview</a> › <a href="./">레슨 목록</a> › Day 7
+  </nav>
+
+  <h1>Day 7 — API 통합 &amp; 네트워크 계층</h1>
+  <p class="subtitle">REST/GraphQL 계약 설계, HTTP 캐싱, 에러 처리와 재시도, 오프라인 대응 전략 · 2026-07-08</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#rest-graphql">REST vs GraphQL — 계약 설계 트레이드오프</a></li>
+      <li><a href="#caching">HTTP 캐싱과 클라이언트 캐싱 계층</a></li>
+      <li><a href="#retry">에러 처리, 재시도, 멱등성</a></li>
+      <li><a href="#offline">오프라인/불안정 네트워크 대응</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"백엔드 API가 간헐적으로 5xx를 반환하는 상황에서, 프론트엔드가 사용자 경험을 지키기 위해 어떤 재시도·폴백 전략을 설계하시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"결제 API 호출이 타임아웃되었는데, 실제로는 서버에서 결제가 성공적으로 처리됐을 수 있습니다. 클라이언트가 재시도를 안전하게 하려면 무엇을 보장해야 하나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"우리 서비스가 REST에서 GraphQL로 마이그레이션을 검토 중입니다. 어떤 기준으로 전환 여부를 판단하고, 전환한다면 어떤 리스크를 관리하시겠어요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"fetch 문법을 아는가"가 아니라, 네트워크는 항상 실패할 수 있다는 전제 위에서 사용자 경험을 방어적으로 설계할 수 있는가</strong>를 테스트합니다. 주니어는 "API를 호출해서 데이터를 받아온다"를 단순한 성공 경로로만 생각하지만, 시니어는 타임아웃, 부분 실패, 중복 요청, 순서 역전(race condition), 오프라인 전환 같은 <em>실패가 기본값인 세계</em>를 전제로 설계합니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>실패 모드를 구체적으로 나열할 수 있는가</strong> — "네트워크 에러"를 뭉뚱그리지 않고, 타임아웃/4xx/5xx/네트워크 단절/응답 파싱 실패를 각각 다르게 다뤄야 한다는 것을 아는가.</li>
+      <li><strong>멱등성(Idempotency)을 이해하는가</strong> — 어떤 요청은 안전하게 재시도할 수 있고 어떤 요청은 재시도 시 중복 부작용(이중 결제 등)을 낳는지 구분할 수 있는가.</li>
+      <li><strong>캐싱 계층을 여러 층위로 사고하는가</strong> — 브라우저 HTTP 캐시, CDN 캐시, 클라이언트 상태 캐시(React Query 등)가 서로 다른 계층이며 각각 다른 무효화 전략이 필요하다는 것을 아는가.</li>
+      <li><strong>사용자에게 실패를 어떻게 노출할지 설계할 수 있는가</strong> — 무한 스피너, 백지 화면, 이해 불가능한 에러 코드 대신 재시도 버튼, 낙관적 UI 롤백, 스켈레톤 폴백 같은 구체적 UX 패턴으로 답할 수 있는가.</li>
+      <li><strong>API 계약 설계가 아키텍처 결정이라는 것을 아는가</strong> — REST/GraphQL 선택이 유행이 아니라 오버페칭/언더페칭, 캐싱 용이성, 팀 규모, 타입 안정성 같은 구체적 트레이드오프의 결과라는 것을 설명할 수 있는가.</li>
+    </ul>
+
+    <p>주니어~중니어에서 자주 나오는 답변 패턴: "실패하면 알림창을 띄우고 다시 시도 버튼을 누르게 하겠습니다"처럼 재시도를 단순 UI 문제로 축소하거나, "GraphQL이 더 최신이니까 GraphQL을 쓰겠습니다"처럼 근거 없는 유행을 따르는 경우입니다. 시니어는 <strong>어떤 요청이 안전하게 재시도 가능한지, 실패가 사용자에게 어떤 손실을 주는지</strong>부터 구분합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>멱등성(Idempotency)이란 무엇인가</h3>
+    <p>같은 요청을 <strong>한 번 보내든 여러 번 보내든 서버 상태에 미치는 최종 결과가 동일</strong>한 성질을 말합니다. 비유하면, 엘리베이터 버튼을 한 번 누르든 세 번 연타하든 엘리베이터는 한 번만 오는 것이 멱등한 동작이고, 자판기에 동전을 넣고 버튼을 누를 때마다 매번 음료가 나오는 것은 멱등하지 않은 동작입니다. HTTP에서는 <code>GET</code>, <code>PUT</code>, <code>DELETE</code>가 정의상 멱등하고(같은 리소스를 몇 번 조회하거나 몇 번 같은 값으로 덮어써도 결과는 같음), <code>POST</code>는 정의상 멱등하지 않습니다(주문 생성 요청을 두 번 보내면 주문이 두 개 생길 수 있음). 이 구분이 중요한 이유는 <strong>재시도가 안전한지 아닌지를 이 성질 하나로 판단</strong>하기 때문입니다.</p>
+
+    <h3>왜 타임아웃이 "실패"를 의미하지 않는가</h3>
+    <p>클라이언트가 타임아웃을 겪었다는 것은 <strong>"응답을 못 받았다"는 뜻이지 "서버가 처리를 못 했다"는 뜻이 아닙니다.</strong> 서버는 요청을 정상적으로 처리하고 응답을 보내는 중이었는데, 그 응답이 네트워크 어딘가에서 유실되었거나 클라이언트의 대기 시간이 서버의 처리 시간보다 짧아서 먼저 포기했을 수 있습니다. 결제 API처럼 부작용이 있는 요청에서 이 구분을 무시하고 "타임아웃 = 실패 = 재시도"로 단순화하면, 실제로는 결제가 이미 성공했는데 재시도로 인해 이중 결제가 발생하는 사고로 이어집니다.</p>
+
+    <h3>오버페칭(Overfetching)과 언더페칭(Underfetching)이란 무엇인가</h3>
+    <p>오버페칭은 <strong>화면에 필요하지 않은 데이터까지 서버가 응답에 포함시켜 보내는 것</strong>입니다. 예를 들어 사용자 이름만 필요한 화면인데 REST API의 <code>/users/1</code> 엔드포인트가 주소·주문내역·설정까지 통째로 응답하는 경우입니다. 언더페칭은 반대로 <strong>한 번의 요청으로 필요한 데이터를 다 못 받아, 여러 번 순차적으로 추가 요청을 보내야 하는 것</strong>입니다. 예를 들어 게시글 목록을 받은 뒤 각 게시글의 작성자 정보를 얻기 위해 게시글 개수만큼 추가 요청을 보내는 N+1 패턴입니다. REST는 엔드포인트가 고정된 응답 구조를 가지므로 이 두 문제가 함께 발생하기 쉽고, GraphQL은 클라이언트가 필요한 필드만 선언해서 요청할 수 있어 이 문제를 구조적으로 줄입니다.</p>
+
+    <h3>클라이언트 캐시와 서버/CDN 캐시는 왜 다른 계층인가</h3>
+    <p>브라우저의 HTTP 캐시나 CDN 캐시는 <strong>"이 URL의 응답을 얼마나 오래 재사용할 수 있는가"</strong>를 다루는 전송 계층의 캐시입니다. 반면 React Query나 SWR 같은 클라이언트 상태 캐시는 <strong>"이미 받아온 데이터를 화면 간에 어떻게 공유하고, 언제 다시 요청할 것인가"</strong>를 다루는 애플리케이션 계층의 캐시입니다. 비유하면 HTTP 캐시는 "택배 창고에 물건을 얼마나 오래 보관할지"이고, 클라이언트 상태 캐시는 "이미 집에 들어온 물건을 여러 방에서 어떻게 공유해서 쓸지"입니다. 두 계층은 독립적으로 존재하며, 하나만 관리해서는 데이터 신선도와 성능을 동시에 잡을 수 없습니다.</p>
+
+    <h3>낙관적 업데이트(Optimistic Update)란 무엇인가</h3>
+    <p>서버 응답을 기다리지 않고 <strong>요청이 성공할 것이라 가정하고 화면을 먼저 갱신</strong>하는 패턴입니다. 예를 들어 "좋아요" 버튼을 누르면 서버 응답을 기다리지 않고 즉시 하트를 채우고 카운트를 올립니다. 이렇게 하면 사용자는 네트워크 지연을 전혀 체감하지 못합니다. 다만 실제로 서버 요청이 실패하면 화면을 원래 상태로 되돌리는(rollback) 로직이 반드시 함께 있어야 하며, 이 롤백을 빠뜨리면 화면과 실제 서버 상태가 어긋난 채로 사용자가 잘못된 정보를 계속 보게 되는 사고가 발생합니다.</p>
+  </section>
+
+  <!-- 4. REST vs GraphQL -->
+  <section id="rest-graphql">
+    <h2>4. REST vs GraphQL — 계약 설계 트레이드오프</h2>
+
+    <div class="card">
+      <h4>REST와 GraphQL의 근본적 차이</h4>
+      <table class="method-table">
+        <thead><tr><th>축</th><th>REST</th><th>GraphQL</th></tr></thead>
+        <tbody>
+          <tr><td>데이터 형태 결정 주체</td><td>서버(엔드포인트가 고정 응답 구조 정의)</td><td>클라이언트(쿼리로 필요한 필드 선언)</td></tr>
+          <tr><td>오버/언더페칭</td><td>구조적으로 발생하기 쉬움</td><td>클라이언트가 필요한 만큼만 받아 구조적으로 완화</td></tr>
+          <tr><td>HTTP 캐싱 친화성</td><td>URL 단위 캐싱이 자연스러움(CDN, 브라우저 캐시)</td><td>대부분 POST 단일 엔드포인트라 URL 기반 캐싱이 어려움</td></tr>
+          <tr><td>타입 안정성</td><td>OpenAPI 등 별도 스키마 도구 필요</td><td>스키마가 프로토콜에 내장, 코드젠으로 타입 자동 생성 용이</td></tr>
+          <tr><td>서버 복잡도</td><td>엔드포인트별로 단순, 개수가 늘어남</td><td>리졸버 계층, N+1 방지(DataLoader) 등 서버 구현 복잡도 증가</td></tr>
+          <tr><td>팀 규모 적합성</td><td>소규모 팀, 단순 CRUD 도메인에 적합</td><td>다수 클라이언트(웹/앱/파트너)가 서로 다른 데이터 형태를 요구할 때 유리</td></tr>
+        </tbody>
+      </table>
+      <p>GraphQL이 "REST의 상위 호환"이 아닙니다. GraphQL은 캐싱을 URL 기반에서 정규화된 클라이언트 캐시(Apollo/Relay의 정규화 캐시)로 옮기는 대가를 치르고, 서버 쪽에서는 임의의 쿼리 조합이 만들어내는 성능 리스크(과도하게 깊은 쿼리, N+1)를 직접 관리해야 하는 부담을 집니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>전환 여부를 판단하는 기준</h4>
+      <ul class="step-block">
+        <li>
+          <div class="step-num">1</div>
+          <div><strong>실제로 오버/언더페칭이 측정 가능한 문제인가</strong>
+            <p style="margin-top:0.3rem">"이론적으로 GraphQL이 낫다"가 아니라, 실제 프로덕션에서 특정 화면이 N+1 요청을 하고 있는지, 응답 페이로드 중 사용하지 않는 필드 비율이 얼마나 되는지 실측합니다.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div><strong>클라이언트 다양성이 있는가</strong>
+            <p style="margin-top:0.3rem">웹/모바일/서드파티 파트너처럼 같은 도메인 데이터를 서로 다른 형태로 필요로 하는 소비자가 여러 개일수록 GraphQL의 이점이 커집니다. 클라이언트가 하나뿐이라면 REST로도 충분한 경우가 많습니다.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div><strong>팀이 새로운 캐싱·성능 리스크를 감당할 준비가 되어 있는가</strong>
+            <p style="margin-top:0.3rem">GraphQL 도입은 CDN 캐싱 전략 재설계, 쿼리 복잡도 제한(depth limiting, query cost analysis), N+1 방지용 DataLoader 패턴 도입 등 새로운 운영 부담을 동반합니다.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">4</div>
+          <div><strong>점진적 전환이 가능한가</strong>
+            <p style="margin-top:0.3rem">전면 재작성보다는 신규 화면이나 오버페칭이 가장 심한 화면부터 GraphQL 게이트웨이(BFF)를 앞에 두고, 기존 REST 백엔드를 그 뒤에서 점진적으로 통합하는 방식으로 리스크를 낮춥니다.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 5. HTTP 캐싱 -->
+  <section id="caching">
+    <h2>5. HTTP 캐싱과 클라이언트 캐싱 계층</h2>
+
+    <div class="card">
+      <h4>HTTP 캐시 계층 — Cache-Control과 검증 캐시</h4>
+      <table class="method-table">
+        <thead><tr><th>헤더/전략</th><th>동작</th><th>적합한 리소스</th></tr></thead>
+        <tbody>
+          <tr><td><code>Cache-Control: max-age=31536000, immutable</code></td><td>만료 전까지 서버에 재검증 없이 그대로 재사용</td><td>파일명에 해시가 포함된 정적 자산(JS/CSS 번들, 이미지)</td></tr>
+          <tr><td><code>Cache-Control: no-cache</code></td><td>매번 서버에 재검증(ETag/Last-Modified) 요청, 304면 재다운로드 생략</td><td>자주 바뀌지만 대역폭은 아끼고 싶은 API 응답</td></tr>
+          <tr><td><code>Cache-Control: no-store</code></td><td>캐시 자체를 금지, 매번 완전히 새로 요청</td><td>민감한 개인정보, 결제 정보가 담긴 응답</td></tr>
+          <tr><td><code>ETag</code> / <code>If-None-Match</code></td><td>리소스 내용 해시로 변경 여부 검증, 미변경 시 304로 바디 생략</td><td>내용이 자주 바뀌지 않는 API 응답(사용자 프로필 등)</td></tr>
+          <tr><td><code>stale-while-revalidate</code></td><td>만료된 캐시라도 즉시 응답하고, 백그라운드로 최신 데이터를 갱신</td><td>완전한 최신성보다 즉시 응답이 더 중요한 목록/피드 API</td></tr>
+        </tbody>
+      </table>
+      <p>정적 자산에는 파일명 해시(<code>app.a1b2c3.js</code>)와 <code>immutable</code>을 함께 써서 "영구 캐시 + 배포 시 URL 자체가 바뀌어 무효화"라는 조합을 만드는 것이 실무 표준입니다. 반대로 API 응답에 이런 영구 캐시를 잘못 적용하면 사용자가 오래된 데이터를 계속 보는 사고로 이어집니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>클라이언트 상태 캐시(React Query/SWR류)의 역할</h4>
+      <p>HTTP 캐시가 "네트워크 요청을 생략할 수 있는가"를 다룬다면, 클라이언트 상태 캐시는 <strong>"이미 메모리에 있는 데이터를 여러 컴포넌트가 어떻게 재사용하고, 언제 다시 fetch할 것인가"</strong>를 다룹니다. 핵심 개념은 다음과 같습니다.</p>
+      <ul>
+        <li><strong>Stale-While-Revalidate 패턴</strong>: 캐시된 데이터를 즉시 화면에 보여주면서 동시에 백그라운드로 최신 데이터를 가져와 조용히 교체합니다. 사용자는 로딩 스피너 없이 즉시 화면을 보고, 데이터는 곧 최신화됩니다.</li>
+        <li><strong>쿼리 키 기반 캐시 정규화</strong>: <code>['user', userId]</code>처럼 요청 파라미터를 키로 캐시를 식별해, 같은 데이터를 요청하는 여러 컴포넌트가 중복 요청 없이 캐시를 공유합니다.</li>
+        <li><strong>캐시 무효화(Invalidation) 시점 설계</strong>: 데이터를 변경하는 mutation이 성공한 직후 관련된 쿼리 키를 무효화(invalidate)해서 다음 조회 시 최신 데이터를 강제로 다시 받아오게 합니다. 이 시점 설계를 놓치면 사용자가 방금 수정한 데이터가 반영되지 않은 화면을 계속 보게 됩니다.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h4>캐시 계층이 어긋나서 발생하는 전형적 버그</h4>
+      <p>"방금 프로필 사진을 바꿨는데 새로고침해도 예전 사진이 보인다"는 버그는 보통 다음 계층 중 하나가 원인입니다.</p>
+      <ul>
+        <li>CDN이 이미지 URL을 오래 캐싱하고 있는데, 업로드 후 URL을 바꾸지 않고 같은 경로에 덮어써서 CDN이 이전 버전을 계속 서빙(→ URL에 버전/해시를 포함시켜야 함).</li>
+        <li>클라이언트 상태 캐시(React Query)에서 프로필 업데이트 mutation 후 관련 쿼리 키를 invalidate하지 않아, 화면은 여전히 메모리에 있는 이전 데이터를 보여줌.</li>
+        <li>브라우저 HTTP 캐시가 API 응답에 과도하게 긴 <code>max-age</code>를 갖고 있어, 재검증 없이 이전 응답을 그대로 재사용.</li>
+      </ul>
+      <p>이 사슬을 이해하지 못하면 "캐시를 지우면 되겠지"라는 임시방편만 반복하게 됩니다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 에러 처리, 재시도, 멱등성 -->
+  <section id="retry">
+    <h2>6. 에러 처리, 재시도, 멱등성</h2>
+
+    <div class="card">
+      <h4>실패 유형별로 다른 대응이 필요한 이유</h4>
+      <table class="method-table">
+        <thead><tr><th>실패 유형</th><th>의미</th><th>적절한 대응</th></tr></thead>
+        <tbody>
+          <tr><td>4xx (Client Error)</td><td>요청 자체가 잘못됨(잘못된 입력, 인증 만료 등)</td><td>재시도해도 결과가 같음 — 재시도 금지, 사용자에게 입력 수정 요구 또는 재로그인 유도</td></tr>
+          <tr><td>5xx (Server Error)</td><td>서버 측 일시적 문제일 가능성</td><td>제한된 횟수 내 지수 백오프 재시도가 유효할 수 있음</td></tr>
+          <tr><td>타임아웃</td><td>서버 처리 결과를 알 수 없음(성공했을 수도 있음)</td><td>멱등한 요청만 안전하게 재시도, 비멱등 요청은 상태 조회로 실제 결과 확인 우선</td></tr>
+          <tr><td>네트워크 단절</td><td>요청 자체가 전송되지 않았거나 응답을 받을 수 없음</td><td>연결 복구를 감지해 큐에 쌓인 요청을 재전송(오프라인 큐잉)</td></tr>
+          <tr><td>응답 파싱 실패</td><td>서버 계약이 예상과 다름(스키마 변경, 손상된 응답)</td><td>재시도로 해결 안 됨 — 즉시 에러 리포팅, 폴백 UI로 전환</td></tr>
+        </tbody>
+      </table>
+      <p>"에러가 나면 재시도한다"는 하나의 규칙으로 뭉뚱그리면, 4xx를 무한 재시도해 서버에 불필요한 부하를 주거나, 비멱등 요청을 재시도해 중복 부작용을 만드는 사고로 이어집니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>안전한 재시도의 두 가지 축 — 지수 백오프와 멱등성 키</h4>
+      <p><strong>지수 백오프(Exponential Backoff)</strong>는 재시도 간격을 1초, 2초, 4초, 8초처럼 점점 늘려서, 일시적 장애 상황에서 클라이언트들이 동시에 재시도를 몰아붙여 서버를 더 무너뜨리는(retry storm) 것을 방지합니다. 여기에 무작위 지연(jitter)을 더해 여러 클라이언트의 재시도 타이밍이 겹치지 않게 분산시키는 것이 실무 표준입니다.</p>
+      <pre><code>async function fetchWithRetry(url, options, maxRetries = 3) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      if (res.status >= 500 && attempt < maxRetries) {
+        const delay = 2 ** attempt * 1000 + Math.random() * 300;
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      return res;
+    } catch (networkErr) {
+      if (attempt === maxRetries) throw networkErr;
+      const delay = 2 ** attempt * 1000 + Math.random() * 300;
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+}</code></pre>
+      <p><strong>멱등성 키(Idempotency Key)</strong>는 비멱등 요청(주로 <code>POST</code>)을 안전하게 재시도하기 위한 서버-클라이언트 계약입니다. 클라이언트가 요청 생성 시 고유 키(UUID)를 헤더에 담아 보내고, 서버는 같은 키로 들어온 요청을 이미 처리했다면 새로 처리하지 않고 <strong>이전 처리 결과를 그대로 반환</strong>합니다. 결제 API처럼 중복 실행이 치명적인 경우, 클라이언트 단독으로는 멱등성을 보장할 수 없고 반드시 이 서버 계약이 함께 있어야 합니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>사용자에게 실패를 어떻게 보여줄 것인가</h4>
+      <ul>
+        <li><strong>스켈레톤/캐시된 이전 데이터 폴백</strong>: 완전한 백지 에러 화면 대신 마지막으로 성공한 데이터를 "새로고침이 지연되고 있습니다" 안내와 함께 유지합니다.</li>
+        <li><strong>낙관적 업데이트 롤백</strong>: 낙관적으로 반영했던 화면을 실패 시 원래 상태로 되돌리고, 무엇이 실패했는지 구체적으로 안내합니다(예: "좋아요 반영에 실패했습니다. 다시 시도해주세요").</li>
+        <li><strong>재시도 가능 여부를 사용자에게 구분해서 제시</strong>: 4xx(입력 문제)는 "다시 시도" 버튼보다 무엇을 고쳐야 하는지 안내하고, 5xx/네트워크 문제는 "다시 시도" 버튼과 자동 재시도를 함께 제공합니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7. 오프라인 대응 -->
+  <section id="offline">
+    <h2>7. 오프라인/불안정 네트워크 대응</h2>
+
+    <div class="card">
+      <h4>오프라인 대응이 필요한 이유</h4>
+      <p>모바일 사용자는 지하철, 엘리베이터, 해외 로밍 등으로 네트워크가 자주 순간적으로 끊깁니다. "오프라인이면 그냥 에러를 보여준다"는 접근은 이런 일시적 단절을 실제 실패로 오인시켜 사용자 경험을 불필요하게 나쁘게 만듭니다. 시니어 수준에서는 연결 상태를 감지하고, 가능하면 요청을 큐에 쌓아 연결이 복구되면 자동으로 재전송하는 설계를 고려합니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>연결 상태 감지와 큐잉 패턴</h4>
+      <ul class="step-block">
+        <li>
+          <div class="step-num">1</div>
+          <div><strong><code>navigator.onLine</code>과 <code>online</code>/<code>offline</code> 이벤트로 상태 감지</strong>
+            <p style="margin-top:0.3rem">단, <code>navigator.onLine</code>은 "네트워크 인터페이스가 연결되어 있는가"만 알려줄 뿐 실제로 서버에 도달 가능한지는 보장하지 않으므로, 중요한 판단에는 실제 요청 성공/실패 결과를 함께 신뢰해야 합니다.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div><strong>변경 요청(mutation)을 로컬 큐에 저장</strong>
+            <p style="margin-top:0.3rem">오프라인 중 발생한 사용자의 변경 액션(글 작성, 좋아요 등)을 즉시 실패시키지 않고 IndexedDB 등에 큐로 저장하며, UI는 낙관적으로 먼저 반영합니다.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div><strong>연결 복구 시 큐를 순서대로 재전송</strong>
+            <p style="margin-top:0.3rem"><code>online</code> 이벤트나 Service Worker의 Background Sync API를 활용해 연결이 복구되면 큐에 쌓인 요청을 순서를 지켜 재전송합니다. 순서가 중요한 요청(댓글 순서 등)은 서버에서도 처리 순서를 보장해야 합니다.</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">4</div>
+          <div><strong>충돌(Conflict) 처리 전략을 사전에 정의</strong>
+            <p style="margin-top:0.3rem">오프라인 중 로컬에서 수정한 데이터와 그 사이 서버에서 다른 클라이언트가 변경한 데이터가 충돌할 수 있습니다. "마지막 쓰기가 이긴다(Last-Write-Wins)"처럼 단순한 규칙부터, 버전 번호 비교로 충돌을 감지해 사용자에게 병합을 요청하는 방식까지 도메인 중요도에 따라 선택합니다.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>8. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>요청의 성질을 먼저 분류합니다.</strong> 문제가 된 요청이 멱등한지(GET/PUT/DELETE) 비멱등한지(POST), 부작용의 심각도(단순 조회 vs 결제)를 확인합니다.</li>
+      <li><strong>실패 유형을 세분화합니다.</strong> 5xx인지, 타임아웃인지, 네트워크 단절인지에 따라 재시도 가능 여부와 전략이 달라진다는 것을 전제로 둡니다.</li>
+      <li><strong>서버 계약이 재시도를 안전하게 만들 수 있는지 확인합니다.</strong> 멱등성 키 같은 서버 측 지원이 있는지, 없다면 도입을 제안할 것인지 판단합니다.</li>
+      <li><strong>재시도 정책을 설계합니다.</strong> 지수 백오프 + jitter, 최대 재시도 횟수, 재시도 대상 상태 코드를 구체적으로 정합니다.</li>
+      <li><strong>사용자에게 노출할 UX를 설계합니다.</strong> 재시도 중임을 알릴지, 실패 시 어떤 폴백(캐시된 데이터, 재시도 버튼, 안내 문구)을 보여줄지 결정합니다.</li>
+      <li><strong>재발 방지와 관측을 붙입니다.</strong> 실패율과 재시도 성공률을 모니터링에 남겨, 특정 엔드포인트의 실패가 급증하면 알림이 오도록 합니다.</li>
+    </ol>
+  </section>
+
+  <!-- 9. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>9. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "결제 API 호출이 타임아웃되었는데, 실제로는 서버에서 결제가 성공적으로 처리됐을 수 있습니다. 클라이언트가 재시도를 안전하게 하려면 무엇을 보장해야 하나요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>먼저 결제 요청은 <code>POST</code>이므로 정의상 멱등하지 않다는 점을 짚습니다. 타임아웃은 "서버가 실패했다"는 뜻이 아니라 "응답을 못 받았을 뿐 서버는 처리를 완료했을 수 있다"는 뜻이므로, 클라이언트가 임의로 같은 결제 요청을 그대로 재전송하면 이중 결제가 발생할 위험이 있습니다.</p>
+      <br>
+      <p>이 문제를 클라이언트 단독으로는 안전하게 풀 수 없기 때문에, 서버와 함께 멱등성 키(Idempotency Key) 계약을 도입하는 것을 제안합니다. 결제 요청을 생성하는 시점에 클라이언트가 UUID를 생성해 <code>Idempotency-Key</code> 헤더에 담아 보내고, 이 키는 재시도 시에도 동일하게 재사용합니다. 서버는 같은 키로 들어온 요청을 이미 처리했다면 새로 결제를 실행하지 않고 이전 처리 결과(성공/실패)를 그대로 반환하도록 구현합니다.</p>
+      <br>
+      <p>이 계약이 없는 상황이라면, 무작정 재시도하는 대신 결제 상태를 조회하는 별도 엔드포인트(<code>GET /payments/{orderId}/status</code>)로 먼저 실제 처리 결과를 확인하고, 그 결과가 없거나 명시적으로 실패인 경우에만 재시도하는 방식으로 폴백합니다.</p>
+      <br>
+      <p>UX 측면에서는 타임아웃이 발생한 순간 사용자에게 "결제 처리 중입니다"라는 중간 상태를 보여주고, 상태 조회가 끝날 때까지 중복 클릭을 막기 위해 결제 버튼을 비활성화합니다. 실제로 실패로 확인된 경우에만 재시도 버튼을 노출합니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>결제 요청이 비멱등하다는 것을 근거로 "무작정 재시도가 위험하다"는 결론을 도출함</li>
+      <li>클라이언트 단독 해결이 불가능함을 인정하고 서버와의 계약(멱등성 키)을 제안함</li>
+      <li>계약이 없는 현실적 상황에 대한 폴백(상태 조회 우선)까지 제시함</li>
+      <li>UX 레벨에서 중복 클릭 방지와 상태 안내까지 구체적으로 다룸</li>
+    </ul>
+  </section>
+
+  <!-- 10. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>10. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"타임아웃이 나면 3번까지 자동으로 재시도하는 로직을 붙이겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>결제처럼 부작용이 있는 비멱등 요청에 무조건적 재시도를 적용해 이중 결제 위험을 만듭니다.</li>
+        <li>타임아웃이 "서버 처리 결과를 알 수 없는 상태"라는 것을 고려하지 않고 곧바로 재시도로 넘어갑니다.</li>
+        <li>서버와의 계약(멱등성 키, 상태 조회 API) 없이 클라이언트 단독으로 문제를 풀려고 합니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"에러가 나면 사용자에게 알림창으로 '오류가 발생했습니다. 다시 시도해주세요'라고 보여주겠습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>4xx(사용자가 고쳐야 할 문제)와 5xx(서버 문제)를 구분하지 않아 사용자가 무엇을 해야 할지 알 수 없습니다.</li>
+        <li>이미 처리됐을 수도 있는 요청을 사용자가 그대로 재시도하게 만들어 근본 문제(멱등성)를 해결하지 못합니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>요청이 멱등한지 아닌지부터 구분하고 재시도 가능 여부를 판단한다</li>
+        <li>타임아웃을 실패가 아니라 "결과를 알 수 없는 상태"로 취급한다</li>
+        <li>클라이언트 단독 해결의 한계를 인정하고 서버 계약(멱등성 키, 상태 조회)을 함께 설계한다</li>
+        <li>실패 유형별로 다른 UX(재시도 버튼 vs 입력 수정 안내)를 제시한다</li>
+        <li>재발 방지를 위한 관측(실패율 모니터링)까지 언급한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11. Follow-up -->
+  <section id="followups">
+    <h2>11. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: 낙관적 업데이트(Optimistic Update)를 적용할 때, 어떤 기준으로 적용 여부를 결정하시나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 실패 확률이 낮고, 실패했을 때 되돌리기가 쉬우며, 사용자에게 즉각적인 반응이 중요한 액션(좋아요, 북마크, 읽음 표시)에는 낙관적 업데이트가 적합합니다. 반대로 결제, 주문 확정처럼 실패 시 되돌리기 어렵거나 사용자가 실패 여부를 정확히 알아야 하는 액션에는 낙관적 업데이트를 쓰지 않고 서버 응답을 기다린 후 반영합니다. 적용하더라도 실패 시 롤백 로직과 사용자에게 실패를 알리는 안내를 반드시 함께 구현해야 하며, 롤백 없는 낙관적 업데이트는 화면과 실서버 상태의 불일치를 방치하는 것과 같습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: React Query 같은 클라이언트 캐시 라이브러리 없이 직접 fetch로 데이터 계층을 구성한다면, 어떤 것들을 직접 구현해야 하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 최소한 다음을 직접 구현해야 합니다 — 동일 데이터를 요청하는 여러 컴포넌트 간 요청 중복 제거(deduplication), 캐시된 데이터의 신선도 판단과 재검증(stale time), 포커스 복귀나 재연결 시 자동 재검증, 에러 발생 시 재시도 정책, 그리고 mutation 후 관련 캐시 무효화. 이 목록을 나열해보면 React Query 같은 라이브러리가 "편의 기능"이 아니라 데이터 신선도·성능·일관성이라는 세 가지 문제를 구조적으로 함께 해결해주는 인프라라는 것이 드러나며, 이것이 왜 직접 구현보다 검증된 라이브러리를 쓰는 것이 실무적으로 합리적인지의 근거가 됩니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: GraphQL을 도입하면 HTTP 캐싱(CDN, 브라우저 캐시)을 포기해야 하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 완전히 포기하는 것은 아니지만 REST만큼 자연스럽지는 않습니다. GraphQL은 보통 단일 엔드포인트에 <code>POST</code>로 쿼리를 보내기 때문에 URL 기반의 CDN/브라우저 캐싱이 기본적으로 작동하지 않습니다. 이를 보완하기 위해 Persisted Queries(자주 쓰는 쿼리를 서버에 미리 등록하고 짧은 해시로 GET 요청을 보내 URL 캐싱을 되살리는 기법)를 쓰거나, Apollo Client/Relay의 정규화된 클라이언트 캐시로 애플리케이션 계층에서 캐싱 이점을 확보하는 방향으로 전환합니다. 즉 캐싱의 책임이 전송 계층(CDN)에서 애플리케이션 계층(클라이언트 캐시)으로 옮겨간다고 설명하는 것이 정확합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q (비기술적): 백엔드 팀이 API 응답 구조를 변경하겠다고 통보 없이 배포해서 프론트엔드가 장애를 겪었습니다. 재발 방지를 위해 어떤 프로세스를 제안하시겠어요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 먼저 이번 장애의 근본 원인이 "실수"가 아니라 "계약이 코드로 강제되지 않았다"는 프로세스 문제임을 짚습니다. 구체적으로는 OpenAPI/GraphQL 스키마를 단일 진실 공급원(Source of Truth)으로 두고, 스키마 변경이 있는 PR에서는 자동으로 프론트엔드가 실제 사용 중인 필드와의 호환성을 검사하는 계약 테스트(Contract Test, 예: Pact)를 CI에 추가하자고 제안합니다. 또한 breaking change와 non-breaking change를 구분하는 버전 정책(예: 필드 제거는 반드시 deprecation 기간을 거침)을 백엔드 팀과 합의하고, 이를 리뷰 체크리스트에 명시해 같은 사고가 개인의 실수가 아니라 프로세스로 방지되도록 만듭니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>12. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"타임아웃은 곧 실패이므로 무조건 재시도해도 안전하다"</strong></p>
+      <p>타임아웃은 응답을 못 받았다는 뜻일 뿐, 서버가 실제로 처리를 실패했다는 뜻이 아닙니다. 비멱등 요청(POST)을 무조건 재시도하면 서버가 이미 처리를 완료한 작업을 중복 실행시킬 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"GraphQL은 REST보다 항상 더 나은 최신 기술이다"</strong></p>
+      <p>GraphQL은 오버/언더페칭을 줄이는 대신 URL 기반 HTTP 캐싱을 어렵게 만들고, 서버 쪽 쿼리 복잡도 관리(N+1, 과도하게 깊은 쿼리) 부담을 늘립니다. 클라이언트가 하나뿐이고 도메인이 단순한 서비스에서는 REST가 오히려 더 적합할 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"캐시를 쓰면 항상 최신 데이터보다 성능이 우선이다"</strong></p>
+      <p>캐시 전략은 리소스의 성격에 따라 달라야 합니다. 정적 자산은 영구 캐시가 맞지만, 결제 상태나 재고 수량처럼 신선도가 중요한 데이터에 긴 캐시를 적용하면 사용자가 잘못된 정보를 근거로 행동하게 만드는 사고로 이어집니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"navigator.onLine이 true면 서버에 정상적으로 요청을 보낼 수 있다"</strong></p>
+      <p><code>navigator.onLine</code>은 네트워크 인터페이스의 연결 여부만 알려줄 뿐, 실제로 목적지 서버까지 도달 가능한지는 보장하지 않습니다. 와이파이는 연결되어 있지만 인터넷이 끊긴 상황(캡티브 포털 등)에서도 이 값은 <code>true</code>일 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"낙관적 업데이트는 UX를 위해 항상 적용하는 것이 좋다"</strong></p>
+      <p>실패 시 되돌리기 어려운 액션(결제, 삭제 확정)이나 실패율이 유의미하게 높은 요청에 낙관적 업데이트를 적용하면, 사용자가 잘못된 성공 화면을 신뢰하게 만들고 이후 롤백 시 혼란을 가중시킵니다. 적용 여부는 액션의 되돌림 가능성과 실패 시 손실 크기로 판단해야 합니다.</p>
+    </div>
+  </section>
+
+  <!-- 13. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>13. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 7을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>멱등성의 정의와, HTTP 메서드별로 멱등 여부가 다르다는 것을 예시로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>타임아웃이 "실패"가 아니라 "결과를 알 수 없는 상태"인 이유와, 이것이 재시도 설계에 미치는 영향을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>멱등성 키가 무엇이고 왜 클라이언트 단독이 아니라 서버와의 계약이 필요한지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>REST와 GraphQL의 트레이드오프를 오버/언더페칭, 캐싱 친화성, 서버 복잡도 축으로 비교할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>HTTP 캐시 계층과 클라이언트 상태 캐시(React Query류)가 서로 다른 계층이라는 것과, 두 계층이 어긋나서 발생하는 버그를 예로 들 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>지수 백오프와 jitter가 왜 필요한지, retry storm이 무엇인지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>낙관적 업데이트의 적용 기준과, 롤백 로직이 없을 때 발생하는 문제를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>오프라인 큐잉 패턴(감지 → 큐 저장 → 재전송 → 충돌 처리)을 순서대로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>실패 유형(4xx/5xx/타임아웃/네트워크 단절/파싱 실패)별로 다른 대응이 필요한 이유를 구분해서 말할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>API 계약 변경으로 인한 장애를 프로세스(계약 테스트, 버전 정책)로 재발 방지하는 방안을 제시할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 8</h3>
+      <p><strong>상태/데이터 아키텍처 — 클라이언트 상태 vs 서버 상태, 캐시 무효화, 데이터 정합성</strong></p>
+      <p>Day 7에서 "네트워크를 통해 데이터를 어떻게 안전하게 주고받는가"를 다뤘다면, Day 8에서는 그렇게 받아온 데이터를 애플리케이션 내부에서 어떻게 구조화하고 정합성을 유지할 것인가를 다룹니다.</p>
+      <p>면접 질문 예고: "전역 상태 관리 라이브러리에 서버에서 받아온 데이터까지 모두 넣고 있는 코드베이스를 물려받았습니다. 어떤 기준으로 리팩터링하시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    프론트엔드 10년차 이상 개발자 Interview · Day 7 of 17 · 2026-07-08
+  </p>
+
+</div>
+</body>
+</html>

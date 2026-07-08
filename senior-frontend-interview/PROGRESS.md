@@ -10,12 +10,12 @@
 | 4 | 2026-07-05 | JavaScript 실행 모델, 클로저와 메모리 누수 (콜스택/이벤트 루프/마이크로태스크, 클로저 기반 누수, 프로덕션 힙 스냅샷 진단) | [0004-javascript-execution-model-closures-memory-leaks.html](lessons/0004-javascript-execution-model-closures-memory-leaks.html) |
 | 5 | 2026-07-06 | 웹 접근성(A11y) 심화 (접근성 트리, WAI-ARIA, 키보드 인터랙션 모델, 스크린리더 대응, 프로덕션 접근성 감사 절차) | [0005-accessibility-aria-keyboard-audit.html](lessons/0005-accessibility-aria-keyboard-audit.html) |
 | 6 | 2026-07-07 | Web Vitals & 성능 예산 (LCP/INP/CLS 세부 진단, RUM vs Lab, p75 분포 사고, 성능 예산 설계와 CI 통합) | [0006-web-vitals-performance-budget.html](lessons/0006-web-vitals-performance-budget.html) |
+| 7 | 2026-07-08 | API 통합 & 네트워크 계층 (REST vs GraphQL 트레이드오프, HTTP/클라이언트 캐싱 계층, 멱등성과 재시도 전략, 오프라인 큐잉) | [0007-api-integration-network-layer.html](lessons/0007-api-integration-network-layer.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | API 통합 & 네트워크 계층 | REST/GraphQL, 캐싱, 에러 처리, 오프라인/재시도 전략 |
 | 8 | 상태/데이터 아키텍처 | 클라이언트 상태 vs 서버 상태, 캐시 무효화, 데이터 정합성 |
 | 9 | React 렌더링 모델 & 아키텍처 | 컴포넌트 경계, 리렌더링 최적화, 훅 설계, 커스텀 훅 |
 | 10 | Next.js & 서버 사이드 아키텍처 | SSR/SSG/ISR, Server/Client Components, 하이드레이션 |
@@ -29,7 +29,7 @@
 
 ## 현재 학습 위치
 
-**Day 6 완료** — Day 7 (API 통합 & 네트워크 계층)이 다음 차례.
+**Day 7 완료** — Day 8 (상태/데이터 아키텍처)이 다음 차례.
 
 ## 습득한 핵심 개념
 
@@ -41,7 +41,7 @@
 - [x] 콜스택/이벤트 루프/마이크로·매크로태스크 실행 순서, 클로저가 참조를 유지시켜 발생시키는 메모리 누수 패턴, 힙 스냅샷 비교와 Retainers 추적을 통한 프로덕션 진단 절차 (Day 4)
 - [x] 접근성 트리(role/name/state/value)와 렌더 트리의 분리, WAI-ARIA 계약 원칙, 커스텀 위젯 키보드 패턴, 포커스 트랩과 Live Region, 층위별 프로덕션 접근성 감사 절차 (Day 5)
 - [x] LCP/INP/CLS 세부 단계 분해, Lab vs RUM(Field) 데이터 차이, p75 기준 분포 사고, 성능 예산 유형과 CI 통합 절차 (Day 6)
-- [ ] API 통합과 네트워크 계층 설계 (예정 Day 7)
+- [x] 멱등성과 타임아웃/재시도의 관계, REST vs GraphQL 트레이드오프, HTTP 캐시와 클라이언트 상태 캐시의 계층 분리, 멱등성 키와 지수 백오프, 오프라인 큐잉 패턴 (Day 7)
 - [ ] 상태/데이터 아키텍처 (예정 Day 8)
 - [ ] React 렌더링 모델과 아키텍처 (예정 Day 9)
 - [ ] Next.js 서버 사이드 아키텍처 (예정 Day 10)
