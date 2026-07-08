@@ -13,12 +13,12 @@
 | 7 | 2026-07-05 | Descriptor 프로토콜 — `__get__`/`__set__`/`__delete__`와 속성 접근의 실체 | [0007-descriptor-protocol.html](lessons/0007-descriptor-protocol.html) |
 | 8 | 2026-07-06 | Decorator — 함수형 패턴, closure, 실행 시점, 실무 활용 | [0008-decorator.html](lessons/0008-decorator.html) |
 | 9 | 2026-07-07 | Python 실행 모델 — 바이트코드, CPython 인터프리터, 네임스페이스, LEGB | [0009-execution-model.html](lessons/0009-execution-model.html) |
+| 10 | 2026-07-08 | Typing 심화 — Protocol, Generic, TypeVar, Literal, overload | [0010-typing-deep-dive.html](lessons/0010-typing-deep-dive.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 10 | Typing — 타입 힌트 심화 | `Protocol`, `Generic`, `TypeVar`, `Literal`, `overload` |
 | 11 | Testing 전략 | pytest fixture, mock, property-based testing, 테스트 격리 |
 | 12 | Debugging과 Profiling | `pdb`, `cProfile`, `memory_profiler`, flamegraph |
 | 13 | 패키징과 의존성 관리 | `pyproject.toml`, `poetry`, `pip`, virtual env, lock file |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 9 완료** — Day 10 (Typing 심화)부터 계속.
+**Day 10 완료** — Day 11 (Testing 전략)부터 계속.
 
 ## 습득한 핵심 개념
 
@@ -75,4 +75,11 @@
 - [x] 클로저의 cell 공유 원리와 반복문 클로저 함정 (Day 9)
 - [x] 가변 기본 인자가 함수 정의 시점에 1회만 평가되는 원리 (Day 9)
 
-- [ ] Typing 심화 — `Protocol`, `Generic`, `TypeVar` (예정 Day 10)
+- [x] `Protocol`과 구조적 타이핑 vs `ABC`의 명목적 타이핑 (Day 10)
+- [x] `Generic`/`TypeVar`로 입력-출력 타입 관계를 표현하는 원리 (Day 10)
+- [x] `@overload`가 정적 검사 전용 시그니처이며 별도 구현체가 필요한 이유 (Day 10)
+- [x] `Literal`로 값 자체를 타입으로 좁히는 패턴 (Day 10)
+- [x] 공변/반공변/무공변과 가변 컨테이너가 무공변이어야 하는 이유 (Day 10)
+- [x] `Any`와 `object`의 차이, "Any 오염"의 위험성 (Day 10)
+
+- [ ] Testing 전략 — pytest fixture, mock, property-based testing (예정 Day 11)
