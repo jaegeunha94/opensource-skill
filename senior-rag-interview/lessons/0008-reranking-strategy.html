@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — Reranking 전략</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      border-top: 1px dashed var(--border);
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 8 · RAG Interview</div>
+    <h1>Reranking 전략</h1>
+    <div class="subtitle">1차 검색이 "대충 관련 있는 후보"를 넓게 모으는 단계라면, reranking은 그 후보를 실제 질의 의도에 맞게 정밀하게 재정렬하는 단계다 — 어떤 모델을, 몇 개의 후보에, 어떤 예산으로 적용할지 판단하는 능력을 확인한다.</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "Hybrid search로 이미 BM25와 dense를 결합했는데, 왜 reranking 단계가 추가로 필요한가요? Bi-encoder와 cross-encoder의 구조적 차이로 설명해 주세요."
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형 (비용형)</span>
+      "Reranking은 항상 품질을 올려주는데, 왜 모든 요청에 무조건 적용하지 않나요? 비용과 지연 관점에서 설계 기준을 말해 주세요."
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형 (모델 선택형)</span>
+      "Cross-encoder reranker, ColBERT 같은 late-interaction reranker, LLM을 reranker로 쓰는 방식 중 어떤 상황에 어떤 것을 고르시겠습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q4 — 변형 (장애형)</span>
+      "Reranker API가 타임아웃되거나 장애가 났습니다. 서비스는 계속 응답해야 합니다. 어떻게 설계하시겠습니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>왜 1차 검색만으로는 부족한가</h2>
+
+    <h3>Recall을 넓히는 단계와 Precision을 좁히는 단계는 역할이 다르다</h3>
+    <p>
+      Day 4~7에서 다룬 dense embedding, BM25, hybrid fusion, metadata filter는 모두 <strong>1차 검색(first-stage
+      retrieval)</strong>이다. 이 단계의 목표는 "정답이 후보 안에 반드시 들어있게 하는 것", 즉 <strong>recall을
+      넓히는 것</strong>이다. 그래서 속도를 위해 쿼리와 문서를 <strong>각각 독립적으로</strong> 벡터로 인코딩한
+      뒤 내적/코사인 유사도로 비교하는 <strong>bi-encoder</strong> 구조를 쓴다 — 문서 임베딩은 미리 계산해
+      인덱스에 저장해두고, 쿼리가 오면 쿼리만 인코딩해서 비교하면 되므로 수백만 문서에서도 빠르다.
+    </p>
+    <p>
+      문제는 bi-encoder가 쿼리와 문서를 <strong>서로 한 번도 같이 보지 않고</strong> 각자 인코딩한다는 점이다.
+      "이 문서가 이 쿼리에 얼마나 관련 있는가"를 정밀하게 판단하려면 쿼리의 각 단어와 문서의 각 단어가 서로
+      어떻게 상호작용하는지를 봐야 하는데, bi-encoder는 이 상호작용 정보를 압축된 벡터 하나에 욱여넣기 때문에
+      정밀도에 한계가 있다. 그래서 1차 검색으로 뽑은 top-30~100 후보 안에는 진짜 정답이 들어있지만, 그
+      <strong>순서(ranking)는 정확하지 않을 수 있다</strong> — 이게 reranking이 필요한 이유다.
+    </p>
+
+    <h3>Cross-encoder — 쿼리와 문서를 함께 보고 관련도를 직접 계산</h3>
+    <p>
+      Cross-encoder는 쿼리와 문서 쌍을 <strong>하나의 입력으로 합쳐서</strong> 트랜스포머에 통째로 넣고,
+      두 텍스트 사이의 토큰 단위 상호작용(attention)을 모두 계산한 뒤 "이 쌍의 관련도 점수"를 하나의 숫자로
+      직접 출력한다. Bi-encoder가 "각자 좌표를 찍고 거리를 재는" 방식이라면, cross-encoder는 "둘을 나란히 놓고
+      직접 비교해서 점수를 매기는" 방식이다. 그만큼 정확하지만, <strong>문서 임베딩을 미리 계산해둘 수 없다</strong>
+      — 쿼리가 올 때마다 후보 문서 각각과 쌍을 이뤄 매번 새로 추론해야 하므로, 후보가 많아질수록 비용과
+      지연이 선형으로 증가한다. 그래서 cross-encoder는 전체 데이터셋이 아니라 <strong>1차 검색이 좁혀준
+      top-N(보통 수십~100개) 후보에만</strong> 적용하는 2단계(two-stage) 구조가 표준이다.
+    </p>
+
+    <h3>Late-interaction(ColBERT) — 그 중간 지점</h3>
+    <p>
+      ColBERT류의 late-interaction 모델은 절충안이다. 문서를 <strong>토큰 단위 임베딩 여러 개</strong>로
+      미리 인코딩해서 저장해두고(그래서 "late"), 쿼리가 오면 쿼리 토큰 임베딩과 문서 토큰 임베딩 사이의
+      MaxSim(각 쿼리 토큰이 문서 토큰 중 가장 가까운 것과 매칭되는 최댓값의 합) 연산만 쿼리 시점에 수행한다.
+      Cross-encoder처럼 쌍을 다시 통째로 인코딩하지 않아도 되므로 지연이 훨씬 짧다(벤치마크에 따라 p50
+      수십 ms 수준). 대신 <strong>문서마다 벡터 하나가 아니라 토큰 수만큼의 벡터를 저장</strong>해야 하므로
+      인덱스 크기가 단일 벡터 방식 대비 1~2자릿수 커진다는 저장 비용 트레이드오프가 있다.
+    </p>
+
+    <h3>LLM을 reranker로 쓰는 방식(listwise reranking)</h3>
+    <p>
+      RankGPT류의 접근은 LLM에게 "이 쿼리에 대해 다음 문서들을 관련도 순으로 정렬해줘"라고 통째로 묻는다
+      (listwise). LLM은 지시사항이나 다단계 추론이 필요한 복잡한 관련도 판단(예: "이 정책 문서가 최신
+      버전인지까지 고려해서 정렬해줘")에서 cross-encoder보다 더 정교한 판단을 할 수 있지만, 지연이 수 초
+      단위로 커지고 비용도 훨씬 높다. 그래서 실시간 사용자 응답 경로보다는 <strong>배치 평가, 오프라인
+      데이터셋 큐레이션, 지연에 덜 민감한 워크플로우</strong>에 주로 쓰인다.
+    </p>
+
+    <table>
+      <tr>
+        <th>방식</th>
+        <th>쿼리-문서 상호작용 시점</th>
+        <th>지연</th>
+        <th>정확도 경향</th>
+        <th>주 용도</th>
+      </tr>
+      <tr>
+        <td>Bi-encoder(1차 검색)</td>
+        <td>없음 — 각자 독립 인코딩</td>
+        <td>매우 낮음(사전 계산)</td>
+        <td>낮음~중간</td>
+        <td>전체 데이터셋에서 recall 확보</td>
+      </tr>
+      <tr>
+        <td>Late-interaction(ColBERT)</td>
+        <td>토큰 벡터는 사전 계산, MaxSim만 쿼리 시점</td>
+        <td>낮음(p50 수십 ms대 사례)</td>
+        <td>중간~높음</td>
+        <td>지연에 민감하지만 cross-encoder급 품질이 필요한 경우</td>
+      </tr>
+      <tr>
+        <td>Cross-encoder</td>
+        <td>쌍 전체를 매번 통째로 인코딩</td>
+        <td>중간(후보 수에 선형 비례, 보통 +100~200ms)</td>
+        <td>높음(+5~15 NDCG@10 보고 사례)</td>
+        <td>top-N 재정렬의 표준</td>
+      </tr>
+      <tr>
+        <td>LLM listwise(RankGPT류)</td>
+        <td>후보 리스트 전체를 프롬프트로 한 번에 판단</td>
+        <td>매우 높음(초 단위)</td>
+        <td>지시/추론이 필요한 케이스에서 최고 수준 보고 사례</td>
+        <td>배치·오프라인, 실시간 경로 밖</td>
+      </tr>
+    </table>
+
+    <h3>2026년 기준 모델 지형 — 최소 기준 목록을 넘어서는 최신 근거</h3>
+    <p>
+      Reranker 시장은 embedding 모델만큼 빠르게 바뀐다. 2026년 7월 기준 공개 자료를 종합하면, API 기반으로는
+      Cohere가 2025년 12월 <strong>Rerank v4.0</strong>(Pro/Fast 두 변형, 단일 다국어 모델)을 출시해 기존
+      Rerank 3.5를 대체하는 최신 라인업으로 자리잡았고, Voyage AI는 도메인 특화(code/finance/legal) 변형을
+      제공하는 <strong>rerank-2.5</strong>와, 지연에 민감한 경로를 위한 더 가벼운 <strong>rerank-2.5-lite</strong>를
+      토큰 기반 과금으로 제공한다. 오픈소스 진영에서는 <strong>BGE-reranker-v2-m3</strong>, <strong>mixedbread
+      mxbai-rerank-large-v2</strong>, <strong>Jina Reranker v2</strong>, <strong>Qwen3-Reranker</strong>가
+      단일 GPU에 셀프호스팅하기 좋은 강력한 오픈 웨이트 옵션으로 꼽힌다. Zerank류의 신규 진입자도 벤치마크
+      상위권에 보고되고 있어, <strong>"어느 모델이 최고"라고 고정하기보다 자체 도메인 평가셋으로 주기적으로
+      재검증</strong>하는 태도가 중요하다.
+    </p>
+
+    <div class="callout callout-warn">
+      <strong>과금 단위 차이에 주의:</strong> 같은 "reranking API"라도 과금 방식이 다르다 — Cohere는 "쿼리 1개 +
+      문서 최대 100개"를 1 search unit으로 묶어 1,000 유닛당 과금하고, Voyage는 처리한 토큰 수 기준으로
+      과금한다. 후보 문서 수, 문서당 평균 토큰 길이에 따라 실제 비용 구조가 크게 달라지므로, 벤더 비교 시
+      단순 "가격표 숫자"가 아니라 <strong>우리 워크로드의 후보 수·문서 길이 분포를 대입한 실제 예상 비용</strong>을
+      계산해야 한다.
+    </div>
+
+    <div class="source-note">
+      참고: bi-encoder/cross-encoder/late-interaction 구조 차이, 지연·NDCG@10 개선 폭, 2026년 7월 기준 모델
+      지형(Cohere Rerank v4.0, Voyage rerank-2.5/2.5-lite, BGE-reranker-v2-m3 등 오픈 웨이트 옵션)과 과금
+      방식은 레슨 작성 시점 공개 자료를 바탕으로 했다. 모델 순위·가격·지연 수치는 벤더가 자주 갱신하므로
+      도입 전 공식 문서와 자체 벤치마크로 재검증해야 한다. 세부 출처는 <code>RESOURCES.md</code> 참고.
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <ul>
+      <li>
+        <strong>Bi-encoder와 cross-encoder의 구조적 차이를 원리로 아는가:</strong> "reranking 모델을 하나
+        더 붙이면 좋아진다"는 결과론적 답이 아니라, 왜 1차 검색은 정밀도에 구조적 한계가 있고 reranking이
+        그 한계를 어떻게 보완하는지 설명할 수 있는지 본다.
+      </li>
+      <li>
+        <strong>비용/지연을 정량적으로 판단하는가:</strong> "reranking을 쓰면 좋다"가 아니라, 후보 수·모델
+        선택에 따른 지연과 비용 증가를 구체적 수치 감각으로 설명하고, 언제 reranking을 생략해도 되는지
+        판단 기준을 갖고 있는지 본다.
+      </li>
+      <li>
+        <strong>모델 선택을 상황에 맞게 하는가:</strong> cross-encoder, late-interaction, LLM reranker를
+        무조건 "제일 좋은 것"으로 고르지 않고, 지연 요구사항·후보 수·정확도 요구사항에 따라 선택 기준을
+        다르게 세우는지 확인한다.
+      </li>
+      <li>
+        <strong>장애 내성을 설계에 포함하는가:</strong> reranker를 단일 장애점(SPOF)으로 만들지 않고,
+        타임아웃·장애 시에도 서비스가 저하된 품질로나마 계속 응답하도록 설계하는 습관이 있는지 본다.
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      Senior 엔지니어는 "reranker를 붙였더니 품질이 좋아졌습니다"에서 멈추지 않는다. <strong>어떤 후보 수에
+      어떤 모델을 왜 선택했는지, 그 선택이 비용·지연 예산과 어떻게 맞물리는지, reranker가 실패했을 때 서비스가
+      어떻게 계속 동작하는지</strong>까지 하나의 설계 판단으로 엮어서 설명한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: Hybrid search만으로 top-1 정답률이 목표에 못 미침</h3>
+    <p>
+      Day 6의 hybrid search(BM25 + dense + RRF)를 도입했는데도 사용자가 원하는 답이 top-3 밖에 있다는
+      피드백이 계속 들어온다. 원인을 분석해보면 <strong>정답 chunk가 이미 top-30 안에는 들어있지만 순위가
+      낮다</strong> — recall 문제가 아니라 precision(순서) 문제다. → RRF로 얻은 top-30~50을 cross-encoder
+      reranker에 넣어 재정렬하고, 그 결과를 LLM context로 넘긴다.
+    </p>
+
+    <h3>상황 2: QPS가 급증하면서 reranking 비용이 인프라 비용의 상당 부분을 차지</h3>
+    <p>
+      트래픽이 늘면서 API 기반 reranker 비용이 vector DB 비용을 넘어서기 시작했다. → 모든 요청에 무조건
+      가장 비싼 모델을 쓰는 대신, <strong>지연 SLA가 엄격한 경로에는 lite/fast 계열</strong>을, <strong>배치·
+      비동기 경로에는 더 무거운 모델</strong>을 쓰는 계층화 전략을 도입한다. 트래픽이 충분히 크면 오픈 웨이트
+      reranker를 자체 GPU에 셀프호스팅해 호출당 과금 구조를 상각 비용 구조로 전환하는 것도 검토한다.
+    </p>
+
+    <h3>상황 3: Reranker API가 타임아웃되면서 검색 응답 자체가 실패</h3>
+    <p>
+      Reranking을 동기 호출 경로에 넣었는데, 벤더 API 지연이 튀는 순간 전체 요청이 타임아웃으로 실패했다.
+      → reranking을 <strong>선택적 향상(optional enhancement)</strong>으로 설계해, 타임아웃이 나면 1차
+      검색(hybrid fusion) 순위를 그대로 fallback으로 사용하도록 회로 차단기(circuit breaker)와 타임아웃
+      예산을 둔다. 품질은 살짝 떨어지지만 서비스는 계속 응답한다.
+    </p>
+
+    <h3>상황 4: 특정 도메인(법률/의료 계약서)에서 범용 reranker가 오히려 순위를 망침</h3>
+    <p>
+      범용 벤치마크 상위 reranker를 그대로 붙였더니, 도메인 특화 용어가 많은 계약서 검색에서 오히려 관련
+      없는 조항이 위로 올라오는 사례가 보고됐다. → 도메인 특화 reranker 변형(예: 법률/금융 특화 모델)을
+      평가하거나, Day 11에서 다룰 자체 도메인 평가셋으로 여러 reranker 후보를 재검증한 뒤 배포한다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>1차 검색과 reranking의 역할 분리부터 짚기</strong>
+        "1차 검색은 bi-encoder 구조로 recall을 넓히는 단계이고, reranking은 그 후보를 cross-encoder 같은
+        더 정밀한 구조로 재정렬해 precision을 높이는 단계라는 역할 분리를 먼저 설명합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>왜 cross-encoder를 전체 데이터셋에 못 쓰는지 설명하기</strong>
+        "Cross-encoder는 쿼리-문서 쌍을 매번 통째로 인코딩해야 해서 후보 수에 비례해 비용이 커지므로, 1차
+        검색이 좁혀준 top-N에만 2단계로 적용하는 게 표준이라는 것을 설명합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>비용/지연 트레이드오프를 수치 감각으로 제시하기</strong>
+        "reranking이 보통 후보 30개 기준 100~200ms의 지연을 추가하는 대신 NDCG@10을 5~15점 정도 끌어올리는
+        경향이 있어서, 지연 예산과 품질 요구를 함께 놓고 후보 수·모델을 정한다는 것을 보여줍니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>모델 선택 기준을 상황별로 제시하기</strong>
+        "실시간 경로는 cross-encoder나 late-interaction(ColBERT류)을, 지연에 덜 민감한 배치·오프라인
+        평가에는 LLM listwise reranking을 고려한다는 기준을 설명합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>장애 내성 설계까지 짚기(Senior 포인트)</strong>
+        "reranker를 단일 장애점으로 두지 않고, 타임아웃·장애 시 1차 검색 순위로 graceful degradation하는
+        fallback 설계를 반드시 포함한다는 것을 언급합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "먼저 1차 검색과 reranking은 역할이 다르다는 것부터 말씀드리겠습니다. Hybrid search까지는 bi-encoder
+        기반이라 쿼리와 문서를 각자 독립적으로 인코딩해서 빠르게 비교하는데, 그만큼 둘 사이의 세밀한
+        상호작용은 놓칩니다. 그래서 top-30~50 안에는 정답이 들어있지만 순위가 정확하지 않을 수 있고, 이걸
+        바로잡는 게 reranking입니다.
+      </p>
+      <p>
+        Reranking에는 cross-encoder, ColBERT 같은 late-interaction, LLM 기반 listwise reranking이 있는데
+        각각 트레이드오프가 다릅니다. Cross-encoder는 쿼리-문서 쌍을 매번 통째로 인코딩하기 때문에 가장
+        정확하지만 후보 수에 비례해서 비용과 지연이 늘어나므로, 전체 데이터셋이 아니라 1차 검색이 좁혀준
+        top-N에만 적용하는 2단계 구조를 씁니다. 후보 30개 기준으로 보통 100~200ms 정도 지연이 추가되는
+        대신 NDCG@10이 5~15점 정도 개선되는 걸 목표 수치로 잡습니다. Late-interaction 방식은 문서 토큰
+        임베딩을 미리 계산해두기 때문에 cross-encoder보다 지연이 짧지만 인덱스 크기가 훨씬 커진다는
+        저장 비용이 있고, LLM을 reranker로 쓰는 방식은 지시사항이 복잡한 판단에서는 더 정교하지만 지연이
+        초 단위라 실시간 사용자 응답 경로보다는 배치·오프라인 평가에 씁니다.
+      </p>
+      <p>
+        그래서 저는 지연 SLA가 엄격한 실시간 경로에는 cross-encoder의 가벼운 변형이나 late-interaction을,
+        비동기·배치 경로에는 더 무거운 모델이나 LLM reranker를 쓰는 식으로 계층화합니다. 그리고 트래픽이
+        커지면 API 호출당 과금 구조의 비용이 vector DB 비용을 넘어설 수 있어서, 그 시점에는 오픈 웨이트
+        reranker를 자체 GPU에 셀프호스팅해서 상각 비용 구조로 전환하는 것도 검토합니다.
+      </p>
+      <p>
+        마지막으로 reranker를 동기 호출 경로의 단일 장애점으로 두지 않습니다. Reranker API가 타임아웃되거나
+        장애가 나도 서비스 전체가 실패하면 안 되기 때문에, 타임아웃 예산을 두고 실패 시에는 hybrid fusion의
+        원래 순위를 그대로 fallback으로 써서 품질은 살짝 낮아지더라도 서비스는 계속 응답하도록 설계합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "그냥 embedding 모델을 더 좋은 걸로 바꾸면 reranking이 필요 없지 않나요?"</h3>
+    <p><strong>약한 답변:</strong> "더 좋은 embedding 모델을 쓰면 reranking 없이도 순위가 정확해집니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "Embedding 모델이 아무리 좋아져도 bi-encoder 구조인 이상 쿼리와 문서를 독립적으로 인코딩한다는
+      근본적인 한계는 남습니다. Cross-encoder처럼 쿼리와 문서를 함께 보고 토큰 단위 상호작용을 직접
+      계산하는 구조와는 표현력 자체가 다르기 때문에, embedding 모델 품질 개선과 reranking 도입은 서로
+      대체재가 아니라 보완재입니다."
+    </p>
+
+    <h3>F2. "Reranking에 넣는 후보 수(top-N)는 어떻게 정하나요? 무조건 많이 넣으면 좋은가요?"</h3>
+    <p><strong>약한 답변:</strong> "가능한 한 많이 넣어야 정답을 놓치지 않습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "Cross-encoder는 후보 수에 비례해서 비용과 지연이 늘어나기 때문에 무조건 많이 넣는 게 아니라,
+      1차 검색의 recall@k 곡선을 보고 '이 정도 후보면 정답이 거의 다 포함된다'는 지점을 찾아 top-N을
+      정합니다. 보통 수십에서 100 사이에서 품질과 비용의 손익분기점을 실험적으로 찾는 경우가 많습니다."
+    </p>
+
+    <h3>F3. "ColBERT 같은 late-interaction 모델을 도입하면 인덱스 크기가 커진다고 했는데, 그 비용을 어떻게 관리하나요?"</h3>
+    <p><strong>약한 답변:</strong> "저장 공간을 늘리면 됩니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "토큰 단위 임베딩은 단일 벡터 방식보다 1~2자릿수 큰 저장 공간을 요구하므로, 전체 컬렉션에 무조건
+      적용하기보다 지연에 특히 민감하면서 cross-encoder급 품질이 필요한 경로에 선택적으로 적용하거나,
+      quantization·압축을 함께 적용해 저장 비용을 관리하는 방식을 검토합니다."
+    </p>
+
+    <h3>F4. "LLM을 reranker로 쓰면 정확도가 더 좋다고 하는데, 왜 기본값으로 쓰지 않나요?"</h3>
+    <p><strong>약한 답변:</strong> "LLM이 제일 똑똑하니까 항상 쓰면 좋습니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "LLM listwise reranking은 지시나 다단계 추론이 필요한 복잡한 관련도 판단에서는 강점이 있지만, 지연이
+      초 단위로 커지고 비용도 훨씬 높습니다. 실시간 사용자 응답에서는 사용자가 몇 초 안에 이탈하는 경향이
+      있어서 적합하지 않고, 배치 평가나 오프라인 큐레이션처럼 지연에 덜 민감한 워크플로우에 우선 적용합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>Bi-encoder와 cross-encoder의 <strong>구조적 차이</strong>(상호작용 시점)로 설명한다</li>
+          <li>지연·비용·품질 개선폭을 <strong>구체적 수치 감각</strong>으로 제시한다</li>
+          <li>Cross-encoder/late-interaction/LLM reranker를 <strong>상황에 맞게</strong> 구분해서 고른다</li>
+          <li>Reranker 장애 시 <strong>fallback(graceful degradation)</strong> 설계를 포함한다</li>
+          <li>비용 구조(호출당 vs 토큰당 vs 셀프호스팅 상각)를 워크로드에 대입해 판단한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"reranking을 붙이면 품질이 좋아진다"는 결과만 안다</li>
+          <li>Bi-encoder/cross-encoder 구조 차이를 설명하지 못한다</li>
+          <li>모든 상황에 같은 reranker를 쓰면 된다고 답한다</li>
+          <li>Reranker 장애 시 서비스가 통째로 실패해도 된다고 가정한다</li>
+          <li>비용을 고려하지 않고 "제일 좋은 모델"만 언급한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 reranking을 "품질을 올려주는 추가 모델 호출"이 아니라
+      <strong>"1차 검색과 역할을 나눈 2단계 구조 안에서, 후보 수·모델·장애 대응까지 정량적으로 설계해야
+      하는 문제"</strong>로 다룬다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "reranker는 항상 붙일수록 좋다"</h3>
+    <p>
+      <strong>사실:</strong> reranking은 후보 수에 비례해 지연과 비용이 늘어난다. 지연 SLA가 매우 엄격하거나
+      트래픽이 매우 크면 무조건 도입하기보다, 지연 예산·트래픽 규모·품질 요구 수준을 함께 놓고 도입 여부와
+      후보 수를 결정해야 한다.
+    </p>
+
+    <h3>오해 2: "reranking을 쓰면 1차 검색(hybrid search) 품질은 대충 해도 된다"</h3>
+    <p>
+      <strong>사실:</strong> Cross-encoder reranker는 1차 검색이 가져온 후보 안에서만 재정렬한다. 애초에
+      정답이 top-N 후보에 들어있지 않으면 reranker가 아무리 좋아도 찾을 수 없다. 1차 검색의 recall과
+      reranking의 precision은 서로 대체할 수 없는 별개의 책임이다.
+    </p>
+
+    <h3>오해 3: "가장 벤치마크 점수가 높은 reranker가 우리 서비스에도 최선이다"</h3>
+    <p>
+      <strong>사실:</strong> 범용 벤치마크 상위 모델이 특정 도메인(법률, 의료, 사내 전문 용어)에서는 오히려
+      순위를 악화시킬 수 있다. 도입 전 자체 도메인 평가셋으로 재검증해야 하며, 도메인 특화 변형이 있다면
+      함께 비교해야 한다.
+    </p>
+
+    <h3>오해 4: "LLM으로 reranking하면 무조건 더 정확하니 cross-encoder는 구식이다"</h3>
+    <p>
+      <strong>사실:</strong> LLM listwise reranking은 지시·다단계 추론이 필요한 케이스에서 강점이 있지만
+      지연이 초 단위로 크고 비용도 훨씬 높다. 실시간 사용자 응답 경로에는 여전히 cross-encoder나
+      late-interaction이 표준이고, LLM reranking은 배치·오프라인 워크플로우의 도구다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Reranking 설계·운영 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>항목</th>
+        <th>확인할 것</th>
+        <th>누락 시 위험</th>
+      </tr>
+      <tr>
+        <td>Top-N 결정 근거</td>
+        <td>1차 검색의 recall@k 곡선을 근거로 reranker에 넣을 후보 수를 정했는가</td>
+        <td><span class="badge badge-yellow">불필요한 비용 또는 정답 누락</span></td>
+      </tr>
+      <tr>
+        <td>모델·경로 계층화</td>
+        <td>지연 SLA가 다른 경로(실시간 vs 배치)에 서로 다른 reranker를 적용했는가</td>
+        <td><span class="badge badge-yellow">불필요한 지연 또는 비용 초과</span></td>
+      </tr>
+      <tr>
+        <td>도메인 재검증</td>
+        <td>범용 벤치마크 순위가 아니라 자체 도메인 평가셋으로 reranker를 검증했는가</td>
+        <td><span class="badge badge-red">특정 도메인에서 순위 악화</span></td>
+      </tr>
+      <tr>
+        <td>장애 fallback</td>
+        <td>reranker 타임아웃·장애 시 1차 검색 순위로 graceful degradation하는가</td>
+        <td><span class="badge badge-red">reranker 장애가 전체 서비스 장애로 전이</span></td>
+      </tr>
+      <tr>
+        <td>비용 모델링</td>
+        <td>호출당/토큰당 과금을 실제 워크로드(QPS × 후보 수 × 문서 길이)에 대입해 계산했는가</td>
+        <td><span class="badge badge-red">트래픽 증가 시 예상 밖 비용 급증</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"reranker를 붙이면 품질이 좋아진다"는 결과만 알고, bi-encoder와 cross-encoder의 구조 차이를
+      설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>cross-encoder라는 용어는 알지만, 왜 전체 데이터셋이 아니라 top-N에만 적용하는지, 지연/비용이
+      어떻게 늘어나는지 설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>Bi-encoder/cross-encoder 구조 차이와 top-N 트레이드오프를 설명할 수 있고, late-interaction·
+      LLM reranker의 존재도 알고 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>구조적 차이-비용/지연 정량 판단-상황별 모델 계층화-장애 시 graceful degradation까지 하나의
+      일관된 프레임으로 설명하고, Day 6(hybrid search)·Day 7(metadata filter)과의 파이프라인 연결까지
+      자연스럽게 답변함</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. Bi-encoder와 cross-encoder가 쿼리-문서 상호작용을 처리하는 시점이 왜 다른지, 그 차이가 지연·비용에
+      어떤 영향을 주는지 설명할 수 있는가?<br>
+      2. Cross-encoder를 전체 데이터셋이 아니라 1차 검색이 좁혀준 top-N에만 적용하는 이유를 설명할 수 있는가?<br>
+      3. Late-interaction(ColBERT)과 LLM listwise reranking이 각각 어떤 상황에 더 적합한지 트레이드오프로
+      설명할 수 있는가?<br>
+      4. Reranker가 장애·타임아웃 났을 때 서비스가 어떻게 계속 응답하도록 설계할지 구체적으로 말할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>1차 검색은 recall을 넓히고, reranking은 precision(순서)을 정밀하게 만드는</strong> 서로
+      다른 책임을 가진 단계다.</li>
+      <li><strong>Cross-encoder는 쿼리-문서 쌍을 매번 통째로 인코딩</strong>하므로 전체 데이터셋이 아니라
+      1차 검색이 좁혀준 top-N에만 2단계로 적용하는 것이 표준이다.</li>
+      <li><strong>Late-interaction(ColBERT)은 지연은 짧지만 인덱스 크기가 커지고</strong>, <strong>LLM
+      listwise reranking은 정확하지만 지연이 초 단위</strong>라 실시간 경로보다 배치에 적합하다.</li>
+      <li><strong>모델·후보 수는 지연 SLA와 비용 구조에 맞춰 계층화</strong>해야 하며, 벤더 과금 방식(호출당
+      vs 토큰당)을 실제 워크로드에 대입해 비용을 계산해야 한다.</li>
+      <li><strong>Reranker를 단일 장애점으로 두지 말고</strong>, 장애·타임아웃 시 1차 검색 순위로 graceful
+      degradation하는 fallback을 반드시 설계에 포함해야 한다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 8 완료 · 다음: Day 9 — Context 구성과 Prompt 설계</span>
+  </div>
+
+</div>
+</body>
+</html>

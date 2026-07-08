@@ -134,6 +134,31 @@
 > ACORN 계열 알고리즘의 선택도별 성능 수치는 2026년 7월 기준 공개 자료를 종합한 것이며, 벤더별 구현과
 > 벤치마크는 자주 갱신되므로 실제 도입 전 공식 문서와 자체 벤치마크로 재검증해야 한다.
 
+## Reranking 최신 근거 (Day 8, 2026년 7월 조사 반영)
+
+- [Best Rerankers for RAG in 2026: 7 Models Compared — Future AGI](https://futureagi.com/blog/best-rerankers-for-rag-2026/) — Cohere Rerank v4.0/Voyage rerank-2.5/BGE/Jina/mixedbread/Qwen3-Reranker 비교
+- [Best Reranker for RAG | Leaderboard — Agentset](https://agentset.ai/rerankers) — ELO 기반 reranker 순위(Zerank 2, Cohere Rerank v4.0 Pro 등)
+- [Best Reranker for RAG: We tested the top models — Agentset](https://agentset.ai/blog/best-reranker) — 실측 벤치마크와 지연 비교
+- [Best Reranker Models for RAG: Open-Source vs API Comparison (2026) — BSWEN](https://docs.bswen.com/blog/2026-02-25-best-reranker-models/) — 오픈소스 vs API 선택 기준
+- [Reranking & Cross-Encoders for RAG: BGE, Cohere, Jina (2026) — Local AI Master](https://localaimaster.com/blog/reranking-cross-encoders-guide) — cross-encoder 구조와 모델별 특징
+- [Add Reranking to RAG: Cohere vs Voyage vs Zerank-2](https://www.bestaiweb.ai/how-to-add-reranking-to-your-rag-pipeline-with-cohere-rerank-4-pro-voyage-rerank-2-5-and-zerank-2-in-2026/) — 2026년 주요 reranker 3파전 비교
+- [Cohere — Rerank v4.0 changelog](https://docs.cohere.com/changelog/rerank-v4.0) — Rerank v4.0(Pro/Fast) 공식 출시 공지(2025년 12월)
+- [Cohere — Deprecations](https://docs.cohere.com/docs/deprecations) — Rerank 구버전 지원 종료 정책
+- [Cohere — Rerank Overview](https://docs.cohere.com/docs/rerank-overview) — Rerank API 공식 개요, search unit 과금 단위
+- [Voyage AI — Rerankers Introduction](https://docs.voyageai.com/docs/reranker) — rerank-2.5/rerank-2.5-lite 공식 문서
+- [Voyage AI — Pricing](https://docs.voyageai.com/docs/pricing) — 토큰 기반 reranker 과금 공식 문서
+- [Cross-Encoder Reranking — Emergent Mind](https://www.emergentmind.com/topics/cross-encoder-reranking-9dd25a04-77c6-4f44-807d-cb5f2256901b) — cross-encoder 구조와 성능 개선폭 정리
+- [Hybrid Search and Re-ranking in Production RAG 2026 — AppScale Blog](https://appscale.blog/en/blog/hybrid-search-and-reranking-production-rag-bm25-dense-cross-encoder-2026) — BM25+dense+cross-encoder 2단계 파이프라인 실무 구조
+- [ColBERT and Friends: Re-Ranking That Feels Instant — Codastra (Medium)](https://medium.com/@2nick2patel2/colbert-and-friends-re-ranking-that-feels-instant-6c09102b7526) — late-interaction(ColBERT) MaxSim 원리와 지연 벤치마크
+- [Reranking for RAG: Cross-Encoders vs LLM Rerankers (How to Choose)](https://thegeocommunity.com/blogs/generative-engine-optimization/reranking-cross-encoder-llm-reranker/) — cross-encoder vs LLM reranker 선택 기준
+- [Ultimate Guide to Choosing the Best Reranking Model in 2026 — ZeroEntropy Blog](https://zeroentropy.dev/articles/ultimate-guide-to-choosing-the-best-reranking-model-in-2025/) — reranker 선택 가이드
+- [Using LLMs as a Reranker for RAG: A Practical Guide — fin.ai research](https://fin.ai/research/using-llms-as-a-reranker-for-rag-a-practical-guide/) — RankGPT류 listwise reranking 실무 가이드와 지연/비용 트레이드오프
+- [Building a Modern Search Ranking Stack: From Embeddings to LLM-Powered Relevance (2026)](https://slavadubrov.github.io/blog/2026/02/08/building-a-modern-search-ranking-stack-from-embeddings-to-llm-powered-relevance/) — BM25+dense+RRF+cross-encoder+LLM 최종 레이어의 2026년 실무 컨센서스
+
+> 참고: reranker 모델 순위·지연·NDCG@10 개선폭 수치는 여러 2026년 벤치마크 리뷰 아티클을 종합한 것이며,
+> Cohere/Voyage 공식 changelog와 pricing 문서로 모델 버전과 과금 방식을 교차 확인했다. 모델 순위와 가격은
+> 벤더가 자주 갱신하므로 실제 도입 전 공식 문서와 자체 도메인 평가셋으로 재검증해야 한다.
+
 ## 인터뷰 준비
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 검색 시스템 설계 문제와 유사한 사고 프레임

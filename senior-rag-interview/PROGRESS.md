@@ -11,12 +11,12 @@
 | 5 | 2026-07-05 | Vector Database 선택과 운영 | [0005-vector-database-selection-and-operations.html](lessons/0005-vector-database-selection-and-operations.html) |
 | 6 | 2026-07-06 | Hybrid Search — BM25와 Vector 결합 | [0006-hybrid-search-bm25-and-vector-fusion.html](lessons/0006-hybrid-search-bm25-and-vector-fusion.html) |
 | 7 | 2026-07-07 | Metadata Filtering과 검색 정밀도 | [0007-metadata-filtering-and-retrieval-precision.html](lessons/0007-metadata-filtering-and-retrieval-precision.html) |
+| 8 | 2026-07-08 | Reranking 전략 | [0008-reranking-strategy.html](lessons/0008-reranking-strategy.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Reranking 전략 | Cross-encoder reranking, 비용 대비 품질 개선 |
 | 9 | Context 구성과 Prompt 설계 | Context window 관리, ordering, prompt injection 방어 |
 | 10 | Hallucination 완화와 답변 근거 표시 | Grounding, citation, 답변 거부(abstain) 전략 |
 | 11 | 평가 지표와 Offline/Online Evaluation | Recall@k, Faithfulness, RAGAS, A/B 테스트 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 7 완료** — 다음: Day 8 — Reranking 전략
+**Day 8 완료** — 다음: Day 9 — Context 구성과 Prompt 설계
 
 ## 습득한 핵심 개념
 
@@ -48,7 +48,8 @@
 - [x] RRF(순위 기반 fusion)와 가중치 fusion(alpha/DBSF)의 트레이드오프, k 상수 튜닝 기준 (Day 6)
 - [x] Pre/Post filtering의 실패 모드와 필터 선택도 기반 인덱스 전략(Qdrant/Weaviate/Pinecone/ACORN) (Day 7)
 - [x] ACL 쿼리 레벨 강제와 소스 시스템 ACL 동기화 지연(staleness) 위험 (Day 7)
-- [ ] Reranking 전략 (예정 Day 8)
+- [x] Bi-encoder/cross-encoder/late-interaction(ColBERT)/LLM listwise reranking의 구조적 차이와 지연·비용 트레이드오프 (Day 8)
+- [x] Reranker 모델·경로 계층화, 도메인 재검증, 장애 시 graceful degradation 설계 (Day 8)
 - [ ] Context 구성과 Prompt 설계 (예정 Day 9)
 - [ ] Hallucination 완화와 답변 근거 표시 (예정 Day 10)
 - [ ] 평가 지표와 Offline/Online Evaluation (예정 Day 11)
