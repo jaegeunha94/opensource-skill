@@ -12,12 +12,12 @@
 | 6 | 2026-07-05 | Docker Compose — 로컬 개발부터 운영 경계까지 | [0006-docker-compose-local-to-production-boundary.html](lessons/0006-docker-compose-local-to-production-boundary.html) |
 | 7 | 2026-07-06 | Kubernetes 컨트롤 플레인 — etcd, kube-apiserver, 스케줄러 | [0007-kubernetes-control-plane-etcd-apiserver-scheduler.html](lessons/0007-kubernetes-control-plane-etcd-apiserver-scheduler.html) |
 | 8 | 2026-07-07 | Pod 생명주기 — health check, 재시작 정책 | [0008-pod-lifecycle-health-check-restart-policy.html](lessons/0008-pod-lifecycle-health-check-restart-policy.html) |
+| 9 | 2026-07-08 | Deployment와 롤아웃 전략 — RollingUpdate, 롤백, 카나리 | [0009-deployment-rollout-rollback-canary.html](lessons/0009-deployment-rollout-rollback-canary.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | Deployment와 롤아웃 전략 — RollingUpdate, 롤백, 카나리 | maxSurge, maxUnavailable, rollback, canary |
 | 10 | Service와 Ingress — 트래픽 흐름, 로드밸런싱, TLS 종료 | ClusterIP, NodePort, LoadBalancer, Ingress Controller |
 | 11 | Resource limit과 QoS — requests/limits, OOMKilled 대응 | requests, limits, BestEffort, Burstable, Guaranteed |
 | 12 | 운영 Troubleshooting — CrashLoopBackOff, Pending, 진단 | kubectl describe, logs, events, node 상태 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 8 완료** — Day 9 (Deployment와 롤아웃 전략) 예정.
+**Day 9 완료** — Day 10 (Service와 Ingress) 예정.
 
 ## 습득한 핵심 개념
 
@@ -40,7 +40,7 @@
 - [x] Compose 네트워크/볼륨 자동화 원리, depends_on의 순서 vs 준비 상태 함정, healthcheck 기반 해결, Compose와 Kubernetes 운영 경계 판단 기준 (Day 6)
 - [x] etcd Raft 쿼럼과 홀수 노드 구성 근거, kube-apiserver 검문소 역할과 watch 기반 컨트롤 루프, 스케줄러 Filtering/Scoring, 컴포넌트별 장애 영향 범위 구분 (Day 7)
 - [x] livenessProbe/readinessProbe 역할 분리와 오설계 시 연쇄 재시작 위험, restartPolicy와 CrashLoopBackOff 지수 백오프, startupProbe와 종료 시퀀스(SIGTERM/preStop/terminationGracePeriodSeconds)의 무중단 배포 연관성 (Day 8)
-- [ ] RollingUpdate와 롤백 (예정 Day 9)
+- [x] maxSurge/maxUnavailable과 readinessProbe 연계, rollout undo의 ReplicaSet 복원 원리와 되돌릴 수 없는 부수 효과(DB 마이그레이션), Deployment 기반 근사 카나리와 진짜 트래픽 분할의 차이 (Day 9)
 - [ ] Service / Ingress 트래픽 흐름 (예정 Day 10)
 - [ ] Resource QoS 클래스 (예정 Day 11)
 - [ ] CrashLoopBackOff 진단 프레임워크 (예정 Day 12)
