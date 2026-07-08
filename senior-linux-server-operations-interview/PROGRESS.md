@@ -12,16 +12,18 @@
 | 6 | 2026-07-05 | systemd 서비스 관리 | [0006-systemd-service-management.html](lessons/0006-systemd-service-management.html) |
 | 7 | 2026-07-06 | 네트워크 진단 | [0007-network-diagnostics.html](lessons/0007-network-diagnostics.html) |
 | 8 | 2026-07-07 | 권한 & 보안 관리 | [0008-permissions-security-management.html](lessons/0008-permissions-security-management.html) |
+| 9 | 2026-07-08 | 종합 장애 시나리오 실습 | [0009-comprehensive-incident-scenarios.html](lessons/0009-comprehensive-incident-scenarios.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | 종합 장애 시나리오 실습 | Day 1~8 개념 종합. 실전 시나리오 3개 — CPU 폭식, 디스크 풀, 서비스 재시작 반복 |
+
+Day 1~9 기본 커리큘럼 완주. 다음 심화 주제는 별도 논의 후 확정 예정(예: 컨테이너 환경 진단, 커널 튜닝 심화, 대규모 장애 사후 분석/포스트모템 심화).
 
 ## 현재 학습 위치
 
-**Day 8 완료** — Day 9: 종합 장애 시나리오 실습 예정.
+**Day 9 완료** — Linux 서버 운영 인터뷰 기본 커리큘럼(Day 1~9) 완주. 다음 심화 Day 주제 확정 필요.
 
 ## 습득한 핵심 개념
 
@@ -68,4 +70,8 @@
 - [x] setuid/setgid/sticky bit의 권한 상승 메커니즘과 보안 위험 (Day 8)
 - [x] SELinux(MAC)가 DAC(rwx)와 독립적인 두 번째 잠금이라는 개념, ausearch로 원인 진단 (Day 8)
 - [x] Linux capability로 root 권한을 세분화해 최소 권한 원칙을 구현하는 방법 (Day 8)
-- [ ] 종합 시나리오 실습 (예정 Day 9)
+- [x] 증상 지도(symptom map)로 표면 증상 하나를 여러 원인 후보와 연결하는 사고 (Day 9)
+- [x] 연쇄 장애(cascading failure)에서 타임라인 역추적으로 최초 원인을 찾는 방법 (Day 9)
+- [x] 즉각 조치(피해 통제)와 근본 원인 분석(재발 방지)을 분리된 병렬 트랙으로 운영 (Day 9)
+- [x] 반복/재시도 자체가 만드는 2차 피해를 원인 규명 전에 통제하는 판단 (Day 9)
+- [x] fact/hypothesis/next step 구조로 불확실한 상황을 커뮤니케이션하는 방법 (Day 9)
