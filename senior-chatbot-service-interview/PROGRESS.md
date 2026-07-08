@@ -8,12 +8,12 @@
 | 2 | 2026-07-05 | Intent 분류 체계와 Utterance/동의어 사전 설계 | [0002-intent-taxonomy-utterance-synonym-dictionary-design.html](lessons/0002-intent-taxonomy-utterance-synonym-dictionary-design.html) |
 | 3 | 2026-07-06 | Entity·Slot 추출 설계와 검증 | [0003-entity-slot-extraction-design-and-validation.html](lessons/0003-entity-slot-extraction-design-and-validation.html) |
 | 4 | 2026-07-07 | NLU-LLM Hybrid Routing 아키텍처 | [0004-nlu-llm-hybrid-routing-architecture.html](lessons/0004-nlu-llm-hybrid-routing-architecture.html) |
+| 5 | 2026-07-08 | Dialogue State 설계: FSM vs Graph 기반 상태 모델 | [0005-dialogue-state-design-fsm-vs-graph.html](lessons/0005-dialogue-state-design-fsm-vs-graph.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 5 | Dialogue State 설계 | FSM vs graph 기반 state, 상태 전이 설계 |
 | 6 | Session/Context 유지와 Multi-turn Flow 설계 | Context window 관리, 요약, 메모리, 세션 만료 |
 | 7 | Fallback 전략과 Escalation/Human Handoff 설계 | Multi-signal escalation, context 전달, 큐 설계 |
 | 8 | RAG와 Tool Calling 연동 아키텍처 | Function/tool calling, MCP, grounding |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 4 완료** — 다음: Day 5 — Dialogue State 설계
+**Day 5 완료** — 다음: Day 6 — Session/Context 유지와 Multi-turn Flow 설계
 
 ## 습득한 핵심 개념
 
@@ -47,7 +47,11 @@
 - [x] 라우팅 신호의 속도-정확도 스펙트럼(규칙/임베딩/경량 분류기/LLM)과 오버헤드 관리 (Day 4)
 - [x] Confidence threshold를 실측 비용-품질 곡선 기반으로 재보정해야 하는 이유 (Day 4)
 - [x] 컴플라이언스/개인정보를 비용·지연·품질과 동등한 네 번째 라우팅 축으로 다루는 원칙 (Day 4)
-- [ ] Dialogue State 설계 (예정 Day 5)
+- [x] Dialogue state를 목표·slot·스택·이력을 포함한 구조화된 데이터로 정의하는 원칙 (Day 5)
+- [x] 순수 FSM의 상태 폭발(state explosion) 메커니즘과 인터럽션/디그레션에서의 한계 (Day 5)
+- [x] 스택(LIFO) 기반 상태 모델(Rasa dialogue frame stack, Dialogflow CX flow stack)로 인터럽션을 정규 연산화하는 설계 (Day 5)
+- [x] 그래프 기반 상태(LangGraph StateGraph)의 타입 스키마·리듀서·체크포인터와 스택 모델의 관계 (Day 5)
+- [x] 상태 스키마 마이그레이션, 멱등적 전이, 외부 영속화 같은 운영 함정 (Day 5)
 - [ ] Session/Context 유지와 Multi-turn Flow (예정 Day 6)
 - [ ] Fallback/Escalation/Human Handoff (예정 Day 7)
 - [ ] RAG와 Tool Calling 연동 (예정 Day 8)
@@ -88,3 +92,14 @@
   결정)를 구분하지 않고 뭉뚱그리는 것이 실무에서 흔한 오개념이라는 점과,
   컴플라이언스/개인정보를 비용·지연과 동등한 네 번째 라우팅 축으로 다뤄야
   한다는 점을 새로 반영함. 근거는 `RESOURCES.md` 참고.
+- 2026-07-08: Day 5 작성 전 최신 조사(Rasa Pro Flow Policy 공식 문서·
+  Changelog의 dialogue frame stack/LIFO/`pattern_continue_interrupted`,
+  Dialogflow CX State handlers·Pages 공식 문서(2026-06 갱신)의 flow stack,
+  LangGraph Persistence 공식 문서와 LangGraph 1.2(2026-05-11, durable graph
+  execution) 릴리스, "Workflow Graphs for Production-Grade Conversational
+  Agents"(arXiv 2505.23006))를 확인함. "순수 FSM만으로 dialogue state를
+  설계"하는 구식 프레임 대신, Rasa와 Dialogflow CX가 독립적으로 수렴한
+  "스택(LIFO) 기반 상태"로 인터럽션/디그레션을 예외가 아닌 정규 연산으로
+  다루는 패턴과, LangGraph StateGraph의 타입 스키마·리듀서·체크포인터를
+  그 상위 일반화로 배치하는 방향으로 레슨을 구성함. 기존 커리큘럼 방향과
+  상충하는 내용은 없었음. 근거는 `RESOURCES.md` 참고.

@@ -45,6 +45,17 @@
 - LLM 기반 entity 추출의 hallucination(값이 없을 때도 지어내는 경향) 및 span grounding(추출값이 원문 부분 문자열과 일치하는지 검증) 완화책 — 다수 hallucination detection/grounding 연구에서 반복 확인되는 논지(arXiv 계열, 상세 논문 링크는 검색 스니펫 기반이라 원문 재확인 필요로 표시).
 - **정리**: 순수 정규식 기반 후처리나 자유 텍스트 생성 후 JSON 파싱은 outdated 방향이며, constrained decoding 기반 구조화 출력이 "형식 검증"의 기본값이 됐다. 다만 이는 "값이 사실에 부합하는가"는 보장하지 않으므로, span grounding·비즈니스 규칙 검증·고위험 slot에 대한 사용자 확인이라는 별도 계층이 여전히 필요하다는 것이 2026년 실무 결론이다.
 
+## Dialogue State — FSM vs Stack vs Graph (Day 5 보강, 2026-07-08 확인)
+
+- [Rasa Pro — Flow Policy](https://rasa.com/docs/rasa-pro/concepts/policies/flow-policy/) — dialogue frame의 LIFO 스택과 내부 slot으로 대화 상태를 관리하는 state machine. 디그레션 시 새 frame을 push하고 원래 flow는 `INTERRUPTED`로 유지, 완료 시 `pattern_continue_interrupted`로 자동 복귀.
+- [Rasa Pro Changelog](https://rasa.com/docs/reference/changelogs/rasa-pro-changelog/) — dialogue frame stack, 서브 에이전트 호출 중 인터럽션/재개 시 상태 리셋 관련 수정 이력.
+- [Google Dialogflow CX — State handlers](https://docs.cloud.google.com/dialogflow/cx/docs/concept/handler) / [Pages](https://docs.cloud.google.com/dialogflow/cx/docs/concept/page) (2026-06 갱신 확인) — page 단위 state handler가 전이를 결정하고, flow 간 전이 시 flow stack에 push, `END_FLOW`로 pop되어 호출 page로 복귀.
+- [LangGraph Persistence — Checkpointer/Store](https://docs.langchain.com/oss/python/langgraph/persistence) — 타입 상태 스키마, `Annotated[list, add_messages]` 같은 리듀서로 누적 필드 관리, 체크포인터로 모든 전이를 자동 영속화(pause/resume/time-travel/수평 확장). 상태 스키마 변경 시 기존 체크포인트가 무효화될 수 있다는 점이 실무적 함정으로 명시됨. LangGraph 1.2(2026-05-11)는 agent run을 durable graph execution으로 취급하는 방향으로 발전.
+- ["A Practical Approach for Building Production-Grade Conversational Agents with Workflow Graphs" (arXiv 2505.23006, 2025)](https://arxiv.org/pdf/2505.23006) — LLM이 복잡한 조건부 규칙을 안정적으로 따르지 못하는 문제를 워크플로 그래프의 명시적 노드 구조로 보완.
+- ["Towards a Neural Era in Dialogue Management for Collaboration: A Literature Survey" (arXiv 2307.09021)](https://arxiv.org/pdf/2307.09021) — 그래프 기반 dialogue state 표현이 경직된 구조와 순수 벡터 표현 사이 균형을 취하며 semi-interpretable하다는 논지; 규칙 기반 state machine은 통제력은 크지만 모든 상태를 수작업으로 만들어야 해 경직된다는 trade-off.
+- [jsz-05/LLM-State-Machine (GitHub)](https://github.com/jsz-05/LLM-State-Machine) — FSM + LLM 결합으로 예측 가능성과 유연성을 동시에 노리는 오픈소스 구현 예시(참고용, 프로덕션 검증 여부 별도 확인 필요).
+- **정리**: 순수 FSM으로 인터럽션·디그레션의 모든 조합을 상태로 나열하는 설계는 상태 폭발로 이어지는 outdated 접근이다. Rasa Pro와 Dialogflow CX가 독립적으로 수렴한 "스택(LIFO) 기반 상태"가 인터럽션을 예외가 아닌 정규 연산(push/pop)으로 다루는 2026년 실무 표준이며, LangGraph StateGraph의 타입 스키마+리듀서+체크포인터는 이를 더 일반화한 그래프 모델로 볼 수 있다. FSM/스택/그래프는 배타적 선택이 아니라 상황별로 조합하는 스펙트럼이다.
+
 ## Dialogue State / Session / Context 관리
 
 - [LangGraph Persistence — Checkpointer/Store](https://docs.langchain.com/oss/python/langgraph/persistence) — 그래프 기반 상태 저장(MemorySaver/SqliteSaver/PostgresSaver), human-in-the-loop `interrupt_before`, time-travel.
