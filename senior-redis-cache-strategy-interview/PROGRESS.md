@@ -12,12 +12,12 @@
 | 6 | 2026-07-05 | 랭킹 시스템과 Sorted Set | [0006-ranking-sorted-set.html](lessons/0006-ranking-sorted-set.html) |
 | 7 | 2026-07-06 | Pub/Sub과 이벤트 처리 | [0007-pubsub-event-processing.html](lessons/0007-pubsub-event-processing.html) |
 | 8 | 2026-07-07 | Redis Streams와 메시지 처리 | [0008-redis-streams-message-processing.html](lessons/0008-redis-streams-message-processing.html) |
+| 9 | 2026-07-08 | Redis Persistence — RDB vs AOF | [0009-persistence-rdb-vs-aof.html](lessons/0009-persistence-rdb-vs-aof.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | Redis Persistence — RDB vs AOF | Snapshot, Append-only log, 운영 판단 |
 | 10 | Eviction Policy와 메모리 사이징 | LRU, LFU, noeviction, maxmemory, 메모리 용량 산정 |
 | 11 | Pipelining · Lua Scripting · Transaction | Pipelining, EVAL, MULTI/EXEC, 원자성 설계 |
 | 12 | Replication과 Latency 진단 | Master-Replica 복제, 복제 지연, latency 진단 방법론 |
@@ -28,7 +28,7 @@
 
 ## 현재 학습 위치
 
-**Day 8 완료** — 다음: Day 9 — Redis Persistence (RDB vs AOF)
+**Day 9 완료** — 다음: Day 10 — Eviction Policy와 메모리 사이징
 
 ## 습득한 핵심 개념
 
@@ -48,7 +48,7 @@
 - [x] 실시간 랭킹 설계 (Sorted Set, ZADD/ZRANGE/ZINCRBY) (Day 6)
 - [x] Pub/Sub 패턴과 전달 보장 수준 (Day 7)
 - [x] Redis Streams / Consumer Group / PEL / XAUTOCLAIM (Day 8)
-- [ ] RDB vs AOF 판단 (예정 Day 9)
+- [x] RDB vs AOF 판단, fork/COW 운영 리스크 (Day 9)
 - [ ] Eviction Policy와 메모리 사이징 (예정 Day 10)
 - [ ] Pipelining · Lua Scripting · Transaction (예정 Day 11)
 - [ ] Replication과 Latency 진단 (예정 Day 12)
