@@ -18,27 +18,27 @@
 | 6 | 2026-07-05 | 쿼리 튜닝 | [interview-day-006-query-tuning.html](lessons/interview-day-006-query-tuning.html) |
 | 7 | 2026-07-06 | 복제와 고가용성 | [interview-day-007-replication-ha.html](lessons/interview-day-007-replication-ha.html) |
 | 8 | 2026-07-07 | 파티셔닝과 샤딩 | [interview-day-008-sharding-partitioning.html](lessons/interview-day-008-sharding-partitioning.html) |
+| 9 | 2026-07-08 | RDB vs NoSQL | [interview-day-009-rdb-vs-nosql.html](lessons/interview-day-009-rdb-vs-nosql.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 9 | RDB vs NoSQL | "Document DB를 선택할 때 어떤 위험을 감수합니까?" | 모델 유연성, 트랜잭션, 쿼리 패턴, 확장성 |
 | 10 | 종합 모의 면접 | "주문 시스템 DB 장애 시나리오를 분석하고 개선안을 제시해보세요." | 데이터 정합성, 성능, 복구, 재발 방지 |
 
 ## 현재 학습 위치
 
-**Day 8 완료** — 다음: Day 9 RDB vs NoSQL
+**Day 9 완료** — 다음: Day 10 종합 모의 면접
 
 ## Interview 답변 체크리스트
 
-- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓)
-- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓)
-- [x] 실제 운영 상황과 연결한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓)
-- [x] 답변 순서를 단계적으로 제시한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓)
-- [x] trade-off를 최소 2개 이상 비교한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓)
-- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓)
-- [x] follow-up 질문까지 대비한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓)
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
+- [x] 실제 운영 상황과 연결한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
+- [x] 답변 순서를 단계적으로 제시한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
+- [x] trade-off를 최소 2개 이상 비교한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
+- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
+- [x] follow-up 질문까지 대비한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
 
 ## 습득한 핵심 개념
 
@@ -62,3 +62,7 @@
 - [x] 샤딩 키 선택이 되돌리기 어려운 이유와 hash/range/directory 방식의 trade-off (Day 8)
 - [x] Consistent hashing/가상 노드가 rebalancing 비용을 줄이는 원리 (Day 8)
 - [x] Cross-shard JOIN/트랜잭션/전역 정렬/유니크 제약이 다시 설계돼야 하는 이유 (Day 8)
+- [x] 스키마리스는 스키마 부재가 아니라 검증 책임의 애플리케이션 이동임을 구분 (Day 9)
+- [x] CAP 정리와 강한 일관성 vs 최종 일관성의 실무적 판단 기준 (Day 9)
+- [x] Document DB 임베딩 vs 참조 선택 기준과 되돌리기 어려움 (Day 9)
+- [x] Polyglot persistence의 이득과 동기화/운영 복잡도 비용 (Day 9)
