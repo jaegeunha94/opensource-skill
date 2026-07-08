@@ -10,12 +10,12 @@
 | 4 | 2026-07-05 | Closure 심화 — 클로저의 실제 메모리 모델, 반복문 클로저 버그, 실무 활용 패턴 | [0004-closure-memory-model-deep-dive.html](lessons/0004-closure-memory-model-deep-dive.html) |
 | 5 | 2026-07-06 | Prototype과 객체 모델 — Prototype chain 조회 알고리즘, `class`는 syntactic sugar, `Object.create`로 체인 직접 다루기 | [0005-prototype-object-model.html](lessons/0005-prototype-object-model.html) |
 | 6 | 2026-07-07 | `this` 바인딩 규칙 — 4가지 바인딩 규칙과 우선순위, `call`/`apply`/`bind`, 화살표 함수의 `this` 예외 | [0006-this-binding-rules.html](lessons/0006-this-binding-rules.html) |
+| 7 | 2026-07-08 | Module 시스템 — CommonJS vs ESM, 순환 참조 처리 차이, 트리쉐이킹이 ESM에서만 가능한 이유, 번들러 경계(interop/dual package hazard) | [0007-module-system-cjs-esm.html](lessons/0007-module-system-cjs-esm.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | Module 시스템 | CommonJS vs ESM, 순환 참조, 트리쉐이킹, 번들러 경계 |
 | 8 | Event Loop 심화 — Microtask vs Macrotask | 큐 우선순위, `requestAnimationFrame`, 렌더링 타이밍과의 관계 |
 | 9 | Promise 내부 동작 | 상태 머신(pending/fulfilled/rejected), 체이닝, 에러 전파 규칙 |
 | 10 | `async`/`await` 심화 | 내부적으로 Promise로 변환되는 방식, 순차 vs 병렬 실행 함정 |
@@ -32,7 +32,7 @@
 
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음: Day 7 — Module 시스템
+**Day 7 완료** — 다음: Day 8 — Event Loop 심화 — Microtask vs Macrotask
 
 ## 습득한 핵심 개념
 
@@ -56,6 +56,10 @@
 - [x] `this` 4가지 바인딩 규칙(new/명시적/암시적/기본)과 우선순위 (Day 6)
 - [x] 화살표 함수가 렉시컬 스코프의 `this`를 물려받는 예외 원리 (Day 6)
 - [x] `call`/`apply`/`bind`의 차이와 하드 바인딩이 `new`에는 예외적으로 재정의되는 규칙 (Day 6)
+- [x] CommonJS(동기/동적)와 ESM(정적/2단계 로딩)의 실행 모델 차이와 live binding vs 값 복사 (Day 7)
+- [x] 순환 참조에서 CJS가 부분 스냅샷을 돌려주는 이유와 ESM의 TDZ/호이스팅 차이 (Day 7)
+- [x] 트리쉐이킹이 ESM 정적 분석에 의존하는 이유와 CJS에서 실패하는 패턴 (Day 7)
+- [x] 번들러 interop(default export 변환)과 dual package hazard, `exports` 필드 (Day 7)
 - [ ] Promise 상태 머신과 에러 전파 규칙 (예정 Day 9)
 - [ ] Promise가 취소 불가능한 근본 이유 (예정 Day 11)
 - [ ] 메모리 누수 진단 절차 (예정 Day 15)
