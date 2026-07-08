@@ -10,19 +10,19 @@
 | 4 | 2026-07-05 | Hooks 심화 — `useEffect`/`useMemo`/`useCallback`의 실무 함정, 의존성 배열 사고, stale closure | [0004-hooks-deep-dive-dependency-array-pitfalls.html](lessons/0004-hooks-deep-dive-dependency-array-pitfalls.html) |
 | 5 | 2026-07-06 | State Management 아키텍처 — 로컬 상태 vs 서버 상태 vs 전역 상태 vs URL 상태 구분과 도구 선택 | [0005-state-management-architecture-local-server-global.html](lessons/0005-state-management-architecture-local-server-global.html) |
 | 6 | 2026-07-07 | Data Fetching 패턴 — 서버 fetch vs 클라이언트 fetch, 워터폴 방지, request memoization | [0006-data-fetching-patterns-waterfall-request-memoization.html](lessons/0006-data-fetching-patterns-waterfall-request-memoization.html) |
+| 7 | 2026-07-08 | Suspense와 동시성 렌더링 — concurrent rendering, transition, 우선순위 스케줄링 | [0007-suspense-concurrent-rendering-transitions.html](lessons/0007-suspense-concurrent-rendering-transitions.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | Suspense와 동시성 렌더링 | concurrent rendering, transition, 우선순위 스케줄링 |
 | 8 | Error Boundary와 장애 격리 | 컴포넌트 트리 단위 장애 격리 설계 |
 | 9 | Hydration 심화 | hydration mismatch의 원인, 디버깅, 예방 |
 | 10 | SSR | 서버 렌더링 파이프라인, TTFB/TTI trade-off |
 
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음: Day 7 — Suspense와 동시성 렌더링
+**Day 7 완료** — 다음: Day 8 — Error Boundary와 장애 격리
 
 ## 습득한 핵심 개념
 
@@ -56,4 +56,9 @@
 - [x] 컴포넌트 트리 계층이 만드는 암묵적 워터폴과 preload 패턴 (Day 6)
 - [x] Request Memoization의 동작 범위(단일 렌더링, URL/옵션 기반)와 `cache()`의 필요성 (Day 6)
 - [x] Request Memoization과 Data Cache의 생존 범위·목적 차이 (Day 6)
-- [ ] Suspense와 concurrent rendering, transition의 우선순위 스케줄링 (예정 Day 7)
+- [x] Suspense가 "아직 준비 안 된 자식의 처리를 조상에게 위임하는" 메커니즘이라는 정확한 모델 (Day 7)
+- [x] 동시성 렌더링 = 병렬 처리가 아니라 "중단 가능한 싱글 스레드 스케줄링" (Day 7)
+- [x] `useTransition`(내가 트리거하는 업데이트)과 `useDeferredValue`(외부에서 온 값) 구분 기준 (Day 7)
+- [x] Suspense의 두 가지 용도(코드 분할 vs 데이터 페칭)와 그 공통 메커니즘 (Day 7)
+- [x] Suspense boundary 배치 — 하나로 뭉치기 vs 세분화하기의 trade-off (Day 7)
+- [ ] Error Boundary가 잡을 수 있는 에러의 범위와 컴포넌트 트리 단위 장애 격리 설계 (예정 Day 8)

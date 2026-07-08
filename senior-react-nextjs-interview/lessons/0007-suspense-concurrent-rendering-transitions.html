@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — Suspense와 동시성 렌더링 | React / Next.js 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .data-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .data-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">React / Next.js 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 7
+  </nav>
+
+  <h1>Day 7 — Suspense와 동시성 렌더링</h1>
+  <p class="subtitle">concurrent rendering, transition, 우선순위 스케줄링 · 2026-07-08</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#suspense-model">Suspense가 실제로 하는 일</a></li>
+      <li><a href="#concurrent">동시성 렌더링 — "중단 가능한 렌더링"이라는 모델</a></li>
+      <li><a href="#transition">useTransition / startTransition — 우선순위를 낮추는 도구</a></li>
+      <li><a href="#deferred">useDeferredValue — 값 자체를 지연시키는 도구</a></li>
+      <li><a href="#transition-vs-deferred">언제 transition, 언제 deferredValue</a></li>
+      <li><a href="#suspense-usage">Suspense의 두 가지 용도 — code splitting과 data fetching</a></li>
+      <li><a href="#boundary-placement">Suspense boundary 배치 전략</a></li>
+      <li><a href="#decision-table">판단 기준표</a></li>
+      <li><a href="#diagnosis-table">증상 기반 진단표</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"검색창에 타이핑할 때마다 아래에 있는 무거운 결과 리스트를 다시 렌더링하는데, 그럴 때마다 입력창 자체가 버벅입니다(키를 눌러도 글자가 늦게 나타남). 원인과 해결책을 설명해 주세요."</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"Suspense가 정확히 무엇을 '기다리는' 것인가요? 그냥 로딩 스피너를 보여주는 컴포넌트 아닌가요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"<code>useTransition</code>과 <code>useDeferredValue</code>는 둘 다 '급하지 않은 업데이트'를 다루는 것 같은데 차이가 뭔가요? 실무에서 어떤 기준으로 골라 쓰나요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"Suspense 문법을 쓸 줄 아는가"가 아니라, "렌더링에는 우선순위가 있고, 급한 업데이트와 급하지 않은 업데이트를 구분해서 설계할 수 있는가"</strong>를 테스트합니다. React 18 이전에는 렌더링이 한번 시작하면 끝까지 멈출 수 없는 하나의 동기 작업이었습니다. 동시성 렌더링은 이 전제 자체를 깨는 변화이고, 이걸 "그냥 새로운 Hook 두 개가 추가됐다"로 이해하면 왜 특정 상황에서만 성능이 개선되고 다른 상황에서는 아무 효과가 없는지 설명하지 못합니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>"렌더링을 중단하고 버릴 수 있다"는 개념을 정확히 아는가</strong> — React가 렌더링 중간에 더 급한 업데이트가 들어오면 진행 중이던 렌더링 작업을 버리고 급한 것부터 처리한 뒤 다시 시작할 수 있다는, 기존의 "한번 시작하면 끝까지 간다"는 사고방식을 뒤집는 모델을 이해하는가.</li>
+      <li><strong>Suspense를 "로딩 스피너 컴포넌트"가 아니라 "비동기 경계를 선언하는 메커니즘"으로 이해하는가</strong> — 자식 컴포넌트가 "아직 준비 안 됐다"고 선언하면 그 사실이 트리를 타고 올라가 가장 가까운 Suspense가 대신 fallback을 보여준다는 전파 구조를 아는가.</li>
+      <li><strong>transition과 deferredValue의 역할 차이를 아는가</strong> — 하나는 "내가 트리거하는 상태 업데이트"에, 다른 하나는 "외부에서 이미 들어온 값을 지연 반영하는 것"에 쓰인다는 주체의 차이를 구분하는가.</li>
+      <li><strong>실제 프로덕션 증상과 연결할 수 있는가</strong> — "입력이 버벅인다", "탭을 전환할 때 화면이 잠깐 멈춘다" 같은 체감 성능 문제를 렌더링 우선순위 문제로 진단하고, 구체적인 API로 고칠 수 있는가.</li>
+      <li><strong>만능이 아니라는 것을 아는가</strong> — transition을 아무 데나 붙인다고 무조건 빨라지는 게 아니라, 오히려 잘못 쓰면 사용자에게 필요한 즉각적 피드백(예: 클릭 후 버튼 상태 변화)까지 지연시킬 수 있다는 trade-off를 아는가.</li>
+    </ul>
+
+    <p>10년차 이하에서 자주 나오는 답변 패턴: "리스트 컴포넌트를 <code>React.memo</code>로 감싸면 될 것 같습니다." 이 답변은 <em>문제의 원인이 "불필요한 재렌더링"이 아니라 "필요한 재렌더링이 너무 무거워서 메인 스레드를 오래 점유하는 것"</em>이라는 점을 놓치고 있습니다. 리스트는 실제로 매번 새로운 검색어에 맞춰 다시 그려져야 하므로 memo로 막을 수 있는 성격의 문제가 아닙니다. 시니어는 "이 렌더링을 막을 수 있는가"가 아니라 "이 렌더링의 우선순위를 낮춰서 입력 반영을 먼저 끝낼 수 있는가"를 묻습니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>"메인 스레드를 점유한다"는 것이 무슨 뜻인가</h3>
+    <p>브라우저는 자바스크립트 실행, 화면 그리기, 사용자 입력 처리를 기본적으로 하나의 스레드(메인 스레드)에서 순서대로 처리합니다. 만약 자바스크립트 코드 하나가 계산을 끝내는 데 200밀리초가 걸린다면, 그 200밀리초 동안 브라우저는 키보드 입력을 반영한 화면도 못 그리고 클릭 이벤트도 처리하지 못합니다. "입력창이 버벅인다"는 현상은 대부분 이것입니다 — 자바스크립트(여기서는 리스트를 다시 그리는 React 렌더링)가 메인 스레드를 길게 붙잡고 있어서, 사용자가 키를 눌러도 그 입력이 화면에 반영될 틈이 없는 것입니다.</p>
+
+    <h3>"렌더링은 중단 가능하다"는 것의 의미</h3>
+    <p>React 17까지의 렌더링은 한번 시작하면 트리 전체를 끝까지 계산할 때까지 멈추지 않는 동기적인 작업이었습니다. React 18의 Fiber 아키텍처는 이 계산을 작은 단위(Fiber 노드 단위)로 쪼개서, 각 단위를 처리한 뒤 "지금 더 급한 일이 생겼는가?"를 확인할 수 있는 지점을 마련했습니다. 급한 일(예: 사용자가 방금 누른 키)이 생기면 React는 진행 중이던(아직 끝나지 않은) 렌더링 작업을 <strong>버리고</strong> 급한 작업을 먼저 처리한 뒤, 필요하면 버려졌던 렌더링을 처음부터 다시 계산합니다. 이것이 "interruptible rendering(중단 가능한 렌더링)"입니다. 중요한 것은 이 "버림"이 <strong>render 단계에서만</strong> 가능하고, 화면에 실제로 반영하는 commit 단계는 한번 시작하면 중단할 수 없다는 것입니다(Day 1에서 다룬 render/commit 분리가 여기서 다시 등장합니다).</p>
+
+    <h3>"우선순위(priority)"란 무엇인가</h3>
+    <p>React 18은 모든 업데이트를 똑같이 취급하지 않습니다. 클릭이나 타이핑처럼 사용자가 직접 일으킨 입력은 "긴급(urgent)" 업데이트로 분류되어 최우선으로 처리됩니다. 반면 개발자가 명시적으로 <code>startTransition</code>으로 감싼 업데이트는 "긴급하지 않음(non-urgent, transition)"으로 분류되어, 긴급한 업데이트가 없을 때만 처리됩니다. 이것은 운영체제의 프로세스 스케줄링과 비슷합니다 — 급한 작업이 CPU를 먼저 쓰고, 급하지 않은 작업은 여유가 생겼을 때 처리되거나 중간에 밀려납니다.</p>
+
+    <h3>"Promise를 throw한다"는 낯선 개념</h3>
+    <p>Suspense의 내부 동작을 이해하려면 "컴포넌트가 렌더링 도중에 에러 대신 Promise를 throw할 수 있다"는 사실을 알아야 합니다. 일반적으로 <code>throw</code>는 에러를 던져서 프로그램 실행을 중단시키는 데 씁니다. Suspense가 지원하는 데이터소스(예: <code>use()</code> Hook, 프레임워크가 통합한 fetch)는 데이터가 아직 준비되지 않았을 때 "에러가 아니라 아직 끝나지 않은 Promise"를 던집니다. React는 이 Promise를 일반 에러와 다르게 취급해서, "이 컴포넌트는 아직 렌더링할 수 없으니 잠시 후 이 Promise가 끝나면 다시 시도하겠다"고 이해하고, 그 사이에는 가장 가까운 Suspense의 fallback을 대신 보여줍니다.</p>
+  </section>
+
+  <!-- 4. Suspense가 실제로 하는 일 -->
+  <section id="suspense-model">
+    <h2>4. Suspense가 실제로 하는 일</h2>
+
+    <p><code>&lt;Suspense fallback={...}&gt;</code>는 "이 경계 안의 어떤 자식이든 아직 준비되지 않았다고 선언하면, 그 선언이 트리를 타고 이 경계까지 올라와서 자식 대신 fallback을 보여주겠다"는 <strong>선언적 계약</strong>입니다.</p>
+
+    <pre><code>function ProfilePage() {
+  return (
+    &lt;Suspense fallback={&lt;Spinner /&gt;}&gt;
+      &lt;ProfileDetails /&gt;   {/* 데이터가 없으면 이 지점에서 "suspend"됨 */}
+    &lt;/Suspense&gt;
+  );
+}</code></pre>
+
+    <p><code>ProfileDetails</code>가 렌더링 도중 아직 도착하지 않은 데이터에 접근하려고 하면(예: <code>use(fetchProfile())</code>), 그 컴포넌트는 "suspend"됩니다. React는 이 신호를 받아 <code>ProfileDetails</code>의 렌더링 결과를 버리고, 대신 가장 가까운 부모 <code>Suspense</code>의 <code>fallback</code>을 화면에 커밋합니다. 데이터가 준비되면(Promise가 resolve되면) React는 <code>ProfileDetails</code>를 <strong>처음부터 다시 렌더링</strong>합니다 — 이때는 데이터가 이미 있으므로 suspend되지 않고 끝까지 렌더링이 완료되어 fallback 대신 실제 내용이 커밋됩니다.</p>
+
+    <div class="why-box">
+      <p><strong>핵심은 이것입니다:</strong> Suspense는 "로딩 상태를 보여주는 컴포넌트"가 아니라, "아직 준비되지 않은 자식이 있을 때 그 사실을 처리할 책임을 가장 가까운 조상에게 위임하는 통신 메커니즘"입니다. 이 덕분에 <code>ProfileDetails</code> 컴포넌트 자체는 <code>isLoading</code> 같은 상태 변수나 <code>if (loading) return &lt;Spinner /&gt;</code> 분기를 직접 관리할 필요가 없습니다 — 로딩 상태 처리를 컴포넌트 트리 구조 자체로 표현하는 것이 Suspense의 설계 의도입니다.</p>
+    </div>
+  </section>
+
+  <!-- 5. 동시성 렌더링 -->
+  <section id="concurrent">
+    <h2>5. 동시성 렌더링 — "중단 가능한 렌더링"이라는 모델</h2>
+
+    <p>동시성 렌더링(concurrent rendering)은 병렬 처리(여러 스레드에서 동시에 실행)를 의미하는 것이 <strong>아닙니다</strong>. 자바스크립트는 여전히 싱글 스레드로 실행됩니다. 동시성이 의미하는 것은 <strong>React가 렌더링 작업을 여러 개의 작은 단위로 쪼개고, 그 사이사이에 "지금 이 작업을 계속할지, 중단하고 다른 작업을 먼저 처리할지" 판단할 수 있는 지점을 만들었다는 것</strong>입니다.</p>
+
+    <pre><code>function SearchPage() {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+
+  function handleChange(e) {
+    const value = e.target.value;
+    setQuery(value);          // 긴급 업데이트 — 입력창 글자는 즉시 반영되어야 함
+    startTransition(() => {
+      setResults(filterHugeList(value)); // 긴급하지 않은 업데이트 — 늦게 반영되어도 괜찮음
+    });
+  }
+
+  return (
+    &lt;&gt;
+      &lt;input value={query} onChange={handleChange} /&gt;
+      &lt;HeavyResultList results={results} /&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+
+    <p>이 코드에서 <code>setQuery</code>는 감싸지 않았기 때문에 긴급 업데이트로 처리되어 즉시 커밋됩니다(입력창에 글자가 바로 나타남). <code>setResults</code>는 <code>startTransition</code>으로 감쌌기 때문에 긴급하지 않은 업데이트로 표시됩니다. 사용자가 다음 키를 계속 누르면, React는 <strong>아직 끝나지 않은(진행 중인) <code>HeavyResultList</code> 렌더링을 버리고</strong> 새로 들어온 입력(긴급 업데이트)을 먼저 처리합니다. 타이핑이 멈추고 여유가 생기면 그제서야 마지막 <code>startTransition</code> 업데이트가 끝까지 렌더링되어 화면에 반영됩니다.</p>
+
+    <div class="card">
+      <h4>이것이 없던 시절(React 17 이하)에는 어떻게 됐나</h4>
+      <p><code>setQuery</code>와 <code>setResults</code>를 같은 이벤트 핸들러 안에서 호출하면, 둘 다 구분 없이 하나의 동기적 렌더링으로 처리됩니다. <code>HeavyResultList</code>가 무거우면 이 렌더링 계산이 끝날 때까지 브라우저는 다음 키 입력을 화면에 반영할 수 없습니다. 즉 <strong>입력창의 글자 자체가 리스트 렌더링이 끝날 때까지 늦게 나타나는</strong> 현상이 발생합니다. 동시성 렌더링은 바로 이 문제 — "급하지 않은 계산이 급한 업데이트를 막는 것" — 을 해결하기 위한 것입니다.</p>
+    </div>
+  </section>
+
+  <!-- 6. useTransition -->
+  <section id="transition">
+    <h2>6. useTransition / startTransition — 우선순위를 낮추는 도구</h2>
+
+    <pre><code>const [isPending, startTransition] = useTransition();
+
+function handleChange(e) {
+  const value = e.target.value;
+  setQuery(value); // 긴급
+  startTransition(() => {
+    setResults(filterHugeList(value)); // 긴급하지 않음, isPending이 true가 되는 동안 진행
+  });
+}</code></pre>
+
+    <p><code>useTransition</code>은 <strong>"내가 직접 트리거하는 상태 업데이트"</strong>를 긴급하지 않은 것으로 표시할 때 씁니다. <code>isPending</code>은 그 낮은 우선순위 작업이 아직 끝나지 않았음을 나타내는 boolean이며, 이걸로 "업데이트 중" 같은 은은한 표시(예: 흐림 처리, 작은 스피너)를 보여줄 수 있습니다. 중요한 것은 <code>isPending</code>이 true인 동안에도 화면이 완전히 멈추지 않고, 이전 화면(오래된 <code>results</code>)이 계속 상호작용 가능한 상태로 보인다는 것입니다 — 이것이 "화면이 멈추는 것"과 "긴급하지 않은 업데이트가 뒤로 밀리는 것"의 차이입니다.</p>
+
+    <div class="why-box">
+      <p><strong>startTransition은 "느리게 만드는" 도구가 아니라 "새치기당해도 괜찮다고 표시하는" 도구입니다.</strong> 만약 아무 긴급 업데이트도 들어오지 않는다면, transition으로 감싼 업데이트는 지연 없이 곧바로 처리됩니다. 지연이 발생하는 것은 오직 그 사이에 더 긴급한 업데이트가 끼어들 때뿐입니다.</p>
+    </div>
+  </section>
+
+  <!-- 7. useDeferredValue -->
+  <section id="deferred">
+    <h2>7. useDeferredValue — 값 자체를 지연시키는 도구</h2>
+
+    <pre><code>function SearchPage({ query }) { // query는 부모나 URL에서 내려온 값 — 내가 setState를 직접 호출하지 않음
+  const deferredQuery = useDeferredValue(query);
+
+  return (
+    &lt;&gt;
+      &lt;input value={query} /&gt;
+      {/* deferredQuery는 query보다 "뒤늦게" 따라감 — 그 사이엔 이전 값으로 렌더링 유지 */}
+      &lt;HeavyResultList query={deferredQuery} /&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+
+    <p><code>useDeferredValue</code>는 <strong>내가 상태 업데이트를 직접 트리거하는 게 아니라, 이미 어딘가에서 들어온 값을 "지연된 사본"으로 만들어 쓰는</strong> 상황에 씁니다. 예를 들어 <code>query</code>가 부모 컴포넌트의 props로 내려오거나 URL 쿼리 파라미터에서 읽어온 값이라면, 그 값을 만드는 <code>setState</code> 호출 자체를 내가 통제할 수 없습니다(<code>startTransition</code>으로 감쌀 지점이 없습니다). 이럴 때 <code>useDeferredValue</code>는 "이 값이 바뀌어도, 무거운 하위 트리는 즉시 따라가지 말고 여유가 생겼을 때 따라가라"고 지시합니다. 그동안 <code>HeavyResultList</code>는 이전 <code>deferredQuery</code> 값으로 렌더링된 상태를 유지합니다.</p>
+
+    <div class="card">
+      <h4>실무에서 자주 쓰는 패턴 — 오래된 값인지 표시하기</h4>
+      <pre><code>const deferredQuery = useDeferredValue(query);
+const isStale = query !== deferredQuery;
+
+return (
+  &lt;div style={{ opacity: isStale ? 0.6 : 1 }}&gt;
+    &lt;HeavyResultList query={deferredQuery} /&gt;
+  &lt;/div&gt;
+);</code></pre>
+      <p><code>query</code>(최신 값)와 <code>deferredQuery</code>(지연된 값)가 다르다는 것은 아직 리스트가 최신 상태를 따라가지 못했다는 뜻이므로, 이를 이용해 "갱신 중" 느낌의 UI를 별도의 <code>isPending</code> 상태 없이 만들 수 있습니다.</p>
+    </div>
+  </section>
+
+  <!-- 8. transition vs deferredValue -->
+  <section id="transition-vs-deferred">
+    <h2>8. 언제 transition, 언제 deferredValue</h2>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th>useTransition</th>
+          <th>useDeferredValue</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>통제 대상</td>
+          <td>내가 호출하는 <code>setState</code> 자체</td>
+          <td>이미 존재하는(내가 만든 게 아닌) 값의 반영 시점</td>
+        </tr>
+        <tr>
+          <td>전형적 상황</td>
+          <td>버튼 클릭 → 탭 전환, 필터 변경 등 이벤트 핸들러 내부</td>
+          <td>props로 내려온 값, URL 파라미터, 다른 라이브러리가 준 값</td>
+        </tr>
+        <tr>
+          <td>진행 상태 표시</td>
+          <td><code>isPending</code> boolean 제공</td>
+          <td>직접 값 비교(<code>value !== deferredValue</code>)로 판단해야 함</td>
+        </tr>
+        <tr>
+          <td>내부 동작</td>
+          <td>콜백 안의 업데이트를 낮은 우선순위로 스케줄</td>
+          <td>내부적으로 낮은 우선순위의 "따라가는 사본" 상태를 만듦(구현상 transition과 유사한 스케줄링 사용)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>한 문장으로 구분하면: <strong>"내가 이 업데이트를 일으키는 setState 호출부를 갖고 있는가?"</strong> 그렇다면 <code>useTransition</code>, 아니라면(값만 받아서 쓰는 입장이라면) <code>useDeferredValue</code>입니다.</p>
+  </section>
+
+  <!-- 9. Suspense의 두 가지 용도 -->
+  <section id="suspense-usage">
+    <h2>9. Suspense의 두 가지 용도 — code splitting과 data fetching</h2>
+
+    <p>Suspense는 하나의 메커니즘이지만 실무에서는 두 가지 서로 다른 상황에 쓰입니다. 면접에서 이 둘을 구분하지 못하면 "Suspense는 데이터 로딩에만 쓰는 것"이라는 오해를 드러내게 됩니다.</p>
+
+    <div class="card">
+      <h4>용도 1 — 코드 분할 (React.lazy)</h4>
+      <pre><code>const HeavyChart = React.lazy(() =&gt; import("./HeavyChart"));
+
+function Dashboard() {
+  return (
+    &lt;Suspense fallback={&lt;Spinner /&gt;}&gt;
+      &lt;HeavyChart /&gt;
+    &lt;/Suspense&gt;
+  );
+}</code></pre>
+      <p>여기서 기다리는 대상은 서버 데이터가 아니라 <strong>이 컴포넌트의 자바스크립트 코드 자체를 담은 청크 파일을 네트워크로 내려받는 것</strong>입니다. 파일 다운로드가 끝날 때까지 Suspense가 fallback을 보여줍니다. Day 18(번들 최적화)에서 다시 다룹니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>용도 2 — 데이터 페칭 (Server Component, <code>use()</code>)</h4>
+      <pre><code>async function ProfileDetails({ userId }) {
+  const profile = await getProfile(userId); // 서버 컴포넌트에서 await하는 것 자체가 suspend 지점
+  return &lt;div&gt;{profile.name}&lt;/div&gt;;
+}
+
+function Page({ userId }) {
+  return (
+    &lt;Suspense fallback={&lt;Spinner /&gt;}&gt;
+      &lt;ProfileDetails userId={userId} /&gt;
+    &lt;/Suspense&gt;
+  );
+}</code></pre>
+      <p>Next.js App Router에서는 <code>async</code> 서버 컴포넌트가 <code>await</code>하는 지점 자체가 Suspense의 suspend 신호로 연결됩니다. 이것이 <strong>streaming SSR</strong>(Day 17에서 다룸)의 기반입니다 — 서버는 이 컴포넌트를 기다리는 동안 페이지의 나머지 부분(다른 Suspense 경계 밖의 내용)을 먼저 클라이언트로 보내고, 이 컴포넌트가 준비되면 스트림으로 이어서 보냅니다.</p>
+    </div>
+
+    <div class="why-box">
+      <p><strong>두 용도의 공통점:</strong> "이 하위 트리가 지금 당장 렌더링을 완성할 수 없다"는 신호를 던지고, 그 처리를 조상의 Suspense에게 위임한다는 점에서 동일한 메커니즘입니다. 다른 것은 그 신호가 "코드가 아직 없어서"인지 "데이터가 아직 없어서"인지뿐입니다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Suspense boundary 배치 전략 -->
+  <section id="boundary-placement">
+    <h2>10. Suspense boundary 배치 전략</h2>
+
+    <p>Suspense를 어디에 두느냐는 "그냥 감싸면 되는" 문제가 아니라, <strong>사용자가 로딩 상태를 어떤 단위로 체감하게 할 것인가</strong>를 결정하는 설계입니다.</p>
+
+    <div class="card">
+      <h4>안티패턴 — 페이지 전체를 하나의 Suspense로 감싸기</h4>
+      <pre><code>&lt;Suspense fallback={&lt;FullPageSpinner /&gt;}&gt;
+  &lt;Header /&gt;      {/* 데이터 필요 없음 */}
+  &lt;ProfileInfo /&gt; {/* 데이터 필요 */}
+  &lt;OrderHistory /&gt; {/* 데이터 필요, 오래 걸림 */}
+&lt;/Suspense&gt;</code></pre>
+      <p>이 구조는 <code>Header</code>처럼 데이터가 필요 없어 즉시 그릴 수 있는 부분까지도, 가장 느린 <code>OrderHistory</code>가 끝날 때까지 화면에 아무것도 보여주지 못하게 만듭니다. Suspense 경계가 하나뿐이면 그 안에서 가장 느린 컴포넌트가 전체 화면의 체감 속도를 결정합니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>개선 — 세분화된 Suspense 경계</h4>
+      <pre><code>&lt;Header /&gt; {/* Suspense 밖 — 즉시 렌더링 */}
+&lt;Suspense fallback={&lt;ProfileSkeleton /&gt;}&gt;
+  &lt;ProfileInfo /&gt;
+&lt;/Suspense&gt;
+&lt;Suspense fallback={&lt;OrderSkeleton /&gt;}&gt;
+  &lt;OrderHistory /&gt; {/* 느린 부분만 별도로 격리 */}
+&lt;/Suspense&gt;</code></pre>
+      <p>이렇게 하면 <code>Header</code>는 즉시 보이고, <code>ProfileInfo</code>와 <code>OrderHistory</code>는 각자 준비되는 대로 독립적으로 화면에 나타납니다(streaming SSR과 결합하면 이 각각이 서버에서 스트림으로 순서대로 전달됩니다). 사용자는 "페이지가 통째로 멈춰 있다"가 아니라 "빈 부분이 하나씩 채워진다"는 체감을 얻습니다.</p>
+    </div>
+
+    <div class="why-box">
+      <p><strong>설계 원칙:</strong> Suspense 경계는 "데이터를 가져오는 단위"가 아니라 <strong>"로딩 상태를 사용자에게 어떤 덩어리로 보여주고 싶은가"</strong> 기준으로 나눕니다. 서로 관련 없는 정보(헤더와 주문 내역)를 같은 경계에 묶으면 느린 쪽이 빠른 쪽의 발목을 잡고, 반대로 지나치게 잘게 쪼개면 화면 곳곳에서 스켈레톤이 순서 없이 팝콘처럼 튀는 "layout shift 누적" 문제가 생깁니다.</p>
+    </div>
+  </section>
+
+  <!-- 11. 판단 기준표 -->
+  <section id="decision-table">
+    <h2>11. 판단 기준표</h2>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>상황</th>
+          <th>판단</th>
+          <th>근거</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>무거운 리스트/차트 렌더링이 입력창 반응을 막음</td>
+          <td>리스트를 업데이트하는 setState를 <code>startTransition</code>으로 감쌈</td>
+          <td>입력은 긴급, 리스트 재계산은 긴급하지 않음으로 분리</td>
+        </tr>
+        <tr>
+          <td>props/URL로 받은 값이 바뀔 때마다 무거운 하위 트리가 버벅임</td>
+          <td><code>useDeferredValue</code>로 지연된 사본을 하위 트리에 전달</td>
+          <td>값의 원천을 내가 통제할 수 없어 <code>startTransition</code> 적용 지점이 없음</td>
+        </tr>
+        <tr>
+          <td>코드 청크가 커서 초기 로딩이 느림</td>
+          <td><code>React.lazy</code> + <code>Suspense</code>로 코드 분할</td>
+          <td>필요한 시점에만 코드를 내려받도록 지연</td>
+        </tr>
+        <tr>
+          <td>서버 컴포넌트 중 일부만 응답이 느림</td>
+          <td>느린 부분만 별도 <code>Suspense</code>로 감싸 스트리밍</td>
+          <td>빠른 부분이 느린 부분 때문에 대기하지 않도록 격리</td>
+        </tr>
+        <tr>
+          <td>버튼 클릭 직후 즉각적인 시각 피드백(눌림 효과 등)이 필요</td>
+          <td>그 상태 업데이트는 transition으로 감싸지 않음</td>
+          <td>즉각 반응해야 하는 업데이트를 긴급하지 않음으로 낮추면 오히려 UX 저하</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 12. 진단표 -->
+  <section id="diagnosis-table">
+    <h2>12. 증상 기반 진단표</h2>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>증상</th>
+          <th>의심할 원인</th>
+          <th>확인 방법</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>키를 눌러도 입력창 글자가 늦게 나타남</td>
+          <td>같은 이벤트 핸들러 안의 무거운 setState가 긴급 업데이트와 구분되지 않고 동기 처리됨</td>
+          <td>React DevTools Profiler로 렌더링 소요 시간 확인 → 무거운 업데이트를 <code>startTransition</code>으로 격리</td>
+        </tr>
+        <tr>
+          <td>버튼을 눌러도 잠시 아무 반응이 없다가 갑자기 화면이 바뀜(눌림 피드백 자체가 없음)</td>
+          <td>즉시 피드백이 필요한 상태 업데이트까지 <code>startTransition</code>으로 감쌈</td>
+          <td>어떤 상태가 "즉각 보여야 하는 결과"인지 재검토 → 그 부분은 transition 밖으로 분리</td>
+        </tr>
+        <tr>
+          <td>페이지 전체가 로딩 스피너 하나로 오래 멈춰 있음</td>
+          <td>Suspense 경계가 하나로 뭉쳐 있어 가장 느린 컴포넌트가 전체를 막음</td>
+          <td>느린 부분만 별도 Suspense로 분리해 나머지는 먼저 보이게 함</td>
+        </tr>
+        <tr>
+          <td>스켈레톤 UI가 화면 곳곳에서 순서 없이 나타났다 사라지며 레이아웃이 계속 흔들림</td>
+          <td>Suspense 경계를 지나치게 잘게 쪼개 각자 다른 시점에 팝인(pop-in)됨</td>
+          <td>연관된 정보를 하나의 경계로 묶어 팝인 횟수를 줄임</td>
+        </tr>
+        <tr>
+          <td><code>isPending</code>이 true인데도 화면이 완전히 멈춘 것처럼 보임</td>
+          <td>transition으로 감싼 업데이트가 실제로는 매우 무거워 낮은 우선순위로도 오래 걸림</td>
+          <td>우선순위 문제가 아니라 알고리즘 자체의 최적화(가상화, 메모이제이션)가 필요한지 재검토</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 13. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>13. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>증상의 원인을 렌더링 우선순위 문제로 규정합니다.</strong> "입력창이 버벅이는 것은 리스트를 다시 그리는 계산이 메인 스레드를 오래 점유해서, 그 사이에 들어온 키 입력이 화면에 반영될 틈이 없기 때문입니다."</li>
+      <li><strong>어떤 업데이트가 긴급하고 어떤 게 아닌지 구분합니다.</strong> "입력창의 글자 자체(<code>setQuery</code>)는 사용자가 친 키를 즉시 보여줘야 하는 긴급 업데이트이고, 그 아래 리스트를 다시 계산하는 것(<code>setResults</code>)은 몇 프레임 늦게 반영돼도 사용자가 알아채기 어려운 긴급하지 않은 업데이트입니다."</li>
+      <li><strong>구체적인 API로 연결합니다.</strong> "<code>setResults</code> 호출을 <code>startTransition</code>으로 감싸서, React가 더 급한 입력 업데이트를 우선 처리하고 리스트 업데이트는 여유가 있을 때 처리하도록 만들겠습니다."</li>
+      <li><strong>제어 주체에 따라 도구를 재확인합니다.</strong> "만약 검색어가 제가 직접 관리하는 상태가 아니라 URL 파라미터나 부모로부터 내려온 props라면, <code>startTransition</code>을 걸 지점이 없으므로 대신 <code>useDeferredValue</code>로 리스트에 전달되는 값 자체를 지연시키겠습니다."</li>
+      <li><strong>한계와 대안을 언급합니다.</strong> "다만 리스트 자체의 렌더링 비용이 지나치게 크다면 우선순위 조정만으로는 한계가 있으므로, 가상화(virtualization)나 페이지네이션으로 실제 렌더링해야 하는 항목 수 자체를 줄이는 것도 함께 검토하겠습니다."</li>
+    </ol>
+  </section>
+
+  <!-- 14. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>14. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "검색창에 타이핑할 때마다 아래에 있는 무거운 결과 리스트를 다시 렌더링하는데, 그럴 때마다 입력창 자체가 버벅입니다. 원인과 해결책을 설명해 주세요."</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>이 증상의 원인은 자바스크립트가 싱글 스레드로 동작한다는 전제에서 나옵니다. 검색어가 바뀔 때마다 무거운 리스트를 다시 계산하는 렌더링이 메인 스레드를 길게 점유하면, 그 계산이 끝나기 전까지 브라우저는 사용자가 그다음 누른 키 입력을 화면에 반영할 기회를 얻지 못합니다. 결과적으로 입력창의 글자 자체가 늦게 나타나는 것처럼 느껴집니다.</p>
+      <br>
+      <p>해결책은 두 상태 업데이트의 긴급도를 구분하는 것입니다. 입력창에 표시할 <code>query</code> 상태는 사용자가 친 글자를 즉시 반영해야 하는 긴급 업데이트로 그대로 두고, 리스트를 갱신하는 <code>results</code> 상태 업데이트는 <code>startTransition</code>으로 감싸서 React에게 "이 업데이트는 긴급하지 않다"고 알리겠습니다. 이렇게 하면 사용자가 계속 타이핑하는 동안 React는 진행 중이던 리스트 렌더링을 중단하고 새로 들어온 입력을 먼저 처리한 뒤, 타이핑이 멈추고 여유가 생겼을 때 마지막 입력 기준으로 리스트를 완성해 커밋합니다.</p>
+      <br>
+      <p>만약 검색어가 제가 직접 <code>setState</code>로 관리하는 값이 아니라 URL 쿼리 파라미터처럼 외부에서 들어온 값이라면, <code>startTransition</code>을 걸 지점 자체가 없으므로 대신 <code>useDeferredValue</code>로 리스트에 넘기는 값을 지연시키는 방식을 쓰겠습니다. 그리고 이 방법은 렌더링 우선순위를 조정하는 것이지 렌더링 자체의 비용을 줄이는 것은 아니므로, 리스트 항목이 매우 많다면 가상화 같은 근본적인 렌더링 비용 절감도 함께 고려하겠습니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>증상을 "왜 발생하는가"(싱글 스레드, 우선순위 부재)부터 설명한 뒤 해결책으로 넘어가는 순서를 지킴</li>
+      <li>두 가지 도구(<code>startTransition</code>, <code>useDeferredValue</code>)를 상황(내가 트리거하는가 여부)에 맞게 구분해서 제시함</li>
+      <li>우선순위 조정과 렌더링 비용 절감을 서로 다른 문제로 구분해, 만능 해법이 아니라는 것을 명시함</li>
+    </ul>
+  </section>
+
+  <!-- 15. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>15. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"리스트 컴포넌트를 <code>React.memo</code>로 감싸고 <code>useCallback</code>으로 핸들러를 고정하면 재렌더링을 막을 수 있습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>이 문제의 본질은 "불필요한 재렌더링"이 아니라 "필요한 재렌더링이 너무 무거워 메인 스레드를 막는 것"입니다. 검색어가 바뀔 때마다 리스트는 실제로 새 결과를 보여줘야 하므로, memo로 렌더링을 막으면 오히려 리스트가 갱신되지 않는 버그가 됩니다.</li>
+        <li>렌더링을 "막는 것"과 "우선순위를 낮추는 것"을 구분하지 못하고 있습니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"디바운스(debounce)를 걸어서 타이핑이 끝난 후 300ms 뒤에 리스트를 업데이트하면 됩니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>디바운스는 유효한 보완 기법이지만, "고정된 시간만큼 무조건 기다리는 것"이라 사용자가 잠깐 멈췄다가 다시 타이핑해도 불필요하게 지연이 발생하고, 반대로 리스트가 실제로는 매우 가벼운 경우에도 항상 지연을 강제합니다. transition은 실제로 더 긴급한 작업이 있을 때만 밀리고, 없으면 즉시 처리된다는 점에서 더 적응적(adaptive)입니다.</li>
+        <li>면접관은 "임의의 시간을 정해서 미루는 기법"과 "React의 렌더링 스케줄러가 우선순위 기반으로 판단하게 하는 기법"의 차이를 아는지 보고 싶어합니다. 실무에서는 둘을 함께 쓰기도 하지만, 이 둘을 같은 것으로 착각하면 안 됩니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>증상의 근본 원인을 "싱글 스레드가 긴 계산에 점유되는 것"으로 정확히 짚는다</li>
+        <li>업데이트를 긴급/비긴급으로 나누는 사고를 보여주고, 그 판단에 맞는 구체적 API(<code>startTransition</code> vs <code>useDeferredValue</code>)를 상황별로 구분한다</li>
+        <li>우선순위 조정이 렌더링 비용 자체를 줄이는 것은 아니라는 한계를 명시하고, 필요하면 가상화 같은 보완책을 함께 제시한다</li>
+        <li>즉각적 피드백이 필요한 업데이트까지 transition으로 감싸면 안 된다는 trade-off를 안다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 16. Follow-up -->
+  <section id="followups">
+    <h2>16. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: <code>startTransition</code> 안에서 상태 업데이트가 정말 "느리게" 실행되나요, 아니면 단지 우선순위만 낮아지는 건가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 후자입니다. <code>startTransition</code>은 지연 시간을 강제로 추가하는 것이 아니라, 해당 업데이트를 "새치기당해도 되는" 낮은 우선순위로 표시할 뿐입니다. 만약 그 사이에 아무런 긴급 업데이트도 들어오지 않는다면, transition 업데이트는 즉시(다음 프레임 안에) 처리됩니다. 지연이 눈에 띄는 것은 오직 사용자가 계속 타이핑하는 등 긴급 업데이트가 연속으로 들어와 transition 작업이 계속 뒤로 밀릴 때뿐입니다. 이 점에서 고정된 대기시간을 강제하는 디바운스와 근본적으로 다릅니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: Suspense boundary가 너무 상위(예: 페이지 최상단)에 있으면 어떤 문제가 생기나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 그 경계 안에 있는 모든 자식 중 <strong>가장 느린 하나</strong>가 전체 화면이 보이는 시점을 결정하게 됩니다. 헤더, 네비게이션처럼 데이터가 필요 없어 즉시 그릴 수 있는 부분까지도 가장 느린 컴포넌트(예: 외부 API를 호출하는 위젯)가 끝날 때까지 fallback 뒤에 가려집니다. 실무에서는 이것이 "왜 이 페이지는 로딩이 유독 느껴 보이지?"라는 리포트의 흔한 원인입니다. 해결책은 느린 컴포넌트만 별도의 하위 Suspense로 감싸 격리하고, 나머지는 상위 경계 밖에 두거나 더 빠르게 준비되는 별도 경계로 나누는 것입니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: <code>useDeferredValue</code>와 디바운스/쓰로틀의 차이는 정확히 무엇인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 디바운스/쓰로틀은 <strong>"함수가 호출되는 시점 자체"</strong>를 인위적인 타이머로 제어하는 기법이며 React와 무관하게 동작합니다(입력이 멈추고 몇 ms 후에만 실제로 함수를 호출). <code>useDeferredValue</code>는 함수 호출 시점을 조절하는 것이 아니라, <strong>렌더링 우선순위</strong>를 이용해 "새 값으로의 리렌더링"을 지연시킵니다. 값은 즉시 갱신되지만, 그 값을 반영하는 렌더링이 더 급한 작업 뒤로 밀릴 뿐입니다. 실무에서는 네트워크 요청 횟수 자체를 줄이고 싶다면 디바운스가 적합하고, 네트워크 요청 여부와 무관하게 화면에 무거운 컴포넌트가 있어 렌더링 자체가 버벅이는 문제라면 <code>useDeferredValue</code>가 적합합니다. 둘은 대체재가 아니라 서로 다른 계층의 문제를 다룹니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: Automatic batching과 concurrent rendering은 어떤 관계인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> Automatic batching(React 18에서 <code>setTimeout</code>, Promise 콜백, 네이티브 이벤트 핸들러 등 어디서든 여러 <code>setState</code> 호출을 하나의 렌더링으로 묶는 것)은 동시성 렌더링과 별개의 기능이지만, 같은 React 18 아키텍처(Fiber의 우선순위 기반 스케줄링) 위에서 함께 동작합니다. Automatic batching은 "여러 업데이트를 하나로 합쳐 렌더링 횟수를 줄이는 것"이고, transition/deferredValue는 "합쳐진(혹은 개별) 업데이트 중 어떤 것을 먼저 처리할지 우선순위를 매기는 것"입니다. 즉 batching이 렌더링 횟수를 줄인다면, concurrent 기능은 그 렌더링들 사이의 순서를 조정합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 서버 컴포넌트에서도 Suspense가 동작하나요? 클라이언트의 concurrent rendering과 같은 개념인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 서버 컴포넌트에서도 Suspense는 동작하지만, 역할이 조금 다릅니다. 클라이언트에서는 Suspense가 "이미 화면에 있는 트리 중 일부를 fallback으로 바꿔치기"하는 데 쓰이지만, 서버 렌더링(streaming SSR)에서는 Suspense가 "이 경계 밖의 HTML을 먼저 스트림으로 보내고, 경계 안의 내용은 준비되는 대로 나중에 이어서 보낸다"는 신호로 쓰입니다. 우선순위 스케줄링이라는 개념 자체는 클라이언트의 concurrent rendering에 국한되지만, "아직 준비 안 된 하위 트리를 fallback으로 대체하고 나머지는 먼저 처리한다"는 Suspense의 근본 아이디어는 서버와 클라이언트 모두에서 동일하게 적용됩니다. 이 부분은 Day 17(Streaming)에서 더 깊이 다룹니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>17. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"Suspense는 그냥 로딩 스피너를 보여주는 컴포넌트다"</strong></p>
+      <p>Suspense는 스피너 컴포넌트가 아니라, 자식이 "아직 준비되지 않았다"고 선언하면 그 처리를 조상에게 위임하는 통신/전파 메커니즘입니다. fallback으로 무엇을 보여줄지는 자유이며 스피너는 그중 흔한 선택일 뿐입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"동시성 렌더링은 여러 스레드에서 병렬로 렌더링한다는 뜻이다"</strong></p>
+      <p>자바스크립트는 여전히 싱글 스레드로 실행됩니다. "동시성(concurrent)"은 하나의 스레드 안에서 작업을 작은 단위로 쪼개 중단·재개·우선순위 조정을 할 수 있게 만든 스케줄링 모델을 의미하며, 병렬 실행(parallelism)과는 다른 개념입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"startTransition을 쓰면 업데이트가 항상 나중에, 느리게 실행된다"</strong></p>
+      <p>실제로는 우선순위만 낮아질 뿐입니다. 더 긴급한 업데이트가 없다면 transition 업데이트도 즉시 처리됩니다. 지연은 "새치기당할 가능성"이지 "보장된 지연"이 아닙니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"useTransition과 useDeferredValue는 같은 것을 다르게 부르는 이름일 뿐이다"</strong></p>
+      <p>둘 다 낮은 우선순위 스케줄링을 이용하지만, 적용 대상이 다릅니다. <code>useTransition</code>은 내가 트리거하는 <code>setState</code> 호출에, <code>useDeferredValue</code>는 내가 통제할 수 없는 외부 값의 반영 시점에 씁니다. 코드 상에서 <code>setState</code>를 감쌀 지점이 있는지 없는지로 선택이 갈립니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"모든 무거운 컴포넌트에 startTransition을 걸면 항상 성능이 좋아진다"</strong></p>
+      <p>즉각적인 시각 피드백이 필요한 업데이트(버튼 눌림 효과, 폼 제출 직후 상태 변화 등)까지 transition으로 감싸면, 오히려 사용자가 "내가 누른 게 반영이 안 됐다"고 느끼는 UX 저하가 생깁니다. 또한 transition은 렌더링 비용 자체를 줄이지 않으므로, 근본적으로 너무 무거운 컴포넌트는 우선순위 조정만으로 해결되지 않습니다.</p>
+    </div>
+  </section>
+
+  <!-- 18. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>18. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 7을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Suspense를 "로딩 스피너 컴포넌트"가 아니라 "아직 준비 안 된 자식의 처리를 조상에게 위임하는 메커니즘"으로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>동시성 렌더링이 병렬 처리가 아니라 "중단 가능한 싱글 스레드 스케줄링"이라는 것을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>입력이 버벅이는 증상을 "메인 스레드 점유"와 "우선순위 부재"로 진단할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>useTransition</code>과 <code>useDeferredValue</code>를 "내가 setState를 트리거하는가"로 구분해서 선택할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Suspense의 두 가지 용도(코드 분할, 데이터 페칭)를 각각 예시로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>Suspense boundary를 하나로 뭉치는 것과 세분화하는 것의 trade-off를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"startTransition을 쓰면 항상 느려진다"는 오해를 반박할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>디바운스와 <code>useDeferredValue</code>가 서로 다른 계층의 문제를 다룬다는 것을 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 8</h3>
+      <p><strong>Error Boundary와 장애 격리</strong></p>
+      <p>Day 7에서 "아직 준비되지 않은 트리를 어떻게 우아하게 기다릴지"를 다뤘다면, Day 8에서는 "일부 트리가 완전히 고장 났을 때 그 장애가 페이지 전체로 번지지 않게 어떻게 격리할지"를 다룹니다. Error Boundary가 잡을 수 있는 에러와 잡을 수 없는 에러의 경계, 컴포넌트 트리 단위로 장애를 격리하는 설계, Suspense와 Error Boundary를 함께 배치하는 패턴을 다룹니다.</p>
+      <p>면접 질문 예고: "위젯 하나에서 발생한 렌더링 에러 때문에 페이지 전체가 하얀 화면이 됐습니다. 이런 장애가 다시 발생하지 않도록 어떻게 설계하시겠습니까?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    React / Next.js 시니어 인터뷰 · Day 7 of 20 · 2026-07-08
+  </p>
+
+</div>
+</body>
+</html>
