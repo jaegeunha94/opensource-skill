@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 9 — 실전 설계: URL 단축 서비스 — Hash 전략, Collision 처리, 분산 ID 생성</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="container">
+
+  <!-- ══════════════════════════════════════════ HEADER ══ -->
+  <div class="lesson-header">
+    <div class="day-label">Day 9 · 시스템 설계 Interview</div>
+    <h1>실전 설계 — URL 단축 서비스: Hash 전략, Collision 처리, 분산 ID 생성</h1>
+    <p class="subtitle">Day 1~8에서 배운 요구사항 정리, capacity estimation, 수평 확장, 캐시, 샤딩, 큐, 장애 격리, 일관성 트레이드오프를 하나의 실전 문제에 처음부터 끝까지 적용해본다. URL 단축 서비스는 짧아 보이지만 "짧은 키를 어떻게 안전하고 유일하게, 그리고 대규모로 만들 것인가"라는 분산 시스템의 핵심 문제를 그대로 담고 있다</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 핵심 면접 질문 ══ -->
+  <h2>이 레슨의 핵심 면접 질문</h2>
+  <p class="section-intro">URL 단축 서비스는 시스템 설계 면접의 "국민 문제"다. 쉬워 보이는 만큼, 여기서 얕은 답변을 하면 바로 티가 난다. 면접관은 짧은 키를 어떻게 유일하게 만들지에 대한 판단력을 본다.</p>
+
+  <div class="callout callout-interview">
+    <div class="callout-title">면접 질문 유형</div>
+    <ul>
+      <li>"bit.ly 같은 URL 단축 서비스를 설계해보세요."</li>
+      <li>"긴 URL을 짧은 키로 어떻게 변환하시겠어요? 그 키는 어떻게 유일함을 보장하나요?"</li>
+      <li>"해시를 쓴다면 충돌(collision)은 어떻게 처리하시겠어요?"</li>
+      <li>"서버가 여러 대인데, 각 서버가 동시에 키를 생성해도 중복되지 않게 하려면 어떻게 하나요?"</li>
+      <li>"사용자가 원하는 커스텀 별칭(custom alias)을 지원해야 한다면 설계가 어떻게 바뀌나요?"</li>
+    </ul>
+    <p style="margin-top:0.75rem; margin-bottom:0">
+      <strong>이 질문들의 공통점:</strong> "짧은 문자열 하나를 만든다"는 표면적 문제 뒤에 숨은 <strong>대규모 분산 환경에서의 유일성 보장</strong> 문제를 인식하고, 여러 후보 전략의 trade-off를 비교해 근거 있는 선택을 할 수 있는가를 본다.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 전제 개념 ══ -->
+  <h2>전제 개념 — 짧은 키를 만드는 문제가 왜 어려운가부터 이해한다</h2>
+  <p class="section-intro">Base62 인코딩이나 Snowflake 같은 용어를 외우기 전에, "짧은 키 하나를 만드는 것"이 왜 단일 서버에서는 쉽고 분산 환경에서는 어려워지는지부터 이해해야 한다.</p>
+
+  <div class="callout callout-prereq">
+    <div class="callout-title">문제를 정확히 정의하기 — "짧은 키"는 무엇을 만족해야 하는가?</div>
+    <p style="margin-bottom:0">
+      URL 단축 서비스의 핵심은 <code>https://example.com/very/long/path?with=query&params=true</code> 같은 긴 URL을 <code>short.ly/aB3xZ9</code>
+      처럼 <strong>짧고, 유일하고, 예측 불가능하지 않으며(또는 원하는 만큼만 예측 가능하며), 빠르게 원본으로 되돌릴 수 있는</strong> 키로
+      바꾸는 것이다. 여기서 "유일함"이 핵심 난제다 — <strong>여러 서버가 동시에 요청을 처리하는 분산 환경에서, 서로 다른 서버가 동시에
+      키를 만들어도 절대 겹치지 않아야 한다</strong>. 단일 서버라면 그냥 순차 증가 카운터를 쓰면 끝나는 문제가, 서버가 여러 대가 되는
+      순간 Day 3에서 다룬 수평 확장 문제와 정확히 같은 형태로 어려워진다.
+    </p>
+  </div>
+
+  <div class="callout callout-prereq">
+    <div class="callout-title">Base62 인코딩이란? — 숫자를 사람이 읽기 좋은 짧은 문자열로 바꾸는 방법</div>
+    <p style="margin-bottom:0">
+      Base62는 숫자를 <strong>0~9, a~z, A~Z (총 62개 문자)</strong>를 사용한 62진법으로 표현하는 방식이다. 10진법 숫자
+      <code>125</code>가 62진법에서는 훨씬 짧은 문자열이 되는 것처럼, <strong>내부적으로 관리하는 큰 정수(예: DB의 auto-increment ID나
+      분산 ID 생성기가 만든 숫자)를 Base62로 인코딩하면 사람이 URL에 쓰기 좋은 짧은 문자열</strong>이 나온다. 예를 들어 정수
+      <code>125</code>는 Base62로 <code>"cD"</code> 같은 2자리 문자열이 된다. 문자당 표현 가능한 경우의 수가 62가지이므로,
+      <strong>7자리면 62^7 ≈ 3.5조 개, 6자리면 62^6 ≈ 568억 개</strong>의 서로 다른 키를 만들 수 있다 — 이 숫자가 "몇 자리가 적절한가"를
+      정하는 근거가 된다.
+    </p>
+  </div>
+
+  <div class="callout callout-prereq">
+    <div class="callout-title">해시 기반 생성이란? — 원본 URL 자체에서 짧은 키를 뽑아내는 방법</div>
+    <p style="margin-bottom:0">
+      Base62가 "내부 숫자를 인코딩"하는 방식이라면, <strong>해시 기반 생성은 원본 URL 문자열 자체를 MD5나 SHA-256 같은 해시 함수에
+      넣고, 그 결과값의 앞 6~8자만 잘라 쓰는 방식</strong>이다. 예를 들어 원본 URL을 MD5로 해싱하면 32자리 16진수가 나오는데, 이 중
+      앞 7자만 잘라서 짧은 키로 쓴다. 이 방식의 장점은 <strong>같은 URL을 여러 번 넣어도 항상 같은 키가 나온다</strong>는 결정적
+      (deterministic) 특성이다. 하지만 해시값을 잘라서 쓰는 순간, <strong>서로 다른 두 URL이 우연히 같은 짧은 키를 갖게 되는 충돌
+      (collision)</strong>이 발생할 수 있다는 근본적 문제가 따라온다.
+    </p>
+  </div>
+
+  <div class="callout callout-prereq">
+    <div class="callout-title">해시 충돌(Collision)이란? — 왜 짧게 자르면 반드시 부딪히게 되는가</div>
+    <p style="margin-bottom:0">
+      해시 함수는 무한히 다양한 입력을 <strong>고정된 길이의 출력</strong>으로 압축하는 함수다. 입력의 가짓수는 무한한데 출력의
+      가짓수는 유한하므로, <strong>비둘기집 원리(pigeonhole principle)</strong>에 따라 서로 다른 두 입력이 같은 출력을 내는 경우가
+      반드시 존재한다. 문제는 "존재하느냐"가 아니라 <strong>"얼마나 자주 발생하느냐"</strong>인데, 해시값을 7자(Base62 기준 62^7 ≈
+      3.5조 가지)로 자르면 <strong>생일 역설(Birthday Paradox)</strong>에 의해 저장된 URL이 수십억 개 규모로 늘어날 때 충돌 확률이
+      무시할 수 없는 수준으로 올라간다. 즉, "충돌이 이론적으로 가능하다"가 아니라 <strong>"서비스가 커지면 충돌이 실제로 발생하며,
+      이를 감지하고 해소하는 로직이 반드시 필요하다"</strong>는 것이 설계의 전제가 되어야 한다.
+    </p>
+  </div>
+
+  <div class="callout callout-prereq">
+    <div class="callout-title">분산 유일 ID 생성이란? — 여러 서버가 동시에 겹치지 않는 번호를 뽑는 문제</div>
+    <p style="margin-bottom:0">
+      단일 DB의 auto-increment는 서버가 한 대일 때는 완벽하게 유일한 순번을 준다. 하지만 <strong>Day 5에서 샤딩한 여러 DB, 또는
+      여러 애플리케이션 서버가 동시에 키를 발급</strong>해야 하는 상황에서는, 각 서버가 독립적으로 번호를 매기면 서로 다른 서버가
+      우연히 같은 번호를 발급하는 중복 문제가 생긴다. <strong>분산 유일 ID 생성</strong>은 이 문제를 푸는 기법들을 통칭하며,
+      대표적으로 <strong>Twitter Snowflake, Ticket Server(범위 할당), UUID</strong> 세 가지 접근이 있다. 이 개념은 URL 단축뿐
+      아니라 주문 번호, 결제 트랜잭션 ID 등 <strong>분산 환경에서 유일 식별자가 필요한 모든 곳</strong>에 재사용되는 매우 범용적인
+      패턴이다.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 왜 묻는가 ══ -->
+  <h2>왜 면접에서 이것을 묻는가?</h2>
+
+  <div class="callout callout-why">
+    <div class="callout-title">면접관의 관점</div>
+    <p>
+      URL 단축은 요구사항이 단순해 보이기 때문에, 지원자가 <strong>"쉬운 문제를 얼마나 깊게 파고들 수 있는가"</strong>를 관찰하기
+      좋은 문제다. 이 지점에서 시니어와 주니어가 크게 갈린다.
+    </p>
+    <ul>
+      <li><strong>여러 키 생성 전략의 trade-off를 비교하는가?</strong> — "해시를 쓰겠습니다"로 끝내지 않고, Base62 인코딩, 해시, 분산 ID 생성 중 무엇을 왜 선택하는지 근거를 대는지</li>
+      <li><strong>충돌 가능성을 스스로 짚어내는가?</strong> — 면접관이 묻기 전에 먼저 "해시를 쓰면 충돌이 생길 수 있다"는 것을 인지하고 대응책을 제시하는지</li>
+      <li><strong>분산 환경에서의 유일성 문제를 인식하는가?</strong> — 서버 한 대를 전제로 설계하지 않고, 여러 서버/여러 샤드에서 동시에 키를 발급해도 안전한 구조를 설계하는지</li>
+      <li><strong>읽기와 쓰기의 비대칭을 capacity estimation에 반영하는가?</strong> — URL 단축은 압도적으로 읽기(리다이렉트)가 많은 워크로드라는 것을 Day 2, Day 4의 캐시 개념과 연결하는지</li>
+      <li><strong>Day 1~8에서 배운 개념을 하나의 설계로 통합할 수 있는가?</strong> — capacity estimation, 캐시, 샤딩, 장애 격리를 개별 이론이 아니라 하나의 일관된 설계 안에서 연결해 설명하는지</li>
+    </ul>
+  </div>
+
+  <div class="callout callout-realworld">
+    <div class="callout-title">실무 연결</div>
+    <p>
+      실무에서 흔한 사례는 이렇다: 한 마케팅 플랫폼이 캠페인 링크 단축 기능을 auto-increment ID를 그대로 Base62 인코딩하는 방식으로
+      만들었다. 서비스 초기엔 문제가 없었지만, <strong>ID가 순차적으로 증가하기 때문에 짧은 키를 하나씩 순서대로 열거(enumeration)
+      하면 아직 공개되지 않은 캠페인의 URL까지 스캔할 수 있는 보안 문제</strong>가 발견됐다. 또한 트래픽이 늘어 DB를 여러 대로
+      샤딩하자, 각 샤드가 독립적으로 auto-increment를 발급하면서 <strong>서로 다른 샤드가 같은 ID를 발급하는 충돌</strong>이 발생했다.
+      이 두 사고 이후 팀은 ID 생성을 <strong>중앙화된 분산 ID 생성기(Snowflake 기반)</strong>로 옮기고, 여기에 <strong>비순차적으로
+      섞는 처리(예: ID에 대한 가역 치환 함수 적용)</strong>를 추가해 순번이 그대로 노출되지 않도록 개선했다. 이는 "짧은 키 생성"이
+      단순한 인코딩 문제가 아니라 <strong>분산 시스템 설계와 보안이 함께 얽힌 문제</strong>라는 것을 보여주는 대표적 사례다.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 프레임워크 ══ -->
+  <h2>URL 단축 서비스 설계 프레임워크</h2>
+  <p class="section-intro">Day 1의 5단계 프레임워크(요구사항 → capacity → 상위 설계 → 상세 설계 → trade-off 정리)를 이 문제에 맞게 구체화하면 아래 순서가 된다.</p>
+
+  <ol class="steps">
+    <li>
+      <div>
+        <h4>Functional / Non-functional 요구사항을 먼저 정리한다</h4>
+        <p>단축(shorten), 리다이렉트(redirect)는 필수. 커스텀 별칭, 만료 시간, 클릭 통계는 면접관에게 범위를 확인하고 우선순위를 정한다. Non-functional로는 높은 가용성, 낮은 리다이렉트 지연, 짧은 키의 유일성 보장을 명시한다.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h4>Capacity Estimation — 특히 읽기:쓰기 비율을 먼저 짚는다</h4>
+        <p>Day 2의 프레임워크대로 DAU, 초당 단축 요청 수(쓰기), 초당 리다이렉트 수(읽기)를 추정한다. 이 서비스는 통상 읽기:쓰기 비율이 100:1 이상인 압도적 읽기 중심 워크로드라는 것이 이후 캐시 설계의 근거가 된다.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h4>짧은 키 생성 전략을 비교하고 선택한다</h4>
+        <p>해시 기반 vs Base62 인코딩(auto-increment) vs 분산 ID 생성(Snowflake/Ticket Server) 중, 유일성 보장 난이도와 충돌 처리 비용을 기준으로 선택한다. 이 선택이 이 설계의 핵심이다.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h4>상위 아키텍처를 그린다</h4>
+        <p>Day 3의 stateless 서버 + L7 로드밸런서, Day 4의 캐시 레이어, Day 5의 DB(원본 URL과 짧은 키 매핑 저장), 필요 시 Day 6의 큐(비동기 클릭 통계 집계)를 조합한다.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h4>리다이렉트 경로의 지연을 최소화하는 데 집중한다</h4>
+        <p>읽기 중심 워크로드이므로 캐시 히트율이 곧 서비스 품질이다. 짧은 키 → 원본 URL 매핑을 Redis 같은 캐시에 두고, Day 4의 캐시 무효화·hot key 대응까지 함께 설계한다.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h4>확장 요구사항(커스텀 별칭, 만료, 통계, 보안)을 마지막에 다룬다</h4>
+        <p>핵심 흐름을 먼저 완성한 뒤, 남은 시간에 커스텀 별칭의 동시성 처리, TTL 기반 만료, 클릭 통계의 비동기 집계, ID 열거 방지 같은 심화 주제로 확장한다.</p>
+      </div>
+    </li>
+  </ol>
+
+  <!-- ══════════════════════════════════════════ 깊이 있는 비교 ══ -->
+  <h2>세 가지 키 생성 전략 비교 — 무엇을 근거로 선택하는가</h2>
+  <p class="section-intro">"어떻게 짧은 키를 만들 것인가"에 정답은 하나가 아니다. 세 가지 전략의 근본적인 차이를 이해하고 있어야 상황에 맞게 선택하고, 그 이유를 설명할 수 있다.</p>
+
+  <div class="callout callout-thinking">
+    <div class="callout-title">전략 1: 해시 기반(MD5/SHA-256 잘라 쓰기)</div>
+    <p style="margin-bottom:0">
+      <strong>장점:</strong> 같은 URL을 여러 번 넣어도 항상 같은 키가 나오는 결정적 특성 덕분에, 이미 단축된 URL을 다시 요청받았을 때
+      DB 조회 없이도 같은 키를 재사용할 수 있는 가능성이 있다. <strong>단점:</strong> 해시값을 짧게 자르는 순간 충돌이 발생할 수 있어,
+      <strong>매번 DB에서 해당 키가 이미 사용 중인지 확인하는 추가 조회가 필요</strong>하다. 충돌이 발견되면 원본에 salt(임의 문자열)를
+      붙여 재해싱하는 과정을 반복해야 하므로, <strong>쓰기 경로에 예측 불가능한 지연(최악의 경우 여러 번 재시도)</strong>이 생길 수 있다.
+    </p>
+  </div>
+
+  <div class="callout callout-thinking">
+    <div class="callout-title">전략 2: Base62 인코딩 + Auto-increment ID</div>
+    <p style="margin-bottom:0">
+      <strong>장점:</strong> DB가 발급하는 순차 정수를 Base62로 인코딩하기만 하면 되므로 <strong>충돌 자체가 원천적으로 발생하지
+      않는다</strong> — 매번 다른 정수이므로 매번 다른 키가 나온다. <strong>단점:</strong> 단일 DB의 auto-increment는 여러 서버/샤드로
+      확장하는 순간 병목이자 단일 장애점이 된다(Day 3, Day 5에서 다룬 stateless 확장 원칙과 충돌). 또한 <strong>ID가 순차적으로
+      증가</strong>하므로, 짧은 키를 하나씩 순서대로 요청하면 다른 사용자의 URL을 열거해서 스캔할 수 있는 <strong>보안 위험</strong>이
+      있다.
+    </p>
+  </div>
+
+  <div class="callout callout-thinking">
+    <div class="callout-title">전략 3: 분산 유일 ID 생성 (Snowflake / Ticket Server)</div>
+    <p style="margin-bottom:0">
+      <strong>Snowflake 방식</strong>은 64비트 정수를 <strong>[타임스탬프(41비트)] + [머신 ID(10비트)] + [시퀀스 번호(12비트)]</strong>로
+      구성해, 서로 다른 서버가 동시에 발급해도 머신 ID가 다르면 절대 겹치지 않도록 만든다. 중앙 서버 없이 각 노드가 독립적으로 발급할
+      수 있어 <strong>확장성이 가장 좋다</strong>. <strong>Ticket Server(Flickr 방식)</strong>는 중앙 DB(또는 카운터 서비스)가
+      "1번부터 1000번까지는 서버 A가, 1001번부터 2000번까지는 서버 B가 쓰라"는 식으로 <strong>ID 범위를 미리 배치(batch)로 할당</strong>해,
+      각 서버는 할당받은 범위 안에서 로컬로 빠르게 발급한다. 구현이 Snowflake보다 단순하지만, <strong>중앙 할당자가 병목이 될 수
+      있고(다만 배치 크기를 키우면 완화 가능) 서버가 재시작되면 할당받은 범위 중 일부를 낭비</strong>할 수 있다는 단점이 있다.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 실전 예시 ══ -->
+  <h2>실전 예시 — URL 단축 서비스 전체 설계 흐름</h2>
+  <p class="section-intro">
+    45분 인터뷰를 가정하고, 위 프레임워크를 실제로 어떻게 진행하는지 하나의 완결된 흐름으로 정리해본다.
+  </p>
+
+  <h3>1) 요구사항 정리 (약 5분)</h3>
+  <ul>
+    <li><strong>Functional:</strong> 긴 URL → 짧은 URL 생성, 짧은 URL로 접속 시 원본으로 리다이렉트, 커스텀 별칭 지원, 링크 만료 기능</li>
+    <li><strong>Non-functional:</strong> 리다이렉트는 낮은 지연(수십 ms 이내), 높은 가용성(리다이렉트가 안 되면 사용자에게 즉각 체감되는 장애), 짧은 키는 절대 중복되지 않아야 함</li>
+    <li><strong>범위 밖(면접관과 확인):</strong> 실시간 클릭 분석 대시보드는 최소 기능만, 스팸/악성 URL 탐지는 이번 설계에서 제외</li>
+  </ul>
+
+  <h3>2) Capacity Estimation (약 5분)</h3>
+  <ul>
+    <li>월간 신규 단축 URL 1억 개 가정 → 초당 쓰기 ≈ 1억 / (30 × 24 × 3600) ≈ 38 QPS</li>
+    <li>읽기(리다이렉트):쓰기 비율을 100:1로 가정 → 초당 읽기 ≈ 3,800 QPS, 피크 시 2~3배인 약 1만 QPS</li>
+    <li>URL 평균 100바이트, 매핑 레코드 당 메타데이터 포함 약 500바이트로 가정 → 5년간 누적 시 1억 × 12 × 5 × 500B ≈ 300GB, 단일 DB로도 감당 가능하지만 <strong>읽기 트래픽이 병목</strong>이므로 캐시가 핵심</li>
+  </ul>
+
+  <h3>3) 키 생성 전략 선택</h3>
+  <p>
+    이 설계에서는 <strong>Snowflake 기반 분산 ID 생성 → Base62 인코딩</strong>을 선택한다. 이유: 해시 기반은 트래픽이 커질수록
+    충돌 처리 비용(추가 조회 + 재시도)이 쓰기 경로 지연으로 이어지고, 단순 auto-increment는 여러 서버로 확장할 때 병목과 순번 노출
+    문제가 있기 때문이다. Snowflake로 발급한 64비트 정수를 Base62로 인코딩하면 짧고, 여러 서버가 독립적으로 발급해도 충돌이 없으며,
+    타임스탬프 기반이라 순수 순차 증가가 아니어서 열거 공격도 어느 정도 완화된다.
+  </p>
+
+  <h3>4) 상위 아키텍처</h3>
+  <ul>
+    <li><strong>클라이언트 → L7 로드밸런서 → Stateless API 서버(Day 3)</strong>: 단축 요청과 리다이렉트 요청을 모두 처리</li>
+    <li><strong>ID 생성 서비스(Snowflake 노드)</strong>: API 서버가 새 URL 등록 시 호출해 유일 ID를 발급받음</li>
+    <li><strong>DB(짧은 키 ↔ 원본 URL 매핑, Day 5의 샤딩 적용)</strong>: 짧은 키를 샤딩 키로 사용해 수평 확장</li>
+    <li><strong>캐시(Redis, Day 4)</strong>: 리다이렉트 경로의 핵심. 짧은 키 → 원본 URL을 Cache-aside로 캐싱해 DB 접근 최소화</li>
+    <li><strong>비동기 큐(Day 6, 선택적)</strong>: 클릭 통계는 리다이렉트 응답 경로에서 동기로 집계하지 않고, 이벤트를 큐에 발행해 별도 집계 서비스가 비동기로 처리</li>
+  </ul>
+
+  <h3>5) 리다이렉트 흐름 상세</h3>
+  <ol>
+    <li>사용자가 짧은 URL로 접속 → API 서버가 캐시(Redis)에서 짧은 키 조회</li>
+    <li>캐시 히트 → 즉시 원본 URL로 리다이렉트 (대부분의 요청이 여기서 끝남, 압도적 읽기 비율의 이유)</li>
+    <li>캐시 미스 → DB(해당 샤드)에서 조회 → 캐시에 채워 넣고 리다이렉트</li>
+    <li>리다이렉트와 별개로 "클릭 이벤트"를 큐에 비동기 발행 → 통계 집계 서비스가 처리 (리다이렉트 지연에 영향 없음)</li>
+  </ol>
+
+  <div class="callout callout-thinking">
+    <div class="callout-title">여기서 시니어가 반드시 짚는 포인트</div>
+    <p>
+      "Redis에 캐싱하겠습니다"만으로는 부족하다. <strong>왜 읽기:쓰기 비율이 100:1인지를 capacity estimation에서 먼저 근거로
+      제시하고, 그 비율이 캐시를 핵심 컴포넌트로 만드는 이유</strong>까지 연결해야 한다. 또한 인기 있는 단축 URL(예: 바이럴 캠페인
+      링크)로 트래픽이 몰리는 <strong>hot key 문제(Day 4)</strong>를 언급하며, 단일 캐시 노드가 아니라 캐시 자체도 분산·복제
+      구성이 필요할 수 있다는 것까지 짚으면 설계의 깊이가 드러난다.
+    </p>
+  </div>
+
+  <h3>답변 예시 — 이렇게 말하면 된다</h3>
+  <div class="callout callout-interview">
+    <div class="callout-title">답변 예시 — 키 생성 전략 선택 근거</div>
+    <p>
+      "짧은 키 생성 전략으로 해시 기반, Base62+auto-increment, 분산 ID 생성 세 가지를 검토했습니다. 해시 기반은 충돌 처리를 위한
+      추가 DB 조회와 재시도가 쓰기 경로 지연을 예측 불가능하게 만들고, 단순 auto-increment는 여러 서버로 확장할 때 단일 장애점이
+      되고 순번이 노출되는 문제가 있습니다. 그래서 Snowflake 방식의 분산 ID 생성기를 도입해 타임스탬프, 머신 ID, 시퀀스 번호로
+      구성된 64비트 정수를 발급받고, 이를 Base62로 인코딩해 7자리 짧은 키를 만들겠습니다. 이 방식은 여러 서버가 중앙 조율 없이
+      동시에 발급해도 충돌이 없고, 순수 순차 증가가 아니라서 열거 공격도 어느 정도 완화됩니다. 이 서비스는 읽기:쓰기 비율이
+      100:1 이상으로 예상되므로, 리다이렉트 경로는 Redis 캐시를 앞단에 두어 대부분의 요청이 DB까지 가지 않도록 설계하겠습니다."
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 강한 vs 약한 ══ -->
+  <h2>강한 답변과 약한 답변의 차이</h2>
+
+  <div class="answer-compare">
+    <div class="answer-box answer-strong">
+      <div class="answer-label">강한 답변 (Senior level)</div>
+      <p>
+        "읽기:쓰기 비율을 먼저 추정해 캐시를 설계의 중심에 두고, 키 생성은 해시/Base62/분산 ID 생성의 trade-off를 비교해 분산 ID
+        생성을 선택한 근거를 설명합니다. 충돌 가능성, 열거 공격 위험, 여러 서버로 확장할 때의 병목까지 스스로 짚어내고, 커스텀
+        별칭의 동시성 처리와 hot key 대응까지 확장해 설계합니다."
+      </p>
+    </div>
+    <div class="answer-box answer-weak">
+      <div class="answer-label">약한 답변 (Junior level)</div>
+      <p>
+        "원본 URL을 MD5로 해싱해서 앞 6자만 잘라 짧은 URL로 쓰겠습니다. DB에 원본과 짧은 URL을 매핑해서 저장하고, 요청이 오면
+        DB에서 찾아서 리다이렉트하겠습니다.
+        (충돌 가능성 인식 없음, 서버가 여러 대일 때의 유일성 문제 인식 없음, 캐시 없이 매 요청마다 DB 조회, 읽기:쓰기 비율 고려 없음)"
+      </p>
+    </div>
+  </div>
+
+  <h3>왜 약한 답변이 약한가?</h3>
+  <ul>
+    <li><strong>충돌 가능성을 인식하지 못함:</strong> 해시를 잘라 쓰면 반드시 충돌이 발생한다는 것과, 그것을 감지·해소할 로직이 필요하다는 것을 짚지 못한다</li>
+    <li><strong>분산 환경의 유일성 문제를 고려하지 않음:</strong> 서버가 한 대라는 암묵적 전제로 설계해서, 여러 서버로 확장하는 순간 무너지는 설계를 제시한다</li>
+    <li><strong>읽기 중심 워크로드를 반영하지 않음:</strong> capacity estimation 없이 "DB에서 찾는다"고만 해서, 압도적으로 많은 리다이렉트 요청이 DB에 직접 부하를 준다는 것을 놓친다</li>
+    <li><strong>보안 관점이 없음:</strong> 순차적이거나 예측 가능한 키가 열거 공격에 노출될 수 있다는 것을 고려하지 않는다</li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════ 사고 순서 ══ -->
+  <h2>답변 사고 순서 — 실전 적용</h2>
+
+  <div class="callout callout-thinking">
+    <div class="callout-title">머릿속 흐름 (URL 단축 서비스 설계 45분 기준)</div>
+    <p><strong>[0~5분]</strong> Functional/Non-functional 요구사항을 정리하고 면접관과 범위를 확인한다 (커스텀 별칭, 만료, 통계 포함 여부).</p>
+    <p><strong>[5~10분]</strong> DAU, 읽기:쓰기 비율, 저장 용량을 추정한다. 읽기 중심 워크로드임을 이 단계에서 명확히 짚는다.</p>
+    <p><strong>[10~20분]</strong> 짧은 키 생성 전략(해시/Base62/분산 ID)을 비교하고 하나를 선택해 근거를 설명한다.</p>
+    <p><strong>[20~30분]</strong> 상위 아키텍처를 그린다 — 로드밸런서, stateless 서버, ID 생성기, DB(샤딩), 캐시, 큐.</p>
+    <p><strong>[30~38분]</strong> 리다이렉트 경로의 캐시 전략, hot key 대응, 클릭 통계의 비동기 처리를 상세화한다.</p>
+    <p><strong>[38~45분]</strong> 커스텀 별칭 동시성, 만료 처리, 보안(열거 공격 방지) 등 확장 주제로 마무리하고 trade-off를 요약한다.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ Senior Follow-up ══ -->
+  <h2>Senior-Level Follow-up 질문과 답변 방향</h2>
+  <p class="section-intro">
+    기본 설계까지 답했다고 해도, 면접관은 구체적인 예외 상황과 숫자 근거를 파고든다.
+  </p>
+
+  <div class="callout callout-followup">
+    <div class="callout-title">Follow-up 1</div>
+    <p><strong>Q: "왜 짧은 키가 7자여야 하나요? 6자나 8자는 왜 안 되나요?"</strong></p>
+    <p>
+      <strong>답변 방향:</strong> "이건 트레이드오프입니다. Base62 기준 6자는 62^6 ≈ 568억 개, 7자는 62^7 ≈ 3.5조 개의 키 공간을
+      제공합니다. 예상 URL 수(예: 5년간 60억 개)를 감안하면 6자로도 수학적으로는 충분할 수 있지만, 여유 공간이 적으면 해시 기반
+      방식에서 충돌 확률이 빨리 올라가고, Base62+분산 ID 방식이라도 향후 트래픽 증가에 대한 여유가 줄어듭니다. 반대로 8자, 9자로
+      늘리면 키 공간은 넉넉해지지만 URL이 불필요하게 길어져 '짧은 URL'이라는 제품 목적과 배치됩니다. 그래서 예상 규모의 100배 이상
+      여유를 두는 선에서 7자를 기본값으로 잡고, 실제 성장 속도에 따라 조정 가능하게 설계하겠습니다."
+    </p>
+  </div>
+
+  <div class="callout callout-followup">
+    <div class="callout-title">Follow-up 2</div>
+    <p><strong>Q: "두 사용자가 동시에 같은 커스텀 별칭(예: short.ly/my-brand)을 요청하면 어떻게 처리하나요?"</strong></p>
+    <p>
+      <strong>답변 방향:</strong> "이건 전형적인 race condition입니다. 애플리케이션 레벨에서 '먼저 조회 후 없으면 생성'하는 방식은
+      두 요청이 동시에 조회를 통과해버리면 둘 다 생성을 시도해 충돌이 날 수 있습니다. 그래서 짧은 키(커스텀 별칭 포함) 컬럼에
+      <strong>DB unique constraint</strong>를 걸어두고, 생성 시도 시 제약 위반 에러가 나면 '이미 사용 중인 별칭입니다'로 응답하는
+      방식을 씁니다. DB 제약이 최종 방어선이 되므로 애플리케이션 로직에 버그가 있어도 데이터 무결성은 깨지지 않습니다. 대규모
+      동시 요청이 예상되는 특수 케이스라면 분산 락을 앞단에 추가로 둘 수도 있지만, 커스텀 별칭 생성은 상대적으로 빈도가 낮은
+      쓰기라 DB 제약만으로 충분한 경우가 대부분입니다."
+    </p>
+  </div>
+
+  <div class="callout callout-followup">
+    <div class="callout-title">Follow-up 3</div>
+    <p><strong>Q: "Snowflake의 머신 ID가 10비트라고 했는데, 이게 어떤 한계를 의미하나요?"</strong></p>
+    <p>
+      <strong>답변 방향:</strong> "10비트 머신 ID는 동시에 2^10 = 1,024대까지의 노드를 구분할 수 있다는 뜻입니다. 이보다 많은
+      ID 생성 노드를 동시에 운영하려면 비트 배분을 바꾸거나(예: 머신 ID를 늘리고 시퀀스 비트를 줄이는 대신 처리량이 줄어드는
+      trade-off를 감수) 계층적 할당(데이터센터 ID + 머신 ID로 분리)을 도입해야 합니다. 또한 시퀀스 번호가 12비트라 밀리초당 노드
+      하나가 최대 4,096개의 ID를 발급할 수 있는데, 이보다 더 높은 처리량이 필요하면 시퀀스 비트를 늘리거나 밀리초보다 더 세밀한
+      시간 단위를 쓰는 변형이 필요합니다. 그리고 서버의 시스템 시계가 뒤로 흐르는(clock drift/NTP 보정) 상황에서 같은 타임스탬프가
+      재사용돼 ID가 중복될 위험이 있어, 시계가 역행하면 잠시 ID 발급을 멈추거나 별도의 오프셋을 두는 방어 로직이 필요합니다."
+    </p>
+  </div>
+
+  <div class="callout callout-followup">
+    <div class="callout-title">Follow-up 4</div>
+    <p><strong>Q: "짧은 키가 순차적으로 생성되면 어떤 문제가 생기나요? 어떻게 막나요?"</strong></p>
+    <p>
+      <strong>답변 방향:</strong> "순차적인 키는 공격자가 키를 하나씩 증가시키며 요청해 아직 공개되지 않았거나 비공개로 설정된
+      URL을 열거(enumeration)해서 스캔할 수 있는 위험이 있습니다. 예를 들어 미공개 프로모션 페이지나 개인정보가 담긴 링크가
+      순차 키로 발급되면, 공격자가 순서대로 접근해 정보를 긁어갈 수 있습니다. Snowflake처럼 타임스탬프 기반 ID는 시간 순서는
+      드러나지만 완전한 순차 증가는 아니라서 일부 완화가 되고, 여기에 더해 <strong>ID에 가역적인 비트 섞기(bit shuffling)나
+      경량 암호화(format-preserving encryption)</strong>를 적용해 외부에 노출되는 키에서 내부 순번을 유추하기 어렵게 만드는
+      방법을 추가로 쓸 수 있습니다. 완전한 비공개가 필요한 링크는 애초에 키의 예측 불가능성만으로 막지 않고, 접근 권한 검증
+      (인증된 사용자만 조회 가능)을 별도로 두는 것이 더 근본적인 방어입니다."
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ 흔한 오해 ══ -->
+  <h2>Trade-off와 흔한 오해</h2>
+
+  <h3>오해 1: "해시를 쓰면 충돌이 거의 없으니 신경 쓸 필요 없다"</h3>
+  <p>
+    <strong>실제:</strong> 충돌 확률이 낮다는 것과 "발생하지 않는다"는 것은 다르다. 서비스가 수십억 건 규모로 커지면 생일 역설에
+    의해 짧게 자른 해시값의 충돌은 실제로 발생하는 사건이 된다. "충돌이 드물다"가 아니라 <strong>"충돌이 발생했을 때 감지하고
+    해소하는 로직이 있는가"</strong>가 설계 품질을 가른다.
+  </p>
+
+  <h3>오해 2: "짧은 키는 짧을수록 무조건 좋다"</h3>
+  <p>
+    <strong>실제:</strong> 키 길이는 키 공간(가능한 조합의 수)과 직결된다. 지나치게 짧게 잡으면 예상 트래픽 규모에서 키 공간이
+    빠르게 소진되거나 충돌 확률이 높아진다. 길이는 "짧을수록 좋다"가 아니라 <strong>예상 규모 대비 여유 있는 키 공간을 확보하는
+    선에서 최소화</strong>하는 균형점을 찾는 문제다.
+  </p>
+
+  <h3>오해 3: "auto-increment ID를 그대로 쓰면 간단하고 문제없다"</h3>
+  <p>
+    <strong>실제:</strong> 단일 서버 프로토타입에서는 문제없지만, 여러 서버/샤드로 확장하는 순간 단일 장애점이자 병목이 되고,
+    순번이 그대로 노출되면 열거 공격에 취약해진다. "지금 당장 동작하는가"가 아니라 <strong>"트래픽이 100배로 늘어도 이 설계가
+    유지되는가"</strong>를 기준으로 판단해야 한다.
+  </p>
+
+  <h3>Trade-off: 결정적(deterministic) 키 생성 vs 비결정적 키 생성</h3>
+  <p>
+    해시 기반은 같은 입력에 같은 키가 나오는 결정적 방식이라 "중복 URL 재사용" 최적화가 가능하지만 충돌 처리 비용을 수반한다.
+    분산 ID 생성은 매번 다른 키가 나오는 비결정적 방식이라 충돌이 없지만, 같은 URL을 여러 번 단축하면 서로 다른 짧은 키가
+    발급되어 저장 공간이 늘어난다. 이 선택은 "충돌 처리 비용을 감수할 것인가, 중복 저장을 감수할 것인가"의 문제이며, 대부분의
+    실무 설계는 <strong>충돌 처리의 예측 불가능한 지연을 피하기 위해 비결정적 방식(분산 ID 생성)을 우선</strong>한다.
+  </p>
+
+  <!-- ══════════════════════════════════════════ Quiz ══ -->
+  <div class="quiz-section">
+    <h3>자기 점검 퀴즈</h3>
+    <p>각 문제에서 가장 적합한 답을 고르고 이유를 생각해보자.</p>
+
+    <div class="quiz-q" id="q1">
+      <p>1. 해시 기반 짧은 키 생성 방식의 근본적인 문제는 무엇인가?</p>
+      <ul class="quiz-options">
+        <li><label><input type="radio" name="q1" value="a"> a) 해시 함수 계산 속도가 너무 느리다</label></li>
+        <li><label><input type="radio" name="q1" value="b"> b) 해시값을 짧게 자르면 서로 다른 URL이 같은 키를 갖는 충돌이 발생할 수 있어 감지·해소 로직이 필요하다</label></li>
+        <li><label><input type="radio" name="q1" value="c"> c) 해시 함수는 결정적이지 않아서 같은 URL마다 다른 키가 나온다</label></li>
+        <li><label><input type="radio" name="q1" value="d"> d) 해시 기반 방식은 DB 저장 공간을 두 배로 사용한다</label></li>
+      </ul>
+      <button class="check-btn" onclick="checkQ1()">답 확인</button>
+      <div class="quiz-feedback" id="q1-feedback"></div>
+    </div>
+
+    <div class="quiz-q" id="q2">
+      <p>2. 여러 애플리케이션 서버가 동시에 짧은 키를 발급해도 충돌이 없도록 하는 데 가장 적합한 방법은?</p>
+      <ul class="quiz-options">
+        <li><label><input type="radio" name="q2" value="a"> a) 각 서버가 독립적으로 로컬 auto-increment 카운터를 사용한다</label></li>
+        <li><label><input type="radio" name="q2" value="b"> b) 모든 서버가 같은 고정된 키를 재사용한다</label></li>
+        <li><label><input type="radio" name="q2" value="c"> c) Snowflake처럼 타임스탬프, 머신 ID, 시퀀스 번호를 조합한 분산 ID 생성 방식을 쓴다</label></li>
+        <li><label><input type="radio" name="q2" value="d"> d) 클라이언트가 직접 키를 생성해서 서버에 전달한다</label></li>
+      </ul>
+      <button class="check-btn" onclick="checkQ2()">답 확인</button>
+      <div class="quiz-feedback" id="q2-feedback"></div>
+    </div>
+
+    <div class="quiz-q" id="q3">
+      <p>3. URL 단축 서비스에서 캐시(Redis)가 특히 중요한 이유로 가장 적절한 것은?</p>
+      <ul class="quiz-options">
+        <li><label><input type="radio" name="q3" value="a"> a) 짧은 키 생성 자체가 캐시 없이는 불가능하기 때문에</label></li>
+        <li><label><input type="radio" name="q3" value="b"> b) 리다이렉트(읽기) 요청이 단축(쓰기) 요청보다 압도적으로 많은 워크로드이기 때문에</label></li>
+        <li><label><input type="radio" name="q3" value="c"> c) 캐시가 없으면 짧은 키의 유일성을 보장할 수 없기 때문에</label></li>
+        <li><label><input type="radio" name="q3" value="d"> d) 캐시를 쓰면 DB 샤딩이 필요 없어지기 때문에</label></li>
+      </ul>
+      <button class="check-btn" onclick="checkQ3()">답 확인</button>
+      <div class="quiz-feedback" id="q3-feedback"></div>
+    </div>
+  </div>
+
+  <script>
+  function checkQ1() {
+    const sel = document.querySelector('input[name="q1"]:checked');
+    const fb = document.getElementById('q1-feedback');
+    if (!sel) { fb.className = 'quiz-feedback wrong'; fb.textContent = '답을 선택해주세요.'; return; }
+    if (sel.value === 'b') {
+      fb.className = 'quiz-feedback correct';
+      fb.textContent = '정답! 해시 함수는 무한한 입력을 유한한 출력으로 압축하므로, 해시값을 6~8자로 짧게 자르면 비둘기집 원리에 의해 서로 다른 URL이 같은 짧은 키를 갖는 충돌이 반드시 발생할 수 있다. 서비스 규모가 커질수록(생일 역설) 이 확률이 무시할 수 없는 수준이 되므로, 충돌을 감지하고 재해싱하는 로직이 반드시 필요하다.';
+    } else {
+      const wrong = {
+        a: '오답. 계산 속도는 이 방식의 핵심 문제가 아니다. MD5/SHA 계산 자체는 매우 빠르다. 핵심 문제는 짧게 자른 결과의 충돌 가능성이다.',
+        c: '오답. 해시 함수는 오히려 결정적(deterministic)이다 — 같은 입력은 항상 같은 출력을 낸다. 문제는 그 결정적 출력을 짧게 잘랐을 때 서로 다른 입력끼리 겹칠 수 있다는 것이다.',
+        d: '오답. 저장 공간 두 배 사용은 해시 기반 방식의 특징이 아니다. 오히려 결정적 특성 덕분에 같은 URL 재요청 시 저장을 재사용할 여지가 있다.'
+      };
+      fb.className = 'quiz-feedback wrong';
+      fb.textContent = wrong[sel.value] || '오답입니다.';
+    }
+  }
+
+  function checkQ2() {
+    const sel = document.querySelector('input[name="q2"]:checked');
+    const fb = document.getElementById('q2-feedback');
+    if (!sel) { fb.className = 'quiz-feedback wrong'; fb.textContent = '답을 선택해주세요.'; return; }
+    if (sel.value === 'c') {
+      fb.className = 'quiz-feedback correct';
+      fb.textContent = '정답! Snowflake 방식은 타임스탬프, 머신 ID, 시퀀스 번호를 비트 단위로 조합해 서로 다른 노드가 중앙 조율 없이 동시에 ID를 발급해도 머신 ID가 다르면 절대 겹치지 않도록 보장한다. 이것이 분산 환경에서 유일 ID를 생성하는 대표적인 해법이다.';
+    } else {
+      const wrong = {
+        a: '오답. 각 서버가 독립적인 로컬 카운터를 쓰면 서로 다른 서버가 우연히 같은 번호를 발급하는 충돌이 그대로 발생한다. 이것이 바로 분산 환경에서 auto-increment가 문제가 되는 지점이다.',
+        b: '오답. 고정된 키를 재사용하면 유일성 자체가 깨져서 서비스가 성립하지 않는다.',
+        d: '오답. 클라이언트가 키를 생성하게 하면 유일성 보장이 클라이언트 신뢰에 의존하게 되어 악의적이거나 버그가 있는 클라이언트가 충돌을 일으킬 수 있다. 서버(또는 서버가 신뢰하는 ID 생성 서비스)가 유일성을 책임져야 한다.'
+      };
+      fb.className = 'quiz-feedback wrong';
+      fb.textContent = wrong[sel.value] || '오답입니다.';
+    }
+  }
+
+  function checkQ3() {
+    const sel = document.querySelector('input[name="q3"]:checked');
+    const fb = document.getElementById('q3-feedback');
+    if (!sel) { fb.className = 'quiz-feedback wrong'; fb.textContent = '답을 선택해주세요.'; return; }
+    if (sel.value === 'b') {
+      fb.className = 'quiz-feedback correct';
+      fb.textContent = '정답! URL 단축 서비스는 통상 리다이렉트(읽기)가 단축(쓰기)보다 100배 이상 많은 압도적 읽기 중심 워크로드다. 이런 워크로드에서는 매 리다이렉트마다 DB를 조회하면 DB가 병목이 되므로, 짧은 키 → 원본 URL 매핑을 캐시에 두어 대부분의 요청을 DB까지 가지 않고 처리하는 것이 성능의 핵심이다.';
+    } else {
+      const wrong = {
+        a: '오답. 짧은 키 생성은 ID 생성 로직(해시, Base62, Snowflake 등)으로 이루어지며 캐시와는 무관하다. 캐시는 생성된 키를 조회하는 읽기 경로를 빠르게 하기 위한 것이다.',
+        c: '오답. 유일성 보장은 DB의 unique constraint나 분산 ID 생성 로직이 담당하는 문제이지, 캐시가 보장하는 것이 아니다.',
+        d: '오답. 캐시와 DB 샤딩은 서로 다른 목적을 갖는 별개의 확장 기법이다. 캐시는 읽기 지연을 줄이고, 샤딩은 쓰기 처리량과 저장 용량을 늘린다. 캐시가 있어도 데이터 규모가 크면 샤딩은 여전히 필요하다.'
+      };
+      fb.className = 'quiz-feedback wrong';
+      fb.textContent = wrong[sel.value] || '오답입니다.';
+    }
+  }
+  </script>
+
+  <!-- ══════════════════════════════════════════ Rubric ══ -->
+  <h2>자기 점검 Rubric</h2>
+  <p class="section-intro">이 항목으로 자신의 답변이 어느 수준인지 확인하자.</p>
+
+  <table class="rubric-table">
+    <thead>
+      <tr>
+        <th>평가 항목</th>
+        <th>Junior 수준</th>
+        <th>Mid 수준</th>
+        <th>Senior 수준</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>키 생성 전략 비교</strong></td>
+        <td class="level level-junior">해시나 auto-increment 하나만 제시</td>
+        <td class="level level-mid">여러 전략을 알지만 선택 근거가 약함</td>
+        <td class="level level-senior">해시/Base62/분산 ID의 trade-off를 비교해 근거 있는 선택을 제시</td>
+      </tr>
+      <tr>
+        <td><strong>충돌/중복 인식</strong></td>
+        <td class="level level-junior">충돌 가능성을 언급하지 않음</td>
+        <td class="level level-mid">충돌 가능성은 알지만 구체적 해소 로직이 없음</td>
+        <td class="level level-senior">충돌 발생 시 감지·재시도 로직까지 구체적으로 설계</td>
+      </tr>
+      <tr>
+        <td><strong>분산 환경 유일성 보장</strong></td>
+        <td class="level level-junior">단일 서버 전제로만 설계</td>
+        <td class="level level-mid">문제는 인지하지만 구체적 해법(Snowflake 등)을 모름</td>
+        <td class="level level-senior">Snowflake/Ticket Server 등 구체적 분산 ID 생성 방식과 그 한계까지 설명</td>
+      </tr>
+      <tr>
+        <td><strong>읽기 중심 워크로드 반영</strong></td>
+        <td class="level level-junior">캐시 없이 매 요청마다 DB 조회</td>
+        <td class="level level-mid">캐시는 두지만 읽기:쓰기 비율 근거가 없음</td>
+        <td class="level level-senior">capacity estimation으로 읽기:쓰기 비율을 근거로 캐시를 설계의 중심에 둠</td>
+      </tr>
+      <tr>
+        <td><strong>보안(열거 공격) 고려</strong></td>
+        <td class="level level-junior">순차 키의 위험을 인지하지 못함</td>
+        <td class="level level-mid">위험은 알지만 완화 방법을 제시하지 못함</td>
+        <td class="level level-senior">비순차 ID, 비트 섞기, 접근 권한 검증 등 구체적 완화책을 제시</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ══════════════════════════════════════════ 핵심 정리 ══ -->
+  <h2>핵심 정리</h2>
+  <ul>
+    <li>URL 단축 서비스의 핵심 난제는 <strong>분산 환경에서 짧은 키의 유일성을 보장하는 것</strong>이다</li>
+    <li><strong>해시 기반</strong>은 결정적이지만 충돌 처리 비용이 있고, <strong>Base62+auto-increment</strong>는 충돌은 없지만 확장성과 보안에 약점이 있으며, <strong>분산 ID 생성(Snowflake/Ticket Server)</strong>이 규모 확장에 가장 적합한 경우가 많다</li>
+    <li>이 서비스는 <strong>읽기(리다이렉트):쓰기(단축) 비율이 100:1 이상</strong>인 압도적 읽기 중심 워크로드이므로, 캐시가 설계의 핵심이다</li>
+    <li>순차적이거나 예측 가능한 키는 <strong>열거(enumeration) 공격</strong>에 취약할 수 있어, 비순차 ID나 접근 권한 검증 같은 보안 고려가 필요하다</li>
+    <li>커스텀 별칭 같은 동시 쓰기 요청은 <strong>DB unique constraint</strong>를 최종 방어선으로 두어 race condition을 안전하게 처리한다</li>
+  </ul>
+
+  <hr>
+
+  <div class="callout callout-tip">
+    <div class="callout-title">다음 스텝</div>
+    <p>
+      오늘은 Day 1~8에서 배운 개념들을 하나의 완결된 실전 설계에 통합해봤다. 이제 이 패턴을 다른 유형의 서비스에도 적용하는
+      연습으로 이어간다.
+    </p>
+    <p><strong>Day 10에서는</strong> 실전 설계 — 뉴스 피드 / 타임라인: Fanout on Write vs Read, 소셜 그래프 DB 선택을 다룬다.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════ NAV ══ -->
+  <div class="lesson-nav">
+    <a href="./0008-distributed-systems-consistency-cap.html">← Day 8: 분산 시스템과 일관성</a>
+    <a href="./index.html">목록으로</a>
+  </div>
+
+</div><!-- .container -->
+
+</body>
+</html>

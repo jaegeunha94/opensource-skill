@@ -12,12 +12,12 @@
 | 6 | 2026-07-05 | 메시지 큐와 비동기 처리 — Kafka vs RabbitMQ, 이벤트 드리븐 아키텍처, Backpressure | [0006-message-queue-async-processing.html](lessons/0006-message-queue-async-processing.html) |
 | 7 | 2026-07-06 | 장애 격리와 고가용성 — Circuit Breaker, Bulkhead, Retry with Backoff, 다중 AZ | [0007-fault-isolation-high-availability.html](lessons/0007-fault-isolation-high-availability.html) |
 | 8 | 2026-07-07 | 분산 시스템과 일관성 — CAP Theorem, BASE vs ACID, Eventual Consistency, 분산 트랜잭션 | [0008-distributed-systems-consistency-cap.html](lessons/0008-distributed-systems-consistency-cap.html) |
+| 9 | 2026-07-08 | 실전 설계 — URL 단축 서비스: Hash 전략, Collision 처리, 분산 ID 생성 | [0009-url-shortener-system-design.html](lessons/0009-url-shortener-system-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | 실전 설계 — URL 단축 서비스 | Hash 전략, Collision 처리, 분산 ID 생성 |
 | 10 | 실전 설계 — 뉴스 피드 / 타임라인 | Fanout on Write vs Read, 소셜 그래프 DB 선택 |
 | 11 | 실전 설계 — 채팅 서비스 | WebSocket, 메시지 순서, 오프라인 처리, 대화방 확장 |
 | 12 | 실전 설계 — 동영상 스트리밍 | 인코딩 파이프라인, CDN, Adaptive Bitrate |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 8 완료** — Day 9: 실전 설계 — URL 단축 서비스(Hash 전략, 분산 ID 생성)로 이어짐.
+**Day 9 완료** — Day 10: 실전 설계 — 뉴스 피드 / 타임라인(Fanout on Write vs Read, 소셜 그래프 DB 선택)으로 이어짐.
 
 ## 습득한 핵심 개념
 
@@ -43,4 +43,5 @@
 - [x] 동기 vs 비동기 판단 기준, at-least-once/멱등성, Backpressure, Kafka vs RabbitMQ, DLQ, 파티션 키 기반 순서 보장 (Day 6)
 - [x] 장애 전파 메커니즘, Circuit Breaker(Closed/Open/Half-Open), Bulkhead, Retry with Backoff+Jitter, Fallback, 다중 AZ와 가용성 SLA (Day 7)
 - [x] CAP Theorem(파티션 전제 하 C/A 트레이드오프), ACID vs BASE, Eventual Consistency, 2PC의 blocking 위험, Saga(보상 트랜잭션), PACELC (Day 8)
-- [ ] 분산 ID 생성 / URL 단축 설계 (예정 Day 9)
+- [x] 짧은 키 생성 전략 비교(해시/Base62/분산 ID), 해시 충돌과 생일 역설, Snowflake/Ticket Server, 열거 공격 방지, 읽기:쓰기 비율 기반 캐시 설계 (Day 9)
+- [ ] Fanout on Write vs Read, 소셜 그래프 DB 선택 (예정 Day 10)
