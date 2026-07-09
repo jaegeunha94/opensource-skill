@@ -10,12 +10,12 @@
 | 4 | 2026-07-06 | Model/Tool/Runtime 경계와 Provider 추상화 | [0004-model-tool-runtime-boundary-provider-abstraction.html](lessons/0004-model-tool-runtime-boundary-provider-abstraction.html) |
 | 5 | 2026-07-07 | MCP와 API 통합, ACP 기반 IDE 연동 | [0005-mcp-api-integration-acp-ide-integration.html](lessons/0005-mcp-api-integration-acp-ide-integration.html) |
 | 6 | 2026-07-08 | Gateway와 채널 통합 | [0006-gateway-channel-integration.html](lessons/0006-gateway-channel-integration.html) |
+| 7 | 2026-07-09 | 메모리와 세션 설계 | [0007-memory-session-design.html](lessons/0007-memory-session-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | 메모리와 세션 설계 | FTS5 전문 검색 + LLM 요약, Honcho 기반 dialectic user modeling, 세션 영속성 vs 컨텍스트 예산 |
 | 8 | 스케줄링과 반복 작업 | 내장 cron, 자연어 반복 작업 정의, 실패한 예약 작업의 복구/알림 설계 |
 | 9 | Replay와 평가 루프 | batch 모드, ShareGPT 포맷 trajectory, trajectory compression, eval harness/파인튜닝 데이터 재활용 |
 | 10 | 샌드박싱과 권한 모델 | 7-layer defense, 위험 명령 승인, 컨테이너 격리(Docker/Singularity/Modal/Daytona), MCP 자격증명 필터링 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음: Day 7 — 메모리와 세션 설계
+**Day 7 완료** — 다음: Day 8 — 스케줄링과 반복 작업
 
 ## 습득한 핵심 개념
 
@@ -56,7 +56,12 @@
 - [x] webhook vs polling의 방향성과 로컬-first 배포 토폴로지(방화벽/터널링) 판단 (Day 6)
 - [x] CVE-2026-7396 등 실제 사례를 어댑터 위협 모델링 체크리스트(입력 검증/rate limit/자격증명 격리)로 일반화 (Day 6)
 - [x] 어댑터별 circuit breaker 장애 격리와 재시작 시 세션 자동 재개(`restart_interrupted`) (Day 6)
-- [ ] 메모리/세션 설계, dialectic user modeling (예정 Day 7)
+- [x] 메모리 3-레이어 구조: 내장 메모리(MEMORY.md/USER.md, frozen snapshot) vs `session_search`(SQLite FTS5, 무압축) vs 외부 provider(9개, additive) (Day 7)
+- [x] frozen snapshot이 세션 도중 반영 안 되는 이유(prefix caching 보존)와 최신성 트레이드오프 (Day 7)
+- [x] 메모리 용량 초과 시 하드 에러 + 에이전트 자가 정리 설계(사일런트 데이터 유실 방지) (Day 7)
+- [x] `session_search`는 FTS5 어휘 검색(LLM 요약 없음)이며 벡터/의미 검색과 다르다는 정정 (Day 7)
+- [x] Honcho dialectic reasoning(사후 LLM 분석 기반 사용자 모델링) — base context/dialectic supplement 2계층, contextCadence/dialecticCadence/dialecticDepth 노브 (Day 7)
+- [x] Issue #4889 사례로 배우는 "정제된 사용자 입력 vs 다운스트림 페이로드" 경계 원칙 (Day 7)
 - [ ] 스케줄링(cron) (예정 Day 8)
 - [ ] Replay/평가 루프 (예정 Day 9)
 - [ ] 샌드박싱/권한 모델(7-layer defense) (예정 Day 10)

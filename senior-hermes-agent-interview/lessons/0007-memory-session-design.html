@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — 메모리와 세션 설계</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 7 · Hermes Agent Interview</div>
+    <h1>메모리와 세션 설계</h1>
+    <div class="subtitle">MEMORY.md/USER.md 고정 스냅샷, SQLite FTS5 session_search, 9개 외부 provider(Honcho dialectic reasoning 포함)까지 — "세션 안에서 무엇을 남기고, 어떻게 다시 불러오는가"의 설계 판단</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전/출처 기준과 커리큘럼 정정:</strong> 2026-07-09 기준 재확인 결과, v0.18.0 "The Judgment
+    Release"(2026-07-01) 이후 <strong>v0.18.1(2026.7.7, 설치 프로그램 자가복구·대시보드 안정화 위주
+    인프라 패치)</strong>과 <strong>v0.18.2(2026.7.7.2, WhatsApp Baileys 의존성을 고정 커밋 대신 정식
+    npm 릴리스로 전환하는 당일 패치)</strong>가 추가로 나왔다. 이번 Day의 메모리/세션 관련 내용에는 두
+    패치 모두 영향이 없다. 이번 Day는 공식 문서 <code>website/docs/user-guide/features/memory.md</code>,
+    <code>memory-providers.md</code>, <code>honcho.md</code>를 원문 확인해 1차 출처로 삼았다.
+    <strong>이 과정에서 <code>PROGRESS.md</code>에 미리 적어둔 예정 주제 설명 두 군데를 정정한다</strong> —
+    (1) "FTS5 전문 검색 + <strong>LLM 요약</strong>"이라고 돼 있었으나, 공식 문서 원문은
+    <code>session_search</code>가 "실제 메시지를 그대로 반환한다 — LLM 요약도, truncation도 없다"고
+    명시한다. LLM 요약이 들어가는 지점은 <code>session_search</code>가 아니라 Honcho 같은 외부 provider의
+    dialectic reasoning 쪽이다. (2) 외부 메모리 provider는 "8개"가 아니라 문서상 <strong>9개</strong>
+    (Honcho/OpenViking/Mem0/Hindsight/Holographic/RetainDB/ByteRover/Supermemory/Memori)다. 신생·고속
+    변화 프로젝트를 다루는 이 트랙의 원칙대로, 사전에 적어둔 커리큘럼 설명보다 방금 재확인한 공식 문서
+    원문을 우선했다.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "Hermes Agent가 세션이 끝나도 사용자에 대해 기억한다고 들었습니다. 이게 구체적으로 어떤 메커니즘으로
+      동작합니까? 설마 매 턴마다 지금까지의 대화 전체를 다시 프롬프트에 밀어넣는 건 아니겠죠?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "메모리에 새 내용을 추가하려는데 정해진 용량을 넘으면 어떻게 됩니까? 오래된 내용을 자동으로 잘라내고
+      새 내용을 넣나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "사용자가 '몇 주 전에 나눴던 마이그레이션 얘기 다시 찾아줘'라고 하면 Hermes는 그걸 어떻게 찾아옵니까?
+      그것도 메모리 파일 안에 다 들어있나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q4 — 변형</span>
+      "Honcho 같은 외부 메모리 provider를 붙이면 기존 내장 메모리(MEMORY.md/USER.md)는 어떻게 됩니까?
+      대체되나요, 같이 쓰이나요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q5 — 변형</span>
+      "Honcho의 'dialectic reasoning'이라는 게 정확히 뭘 하는 겁니까? 결국 벡터 검색 아닙니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q6 — 변형</span>
+      "이 메모리 시스템이 실제 프로덕션에서 깨진 사례를 알고 있습니까? 있다면 근본 원인이 뭐였다고
+      생각합니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>"세션"과 "메모리"부터 분리한다</h2>
+
+    <p>
+      Day 6에서 세션 키(<code>agent:main:{platform}:{chat_type}:{chat_id}</code>)를 배웠다. 그건
+      <strong>"어떤 메시지들이 하나의 대화로 묶이는가"</strong>를 결정하는 라우팅 경계였다. 오늘 다루는
+      메모리·세션 설계는 그것과 다른 질문이다 — <strong>"그 대화(들)에서 무엇을 남기고, 다음번에 그걸
+      어떻게 다시 불러오는가"</strong>. 세션 키가 "봉투를 어떻게 나눌 것인가"라면, 메모리 설계는 "봉투
+      안에 뭘 적어서 넣고, 나중에 뭘 어떻게 꺼내 읽을 것인가"에 가깝다.
+    </p>
+    <p>
+      이 구분이 필요한 이유는 컨텍스트 예산(context budget) 문제 때문이다. LLM의 컨텍스트 윈도우는
+      유한하고, 토큰은 곧 비용과 지연시간이다. 대화가 길어질수록 매 턴 전체 이력을 그대로 프롬프트에
+      넣는 방식은 결국 윈도우를 넘기거나, 넘기지 않더라도 비용과 응답 속도가 계속 나빠진다. Hermes는 이
+      문제를 <strong>세 개의 서로 다른 레이어</strong>로 나눠서 푼다 — (1) 압축된 상시 프로필(내장
+      메모리), (2) 압축 없는 온디맨드 아카이브 검색(<code>session_search</code>), (3) 선택적 외부 semantic
+      provider(Honcho 등). 이 세 레이어를 하나로 뭉뚱그리면 안 된다는 게 이번 Day의 핵심이다.
+    </p>
+
+    <h3>레이어 1 — 내장 메모리: 압축된 상시 프로필</h3>
+    <p>
+      Hermes는 <code>~/.hermes/memories/</code>에 두 개의 영속 파일을 유지한다:
+    </p>
+    <table>
+      <tr><th>파일</th><th>용도</th><th>공식 문서 표현</th><th>기본 문자 한도</th></tr>
+      <tr><td><code>MEMORY.md</code></td><td>에이전트의 개인 노트</td>
+        <td>"환경 사실, 관례, 학습한 것들"</td><td>2,200자</td></tr>
+      <tr><td><code>USER.md</code></td><td>사용자 프로필</td>
+        <td>"당신의 선호도, 커뮤니케이션 스타일, 기대치"</td><td>1,375자</td></tr>
+    </table>
+    <p>
+      두 파일은 <strong>"세션 시작 시 시스템 프롬프트에 고정 스냅샷(frozen snapshot)으로 주입"</strong>된다.
+      여기서 "frozen"이라는 표현이 핵심이다 — 세션 도중 <code>memory</code> 툴로 만든 변경사항은 디스크에는
+      바로 반영되지만, <strong>이번 세션의 시스템 프롬프트에는 나타나지 않는다.</strong> 다음 세션부터
+      반영된다. 이건 버그가 아니라 <strong>LLM 프리픽스 캐싱(prefix caching)을 보존하기 위한 의도적
+      설계</strong>다 — 시스템 프롬프트가 세션 도중 바뀌면 프리픽스 캐시가 매번 무효화돼 매 턴 비용과
+      지연시간이 늘어난다. "최신성"과 "캐시 히트율" 사이의 트레이드오프에서, Hermes는 세션 단위로는
+      캐시 히트율을 택하고 세션 경계에서만 최신성을 반영하는 쪽을 택한 것이다.
+    </p>
+
+    <h3>메모리 툴 — 쓰기 3종, 읽기 없음</h3>
+    <p>
+      에이전트는 <code>memory</code> 툴로 세 가지 동작만 할 수 있다 — <strong>add</strong>(새 항목 추가),
+      <strong>replace</strong>(부분 문자열 매칭으로 기존 내용 교체), <strong>remove</strong>(부분 문자열
+      매칭으로 삭제). <strong><code>read</code> 액션은 없다</strong> — 공식 문서 표현으로 "메모리 내용은
+      세션 시작 시 시스템 프롬프트에 자동으로 주입되기 때문"이다. 즉 메모리는 에이전트가 "질의해서 가져오는"
+      대상이 아니라 "항상 거기 있는" 대상으로 설계돼 있다.
+    </p>
+
+    <h3>용량 초과 처리 — 조용히 버리지 않고, 에러를 낸다</h3>
+    <p>
+      추가하려는 내용이 문자 한도를 넘기면, <code>memory</code> 툴은 <strong>조용히 오래된 내용을 잘라내는
+      대신 에러를 반환</strong>한다. 그러면 같은 턴 안에서 에이전트 스스로 기존 항목을 통합(consolidate)하거나
+      삭제해 공간을 만든 뒤 재시도한다. 문서가 권장하는 실무 패턴은 80% 용량 도달 시점에 미리 통합해 두는
+      것이다. 이 설계가 왜 중요한지는 대안과 비교하면 분명해진다 — 만약 시스템이 자동으로 LRU(least
+      recently used) 방식으로 오래된 항목을 조용히 버렸다면, "어떤 기억이 아직 중요한가"라는 판단을
+      시스템이 기계적으로 내리게 된다. 에러를 내고 에이전트에게 정리를 맡기면, "무엇을 남기고 무엇을
+      버릴지"에 대한 판단을 문맥을 아는 LLM에게 위임하면서도, 최소한 <strong>사일런트 데이터 유실은
+      막는다</strong>. 추가로 <code>write_approval: true</code>로 설정하면 메모리 저장 자체에 사람의 승인
+      (<code>/memory pending</code>/<code>approve</code>/<code>reject</code>)을 요구할 수 있다 — Day 3에서
+      배운 스킬 <code>write_approval</code>과 같은 패턴이 메모리 쓰기에도 적용된 것이다.
+    </p>
+
+    <h3>레이어 2 — <code>session_search</code>: 압축 없는 온디맨드 아카이브</h3>
+    <p>
+      내장 메모리가 "항상 켜져 있는 압축된 요약"이라면, <code>session_search</code> 툴은 정반대 극단이다.
+      에이전트는 이 툴로 <code>~/.hermes/state.db</code>(SQLite)를 <strong>FTS5(전문 검색, full-text
+      search) 인덱스</strong>로 질의한다. 공식 문서가 명시적으로 강조하는 문장은 이렇다 — "검색 질의는 DB의
+      실제 메시지를 그대로 반환한다 — LLM 요약도, truncation도 없다." 즉 이 레이어에는 압축이 전혀 없다.
+      대신 용량은 "무제한"에 가깝다 — 메모리처럼 문자 수 제한에 묶이지 않고, 몇 주 전 대화까지 어휘
+      기반으로 검색할 수 있다.
+    </p>
+    <div class="callout callout-warn">
+      <strong>FTS5는 "어휘 검색"이지 "의미 검색"이 아니다.</strong> FTS5는 SQLite의 전문 검색 확장으로,
+      질의어와 겹치는 단어/어구를 인덱스에서 찾는 방식이다. "이전에 나눈 배포 이슈"를 검색하려면 질의에
+      실제로 그와 겹치는 단어가 있어야 한다 — 임베딩 기반 유사도 검색처럼 "의미가 비슷한" 메시지를 찾아주는
+      건 아니다. 의미 기반 검색이 필요하면 뒤에서 다룰 외부 provider(Supermemory, Mem0 등) 영역으로
+      넘어가야 한다.
+    </div>
+
+    <h3>레이어 3 — 외부 메모리 provider: 9개, 전부 additive</h3>
+    <p>
+      Hermes는 내장 메모리를 대체하지 않고 <strong>더하는(additive)</strong> 방식으로 외부 provider를 붙일
+      수 있다. 공식 문서 원문: "내장 메모리(MEMORY.md/USER.md)는 이전과 완전히 동일하게 계속 동작한다.
+      외부 provider는 추가적인 것이다." 문서에 나열된 9개는 다음과 같다(단, <strong>동시에 활성화할 수
+      있는 외부 provider는 한 번에 하나</strong>다):
+    </p>
+    <table>
+      <tr><th>Provider</th><th>성격</th></tr>
+      <tr><td>Honcho</td><td>AI-native 세션 간 사용자 모델링(dialectic reasoning)</td></tr>
+      <tr><td>OpenViking</td><td>파일시스템 스타일 지식 계층</td></tr>
+      <tr><td>Mem0</td><td>서버 사이드 LLM 사실 추출</td></tr>
+      <tr><td>Hindsight</td><td>엔티티 해석 기반 지식 그래프</td></tr>
+      <tr><td>Holographic</td><td>로컬 SQLite 사실 저장소(외부 의존성 없음)</td></tr>
+      <tr><td>RetainDB</td><td>하이브리드 검색 지원 클라우드 메모리</td></tr>
+      <tr><td>ByteRover</td><td>CLI 기반 계층형 지식 트리</td></tr>
+      <tr><td>Supermemory</td><td>프로파일링 포함 시맨틱 장기 메모리</td></tr>
+      <tr><td>Memori</td><td>프로젝트 단위 귀속이 있는 구조화 메모리</td></tr>
+    </table>
+    <p>
+      대부분 <code>hermes memory setup</code>으로 대화형 설정 후 API 키를 <code>~/.hermes/.env</code>에,
+      활성 provider는 <code>~/.hermes/config.yaml</code>에 지정하는 패턴을 따른다. 프로필별로 자격증명과
+      저장 위치가 분리되고(클라우드는 프로필 스코프 식별자 자동 파생, 로컬은 프로필별 파일 경로), 비용도
+      갈린다 — Holographic과 ByteRover(로컬 모드)는 무료, 클라우드 provider는 구독 과금이다.
+    </p>
+
+    <h3>Honcho 딥다이브 — "dialectic reasoning"은 사후 분석이지 벡터 검색이 아니다</h3>
+    <p>
+      Honcho는 9개 provider 중 가장 정교한 사용자 모델링을 제공한다. 다섯 개 툴을 노출한다:
+    </p>
+    <ul>
+      <li><code>honcho_profile</code> — peer card(사실 목록) 읽기/갱신</li>
+      <li><code>honcho_search</code> — 컨텍스트에 대한 시맨틱 검색(LLM 합성 없는 원문 발췌)</li>
+      <li><code>honcho_context</code> — 세션 요약·표상(representation)·카드·최근 메시지를 포함한 전체
+        세션 컨텍스트</li>
+      <li><code>honcho_reasoning</code> — Honcho의 LLM이 합성한 답변(<code>reasoning_level</code> 지정
+        가능)</li>
+      <li><code>honcho_conclude</code> — 결론(conclusion) 생성/삭제</li>
+    </ul>
+    <p>
+      핵심은 <strong>두 개 레이어의 컨텍스트 주입</strong>이다. <strong>Base context</strong>는
+      <code>contextCadence</code> 턴마다 갱신되며 세션 요약·사용자 표상·사용자 peer card·에이전트 자기
+      표상을 담는다 — "이 사람이 누구인가"를 답하는 층이다. <strong>Dialectic supplement</strong>는
+      <code>dialecticCadence</code> 턴마다 갱신되며, "지금 이 사용자에게 무엇이 중요한가"를 답하는
+      LLM 합성 추론이다. 이게 바로 "dialectic reasoning"의 실체다 — 매 대화 턴 이후(케이던스로 조절),
+      Honcho가 그 대화를 분석해 사용자의 선호·습관·목표에 대한 통찰을 도출하고, 이게 누적되면서 사용자가
+      명시적으로 말한 적 없는 것까지 포함한 깊어지는 이해를 만든다는 것이다. 즉 벡터 유사도로 "비슷한
+      메시지를 찾는" <code>honcho_search</code>와, LLM이 "지금 상황을 재해석해서 결론을 내리는"
+      dialectic 레이어는 서로 다른 메커니즘이다.
+    </p>
+    <p>
+      Dialectic 레이어는 <strong>콜드 스타트와 웜 세션을 구분</strong>한다 — base context가 아직 없으면
+      "이 사람은 누구인가? 선호·목표·작업 스타일은?" 같은 일반적 질의로 시작하고(cold), base context가
+      이미 있으면 "지금까지 이 세션에서 논의된 것을 볼 때, 이 사용자에 대해 지금 가장 관련 있는 맥락은
+      무엇인가?"처럼 세션 범위로 좁힌 질의를 던진다(warm). 또한 <code>dialecticDepth</code>(1~3)로 다중
+      패스 추론을 조절할 수 있다 — Pass 0(콜드/웜 프롬프트) → Pass 1(자기 감사, 초기 평가의 공백 식별) →
+      Pass 2(정합성 확인, 모순 검사). 질의 길이에 따라 추론 깊이를 자동으로 올리는 query-adaptive
+      메커니즘도 있다(120자 이상이면 +1 레벨, 400자 이상이면 +2, <code>reasoningLevelCap</code>으로 상한).
+    </p>
+    <div class="callout callout-tip">
+      <strong>세 개의 케이던스 노브가 곧 비용/지연 다이얼이다.</strong> <code>contextCadence</code>(base
+      layer 갱신 간격), <code>dialecticCadence</code>(dialectic layer 갱신 간격, <code>peer.chat()</code>
+      LLM 호출), <code>dialecticDepth</code>(호출당 패스 수)는 전부 "얼마나 자주, 얼마나 깊게 사용자
+      모델을 다시 계산할 것인가"를 정하는 손잡이다. 매 턴마다 깊이 3으로 갱신하면 사용자 이해는 가장
+      최신이지만, 매 턴 추가 LLM 호출 여러 번이 비용과 지연시간에 그대로 더해진다.
+    </div>
+
+    <h3>알려진 한계 — 세션 전략과 리핀(re-pin) 시 고아 메모리</h3>
+    <p>
+      Honcho 세션 전략에 따라 메모리 범위가 달라진다 — <code>per-session</code> 모드에서는 <code>hermes</code>
+      실행마다 새 세션을 얻고, <code>per-directory</code> 모드에서는 작업 디렉터리당 하나의 Honcho 세션을
+      유지한다. 게이트웨이 사용자 매핑 쪽에는 <code>pinUserPeer</code>라는 설정이 있는데, 이게
+      <code>true</code>에서 <code>false</code>로 바뀌면 <strong>기존에 <code>peerName</code> 아래 쌓인
+      메모리는 그대로 남고, 플랫폼 사용자는 새롭고 텅 빈 peer로 다시 매핑된다</strong>고 문서가 명시한다 —
+      즉 데이터가 삭제된 건 아니지만, 사용자 입장에서는 "예전 기억을 잃어버린 것처럼" 보이는 고아(orphan)
+      메모리가 생긴다.
+    </p>
+
+    <h3>실제 프로덕션 장애 사례 — Issue #4889, "정제된 메시지"와 "화면에 보여줄 메시지"를 헷갈린 대가</h3>
+    <p>
+      공개된 GitHub 이슈 #4889는 스킬(Day 3)이 실행될 때 시스템 프리픽스와 <code>SKILL.md</code> 전체
+      본문이 <code>user_message</code> 변수에 그대로 주입되는데, 이 부풀려진 메시지가 그대로 Honcho
+      memory provider로 전달되면서 Honcho가 강제하는 <strong>1만 자 질의 한도</strong>를 넘겨
+      <code>"String should have at most 10000 characters"</code> 에러로 실패한다고 보고한다. 근본
+      원인으로 지목된 지점은 — 코드베이스에는 이미 <code>persist_user_message</code>라는, 트랜스크립트
+      저장 등 다른 곳에서 올바르게 쓰이는 "깨끗한" 사용자 메시지 변수가 있는데, Honcho 메모리 호출 지점만
+      그걸 안 쓰고 augmented된(부풀려진) <code>user_message</code>를 그대로 넘긴다는 것이다. 영향은
+      <code>queue_prefetch_all()</code>과 <code>sync_all()</code> 양쪽에 미치고, 큰 스킬이 실행될 때마다
+      dialectic prefetch가 조용히 실패해 해당 턴에 대해 에이전트가 메모리 컨텍스트 없이 응답하게 된다.
+    </p>
+    <div class="callout callout-danger">
+      <strong>이 사례가 시니어에게 주는 교훈은 "Honcho 한도가 작다"가 아니다.</strong> 진짜 교훈은
+      <strong>"사용자에게 실제로 온 입력"과 "다운스트림 시스템에 보낼 페이로드"를 같은 변수로 취급하면
+      아키텍처 경계가 새어나간다</strong는 것이다. 스킬 실행으로 시스템이 덧붙인 프리픽스·전체 SKILL.md
+      본문은 <em>모델에게 보여줄 확장된 입력</em>이지, <em>사용자가 실제로 타이핑한 것</em>이 아니다. 이
+      경계가 무너지면 여기서는 문자 수 한도 위반으로 드러났지만, 원리적으로는 Day 11에서 다룰 prompt
+      injection 방어와 같은 계열의 문제다 — "누가 무엇을 실제로 말했는가"를 다운스트림 시스템에 정확히
+      전달하지 못하면, 그 시스템은 잘못된 신뢰 판단을 내리게 된다.
+    </div>
+
+    <h3>세 레이어를 한 문장으로 정리</h3>
+    <p>
+      내장 메모리(MEMORY.md/USER.md)는 <strong>"항상 켜져 있는, 토큰 제한이 있는, 세션 경계에서만
+      갱신되는 압축 프로필"</strong>이고, <code>session_search</code>는 <strong>"필요할 때만 불러오는,
+      무제한에 가까운, 압축 없는 원문 아카이브"</strong>이고, Honcho 같은 외부 provider는
+      <strong>"별도로 켜야 하는, LLM이 사후 분석으로 계속 갱신하는, 어휘가 아니라 의미 기반의 사용자
+      모델"</strong>이다. 이 셋을 뭉뚱그려서 "메모리 시스템"이라고만 답하면 면접관은 구조를 모른다고
+      판단한다.
+    </p>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+    <ul>
+      <li>
+        <strong>유한한 컨텍스트 윈도우를 구조적으로 이해하는가:</strong> "메모리가 있다"를 "전체 대화가
+        계속 쌓인다"로 오해하지 않고, 압축·검색·외부 모델링이라는 세 레이어로 나눠서 설명할 수 있는가
+      </li>
+      <li>
+        <strong>캐싱과 최신성의 트레이드오프를 아는가:</strong> frozen snapshot이 버그가 아니라 prefix
+        caching을 보존하기 위한 설계 선택임을 설명하고, "왜 세션 도중 반영 안 되냐"는 질문에 성능 근거로
+        답할 수 있는가
+      </li>
+      <li>
+        <strong>실패 모드 설계 판단력:</strong> 용량 초과 시 조용한 삭제 대신 에러 후 자가 정리를 택한
+        이유를, silent data loss 방지와 "무엇이 중요한지 판단은 LLM에 맡긴다"는 원칙으로 설명할 수 있는가
+      </li>
+      <li>
+        <strong>어휘 검색과 의미 검색을 구분하는가:</strong> FTS5(<code>session_search</code>)와 임베딩
+        기반 semantic provider(Honcho 등)의 차이를 정확히 짚는가
+      </li>
+      <li>
+        <strong>실제 장애를 아키텍처 원칙으로 일반화하는가:</strong> #4889 같은 사례를 "버그가 있었다"로
+        끝내지 않고, "표시용 데이터와 다운스트림 페이로드를 분리해야 한다"는 재사용 가능한 원칙으로
+        추출하는가
+      </li>
+    </ul>
+    <div class="callout callout-warn">
+      실무에서 이 판단을 잘못하면, 매 턴 전체 대화 이력을 프롬프트에 밀어넣어 비용·지연시간이 선형으로
+      증가하는 설계를 만들거나, 메모리가 세션 중간에 즉시 반영된다고 가정해 "왜 방금 알려준 정보를 또
+      물어보냐"는 사용자 불만에 잘못된 원인으로 대응하거나, Honcho 같은 외부 provider의 사후 분석을 실시간
+      검색으로 착각해 지연시간 예산을 잘못 잡는 사고로 이어진다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: "어제 프로젝트 이름 알려줬는데 오늘 또 물어보네요?"라는 사용자 불만</h3>
+    <p>
+      사용자가 세션 도중 이름을 알려줬고 에이전트가 <code>memory add</code>로 저장까지 했는데, <strong>같은
+      세션</strong> 안에서 다시 물어본다는 불만이 들어온다. → frozen snapshot 때문에 그 변경사항은 디스크에는
+      이미 반영됐지만 이번 세션의 시스템 프롬프트에는 없다는 걸 설명하고, 대신 에이전트가 <code>memory</code>
+      툴로 방금 저장한 내용을 같은 턴 안에서 대화 맥락으로는 참조할 수 있다는 점(시스템 프롬프트 재주입과
+      "이번 대화 턴에서 방금 한 일을 기억하는 것"은 별개)을 구분해서 답한다. 진짜 반영은 다음 세션부터다.
+    </p>
+
+    <h3>상황 2: 메모리 저장이 계속 실패하는 에러 로그가 반복된다</h3>
+    <p>
+      로그에 <code>memory</code> 툴 에러가 반복적으로 찍힌다 → USER.md/MEMORY.md가 이미 한도에 가깝다는
+      신호다. 조용히 잘리는 대신 에러가 나는 건 설계된 동작이므로, 에이전트가 스스로 통합(consolidate)하도록
+      유도하는 지침을 스킬/시스템 프롬프트에 추가하거나, 80% 도달 시점에 정리하는 습관을 명시적으로
+      요구한다.
+    </p>
+
+    <h3>상황 3: "몇 주 전 마이그레이션 논의 다시 찾아줘" 요청 설계</h3>
+    <p>
+      이런 요청은 내장 메모리(용량 제한)로는 처리할 수 없고 <code>session_search</code>(FTS5)로 처리해야
+      한다. 다만 FTS5는 어휘 검색이므로, 사용자가 당시 실제로 썼던 단어(예: "마이그레이션", "스키마 변경")와
+      겹치지 않는 애매한 질의("그때 그거")는 검색이 잘 안 될 수 있다는 한계를 실무에 반영해, 검색어를
+      구체화하도록 되묻는 흐름을 설계에 넣는다. 의미 기반 회상이 자주 필요하면 Supermemory/Mem0류의 외부
+      provider 도입을 검토 대상으로 올린다.
+    </p>
+
+    <h3>상황 4: Honcho 연동 후 특정 스킬을 쓸 때마다 이상한 1만 자 에러가 반복된다</h3>
+    <p>
+      큰 <code>SKILL.md</code>를 쓰는 스킬을 실행할 때마다 Honcho 쪽에서 문자 수 초과 에러가 뜬다는 제보가
+      들어온다 → #4889 사례와 정확히 같은 패턴이다. 원인은 Honcho의 한도가 아니라, 스킬이 프리픽스로 붙인
+      확장된 <code>user_message</code>가 그대로 dialectic 호출에 흘러 들어가는 것이다. 임시 완화책으로 큰
+      스킬 사용 시 dialectic prefetch를 건너뛰게 하거나, 근본 수정을 원하면 <code>persist_user_message</code>
+      같은 "정제된 사용자 입력" 경로를 memory provider 호출에도 일관되게 쓰도록 코드 경로를 맞춰야 한다.
+    </p>
+
+    <h3>상황 5: 사용자를 재-페어링했더니 예전 기억이 사라진 것처럼 보인다</h3>
+    <p>
+      게이트웨이 관리자가 어떤 이유로 사용자를 다시 페어링(re-pin)했더니, Honcho 쪽 사용자 프로필이
+      텅 비어 보인다는 문의가 들어온다 → <code>pinUserPeer</code>가 꺼졌다 켜지는 과정에서 이전
+      <code>peerName</code> 아래 쌓인 메모리는 삭제되지 않았지만 새 매핑은 빈 peer로 시작한다는 걸
+      설명하고, 데이터 자체는 남아있으니 peer 매핑을 원래대로 되돌리거나 수동으로 이전 peer의 데이터를
+      새 peer로 마이그레이션하는 방법을 검토한다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>세션(라우팅)과 메모리(콘텐츠)를 먼저 분리한다</strong>
+        Day 6의 세션 키가 "어떤 메시지가 한 대화로 묶이는가"를 정한다면, 오늘은 "그 대화에서 뭘 남기고
+        어떻게 다시 불러오는가"의 문제라고 프레이밍한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>내장 메모리를 구조로 설명한다</strong>
+        MEMORY.md/USER.md 2파일, 문자 한도, frozen snapshot과 prefix caching 근거, add/replace/remove
+        3종 툴, 에러 기반 용량 관리를 순서대로 짚는다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong><code>session_search</code>를 대비시켜 설명한다</strong>
+        FTS5 기반 어휘 검색, LLM 요약 없이 원문 반환, 무제한에 가까운 용량이라는 점에서 메모리와 정반대
+        특성을 가진 레이어임을 강조한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>외부 provider(특히 Honcho)를 추가 레이어로 위치시킨다</strong>
+        9개 provider가 전부 additive라는 것, Honcho의 dialectic reasoning이 사후 LLM 분석 기반 사용자
+        모델링이지 벡터 검색 자체가 아니라는 것, 케이던스 노브가 비용/지연 다이얼이라는 것을 짚는다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>실제 장애 사례로 아키텍처 원칙을 도출한다</strong>
+        Issue #4889를 근거로 "정제된 사용자 입력"과 "다운스트림 페이로드"를 분리해야 한다는 원칙을 뽑아내고,
+        이게 Day 11 prompt injection 방어와 같은 결의 문제라는 것을 연결한다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+    <p>
+      "Hermes의 메모리·세션 설계는 세 개의 레이어로 나눠서 이해하는 게 정확하다고 생각합니다. 먼저 내장
+      메모리는 <code>~/.hermes/memories/</code>의 <code>MEMORY.md</code>(에이전트 노트, 2,200자)와
+      <code>USER.md</code>(사용자 프로필, 1,375자) 두 파일로, 세션 시작 시 시스템 프롬프트에 고정
+      스냅샷으로 주입됩니다. 세션 도중 <code>memory</code> 툴로 add/replace/remove를 해도 디스크에는
+      바로 반영되지만 이번 세션의 프롬프트에는 나타나지 않고 다음 세션부터 반영되는데, 이건 버그가 아니라
+      LLM 프리픽스 캐싱을 지키기 위한 의도된 트레이드오프입니다. 용량을 넘기면 조용히 오래된 걸 지우는
+      대신 에러를 내서 에이전트가 스스로 정리하게 만드는데, 이건 '무엇이 중요한지' 판단을 문맥을 아는
+      LLM에게 맡기면서도 최소한 사일런트 데이터 유실은 막으려는 설계라고 봅니다.
+    </p>
+    <p>
+      두 번째 레이어는 <code>session_search</code>입니다. 이건 SQLite의 FTS5 전문 검색으로
+      <code>state.db</code>를 뒤지는데, 공식 문서가 명시하듯 LLM 요약이나 truncation 없이 실제 메시지
+      원문을 그대로 반환합니다. 내장 메모리가 '토큰 제한이 있는 압축 프로필'이라면 이쪽은 '무제한에
+      가까운 비압축 아카이브'라서, 몇 주 전 대화를 찾을 때 쓰는 레이어입니다. 다만 FTS5는 어휘 기반
+      검색이라 의미가 비슷해도 단어가 안 겹치면 못 찾는다는 한계가 있습니다.
+    </p>
+    <p>
+      세 번째 레이어는 외부 메모리 provider로, Honcho·Mem0·Supermemory 등 9개가 있고 전부 내장 메모리를
+      대체하지 않고 더하는 방식으로 동작합니다. 그중 Honcho는 dialectic reasoning이라는 사후 분석
+      메커니즘을 씁니다 — 매 대화 턴 이후 케이던스에 따라 Honcho의 LLM이 그 대화를 분석해서 사용자의
+      선호·습관·목표에 대한 통찰을 도출하고 누적시킵니다. 이건 <code>honcho_search</code> 같은 벡터
+      유사도 검색과는 다른 메커니즘이고, base context(누가 이 사람인가)와 dialectic supplement(지금
+      뭐가 중요한가)라는 두 레이어로 나뉘어 주입되며, contextCadence/dialecticCadence/dialecticDepth라는
+      세 노브로 비용과 최신성을 조절합니다.
+    </p>
+    <p>
+      실제로 이 구조가 프로덕션에서 깨진 사례도 있습니다. GitHub 이슈 #4889는 스킬 실행 시 시스템이
+      붙인 프리픽스와 전체 SKILL.md 본문이 <code>user_message</code>에 섞여 들어가는데, 이 부풀려진
+      메시지가 그대로 Honcho 호출에 전달되면서 1만 자 한도를 넘겨 dialectic prefetch가 조용히 실패한다는
+      버그입니다. 코드베이스에는 이미 트랜스크립트 저장 등에 쓰이는 '깨끗한' <code>persist_user_message</code>
+      변수가 있었는데, Honcho 호출 지점만 그걸 안 쓴 거죠. 여기서 뽑을 수 있는 원칙은, '사용자가 실제로
+      말한 것'과 '모델에게 보여줄 확장된 입력'을 같은 변수로 취급하면 다운스트림 시스템의 신뢰 판단이
+      깨진다는 것이고, 이건 나중에 다룰 prompt injection 방어와도 같은 계열의 문제라고 생각합니다."
+    </p>
+  </div>
+
+  <!-- Senior-level Follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>Follow-up 1: "frozen snapshot이 prefix caching을 지킨다고 했는데, 만약 매 턴마다 최신 메모리를
+      즉시 반영하고 싶다면 어떤 대가를 치러야 합니까?"</h3>
+    <p>
+      모범적인 사고 방향: 즉시 반영은 시스템 프롬프트를 매 턴 재구성해야 한다는 뜻이고, 그러면 프리픽스
+      캐시가 매번 무효화된다는 것부터 짚는다. 결과적으로 매 턴 전체 시스템 프롬프트를 다시 처리해야 해서
+      지연시간과 비용이 늘어난다. 이걸 감수할 가치가 있는 경우는 "이번 세션 안에서 방금 알려준 정보를
+      즉시 정확히 반영해야 하는" 고위험 도메인(예: 결제 정보 정정) 정도로 한정하고, 그 경우에도 시스템
+      프롬프트 전체가 아니라 최근 turn의 대화 맥락으로 처리하는 게 더 싸다는 대안을 제시하면 좋다.
+    </p>
+
+    <h3>Follow-up 2: "메모리 용량 초과 시 하드 에러 대신 LRU로 오래된 항목을 자동으로 버리게 바꾸면 왜 더
+      위험할 수 있습니까?"</h3>
+    <p>
+      모범적인 사고 방향: LRU는 "최근에 안 쓰였다"를 "안 중요하다"로 오해할 수 있다는 걸 짚는다. 사용자
+      프로필의 어떤 항목(예: 알레르기 정보, 중요 마감일)은 몇 달간 언급이 없어도 여전히 중요할 수 있는데,
+      기계적 LRU는 그런 맥락을 모른다. 반대로 하드 에러 + 에이전트 자가 정리는 판단을 문맥을 아는 LLM에
+      맡기기 때문에 "왜 이 항목을 지웠는지"를 최소한 설명 가능한 결정으로 만들 수 있다는 점을 강조하면
+      좋다.
+    </p>
+
+    <h3>Follow-up 3: "<code>session_search</code>가 요약 없이 원문을 그대로 반환한다는 게 오히려 문제가
+      되는 상황이 있을까요?"</h3>
+    <p>
+      모범적인 사고 방향: 두 가지 각도로 답한다 — (1) 컨텍스트 낭비: 검색 결과가 길면 그대로 다시
+      프롬프트에 들어가 토큰을 많이 쓰게 되고, 압축이 없으니 관련 없는 부분까지 같이 딸려온다. (2) 보안
+      관점: 만약 과거 세션에 프롬프트 인젝션 시도가 섞인 메시지가 있었다면, <code>session_search</code>는
+      그걸 그대로(요약이나 무해화 없이) 다시 불러올 수 있다는 뜻이 된다. 이건 Day 11에서 다룰 프로버넌스
+      문제와 직결되므로, 검색 결과를 그대로 신뢰할 수 있는 입력처럼 다루면 안 된다는 원칙으로 마무리하면
+      좋다.
+    </p>
+
+    <h3>Follow-up 4: "Honcho의 <code>dialecticCadence</code>를 1로(매 턴마다) 설정하면 어떤 문제가
+      생깁니까?"</h3>
+    <p>
+      모범적인 사고 방향: 매 턴 <code>peer.chat()</code> LLM 호출이 추가되므로, 원래 응답을 만드는 LLM
+      호출에 더해 Honcho 쪽 LLM 호출이 매번 병렬 또는 직렬로 더해진다는 것부터 짚는다. 이건 비용이 대화
+      턴 수에 선형으로 늘어나고, dialecticDepth가 2~3이면 턴당 여러 번의 <code>.chat()</code> 패스까지
+      곱해진다. 실무적으로는 케이던스를 몇 턴에 한 번으로 늘리고, query-adaptive 메커니즘(질의 길이에 따라
+      깊이 자동 조절)에 맡겨 짧고 사소한 턴에는 얕은 추론만 돌게 하는 게 합리적인 절충이라고 제안하면
+      좋다.
+    </p>
+
+    <h3>Follow-up 5: "#4889 같은 버그가 생긴 근본 원인을 한 문장으로 표현한다면 뭐라고 하겠습니까?"</h3>
+    <p>
+      모범적인 사고 방향: "표시/기록용으로 확장된 데이터와, 하위 시스템이 계약(문자 수 한도 등)을 가진
+      원본 입력을 같은 변수 하나로 다뤘기 때문"이라고 한 문장으로 정리한다. 이미 코드베이스에
+      <code>persist_user_message</code>라는 정제된 경로가 존재했다는 사실이 중요한데, 이건 "몰라서 못 막은
+      버그"가 아니라 "이미 있는 안전한 패턴을 새 통합 지점에 일관되게 적용하지 못한" 종류의 실패라는 걸
+      짚으면 시니어다운 답변이 된다.
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변</span> <span class="tag tag-weak">vs 약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>좋은 답변</h4>
+        <ul>
+          <li>세션(라우팅 경계)과 메모리(콘텐츠 설계)를 먼저 분리하고 시작한다</li>
+          <li>내장 메모리·<code>session_search</code>·외부 provider를 서로 다른 특성(압축률, 용량, 갱신
+            시점, 검색 방식)으로 대비시켜 설명한다</li>
+          <li>frozen snapshot을 버그가 아니라 prefix caching 트레이드오프로 정확히 설명한다</li>
+          <li>용량 초과 시 하드 에러 + 자가 정리 설계의 의도(사일런트 유실 방지)를 설명한다</li>
+          <li>FTS5(어휘 검색)와 Honcho dialectic(사후 LLM 분석 기반 모델링)을 구분한다</li>
+          <li>실제 장애 사례(#4889)를 근거로 아키텍처 원칙(정제된 입력 vs 확장된 페이로드)을 도출한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변</h4>
+        <ul>
+          <li>"메모리가 있어서 다 기억한다"는 한 줄로 끝내고 레이어 구분을 못한다</li>
+          <li>메모리가 세션 중간에 즉시 반영된다고 잘못 설명한다</li>
+          <li><code>session_search</code>를 벡터 검색이나 요약 검색으로 착각한다</li>
+          <li>Honcho를 붙이면 내장 메모리가 꺼지거나 대체된다고 잘못 안다</li>
+          <li>용량 초과 시 자동으로 오래된 걸 지운다고 추측성으로 답한다</li>
+          <li>실제 사례 없이 이론적인 설명만 반복한다</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 흔한 오해 정정 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <div class="callout callout-danger">
+      <strong>오해 1: "메모리가 있으니 전체 대화 기록이 계속 프롬프트에 쌓인다."</strong><br>
+      실제로는 압축된 2개 파일(합쳐서 약 3,575자)만 시스템 프롬프트에 들어가고, 전체 대화 이력은
+      <code>session_search</code>로 필요할 때만 온디맨드로 불러온다. "메모리 = 전체 이력 누적"이라는
+      전제 자체가 틀렸다.
+    </div>
+
+    <div class="callout callout-danger">
+      <strong>오해 2: "메모리를 업데이트하면 바로 다음 대답에 반영된다."</strong><br>
+      같은 세션 안에서는 반영되지 않는다. <code>memory</code> 툴로 만든 변경은 디스크에는 즉시 저장되지만,
+      시스템 프롬프트는 세션 시작 시 고정된 스냅샷이라 다음 세션부터 반영된다. 이건 prefix caching을
+      지키기 위한 의도된 지연이다.
+    </div>
+
+    <div class="callout callout-danger">
+      <strong>오해 3: "Honcho 같은 외부 provider를 붙이면 내장 메모리는 꺼진다."</strong><br>
+      공식 문서가 명시하듯 외부 provider는 additive다 — 내장 MEMORY.md/USER.md는 이전과 동일하게 계속
+      작동하고, 외부 provider는 그 위에 더해지는 레이어다. 다만 동시에 활성화할 수 있는 외부 provider는
+      한 번에 하나뿐이라는 제약은 있다.
+    </div>
+
+    <div class="callout callout-danger">
+      <strong>오해 4: "<code>session_search</code>는 벡터 검색이라 질문의 의미를 이해하고 찾아준다."</strong><br>
+      <code>session_search</code>는 SQLite FTS5 기반 어휘 검색이다. 질의어와 실제로 겹치는 단어/어구가
+      있어야 찾아진다. 의미 기반(semantic) 회상이 필요하면 Supermemory·Mem0 같은 외부 provider 영역이지,
+      내장 <code>session_search</code>의 역할이 아니다.
+    </div>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">Weak</span>
+      <span>"메모리 파일에 다 저장된다" 정도로만 설명하고, 세션/메모리 구분이나 세 레이어 구조를 전혀
+        인지하지 못한다.</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">Junior</span>
+      <span>MEMORY.md/USER.md의 존재는 알지만, frozen snapshot의 이유(prefix caching)나
+        <code>session_search</code>와의 차이를 설명하지 못한다.</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">Mid</span>
+      <span>내장 메모리와 <code>session_search</code>를 구분할 수 있지만, 외부 provider(특히 Honcho
+        dialectic reasoning의 메커니즘)나 실제 장애 사례로는 연결하지 못한다.</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">Senior</span>
+      <span>세션(라우팅)과 메모리(콘텐츠) 구분 → 내장 메모리(frozen snapshot, 용량 관리 철학) →
+        <code>session_search</code>(FTS5 어휘 검색, 무압축) → 외부 provider(9개, additive, Honcho
+        dialectic reasoning의 케이던스/뎁스 설계) → 실제 장애 사례(#4889)로 도출한 아키텍처 원칙까지
+        하나의 논리로 연결하고, 사실과 추론·정정 사항을 구분해서 말한다.</span>
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li>세션(어떤 메시지가 한 대화로 묶이는가, Day 6)과 메모리(무엇을 남기고 어떻게 다시 불러오는가,
+        Day 7)는 서로 다른 층위의 설계 문제다</li>
+      <li>내장 메모리는 MEMORY.md(2,200자)/USER.md(1,375자) 2파일을 세션 시작 시 고정 스냅샷으로 주입한다
+        — 세션 도중 변경은 디스크에는 반영되지만 prefix caching 보존을 위해 다음 세션부터 프롬프트에
+        반영된다</li>
+      <li>메모리 용량 초과 시 조용히 지우지 않고 에러를 내어 에이전트가 스스로 정리하게 한다 —
+        write_approval로 사람 승인을 추가할 수도 있다</li>
+      <li><code>session_search</code>는 SQLite FTS5 기반 어휘 검색으로, LLM 요약이나 truncation 없이
+        원문을 그대로 반환한다 — 메모리와 정반대로 무제한에 가깝지만 압축이 없다</li>
+      <li>외부 메모리 provider는 9개(Honcho/OpenViking/Mem0/Hindsight/Holographic/RetainDB/ByteRover/
+        Supermemory/Memori)이며 전부 내장 메모리에 더해지는 additive 레이어다(동시 활성화는 하나만)</li>
+      <li>Honcho의 dialectic reasoning은 벡터 검색이 아니라 사후 LLM 분석 기반 사용자 모델링이며,
+        base context/dialectic supplement 2계층과 contextCadence/dialecticCadence/dialecticDepth 3개
+        노브로 비용·최신성을 조절한다</li>
+      <li>Issue #4889는 "정제된 사용자 입력"과 "다운스트림 페이로드"를 같은 변수로 취급하면 아키텍처
+        경계가 새어나간다는 걸 보여주는 실제 사례이며, Day 11 prompt injection 방어와 같은 원칙으로
+        연결된다</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span>Day 7 / 14</span>
+    <a href="./index.html">← 레슨 목록으로</a>
+  </div>
+
+</div>
+</body>
+</html>

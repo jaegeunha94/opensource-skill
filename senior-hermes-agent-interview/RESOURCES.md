@@ -164,6 +164,47 @@
 - [GitHub Releases — v0.18.0 "The Judgment Release"](https://github.com/NousResearch/hermes-agent/releases/tag/v2026.7.1) —
   2026-07-08 기준 재확인해도 최신 릴리스 동일
 
+## Day 7 리서치 — 메모리와 세션 설계 (1차 출처 우선, 2026-07-09 확인)
+
+- [Memory 공식 문서](https://hermes-agent.nousresearch.com/docs/user-guide/features/memory) 및 GitHub
+  미러 [`website/docs/user-guide/features/memory.md`](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/memory.md) —
+  `MEMORY.md`(2,200자)/`USER.md`(1,375자) 2파일 구조, `~/.hermes/memories/`, 세션 시작 시 시스템
+  프롬프트에 frozen snapshot으로 주입(prefix caching 보존 근거), `memory` 툴 3액션(add/replace/remove,
+  read 없음), 용량 초과 시 하드 에러 + 에이전트 자가 정리(80% 사전 통합 권장), `write_approval` 승인
+  게이트, `session_search` 툴(SQLite `~/.hermes/state.db`, FTS5, "LLM 요약도 truncation도 없이 실제
+  메시지를 그대로 반환"이 원문 문장), `memory.memory_char_limit`/`user_char_limit`/`write_approval`
+  등 `config.yaml` 설정 — WebFetch로 GitHub raw 미러 원문 확인
+- [Memory Providers 공식 문서](https://hermes-agent.nousresearch.com/docs/user-guide/features/memory-providers)
+  및 GitHub 미러 `website/docs/user-guide/features/memory-providers.md` — 외부 메모리 provider
+  **9개**(Honcho/OpenViking/Mem0/Hindsight/Holographic/RetainDB/ByteRover/Supermemory/Memori) 목록,
+  "내장 메모리는 이전과 동일하게 계속 동작, 외부 provider는 additive"라는 원문 문장, 동시 활성화는
+  provider 1개로 제한, `hermes memory setup` 설정 흐름, 프로필별 자격증명/저장 위치 분리, 비용 구조
+  (Holographic/ByteRover 로컬 모드 무료, 클라우드 provider 구독제) — WebFetch로 GitHub raw 미러 원문
+  확인. **PROGRESS.md 정정:** 사전에 "8개"로 적어뒀던 숫자를 공식 문서 원문 기준 9개로 수정
+- [Honcho Memory 공식 문서](https://hermes-agent.nousresearch.com/docs/user-guide/features/honcho) 및
+  GitHub 미러 `website/docs/user-guide/features/honcho.md` — 5개 툴(`honcho_profile`/`honcho_search`/
+  `honcho_context`/`honcho_reasoning`/`honcho_conclude`), dialectic reasoning(턴마다 `dialecticCadence`
+  게이팅, 사후 LLM 분석으로 사용자 선호·습관·목표 도출), base context(요약/표상/peer card/AI
+  자기표상, `contextCadence` 갱신) vs dialectic supplement(LLM 합성, `dialecticCadence` 갱신) 2계층,
+  cold start vs warm session 프롬프트 분기, `dialecticDepth`(1~3, Pass 0/1/2), 질의 길이 기반
+  reasoning level 자동 상향(`reasoningLevelCap`), 세션 전략(`per-session`/`per-directory`)과
+  `pinUserPeer` 토글 시 고아 메모리 생성 한계 — WebFetch로 GitHub raw 미러 원문 확인
+- [GitHub Issue #4889 — Bug: Honcho dialectic queries fail with oversized `user_message` (skill
+  content injected into memory prefetch)](https://github.com/NousResearch/hermes-agent/issues/4889) —
+  스킬 실행 시 시스템 프리픽스 + `SKILL.md` 전체 본문이 `user_message`에 섞여 Honcho의 1만 자 질의
+  한도를 넘겨 `queue_prefetch_all()`/`sync_all()`이 조용히 실패하는 버그. 코드베이스에 이미 존재하는
+  "정제된" `persist_user_message` 변수를 Honcho 호출 지점만 쓰지 않은 게 근본 원인으로 지목됨. WebFetch
+  요약 결과 헤더 문구와 본문 상태 라벨이 엇갈려("Closed" 헤더 vs 본문 "Status: Open") 정확한 현재 상태는
+  실제 도입 전 브라우저로 재확인 필요 — 이 불일치 자체를 레슨에 명시했다
+- [GitHub Releases — v0.18.1(2026.7.7)](https://github.com/NousResearch/hermes-agent/releases) —
+  v0.18.0 이후 약 667 커밋 롤업, 설치 프로그램 자가복구·대시보드 안정화 위주 인프라 패치.
+  [v0.18.2(2026.7.7.2)](https://github.com/NousResearch/hermes-agent/releases) — WhatsApp Baileys
+  의존성을 고정 git 커밋 대신 정식 npm 릴리스로 전환하는 당일 패치. 둘 다 2026-07-08 배포, 메모리/세션
+  기능에는 영향 없음을 확인 — WebFetch로 릴리스 목록 확인
+- **PROGRESS.md 정정:** 사전에 "FTS5 전문 검색 + LLM 요약"으로 적어뒀던 Day 7 예정 주제 설명 중
+  "LLM 요약" 부분은 공식 문서 원문("no LLM summarization, no truncation")과 상충해 정정함. LLM 기반
+  사후 처리는 `session_search`가 아니라 Honcho dialectic reasoning 쪽 기능이다
+
 ## 보안 감사 / CVE
 
 - 독립 보안 감사(연구자 @Anic888, 2026-04-11) — 기본 설정 기준 Critical 4건 + High 9건: 무제한 셸 실행, 컨테이너 승인 우회, 지속적인 skill-injection 벡터
