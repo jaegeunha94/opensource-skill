@@ -9,12 +9,12 @@
 | 3 | 2026-07-06 | 이기종 문서 수집 아키텍처와 커넥터 설계 | [0003-heterogeneous-document-ingestion-connector-architecture.html](lessons/0003-heterogeneous-document-ingestion-connector-architecture.html) |
 | 4 | 2026-07-07 | PDF/DOCX/PPTX/XLSX 파싱 전략 | [0004-pdf-docx-pptx-xlsx-parsing-strategy.html](lessons/0004-pdf-docx-pptx-xlsx-parsing-strategy.html) |
 | 5 | 2026-07-08 | HTML/Markdown/코드/CSV/JSON/YAML 파싱과 구조화 데이터 처리 | [0005-html-markdown-code-csv-json-yaml-parsing-structured-data.html](lessons/0005-html-markdown-code-csv-json-yaml-parsing-structured-data.html) |
+| 6 | 2026-07-09 | OCR과 Table/Image Extraction | [0006-ocr-table-image-extraction.html](lessons/0006-ocr-table-image-extraction.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | OCR과 Table/Image Extraction | 레이아웃 인식 모델, 병합 셀 표, 멀티모달 추출, 품질 검증 |
 | 7 | Metadata와 Provenance 설계 | 근거 추적, lineage, freshness, 출처 시스템 매핑 |
 | 8 | 문서 구조 기반 Semantic Chunking | Structure-aware/table-aware chunking, 계층적 chunk, contextual retrieval |
 | 9 | Incremental Indexing, Deduplication, Versioning | 변경 감지, 정확/근접 중복 제거, 재인덱싱 비용 관리 |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 다음: Day 6 — OCR과 Table/Image Extraction
+**Day 6 완료** — 다음: Day 7 — Metadata와 Provenance 설계
 
 ## 습득한 핵심 개념
 
@@ -52,7 +52,12 @@
 - [x] 구조적 검색(호출 그래프 순회)으로 임베딩 검색을 보완하는 하이브리드 코드 검색 (Day 5)
 - [x] CSV/JSON/YAML 구조화 데이터가 임베딩에 원래 적합하지 않은 이유와 서술형/사실형 데이터 분리, Text-to-SQL 하이브리드 (Day 5)
 - [x] YAML `yaml.load()`/`unsafe_load()`의 원격 코드 실행(RCE) 위험과 `safe_load()` 강제의 필요성 (Day 5)
-- [ ] OCR과 Table/Image Extraction (예정 Day 6)
+- [x] OCR·레이아웃 분석·표 구조 인식(TSR)이 서로 다른 세 문제이며, OCR 정확도가 높아도 오류가 숫자/표에 집중되면("OCR Blind Spot") RAG 답변 정확도가 훨씬 크게 떨어질 수 있음 (Day 6)
+- [x] 2026년 OCR 지형(Chandra/olmOCR-2/dots.ocr/Mistral OCR/Granite-Docling)의 벤치마크별 강약점과 종합 점수와 표 세부 점수의 괴리 (Day 6)
+- [x] TableFormer/Table Transformer(TATR)의 병합 셀 grid 복원과 GriTS 지표, 재조립 검증 원칙 (Day 6)
+- [x] 이미지/차트를 "경량 캡션(인덱싱) + 고성능 재조회(생성)" 2단계로 처리하는 비용/정확도 트레이드오프 (Day 6)
+- [x] ColPali/ColQwen2 같은 OCR-free 시각 문서 검색과 근거 추적성(citation grounding) 사이의 트레이드오프 (Day 6)
+- [x] Confidence score 기반 human-in-the-loop 품질 게이트 설계와 도메인별 캘리브레이션 (Day 6)
 - [ ] Metadata와 Provenance 설계 (예정 Day 7)
 - [ ] 문서 구조 기반 Semantic Chunking (예정 Day 8)
 - [ ] Incremental Indexing, Deduplication, Versioning (예정 Day 9)

@@ -126,6 +126,25 @@
 - [CSR-RAG: An Efficient Retrieval System for Text-to-SQL on the Enterprise Scale (arXiv 2601.06564)](https://arxiv.org/abs/2601.06564) — 질의의 의미적 문맥·DB 스키마·테이블 간 연결성을 분리해 검색하는 엔터프라이즈 Text-to-SQL 하이브리드 구조
 - [pandas 3.0.0 릴리스 노트 (2026-01-21)](https://pandas.pydata.org/docs/whatsnew/v3.0.0.html) / [문자열 dtype 마이그레이션 가이드](https://pandas.pydata.org/docs/user_guide/migration-3-strings.html) — `read_csv` 등에서 문자열 컬럼 기본 dtype이 object에서 PyArrow 기반 전용 string dtype으로 변경, 비문자열 값 저장 시 에러 발생
 
+## Day 6 최신 근거 (2026년 7월 조사 반영)
+
+- [When Good OCR Is Not Enough: Benchmarking OCR Robustness for Retrieval-Augmented Generation (arXiv 2605.00911)](https://arxiv.org/pdf/2605.00911) — OCR 정확도와 RAG 답변 정확도의 비선형 관계를 4개 국면(OCR Reliable/LLM Compensates/Both Weak/OCR Blind Spot)으로 분류, 문서 단위 OCR 정확도 82.9%가 RAG 답변 정확도 53.0%로 이어진 사례
+- [olmOCR-Bench Leaderboard (CodeSOTA)](https://www.codesota.com/ocr/benchmark/olmocr-bench) — Chandra(9B) 평균 83.1±0.9, olmOCR-2(8B) 82.3±1.1, Mistral OCR 72.0±1.1 등 2026년 OCR 모델 비교
+- [dots.ocr: Multilingual Document Layout Parsing in a Single Vision-Language Model (arXiv 2512.02498)](https://arxiv.org/pdf/2512.02498) — 레이아웃 분석과 OCR을 단일 VLM(3B)으로 통합, OmniDocBench 88.41점, 100개 이상 언어 지원
+- [Best OCR Software of 2026: Agentic AI vs. Legacy Solutions (LlamaIndex)](https://www.llamaindex.ai/insights/best-ocr-software) / [Best AI for PDF Table Extraction (2026) (LlamaIndex)](https://www.llamaindex.ai/insights/best-ai-for-pdf-table-extraction) — 2026년 OCR/표 추출 벤더·모델 지형 개관
+- [GitHub — microsoft/table-transformer (TATR)](https://github.com/microsoft/table-transformer) — PubTables-1M(57.5만 페이지) 학습, TATR-v1.2-Pub GriTS 0.980, 문서 텍스트 레이어 결합 시 오류율 절반 감소
+- [PubTables-v2: A new large-scale dataset for full-page and multi-page table extraction (arXiv 2512.10888)](https://arxiv.org/pdf/2512.10888) — 여러 페이지에 걸친 표 추출까지 다루는 후속 데이터셋/벤치마크
+- [Table Detection in 2026: A Practical Guide to Models, Datasets, and Weights (Medium)](https://walidhadri.medium.com/table-detection-in-2026-a-practical-guide-to-models-datasets-and-weights-141e881619c8) — TableFormer 복잡 표 벤치마크 97.9% 정확도 등 표 구조 인식 모델 비교
+- [Mistral OCR 4 Brings Citation-Ready Structured Output to RAG, Agentic, and Enterprise Search Pipelines (MarkTechPost, 2026-06)](https://www.marktechpost.com/2026/06/23/mistral-ocr-4/) — 단어·페이지 단위 confidence score 도입, OCR-레이아웃 재구성-구조화 파이프라인을 단일 호출로 압축
+- [Human in the Loop: Using Confidence Scores to Build Reliable Document Extraction (Iteration Layer)](https://iterationlayer.com/blog/ai-data-extraction-confidence-scores) — confidence score 임계값 기반 자동 승인/사람 검토 라우팅 설계 원칙
+- [ColPali: Efficient Document Retrieval with Vision Language Models (arXiv 2407.01449)](https://arxiv.org/pdf/2407.01449) / [An Overview of Late Interaction Retrieval Models: ColBERT, ColPali, and ColQwen (Weaviate)](https://weaviate.io/blog/late-interaction-overview) — SigLIP 기반 패치 임베딩과 MaxSim(late interaction)으로 OCR을 생략하는 시각 문서 검색 아키텍처
+- [Your Multimodal RAG Pipeline Should Look at Images Twice (Towards AI)](https://pub.towardsai.net/your-multimodal-rag-pipeline-should-look-at-images-twice-f4c2bc190fb8) — 인덱싱 시점 경량 VLM 캡션 + 질의 시점 고성능 VLM 재조회의 2단계 이미지 인덱싱 패턴
+- [Comparison of Text-Based and Image-Based Retrieval in Modern Multimodal RAG Systems (arXiv 2511.16654)](https://arxiv.org/html/2511.16654) — 텍스트 변환(캡셔닝) vs 네이티브 멀티모달 임베딩의 트레이드오프 실증 비교
+
+> 참고: OCR/표 추출 벤더의 벤치마크(olmOCR-Bench, OmniDocBench 등)는 모델·버전 갱신 주기가 매우 짧고
+> 종합 점수와 세부 항목(특히 표) 점수의 괴리가 크다. 위 자료는 레슨 작성 시점(2026년 7월) 기준
+> 공개 정보를 반영한 것이며, 실제 도구 선택 전에는 표/숫자 중심 도메인 골든셋으로 반드시 재검증해야 한다.
+
 ## 인터뷰 준비
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 검색 시스템 설계 문제와 유사한 사고 프레임
