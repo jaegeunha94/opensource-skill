@@ -17,7 +17,7 @@ Rules:
 
 | subject-slug | enabled | note |
 |--------------|---------|------|
-| __all__ | true | Set this to false to skip every study-track routine. |
+| __all__ | false | Set this to false to skip every study-track routine. |
 | computer-networking | true | |
 | senior-http-web-protocol-interview | true | |
 | operating-systems | true | |
