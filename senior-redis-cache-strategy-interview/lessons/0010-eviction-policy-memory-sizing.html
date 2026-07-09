@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 — Eviction Policy와 메모리 사이징</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 10 · Redis / 캐시 전략 Interview</div>
+    <h1>Eviction Policy와 메모리 사이징</h1>
+    <div class="subtitle">"메모리가 가득 차면 Redis는 어떻게 되는가" — maxmemory 도달 시 동작을 설계하고, 필요한 메모리를 정확히 산정하는 법</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "운영 중인 Redis가 <code>maxmemory</code> 한계에 도달했습니다. 지금 어떤 <code>maxmemory-policy</code>가
+      설정돼 있는지에 따라 서비스에 각각 어떤 일이 벌어지는지 설명해 주세요. 그리고 이 Redis 인스턴스가
+      순수 캐시인지, 세션 데이터도 함께 담고 있는지에 따라 어떤 정책을 선택하시겠습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "Redis의 LRU는 '완벽한' LRU가 아니라고 들었습니다. 실제로는 어떻게 동작하고, 이게 왜 정확도와
+      성능의 트레이드오프가 되는지 설명해 주세요."
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "서버 물리 메모리가 64GB인 신규 Redis 클러스터를 구축합니다. <code>maxmemory</code>를 몇 GB로
+      잡으시겠습니까? 그 숫자를 어떻게 산정하는지 근거를 말씀해 주세요."
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Redis가 메모리 한계에 부딪히면 무슨 일이 벌어지는가</h2>
+
+    <p>
+      Redis는 데이터를 전부 RAM에 올려두고 쓰는 인메모리 데이터베이스다. RAM은 디스크와 달리 용량이
+      제한적이고 비싸기 때문에, Redis 인스턴스에는 보통 <code>maxmemory</code>로 사용할 수 있는 메모리
+      상한을 명시적으로 걸어둔다. 문제는 <strong>실제로 그 상한에 도달했을 때 Redis가 무엇을 할지</strong>는
+      기본값만으로는 원하는 대로 동작하지 않는다는 점이다.
+    </p>
+
+    <div class="callout callout-warn">
+      <strong>가장 많이 놓치는 사실:</strong> Redis의 <code>maxmemory-policy</code> 기본값은
+      <code>noeviction</code>이다. 즉, <strong>아무것도 설정하지 않으면 Redis는 알아서 오래된 키를
+      지우지 않는다.</strong> 대신 메모리가 꽉 찬 상태에서 새 쓰기 명령이 들어오면 그 명령을 거부하고
+      <code>OOM command not allowed</code> 에러를 반환한다. "캐시니까 알아서 오래된 것부터 지워지겠지"라고
+      가정하고 아무 설정도 하지 않으면, 트래픽이 몰리는 순간 쓰기가 전부 실패하는 장애로 이어진다.
+    </div>
+
+    <h3>maxmemory-policy — 8가지 선택지</h3>
+    <p>
+      Redis가 메모리 한계에 도달했을 때 취할 행동은 <code>maxmemory-policy</code>로 선택한다. 두 축으로
+      나눠서 이해하면 외우기 쉽다: <strong>어떤 키를 대상으로 삼을지(allkeys vs volatile)</strong>와
+      <strong>어떤 기준으로 고를지(LRU / LFU / random / TTL)</strong>.
+    </p>
+    <table>
+      <tr>
+        <th>정책</th>
+        <th>대상 키</th>
+        <th>선택 기준</th>
+      </tr>
+      <tr>
+        <td><code>noeviction</code></td>
+        <td>없음 (evict 안 함)</td>
+        <td>쓰기 명령을 거부하고 에러 반환 (읽기는 계속 가능)</td>
+      </tr>
+      <tr>
+        <td><code>allkeys-lru</code></td>
+        <td>전체 키</td>
+        <td>가장 오래 접근 안 된 키부터 제거 (근사 LRU)</td>
+      </tr>
+      <tr>
+        <td><code>allkeys-lfu</code></td>
+        <td>전체 키</td>
+        <td>접근 빈도가 가장 낮은 키부터 제거 (근사 LFU)</td>
+      </tr>
+      <tr>
+        <td><code>allkeys-random</code></td>
+        <td>전체 키</td>
+        <td>무작위로 제거</td>
+      </tr>
+      <tr>
+        <td><code>volatile-lru</code></td>
+        <td>TTL이 설정된 키만</td>
+        <td>가장 오래 접근 안 된 키부터 제거</td>
+      </tr>
+      <tr>
+        <td><code>volatile-lfu</code></td>
+        <td>TTL이 설정된 키만</td>
+        <td>접근 빈도가 가장 낮은 키부터 제거</td>
+      </tr>
+      <tr>
+        <td><code>volatile-random</code></td>
+        <td>TTL이 설정된 키만</td>
+        <td>무작위로 제거</td>
+      </tr>
+      <tr>
+        <td><code>volatile-ttl</code></td>
+        <td>TTL이 설정된 키만</td>
+        <td>남은 TTL이 가장 짧은 키부터 제거</td>
+      </tr>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>allkeys vs volatile의 핵심 차이:</strong> <code>volatile-*</code> 계열은
+      <strong>TTL이 걸려 있지 않은 키는 절대 건드리지 않는다</strong>. 이 특성 덕분에, 같은 Redis
+      인스턴스에 "만료돼도 되는 캐시 데이터(TTL 있음)"와 "절대 사라지면 안 되는 원본 데이터(TTL 없음,
+      예: 세션·설정값)"를 함께 둘 때 후자를 보호하는 용도로 쓸 수 있다. 반대로 모든 키가 TTL을 갖고
+      있다면 <code>volatile-lru</code>는 사실상 <code>allkeys-lru</code>와 동일하게 동작한다.
+    </div>
+
+    <h3>Redis의 LRU는 "근사(approximated) LRU"다</h3>
+    <p>
+      진짜 LRU를 구현하려면 모든 키를 접근 순서대로 정렬한 연결 리스트를 유지하고, 접근할 때마다 그
+      키를 리스트 맨 앞으로 옮겨야 한다. 이건 정확하지만 <strong>모든 읽기/쓰기마다 추가 연산과 메모리
+      오버헤드</strong>가 발생한다. Redis는 이 비용을 감당하지 않기 위해 다른 전략을 쓴다:
+    </p>
+    <ol>
+      <li>모든 키 객체에 최근 접근 시각을 담는 24비트 타임스탬프(LRU clock)를 붙여둔다.</li>
+      <li>evict가 필요해지면, 전체 키를 순회하는 대신 <strong>무작위로 N개(기본값 5, <code>maxmemory-samples</code>)를
+      뽑아</strong> 그중 가장 오래된 것을 제거한다.</li>
+      <li>Redis 4 이상에서는 후보 풀(pool)을 유지해 샘플링 정확도를 조금 더 높인다.</li>
+    </ol>
+    <pre><code><span class="comment"># redis.conf — 샘플 개수. 클수록 진짜 LRU에 가까워지지만 CPU 비용 증가</span>
+<span class="keyword">maxmemory-samples</span> <span class="number">5</span>  <span class="comment"># 기본값. 실무에서 정확도를 높이려면 10 정도로 조정</span></code></pre>
+    <p>
+      즉 <strong>"가장 오래 안 쓴 키"가 아니라 "무작위 표본 중에서 가장 오래 안 쓴 키"</strong>가 제거된다.
+      샘플 수가 적을수록 오차가 커지지만 CPU 비용은 낮고, 샘플 수를 늘리면 진짜 LRU에 가까워지는 대신
+      evict 연산 자체의 비용이 늘어난다 — 이것도 하나의 trade-off다.
+    </p>
+
+    <h3>LFU — "최근성"이 아니라 "빈도"로 판단</h3>
+    <p>
+      LRU의 약점은 <strong>아주 자주 쓰이는 키라도 잠깐 접근이 뜸하면 evict 후보가 될 수 있다</strong>는
+      점이다. 예를 들어 인기 상품 정보처럼 하루 종일 꾸준히 조회되던 키가, 마침 direct 접근이 몇 초
+      뜸한 타이밍에 무작위 샘플에 걸리면 지워질 수 있다. LFU(Least Frequently Used)는 "얼마나 자주
+      쓰였는가"를 기준으로 삼아 이런 상황을 줄인다. Redis는 각 키에 8비트 확률적 카운터(probabilistic
+      counter, Morris counter 방식)를 붙여 접근 빈도를 근사적으로 추적하고, 시간이 지나면 카운터 값을
+      서서히 감쇠(decay)시켜 "예전엔 자주 쓰였지만 지금은 아닌" 키도 결국 후보에 오르게 한다.
+    </p>
+
+    <h3>메모리 사이징 — "데이터 크기 = maxmemory"가 아니다</h3>
+    <p>
+      메모리 용량을 산정할 때 가장 흔한 실수는 <strong>저장할 값(value)들의 크기만 더해서 그게 곧 필요한
+      메모리라고 계산하는 것</strong>이다. 실제로 Redis가 소비하는 메모리는 그보다 훨씬 크다.
+    </p>
+    <ul>
+      <li><strong>키당 오버헤드:</strong> 모든 키는 dictEntry, robj(Redis Object) 헤더, 키 이름 자체의
+      SDS(Simple Dynamic String) 구조체 등 부가 구조를 함께 갖는다. 작은 값(예: 정수 하나)을 저장해도
+      키당 수십 바이트의 고정 오버헤드가 붙는다 — 값 자체보다 오버헤드가 더 클 수도 있다.</li>
+      <li><strong>인코딩 임계값:</strong> Hash/List/Set/Sorted Set은 요소 수가 적을 때 listpack(구
+      ziplist)처럼 압축된 표현을 쓰다가, <code>hash-max-listpack-entries</code> 같은 임계값을 넘으면
+      해시테이블 같은 완전한 구조로 전환된다. 이 전환 시점에 메모리 사용량이 계단식으로 뛴다.</li>
+      <li><strong>메모리 파편화(fragmentation):</strong> Redis의 기본 메모리 할당자(jemalloc)는 할당/해제가
+      반복되면 실제 사용량보다 더 많은 물리 메모리를 점유하게 된다. <code>mem_fragmentation_ratio</code>로
+      확인할 수 있고, 이 값이 1.5를 넘으면 파편화가 심하다는 신호다.</li>
+      <li><strong>Replication backlog / client output buffer:</strong> 복제본에 변경분을 전달하기 위한
+      백로그 버퍼, Pub/Sub 구독자나 느린 클라이언트를 위한 output buffer도 <code>maxmemory</code> 예산
+      안에서 함께 소비된다.</li>
+      <li><strong>fork 시 Copy-on-Write 스파이크(Day 9 연결):</strong> <code>BGSAVE</code>/
+      <code>BGREWRITEAOF</code> 도중에는 쓰기가 활발할수록 COW로 메모리 사용량이 순간적으로 크게
+      늘어난다.</li>
+    </ul>
+
+    <div class="callout callout-danger">
+      <strong>왜 이게 위험한가:</strong> <code>maxmemory</code>를 물리 메모리 100%에 딱 맞춰 잡으면,
+      fork COW 스파이크나 replication 버퍼 증가가 물리 메모리 자체를 초과시켜 OS가 Redis 프로세스를
+      OOM Killer로 강제 종료시킬 수 있다. 이건 Redis 내부의 eviction 정책과는 별개의 문제 — Redis
+      프로세스 자체가 죽는 것이라 <code>maxmemory-policy</code>가 무엇이든 소용없다.
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <ul>
+      <li>
+        <strong>"기본 설정을 그대로 쓰면 무슨 일이 벌어지는지" 아는가:</strong> <code>noeviction</code>이
+        기본값이라는 사실과, 그로 인해 캐시 용도 인스턴스에서 트래픽 피크에 쓰기 실패가 날 수 있다는
+        구체적 장애 시나리오를 아는지
+      </li>
+      <li>
+        <strong>eviction 대상 범위를 데이터 성격에 맞춰 설계하는가:</strong> 같은 인스턴스에 캐시와
+        원본 데이터가 섞여 있을 때 <code>volatile-*</code>와 TTL 유무를 조합해 원본 데이터를 보호할 수
+        있는지
+      </li>
+      <li>
+        <strong>Redis의 LRU/LFU가 "근사치"라는 내부 동작을 이해하는가:</strong> 샘플링 기반이라는 것,
+        정확도와 성능 사이의 trade-off를 <code>maxmemory-samples</code> 같은 파라미터로 조정할 수
+        있다는 것을 아는지
+      </li>
+      <li>
+        <strong>메모리 사이징을 정량적으로 산정할 수 있는가:</strong> 데이터 크기뿐 아니라 키당 오버헤드,
+        인코딩 임계값, 파편화, fork COW 여유까지 감안해 <code>maxmemory</code>를 물리 메모리보다 낮게
+        잡아야 한다는 걸 아는지
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      이 주제는 "LRU와 LFU 차이를 아는가"로 끝나지 않는다. <strong>"이 Redis 인스턴스가 가득 찼을 때
+      비즈니스적으로 어떤 결과가 나야 정상인지 스스로 설계하고, 그 설계에 맞는 메모리 여유를 미리
+      확보할 수 있는가"</strong>를 평가한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 순수 캐시 레이어에서 기본값(noeviction) 그대로 운영</h3>
+    <p>
+      DB 조회 결과만 캐싱하는 인스턴스에 <code>maxmemory-policy</code>를 별도로 설정하지 않으면 기본값인
+      <code>noeviction</code>이 그대로 적용된다. 트래픽이 늘어 캐시 키가 계속 쌓이다가 메모리가 꽉 차면,
+      Redis는 알아서 오래된 캐시를 지우는 게 아니라 <strong>새 쓰기(SET)를 전부 거부</strong>한다. 캐시
+      워밍이나 신규 캐시 채우기 로직이 갑자기 에러를 뱉기 시작하고, 최악의 경우 애플리케이션이 그 에러를
+      제대로 처리하지 못해 요청 자체가 실패한다. 이런 용도라면 <code>allkeys-lru</code> 또는
+      <code>allkeys-lfu</code>로 명시적으로 바꿔야 한다.
+    </p>
+
+    <h3>상황 2: 캐시와 세션이 한 인스턴스에 공존</h3>
+    <p>
+      비용 절감을 위해 캐시(TTL 있음)와 세션 데이터(TTL 있을 수도, 없을 수도)를 같은 Redis 인스턴스에
+      두는 경우가 많다. 이때 <code>allkeys-lru</code>를 쓰면 접근 패턴에 따라 <strong>세션 데이터도
+      evict 대상이 되어 사용자가 갑자기 로그아웃</strong>될 수 있다. 세션은 만료 시점을 애플리케이션이
+      명시적으로 관리해야 하므로(예: 로그인 시 TTL 갱신) TTL을 걸어두되, 캐시 키만 evict 대상이
+      되도록 <strong>세션 키에는 애초에 TTL을 걸지 않고 <code>volatile-lru</code>를 쓰는</strong>
+      식의 구분이 필요하다 — 다만 이 경우 세션 만료는 애플리케이션 레벨(예: 별도 배치)로 처리해야 한다는
+      trade-off가 생긴다.
+    </p>
+
+    <h3>상황 3: 특정 상품/유저 데이터가 예측 못한 타이밍에 자주 사라짐</h3>
+    <p>
+      <code>allkeys-lru</code>로 운영 중인데, 하루 중 특정 시간대에 접근이 뜸했다가 다시 몰리는 인기
+      상품 데이터가 그 사이 evict돼서 캐시 미스가 튀는 패턴이 반복된다면 — 이건 LRU의 전형적인 약점이다.
+      "자주 쓰이지만 순간적으로 조회가 뜸했던" 키가 "정말 안 쓰이는" 키와 구분되지 않기 때문이다. 이런
+      워크로드에서는 <code>allkeys-lfu</code>로 전환해 "빈도" 기준으로 판단하게 하면 개선되는 경우가
+      많다.
+    </p>
+
+    <h3>상황 4: BGSAVE 직후 메모리 사용량 급증으로 evict가 과도하게 발생</h3>
+    <p>
+      Day 9에서 다룬 것처럼 <code>BGSAVE</code>는 fork/COW로 순간적인 메모리 스파이크를 유발한다.
+      <code>maxmemory</code>를 여유 없이 빡빡하게 잡아둔 상태에서 이 스파이크가 발생하면, 실제로는
+      필요하지 않은 시점에 evict가 과도하게 트리거되어 캐시 히트율이 급락하는 부작용이 생길 수 있다.
+      메모리 사이징 시 fork COW 여유를 별도로 감안해야 하는 이유다.
+    </p>
+
+    <h3>상황 5: 신규 클러스터 용량 산정 미팅</h3>
+    <p>
+      "예상 데이터 총량이 20GB니까 32GB 인스턴스면 충분하다"는 계산은 키당 오버헤드, 파편화, replication
+      buffer, fork COW 여유를 전혀 고려하지 않은 것이다. 실무에서는 순수 데이터 크기 추정값에
+      <strong>1.5~2배 정도의 여유</strong>를 곱해 인스턴스 크기를 정하고, <code>maxmemory</code>는 그
+      물리 메모리보다 더 낮은 값(예: 물리 메모리의 70~80%)으로 설정해 OS 레벨 OOM을 방지하는 것이
+      표준적인 접근이다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>이 인스턴스가 무슨 용도인지부터 구분한다</strong>
+        "먼저 이 Redis가 순수 캐시인지, 세션/카운터처럼 원본 데이터를 함께 담고 있는지부터 확인합니다.
+        전자는 <code>allkeys-*</code>, 후자는 <code>volatile-*</code>와 TTL 설계를 조합해서 원본 데이터를
+        evict 대상에서 제외해야 합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>기본값(noeviction)의 위험을 짚는다</strong>
+        "아무 설정도 안 하면 <code>noeviction</code>이 기본값이라, 메모리가 차면 쓰기가 거부되는 장애가
+        조용히 발생할 수 있습니다. 캐시 용도라면 반드시 명시적으로 eviction 정책을 켭니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>LRU vs LFU를 접근 패턴으로 선택한다</strong>
+        "접근 패턴이 최근성 위주면 LRU, 특정 키가 꾸준히 자주 조회되는 hot key 패턴이면 LFU가 더
+        적합합니다. 다만 둘 다 샘플링 기반의 근사치라는 걸 감안해서, <code>maxmemory-samples</code>로
+        정확도와 CPU 비용의 균형을 조정합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>메모리 사이징 근거를 수치로 제시한다</strong>
+        "순수 데이터 크기뿐 아니라 키당 오버헤드, 인코딩 전환 임계값, 파편화, replication buffer,
+        fork COW 스파이크까지 감안해서 물리 메모리에 여유를 두고 <code>maxmemory</code>를 산정합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>모니터링 지표로 검증 루프를 닫는다 (Senior 포인트)</strong>
+        "설정 이후에는 <code>evicted_keys</code>, <code>used_memory</code>,
+        <code>mem_fragmentation_ratio</code>, OOM 에러율 같은 지표를 대시보드로 계속 관찰해서, 설계
+        당시의 가정이 실제 트래픽과 맞는지 검증합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "먼저 이 Redis가 어떤 데이터를 담고 있는지부터 구분합니다. 순수 DB 캐시라면 재생성이 가능하므로
+        <code>allkeys-lru</code>나 <code>allkeys-lfu</code>를 명시적으로 설정합니다. 기본값인
+        <code>noeviction</code>을 그대로 두면 메모리가 찼을 때 오래된 키를 지우는 대신 새 쓰기 자체를
+        거부하기 때문에, 트래픽 피크에 캐시 갱신이 통째로 실패하는 장애로 이어질 수 있습니다.
+      </p>
+      <p>
+        반대로 같은 인스턴스에 세션처럼 원본 데이터가 함께 있다면, 그 키에는 TTL을 걸지 않고
+        <code>volatile-lru</code>를 사용해서 evict 대상에서 제외합니다. LRU와 LFU 중에서는 접근 패턴이
+        최근성 위주인지, 특정 인기 키가 시간대와 무관하게 꾸준히 조회되는지에 따라 선택합니다. 다만
+        Redis의 LRU/LFU는 전체 키를 정렬하는 게 아니라 <code>maxmemory-samples</code> 개수만큼 무작위로
+        뽑아 그중 가장 오래됐거나 빈도가 낮은 걸 지우는 근사치이기 때문에, 정확도가 중요하다면 샘플
+        수를 늘리는 것도 고려합니다.
+      </p>
+      <p>
+        메모리 용량은 저장할 값의 크기만 더해서 계산하지 않습니다. 키당 dictEntry/robj 오버헤드, Hash나
+        Sorted Set이 listpack에서 해시테이블로 전환될 때의 메모리 증가, jemalloc 파편화,
+        replication backlog, 그리고 BGSAVE 시 fork COW로 인한 순간적인 메모리 스파이크까지 감안해서,
+        실제 데이터 크기 추정값에 여유를 두고 <code>maxmemory</code>를 물리 메모리의 70~80% 선으로
+        설정합니다. 이렇게 하면 Redis 내부 eviction 로직과 별개로 OS OOM Killer에 의해 프로세스 전체가
+        죽는 상황을 막을 수 있습니다. 설정 이후에는 <code>evicted_keys</code>와
+        <code>mem_fragmentation_ratio</code>를 계속 모니터링해서 설계 가정이 실제와 맞는지 확인합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "<code>noeviction</code>이 기본값인 게 왜 위험한가요? 그렇다면 왜 Redis는 이걸 기본값으로
+    뒀을까요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "위험한 이유는 캐시 용도로 쓰는 팀이 이 사실을 놓치면 쓰기가 조용히 실패하기 시작한다는 점입니다.
+      다만 Redis 입장에서는 <code>noeviction</code>이 안전한 기본값입니다 — Redis가 원본 데이터
+      저장소로 쓰일 수도 있는데, 임의로 데이터를 지워버리는 정책을 기본값으로 두면 사용자가 의도치 않게
+      데이터를 잃을 수 있기 때문입니다. 그래서 '어떤 데이터가 사라져도 되는지'는 사용자가 명시적으로
+      선택하게 만든 것이라고 이해하고 있습니다."
+    </p>
+
+    <h3>F2. "<code>maxmemory-samples</code>를 5에서 10으로 늘리면 무엇이 좋아지고 무엇이
+    나빠지나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "샘플 수를 늘리면 evict 후보를 더 넓게 살펴보는 것이므로 실제 LRU/LFU 순서에 더 가까운 키를
+      골라내게 되어 정확도가 올라갑니다. 대신 evict가 일어날 때마다 더 많은 키를 조사해야 하므로 그
+      순간의 CPU 비용이 늘어납니다. eviction이 자주 일어나는, 즉 메모리가 빡빡한 인스턴스일수록 이
+      비용 증가가 체감됩니다. 그래서 무조건 높이기보다는, 실제로 '엉뚱한 키가 evict된다'는 문제가
+      관찰될 때 조정하는 편입니다."
+    </p>
+
+    <h3>F3. "<code>volatile-lru</code>로 설정했는데 evict가 필요한 시점에 TTL이 걸린 키가 하나도 없다면
+    어떻게 되나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "그 경우 evict할 후보 자체가 없으므로 <code>noeviction</code>과 동일하게 동작합니다 — 즉 쓰기가
+      거부됩니다. <code>volatile-*</code> 정책을 쓸 때는 캐시로 쓰이는 키에 TTL이 실제로 잘 걸리고
+      있는지, 애플리케이션 배포 실수로 TTL 없이 SET된 키가 쌓이고 있지 않은지를 함께 모니터링해야
+      한다고 생각합니다."
+    </p>
+
+    <h3>F4. "<code>used_memory</code>가 실제 데이터 총량보다 훨씬 크게 나옵니다. 왜 그럴까요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "여러 원인이 있을 수 있습니다. 첫째, 키당 dictEntry·robj 헤더 같은 고정 오버헤드가 값 자체보다
+      클 수 있습니다. 둘째, Hash나 Set 같은 컬렉션이 <code>hash-max-listpack-entries</code> 같은
+      임계값을 넘어 압축된 listpack에서 완전한 해시테이블로 전환되면 메모리 사용량이 계단식으로
+      뜁니다. 셋째, jemalloc 할당/해제 패턴에 따른 파편화입니다. <code>MEMORY USAGE</code>로 개별 키의
+      실제 점유량을, <code>INFO memory</code>의 <code>mem_fragmentation_ratio</code>로 파편화 정도를
+      확인해서 원인을 좁혀갑니다."
+    </p>
+
+    <h3>F5. "eviction과 데이터 만료(expire)는 어떻게 다른가요? 같은 걸로 봐도 되나요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "다릅니다. 만료(expire)는 TTL이 다 돼서 키가 자연스럽게 사라지는 것으로, 메모리 여유와 무관하게
+      항상 일어납니다. Eviction은 <code>maxmemory</code> 한계에 도달했을 때 메모리를 확보하기 위해
+      <strong>아직 TTL이 남았거나 TTL이 아예 없는 키까지도</strong> 강제로 지우는 것입니다. 그래서
+      <code>evicted_keys</code>와 <code>expired_keys</code> 지표를 구분해서 봐야 합니다 —
+      <code>evicted_keys</code>가 계속 늘어난다는 건 메모리가 부족하다는 신호이고,
+      <code>expired_keys</code>는 정상적인 TTL 설계의 결과입니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>기본값이 <strong><code>noeviction</code></strong>이라는 사실과 그로 인한 구체적 장애
+          시나리오를 안다</li>
+          <li>인스턴스에 담긴 데이터 성격(캐시 vs 원본)에 따라 <strong>allkeys/volatile을 구분</strong>해서
+          설계한다</li>
+          <li>Redis의 LRU/LFU가 <strong>샘플링 기반 근사치</strong>라는 내부 동작을 알고,
+          <code>maxmemory-samples</code>의 trade-off를 설명한다</li>
+          <li>메모리 사이징을 <strong>키당 오버헤드·인코딩 전환·파편화·fork COW</strong>까지 감안해
+          수치로 산정한다</li>
+          <li><code>evicted_keys</code>, <code>mem_fragmentation_ratio</code> 같은
+          <strong>모니터링 지표</strong>로 설계를 검증하는 루프까지 언급한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"LRU는 오래 안 쓴 걸 지우는 것"이라는 <strong>정의만 나열</strong>하고 끝낸다</li>
+          <li>Redis는 <strong>메모리가 차면 자동으로 알아서 지운다</strong>고 착각한다 (기본값을
+          모른다)</li>
+          <li>Redis의 LRU가 <strong>정확한 진짜 LRU</strong>라고 착각한다</li>
+          <li>메모리 사이징을 <strong>"데이터 크기 = maxmemory"</strong>로 단순 계산한다</li>
+          <li><code>maxmemory</code>를 <strong>물리 메모리와 동일하게</strong> 설정해도 된다고
+          생각한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 "eviction 정책이 뭐가 있는가"로 답하지 않는다.
+      <strong>"이 인스턴스가 가득 찼을 때 어떤 데이터는 지워져도 되고 어떤 데이터는 절대 지워지면 안
+      되는지 구분하고, 그 경계를 설정으로 강제할 수 있는가"</strong>라는 질문으로 바꿔서 설계한다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "Redis는 캐시니까 메모리가 차면 알아서 오래된 것부터 지운다"</h3>
+    <p>
+      <strong>사실:</strong> 기본 정책은 <code>noeviction</code>이다. 명시적으로
+      <code>allkeys-lru</code> 등으로 바꾸지 않으면, 메모리가 차는 순간 자동 삭제가 아니라
+      <strong>쓰기 실패</strong>가 발생한다.
+    </p>
+
+    <h3>오해 2: "Redis의 LRU는 정확히 가장 오래 안 쓴 키를 찾아낸다"</h3>
+    <p>
+      <strong>사실:</strong> 전체 키를 정렬해서 관리하지 않는다. <code>maxmemory-samples</code>개만
+      무작위로 뽑아 그중 가장 오래된 걸 지우는 <strong>근사치</strong>다. 샘플 수가 적을수록 실제 LRU
+      순서와 어긋날 가능성이 커진다.
+    </p>
+
+    <h3>오해 3: "<code>volatile-lru</code>를 쓰면 세션 데이터도 안전하다"</h3>
+    <p>
+      <strong>사실:</strong> 세션 키에 TTL이 걸려 있다면 <code>volatile-lru</code>도 그 키를 evict
+      대상으로 삼는다. 보호하려면 <strong>해당 키에 TTL을 걸지 않아야</strong> 하며, 이 경우 만료는
+      애플리케이션이 별도로 관리해야 한다.
+    </p>
+
+    <h3>오해 4: "메모리 용량 산정은 저장할 데이터 크기만 더하면 된다"</h3>
+    <p>
+      <strong>사실:</strong> 키당 오버헤드, 인코딩 전환 임계값, 파편화, replication buffer, fork COW
+      스파이크까지 감안해야 한다. 실무에서는 순수 데이터 크기 추정값에 1.5~2배 여유를 두고,
+      <code>maxmemory</code>는 물리 메모리보다 낮게(예: 70~80%) 설정하는 것이 표준이다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Eviction / 메모리 사이징 설계 전 확인할 것</h2>
+
+    <table>
+      <tr>
+        <th>확인 항목</th>
+        <th>권장 조치</th>
+        <th>주의</th>
+      </tr>
+      <tr>
+        <td>maxmemory-policy가 명시적으로 설정됐는가</td>
+        <td><span class="badge badge-green">캐시 용도면 allkeys-lru/lfu로 명시 설정</span></td>
+        <td><span class="badge badge-red">기본값(noeviction) 방치 시 쓰기 실패 장애 위험</span></td>
+      </tr>
+      <tr>
+        <td>원본 데이터와 캐시가 같은 인스턴스에 섞여 있는가</td>
+        <td><span class="badge badge-green">원본 데이터는 TTL 미설정 + volatile-* 조합으로 보호</span></td>
+        <td><span class="badge badge-yellow">모든 키에 TTL을 걸면 volatile-*의 보호 효과가 사라짐</span></td>
+      </tr>
+      <tr>
+        <td>접근 패턴이 LRU에 적합한가, LFU가 더 맞는가</td>
+        <td><span class="badge badge-green">hot key가 꾸준히 반복되면 LFU 고려</span></td>
+        <td><span class="badge badge-yellow">근거 없이 정책을 바꾸면 회귀 원인 파악이 어려움</span></td>
+      </tr>
+      <tr>
+        <td>maxmemory-samples 기본값(5)으로 충분한가</td>
+        <td><span class="badge badge-green">엉뚱한 키 evict가 관찰되면 10 등으로 상향</span></td>
+        <td><span class="badge badge-yellow">샘플 수 증가는 evict 연산의 CPU 비용 증가와 맞바꾸는 것</span></td>
+      </tr>
+      <tr>
+        <td>maxmemory가 물리 메모리 대비 여유가 있는가</td>
+        <td><span class="badge badge-green">물리 메모리의 70~80% 수준으로 설정</span></td>
+        <td><span class="badge badge-red">여유 없으면 fork COW/replication buffer로 OOM Killer 위험</span></td>
+      </tr>
+      <tr>
+        <td>evicted_keys / mem_fragmentation_ratio 모니터링 중인가</td>
+        <td><span class="badge badge-green">대시보드/알림으로 상시 관찰</span></td>
+        <td><span class="badge badge-yellow">evicted_keys 급증은 캐시 히트율 저하로 직결됨</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>eviction이 뭔지 개념은 알지만, Redis 기본값이 noeviction이라는 것도 모르고 정책 목록도
+      설명 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>allkeys-lru 같은 정책 이름과 뜻은 나열하지만, allkeys와 volatile의 차이나 LRU/LFU 선택
+      기준은 설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>데이터 성격에 따라 allkeys/volatile을 구분해서 쓸 수 있다는 것을 알고, 메모리 사이징에
+      오버헤드가 있다는 정도는 인지함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>LRU/LFU가 샘플링 기반 근사치라는 내부 동작, maxmemory-samples trade-off, 키당 오버헤드·
+      인코딩 전환·파편화·fork COW를 포함한 정량적 메모리 사이징, evicted_keys 기반 모니터링까지
+      하나의 설계로 연결해서 설명함</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. <code>maxmemory-policy</code>의 기본값과, 그걸 방치했을 때 벌어지는 구체적 장애를 설명할 수
+      있는가?<br>
+      2. allkeys-*와 volatile-*의 차이를, TTL 유무를 기준으로 정확히 설명할 수 있는가?<br>
+      3. Redis의 LRU가 왜 "근사치"인지, <code>maxmemory-samples</code>가 무엇을 조정하는지 아는가?<br>
+      4. 메모리 사이징 시 데이터 크기 외에 감안해야 할 요소를 최소 3가지 이상 말할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><code>maxmemory-policy</code>의 기본값은 <strong>noeviction</strong>이다 — 캐시 용도라면
+      명시적으로 <code>allkeys-lru</code>/<code>allkeys-lfu</code> 등으로 바꿔야 한다.</li>
+      <li><code>volatile-*</code> 계열은 <strong>TTL이 걸린 키만</strong> evict 대상으로 삼는다 —
+      원본 데이터를 보호하려면 TTL을 걸지 않아야 한다.</li>
+      <li>Redis의 LRU/LFU는 전체 정렬이 아니라 <strong>무작위 샘플링 기반의 근사치</strong>이며,
+      <code>maxmemory-samples</code>로 정확도와 CPU 비용을 조정한다.</li>
+      <li>LFU는 <strong>접근 빈도</strong>를, LRU는 <strong>최근성</strong>을 기준으로 삼는다 — hot
+      key가 꾸준히 반복되는 워크로드에는 LFU가 더 적합할 수 있다.</li>
+      <li>메모리 사이징은 <strong>데이터 크기 + 키당 오버헤드 + 인코딩 전환 + 파편화 + fork COW
+      여유</strong>까지 감안해야 하며, <code>maxmemory</code>는 물리 메모리보다 낮게(예: 70~80%)
+      잡는 것이 표준이다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 10 완료 · 다음: Day 11 — Pipelining · Lua Scripting · Transaction</span>
+  </div>
+
+</div>
+</body>
+</html>
