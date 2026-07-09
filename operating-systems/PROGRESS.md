@@ -19,17 +19,18 @@
 | 7 | 2026-07-06 | 파일 시스템과 I/O | [0017-day7-file-io-and-buffer-cache.html](lessons/0017-day7-file-io-and-buffer-cache.html) |
 | 8 | 2026-07-07 | 비동기 I/O와 이벤트 루프 | [0018-day8-async-io-and-event-loop.html](lessons/0018-day8-async-io-and-event-loop.html) |
 | 9 | 2026-07-08 | 컨테이너와 OS 격리 | [0019-day9-container-os-isolation.html](lessons/0019-day9-container-os-isolation.html) |
+| 10 | 2026-07-09 | 종합 모의 면접 (운영체제 지표 기반 RCA) | [0020-day10-comprehensive-mock-interview.html](lessons/0020-day10-comprehensive-mock-interview.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 10 | 종합 모의 면접 | "운영체제 지표를 바탕으로 성능 저하 RCA를 수행해보세요." | 지표 기반 추론, 해결안 비교, 재발 방지 |
+| (없음) | 시니어 인터뷰 커리큘럼 1주기 완주 | - | 다음 요청 시 심화 주제(예: NUMA, RCU, io_uring 심화, 실시간 스케줄링)로 확장 예정 |
 
 ## 현재 학습 위치
 
-**Day 9 완료** (2026-07-08) — 컨테이너와 OS 격리
-**다음**: Day 10 — 종합 모의 면접
+**Day 10 완료** (2026-07-09) — 종합 모의 면접, 시니어 인터뷰 커리큘럼 1주기 완주
+**다음**: 사용자 요청 시 심화 주제 추가 (Day 11부터)
 
 ## Interview 답변 체크리스트
 
@@ -57,4 +58,4 @@
 - [x] page cache, dirty page, write-back, fsync/fdatasync, 저널링 오버헤드 — Day 7
 - [x] blocking I/O, non-blocking I/O, select/poll/epoll, 이벤트 루프 블로킹, io_uring, cgroup CPU throttling과 이벤트 루프 — Day 8
 - [x] VM vs 컨테이너 구조, namespace(시야 격리)와 cgroup(자원 제한) 구분, noisy neighbor, OOM kill, CPU throttling, User namespace, gVisor/Kata — Day 9
-- [ ] 지표 기반 종합 RCA와 해결안 비교 (예정 Day 10)
+- [x] 복합 원인 장애의 계층별 순차 진단 (CPU/스케줄링 → 동시성 → 컨테이너 경계 → I/O/이벤트 루프), 상관관계 vs 인과관계 구분, 재발 방지 커뮤니케이션 — Day 10
