@@ -14,12 +14,12 @@
 | 8 | 2026-07-06 | Decorator — 함수형 패턴, closure, 실행 시점, 실무 활용 | [0008-decorator.html](lessons/0008-decorator.html) |
 | 9 | 2026-07-07 | Python 실행 모델 — 바이트코드, CPython 인터프리터, 네임스페이스, LEGB | [0009-execution-model.html](lessons/0009-execution-model.html) |
 | 10 | 2026-07-08 | Typing 심화 — Protocol, Generic, TypeVar, Literal, overload | [0010-typing-deep-dive.html](lessons/0010-typing-deep-dive.html) |
+| 11 | 2026-07-09 | Testing 전략 — pytest fixture, mock, property-based testing, 테스트 격리 | [0011-testing-strategy.html](lessons/0011-testing-strategy.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 11 | Testing 전략 | pytest fixture, mock, property-based testing, 테스트 격리 |
 | 12 | Debugging과 Profiling | `pdb`, `cProfile`, `memory_profiler`, flamegraph |
 | 13 | 패키징과 의존성 관리 | `pyproject.toml`, `poetry`, `pip`, virtual env, lock file |
 | 14 | 표준 라이브러리 심화 | `collections`, `itertools`, `functools`, `pathlib`, `dataclasses` |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 10 완료** — Day 11 (Testing 전략)부터 계속.
+**Day 11 완료** — Day 12 (Debugging과 Profiling)부터 계속.
 
 ## 습득한 핵심 개념
 
@@ -82,4 +82,11 @@
 - [x] 공변/반공변/무공변과 가변 컨테이너가 무공변이어야 하는 이유 (Day 10)
 - [x] `Any`와 `object`의 차이, "Any 오염"의 위험성 (Day 10)
 
-- [ ] Testing 전략 — pytest fixture, mock, property-based testing (예정 Day 11)
+- [x] 테스트 격리와 flaky test의 인과 관계 (Day 11)
+- [x] pytest fixture scope 설계 — 리소스 비용 vs 격리 요구사항의 절충 (Day 11)
+- [x] Stub/Mock/Fake의 목적 구분과 mock을 적용할 경계 판단 (Day 11)
+- [x] mock 기반 테스트의 한계 — 가정과 실제 의존성의 어긋남 위험 (Day 11)
+- [x] property-based testing — invariant 관점의 사고 전환과 shrinking (Day 11)
+- [x] 테스트 커버리지의 한계와 레거시 코드의 특성화 테스트 전략 (Day 11)
+
+- [ ] Debugging과 Profiling — pdb, cProfile, memory_profiler, flamegraph (예정 Day 12)
