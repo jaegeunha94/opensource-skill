@@ -19,16 +19,18 @@
 | 7 | 2026-07-06 | 트라이와 문자열 검색 | [interview-day07-trie-and-string-search.html](lessons/interview-day07-trie-and-string-search.html) |
 | 8 | 2026-07-07 | 그래프 표현과 탐색 | [interview-day08-graph-representation-and-traversal.html](lessons/interview-day08-graph-representation-and-traversal.html) |
 | 9 | 2026-07-08 | 실무 자료구조 설계 (캐시·Rate Limiter·랭킹) | [interview-day09-cache-rate-limiter-ranking-design.html](lessons/interview-day09-cache-rate-limiter-ranking-design.html) |
+| 10 | 2026-07-09 | 종합 모의 면접 (요구사항 변화에 따른 자료구조 재검토) | [interview-day10-mock-interview-requirement-change.html](lessons/interview-day10-mock-interview-requirement-change.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 10 | 종합 모의 면접 | "요구사항이 바뀌는 상황에서 자료구조 선택을 재검토해보세요." | 변경 대응, trade-off, follow-up 대응 |
+
+계획된 10일 커리큘럼을 모두 완료했다. 추가 심화 주제(예: 동시성 안전 자료구조, 영속(persistent) 자료구조, 분산 자료구조 심화)가 필요하면 다음 세션에서 Day 11로 확장한다.
 
 ## 현재 학습 위치
 
-**Day 9 완료** — 다음은 Day 10: 종합 모의 면접 (요구사항 변경에 따른 자료구조 재검토, trade-off와 follow-up 대응).
+**Day 10 완료** — 자료구조 10년차 이상 개발자 Interview 커리큘럼(Day 1~10) 완료. 다음 세션에서 심화 주제로 확장 가능.
 
 ## Interview 답변 체크리스트
 
@@ -54,4 +56,4 @@
 - [x] 트라이 구조와 prefix search, 알파벳 크기별 자식 표현, radix tree/DAWG 압축 — Day 7
 - [x] 인접 행렬 vs 인접 리스트, sparse/dense graph, BFS/DFS 복잡도 차이, 재귀 DFS 콜스택 오버플로우 위험 — Day 8
 - [x] LRU 캐시(해시 맵 + 이중 연결 리스트), sliding window/token bucket rate limiter, 스킵 리스트+해시 맵 기반 랭킹 조합 설계 — Day 9
-- [ ] 요구사항 변경에 따른 자료구조 재검토, 종합 trade-off 대응 (예정 Day 10)
+- [x] 요구사항 변화에 따른 자료구조 재검토(유지 vs 교체 구분), 규모 변화가 자료구조 유효성을 무효화하는 원리, 라운드별 trade-off 재계산, 종합 follow-up 대응 — Day 10
