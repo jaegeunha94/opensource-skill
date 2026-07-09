@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 18 — 네비게이션 UI 패턴</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; font-size: 16px; line-height: 1.7; color: #1a1a2e; background: #f8f9fc; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+    /* header */
+    header { background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%); color: #fff; border-radius: 12px; padding: 2rem 2rem 1.75rem; margin-bottom: 2rem; }
+    header .day-badge { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-bottom: 0.5rem; }
+    header h1 { font-size: 1.7rem; font-weight: 700; line-height: 1.3; }
+    header p.subtitle { margin-top: 0.6rem; opacity: 0.9; font-size: 0.95rem; }
+
+    /* nav breadcrumb */
+    .breadcrumb { font-size: 0.82rem; color: #6c757d; margin-bottom: 1.5rem; }
+    .breadcrumb a { color: #3a7bd5; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* section */
+    section { background: #fff; border-radius: 10px; padding: 1.75rem 2rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    section h2 { font-size: 1.15rem; font-weight: 700; color: #3a7bd5; margin-bottom: 1rem; border-left: 4px solid #3a7bd5; padding-left: 0.75rem; }
+    section h3 { font-size: 1rem; font-weight: 700; color: #2d3436; margin: 1.4rem 0 0.5rem; }
+    section p { margin-bottom: 0.85rem; }
+    section ul, section ol { padding-left: 1.4rem; margin-bottom: 0.85rem; }
+    section ul li, section ol li { margin-bottom: 0.4rem; }
+
+    /* term card */
+    .term-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+    .term-card .term-title { font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.25rem; }
+    .term-card .term-eng { font-size: 0.82rem; color: #6c757d; margin-bottom: 0.5rem; font-style: italic; }
+    .term-card .term-body { font-size: 0.93rem; }
+
+    /* table */
+    .table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+    th { background: #f0f4ff; color: #3a7bd5; font-weight: 700; text-align: left; padding: 0.6rem 0.9rem; border-bottom: 2px solid #d0d9f5; }
+    td { padding: 0.55rem 0.9rem; border-bottom: 1px solid #eee; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f9fbff; }
+
+    /* callout */
+    .callout { border-left: 4px solid #00d2ff; background: #f0faff; border-radius: 0 8px 8px 0; padding: 0.9rem 1.1rem; margin: 1rem 0; font-size: 0.9rem; }
+    .callout.warn { border-color: #f39c12; background: #fffbf0; }
+    .callout.tip  { border-color: #27ae60; background: #f0fff4; }
+
+    /* code */
+    code { background: #f4f4f8; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.85em; font-family: 'Fira Code', monospace; }
+
+    /* copy compare */
+    .compare-row { display: flex; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .compare-col { flex: 1 1 240px; border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.9rem; }
+    .compare-col.bad { background: #fff4f4; border-left: 4px solid #e74c3c; }
+    .compare-col.good { background: #f0fff4; border-left: 4px solid #27ae60; }
+    .compare-col .label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+    .compare-col.bad .label { color: #e74c3c; }
+    .compare-col.good .label { color: #27ae60; }
+
+    /* quiz */
+    .quiz { background: #fafbfe; border: 1px solid #d0d9f5; border-radius: 8px; padding: 1.25rem 1.4rem; margin-top: 1.5rem; }
+    .quiz h3 { font-size: 1rem; color: #3a7bd5; margin-bottom: 0.75rem; }
+    .quiz .q { font-weight: 600; margin-bottom: 0.6rem; }
+    .quiz .options li { margin-bottom: 0.3rem; cursor: pointer; padding: 0.3rem 0.5rem; border-radius: 4px; transition: background 0.15s; }
+    .quiz .options li:hover { background: #e8f0ff; }
+    .quiz details { margin-top: 0.75rem; }
+    .quiz details summary { cursor: pointer; color: #3a7bd5; font-size: 0.9rem; }
+    .quiz details p { margin-top: 0.5rem; font-size: 0.9rem; background: #f0fff4; border-left: 3px solid #27ae60; padding: 0.6rem 0.8rem; border-radius: 0 6px 6px 0; }
+
+    /* footer */
+    footer { text-align: center; font-size: 0.82rem; color: #aaa; margin-top: 2.5rem; }
+    footer a { color: #3a7bd5; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="breadcrumb">
+    <a href="./index.html">← UI/UX 용어 학습 목록</a>
+  </div>
+
+  <header>
+    <div class="day-badge">Day 18 · UI/UX 용어</div>
+    <h1>네비게이션 UI 패턴</h1>
+    <p class="subtitle">Tab Bar · Bottom Navigation · Hamburger Menu · Drawer · Breadcrumb · Stepper · Pagination · Infinite Scroll</p>
+  </header>
+
+  <!-- ───────────────── 1. 왜 이 용어가 중요한가 ───────────────── -->
+  <section>
+    <h2>1. 왜 이 용어들이 중요한가</h2>
+    <p>
+      Day 2에서 다룬 정보 구조(IA)가 "화면들을 어떤 구조로 나눌 것인가"라는
+      추상적 설계라면, 이번 Day는 그 구조를 사용자가 <strong>실제로 손가락과
+      눈으로 이동할 때 쓰는 구체적인 UI 컴포넌트</strong>를 다룬다. "네비게이션
+      좀 손보자"는 말이 나왔을 때, 그게 화면 하단의 <strong>Bottom
+      Navigation</strong> 탭 구성을 바꾸자는 것인지, 좌측에서 밀려나오는
+      <strong>Drawer</strong> 메뉴 항목을 정리하자는 것인지에 따라 작업 범위와
+      담당 컴포넌트가 완전히 달라진다.
+    </p>
+    <p>
+      특히 <strong>Tab Bar</strong>와 <strong>Bottom Navigation</strong>,
+      <strong>Hamburger Menu</strong>와 <strong>Drawer</strong>는 실무에서
+      가장 자주 혼용되는 용어 쌍이다. 정확히 구분해서 쓰면 "이 화면은 콘텐츠
+      내부 Tab이니 상단에 두고, 앱 전역 이동은 Bottom Navigation으로 고정하자"
+      처럼 화면 설계 논의가 빨라지고, 개발자에게 컴포넌트 스펙을 전달할 때도
+      오해가 줄어든다.
+    </p>
+  </section>
+
+  <!-- ───────────────── 2. 핵심 용어 카드 ───────────────── -->
+  <section>
+    <h2>2. 핵심 용어 카드</h2>
+
+    <div class="term-card">
+      <div class="term-title">탭 바</div>
+      <div class="term-eng">Tab Bar</div>
+      <div class="term-body">
+        하나의 화면 <strong>안에서 콘텐츠 카테고리를 전환</strong>하는
+        가로형 네비게이션. 예를 들어 상품 상세 화면에서 "상세정보 / 리뷰 /
+        Q&A"를 전환하는 탭이 여기 해당한다. 화면 자체는 유지되고 그 안의
+        콘텐츠만 바뀐다는 점이 핵심이다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">하단 내비게이션</div>
+      <div class="term-eng">Bottom Navigation</div>
+      <div class="term-body">
+        모바일 앱 화면 <strong>최하단에 고정되어 앱의 최상위 섹션(홈, 검색,
+        알림, 마이페이지 등)을 전환</strong>하는 네비게이션. Tab Bar와
+        생김새가 비슷해 자주 혼동되지만, Bottom Navigation은 화면 자체를
+        완전히 바꾸는 <strong>앱 전역 이동</strong>이고 보통 3~5개 항목으로
+        제한된다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">햄버거 메뉴</div>
+      <div class="term-eng">Hamburger Menu</div>
+      <div class="term-body">
+        가로줄 세 개(☰) 아이콘으로 표시되는 <strong>메뉴를 여는 트리거
+        버튼</strong>. 그 자체가 메뉴 목록은 아니며, 누르면 보통
+        <strong>Drawer</strong>가 열린다. 공간이 좁은 화면에서 하위 메뉴를
+        숨겨두는 용도로 쓰이지만, 클릭 전까지 메뉴 항목이 보이지 않아
+        발견성(discoverability)이 낮다는 지적을 받기도 한다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">드로어 (사이드 내비게이션)</div>
+      <div class="term-eng">Drawer / Side Navigation</div>
+      <div class="term-body">
+        화면 <strong>좌측(또는 우측) 가장자리에서 밀려나와 세로로 나열된
+        메뉴 목록을 보여주는 패널</strong>. Hamburger Menu를 누르거나 화면
+        가장자리를 스와이프하면 열린다. 메뉴 항목 수가 많거나 계정 전환·설정
+        같은 부가 기능을 담을 때 Bottom Navigation 대신 쓰인다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">브레드크럼</div>
+      <div class="term-eng">Breadcrumb</div>
+      <div class="term-body">
+        "홈 > 카테고리 > 상세" 형태로 <strong>현재 위치까지의 계층 경로를
+        순서대로 보여주는</strong> 텍스트형 네비게이션. 사용자가 지금
+        정보 구조의 어디에 있는지 알려주고, 상위 단계로 한 번에 이동할 수
+        있게 한다. 깊은 계층 구조를 가진 관리자 화면·이커머스 카테고리
+        페이지에서 특히 유용하다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">스테퍼</div>
+      <div class="term-eng">Stepper</div>
+      <div class="term-body">
+        회원가입, 결제처럼 <strong>정해진 순서를 반드시 거쳐야 하는 여러
+        단계를 번호나 진행 바로 보여주는</strong> 네비게이션. Breadcrumb와
+        달리 임의 이동이 아니라 <strong>선형적인 진행</strong>을 표현하며,
+        사용자가 전체 몇 단계 중 지금 몇 번째인지 가늠하게 해 이탈을
+        줄이는 역할을 한다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">페이지네이션</div>
+      <div class="term-eng">Pagination</div>
+      <div class="term-body">
+        긴 목록을 <strong>여러 페이지로 나누고 번호를 눌러 이동</strong>하게
+        하는 방식. 사용자가 특정 위치(예: "3페이지의 그 상품")로 다시 돌아가기
+        쉽고, 전체 분량을 가늠할 수 있다는 장점이 있다. 관리자 화면이나
+        검색 결과처럼 특정 항목을 다시 찾아야 하는 상황에 적합하다.
+      </div>
+    </div>
+
+    <div class="term-card">
+      <div class="term-title">무한 스크롤</div>
+      <div class="term-eng">Infinite Scroll</div>
+      <div class="term-body">
+        스크롤이 <strong>목록 끝에 가까워지면 다음 항목을 자동으로 이어서
+        불러오는</strong> 방식. 페이지 전환 클릭 없이 콘텐츠를 계속 소비할 수
+        있어 SNS 피드처럼 <strong>탐색·발견 중심</strong> 콘텐츠에 적합하지만,
+        특정 항목을 다시 찾거나 푸터에 도달하기 어렵다는 단점이 있다.
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ───────────────── 3. 헷갈리기 쉬운 개념 비교 ───────────────── -->
+  <section>
+    <h2>3. 헷갈리기 쉬운 개념 비교</h2>
+
+    <h3>① Tab Bar vs Bottom Navigation</h3>
+    <div class="compare-row">
+      <div class="compare-col good">
+        <div class="label">Tab Bar</div>
+        <strong>화면 내부</strong>의 콘텐츠 카테고리 전환. 화면은 그대로,
+        콘텐츠만 바뀐다. 위치는 상단·화면 중간 등 자유롭다.
+      </div>
+      <div class="compare-col bad">
+        <div class="label">Bottom Navigation</div>
+        <strong>앱 전역</strong>의 최상위 섹션 전환. 화면 자체가 완전히
+        바뀌며, 항상 화면 하단에 고정된다.
+      </div>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d; margin-top:-0.5rem;">
+      실무 팁: "탭 이름 바꿔주세요" 같은 요청을 받으면 어느 컴포넌트를
+      말하는지 먼저 확인해야 한다. Bottom Navigation 항목을 바꾸는 것은
+      정보 구조(IA) 변경에 가깝고, Tab Bar 라벨을 바꾸는 것은 화면 내부 카피
+      수정에 가까워 작업 범위가 다르다.
+    </p>
+
+    <h3>② Hamburger Menu vs Drawer</h3>
+    <div class="compare-row">
+      <div class="compare-col good">
+        <div class="label">Hamburger Menu</div>
+        메뉴를 여는 <strong>트리거(아이콘 버튼)</strong>. 그 자체는 메뉴
+        목록이 아니다.
+      </div>
+      <div class="compare-col bad">
+        <div class="label">Drawer</div>
+        Hamburger Menu를 눌렀을 때 <strong>열리는 패널(콘텐츠)</strong>.
+        메뉴 항목 목록이 실제로 담기는 곳이다.
+      </div>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d; margin-top:-0.5rem;">
+      실무 팁: "햄버거 메뉴에 항목 추가해주세요"는 대부분 Drawer 안에 항목을
+      추가해달라는 뜻이다. 트리거 아이콘과 그 안의 콘텐츠를 구분해서
+      스펙 문서에 적으면 개발자와의 혼선이 줄어든다.
+    </p>
+
+    <h3>③ Pagination vs Infinite Scroll</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>구분</th><th>재방문 시 위치 복원</th><th>전체 분량 인지</th><th>적합한 상황</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Pagination</td><td>쉬움 (페이지 번호로 복귀)</td><td>쉬움 (총 페이지 수 표시)</td><td>검색 결과, 관리자 목록처럼 특정 항목을 다시 찾는 경우</td></tr>
+          <tr><td>Infinite Scroll</td><td>어려움 (스크롤 위치 유실 가능)</td><td>어려움 (끝을 가늠하기 어려움)</td><td>SNS 피드처럼 몰입해서 계속 탐색하는 경우</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:0.85rem; color:#6c757d;">
+      실무 팁: 이커머스 상품 목록처럼 사용자가 "아까 봤던 그 상품"으로
+      돌아가야 하는 화면에 Infinite Scroll을 적용하면 뒤로가기 시 스크롤
+      위치가 초기화되어 이탈이 늘 수 있다. 이런 경우 Pagination이나
+      "더보기" 버튼형 로딩이 더 적합하다.
+    </p>
+  </section>
+
+  <!-- ───────────────── 4. 실전 체크리스트 ───────────────── -->
+  <section>
+    <h2>4. 네비게이션 리뷰 실전 체크리스트</h2>
+    <p>새 화면이나 네비게이션 개편을 리뷰할 때 아래 항목을 팀과 함께 확인한다.</p>
+    <ol>
+      <li><strong>전역 vs 화면 내부 구분</strong> — 지금 논의하는 네비게이션이 앱 전역 이동(Bottom Navigation)인지, 화면 내부 콘텐츠 전환(Tab Bar)인지 구분되어 있는가?</li>
+      <li><strong>Bottom Navigation 항목 수</strong> — 3~5개를 넘지 않는가? 항목이 늘어나면 우선순위를 다시 정하거나 일부를 Drawer로 옮겨야 한다.</li>
+      <li><strong>Drawer 남용 여부</strong> — 자주 쓰는 핵심 기능을 발견성이 낮은 Drawer 안에 숨겨두고 있지는 않은가?</li>
+      <li><strong>Breadcrumb 필요 여부</strong> — 계층이 3단계 이상 깊은 화면에 사용자가 현재 위치를 알 수 있는 Breadcrumb가 있는가?</li>
+      <li><strong>Stepper의 이탈 지점 표시</strong> — 여러 단계로 이뤄진 플로우에서 지금 몇 단계 중 몇 번째인지, 남은 단계가 몇 개인지 명확히 보이는가?</li>
+      <li><strong>목록 탐색 방식 선택 근거</strong> — Pagination과 Infinite Scroll 중, 사용자가 특정 항목으로 되돌아올 필요가 있는지를 기준으로 선택했는가?</li>
+    </ol>
+    <div class="callout tip">
+      <strong>Tip — 네비게이션 용어를 스펙 문서에 정확히 쓰자:</strong>
+      "메뉴", "탭", "네비게이션"처럼 뭉뚱그린 표현 대신 Tab Bar, Bottom
+      Navigation, Drawer처럼 구체적인 컴포넌트명을 쓰면 디자이너·개발자가
+      같은 컴포넌트를 두고 다른 그림을 상상하는 일이 줄어든다.
+    </div>
+    <div class="callout warn">
+      <strong>주의 — Hamburger Menu 뒤에 핵심 기능 숨기기:</strong>
+      사용률이 높은 기능을 Drawer 안에 넣으면 클릭 한 번이 늘어나는 것을
+      넘어, 애초에 그 기능이 있다는 사실 자체를 사용자가 모르게 될 수 있다.
+      핵심 기능은 Bottom Navigation이나 화면에 바로 노출하는 것이 우선이다.
+    </div>
+  </section>
+
+  <!-- ───────────────── 5. 용어 요약 ───────────────── -->
+  <section>
+    <h2>5. 용어 요약</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>용어</th><th>한국어</th><th>한 줄 설명</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Tab Bar</td><td>탭 바</td><td>화면 내부 콘텐츠 카테고리를 전환하는 가로형 네비게이션</td></tr>
+          <tr><td>Bottom Navigation</td><td>하단 내비게이션</td><td>앱 전역 최상위 섹션을 전환하는 하단 고정 네비게이션</td></tr>
+          <tr><td>Hamburger Menu</td><td>햄버거 메뉴</td><td>메뉴 패널을 여는 트리거 아이콘</td></tr>
+          <tr><td>Drawer</td><td>드로어</td><td>가장자리에서 밀려나와 메뉴 목록을 보여주는 패널</td></tr>
+          <tr><td>Breadcrumb</td><td>브레드크럼</td><td>현재 위치까지의 계층 경로를 보여주는 텍스트형 네비게이션</td></tr>
+          <tr><td>Stepper</td><td>스테퍼</td><td>선형적인 다단계 진행 상태를 보여주는 네비게이션</td></tr>
+          <tr><td>Pagination</td><td>페이지네이션</td><td>목록을 여러 페이지로 나눠 번호로 이동하는 방식</td></tr>
+          <tr><td>Infinite Scroll</td><td>무한 스크롤</td><td>스크롤에 따라 다음 항목을 자동으로 이어 불러오는 방식</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───────────────── 6. 셀프 체크 퀴즈 ───────────────── -->
+  <section>
+    <h2>6. 셀프 체크 퀴즈</h2>
+
+    <div class="quiz">
+      <h3>Q1</h3>
+      <p class="q">상품 상세 화면 안에서 "상세정보 / 리뷰 / Q&A"를 눌러 콘텐츠만 바뀌는 UI와, 화면 최하단에 고정되어 "홈 / 검색 / 알림 / 마이페이지"를 전환하는 UI를 각각 부르는 용어는?</p>
+      <ol class="options" type="A">
+        <li>A. Breadcrumb / Stepper</li>
+        <li>B. Tab Bar / Bottom Navigation</li>
+        <li>C. Drawer / Hamburger Menu</li>
+        <li>D. Pagination / Infinite Scroll</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — Tab Bar / Bottom Navigation</strong><br>
+          화면 내부 콘텐츠 전환은 Tab Bar, 앱 전역 최상위 섹션 전환은 Bottom
+          Navigation이다. A(Breadcrumb/Stepper)는 계층 경로 표시와 단계형
+          진행 표시로 이 상황과 무관하고, C(Drawer/Hamburger Menu)는 트리거와
+          패널 관계이지 화면 전환 방식 비교가 아니며, D(Pagination/Infinite
+          Scroll)는 목록 탐색 방식이라 이 상황에 해당하지 않는다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q2</h3>
+      <p class="q">이커머스 상품 목록 화면에서 사용자가 상품을 눌러 상세 화면을 봤다가 뒤로가기를 눌렀을 때, 아까 보던 스크롤 위치의 상품으로 정확히 돌아오게 하고 싶다. 어느 방식이 이 요구에 더 적합한가?</p>
+      <ol class="options" type="A">
+        <li>A. Infinite Scroll</li>
+        <li>B. Pagination</li>
+        <li>C. Hamburger Menu</li>
+        <li>D. Stepper</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — Pagination</strong><br>
+          Pagination은 페이지 번호로 위치를 명확히 표시해 재방문 시 복원이
+          쉽다. A(Infinite Scroll)는 스크롤 위치 복원이 어려워 이 요구와
+          반대되고, C(Hamburger Menu)와 D(Stepper)는 목록 탐색 방식이 아니라
+          각각 메뉴 트리거와 다단계 진행 표시라 이 문제와 관련이 없다.
+        </p>
+      </details>
+    </div>
+
+    <div class="quiz" style="margin-top:1rem;">
+      <h3>Q3</h3>
+      <p class="q">디자이너가 "햄버거 메뉴에 새 항목 하나 추가해주세요"라고 요청했다. 개발자가 정확히 이해하려면 실제로 어떤 컴포넌트에 항목을 추가해야 하는가?</p>
+      <ol class="options" type="A">
+        <li>A. Tab Bar</li>
+        <li>B. Drawer</li>
+        <li>C. Breadcrumb</li>
+        <li>D. Bottom Navigation</li>
+      </ol>
+      <details>
+        <summary>정답 보기</summary>
+        <p>
+          <strong>정답: B — Drawer</strong><br>
+          Hamburger Menu는 메뉴를 여는 트리거 아이콘일 뿐이고, 실제 메뉴
+          항목 목록은 그 트리거를 눌렀을 때 열리는 Drawer 패널 안에 담긴다.
+          A(Tab Bar)와 D(Bottom Navigation)는 성격이 다른 전환형 네비게이션이고,
+          C(Breadcrumb)는 계층 경로 표시라 메뉴 항목 추가와 무관하다.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ───────────────── 7. 다음 학습 예고 ───────────────── -->
+  <section>
+    <h2>7. 다음 학습 예고</h2>
+    <p>
+      다음 Day에서는 지금까지 다룬 기초 개념, 정보 구조, 컴포넌트 시스템,
+      인터랙션, 접근성, 협업 툴, 사용자 조사, 프로토타이핑, 사용성 테스트,
+      반응형/모바일, UX 라이팅, 다크 패턴, 디자인 리뷰 프로세스, 폼/인풋 UX,
+      알림/피드백 UI, 로딩/스켈레톤 UI, 온보딩/FTUE, 네비게이션 UI 패턴을
+      바탕으로 실무 심화 주제나 인접 영역으로 계속 확장할 예정이다.
+    </p>
+  </section>
+
+  <footer>
+    <p>
+      <a href="./index.html">← 전체 목록</a> &nbsp;|&nbsp;
+      UI/UX 용어 학습 워크스페이스 · Day 18 · 2026-07-09
+    </p>
+  </footer>
+
+</div>
+</body>
+</html>
