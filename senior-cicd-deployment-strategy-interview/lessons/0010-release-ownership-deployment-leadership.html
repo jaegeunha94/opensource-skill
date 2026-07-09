@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 — Release Ownership과 배포 리더십 | CI/CD 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    .lesson-header {
+      border-left: 4px solid var(--accent);
+      padding: 1.5rem 1.5rem 1.5rem 2rem;
+      background: var(--surface);
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .lesson-title { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
+    .lesson-subtitle { color: var(--muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 1.2rem 0 0.6rem;
+    }
+    p { margin-bottom: 0.8rem; color: var(--text); }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.88em;
+      color: #a5b4fc;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    .interview-q {
+      background: linear-gradient(135deg, #1e2a4a 0%, #1a2035 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .interview-q .label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .interview-q .question {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.5;
+    }
+
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .strategy-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .strategy-card .name {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .strategy-card.blue-green .name { color: #60a5fa; }
+    .strategy-card.rolling .name { color: #34d399; }
+    .strategy-card.canary .name { color: #f59e0b; }
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-right: 0.3rem;
+      margin-bottom: 0.3rem;
+    }
+    .tag-green { background: #14532d; color: #4ade80; }
+    .tag-red { background: #450a0a; color: #f87171; }
+    .tag-yellow { background: #422006; color: #fbbf24; }
+    .tag-blue { background: #1e3a5f; color: #93c5fd; }
+
+    .answer-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.8;
+    }
+    .answer-block .speaker {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .compare-card.good {
+      background: #052e16;
+      border: 1px solid #166534;
+    }
+    .compare-card.weak {
+      background: #2d0a0a;
+      border: 1px solid #7f1d1d;
+    }
+    .compare-label {
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .compare-card.good .compare-label { color: #4ade80; }
+    .compare-card.weak .compare-label { color: #f87171; }
+
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent2);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.1rem;
+    }
+
+    .followup-item {
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .followup-item .q {
+      font-weight: 600;
+      color: #c4b5fd;
+      margin-bottom: 0.5rem;
+    }
+    .followup-item .a {
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 700;
+      text-align: left;
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:last-child td { border-bottom: none; }
+    .rubric-table tr:nth-child(even) td { background: #12141e; }
+    .level-badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .level-1 { background: #450a0a; color: #fca5a5; }
+    .level-2 { background: #422006; color: #fcd34d; }
+    .level-3 { background: #14532d; color: #86efac; }
+    .level-4 { background: #1e3a5f; color: #93c5fd; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .callout-warn {
+      background: #2d1b00;
+      border: 1px solid var(--yellow);
+      color: #fef3c7;
+    }
+    .callout-info {
+      background: #0c1a3a;
+      border: 1px solid var(--accent);
+      color: #dbeafe;
+    }
+    .callout-icon { font-weight: 700; margin-right: 0.4rem; }
+
+    .flow-diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #a5b4fc;
+      overflow-x: auto;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      white-space: pre;
+    }
+
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .nav-bar a {
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .nav-bar a:hover { text-decoration: underline; }
+    .nav-center { color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-header">
+    <div class="lesson-meta">CI/CD와 배포 전략 인터뷰 · Day 10</div>
+    <div class="lesson-title">Release Ownership과 배포 리더십</div>
+    <div class="lesson-subtitle">지금까지 배운 파이프라인, 배포 전략, 롤백 판단은 모두 "누가 그 판단을 내리고, 그 결과를 책임지는가"라는 질문 위에 서 있다. 도구와 절차가 아무리 정교해도 책임 구조가 불명확하면 배포는 결국 눈치와 회피의 게임이 된다. 이번 레슨은 이 트랙의 마지막 퍼즐 조각, 즉 release ownership을 다룬다.</div>
+  </div>
+
+  <!-- SECTION 1: 면접 질문 -->
+  <section>
+    <h2>🎯 오늘의 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">주질문 (Main Question)</div>
+      <div class="question">
+        "당신의 팀에서 배포에 대한 책임은 어떻게 나뉘어 있습니까?<br>
+        배포가 실패해서 장애가 났을 때, 최종적으로 누가 책임을 진다고 생각하십니까?"
+      </div>
+    </div>
+
+    <div class="interview-q" style="border-color: var(--accent2);">
+      <div class="label" style="color: var(--accent2);">변형 질문 (Variation)</div>
+      <div class="question" style="font-size: 1rem;">
+        "배포 속도(velocity)와 안정성(stability) 사이에서 조직 전체가 갈등할 때,<br>
+        당신이라면 어떤 프로세스와 권한 구조로 이 갈등을 조율하시겠습니까?"
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: 왜 면접에서 묻는가 -->
+  <section>
+    <h2>🔍 왜 면접에서 이 질문을 하는가</h2>
+
+    <p>지금까지의 Day 1~9는 전부 "어떻게 배포하는가"에 대한 질문이었다. Release ownership 질문은 방향이 다르다. 면접관은 지원자가 <strong>도구를 잘 다루는 사람</strong>인지가 아니라, <strong>10년차 이상으로서 조직의 배포 문화와 의사결정 구조를 설계하고 개선할 수 있는 사람</strong>인지를 확인하려 한다. 주니어와 미드레벨 개발자는 "제가 배포 버튼을 누릅니다"까지만 답한다. 시니어에게 기대하는 답은 "이 배포가 실패했을 때 누가 무엇을 결정하고, 그 결정 권한이 왜 그 사람에게 있으며, 실패의 책임을 개인이 아니라 시스템의 문제로 환원하는 문화를 어떻게 만드는가"이다.</p>
+
+    <div class="card">
+      <div class="card-title">면접관이 실제로 평가하는 것</div>
+      <ul>
+        <li><strong>책임과 권한의 일치 여부:</strong> 배포를 실행하는 사람과 그 결과를 책임지는 사람이 같은지, 다르다면 왜 그런 구조를 택했는지 설명할 수 있는가</li>
+        <li><strong>블레임리스(blameless) 문화 이해:</strong> 장애의 원인을 "누가 실수했는가"가 아니라 "어떤 시스템적 허점이 실수를 가능하게 했는가"로 접근하는가</li>
+        <li><strong>속도-안정성 트레이드오프 조율 능력:</strong> 무작정 승인 단계를 늘려 안정성만 추구하거나, 반대로 절차 없이 속도만 추구하는 극단이 아니라 리스크 기반으로 절차를 차등화할 수 있는가</li>
+        <li><strong>커뮤니케이션 설계:</strong> 배포 중, 장애 중, 장애 후에 각각 누구에게 무엇을 어떤 채널로 알리는지 구체적인 절차가 있는가</li>
+        <li><strong>조직적 재발 방지:</strong> 포스트모텀 액션 아이템이 실제로 완료되도록 추적하는 체계가 있는가, 아니면 문서만 쓰고 끝나는가</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>주니어 vs 시니어 차이:</strong> 주니어는 "저는 맡은 기능만 배포하고, 문제가 생기면 리드에게 보고합니다"에서 멈춘다. 시니어는 배포 권한 구조 자체를 설계하고, 그 구조가 왜 조직의 리스크 수준과 팀 성숙도에 맞는지, 그리고 실패했을 때 개인을 비난하지 않으면서도 재발을 막는 시스템을 어떻게 만드는지까지 설명한다.
+    </div>
+  </section>
+
+  <!-- SECTION 3: 전제 개념 -->
+  <section>
+    <h2>📚 전제 개념: Ownership이란 무엇을 소유하는 것인가</h2>
+
+    <h3>"You Build It, You Run It" (쉬운 설명)</h3>
+    <p>전통적인 조직 구조에서는 개발팀이 코드를 작성해서 운영팀(Ops)에 넘기면, 그 이후 배포와 장애 대응은 운영팀의 몫이었다. 이 구조의 문제는 <strong>코드를 만든 사람과 그 코드가 실제로 운영에서 어떻게 동작하는지 겪는 사람이 분리된다</strong>는 데 있다. 개발자는 "내 코드는 테스트를 통과했으니 내 책임은 끝났다"고 생각하고, 운영팀은 "내가 만들지 않은 코드가 새벽에 터졌다"고 생각한다. 이 둘 사이에는 책임을 서로에게 미룰 구조적 유인이 생긴다.</p>
+    <p>Amazon의 Werner Vogels가 정리한 "You build it, you run it" 원칙은 이 간극을 없앤다. <strong>코드를 작성한 팀이 그 코드의 배포, 모니터링, 장애 대응까지 함께 소유한다.</strong> 여기서 ownership이 뜻하는 것은 단순히 "배포 버튼을 누른다"가 아니라, 그 배포로 인한 결과(장애, 성능 저하, 사용자 영향)를 끝까지 인지하고 개선할 책임을 진다는 뜻이다.</p>
+
+    <h3>이것이 실무에서 왜 중요한가</h3>
+    <div class="card">
+      <ul>
+        <li><strong>피드백 루프가 짧아진다:</strong> 코드를 짠 사람이 장애 알림을 직접 받으면, 문제의 원인을 가장 빨리 이해하고 고칠 수 있는 사람이 가장 먼저 반응한다.</li>
+        <li><strong>품질에 대한 동기가 달라진다:</strong> 자신이 새벽에 알림을 받을 수 있다는 것을 알면, 테스트와 관측성(observability)에 더 신경 쓰게 된다. "남이 운영할 코드"와 "내가 운영할 코드"는 작성 방식부터 달라진다.</li>
+        <li><strong>조직 확장성:</strong> 팀 수가 늘어날수록 중앙 운영팀이 모든 서비스를 파악하는 것은 불가능해진다. 각 팀이 자기 서비스를 소유해야 확장 가능한 구조가 된다.</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>흔한 오해:</strong> "You build it, you run it"을 "각자 알아서 배포하고 각자 알아서 책임진다"는 각자도생 구조로 오해하기 쉽다. 실제로는 팀 단위의 ownership이지 개인 단위의 비난 구조가 아니다. 이 원칙이 작동하려면 플랫폼 팀이 제공하는 공통 배포 도구, 관측성 인프라, 온콜 지원 체계가 함께 있어야 한다. Ownership 없이 책임만 떠넘기면 번아웃과 이직으로 이어진다.</div>
+  </section>
+
+  <!-- SECTION 4: 책임과 권한 구조 -->
+  <section>
+    <h2>🧩 배포 권한 구조 — 누가 무엇을 승인하는가</h2>
+
+    <p>"책임진다"는 말이 실무에서 의미를 가지려면, 그 책임에 대응하는 <strong>결정 권한(decision rights)</strong>이 명확히 정의되어야 한다. 권한 없는 책임은 희생양을 만들 뿐이고, 책임 없는 권한은 무모한 배포를 만든다.</p>
+
+    <div class="flow-diagram">리스크 기반 배포 권한 구조 예시
+
+[Tier 1] 저위험 변경 (설정값 조정, 프론트엔드 텍스트 수정, feature flag 토글)
+   승인자: 담당 개발자 본인
+   절차: CI 통과 + 자동 배포, 사후 알림만
+
+[Tier 2] 중위험 변경 (일반 기능 배포, API 스키마 비파괴적 확장)
+   승인자: 팀 내 동료 리뷰(peer review) + 자동화된 품질 게이트 통과
+   절차: PR 승인 1명 이상 + Canary 단계적 배포
+
+[Tier 3] 고위험 변경 (결제, 인증, DB 마이그레이션, 대규모 트래픽 영향)
+   승인자: 팀 리드 또는 지정된 release owner + 관련 팀 사전 공지
+   절차: 변경 계획서 작성 + 배포 시간대 지정(피크 시간 회피) + 롤백 계획 사전 문서화
+
+[긴급 상황] Hotfix / 긴급 롤백
+   승인자: 온콜 엔지니어 단독 실행 가능 (사후 승인)
+   근거: 장애 중에는 승인 대기 시간 자체가 손실이므로, 사전에 "긴급 시 누가 무엇을 스스로 결정해도 되는지"를 합의해 둔다</div>
+
+    <h3>왜 모든 배포를 같은 절차로 다루면 안 되는가</h3>
+    <div class="card">
+      <ul>
+        <li><strong>과도한 게이트는 속도를 죽인다:</strong> 텍스트 오타 수정에 팀 리드 승인과 변경관리위원회(CAB) 검토를 요구하면, 개발자는 결국 절차를 우회할 방법을 찾거나 배포 자체를 꺼리게 된다.</li>
+        <li><strong>과소한 게이트는 사고를 부른다:</strong> 결제 로직 변경을 개발자 본인 판단만으로 즉시 배포하게 두면, 리뷰 없는 실수가 그대로 프로덕션에 반영된다.</li>
+        <li><strong>리스크 등급은 변경의 성격으로 결정한다:</strong> 영향 범위(전체 사용자 vs 일부), 되돌리기 어려움(스키마 변경 포함 여부), 도메인 민감도(결제/인증 vs UI 문구)를 기준으로 삼는다.</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>실무 연결:</strong> 전통적인 ITIL 기반 조직은 모든 변경을 Change Advisory Board(CAB)가 검토하게 했다. 이는 규제 산업(금융, 의료)에서는 여전히 유효하지만, 빠르게 움직여야 하는 대부분의 소프트웨어 조직에서는 병목이 된다. 현대적인 접근은 CAB를 없애는 것이 아니라, <strong>리스크가 낮은 변경은 자동화된 게이트로 대체하고, CAB 같은 사람 검토는 진짜 고위험 변경에만 집중</strong>시키는 것이다.
+    </div>
+  </section>
+
+  <!-- SECTION 5: 속도 vs 안정성 -->
+  <section>
+    <h2>⚖️ 속도와 안정성의 조직적 갈등 — Error Budget으로 조율하기</h2>
+
+    <p>제품 조직은 "더 빨리 배포해서 더 빨리 기능을 내놓자"고 하고, 운영/SRE 조직은 "더 신중하게 배포해서 장애를 줄이자"고 한다. 이 갈등은 회의로 해결되지 않는다. 실무에서 널리 쓰이는 해법은 Google SRE가 정리한 <strong>error budget(오류 예산)</strong> 개념이다.</p>
+
+    <h3>Error Budget이 하는 일 (쉬운 설명)</h3>
+    <p>서비스의 신뢰성 목표(SLO)를 예를 들어 "가용성 99.9%"로 정하면, 이는 동시에 "0.1%는 실패해도 괜찮다"는 <strong>예산</strong>을 뜻한다. 이 예산이 남아있는 동안은 팀이 배포 속도를 높이고 실험적인 기능도 빠르게 낼 수 있다. 반대로 예산을 다 써버렸다면(장애가 잦았다면), 그 달에는 신규 기능 배포를 잠시 멈추고 안정성 개선에 집중한다.</p>
+
+    <div class="card">
+      <div class="card-title">Error Budget이 갈등을 없애는 방식</div>
+      <ul>
+        <li>"더 빨리 내놓자 vs 더 신중하자"는 감정 싸움이 아니라, <strong>남은 예산이라는 숫자</strong>로 판단하게 된다.</li>
+        <li>예산이 넉넉하면 제품팀의 배포 속도 요구가 자연스럽게 우선한다.</li>
+        <li>예산이 소진되면 이는 "누구 잘못이냐"가 아니라 "이번 분기는 안정화에 집중해야 한다"는 조직적 신호가 된다.</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>흔한 오해:</strong> Error budget을 "장애가 나도 되는 면죄부"로 오해하는 경우가 있다. 실제로는 반대다. 예산은 <strong>소진되었을 때 자동으로 배포를 늦추는 브레이크</strong>로 기능한다. 예산이 없다면 조직은 "안정성이 먼저다"라는 말을 반복할 뿐 실제로 속도를 늦출 근거가 없어서, 결국 목소리 큰 쪽이 이기는 정치적 결정이 된다.
+    </div>
+  </section>
+
+  <!-- SECTION 6: 커뮤니케이션과 포스트모텀 -->
+  <section>
+    <h2>📣 배포/장애 커뮤니케이션과 블레임리스 포스트모텀</h2>
+
+    <h3>누구에게, 언제, 무엇을 알리는가</h3>
+    <table class="rubric-table">
+      <thead>
+        <tr><th>시점</th><th>대상</th><th>내용</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>고위험 배포 직전</td>
+          <td>관련 팀, 온콜 채널</td>
+          <td>배포 대상, 예상 영향 범위, 롤백 계획, 배포 시간</td>
+        </tr>
+        <tr>
+          <td>장애 감지 직후</td>
+          <td>인시던트 채널, 담당 리드</td>
+          <td>영향 범위(추정), 현재 대응 중이라는 사실, 예상 업데이트 주기</td>
+        </tr>
+        <tr>
+          <td>장애 중</td>
+          <td>고객 지원팀, 필요 시 상태 페이지</td>
+          <td>정기적 업데이트(15~30분 간격), 확정되지 않은 추측은 배제</td>
+        </tr>
+        <tr>
+          <td>복구 직후</td>
+          <td>전사 채널</td>
+          <td>복구 완료 시각, 영향받은 범위 확정치, 포스트모텀 예정 공지</td>
+        </tr>
+        <tr>
+          <td>사후 (수일 내)</td>
+          <td>관련 조직 전체</td>
+          <td>블레임리스 포스트모텀 문서, 근본 원인, 액션 아이템과 담당자/기한</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>블레임리스 포스트모텀이란 (쉬운 설명)</h3>
+    <p>"누가 이 배포를 승인했나", "누가 이 코드를 짰나"를 캐묻는 순간, 사람들은 사실을 숨기기 시작한다. 다음 장애 때는 알림을 늦게 보내거나, 로그를 조작하거나, 실수를 숨기려 한다. 블레임리스 포스트모텀은 질문의 방향을 <strong>"누가"에서 "무엇이"</strong>로 바꾼다. "왜 이 실수가 프로덕션까지 도달할 수 있었는가", "어떤 검증 단계가 없었기에 이 문제를 잡지 못했는가"를 묻는다.</p>
+
+    <div class="card">
+      <div class="card-title">좋은 포스트모텀의 구성 요소</div>
+      <ul>
+        <li><strong>타임라인:</strong> 배포 시각부터 감지, 대응, 복구까지의 정확한 시간순 기록</li>
+        <li><strong>영향 범위:</strong> 몇 명의 사용자, 어떤 기능, 얼마의 시간 동안 영향받았는지 정량화</li>
+        <li><strong>근본 원인(root cause):</strong> 표면적 원인("코드 버그")이 아니라 구조적 원인("이 버그를 잡을 테스트 케이스가 없었고, 카나리 단계에서도 관련 지표를 보지 않았다")</li>
+        <li><strong>액션 아이템:</strong> "재발 방지"라는 추상적 문구가 아니라, 담당자와 기한이 명시된 구체적 작업 (예: "결제 실패율 알림 추가 — 담당 A, 이번 스프린트 내")</li>
+        <li><strong>액션 아이템 추적:</strong> 포스트모텀 문서에 쓰고 끝나는 것이 아니라, 다음 스프린트 계획에 실제로 반영되고 완료 여부를 확인하는 체계</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-warn">
+      <span class="callout-icon">⚠️</span>
+      <strong>흔한 실패 패턴:</strong> 포스트모텀 문서는 훌륭하게 작성되지만 액션 아이템이 백로그에 묻혀 실행되지 않는 경우가 매우 흔하다. 이렇게 되면 같은 원인의 장애가 반복되고, 조직은 "포스트모텀을 해도 소용없다"는 냉소로 이어진다. 액션 아이템 완료율 자체를 추적 지표로 삼아야 한다.
+    </div>
+  </section>
+
+  <!-- SECTION 7: 답변 사고 순서 -->
+  <section>
+    <h2>🧠 답변 사고 순서</h2>
+    <p>"배포 책임을 어떻게 나누고 있습니까"라는 질문을 받았을 때 아래 순서로 답변을 전개한다.</p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>Ownership 모델 제시</strong><br>
+          "코드를 만든 사람이 배포와 운영까지 소유한다(You build it, you run it)"는 기본 원칙에서 시작한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>리스크 기반 권한 구조 설명</strong><br>
+          모든 배포를 동일한 절차로 다루지 않고, 변경의 위험도에 따라 승인 권한과 절차를 차등화한다는 것을 설명한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>속도-안정성 조율 메커니즘 제시</strong><br>
+          error budget처럼 감정이 아니라 수치로 배포 속도를 조절하는 구조가 있다는 것을 언급한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>장애 시 커뮤니케이션 절차 설명</strong><br>
+          장애 감지부터 복구까지 누구에게 무엇을 알리는지 구체적으로 말한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>블레임리스 포스트모텀과 재발 방지</strong><br>
+          개인 비난이 아니라 시스템 개선으로 이어지는 문화, 그리고 액션 아이템 추적 체계를 설명한다.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>최종 책임 소재에 대한 입장</strong><br>
+          "최종 책임은 누구인가"라는 질문에는 개인이 아니라 팀과 그 팀을 이끄는 리드가 구조적으로 책임진다고 답하되, 그 책임이 개인 비난으로 이어지지 않는 문화가 함께 있어야 한다는 것을 강조한다.
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- SECTION 8: 핵심 답변 예시 -->
+  <section>
+    <h2>💬 핵심 답변 예시</h2>
+
+    <div class="answer-block">
+      <div class="speaker">답변 예시 (시니어 수준)</div>
+      <p>"저는 배포 책임을 'You build it, you run it' 원칙으로 나눕니다. 코드를 작성한 팀이 그 코드의 배포와 온콜 대응까지 함께 소유하는데, 이는 배포 버튼을 누르는 사람과 장애를 겪는 사람을 일치시켜서 품질에 대한 책임감을 실제로 만들기 위해서입니다. 대신 모든 배포를 같은 절차로 다루지는 않습니다. 텍스트 문구 수정 같은 저위험 변경은 개발자 본인이 CI만 통과하면 바로 배포하고, 결제나 인증처럼 고위험 변경은 팀 리드나 지정된 release owner의 사전 검토와 배포 시간대 지정을 거치게 합니다.</p>
+      <p>속도와 안정성 사이의 갈등은 error budget으로 조율합니다. SLO 기준 신뢰성 목표에서 남은 예산이 있으면 신규 기능 배포를 우선하고, 예산을 소진했다면 그 시점부터는 안정화 작업에 집중하도록 자동으로 우선순위가 바뀝니다. 이렇게 하면 '더 빨리 vs 더 신중히'가 감정적인 논쟁이 아니라 숫자로 판단되는 구조가 됩니다.</p>
+      <p>장애가 발생하면 감지 즉시 인시던트 채널에 영향 범위와 대응 상황을 공유하고, 15~30분 간격으로 업데이트하며, 복구 후에는 전사에 결과를 알립니다. 그리고 반드시 블레임리스 포스트모텀을 진행하는데, 여기서 묻는 것은 '누가 실수했는가'가 아니라 '어떤 검증 단계가 없어서 이 실수가 프로덕션까지 도달했는가'입니다. 최종 책임은 개인이 아니라 그 서비스를 소유한 팀과 리드에게 구조적으로 있다고 생각하지만, 그 책임이 특정 개인에 대한 비난으로 이어지면 다음엔 사람들이 문제를 숨기게 되므로, 책임과 비난을 분리하는 것이 release ownership의 핵심이라고 봅니다."</p>
+    </div>
+  </section>
+
+  <!-- SECTION 9: Senior Follow-up -->
+  <section>
+    <h2>🔺 Senior-Level Follow-up 질문</h2>
+
+    <div class="followup-item">
+      <div class="q">Q. "'You build it, you run it'을 도입했더니 온콜 부담이 특정 팀에 몰려서 번아웃과 이직이 발생했습니다. 어떻게 개선하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> Ownership 원칙 자체는 옳지만, 그것을 뒷받침하는 조직적 지원이 없으면 번아웃으로 이어진다는 점에서 출발한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 온콜 부담이 몰리는 것은 그 팀의 서비스가 불안정하거나 온콜 로테이션 인원이 부족하다는 신호다. 근본적으로는 그 서비스의 신뢰성 개선(테스트 강화, 관측성 투자)에 우선순위를 주고, 단기적으로는 온콜 보상 체계, 로테이션 인원 확충, 야간 알림 임계치 재점검(오탐 알림 감소)으로 부담을 낮춘다. 동시에 플랫폼 팀이 공통 배포 도구와 관측성 인프라를 제공해 각 팀이 매번 바닥부터 온콜 체계를 구축하지 않도록 지원해야 한다. Ownership은 책임의 이전이지 지원의 철회가 아니라는 점을 강조한다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "규제가 엄격한 금융권 시스템에서는 CAB(변경관리위원회) 같은 절차를 요구합니다. 이런 환경에서도 배포 속도를 어떻게 확보하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 규제 준수와 배포 속도가 제로섬이 아니라는 전제에서, 사람이 검토해야 하는 범위를 줄이는 방법을 찾아야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 규제가 요구하는 것은 대개 "통제와 감사 추적이 있는가"이지 "모든 변경을 사람이 느리게 검토해야 하는가"가 아니다. 저위험 변경(문구 수정, 설정값 조정)에는 자동화된 정책 검증(policy as code)과 자동 감사 로그로 통제를 대체하고, CAB 같은 사람 검토는 실제 고위험 변경(결제 로직, 데이터 접근 권한 변경)에만 집중시킨다. 이렇게 리스크 기반으로 절차를 분리하면 규제 요건을 충족하면서도 대부분의 배포는 빠르게 흐르게 할 수 있다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "포스트모텀에서 특정 개발자의 실수가 명백히 원인으로 드러났습니다. 블레임리스 원칙을 지키면서도 이 문제를 어떻게 다루시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 블레임리스는 "잘못을 없었던 일로 한다"는 뜻이 아니라 "잘못을 개인의 결함이 아니라 시스템의 허점으로 재구성한다"는 뜻이라는 점을 짚어야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> "그 개발자가 부주의했다"에서 멈추지 않고, "왜 그 부주의가 프로덕션 장애로 이어질 수 있었는가"를 묻는다. 예를 들어 실수로 잘못된 설정값을 배포했다면, 진짜 질문은 "왜 그 값을 검증하는 자동화된 체크가 없었는가"이다. 개인에게는 필요하다면 1:1로 피드백을 주되, 공개 포스트모텀 문서에는 이름을 특정하지 않고 프로세스 개선에 집중한다. 이렇게 해야 다음에 비슷한 실수를 한 사람이 숨기지 않고 즉시 보고하는 문화가 유지된다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="q">Q. "여러 팀이 공유하는 핵심 인프라(예: 공통 API 게이트웨이)를 배포할 때는 ownership을 어떻게 설계하시겠습니까?"</div>
+      <div class="a">
+        <strong>사고 방향:</strong> 단일 팀 서비스와 달리, 실패의 폭발 반경(blast radius)이 여러 팀에 걸치는 공유 인프라는 ownership 모델이 달라야 한다.
+        <br><br>
+        <strong>핵심 답변:</strong> 공유 인프라는 전담 플랫폼 팀이 소유하되, 변경 전 영향받는 팀들에게 사전 공지와 리뷰 기간을 두는 절차(예: RFC, 변경 캘린더 공유)를 마련한다. 배포는 반드시 Canary나 단계적 트래픽 전환으로 진행해 한 곳의 문제가 전체로 번지지 않게 하고, 롤백 권한은 플랫폼 팀 온콜에게 즉시 부여하되 영향받은 팀에게도 실시간으로 상황을 공유하는 채널을 둔다. 공유 자원일수록 ownership은 명확한 단일 책임팀 + 투명한 커뮤니케이션 절차로 풀어야지, 여러 팀이 공동 소유하면 오히려 아무도 책임지지 않는 결과가 된다.
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 10: 좋은 답변 vs 약한 답변 -->
+  <section>
+    <h2>⚖️ 좋은 답변과 약한 답변의 차이</h2>
+
+    <div class="compare-grid">
+      <div class="compare-card good">
+        <div class="compare-label">✅ 좋은 답변</div>
+        <ul>
+          <li>Ownership을 팀 단위 구조(누가 만들고 누가 운영하는가)로 구체적으로 설명</li>
+          <li>모든 배포를 동일하게 다루지 않고 리스크 기반으로 승인 절차를 차등화</li>
+          <li>속도-안정성 갈등을 감정이 아니라 error budget 같은 수치 기반 메커니즘으로 조율</li>
+          <li>장애 시 누구에게 언제 무엇을 알리는지 커뮤니케이션 절차를 구체적으로 설명</li>
+          <li>블레임리스 포스트모텀과 액션 아이템 추적까지 재발 방지를 시스템으로 설명</li>
+        </ul>
+      </div>
+      <div class="compare-card weak">
+        <div class="compare-label">❌ 약한 답변</div>
+        <ul>
+          <li>"제가 배포하고 문제 생기면 제가 고칩니다"에서 설명이 끝남</li>
+          <li>모든 변경에 동일한 승인 절차를 적용해야 한다고 생각</li>
+          <li>속도와 안정성 갈등을 "둘 다 중요하다"는 원론적 답변으로 회피</li>
+          <li>장애 커뮤니케이션을 "일단 고치고 나중에 보고합니다"로 뭉뚱그림</li>
+          <li>포스트모텀을 "누구 잘못인지 밝히는 것"으로 오해</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>핵심 차이:</strong> 약한 답변은 release ownership을 "내가 배포 버튼을 누른다"는 개인 행위로 본다. 좋은 답변은 권한 구조, 리스크 차등화, 조직적 조율 메커니즘, 커뮤니케이션 절차, 블레임리스 문화까지 하나의 조직 설계로 설명한다.
+    </div>
+  </section>
+
+  <!-- SECTION 11: 실무 연결 -->
+  <section>
+    <h2>🏭 실무 연결 — 조직 규모별 Release Ownership 패턴</h2>
+
+    <div class="strategy-grid">
+      <div class="strategy-card blue-green">
+        <div class="name">스타트업 (팀 5~20명)</div>
+        <ul>
+          <li>절차보다 신뢰 기반, 누구나 배포 가능</li>
+          <li>포스트모텀은 비공식 회고 수준</li>
+          <li>리스크: 절차 부재로 인한 큰 사고 가능성</li>
+        </ul>
+      </div>
+      <div class="strategy-card rolling">
+        <div class="name">스케일업 (수십~수백 명)</div>
+        <ul>
+          <li>서비스별 팀 ownership 명확화 시작</li>
+          <li>리스크 기반 승인 절차 도입 (Tier 구조)</li>
+          <li>공식 포스트모텀 템플릿과 액션 아이템 추적 도입</li>
+        </ul>
+      </div>
+      <div class="strategy-card canary">
+        <div class="name">대규모 조직 (수천 명 이상)</div>
+        <ul>
+          <li>플랫폼 팀이 공통 배포/관측성 인프라 제공</li>
+          <li>error budget, 변경 캘린더, freeze window 정례화</li>
+          <li>규제 산업은 자동화된 정책 검증 + 최소한의 사람 CAB</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <strong>실무 팁:</strong> 인터뷰에서 "회사 규모나 도메인에 따라 ownership 모델이 달라야 한다"는 것을 언급하면 신호가 강해진다. 규제 산업의 결제 시스템과 초기 스타트업의 내부 도구에 동일한 승인 절차를 요구하는 것은 둘 다 잘못된 설계다.
+    </div>
+  </section>
+
+  <!-- SECTION 12: 자기 점검 Rubric -->
+  <section>
+    <h2>📋 자기 점검 Rubric</h2>
+    <p>아래 기준으로 자신의 답변 수준을 체크하라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>레벨</th>
+          <th>할 수 있는 것</th>
+          <th>부족한 것</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="level-badge level-1">Lv 1</span></td>
+          <td>"제가 배포하고 문제 생기면 제가 고칩니다"라고 말할 수 있다</td>
+          <td>권한 구조, 리스크 차등화, 조직적 조율 메커니즘을 모름</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-2">Lv 2</span></td>
+          <td>리스크 기반 승인 절차와 장애 커뮤니케이션 절차를 설명할 수 있다</td>
+          <td>속도-안정성 갈등을 수치 기반으로 조율하는 방법 부족</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-3">Lv 3</span></td>
+          <td>error budget, 블레임리스 포스트모텀, 액션 아이템 추적까지 설계에 반영할 수 있다</td>
+          <td>조직 규모/도메인별 ownership 모델 차이 설명 부족</td>
+        </tr>
+        <tr>
+          <td><span class="level-badge level-4">Lv 4 (목표)</span></td>
+          <td>권한 구조 + 속도-안정성 조율 + 커뮤니케이션 + 블레임리스 문화 + 조직 규모별 적용까지 통합 설명</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>셀프 체크리스트</h3>
+    <div class="card">
+      <ul>
+        <li>☐ "You build it, you run it" 원칙과 그것이 필요로 하는 조직적 지원(공통 도구, 온콜 지원)을 설명할 수 있는가</li>
+        <li>☐ 모든 배포에 동일한 절차를 적용하면 안 되는 이유와 리스크 기반 차등화 구조를 설명할 수 있는가</li>
+        <li>☐ Error budget이 속도-안정성 갈등을 수치로 조율하는 원리를 설명할 수 있는가</li>
+        <li>☐ 장애 발생 시 시점별로 누구에게 무엇을 알리는지 구체적인 커뮤니케이션 절차를 말할 수 있는가</li>
+        <li>☐ 블레임리스 포스트모텀이 "누가"가 아니라 "무엇이"를 묻는 이유를 설명할 수 있는가</li>
+        <li>☐ 포스트모텀 액션 아이템이 실행되지 않고 방치되는 흔한 실패를 알고 대책을 제시할 수 있는가</li>
+        <li>☐ 조직 규모와 도메인(규제 산업 vs 스타트업)에 따라 ownership 모델이 달라야 한다는 것을 인지하는가</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- SECTION 13: 흔한 오해 -->
+  <section>
+    <h2>🚫 흔한 오해와 교정</h2>
+
+    <div class="card">
+      <div class="card-title">오해 1</div>
+      <p><strong>"You build it, you run it"은 각자 알아서 배포하고 각자 책임진다는 뜻이다.</strong></p>
+      <p>→ 팀 단위의 ownership이며, 이를 지탱하려면 플랫폼 팀의 공통 배포 도구, 관측성 인프라, 온콜 보상 체계가 함께 있어야 한다. 지원 없는 ownership은 번아웃으로 이어진다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 2</div>
+      <p><strong>안정성을 높이려면 모든 배포에 승인 절차를 추가하면 된다.</strong></p>
+      <p>→ 저위험 변경에까지 과도한 승인 절차를 요구하면 개발자는 절차를 우회하거나 배포 자체를 회피한다. 절차는 리스크 등급에 따라 차등화해야 한다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 3</div>
+      <p><strong>블레임리스 포스트모텀은 잘못을 없었던 일로 하는 것이다.</strong></p>
+      <p>→ 잘못은 인정하되 그 원인을 개인의 부주의가 아니라 시스템의 허점(놓친 검증, 부족한 자동화)으로 재구성하는 것이다. 개인을 특정해 비난하면 사람들은 다음번엔 실수를 숨긴다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">오해 4</div>
+      <p><strong>포스트모텀 문서를 잘 작성하면 재발 방지는 완료된 것이다.</strong></p>
+      <p>→ 문서에 적힌 액션 아이템이 담당자와 기한을 갖고 실제로 완료되어야 재발 방지가 완성된다. 완료율을 추적하지 않으면 같은 원인의 장애가 반복된다.</p>
+    </div>
+  </section>
+
+  <div class="nav-bar">
+    <a href="./0009-rollback-decision-incident-response.html">← Day 9</a>
+    <span class="nav-center">Day 10 / 10 — CI/CD와 배포 전략 인터뷰</span>
+    <a href="./index.html">목록으로 →</a>
+  </div>
+
+</div>
+</body>
+</html>

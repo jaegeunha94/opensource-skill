@@ -13,16 +13,18 @@
 | 7 | 2026-07-06 | Rolling 배포와 점진적 릴리스 | [0007-rolling-deployment-progressive-release.html](lessons/0007-rolling-deployment-progressive-release.html) |
 | 8 | 2026-07-07 | Canary 배포와 트래픽 분산 제어 | [0008-canary-deployment-traffic-control.html](lessons/0008-canary-deployment-traffic-control.html) |
 | 9 | 2026-07-08 | 롤백 판단과 인시던트 대응 | [0009-rollback-decision-incident-response.html](lessons/0009-rollback-decision-incident-response.html) |
+| 10 | 2026-07-09 | Release Ownership과 배포 리더십 | [0010-release-ownership-deployment-leadership.html](lessons/0010-release-ownership-deployment-leadership.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 10 | Release Ownership과 배포 리더십 | 배포 책임 구조, 변경 관리, 팀 커뮤니케이션, 포스트모텀, 재발 방지 |
+
+계획된 커리큘럼의 마지막 Day(10)까지 완료했다. 학습 종료를 명시적으로 요청받기 전까지는 완료로 간주하지 않으며, 다음 세션에서는 미션과 완료 레슨을 기준으로 심화/인접 주제(예: 멀티 리전 배포, 배포 파이프라인 보안, 대규모 조직의 릴리스 트레인 운영)를 새 Day로 추가한다.
 
 ## 현재 학습 위치
 
-**Day 9 완료** — 다음: Day 10 — Release Ownership과 배포 리더십
+**Day 10 완료** — 계획된 커리큘럼 종료, 다음 세션에서 심화/인접 주제로 확장 예정
 
 ## 습득한 핵심 개념
 
@@ -38,4 +40,4 @@
 - [x] Rolling 배포 (배치 크기, readiness/liveness, 자동 실패 감지, N-1 호환성) (Day 7)
 - [x] Canary 배포 (트래픽 비율 곡선, sticky routing, 통계적 판단 기준, feature flag과의 계층 차이) (Day 8)
 - [x] 롤백 트리거 기준, 롤백 vs 핫픽스 판단, 데이터 일관성 한계, 자동 롤백 flapping 방지 (Day 9)
-- [ ] Release Ownership (예정 Day 10)
+- [x] Release Ownership (You Build It You Run It, 리스크 기반 배포 권한 구조, Error Budget, 블레임리스 포스트모텀, 조직 규모별 ownership 패턴) (Day 10)
