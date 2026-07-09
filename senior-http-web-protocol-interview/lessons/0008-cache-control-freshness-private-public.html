@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — Cache-Control 심화 | HTTP / Web Protocol & API Traffic 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">HTTP / Web Protocol & API Traffic 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 8
+  </nav>
+
+  <h1>Day 8 — Cache-Control 심화</h1>
+  <p class="subtitle">freshness, private/public, no-cache vs no-store, 캐시 계층별 해석 · 2026-07-09</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#directive-table">Cache-Control 지시어 판단표</a></li>
+      <li><a href="#freshness">Freshness Lifetime과 Age — 캐시가 "신선함"을 계산하는 법</a></li>
+      <li><a href="#no-cache-vs-no-store">no-cache vs no-store — 가장 많이 틀리는 구분</a></li>
+      <li><a href="#private-vs-public">private vs public — 공유 캐시가 저장해도 되는가</a></li>
+      <li><a href="#incident-case">실전 장애 사례 — "no-cache를 붙였는데 CDN이 계속 오래된 응답을 서빙합니다"</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"응답에 <code>Cache-Control: no-cache</code>를 붙였는데도 CDN이 오래된 응답을 계속 서빙하고 있습니다. 어떻게 원인을 좁혀 나가시겠어요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"<code>no-cache</code>와 <code>no-store</code>의 차이는 무엇이고, 각각 언제 써야 하나요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"<code>private</code>과 <code>public</code>, <code>max-age</code>와 <code>s-maxage</code>가 실제로 어떤 캐시 계층에 다르게 적용되나요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 <strong>"Cache-Control 지시어의 사전적 의미를 암기했는가"가 아니라, 하나의 응답이 브라우저 캐시·CDN·리버스 프록시라는 서로 다른 계층을 지나가면서 각 계층이 같은 헤더를 다르게 해석할 수 있다는 것을 이해하는가</strong>를 테스트합니다. 실무에서 "캐시가 이상하다"는 증상은 거의 항상 여러 계층 중 <strong>어느 계층이 무엇을 저장하고 있는지 특정하지 못해서</strong> 발생하며, <code>no-cache</code>라는 이름만 보고 "캐시를 하지 않는다"고 오해하는 순간 진단이 완전히 엉뚱한 방향으로 흘러갑니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong><code>no-cache</code>가 "캐시 금지"가 아니라 "저장은 해도 되지만 쓰기 전에 검증하라"는 의미라는 것을 아는가</strong> — 이름에서 오는 직관적 오해를 이미 겪어봤는지, 그리고 진짜 캐시 금지는 <code>no-store</code>라는 것을 구분하는가.</li>
+      <li><strong>Freshness lifetime과 Age의 계산 원리를 아는가</strong> — 캐시가 "이 응답을 아직 써도 되는가"를 <code>max-age</code>와 응답이 저장된 이후 경과 시간(<code>Age</code>)의 비교로 판단한다는 절차적 이해가 있는가.</li>
+      <li><strong>private/shared 캐시 구분을 아는가</strong> — 브라우저 캐시(private)와 CDN/리버스 프록시(shared) 캐시가 같은 응답을 다르게 취급할 수 있고, <code>private</code> 지시어와 <code>s-maxage</code>가 정확히 이 구분을 겨냥해 설계되었다는 것을 아는가.</li>
+      <li><strong>계층별 원인 격리 능력</strong> — "캐시 이상 현상"을 브라우저 devtools 캐시, CDN edge 캐시, 중간 프록시 캐시, 오리진 헤더 설정 오류 중 어디에서 발생했는지 순서대로 좁혀나가는 절차적 사고를 보여주는가.</li>
+      <li><strong>성능과 정확성의 trade-off 판단</strong> — 캐시를 공격적으로 걸면 지연 시간과 오리진 부하는 줄지만 stale 데이터가 노출될 위험이 커지고, 반대로 보수적으로 걸면 안전하지만 성능 이점을 포기한다는 균형 감각이 있는가.</li>
+    </ul>
+
+    <p>10년차 이하에서 자주 나오는 답변 패턴: "<code>Cache-Control: no-cache</code>를 붙이면 캐시가 안 됩니다." 이 답변은 이름만 보고 추측한 것이며, 실제로는 정반대로 <strong>캐시는 되지만 매번 오리진에 검증 요청을 보내야 한다</strong>는 것이 정확한 동작입니다. 이 오해를 가진 채로 트래픽을 설계하면, "분명히 no-cache를 붙였는데 왜 CDN에 응답이 저장되어 있지?"라는 잘못된 전제에서 시작해 엉뚱한 곳을 디버깅하게 됩니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>캐시 계층은 하나가 아니다 — 요청이 지나가는 길에 여러 개의 "임시 보관함"이 있다</h3>
+    <p>Day 1에서 그린 트래픽 경로(클라이언트 → CDN → 리버스 프록시/LB → API 게이트웨이 → 앱 서버)의 각 구간에는 저마다의 캐시가 있을 수 있습니다. 브라우저는 자신만의 캐시(private cache)를 가지고 있고, CDN과 리버스 프록시는 여러 사용자가 함께 쓰는 캐시(shared cache)를 가지고 있습니다. 도서관 비유로 설명하면, <strong>private cache는 내 책상 서랍</strong>이고 <strong>shared cache는 도서관 열람실의 공용 서가</strong>입니다. 서랍에 넣은 내 개인 메모(로그인한 사용자 전용 데이터)를 공용 서가에 잘못 꽂아두면 다른 사람이 내 메모를 읽어가는 사고가 나듯이, 개인화된 응답을 shared cache에 저장하면 다른 사용자에게 그대로 노출되는 사고가 납니다. <code>Cache-Control</code>의 여러 지시어는 결국 "이 응답을 어느 서랍/서가에 넣어도 되는지, 언제까지 꺼내 써도 되는지"를 정하는 규칙입니다.</p>
+
+    <h3>"캐시한다"는 것이 실제로 의미하는 두 가지 서로 다른 질문</h3>
+    <p>Cache-Control을 정확히 이해하려면 다음 두 질문을 분리해야 합니다.</p>
+    <ol>
+      <li><strong>저장 가능 여부(storability)</strong>: 이 응답을 캐시가 <em>보관해도</em> 되는가? (<code>no-store</code>가 이 질문에 답함)</li>
+      <li><strong>재사용 가능 여부(reusability)</strong>: 보관된 응답을 <em>다시 클라이언트에게 그대로 내줘도</em> 되는가, 아니면 오리진에게 "아직 유효한지" 먼저 물어봐야 하는가? (<code>max-age</code>, <code>no-cache</code>, <code>must-revalidate</code>가 이 질문에 답함)</li>
+    </ol>
+    <p>이 두 질문이 분리되어 있다는 것이 <code>no-cache</code>라는 이름이 주는 오해의 근원입니다. <code>no-cache</code>는 1번 질문(저장)에는 "저장해도 된다"고 답하고, 2번 질문(재사용)에는 "그냥 재사용하지 말고 매번 검증하라"고 답하는 지시어입니다.</p>
+
+    <h3>"검증(revalidate)"이란 무엇인가 — 통째로 다시 받는 것이 아니라 "변경됐는지만" 묻는 것</h3>
+    <p>검증은 캐시가 오리진에게 <code>If-None-Match</code>(Day 9에서 다룰 ETag 기반) 또는 <code>If-Modified-Since</code> 헤더를 실어 "내가 가진 이 버전이 아직 최신인가?"라고 묻는 조건부 요청입니다. 변경이 없으면 오리진은 본문 없이 <code>304 Not Modified</code>만 응답하고, 캐시는 자신이 가진 응답을 그대로 재사용합니다. 즉 <code>no-cache</code>가 강제하는 것은 "응답 본문을 매번 통째로 새로 받으라"가 아니라 <strong>"매번 최소한 한 번은 오리진에게 물어보고 확인받으라"</strong>는 것입니다. 이 전제가 없으면 "검증 캐시가 대역폭을 절감한다"는 Day 9의 내용과 연결이 끊깁니다.</p>
+
+    <div class="why-box">
+      <p><strong>핵심 요약:</strong> Cache-Control은 하나의 스위치가 아니라 <strong>"누가 저장할 수 있는가"</strong>(private/public/no-store) <strong>"얼마나 오래 검증 없이 재사용할 수 있는가"</strong>(max-age/s-maxage) <strong>"기한이 지나면 어떻게 행동해야 하는가"</strong>(no-cache/must-revalidate/stale-while-revalidate)라는 세 축이 조합된 규칙 집합입니다. 장애를 진단할 때는 항상 이 세 축 중 어느 것이 어떤 계층에서 어긋났는지를 순서대로 확인해야 합니다.</p>
+    </div>
+  </section>
+
+  <!-- 4. 지시어 판단표 -->
+  <section id="directive-table">
+    <h2>4. Cache-Control 지시어 판단표</h2>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th>지시어</th>
+          <th>답하는 질문</th>
+          <th>의미</th>
+          <th>실무 주의점</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>max-age=N</code></td>
+          <td>재사용 가능 기간</td>
+          <td>응답이 저장된 후 N초 동안은 검증 없이 그대로 재사용 가능</td>
+          <td>모든 캐시(브라우저+shared) 공통 적용. 이 값만 보고 "브라우저에서 얼마나 오래 캐시되는지"는 알 수 있지만 CDN 동작까지는 알 수 없음(<code>s-maxage</code> 확인 필요)</td>
+        </tr>
+        <tr>
+          <td><code>s-maxage=N</code></td>
+          <td>재사용 가능 기간(shared 캐시 전용)</td>
+          <td>CDN/리버스 프록시 같은 shared 캐시에서는 이 값이 <code>max-age</code>를 덮어씀. private 캐시(브라우저)는 이 값을 무시하고 <code>max-age</code>를 따름</td>
+          <td>"브라우저에는 짧게, CDN에는 길게(또는 그 반대)" 캐시하고 싶을 때 핵심 도구. 이 필드를 모르면 "왜 브라우저 캐시 기간과 CDN 캐시 기간이 다르지"를 설명 못함</td>
+        </tr>
+        <tr>
+          <td><code>no-store</code></td>
+          <td>저장 가능 여부</td>
+          <td>어떤 캐시도 이 응답을 저장해서는 안 됨 — 매 요청마다 오리진까지 왕복</td>
+          <td>진짜 "캐시 금지"는 이것. 결제 정보, 개인 금융 데이터 등 민감한 응답에 사용. 성능 비용이 가장 큼</td>
+        </tr>
+        <tr>
+          <td><code>no-cache</code></td>
+          <td>재사용 가능 여부</td>
+          <td>저장은 허용하지만, 재사용 전에 반드시 오리진에게 검증(조건부 요청)을 받아야 함</td>
+          <td>"캐시하지 않는다"는 뜻이 아님(가장 흔한 오해). 대역폭은 절감하면서 항상 최신 여부를 보장하고 싶을 때 사용</td>
+        </tr>
+        <tr>
+          <td><code>private</code></td>
+          <td>저장 주체</td>
+          <td>브라우저 같은 private(단일 사용자) 캐시만 저장 가능, CDN/프록시 같은 shared 캐시는 저장 금지</td>
+          <td>사용자별로 다른 개인화 응답(로그인 정보 포함 등)에 필수. 빠뜨리면 shared 캐시가 A의 응답을 B에게 재사용하는 정보 유출 사고로 이어짐</td>
+        </tr>
+        <tr>
+          <td><code>public</code></td>
+          <td>저장 주체</td>
+          <td>일반적으로 private 취급될 수 있는 응답(예: <code>Authorization</code> 헤더가 있는 요청의 응답)도 shared 캐시가 저장하도록 명시적으로 허용</td>
+          <td>대부분의 응답은 <code>Authorization</code> 헤더가 없으면 기본적으로 캐시 가능하므로, <code>public</code>을 명시할 일은 생각보다 적음 — 남용하면 개인화 응답 유출 위험</td>
+        </tr>
+        <tr>
+          <td><code>must-revalidate</code></td>
+          <td>기한 만료 후 행동</td>
+          <td>freshness가 만료되면 반드시 오리진 검증을 거쳐야 하며, 오리진에 연결할 수 없어도 stale 응답을 임의로 내주면 안 됨</td>
+          <td>기본 동작(연결 실패 시 stale이라도 서빙하는 best-effort)을 명시적으로 금지. 정확성이 성능보다 중요한 응답에 사용</td>
+        </tr>
+        <tr>
+          <td><code>proxy-revalidate</code></td>
+          <td>기한 만료 후 행동(shared 캐시 전용)</td>
+          <td><code>must-revalidate</code>와 동일하지만 shared 캐시에만 적용, private 캐시는 예외</td>
+          <td><code>s-maxage</code>와 짝을 이뤄 "CDN에만 엄격한 검증"을 강제할 때 사용</td>
+        </tr>
+        <tr>
+          <td><code>stale-while-revalidate=N</code></td>
+          <td>기한 만료 후 행동</td>
+          <td>freshness 만료 후 N초 동안은 stale 응답을 즉시 반환하면서 백그라운드로 비동기 검증 수행</td>
+          <td>사용자 체감 지연 시간을 0에 가깝게 유지하면서 데이터를 점진적으로 최신화. 최근 CDN/브라우저 대부분이 지원</td>
+        </tr>
+        <tr>
+          <td><code>stale-if-error=N</code></td>
+          <td>오리진 장애 시 행동</td>
+          <td>오리진이 5xx나 타임아웃을 반환해도 N초 이내의 stale 응답을 대신 내줌</td>
+          <td>오리진 장애 시 가용성을 지키는 방어 수단. Day 13(Timeout/Retry)의 장애 격리 사고와 직접 연결됨</td>
+        </tr>
+        <tr>
+          <td><code>immutable</code></td>
+          <td>재검증 필요 여부</td>
+          <td>freshness 기간 내내 절대 변경되지 않는다고 선언 — 브라우저가 새로고침 시에도 재검증 요청조차 생략</td>
+          <td>파일명에 해시가 포함된 정적 자산(예: <code>app.a1b2c3.js</code>)처럼 콘텐츠가 바뀌면 URL도 바뀌는 리소스에 사용</td>
+        </tr>
+        <tr>
+          <td><code>no-transform</code></td>
+          <td>중간 계층의 변형 허용 여부</td>
+          <td>CDN/프록시가 이미지 압축, 포맷 변환 등으로 응답 본문을 임의로 바꾸는 것을 금지</td>
+          <td>무결성 검증(체크섬)이 중요한 응답이나, 변환이 오히려 품질을 해치는 경우에 사용</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 5. Freshness와 Age -->
+  <section id="freshness">
+    <h2>5. Freshness Lifetime과 Age — 캐시가 "신선함"을 계산하는 법</h2>
+
+    <p>캐시가 저장된 응답을 재사용해도 되는지 판단하는 절차는 암기가 아니라 계산입니다. 핵심 공식은 다음과 같습니다.</p>
+
+    <pre><code>response_is_fresh = (freshness_lifetime > current_age)</code></pre>
+
+    <div class="card">
+      <h4>freshness_lifetime — "얼마나 오래 유효한가"</h4>
+      <p>가장 우선순위가 높은 값부터 차례로 사용합니다: shared 캐시라면 <code>s-maxage</code> → 없으면 <code>max-age</code> → 없으면 레거시 <code>Expires</code> 헤더(절대 시각) → 아무것도 없으면 캐시 구현체마다 다른 휴리스틱(예: <code>Last-Modified</code> 기준 추정치)을 씁니다. <strong>private 캐시는 <code>s-maxage</code>를 무시</strong>한다는 점이 여기서 다시 등장합니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>current_age — "이 저장된 응답이 지금 몇 초나 지났는가"</h4>
+      <p>단순히 "저장한 시점부터 지금까지"가 아닙니다. 오리진에서 응답이 만들어진 시점(<code>Date</code> 헤더)부터 캐시가 그 응답을 받기까지 걸린 전송 지연, 그리고 캐시가 그 응답을 받은 후 다시 클라이언트에게 서빙하기까지 걸린 시간까지 모두 합산합니다. 여러 캐시를 거쳐온 응답이라면 각 캐시가 자신이 알고 있던 <code>Age</code>에 자신이 보유한 시간을 더해 전달하며, 이 누적값이 응답의 <code>Age</code> 헤더로 최종 클라이언트에게 노출됩니다.</p>
+    </div>
+
+    <div class="why-box">
+      <p><strong>실무에서 <code>Age</code> 헤더를 반드시 확인해야 하는 이유:</strong> CDN 뒤의 응답에서 <code>Age: 3200</code>이 찍혀 있는데 <code>max-age=60</code>이었다면, 이 응답은 이미 만료되었어야 하는데도 여전히 캐시에서 서빙되고 있다는 뜻입니다. 이는 CDN 설정이 오리진의 <code>Cache-Control</code>을 무시하고 자체 TTL을 적용하고 있거나, edge 노드 간 캐시 무효화가 전파되지 않았다는 강력한 단서입니다. "캐시가 이상하다"는 감이 아니라 <code>Age</code> 헤더 숫자 하나로 원인을 계층 단위로 좁힐 수 있는 것이 시니어와 주니어의 진단 속도 차이를 만듭니다.</p>
+    </div>
+  </section>
+
+  <!-- 6. no-cache vs no-store -->
+  <section id="no-cache-vs-no-store">
+    <h2>6. no-cache vs no-store — 가장 많이 틀리는 구분</h2>
+
+    <table class="method-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th><code>no-cache</code></th>
+          <th><code>no-store</code></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>캐시가 응답을 저장하는가</td>
+          <td>저장함</td>
+          <td>저장하지 않음</td>
+        </tr>
+        <tr>
+          <td>저장된 응답을 재사용하는가</td>
+          <td>검증(조건부 요청) 후에만 재사용</td>
+          <td>해당 없음 — 애초에 저장이 없으므로 매번 전체 왕복</td>
+        </tr>
+        <tr>
+          <td>대역폭 절감 효과</td>
+          <td>있음 — 변경이 없으면 <code>304</code>로 본문 생략</td>
+          <td>없음 — 매번 전체 응답을 새로 받음</td>
+        </tr>
+        <tr>
+          <td>적합한 사용처</td>
+          <td>자주 바뀌지만 항상 최신이어야 하는 API 응답(재고, 가격 등)</td>
+          <td>절대 디스크/메모리에 남아서는 안 되는 민감 정보(결제 상세, OTP 등)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <h4>왜 이런 이름이 오해를 만드는가</h4>
+      <p>스펙 작성 당시 <code>no-cache</code>라는 이름은 "무조건 재사용하지 말고 항상 확인하라"는 의도였지만, 일상 언어에서 "cache하지 않는다"로 직관적으로 읽히면서 혼동이 굳어졌습니다. 이 오해를 가진 채로 "이 응답은 민감하니 <code>no-cache</code>를 붙이자"고 설계하면, 실제로는 캐시에 <strong>저장은 되고</strong> 있는 상태가 되어 보안 요구사항을 충족하지 못하는 사고로 이어질 수 있습니다. 민감 정보에는 반드시 <code>no-store</code>를 써야 합니다.</p>
+    </div>
+  </section>
+
+  <!-- 7. private vs public -->
+  <section id="private-vs-public">
+    <h2>7. private vs public — 공유 캐시가 저장해도 되는가</h2>
+
+    <p><code>private</code>/<code>public</code>은 "얼마나 오래"가 아니라 "<strong>누가</strong> 저장할 수 있는가"를 결정합니다. Day 6에서 다룬 세션/토큰 인증 응답과 직접 연결되는 지점입니다.</p>
+
+    <div class="card">
+      <h4>기본 규칙과 예외</h4>
+      <p>일반적으로 요청에 <code>Authorization</code> 헤더가 있으면 응답은 기본적으로 shared 캐시에 저장되지 않습니다 — 개인화된 응답일 가능성이 높기 때문입니다. <code>public</code>을 명시하면 이 기본 보호를 해제하고 shared 캐시도 저장하도록 허용합니다. 반대로 <code>Authorization</code>이 없는 응답이라도 사용자별로 내용이 달라진다면(예: 쿠키 세션으로 개인화된 대시보드) 명시적으로 <code>private</code>을 붙여야 CDN이 실수로 캐시하지 않습니다.</p>
+    </div>
+
+    <div class="card">
+      <h4>실무 사고 사례 패턴</h4>
+      <p><code>private</code>을 빠뜨린 개인화 API 응답이 CDN 계층에 캐시되어, 사용자 A의 개인정보가 담긴 응답이 같은 URL로 요청한 사용자 B에게 그대로 재사용되는 사고가 실무에서 반복적으로 보고됩니다. 이는 Day 5의 Vary 캐시 오염, Day 7의 CORS 헤더 캐시 오염과 근본 원인이 같습니다 — <strong>"이 URL의 응답은 요청자에 따라 달라진다"는 사실을 캐시 계층에 명시적으로 알리지 않으면, 캐시는 URL만 보고 동일한 응답이라고 착각한다</strong>는 것입니다.</p>
+    </div>
+  </section>
+
+  <!-- 8. 실전 장애 사례 -->
+  <section id="incident-case">
+    <h2>8. 실전 장애 사례 — "no-cache를 붙였는데도 CDN이 오래된 응답을 계속 서빙합니다"</h2>
+
+    <div class="card">
+      <h4>원인 후보와 진단 절차</h4>
+      <ul class="step-block">
+        <li>
+          <div class="step-num">1</div>
+          <div><strong>오리진이 실제로 어떤 <code>Cache-Control</code> 값을 내보내는지 오리진에 직접 curl로 확인한다.</strong> 애플리케이션 코드/미들웨어/프레임워크 기본값이 겹쳐 의도한 것과 다른 헤더가 나가는 경우가 흔합니다. CDN을 거치지 않고 오리진에 직접 요청해 "출발선" 값을 먼저 확정합니다.</div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div><strong>CDN을 거친 응답의 <code>Age</code> 헤더와 <code>Cache-Control</code> 헤더가 오리진과 동일한지 대조한다.</strong> <code>Age</code>가 <code>max-age</code>보다 크게 찍혀 있다면, CDN이 오리진의 지시를 따르지 않고 자체 TTL(예: CDN 대시보드의 Page Rule, Cache Rule 등)을 우선 적용하고 있다는 강력한 신호입니다.</div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div><strong>CDN이 <code>no-cache</code>를 스펙대로(저장+검증) 처리하는지, 아니면 "저장 안 함"으로 오독하고 있는지 확인한다.</strong> 일부 CDN/구성은 <code>no-cache</code>를 만나면 아예 검증 없이 매번 오리진으로 요청을 흘려보내야 정상인데, 설정 오류로 오래된 캐시 엔트리를 그대로 서빙하도록 남아있는 경우가 있습니다.</div>
+        </li>
+        <li>
+          <div class="step-num">4</div>
+          <div><strong>조건부 요청(검증)이 실제로 발생하고 있는지 오리진 로그에서 확인한다.</strong> <code>no-cache</code>가 제대로 동작한다면 CDN은 매번 <code>If-None-Match</code>/<code>If-Modified-Since</code>를 실어 오리진에 검증 요청을 보내야 합니다. 오리진 로그에 이 요청 자체가 안 보인다면, CDN이 검증 절차를 아예 건너뛰고 캐시된 응답을 그대로 내주고 있는 것 — CDN 설정 결함일 가능성이 큽니다.</div>
+        </li>
+        <li>
+          <div class="step-num">5</div>
+          <div><strong>여러 CDN edge 노드(PoP) 간 응답 일관성을 확인한다.</strong> 특정 지역에서만 오래된 응답이 보인다면, 무효화(purge)나 신선도 갱신이 일부 PoP에만 전파되지 않은 것입니다. 이는 헤더 설정 문제가 아니라 CDN의 전파 지연/장애일 수 있습니다.</div>
+        </li>
+        <li>
+          <div class="step-num">6</div>
+          <div><strong>중간에 회사 프록시나 오래된 브라우저 캐시가 끼어 있지 않은지 배제한다.</strong> 사용자 단말의 사설 프록시나 브라우저 자체의 disk cache가 <code>private</code> 응답을 별개로 들고 있는 경우, CDN을 아무리 고쳐도 사용자에게는 여전히 오래된 화면이 보일 수 있습니다 — devtools의 Network 탭에서 "from disk cache"/"from memory cache" 표시로 이 계층을 구분합니다.</div>
+        </li>
+        <li>
+          <div class="step-num">7</div>
+          <div><strong>Vary 헤더 조합(Day 5)이 캐시 키를 예상과 다르게 쪼개고 있지 않은지 확인한다.</strong> 특정 헤더 조합에서만 발생한다면 무효화가 그 캐시 키 변형까지 도달하지 못했을 가능성이 있습니다.</div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>9. 답변 사고 순서</h2>
+
+    <p>면접에서 Cache-Control 관련 질문을 받으면 이 순서로 사고합니다.</p>
+
+    <ol>
+      <li><strong>먼저 저장 가능 여부(storability)와 재사용 가능 여부(reusability)를 분리해서 설명합니다.</strong> <code>no-cache</code>가 "캐시 안 함"이 아니라는 것을 이 구조에서 도출합니다.</li>
+      <li><strong>freshness_lifetime과 current_age의 비교라는 계산 공식으로 "신선함"을 정의합니다.</strong> 감이 아니라 <code>Age</code> 헤더라는 관측 가능한 숫자로 진단한다는 것을 보여줍니다.</li>
+      <li><strong>private/shared 캐시 구분과 <code>max-age</code>/<code>s-maxage</code>의 차이를 짚습니다.</strong> "브라우저와 CDN이 같은 응답을 다르게 캐시할 수 있다"는 계층적 사고를 드러냅니다.</li>
+      <li><strong>오리진에 직접 요청해 "출발선" 헤더 값을 확정하는 절차부터 시작한다고 말합니다.</strong> 응답이 여러 계층을 거치므로, 원인 후보를 오리진부터 하나씩 배제해나가는 것이 시니어의 진단 순서입니다.</li>
+      <li><strong>CDN 자체 설정(TTL 오버라이드, Page Rule 등)이 오리진 헤더보다 우선 적용될 수 있다는 가능성을 언급합니다.</strong> 헤더가 맞아도 계층별 설정이 이를 덮어쓸 수 있다는 것이 실전 경험을 보여주는 지점입니다.</li>
+      <li><strong>보안 관점(민감 응답에는 <code>no-store</code>+<code>private</code> 조합이 필요하다는 것)을 마지막에 짚어 성능 최적화를 넘어선 판단력을 보여줍니다.</strong></li>
+    </ol>
+  </section>
+
+  <!-- 10. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>10. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "응답에 <code>Cache-Control: no-cache</code>를 붙였는데도 CDN이 오래된 응답을 계속 서빙하고 있습니다. 어떻게 원인을 좁혀 나가시겠어요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>먼저 짚고 싶은 전제는, <code>no-cache</code>는 "캐시하지 말라"는 뜻이 아니라 "저장은 해도 되지만 재사용하기 전에 반드시 오리진에게 검증받으라"는 뜻이라는 점입니다. 그래서 증상 자체는 이상하지 않을 수도 있습니다 — CDN이 응답을 들고 있는 것 자체는 정상이고, 문제는 <strong>매번 검증을 하고 있는가</strong>입니다.</p>
+      <br>
+      <p>그래서 저는 먼저 오리진에 CDN을 거치지 않고 직접 curl로 요청해서, 실제로 어떤 <code>Cache-Control</code> 헤더가 나가는지부터 확인합니다. 프레임워크나 미들웨어가 의도치 않은 기본값을 덧씌우는 경우가 실무에서 꽤 흔했기 때문입니다. 여기서 값이 맞다면, 다음은 CDN을 거친 응답의 <code>Age</code> 헤더를 봅니다. <code>Age</code>가 이미 오래 지난 값인데도 계속 같은 응답이 나온다면, 이건 <code>no-cache</code> 헤더 설정 문제가 아니라 CDN이 검증 절차 자체를 건너뛰고 있다는 신호입니다.</p>
+      <br>
+      <p>이 경우 오리진 로그를 확인해서, CDN이 실제로 <code>If-None-Match</code> 같은 조건부 요청을 보내고 있는지 봅니다. 이 요청 자체가 안 보인다면, CDN 설정에서 자체 TTL 규칙이나 캐시 정책이 오리진의 <code>Cache-Control</code>보다 우선 적용되고 있다고 판단하고 CDN 대시보드의 캐시 규칙을 확인합니다. 특정 지역에서만 증상이 나타난다면 무효화가 일부 edge 노드에만 전파되지 않았을 가능성도 함께 봅니다.</p>
+      <br>
+      <p>마지막으로, 만약 이 응답이 민감한 개인화 데이터라면 <code>no-cache</code>가 아니라 <code>no-store</code>와 <code>private</code> 조합이 맞는지도 다시 확인합니다. <code>no-cache</code>는 여전히 저장을 허용하기 때문에, 요구사항이 "절대 저장되면 안 된다"는 것이었다면 애초에 지시어 선택 자체가 잘못됐을 수 있습니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li><code>no-cache</code>의 정확한 의미(저장 허용 + 재사용 전 검증 필수)를 전제로 깔아 증상을 논리적으로 재해석함</li>
+      <li><code>Age</code> 헤더라는 관측 가능한 값을 근거로 원인을 계층 단위로 좁혀나감</li>
+      <li>오리진 → CDN 순서로 "출발선"부터 확정하는 절차적 디버깅을 보여줌</li>
+      <li>CDN 자체 설정이 오리진 헤더를 덮어쓸 수 있다는 실전 경험을 반영함</li>
+      <li>보안 요구사항(no-store 필요 여부)까지 짚어 단순 트러블슈팅을 넘어선 판단을 보여줌</li>
+    </ul>
+  </section>
+
+  <!-- 11. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>11. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"<code>no-cache</code>를 붙였는데도 캐시가 되고 있다면 CDN 버그입니다. CDN 설정을 다시 확인해야 합니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li><code>no-cache</code>가 애초에 저장을 허용한다는 것을 모른 채 "캐시되고 있는 것 자체"를 문제로 단정합니다.</li>
+        <li>"CDN 버그"라는 결론으로 바로 건너뛰어, 오리진 헤더 확인 → Age 확인 → 검증 요청 확인이라는 원인 격리 절차가 없습니다.</li>
+        <li>진짜 문제(검증이 발생하는가)를 짚지 못해 실제로는 잘못된 곳을 디버깅하게 될 가능성이 높습니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"캐시 문제니까 <code>Cache-Control: no-store</code>로 바꾸면 확실히 해결됩니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>근본 원인 진단 없이 가장 강한 지시어로 회피하는 방식이며, 대역폭/오리진 부하 관점의 성능 비용을 전혀 고려하지 않습니다.</li>
+        <li>원인이 CDN 설정 오류였다면 <code>no-store</code>로 바꿔도 CDN이 이를 무시하는 동일한 근본 문제가 재발할 수 있습니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li><code>no-cache</code>가 "저장 허용 + 재사용 전 검증 필수"라는 정확한 의미를 전제로 제시한다</li>
+        <li><code>Age</code> 헤더와 freshness_lifetime 비교로 신선도를 계산 가능한 값으로 설명한다</li>
+        <li>오리진 → CDN 순서로 헤더 값을 직접 대조하는 구체적 절차를 제시한다</li>
+        <li>오리진 로그에서 조건부 요청(검증) 발생 여부를 확인하는 방법을 안다</li>
+        <li>CDN 자체 캐시 정책이 오리진 헤더를 덮어쓸 수 있다는 계층별 사고를 보여준다</li>
+        <li>보안 요구사항에 맞는 지시어(no-store vs no-cache, private vs public)를 구분해서 제안한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 12. Follow-up -->
+  <section id="followups">
+    <h2>12. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: <code>max-age=3600</code>과 <code>s-maxage=60</code>을 함께 설정하면 실제로 어떤 일이 일어나나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> shared 캐시(CDN, 리버스 프록시)는 <code>s-maxage=60</code>을 우선 적용해 60초 동안만 검증 없이 재사용하고, private 캐시(브라우저)는 <code>s-maxage</code>를 무시하고 <code>max-age=3600</code>을 따라 1시간 동안 재사용합니다. 이 조합은 "CDN에서는 자주 갱신하되 브라우저에서는 오래 캐시해도 되는" 상황, 예를 들어 배포 직후 변경이 잦은 콘텐츠를 CDN 레벨에서만 빠르게 갱신하고 싶을 때 유용합니다. 다만 두 캐시의 신선도 기간이 다르다는 것을 팀 내에서 명확히 문서화하지 않으면, "CDN 캐시는 지웠는데 왜 사용자 화면은 안 바뀌지"라는 혼란으로 이어지기 쉽습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: <code>stale-while-revalidate</code>를 쓰면 사용자가 오래된 데이터를 볼 위험이 있는데, 왜 이걸 쓰는 게 합리적인 선택일 수 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 이 지시어는 "약간의 정확성을 희생하고 지연 시간을 크게 줄이는" 명시적인 trade-off입니다. freshness가 만료된 직후 첫 요청도 오리진 응답을 기다리지 않고 즉시 stale 응답을 반환하면서, 동시에 백그라운드에서 비동기로 최신 데이터를 가져와 다음 요청부터 반영합니다. 이 방식이 합리적인 경우는 데이터가 몇 초에서 몇 분 정도 오래돼도 비즈니스적으로 문제가 없고(뉴스 피드, 상품 목록 등), 반면 매 요청마다 오리진을 기다리는 지연 시간이 사용자 경험에 훨씬 더 큰 손해를 주는 경우입니다. 반대로 재고 수량이나 잔액처럼 오래된 값이 즉시 잘못된 의사결정으로 이어지는 응답에는 적합하지 않습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 오리진 서버가 잠깐 5xx를 내는 장애 상황에서 캐시가 어떻게 가용성을 지키는 데 도움이 되나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> <code>stale-if-error</code>를 설정해두면, 오리진이 정해진 시간(N초) 내에 5xx나 타임아웃을 반환할 때 캐시가 오래된 정상 응답을 대신 서빙할 수 있습니다. 이는 오리진 장애가 곧바로 사용자에게 전면적인 에러 화면으로 전파되는 것을 막아주는 방어선이며, Day 13에서 다룰 timeout/retry 설계와 함께 "일부 계층의 장애를 흡수해 전체 시스템의 가용성을 지키는" 신뢰성 설계의 한 축입니다. 다만 이 완화가 "오리진 장애를 못 알아차리게" 만들 수도 있으므로, 캐시가 stale 응답을 대신 내주고 있다는 사실 자체를 모니터링/알림으로 반드시 노출해야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 정적 자산에 <code>immutable</code>을 쓰면 <code>max-age</code>만 쓸 때와 실제로 뭐가 다른가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> <code>max-age</code>만 있으면 freshness 기간 내에도 사용자가 브라우저의 "새로고침"을 누를 때 브라우저가 관행적으로 재검증 요청을 보내는 경우가 있습니다. <code>immutable</code>은 "이 콘텐츠는 freshness 기간 동안 절대 바뀌지 않는다"고 선언해, 새로고침 시에도 재검증 요청 자체를 생략하게 만듭니다. 이것이 안전한 이유는 파일명에 콘텐츠 해시가 포함된 빌드 산출물(예: <code>app.a1b2c3.js</code>)의 경우, 내용이 바뀌면 파일명 자체가 바뀌어 새 URL이 되므로 같은 URL의 응답이 절대 변하지 않는다는 것이 구조적으로 보장되기 때문입니다. 해시가 없는 URL(예: <code>app.js</code>)에 <code>immutable</code>을 잘못 쓰면 실제 콘텐츠가 바뀌어도 사용자가 새 버전을 못 받는 사고로 이어집니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: CDN 대시보드에서 캐시 규칙(Page Rule/Cache Rule 등)을 오리진 <code>Cache-Control</code> 헤더보다 우선 적용하도록 설정하는 것이 언제 합리적인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 오리진 애플리케이션 코드를 배포하지 않고도 캐시 정책을 즉시 조정해야 하는 운영 상황(예: 장애 시 긴급하게 캐시 기간을 늘려 오리진 부하를 줄이거나, 반대로 즉시 무효화가 필요한 상황)에서는 CDN 레벨 오버라이드가 유용합니다. 다만 이 오버라이드가 존재한다는 사실 자체를 팀이 인지하지 못하면, "오리진 헤더를 고쳤는데 왜 반영이 안 되지"라는 혼란스러운 디버깅 시간을 낭비하게 됩니다. 원칙적으로는 오리진 헤더를 단일 진실 공급원(source of truth)으로 유지하고, CDN 오버라이드는 명시적으로 문서화된 예외 상황에만 한정하는 것이 유지보수성 측면에서 안전합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>13. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"no-cache를 붙이면 캐시가 되지 않는다"</strong></p>
+      <p>정반대입니다. <code>no-cache</code>는 저장을 허용하며, 재사용 전에 검증만 강제합니다. 완전한 캐시 금지는 <code>no-store</code>입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"max-age만 확인하면 CDN 캐시 동작을 알 수 있다"</strong></p>
+      <p>shared 캐시(CDN, 리버스 프록시)는 <code>s-maxage</code>가 있으면 그 값을 우선 적용하고 <code>max-age</code>를 무시합니다. CDN 캐시 기간을 판단하려면 반드시 <code>s-maxage</code> 존재 여부부터 확인해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"private을 붙이지 않아도 개인화 API 응답은 알아서 캐시되지 않는다"</strong></p>
+      <p><code>Authorization</code> 헤더가 없는 요청(예: 쿠키 세션 기반 인증)의 응답은 기본적으로 shared 캐시에 저장될 수 있습니다. 사용자별로 내용이 달라지는 응답에는 반드시 명시적으로 <code>private</code>을 붙여야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"Cache-Control 헤더만 맞으면 캐시 문제는 항상 해결된다"</strong></p>
+      <p>CDN이나 리버스 프록시의 자체 캐시 정책이 오리진 헤더를 덮어쓸 수 있습니다. 헤더가 정확해도 계층별 설정을 함께 확인해야 실제 동작을 예측할 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"stale-while-revalidate/stale-if-error는 데이터 정확성을 해치므로 프로덕션에서는 쓰면 안 된다"</strong></p>
+      <p>이는 무조건적인 위험이 아니라 명시적인 trade-off 도구입니다. 짧은 시간의 낡은 데이터를 감수할 수 있는 응답에서는 지연 시간 개선과 장애 흡수라는 실질적인 가용성 이득을 제공합니다. 다만 실시간성이 중요한 응답에는 적합하지 않다는 판단 기준이 함께 있어야 합니다.</p>
+    </div>
+  </section>
+
+  <!-- 14. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>14. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 8을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>저장 가능 여부(storability)와 재사용 가능 여부(reusability)가 서로 다른 질문이라는 것을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>no-cache</code>와 <code>no-store</code>의 차이를 정확히 구분하고, 각각 적합한 사용 사례를 들 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>freshness_lifetime과 current_age(Age 헤더)의 비교로 "신선함"을 계산하는 원리를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>private/shared 캐시 구분과 <code>max-age</code> vs <code>s-maxage</code>의 우선순위 차이를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>private</code>/<code>public</code>이 개인화 응답의 캐시 오염을 어떻게 방지하는지, Day 5·Day 7의 캐시 오염 사고와 어떻게 같은 원리인지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>must-revalidate</code>, <code>stale-while-revalidate</code>, <code>stale-if-error</code>가 각각 어떤 상황의 trade-off를 다루는지 구분할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"CDN이 오래된 응답을 계속 서빙한다"는 증상을 오리진 헤더 확인 → Age 대조 → 검증 요청 발생 여부 → CDN 자체 정책 순서로 원인을 좁혀나가는 절차를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>CDN/프록시의 자체 캐시 정책이 오리진의 <code>Cache-Control</code> 헤더를 덮어쓸 수 있다는 계층별 사고를 갖고 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div><code>immutable</code>이 해시 기반 파일명과 짝을 이뤄야 안전한 이유를 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 9</h3>
+      <p><strong>ETag와 조건부 요청 — 검증 캐시와 대역폭 절감</strong></p>
+      <p>Day 8에서 <code>no-cache</code>가 "재사용 전 검증 필수"를 뜻한다는 것을 다뤘다면, Day 9에서는 그 검증이 실제로 어떻게 이뤄지는지 — <code>ETag</code>와 <code>If-None-Match</code>, <code>Last-Modified</code>와 <code>If-Modified-Since</code>가 어떻게 <code>304 Not Modified</code>를 만들어내고 본문 전송 없이 대역폭을 절감하는지를 다룹니다. Strong/Weak ETag의 차이와, 여러 서버 인스턴스가 서로 다른 ETag를 생성해 캐시 검증이 항상 실패하는 실전 장애 사례도 함께 다룹니다.</p>
+      <p>면접 질문 예고: "여러 대의 앱 서버 뒤에 로드밸런서가 있는데, 조건부 요청이 항상 304가 아니라 200으로 응답합니다. 왜 이런 일이 생길 수 있을까요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    HTTP / Web Protocol & API Traffic 시니어 인터뷰 · Day 8 of 20 · 2026-07-09
+  </p>
+
+</div>
+</body>
+</html>

@@ -11,18 +11,19 @@
 | 5 | 2026-07-06 | Content Negotiation과 Vary 캐시 오염 — Accept/Vary가 만드는 캐시 사고 | [0005-content-negotiation-vary-cache-pollution.html](lessons/0005-content-negotiation-vary-cache-pollution.html) |
 | 6 | 2026-07-07 | Cookies & Session 관리 — SameSite, Secure, HttpOnly, 세션 vs 토큰 trade-off | [0006-cookies-session-management.html](lessons/0006-cookies-session-management.html) |
 | 7 | 2026-07-08 | CORS 심화 — Preflight, credentials, Vary: Origin과 실전 트러블슈팅 | [0007-cors-preflight-credentials.html](lessons/0007-cors-preflight-credentials.html) |
+| 8 | 2026-07-09 | Cache-Control 심화 — freshness, private/public, no-cache vs no-store, 캐시 계층별 해석 | [0008-cache-control-freshness-private-public.html](lessons/0008-cache-control-freshness-private-public.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Cache-Control 심화 | freshness, private/public, no-cache vs no-store, 캐시 계층별 해석 |
 | 9 | ETag와 조건부 요청 | If-None-Match, If-Modified-Since, 검증 캐시와 대역폭 절감 |
 | 10 | Compression | gzip/br, Content-Encoding, CPU-대역폭 trade-off |
+| 11 | Keep-Alive와 Connection 관리 | HTTP/1.1 지속 연결, Head-of-Line Blocking |
 
 ## 현재 학습 위치
 
-**Day 7 완료** — 다음: Day 8 — Cache-Control 심화
+**Day 8 완료** — 다음: Day 9 — ETag와 조건부 요청
 
 ## 습득한 핵심 개념
 
@@ -53,4 +54,11 @@
 - [x] credentials 포함 요청에서 Access-Control-Allow-Origin: *가 불가능한 이유 (Day 7)
 - [x] Vary: Origin으로 CORS 응답의 캐시 오염을 막는 원리 (Day 7)
 - [x] Origin 무조건 반사 + Allow-Credentials 조합의 보안 취약점 (Day 7)
-- [ ] Cache-Control의 freshness, private/public, no-cache vs no-store 구분 (예정 Day 8)
+- [x] Cache-Control의 저장 가능(storability)과 재사용 가능(reusability) 질문 분리 (Day 8)
+- [x] freshness_lifetime과 Age(current_age)를 이용한 신선도 계산 원리 (Day 8)
+- [x] max-age vs s-maxage — private/shared 캐시별 다른 적용 (Day 8)
+- [x] no-cache vs no-store — 저장 허용 여부와 검증 필수 여부 구분 (Day 8)
+- [x] private/public 지시어와 개인화 응답의 shared 캐시 오염 방지 (Day 8)
+- [x] must-revalidate, stale-while-revalidate, stale-if-error의 trade-off (Day 8)
+- [x] "CDN이 오래된 응답을 계속 서빙" 장애의 계층별 원인 격리 절차 (Day 8)
+- [ ] ETag/Last-Modified 기반 조건부 요청과 304 Not Modified (예정 Day 9)
