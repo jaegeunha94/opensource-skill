@@ -20,6 +20,13 @@
 - **Grafana 대시보드 가이드** — https://grafana.com/docs/grafana/latest/dashboards/
 - **Python cProfile 문서** — https://docs.python.org/3/library/profile.html
 - **Linux perf 튜토리얼** — https://perf.wiki.kernel.org/index.php/Tutorial
+- **HikariCP — About Pool Sizing** — https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing
+- **PgBouncer 공식 문서** — https://www.pgbouncer.org/
+
+## DB Connection Pool / 자원 sizing 심화
+
+- **PostgreSQL — Number Of Database Connections** (wiki) — https://wiki.postgresql.org/wiki/Number_Of_Database_Connections
+- **HikariCP Dead Lock 관련 이슈 토론** — pool-level self-deadlock 사례 이해용, HikariCP GitHub Issues 검색
 
 ## 2차 자료 (심화 / 케이스 스터디)
 

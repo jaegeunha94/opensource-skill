@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 — DB Connection Pool 튜닝: pool 고갈과 deadlock | 성능 최적화 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; color: #c8dae8; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .pool-diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .pool-slot {
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #0f1117;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">성능 최적화 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 10
+  </nav>
+
+  <h1>Day 10 — DB Connection Pool 튜닝: pool 고갈과 deadlock</h1>
+  <p class="subtitle">"pool을 늘렸더니 더 느려졌다" — 자원 포화와 self-deadlock을 구분하는 능력 · 2026-07-09</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#sizing">Pool Sizing 공식과 함정</a></li>
+      <li><a href="#deadlock">Pool-level Self-Deadlock</a></li>
+      <li><a href="#leak">Connection Leak 탐지</a></li>
+      <li><a href="#practice">실무 연결</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"DB connection pool 크기를 100에서 500으로 늘렸더니 오히려 전체 서비스가 느려졌습니다. 왜 이런 일이 생겼을까요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"트래픽이 몰릴 때마다 'connection pool timeout' 에러가 발생합니다. DB 서버 자체의 CPU와 메모리는 여유가 있는데도 이런 에러가 나는 이유는 무엇일까요?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"서비스를 재배포하지 않고 며칠을 운영하면 점점 응답이 느려지다가 결국 모든 요청이 타임아웃됩니다. 재배포하면 다시 정상으로 돌아옵니다. 무엇을 의심하시겠어요?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>Day 9에서 다룬 "utilization이 포화 임계점을 넘으면 latency가 비선형으로 폭발한다"는 개념을 DB connection pool이라는 아주 구체적이고 실무에서 매일 마주치는 자원에 적용하는 질문입니다. Connection pool은 애플리케이션과 DB 서버 사이의 <strong>공유 자원(shared resource)</strong>이고, 그 크기를 잘못 잡으면 애플리케이션 서버가 아무리 건강해도 전체 시스템이 무너집니다. 면접관은 지원자가 "pool을 늘리면 무조건 좋다"는 직관적이지만 틀린 반응 대신, <strong>pool은 DB 서버 자원과 애플리케이션 동시성 요구 사이의 균형점</strong>이라는 것을 이해하는지를 이 질문으로 가려냅니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>"더 큰 pool = 더 빠름"이라는 직관을 반박할 수 있는가</strong> — DB 서버의 커넥션당 비용(메모리, 프로세스/스레드, 컨텍스트 스위칭, 락 경합)을 이해하고, pool 크기와 처리량이 선형 관계가 아니라는 것을 설명할 수 있는지.</li>
+      <li><strong>pool 고갈(exhaustion)과 DB 과부하를 구분할 수 있는가</strong> — "pool timeout 에러"가 발생했을 때, 원인이 pool이 너무 작아서인지, DB 서버 자체가 느려져서 커넥션이 오래 점유되고 있는 것인지 구분하는 진단 능력.</li>
+      <li><strong>pool-level self-deadlock을 아는가</strong> — DB 트랜잭션 락으로 인한 전통적인 deadlock과는 다른, 애플리케이션 로직이 하나의 pool에서 커넥션을 중첩 요구하다가 스스로 멈추는 현상을 이해하는지.</li>
+      <li><strong>connection leak을 pool exhaustion과 구분할 수 있는가</strong> — "시간이 지날수록 느려지다가 재배포하면 회복된다"는 패턴이 코드 결함(누수)의 전형적인 신호라는 것을 알아채는지.</li>
+    </ul>
+
+    <p>10년차 이하의 전형적인 약한 패턴: "pool timeout이 났으니 pool 크기를 늘리자"에서 멈춤. 시니어는 "pool을 늘리기 전에, 지금 커넥션이 오래 점유되는 이유(느린 쿼리, 락 대기, 누수)부터 확인해야 한다 — 원인을 해결하지 않고 pool만 늘리면 DB 서버가 더 많은 동시 커넥션을 감당하지 못해 오히려 전체가 느려질 수 있다"까지 설명합니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>Connection Pool이란 — 대여소 비유</h3>
+    <p>DB에 연결(connection)을 새로 맺는 작업은 TCP 핸드셰이크, 인증, 세션 초기화가 포함되어 <strong>수 밀리초에서 수십 밀리초</strong>가 걸리는 비교적 무거운 작업입니다. 매 요청마다 새 연결을 만들고 끊으면 이 비용이 누적되어 낭비가 큽니다. Connection pool은 미리 일정 개수의 연결을 만들어 두고, 요청이 오면 <strong>자전거 대여소</strong>처럼 쓰던 커넥션을 "대여"해주고, 쿼리가 끝나면 다시 "반납"받아 재사용하는 구조입니다. Pool 크기(예: 100)는 "동시에 대여 가능한 자전거 수"와 같습니다 — 101번째 요청은 누군가 반납할 때까지 대기해야 합니다.</p>
+
+    <h3>Pool Exhaustion(고갈)이란</h3>
+    <p>Pool에 있는 모든 커넥션이 동시에 사용 중이어서, 새로운 요청이 커넥션을 빌리지 못하고 대기하다가 결국 <strong>connection acquisition timeout</strong>(커넥션을 얻기 위해 기다리는 시간의 상한)에 걸려 에러로 실패하는 상태입니다. 중요한 점은, 이 에러가 발생했다고 해서 항상 "pool이 작아서" 생기는 것은 아니라는 것입니다 — 각 커넥션이 쿼리를 너무 오래 붙잡고 있어서(느린 쿼리, 락 대기, 트랜잭션을 커밋하지 않고 방치) 반납 속도가 요청 속도를 따라가지 못하는 경우가 훨씬 흔합니다.</p>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> Little's Law(Day 7, Day 9에서 다룸 — <code>L = λ × W</code>)를 여기에도 그대로 적용할 수 있습니다. 동시에 사용 중인 커넥션 수(L)는 요청 도착률(λ)과 커넥션 하나가 점유되는 평균 시간(W)의 곱입니다. pool이 고갈됐다는 것은 요청이 갑자기 늘어서(λ 증가)일 수도 있지만, <strong>쿼리가 느려져 커넥션 점유 시간(W)이 늘어난 것이 원인인 경우가 실무에서 더 많습니다.</strong> pool 크기만 보지 말고 W(커넥션당 평균 점유 시간)를 먼저 확인해야 하는 이유입니다.
+    </div>
+
+    <h3>왜 "커넥션 하나"가 공짜가 아닌가 — DB 서버 관점</h3>
+    <p>애플리케이션 입장에서 커넥션은 가벼운 객체처럼 보이지만, DB 서버 입장에서는 전혀 다릅니다. 예를 들어 PostgreSQL은 커넥션마다 <strong>별도의 OS 프로세스</strong>를 띄우고, 각 프로세스는 수 MB의 메모리(work_mem, 세션 상태 등)를 점유합니다. MySQL은 프로세스 대신 스레드를 쓰지만 마찬가지로 커넥션마다 고정 비용이 붙습니다. 커넥션 수가 CPU 코어 수를 훨씬 초과하면, DB 서버는 실제로 일을 처리하는 시간보다 <strong>어느 프로세스를 실행할지 전환(context switching)하는 데 쓰는 시간</strong>이 늘어나고, 여러 트랜잭션이 같은 행(row)이나 인덱스 페이지를 두고 락 경합(lock contention)을 벌일 확률도 함께 커집니다. 이것이 "pool을 늘렸는데 오히려 느려지는" 현상의 근본 원인입니다.</p>
+
+    <h3>Timeout의 세 가지 층위</h3>
+    <p>Connection pool을 다룰 때는 서로 다른 세 가지 timeout을 구분해야 합니다.</p>
+
+    <table class="method-table">
+      <tr><th>Timeout 종류</th><th>의미</th><th>너무 짧으면</th><th>너무 길면</th></tr>
+      <tr><td>Connection Acquisition Timeout</td><td>pool에서 커넥션을 빌리기 위해 기다리는 최대 시간</td><td>일시적 스파이크에도 요청이 실패</td><td>pool 고갈 시 요청이 쌓여 대기 행렬(queue)이 폭증</td></tr>
+      <tr><td>Query/Statement Timeout</td><td>커넥션을 빌린 뒤 쿼리 하나가 실행되는 최대 시간</td><td>정상 쿼리도 중간에 잘림</td><td>느린 쿼리가 커넥션을 오래 붙잡아 pool 고갈을 유발</td></tr>
+      <tr><td>Idle Timeout</td><td>커넥션이 아무 작업 없이 pool에 유휴 상태로 머무는 최대 시간</td><td>커넥션을 자주 재생성해 오버헤드 증가</td><td>죽은 커넥션(방화벽/네트워크 장비가 끊은 연결)이 pool에 남아 있다가 다음 요청에서 실패</td></tr>
+    </table>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> 이 세 timeout은 서로 방어선을 나눠 맡습니다. Query timeout이 없으면 느린 쿼리 하나가 커넥션을 무한정 붙잡아 pool 전체를 고갈시킬 수 있고, connection acquisition timeout이 없으면 pool이 고갈됐을 때 모든 요청이 무한 대기하며 스레드까지 함께 고갈되는 <strong>연쇄 장애(cascading failure)</strong>로 번집니다. 세 가지를 각각 명시적으로 설정하는 것이 시니어의 기본기입니다.
+    </div>
+  </section>
+
+  <!-- 4. Pool Sizing -->
+  <section id="sizing">
+    <h2>4. Pool Sizing 공식과 함정</h2>
+
+    <div class="pool-diagram">
+      <div class="pool-slot" style="background:#f87171;">1</div>
+      <div class="pool-slot" style="background:#f87171;">2</div>
+      <div class="pool-slot" style="background:#f87171;">3</div>
+      <div class="pool-slot" style="background:#fbbf24;">4</div>
+      <div class="pool-slot" style="background:#34d399;">5</div>
+      <div class="pool-slot" style="background:#34d399;">6</div>
+      <div class="pool-slot" style="background:#34d399;">7</div>
+      <div class="pool-slot" style="background:#34d399;">8</div>
+    </div>
+    <p style="font-size:0.85rem; color:var(--text-muted); margin-top:-0.6rem;">CPU 코어 8개인 DB 서버 예시 — 빨강(사용 중, CPU 처리 중)이 코어 수를 넘어서면 나머지(노랑, 초록)는 대기하거나 컨텍스트 스위칭 비용만 유발합니다. pool을 늘려도 실제 처리 능력은 코어 수 근처에서 한계에 부딪힙니다.</p>
+
+    <p>PostgreSQL 커뮤니티에서 자주 인용되는 경험 공식은 다음과 같습니다.</p>
+
+    <pre><code>connections = ((core_count * 2) + effective_spindle_count)</code></pre>
+
+    <p>즉 코어가 8개인 DB 서버라면, 실질적으로 효율적인 동시 커넥션 수는 대략 16~20개 근처이지, 수백 개가 아닙니다. 이 공식이 절대 진리는 아니지만 핵심 통찰은 명확합니다 — <strong>DB 서버가 실제로 동시에 "일할 수 있는" 능력은 코어 수에 근본적으로 묶여 있고, pool 크기를 그보다 훨씬 크게 잡아도 처리량은 늘지 않으며 오히려 컨텍스트 스위칭과 락 경합 비용만 늘어 처리량이 줄어들 수 있습니다.</strong></p>
+
+    <p>애플리케이션 서버 쪽에서 자주 인용되는 HikariCP(자바 진영의 대표적인 connection pool 라이브러리) 공식은 다음과 같습니다.</p>
+
+    <pre><code>pool_size = Tn × (Cm - 1) + 1</code></pre>
+
+    <p>여기서 <code>Tn</code>은 최대 동시 스레드 수, <code>Cm</code>은 하나의 트랜잭션이 동시에 필요로 하는 커넥션 수(대부분 1)입니다. 대부분의 경우 <code>Cm=1</code>이므로 사실상 pool 크기는 "동시에 DB 작업을 실제로 수행할 스레드 수"와 거의 같아야 하며, 애플리케이션 서버의 스레드 풀 크기가 1000이라고 해서 DB pool도 1000일 필요는 없다는 뜻입니다.</p>
+
+    <table class="method-table">
+      <tr><th>레이어</th><th>일반적인 크기</th><th>이유</th></tr>
+      <tr><td>애플리케이션 스레드 풀 / 이벤트 루프 동시성</td><td>수백~수천</td><td>대부분의 요청은 I/O 대기 중이라 스레드가 CPU를 계속 쓰지 않음</td></tr>
+      <tr><td>DB Connection Pool</td><td>코어 수 기반 수십</td><td>DB 서버가 실제로 CPU를 써서 쿼리를 실행하는 동시 작업 수는 코어 수에 근본적으로 제한됨</td></tr>
+    </table>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> "애플리케이션 인스턴스마다 pool을 100으로 잡고, 인스턴스가 10대면 DB는 최대 1000개의 커넥션을 받아야 한다"는 계산은 실무에서 흔한 실수입니다. DB의 <code>max_connections</code>은 대개 수백 단위로 제한적이고, 인스턴스 수가 늘어날수록 인스턴스당 pool 크기는 오히려 줄여야 합니다. 이 문제를 근본적으로 해결하는 방법이 PgBouncer 같은 <strong>중앙 집중형 pooler</strong>를 애플리케이션과 DB 사이에 두어, 애플리케이션은 넉넉한 pool을 쓰되 실제 DB로 가는 물리 커넥션 수는 pooler가 통제하는 구조입니다.
+    </div>
+  </section>
+
+  <!-- 5. Pool-level Self-Deadlock -->
+  <section id="deadlock">
+    <h2>5. Pool-level Self-Deadlock — DB 락 deadlock과는 다른 함정</h2>
+
+    <p>"deadlock"이라고 하면 대부분 DB 트랜잭션 두 개가 서로 다른 행(row)의 락을 반대 순서로 잡으려다 영원히 대기하는 <strong>DB-level deadlock</strong>을 떠올립니다. 하지만 connection pool에서는 그와 별개로 애플리케이션 로직에서만 발생하는 <strong>pool-level self-deadlock</strong>이 존재합니다.</p>
+
+    <p>전형적인 패턴: 요청 A가 pool에서 커넥션 하나를 빌려 트랜잭션을 시작합니다. 그 트랜잭션 도중 애플리케이션 코드가 (실수로, 혹은 설계상) <strong>같은 pool에서 두 번째 커넥션을 요구</strong>합니다 — 예를 들어 중첩된 서비스 호출이나 재귀 함수가 같은 pool을 통해 새 커넥션을 얻으려 합니다. pool이 이미 최대 동시 요청 수만큼 소진된 상태라면, 이 두 번째 커넥션 요청은 <strong>누군가 반납할 때까지 대기</strong>하는데, pool의 다른 모든 커넥션도 똑같은 패턴(첫 커넥션을 쥔 채 두 번째 커넥션을 기다림)에 걸려 있다면 <strong>아무도 반납하지 않고 모두가 서로를 기다리는 교착 상태</strong>가 됩니다. 이것은 DB 옵티마이저나 락 매니저가 전혀 개입하지 않는, 순전히 애플리케이션 pool 사용 패턴에서 발생하는 deadlock입니다.</p>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> 이 문제는 pool 크기가 <strong>동시에 실행 가능한 최대 요청 수보다 작을 때</strong> 특히 잘 드러납니다. pool 크기가 요청 동시성보다 충분히 크면 두 번째 커넥션 요청도 즉시 처리되어 문제가 가려지지만, 트래픽이 늘어 동시성이 pool 크기에 근접하는 순간 갑자기 전체 서비스가 멈추는 형태로 나타납니다. 근본 해결은 pool을 늘리는 것이 아니라 <strong>하나의 논리적 요청이 하나의 트랜잭션 안에서 커넥션을 중첩 요구하지 않도록 코드 구조를 바꾸는 것</strong>입니다(같은 트랜잭션 컨텍스트를 재사용하도록 전달).
+    </div>
+  </section>
+
+  <!-- 6. Connection Leak -->
+  <section id="leak">
+    <h2>6. Connection Leak 탐지 — "재배포하면 낫는다"의 정체</h2>
+
+    <p>Connection leak은 코드가 커넥션을 빌린 뒤 예외 상황(에러 발생, 조기 return, close 누락)에서 <strong>pool에 반납하지 않고 방치</strong>하는 결함입니다. 반납되지 않은 커넥션은 pool 입장에서는 "사용 중"으로 영원히 남아 있어, 실제 트래픽과 무관하게 pool의 가용 커넥션 수가 시간이 지날수록 서서히 줄어듭니다.</p>
+
+    <table class="method-table">
+      <tr><th>증상</th><th>Pool Exhaustion (일시적 과부하)</th><th>Connection Leak (누수)</th></tr>
+      <tr><td>발생 패턴</td><td>트래픽 스파이크와 동시에 발생, 스파이크가 끝나면 회복</td><td>트래픽과 무관하게 시간이 지날수록 점진적으로 악화</td></tr>
+      <tr><td>활성 커넥션 그래프</td><td>트래픽 곡선과 함께 오르내림</td><td>우상향 계단식 증가, 재배포 시점에 0으로 리셋</td></tr>
+      <tr><td>해결 방향</td><td>pool sizing, 느린 쿼리 최적화</td><td>코드에서 커넥션 반납 누락 지점(try/finally, context manager 누락) 수정</td></tr>
+    </table>
+
+    <div class="why-box">
+      <strong>실무 감각:</strong> "재배포하면 다시 정상으로 돌아온다"는 것은 connection leak의 가장 뚜렷한 신호입니다 — 재배포는 프로세스를 새로 띄우면서 pool도 새로 초기화하기 때문에 누수가 리셋됩니다. 이 패턴을 pool exhaustion으로 오진하고 pool 크기만 늘리면, 누수 속도는 그대로이므로 <strong>회복까지 걸리는 시간만 늘어날 뿐 근본 문제는 해결되지 않습니다.</strong> 대부분의 pool 라이브러리(HikariCP의 <code>leakDetectionThreshold</code> 등)는 커넥션이 일정 시간 이상 반납되지 않으면 경고 로그와 함께 어느 코드 스택에서 빌렸는지 추적하는 기능을 제공하므로, 이를 상시 켜두는 것이 실무 표준입니다.
+    </div>
+  </section>
+
+  <!-- 7. 실무 연결 -->
+  <section id="practice">
+    <h2>7. 실무 연결</h2>
+
+    <h3>상황 1: pool을 100에서 500으로 늘렸더니 처리량이 오히려 감소</h3>
+    <p>피크 시간대에 "pool timeout" 에러가 잦아 pool 크기를 5배로 늘렸습니다. 에러는 줄었지만 전체 처리량(throughput)은 오히려 떨어지고 p99 latency는 더 나빠졌습니다. DB 서버 CPU 코어는 16개였는데, 늘어난 커넥션 수만큼 동시에 실행되려는 쿼리가 늘면서 컨텍스트 스위칭 비율과 락 대기 시간이 급증한 것이 원인이었습니다. pool을 다시 코어 수 기반 공식(약 40)으로 낮추고, 대신 커넥션 획득 대기열(queue)에서 빠르게 실패시켜 재시도하도록 바꾼 뒤에야 처리량이 회복됐습니다.</p>
+
+    <h3>상황 2: DB는 한가한데 pool timeout이 발생</h3>
+    <p>DB 서버의 CPU와 메모리 사용률은 30% 수준으로 여유가 있었지만 애플리케이션에서는 계속 pool timeout 에러가 발생했습니다. 원인을 보니 특정 리포트 API가 인덱스 없는 컬럼으로 대용량 집계 쿼리를 수 초씩 실행하고 있었고, 그 쿼리가 커넥션을 오래 붙잡는 동안 다른 요청들이 pool 대기열에 쌓이고 있었습니다. DB 자체는 그 쿼리 하나만 처리하느라 CPU를 많이 쓰지 않았을 뿐(디스크 I/O 대기가 대부분), pool 관점에서는 명백한 고갈이었습니다. 이 리포트 API를 별도의 전용 pool로 분리한 뒤 다른 API들이 영향받지 않게 됐습니다.</p>
+
+    <h3>상황 3: 며칠 운영 후 서서히 느려지다 전면 타임아웃</h3>
+    <p>배포 직후에는 정상이던 서비스가 3~4일이 지나면 서서히 느려지다 결국 모든 요청이 타임아웃되는 패턴이 반복됐습니다. 활성 커넥션 수 그래프를 시간 순으로 보니 트래픽과 무관하게 계단식으로 계속 증가하고 있었고, 원인은 특정 예외 처리 경로에서 커넥션을 반납하는 <code>finally</code> 블록이 누락된 코드였습니다. 예외가 자주 발생하는 엣지 케이스일수록 누수 속도가 빨랐던 것입니다. leak detection을 활성화해 어느 호출 스택에서 반납이 누락되는지 로그로 특정한 뒤 수정했습니다.</p>
+
+    <h3>상황 4: 여러 인스턴스를 스케일 아웃했더니 DB max_connections 초과 장애</h3>
+    <p>트래픽 증가에 대응해 애플리케이션 인스턴스를 4대에서 20대로 오토스케일링했습니다. 인스턴스당 pool 크기를 50으로 고정해뒀기 때문에 이론상 최대 1000개의 커넥션이 DB로 몰릴 수 있었고, 실제로 DB의 <code>max_connections</code>(300) 한도를 넘기며 신규 커넥션이 전면 거부되는 장애가 발생했습니다. PgBouncer를 애플리케이션과 DB 사이에 두어 애플리케이션 쪽 pool은 유지하되 실제 DB로 가는 물리 커넥션 수를 pooler가 통제하도록 구조를 바꾼 뒤 스케일 아웃과 무관하게 안정화됐습니다.</p>
+  </section>
+
+  <!-- 8. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>8. 답변 사고 순서</h2>
+
+    <ul class="step-block">
+      <li>
+        <div class="step-num">1</div>
+        <div>
+          <strong>증상을 정확히 정의한다 — 언제, 어떤 에러가 나는가</strong>
+          <p style="margin-top:0.3rem">pool timeout인지, DB 자체 timeout인지, 특정 시간대·특정 API에 몰려 있는지부터 구분합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div>
+          <strong>DB 서버 자체의 utilization을 확인한다</strong>
+          <p style="margin-top:0.3rem">CPU, 활성 커넥션 수, 락 대기, 느린 쿼리 로그를 확인해 DB가 실제로 과부하인지, 아니면 pool이 너무 작아 여유 있는 DB 앞에서 요청이 줄 서 있는 것인지 구분합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div>
+          <strong>커넥션 점유 시간(W)이 늘었는지 확인한다</strong>
+          <p style="margin-top:0.3rem">Little's Law 관점에서, 요청량이 그대로인데 pool이 고갈됐다면 커넥션당 점유 시간이 늘어난 것 — 느린 쿼리, 락 대기, 트랜잭션 방치를 의심합니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div>
+          <strong>시간에 따른 패턴으로 leak 여부를 가른다</strong>
+          <p style="margin-top:0.3rem">트래픽과 무관하게 활성 커넥션이 우상향한다면 exhaustion이 아니라 leak — pool 크기 조정이 아니라 코드 결함 수정이 정답입니다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div>
+          <strong>pool 크기 변경은 코어 수·인스턴스 수 기반 공식으로 근거를 대고 조정한다</strong>
+          <p style="margin-top:0.3rem">무작정 늘리지 않고, DB 코어 수와 인스턴스 수를 곱한 총 커넥션 수가 max_connections를 넘지 않는지, pooler 도입이 필요한지까지 함께 판단합니다.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 9. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>9. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "DB connection pool 크기를 100에서 500으로 늘렸더니 오히려 전체 서비스가 느려졌습니다. 왜 이런 일이 생겼을까요?"</p>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER</div>
+      <p>pool 크기를 늘리는 것은 "커넥션을 더 많이 동시에 열 수 있게" 해줄 뿐이고, DB 서버가 그만큼 더 빠르게 처리할 수 있게 만들어주는 것은 아닙니다. DB 서버는 코어 수만큼만 실제로 CPU를 써서 쿼리를 동시에 처리할 수 있는데, 코어 수를 훨씬 초과하는 커넥션이 한꺼번에 활성화되면 DB는 어느 프로세스를 실행할지 계속 전환(context switching)하는 데 시간을 쓰게 되고, 여러 트랜잭션이 같은 행이나 인덱스 페이지를 두고 락 경합을 벌일 확률도 함께 커집니다. 결과적으로 pool 크기를 늘렸는데도 DB의 실질 처리량은 늘지 않고, 오히려 오버헤드만 늘어 처리량이 줄어드는 역효과가 난 것입니다.</p>
+      <br>
+      <p>이 문제를 진단하려면 먼저 DB 서버의 CPU utilization과 락 대기 시간을 확인해, 500개 커넥션이 활성화된 상태에서 DB가 실제로 포화 상태였는지 봅니다. 코어 수가 예를 들어 16개라면, "(코어 수 × 2) + 여유분" 같은 경험 공식을 기준으로 pool을 다시 40~50 근처로 낮추고, 대신 커넥션을 기다리는 요청은 무한정 대기시키지 않고 짧은 acquisition timeout으로 빠르게 실패시켜 재시도하거나 우아하게 거절하는 방식으로 바꾸는 것이 더 나은 방향입니다.</p>
+      <br>
+      <p>또한 pool을 늘리기 전에 애초에 왜 pool timeout이 발생했는지도 함께 봅니다. 실제 동시 요청량이 늘어서인지, 특정 느린 쿼리나 트랜잭션 방치로 커넥션 점유 시간(W)이 늘어서인지에 따라 해법이 다릅니다. 요청량 증가가 원인이 아니라면, pool 크기 조정보다 느린 쿼리 최적화나 별도 pool 분리가 근본 해결책일 수 있습니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>"더 큰 pool = 더 빠름"이라는 직관을 DB 서버 내부 동작(컨텍스트 스위칭, 락 경합)으로 정확히 반박</li>
+      <li>코어 수 기반 sizing 공식을 근거로 구체적인 조정 방향 제시</li>
+      <li>acquisition timeout을 짧게 잡아 빠른 실패(fail fast)로 연쇄 장애를 막는 실무적 대안 제시</li>
+      <li>pool 크기 조정에 그치지 않고 근본 원인(커넥션 점유 시간 증가)까지 조사 범위를 확장</li>
+    </ul>
+  </section>
+
+  <!-- 10. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>10. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"pool을 500까지 늘렸는데도 느리다면, 1000으로 더 늘리면 해결될 것 같습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>DB 서버의 코어 수와 실질 처리 능력이 pool 크기와 무관하게 한계가 있다는 것을 이해하지 못함</li>
+        <li>"늘렸는데 느려졌다"는 이미 관찰된 역상관 신호를 무시하고 같은 방향으로 더 밀어붙임 — Day 1의 Measure First 원칙 위반</li>
+        <li>컨텍스트 스위칭, 락 경합 같은 근본 메커니즘을 전혀 언급하지 않음</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"pool timeout이 났으니 무조건 pool exhaustion입니다. pool을 늘리면 됩니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>connection leak, 느린 쿼리로 인한 점유 시간 증가 등 다른 원인 가능성을 배제함</li>
+        <li>시간에 따른 활성 커넥션 추이(트래픽과 무관한 우상향인지)를 확인하지 않고 성급하게 결론</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>pool 크기와 DB 처리량이 선형 관계가 아니라 코어 수 근처에서 한계에 부딪힌다는 것을 설명한다</li>
+        <li>컨텍스트 스위칭·락 경합이라는 구체적 메커니즘으로 "늘렸는데 느려짐"을 반박한다</li>
+        <li>pool exhaustion, connection leak, DB 과부하를 증상 패턴(스파이크성 vs 점진적 증가)으로 구분한다</li>
+        <li>코어 수·인스턴스 수 기반 sizing 공식을 근거로 구체적인 조정값을 제시한다</li>
+        <li>acquisition/query/idle timeout을 구분해 대응 전략을 각각 제시한다</li>
+        <li>스케일 아웃 시 인스턴스 수 × pool 크기가 DB max_connections를 넘지 않는지, pooler 도입 필요성을 언급한다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11. Follow-up -->
+  <section id="followups">
+    <h2>11. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: pool-level self-deadlock과 DB-level deadlock(트랜잭션 락 충돌)은 어떻게 다르고, 각각 어떻게 진단하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> DB-level deadlock은 DB 옵티마이저가 직접 감지해 한쪽 트랜잭션을 강제로 중단(abort)시키고 에러를 돌려주므로, DB 로그나 에러 코드로 비교적 명확하게 드러납니다. 반면 pool-level self-deadlock은 DB가 전혀 개입하지 않는 애플리케이션 코드의 문제입니다 — 하나의 논리적 요청이 같은 pool에서 커넥션을 중첩 요구하다가, pool이 소진된 상태에서 서로가 서로의 반납을 기다리며 멈춥니다. 이 경우 DB 로그에는 아무 이상이 없고, 애플리케이션의 스레드 덤프(thread dump)를 떠서 여러 스레드가 동일한 pool의 커넥션 획득(acquire) 지점에서 동시에 멈춰 있는지를 확인해야 진단할 수 있습니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 읽기 전용 쿼리가 많은 서비스에서 read replica를 도입하면 connection pool을 어떻게 나눠야 하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> primary DB용 pool과 replica용 pool을 분리하는 것이 기본입니다. 두 pool을 하나로 합치면, replica로 보내야 할 대량의 읽기 쿼리가 primary용 pool까지 경합하게 되어 쓰기 트랜잭션이 읽기 트래픽에 발목 잡힐 수 있습니다. 분리한 뒤에는 각 pool을 해당 DB 인스턴스의 코어 수 기준으로 독립적으로 sizing하고, replica 지연(replication lag)이 문제가 될 수 있는 강한 일관성이 필요한 읽기(예: 방금 쓴 데이터를 바로 읽어야 하는 경우)는 여전히 primary pool로 라우팅하는 로직도 함께 설계해야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: connection acquisition timeout을 몇 초로 잡아야 하나요? 근거는 무엇인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 고정된 정답은 없지만, 이 API를 호출하는 상위 서비스의 전체 요청 timeout보다 충분히 짧게 잡아야 합니다. 예를 들어 사용자에게 노출되는 API의 전체 timeout이 3초라면, connection acquisition에 3초를 다 써버리면 실제 쿼리 실행 시간이 남지 않습니다. 보통 수백 밀리초 단위로 짧게 잡아, pool이 고갈된 상황에서는 빠르게 실패(fail fast)시켜 사용자에게 즉시 에러나 fallback을 보여주고, 재시도나 circuit breaker(Day 12에서 다룰 예정) 정책으로 넘기는 것이 무한정 대기시키는 것보다 시스템 전체의 회복력에 유리합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: PgBouncer 같은 중앙 pooler를 도입하면 애플리케이션 자체의 connection pool은 필요 없어지나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 여전히 필요합니다. 애플리케이션의 pool은 애플리케이션 프로세스 내부에서 커넥션 객체를 재사용하기 위한 것이고, PgBouncer 같은 중앙 pooler는 여러 애플리케이션 인스턴스가 만드는 논리적 커넥션 요청을 모아 <strong>실제 DB로 가는 물리 커넥션 수를 통제</strong>하는 역할입니다. 특히 PgBouncer의 transaction pooling 모드를 쓰면 물리 커넥션 하나를 여러 논리적 트랜잭션이 시간차로 공유할 수 있어, 스케일 아웃으로 인스턴스가 늘어나도 DB의 max_connections를 넘지 않게 관리할 수 있습니다. 다만 transaction pooling 모드에서는 세션 레벨 상태(prepared statement, advisory lock 등)를 커넥션 간에 유지할 수 없다는 제약이 있어, 이런 기능을 쓰는 코드가 있다면 호환성을 먼저 확인해야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: connection leak을 코드 리뷰나 테스트 단계에서 미리 잡을 수 있는 방법이 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 언어/프레임워크가 제공하는 컨텍스트 매니저 패턴(Python의 <code>with</code>, Java의 try-with-resources)을 강제해 예외 발생 여부와 무관하게 커넥션이 자동 반납되도록 코드 컨벤션을 정하는 것이 첫 번째 방어선입니다. 두 번째로 HikariCP의 leak detection threshold처럼 pool 라이브러리의 누수 감지 기능을 개발/스테이징 환경에서 상시 활성화해, 반납 누락이 발생하는 즉시 어느 코드 스택인지 로그로 알 수 있게 합니다. 마지막으로 부하 테스트(Day 7)를 장시간(soak test) 실행하며 활성 커넥션 수가 시간에 따라 우상향하지 않는지 확인하는 것도 배포 전 회귀 테스트로 유용합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>12. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"connection pool은 크면 클수록 안전하고 빠르다"</strong></p>
+      <p>DB 서버의 실질 처리 능력은 코어 수에 근본적으로 제한되어 있어, pool 크기가 이를 훨씬 초과하면 컨텍스트 스위칭과 락 경합 비용만 늘어 오히려 처리량이 줄어들 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"pool timeout 에러가 나면 항상 pool exhaustion이다"</strong></p>
+      <p>느린 쿼리로 인한 커넥션 점유 시간 증가, connection leak, DB 자체 과부하 등 원인이 다양합니다. 증상 패턴(스파이크성인지 점진적 증가인지)으로 구분해야 올바른 해법을 고를 수 있습니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"deadlock은 항상 DB 트랜잭션 락 문제다"</strong></p>
+      <p>애플리케이션 코드가 같은 pool에서 커넥션을 중첩 요구하다가 발생하는 pool-level self-deadlock은 DB가 전혀 개입하지 않는, 순수하게 애플리케이션 로직의 문제입니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"인스턴스를 스케일 아웃할 때 인스턴스당 pool 크기는 그대로 둬도 된다"</strong></p>
+      <p>인스턴스 수 × pool 크기가 DB의 <code>max_connections</code>를 넘으면 신규 커넥션이 전면 거부되는 장애로 이어질 수 있습니다. 스케일 아웃 시 인스턴스당 pool 크기를 줄이거나 중앙 pooler를 도입해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"connection acquisition timeout은 넉넉하게 길게 잡아야 요청이 덜 실패한다"</strong></p>
+      <p>timeout이 길면 pool이 고갈된 상황에서 요청이 무한정 쌓이며 스레드까지 함께 고갈되는 연쇄 장애로 번질 수 있습니다. 짧게 잡아 빠르게 실패시키고 재시도나 fallback으로 넘기는 것이 시스템 전체의 회복력에 유리합니다.</p>
+    </div>
+  </section>
+
+  <!-- 13. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>13. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 10을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>왜 connection pool 크기를 늘리는 것이 DB 처리량을 무한정 늘려주지 않는지, 컨텍스트 스위칭과 락 경합 개념으로 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>pool exhaustion, connection leak, DB 과부하를 증상 패턴(스파이크성 vs 점진적 증가, DB utilization 여부)으로 구분할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>pool-level self-deadlock이 DB-level deadlock과 어떻게 다른지, 왜 DB 로그에 흔적이 남지 않는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>connection acquisition / query / idle timeout 세 가지의 역할 차이와, 각각을 너무 짧거나 길게 잡았을 때의 위험을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>코어 수 기반 pool sizing 공식의 취지를 이해하고, 애플리케이션 스레드 풀 크기와 DB pool 크기가 왜 같을 필요가 없는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>스케일 아웃 시 인스턴스 수 × pool 크기가 DB max_connections를 초과할 수 있다는 위험과, 중앙 pooler(PgBouncer 등)가 이를 어떻게 해결하는지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>connection leak을 코드 리뷰·테스트 단계에서 미리 방지하거나 조기에 탐지하는 방법을 제시할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 11</h3>
+      <p><strong>페이지네이션과 대용량 조회 최적화</strong></p>
+      <p>Day 10에서 다룬 "커넥션 점유 시간이 길어지면 pool 전체가 고갈된다"는 개념을 이번엔 대용량 데이터 조회 API에 적용합니다. OFFSET 기반 페이지네이션이 왜 뒷페이지로 갈수록 느려지는지, 커서(cursor) 기반 페이지네이션이 이를 어떻게 해결하는지, 대용량 export/집계 조회를 어떻게 안전하게 설계하는지 다룹니다.</p>
+      <p>면접 질문 예고: "상품 목록 API가 1페이지는 빠른데 100페이지로 갈수록 점점 느려집니다. 왜 이런 현상이 생기고, 어떻게 해결하시겠어요?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    성능 최적화 시니어 인터뷰 · Day 10 of 20 · 2026-07-09
+  </p>
+
+</div>
+</body>
+</html>
