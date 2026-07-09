@@ -19,26 +19,27 @@
 | 7 | 2026-07-06 | 복제와 고가용성 | [interview-day-007-replication-ha.html](lessons/interview-day-007-replication-ha.html) |
 | 8 | 2026-07-07 | 파티셔닝과 샤딩 | [interview-day-008-sharding-partitioning.html](lessons/interview-day-008-sharding-partitioning.html) |
 | 9 | 2026-07-08 | RDB vs NoSQL | [interview-day-009-rdb-vs-nosql.html](lessons/interview-day-009-rdb-vs-nosql.html) |
+| 10 | 2026-07-09 | 종합 모의 면접 — 주문 시스템 DB 장애 대응 | [interview-day-010-mock-interview.html](lessons/interview-day-010-mock-interview.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 10 | 종합 모의 면접 | "주문 시스템 DB 장애 시나리오를 분석하고 개선안을 제시해보세요." | 데이터 정합성, 성능, 복구, 재발 방지 |
+| (미정) | 인터뷰 커리큘럼 1주기 완료 후 확장 주제 | - | 다음 세션에서 MISSION.md 기준으로 심화/신규 주제를 선정 |
 
 ## 현재 학습 위치
 
-**Day 9 완료** — 다음: Day 10 종합 모의 면접
+**Day 10 완료 — 인터뷰 커리큘럼(Day 1~10) 1주기 완료.** 다음 세션에서는 각 Day의 심화 확장(엔진별 세부 동작, 추가 장애 케이스 등) 또는 새로운 인접 주제 중에서 다음 학습을 정한다.
 
 ## Interview 답변 체크리스트
 
-- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
-- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
-- [x] 실제 운영 상황과 연결한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
-- [x] 답변 순서를 단계적으로 제시한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
-- [x] trade-off를 최소 2개 이상 비교한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
-- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
-- [x] follow-up 질문까지 대비한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓)
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓ / Day 10 ✓)
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓ / Day 10 ✓)
+- [x] 실제 운영 상황과 연결한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓ / Day 10 ✓)
+- [x] 답변 순서를 단계적으로 제시한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓ / Day 10 ✓)
+- [x] trade-off를 최소 2개 이상 비교한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓ / Day 10 ✓)
+- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓ / Day 10 ✓)
+- [x] follow-up 질문까지 대비한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓ / Day 10 ✓)
 
 ## 습득한 핵심 개념
 
@@ -66,3 +67,8 @@
 - [x] CAP 정리와 강한 일관성 vs 최종 일관성의 실무적 판단 기준 (Day 9)
 - [x] Document DB 임베딩 vs 참조 선택 기준과 되돌리기 어려움 (Day 9)
 - [x] Polyglot persistence의 이득과 동기화/운영 복잡도 비용 (Day 9)
+- [x] 장애 대응에서 완화(mitigation)와 근본 원인 분석을 병렬로 진행해야 하는 이유 (Day 10)
+- [x] 느린 쿼리 → 커넥션 점유 시간 증가 → 커넥션 풀 고갈 → 전체 장애 확산의 인과 사슬 (Day 10)
+- [x] Day 1~9 개념을 하나의 진단 트리(증상 → DB 상태 → 쿼리 → 락/트랜잭션 → 모델링 → 인프라)로 통합하는 사고 순서 (Day 10)
+- [x] 복합 원인(compound failure) 장애에서 기여도 기반 우선순위 판단 (Day 10)
+- [x] Blameless postmortem과 재발 방지 프로세스 설계 (Day 10)

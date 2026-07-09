@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 — 종합 모의 면접: 주문 시스템 DB 장애 대응 | 데이터베이스 10년차 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3148;
+      --accent: #7c6af7;
+      --accent2: #4fa3e0;
+      --success: #3ecf8e;
+      --warn: #f5a623;
+      --danger: #e05c5c;
+      --text: #e2e4f0;
+      --text2: #a0a8c0;
+      --text3: #6b738f;
+      --code-bg: #13151f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      padding: 0 1rem 4rem;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #1a1d27 0%, #161927 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 1rem 2rem;
+      text-align: center;
+    }
+    .page-header .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    .page-header h1 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .page-header p {
+      color: var(--text2);
+      font-size: 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin: 2rem 0;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+    .toc ol { padding-left: 1.25rem; color: var(--accent2); }
+    .toc ol li { margin-bottom: 0.35rem; }
+    .toc ol li a { color: var(--accent2); text-decoration: none; font-size: 0.93rem; }
+    .toc ol li a:hover { text-decoration: underline; }
+
+    section { margin: 2.5rem 0; }
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section-title .icon {
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.75rem;
+    }
+    .card p, .card li { color: var(--text2); font-size: 0.95rem; }
+    .card ul, .card ol { padding-left: 1.2rem; }
+    .card li { margin-bottom: 0.4rem; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #1e1a3a 0%, #1a1d27 100%);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+    }
+    .interview-q p {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.7;
+    }
+
+    .concept-box {
+      background: var(--surface2);
+      border-left: 4px solid var(--accent2);
+      border-radius: 0 8px 8px 0;
+      padding: 1.25rem 1.5rem;
+      margin: 1rem 0;
+    }
+    .concept-box h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.6rem;
+    }
+    .concept-box p, .concept-box li { font-size: 0.93rem; color: var(--text2); }
+    .concept-box ul { padding-left: 1.2rem; }
+    .concept-box li { margin-bottom: 0.35rem; }
+
+    .step-list { counter-reset: steps; list-style: none; padding: 0; }
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      align-items: flex-start;
+    }
+    .step-list li::before {
+      content: counter(steps);
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-top: 0.15rem;
+    }
+    .step-list li .step-content {}
+    .step-list li .step-content strong { color: #fff; font-size: 0.97rem; display: block; margin-bottom: 0.25rem; }
+    .step-list li .step-content p { color: var(--text2); font-size: 0.92rem; }
+    .step-list li .step-content ul { color: var(--text2); font-size: 0.92rem; padding-left: 1.1rem; margin-top: 0.3rem; }
+    .step-list li .step-content li { margin-bottom: 0.25rem; }
+
+    .answer-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1rem 0;
+      font-size: 0.92rem;
+      color: var(--text2);
+      line-height: 1.8;
+    }
+    .answer-block .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-short { background: #1e3a2e; color: var(--success); }
+    .tag-deep  { background: #1a2e3a; color: var(--accent2); }
+    .tag-good  { background: #1e3a2e; color: var(--success); }
+    .tag-weak  { background: #3a1e1e; color: var(--danger); }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .compare-card {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+    .compare-card.good { border-top: 3px solid var(--success); }
+    .compare-card.weak { border-top: 3px solid var(--danger); }
+    .compare-card h4 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; }
+    .compare-card.good h4 { color: var(--success); }
+    .compare-card.weak h4 { color: var(--danger); }
+    .compare-card p { font-size: 0.88rem; color: var(--text2); line-height: 1.7; font-style: italic; }
+    .compare-card .why { font-size: 0.82rem; color: var(--text3); margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.6rem; font-style: normal; }
+
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .followup-card .q { color: var(--accent); font-size: 0.93rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .followup-card .intent { font-size: 0.82rem; color: var(--text3); margin-bottom: 0.75rem; }
+    .followup-card .a { font-size: 0.9rem; color: var(--text2); }
+
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      border-bottom: 2px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text2);
+      vertical-align: top;
+    }
+    .rubric-table tr:last-child td { border-bottom: none; }
+    .rubric-table tr:hover td { background: var(--surface2); }
+    .level-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .level-strong { background: #1e3a2e; color: var(--success); }
+    .level-mid    { background: #2a2a10; color: var(--warn); }
+    .level-weak   { background: #3a1e1e; color: var(--danger); }
+
+    .misconception {
+      background: #2a1e1e;
+      border: 1px solid #5a2e2e;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.85rem;
+    }
+    .misconception .myth { font-size: 0.88rem; color: var(--danger); font-weight: 600; margin-bottom: 0.4rem; }
+    .misconception .myth::before { content: "✗ 오해: "; }
+    .misconception .truth { font-size: 0.88rem; color: var(--success); }
+    .misconception .truth::before { content: "✓ 실제: "; }
+
+    .nav-footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav-footer a {
+      color: var(--accent2);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .nav-footer a:hover { text-decoration: underline; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.35rem;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.85em;
+      color: #a8d8f0;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: #a8d8f0;
+      line-height: 1.65;
+      margin: 0.75rem 0;
+    }
+    .highlight-keyword { color: #c792ea; }
+    .highlight-string  { color: #c3e88d; }
+    .highlight-comment { color: #546e7a; font-style: italic; }
+    .highlight-number  { color: #f78c6c; }
+    .highlight-fn      { color: #82aaff; }
+
+    .tip {
+      background: #1a2e1e;
+      border: 1px solid #2e5e3e;
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.88rem;
+      color: #7ed9a8;
+    }
+    .tip::before { content: "💡 "; }
+    .warn-box {
+      background: #2a2010;
+      border: 1px solid #5a4e20;
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.88rem;
+      color: var(--warn);
+    }
+    .warn-box::before { content: "⚠ "; }
+
+    .timeline { list-style: none; padding: 0; margin: 1rem 0; }
+    .timeline li {
+      position: relative;
+      padding: 0.15rem 0 1.1rem 1.6rem;
+      border-left: 2px solid var(--border);
+    }
+    .timeline li:last-child { border-left: 2px solid transparent; }
+    .timeline li::before {
+      content: "";
+      position: absolute;
+      left: -0.4rem;
+      top: 0.25rem;
+      width: 0.7rem;
+      height: 0.7rem;
+      border-radius: 50%;
+      background: var(--accent2);
+    }
+    .timeline li.critical::before { background: var(--danger); }
+    .timeline li.fix::before { background: var(--success); }
+    .timeline .t { font-size: 0.78rem; color: var(--text3); font-weight: 700; margin-right: 0.5rem; }
+    .timeline .desc { font-size: 0.92rem; color: var(--text2); }
+    .timeline strong { color: #fff; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="day-badge">Day 10 · 인터뷰 커리큘럼 · 종합 모의 면접</div>
+  <h1>종합 모의 면접: 주문 시스템 DB 장애 대응</h1>
+  <p>모델링부터 인덱스, 트랜잭션, 락, 복제, 샤딩까지 — Day 1~9의 개념을 하나의 장애 시나리오로 통합해서 답하는 연습</p>
+</div>
+
+<div class="container">
+
+  <nav class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#prerequisite">전제 개념 — 통합 진단 프레임워크</a></li>
+      <li><a href="#real-world">실무 연결 — 장애 타임라인</a></li>
+      <li><a href="#answer-flow">답변 사고 순서</a></li>
+      <li><a href="#answer-example">핵심 답변 예시</a></li>
+      <li><a href="#tradeoff">Trade-off</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followup">Senior-level Follow-up</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </nav>
+
+  <!-- ① 면접 질문 -->
+  <section id="interview-question">
+    <h2 class="section-title"><span class="icon">💬</span> 면접 질문</h2>
+    <div class="interview-q">
+      <div class="label">Core Question — 시나리오형</div>
+      <p>
+        "오늘 오후 2시, 대규모 할인 이벤트가 시작된 지 10분 만에 주문 생성 API의 응답 시간이 평소 80ms에서 12초로 치솟았고, 5분 뒤에는 API 서버들의 DB 커넥션 풀이 모두 고갈되어 서비스 전체가 502 에러를 반환하기 시작했습니다. 지금 이 상황을 어떻게 진단하고, 원인을 좁혀 나가고, 어떤 개선안을 제시하시겠습니까?"
+      </p>
+    </div>
+    <div class="card">
+      <h3>함께 출제되는 변형 질문</h3>
+      <ul>
+        <li>"장애 발생을 인지한 첫 5분 동안 가장 먼저 무엇을 확인하시겠습니까?"</li>
+        <li>"근본 원인이 인덱스 누락으로 밝혀졌다면, 이 문제가 왜 사전에 걸러지지 못했다고 생각하십니까?"</li>
+        <li>"조사해보니 원인이 하나가 아니라 세 가지가 겹쳐 있었습니다. 무엇을 먼저 손대시겠습니까?"</li>
+        <li>"이 장애를 겪은 뒤, 다음 이벤트 전까지 팀에 어떤 프로세스 변화를 제안하시겠습니까?"</li>
+        <li>"이 장애 상황을 비개발자인 사업 담당자에게 3문장으로 설명해보세요."</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ② 왜 면접에서 묻는가 -->
+  <section id="why-asked">
+    <h2 class="section-title"><span class="icon">🎯</span> 왜 면접에서 묻는가</h2>
+    <div class="card">
+      <p>Day 1~9는 각 개념을 따로 확인했지만, 실제 장애는 절대 한 가지 개념만으로 설명되지 않습니다. 이 질문은 <strong style="color:#fff">압박 상황에서 여러 개념을 순서대로 연결해 진단하고, 우선순위를 정하고, 사람들과 소통할 수 있는가</strong>를 한 번에 확인하기 위한 것입니다.</p>
+      <br>
+      <ul>
+        <li><strong>지식이 아니라 사고 순서를 보는가:</strong> "인덱스가 뭔지" 아는 것과 "지금 이 순간 커넥션 풀이 왜 고갈됐는지"를 5분 안에 좁혀 나가는 것은 완전히 다른 능력입니다. 면접관은 후자를 확인합니다.</li>
+        <li><strong>완화(mitigation)와 근본 해결(root cause fix)을 구분하는가:</strong> 장애 중에는 "왜 그런지" 보다 "어떻게 지금 당장 서비스를 살릴지"가 먼저입니다. 이 우선순위를 뒤바꾸는 답변은 실무 경험이 부족하다는 신호로 읽힙니다.</li>
+        <li><strong>복합 원인을 다룰 수 있는가:</strong> 시니어급 장애는 대부분 원인이 하나가 아니라 여러 개의 취약점이 트래픽 임계점에서 동시에 드러난 것입니다. 단일 원인으로 성급하게 결론짓지 않는지 봅니다.</li>
+        <li><strong>재발 방지를 프로세스로 만드는가:</strong> "다음부터 조심하겠다"가 아니라, 이 문제가 다시 같은 방식으로 발생하지 않도록 검증·모니터링·리뷰 체계를 설계할 수 있는지 확인합니다.</li>
+        <li><strong>설명 능력:</strong> 시니어는 동료 개발자뿐 아니라 PM, 경영진에게도 상황을 설명해야 합니다. 기술 용어를 상황에 맞게 조절해서 전달하는지도 관찰 대상입니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ③ 전제 개념 -->
+  <section id="prerequisite">
+    <h2 class="section-title"><span class="icon">📚</span> 전제 개념 — 통합 진단 프레임워크</h2>
+
+    <div class="concept-box">
+      <h4>장애 대응의 두 축 — "지금 살리기"와 "왜 그런지 알아내기"는 다른 작업이다</h4>
+      <p>
+        장애 대응은 두 가지 서로 다른 목표를 동시에 갖습니다. 하나는 <strong>완화(mitigation)</strong> — 사용자가 받는 피해를 지금 당장 줄이는 것이고, 다른 하나는 <strong>근본 원인 분석(root cause analysis)</strong> — 왜 이런 일이 벌어졌는지 끝까지 밝히는 것입니다. 이 둘을 순서대로 하나씩 처리하려고 하면 안 됩니다. 완화는 원인을 100% 알기 전에도 시작할 수 있고, 시작해야 합니다.
+      </p>
+      <p style="margin-top:0.6rem;">
+        예를 들어 특정 쿼리가 느려서 커넥션 풀이 고갈되고 있다는 "증상"만 확인됐다면, 왜 그 쿼리가 느려졌는지(인덱스 누락인지, lock 대기인지, 통계 노후화인지)를 다 밝히기 전에도 <strong>그 쿼리를 만드는 기능을 임시로 차단</strong>하거나 <strong>타임아웃을 줄여 커넥션이 오래 점유되지 않게</strong> 하는 조치는 즉시 취할 수 있습니다.
+      </p>
+      <div class="tip">면접에서 "먼저 로그를 다 뒤져서 원인을 확실히 알아낸 다음에 조치하겠습니다"라고 답하면, 실제 장애 대응 경험이 없다는 신호로 읽히기 쉽습니다. 완화와 진단은 병렬로 진행하는 것이 원칙입니다.</div>
+    </div>
+
+    <div class="concept-box">
+      <h4>커넥션 풀 고갈의 인과 사슬 — 느린 쿼리 하나가 전체 서비스를 멈추는 이유</h4>
+      <p>
+        DB 커넥션 풀은 유한한 자원입니다(예: 애플리케이션 서버당 20개). 쿼리 하나가 평소 10ms에 끝나던 것이 3초로 늘어나면, 그 쿼리를 실행 중인 커넥션은 3초 동안 반납되지 않습니다. 같은 시간 동안 새로 들어오는 요청들은 반납된 커넥션을 기다리며 대기열에 쌓이고, 대기 시간이 애플리케이션의 커넥션 획득 타임아웃을 넘기면 그 요청은 에러로 실패합니다.
+      </p>
+      <p style="margin-top:0.6rem;">
+        문제는 여기서 끝나지 않습니다. 트래픽이 몰리는 상황에서는 <strong>느려진 쿼리 하나가 전체 풀을 점유</strong>하게 되고, 그 쿼리와 무관한 다른 정상적인 쿼리들조차 커넥션을 얻지 못해 함께 실패합니다. 이것이 "특정 쿼리 하나의 지연"이 "전체 서비스 장애"로 확산되는 전형적인 경로입니다. 이 연쇄를 짧게 요약하면: <strong>쿼리 지연 → 커넥션 점유 시간 증가 → 풀 고갈 → 무관한 요청까지 대기/타임아웃 → 전체 장애 확산</strong>입니다.
+      </p>
+      <div class="warn-box">"커넥션 풀을 늘리면 급한 불은 끌 수 있다"고 생각하기 쉽지만, 근본 원인(느린 쿼리)이 그대로면 늘어난 커넥션 수만큼 DB 서버에 더 많은 동시 쿼리가 몰려 DB 자체의 CPU/디스크 I/O가 한계에 도달하며 상황이 더 나빠질 수 있습니다.</div>
+    </div>
+
+    <div class="concept-box">
+      <h4>통합 진단 트리 — Day 1~9의 개념을 장애 조사 순서로 배치하면</h4>
+      <p>실제 장애 조사는 아래 순서로 좁혀가는 경우가 많습니다. 괄호 안은 이 커리큘럼에서 다룬 Day입니다.</p>
+      <ul>
+        <li><strong>① 증상 계층 확인</strong> — API 응답 시간, 에러율, 처리량 그래프로 "언제, 어떤 요청부터" 이상이 시작됐는지 특정 (Day 1)</li>
+        <li><strong>② DB 서버 실시간 상태 확인</strong> — 활성 커넥션 수, 실행 중인 쿼리 목록, lock 대기 체인, CPU/디스크 I/O 사용률 확인 (Day 1, Day 5)</li>
+        <li><strong>③ 느린 쿼리 특정 및 실행 계획 분석</strong> — 슬로우 쿼리 로그와 EXPLAIN으로 풀스캔·정렬 비용·추정치와 실측치 차이 확인 (Day 6, Day 3)</li>
+        <li><strong>④ 트랜잭션 경계와 락 보유 시간 분석</strong> — 하나의 트랜잭션이 너무 많은 작업을 묶고 있어 락을 오래 쥐고 있지 않은지 확인 (Day 4, Day 5)</li>
+        <li><strong>⑤ 스키마/모델링 관점 재확인</strong> — 과도한 정규화로 조인이 많아졌는지, 반대로 역정규화된 컬럼이 갱신 시점에 병목을 만드는지 확인 (Day 2)</li>
+        <li><strong>⑥ 복제·읽기 분산 구조 확인</strong> — 읽기 트래픽이 마스터에 몰려 있지 않은지, replica가 있다면 지연이 커지지 않았는지 확인 (Day 7)</li>
+        <li><strong>⑦ 확장성 구조 확인</strong> — 특정 샤드나 파티션에 트래픽이 쏠리는 hot shard 문제는 아닌지 확인 (Day 8)</li>
+        <li><strong>⑧ 데이터 저장 전략 재검토</strong> —애초에 RDB에 두면 안 되는 성격의 데이터(예: 실시간 카운터, 세션)가 원장 테이블과 뒤섞여 있지 않은지 확인 (Day 9)</li>
+      </ul>
+      <div class="tip">이 순서를 통째로 암기하라는 뜻이 아닙니다. 면접에서 중요한 것은 "증상 → DB 상태 → 쿼리 → 트랜잭션/락 → 모델링 → 인프라 구조" 순으로, 좁은 범위에서 넓은 범위로 가설을 좁혀가는 사고의 흐름을 보여주는 것입니다.</div>
+    </div>
+
+    <div class="concept-box">
+      <h4>복합 원인(compound failure) — 시니어급 장애는 원인이 하나가 아닌 경우가 많다</h4>
+      <p>
+        평소 트래픽에서는 문제없이 버티던 여러 개의 "작은 약점"들이, 트래픽이 임계치를 넘는 순간 동시에 드러나는 경우가 많습니다. 예를 들어 (1) 신규 쿼리에 인덱스가 없었던 것, (2) 재고 차감 트랜잭션이 필요 이상으로 길게 락을 쥐고 있던 것, (3) 커넥션 풀 크기가 평소 트래픽 기준으로만 설정되어 있던 것이 동시에 존재했다면, 평소에는 셋 다 티가 안 나다가 트래픽 5배 증가 시점에 한꺼번에 임계점을 넘습니다.
+      </p>
+      <p style="margin-top:0.6rem;">
+        이런 상황에서 "원인은 인덱스 누락 하나였습니다"로 정리하면 나머지 두 취약점은 다음 장애까지 방치됩니다. 시니어에게 기대되는 태도는 <strong>가장 크게 기여한 원인을 우선 제거하면서도, 함께 발견된 다른 약점들을 백로그로 남기지 않고 후속 조치로 명시</strong>하는 것입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ④ 실무 연결 -->
+  <section id="real-world">
+    <h2 class="section-title"><span class="icon">🏭</span> 실무 연결 — 장애 타임라인</h2>
+    <div class="card">
+      <h3>시나리오: 대규모 할인 이벤트 중 발생한 주문 시스템 장애</h3>
+      <p style="margin-bottom:1rem;">
+        아래는 이 Day의 면접 질문에 대응하는 하나의 완결된 장애 케이스입니다. 실제 인터뷰에서는 이런 흐름으로 진단 과정을 설명하는 것이 목표입니다.
+      </p>
+      <ul class="timeline">
+        <li class="critical">
+          <span class="t">14:00</span>
+          <span class="desc"><strong>이벤트 시작.</strong> 평소 대비 트래픽 약 5배 증가. 신규 추가된 "할인가순 정렬" 옵션이 상품 목록 API에서 처음으로 실사용 트래픽을 받기 시작.</span>
+        </li>
+        <li class="critical">
+          <span class="t">14:10</span>
+          <span class="desc"><strong>주문 생성 API P99 지연이 80ms → 12초로 급증.</strong> 알림이 발생하지만 이 시점에는 아직 원인 불명.</span>
+        </li>
+        <li class="critical">
+          <span class="t">14:12</span>
+          <span class="desc">API 서버들의 DB 커넥션 풀 사용률이 100%에 도달. 신규 요청이 커넥션을 기다리며 큐에 쌓이기 시작.</span>
+        </li>
+        <li class="critical">
+          <span class="t">14:15</span>
+          <span class="desc"><strong>전체 서비스 502 에러 폭증.</strong> 온콜 엔지니어 호출.</span>
+        </li>
+        <li>
+          <span class="t">14:17</span>
+          <span class="desc"><strong>1단계 완화:</strong> 최근 배포 이력을 확인해 "할인가순 정렬" 옵션을 기능 플래그로 즉시 차단. 신규 요청의 커넥션 점유 시간이 줄면서 큐가 빠지기 시작.</span>
+        </li>
+        <li>
+          <span class="t">14:20</span>
+          <span class="desc">DB에서 실행 중인 쿼리 목록을 확인한 결과, <code>ORDER BY discount_price</code>가 걸린 상품 목록 쿼리가 다수 대기 중이었고, 해당 컬럼에 인덱스가 없어 매번 전체 테이블을 정렬(풀 스캔 + filesort)하고 있었음을 확인.</span>
+        </li>
+        <li>
+          <span class="t">14:25</span>
+          <span class="desc">동시에 재고 차감 트랜잭션이 <code>SELECT ... FOR UPDATE</code>로 잡은 재고 행 락을, 뒤이은 포인트 적립·알림 처리까지 하나의 트랜잭션에 묶어 처리하느라 평소보다 3~4배 오래 쥐고 있었던 것도 함께 확인. 두 문제가 동시에 커넥션을 오래 붙잡으며 풀 고갈을 가속했던 것으로 결론.</span>
+        </li>
+        <li class="fix">
+          <span class="t">14:40</span>
+          <span class="desc"><strong>2단계 완화:</strong> <code>discount_price</code> 컬럼에 온라인(무중단) 인덱스 추가. 정렬 쿼리 지연이 즉시 해소되고 커넥션 회전율 정상화.</span>
+        </li>
+        <li class="fix">
+          <span class="t">15:00</span>
+          <span class="desc">서비스 정상화 확인 후 "할인가순 정렬" 기능 플래그 재활성화.</span>
+        </li>
+        <li class="fix">
+          <span class="t">D+2</span>
+          <span class="desc"><strong>근본 개선:</strong> 재고 차감 트랜잭션에서 포인트 적립·알림 발송을 트랜잭션 밖으로 분리(이벤트 기반 비동기 처리)해 락 보유 시간을 최소화. 신규 쿼리에 대한 인덱스 리뷰를 배포 전 체크리스트와 부하 테스트 시나리오에 정식으로 편입.</span>
+        </li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>이 케이스가 보여주는 것</h3>
+      <p>
+        이 장애는 "인덱스 하나만 놓쳤다"는 단일 원인이 아니라, <strong>인덱스 누락(Day 3, Day 6)</strong>과 <strong>과도하게 긴 트랜잭션으로 인한 락 장기 보유(Day 4, Day 5)</strong>가 트래픽 임계점에서 동시에 커넥션 풀 고갈이라는 하나의 증상(Day 1)으로 나타난 복합 원인 사례입니다. 완화(기능 차단 → 온라인 인덱스 추가)와 근본 개선(트랜잭션 재설계, 프로세스 편입)을 분리해서 순서대로 실행한 흐름이 이 시나리오의 핵심입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ⑤ 답변 사고 순서 -->
+  <section id="answer-flow">
+    <h2 class="section-title"><span class="icon">🔍</span> 답변 사고 순서</h2>
+    <div class="tip">"원인부터 찾겠습니다"로 시작하면 약한 답변입니다. 장애 대응은 완화와 진단을 병렬로 진행하는 것이 원칙입니다.</div>
+
+    <ol class="step-list">
+      <li>
+        <div class="step-content">
+          <strong>1단계 — 증상 범위 파악(blast radius)</strong>
+          <p>전체 서비스가 죽었는지, 특정 API·특정 기능만 영향받는지, 언제부터 시작됐는지를 대시보드/알림으로 먼저 확정한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>2단계 — 즉시 완화 가능한 조치 탐색(진단과 병렬)</strong>
+          <p>최근 배포·기능 플래그·트래픽 급증 이벤트 중 되돌릴 수 있는 변경이 있는지 확인하고, 가능하면 먼저 롤백하거나 문제 기능을 차단해 피해를 줄인다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>3단계 — DB 레벨 실시간 상태 확인</strong>
+          <p>활성 커넥션 수, 실행 중인 쿼리, lock 대기 체인, CPU/디스크 I/O를 확인해 "DB가 느린 것"인지 "DB는 멀쩡한데 애플리케이션이 커넥션을 못 얻는 것"인지 구분한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>4단계 — 느린 쿼리와 실행 계획 분석</strong>
+          <p>슬로우 쿼리 로그에서 상위 쿼리를 추리고 EXPLAIN으로 풀스캔·정렬 비용·인덱스 미사용 여부를 확인한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>5단계 — 트랜잭션 경계와 락 보유 시간 확인</strong>
+          <p>느린 쿼리 자체 외에, 그 쿼리가 속한 트랜잭션이 불필요하게 많은 작업을 묶고 있어 락을 오래 쥐고 있지 않은지 확인한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>6단계 — 단일 원인인지 복합 원인인지 판단</strong>
+          <p>발견된 문제가 하나로 증상 전체를 설명하는지, 아니면 여러 취약점이 겹쳐 있는지 확인하고, 겹쳐 있다면 기여도가 큰 순서로 우선순위를 매긴다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>7단계 — 완화 조치와 근본 개선을 분리해서 제시</strong>
+          <p>지금 당장 실행할 완화(온라인 인덱스 추가, 기능 차단, 타임아웃 조정)와, 며칠에 걸쳐 진행할 구조적 개선(트랜잭션 재설계, 읽기 분산, 리뷰 프로세스)을 나눠 설명한다.</p>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>8단계 — 재발 방지를 프로세스로 제안</strong>
+          <p>모니터링/알림 보강, 배포 전 부하 테스트에 신규 쿼리 포함, 인덱스·트랜잭션 설계 리뷰 체크리스트, blameless postmortem 공유까지 조직적 대책을 제시한다.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ⑥ 핵심 답변 예시 -->
+  <section id="answer-example">
+    <h2 class="section-title"><span class="icon">💡</span> 핵심 답변 예시</h2>
+
+    <div class="answer-block">
+      <span class="tag tag-short">짧은 버전 (1분)</span>
+      <p>
+        "먼저 증상 범위를 확인하고, 최근 배포나 신규 기능 중 되돌릴 수 있는 게 있는지부터 봐서 즉시 완화를 시도합니다. 동시에 DB의 활성 커넥션, 실행 중인 쿼리, lock 대기 상태를 확인해 커넥션 풀 고갈의 근본 원인을 좁힙니다. 이번 시나리오라면 인덱스 없는 컬럼에 대한 정렬 쿼리와, 필요 이상으로 길게 락을 쥔 트랜잭션이 동시에 커넥션을 오래 점유한 것이 원인일 가능성이 높습니다. 온라인 인덱스 추가로 즉시 완화하고, 이후 트랜잭션 경계를 재설계하며, 이런 문제가 배포 전에 걸러지도록 부하 테스트와 리뷰 프로세스를 보강하겠습니다."
+      </p>
+    </div>
+
+    <div class="answer-block">
+      <span class="tag tag-deep">깊이 있는 버전 (4~5분)</span>
+      <p>
+        "이 상황은 '원인을 다 알아낸 다음에 조치한다'가 아니라 '완화와 진단을 동시에 진행한다'는 원칙으로 접근하겠습니다.<br><br>
+        <strong>첫째, 완화를 즉시 시작합니다.</strong> 이벤트 시작과 증상 발생 시점이 10분밖에 차이 나지 않으므로, 최근 배포 이력을 확인해 되돌릴 수 있는 변경이 있는지부터 봅니다. 이번 경우처럼 신규 기능(할인가순 정렬)이 기능 플래그로 켜져 있다면 즉시 끄는 것만으로 피해 확산을 크게 줄일 수 있습니다. 원인을 100% 규명하지 못했더라도 이 조치는 지금 실행합니다.<br><br>
+        <strong>둘째, 이와 병렬로 DB 레벨 진단을 시작합니다.</strong> 활성 커넥션 수와 실행 중인 쿼리 목록을 확인해 실제로 무엇이 커넥션을 오래 점유하고 있는지 특정합니다. 슬로우 쿼리 로그와 EXPLAIN으로 확인한 결과, 인덱스 없는 컬럼에 정렬을 거는 쿼리가 매번 풀 스캔과 filesort를 유발하고 있었습니다. 이건 온라인 인덱스 추가로 서비스 중단 없이 바로 고칠 수 있는 문제입니다.<br><br>
+        <strong>셋째, 여기서 멈추지 않고 락 보유 시간도 함께 확인합니다.</strong> 재고 차감 트랜잭션이 포인트 적립과 알림 발송까지 하나로 묶어 처리하느라 필요 이상으로 오래 락을 쥐고 있었다는 것도 확인됩니다. 인덱스 문제 하나만으로 이번 장애의 심각도를 다 설명하기 어렵다고 판단해, 두 원인이 함께 기여한 복합 장애로 결론짓습니다.<br><br>
+        <strong>넷째, 완화와 근본 개선을 분리해서 실행 순서를 제시합니다.</strong> 지금 당장은 인덱스 추가와 기능 플래그 제어로 서비스를 정상화하고, 이후 며칠에 걸쳐 트랜잭션에서 포인트 적립·알림을 비동기로 분리해 락 보유 시간을 근본적으로 줄입니다.<br><br>
+        <strong>다섯째, 재발 방지를 프로세스로 남깁니다.</strong> 이런 문제가 이벤트 당일에야 발견된 것 자체가 프로세스의 허점이므로, 신규 쿼리에 대한 인덱스 리뷰와 대규모 이벤트 전 부하 테스트를 배포 체크리스트에 정식으로 포함시키고, blameless postmortem으로 공유해 같은 패턴이 다른 팀에서도 재발하지 않도록 합니다."
+      </p>
+    </div>
+  </section>
+
+  <!-- ⑦ Trade-off -->
+  <section id="tradeoff">
+    <h2 class="section-title"><span class="icon">⚖️</span> Trade-off</h2>
+    <div class="card">
+      <h3>즉시 완화 vs 근본 원인 해결</h3>
+      <ul>
+        <li><strong>즉시 완화 이득:</strong> 사용자 피해를 지금 당장 줄임. 원인을 100% 몰라도 실행 가능</li>
+        <li><strong>즉시 완화 비용:</strong> 임시 조치(기능 차단 등)로 비즈니스 기능이 일시적으로 제한됨. 근본 원인을 놓치면 재발 가능</li>
+        <li><strong>근본 원인 해결 이득:</strong> 같은 장애의 재발을 막음</li>
+        <li><strong>근본 원인 해결 비용:</strong> 시간이 걸리므로 그동안 완화 없이 기다리면 피해가 계속 커짐</li>
+        <li><strong>판단 기준:</strong> 장애 중에는 완화를 먼저 실행하고, 근본 원인 분석과 개선은 서비스 정상화 이후에도 이어간다. 순서를 바꾸지 않는다.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>온라인(무중단) 인덱스 추가 vs 오프라인 인덱스 추가</h3>
+      <ul>
+        <li><strong>온라인 이득:</strong> 서비스 중단 없이 즉시 적용 가능. 장애 대응 중에도 실행할 수 있음</li>
+        <li><strong>온라인 비용:</strong> 인덱스 생성 중 추가 I/O 부하가 발생해 이미 부하가 높은 DB에는 순간적으로 상황을 더 악화시킬 수 있음</li>
+        <li><strong>오프라인 이득:</strong> DB 부하를 최소화하며 안전하게 적용</li>
+        <li><strong>오프라인 비용:</strong> 서비스 중단 또는 유지보수 시간이 필요해 장애 중 즉시 대응 수단으로는 부적합</li>
+        <li><strong>판단 기준:</strong> 장애 중 긴급 완화는 온라인 방식을 우선 시도하되, DB 부하 상태를 함께 모니터링하며 필요하면 트래픽을 일부 제한한 뒤 적용한다.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>커넥션 풀 확대 vs 근본 쿼리/트랜잭션 수정</h3>
+      <ul>
+        <li><strong>풀 확대 이득:</strong> 설정 변경만으로 즉시 적용 가능해 가장 빠른 초기 대응 수단</li>
+        <li><strong>풀 확대 비용:</strong> 근본 원인이 그대로면 DB 서버 자체의 동시 처리 한계(CPU, I/O, lock 경합)에 더 빨리 도달해 상황이 악화될 수 있음</li>
+        <li><strong>근본 수정 이득:</strong> 커넥션 점유 시간 자체를 줄여 풀 크기를 늘리지 않고도 문제를 해소함</li>
+        <li><strong>근본 수정 비용:</strong> 원인 조사와 코드 변경에 시간이 걸려 즉각적인 완화 수단으로는 느림</li>
+        <li><strong>판단 기준:</strong> 풀 확대는 근본 원인을 조사하는 동안의 임시 버퍼로만 사용하고, 최종 해결책으로 의존하지 않는다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ⑧ 흔한 오해 -->
+  <section id="misconceptions">
+    <h2 class="section-title"><span class="icon">🚫</span> 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="myth">장애 대응은 원인을 완전히 규명해야 끝난 것이다.</div>
+      <div class="truth">장애 대응의 1차 목표는 서비스 정상화이고, 원인 규명은 그와 병렬로 진행하거나 정상화 이후에도 이어가는 별개의 작업입니다. 원인을 다 알 때까지 완화를 미루면 피해가 불필요하게 커집니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">커넥션 풀을 늘리면 커넥션 고갈 문제는 해결된다.</div>
+      <div class="truth">근본 원인(느린 쿼리, 긴 트랜잭션)이 그대로면 늘어난 커넥션만큼 DB 서버에 더 많은 동시 요청이 몰려 CPU/디스크 I/O 한계에 더 빨리 도달할 수 있습니다. 풀 확대는 임시 버퍼일 뿐 근본 해결책이 아닙니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">이런 장애는 담당 개발자의 실수이므로 그 사람의 책임을 명확히 해야 재발을 막을 수 있다.</div>
+      <div class="truth">개인을 비난하면 다음부터 문제를 숨기거나 보고를 늦추는 문화가 생겨 오히려 재발 방지에 방해가 됩니다. 실무에서는 "왜 이 문제가 프로세스(리뷰, 부하 테스트, 모니터링)를 통과했는가"에 초점을 맞추는 blameless postmortem이 표준입니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">장애 원인은 항상 하나이며, 그것만 고치면 끝이다.</div>
+      <div class="truth">트래픽이 급증하는 상황에서는 평소 티가 안 나던 여러 취약점이 동시에 드러나는 복합 원인 장애가 흔합니다. 가장 크게 기여한 원인을 우선 처리하되, 함께 발견된 다른 약점도 후속 조치로 명시해야 합니다.</div>
+    </div>
+
+    <div class="misconception">
+      <div class="myth">부하 테스트에서 통과했으니 신규 쿼리는 안전하다고 볼 수 있다.</div>
+      <div class="truth">부하 테스트가 실제 프로덕션 데이터 규모나 실사용 트래픽 패턴(정렬 옵션, 필터 조합)을 재현하지 못하면 통과해도 의미가 제한적입니다. 이번 시나리오처럼 신규 기능이 실사용 트래픽을 처음 받는 순간에야 문제가 드러나는 경우가 많으므로, 부하 테스트 시나리오 자체의 현실성도 함께 점검해야 합니다.</div>
+    </div>
+  </section>
+
+  <!-- ⑨ 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2 class="section-title"><span class="icon">📊</span> 좋은 답변 vs 약한 답변</h2>
+    <div class="compare-grid">
+      <div class="compare-card good">
+        <h4>강한 답변</h4>
+        <p>"증상 범위부터 확인하고, 되돌릴 수 있는 최근 변경이 있으면 즉시 완화합니다. 이와 병렬로 DB의 활성 커넥션과 실행 중인 쿼리, lock 상태를 확인해 원인을 좁힙니다. 인덱스 문제와 긴 트랜잭션이 함께 기여했을 가능성을 열어두고 둘 다 확인한 뒤, 온라인 인덱스 추가로 즉시 완화하고 트랜잭션 재설계와 리뷰 프로세스 보강을 후속 조치로 진행하겠습니다."</p>
+        <p class="why">
+          왜 강한가: 완화와 진단을 병렬로 진행하고, 복합 원인 가능성을 열어두며, 즉시 조치와 구조적 개선을 분리해서 제시합니다.
+        </p>
+      </div>
+      <div class="compare-card weak">
+        <h4>약한 답변</h4>
+        <p>"로그를 처음부터 끝까지 다 확인해서 정확한 원인을 찾은 다음에, 그 원인이 되는 코드를 수정해서 배포하겠습니다."</p>
+        <p class="why">
+          왜 약한가: 완화 없이 원인 규명부터 하려고 해 장애 시간이 불필요하게 길어지고, 복합 원인 가능성이나 즉시 실행 가능한 조치(기능 차단, 온라인 인덱스)를 전혀 고려하지 않습니다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑩ Follow-up -->
+  <section id="followup">
+    <h2 class="section-title"><span class="icon">🎓</span> Senior-level Follow-up 질문</h2>
+
+    <div class="followup-card">
+      <div class="q">Q. 온라인 인덱스 추가와 오프라인 인덱스 추가의 차이는 무엇이고, 장애 중에는 왜 온라인 방식을 우선 고려합니까?</div>
+      <div class="intent">의도: 완화 조치 하나하나가 어떤 내부 동작에 근거하는지, 그 조치 자체의 부작용까지 이해하는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 온라인 인덱스 추가는 테이블을 잠그지 않고(또는 짧게만 잠그고) 백그라운드로 인덱스를 구축해 서비스 중단 없이 적용할 수 있습니다. 다만 인덱스 구축 자체가 추가 I/O 부하를 유발하므로, 이미 부하가 높은 DB에 무리하게 적용하면 순간적으로 상황이 더 나빠질 수 있습니다. 그래서 적용 전 DB의 여유 자원을 확인하고, 필요하면 문제 기능을 먼저 차단해 부하를 낮춘 뒤 인덱스를 추가하는 순서를 택합니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. 만약 커넥션 풀 고갈이 아니라 DB 서버 자체의 CPU가 100%였다면 진단 경로가 어떻게 달라집니까?</div>
+      <div class="intent">의도: 하나의 진단 트리를 암기한 것이 아니라, 증상에 따라 경로를 유연하게 바꿀 수 있는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 커넥션 풀 고갈은 "애플리케이션이 커넥션을 못 얻는" 문제이지만, DB CPU 100%는 "DB 자체가 물리적으로 더 이상 처리할 여력이 없는" 문제입니다. 이 경우 먼저 어떤 쿼리들이 CPU를 많이 쓰는지(정렬, 집계, 풀스캔) 프로파일링하고, 동시에 read replica로 조회성 쿼리를 분산할 수 있는지, 혹은 특정 쿼리 유형에 rate limit을 걸어 DB가 숨 쉴 틈을 만들 수 있는지부터 검토합니다. 커넥션 풀 크기 조정은 이 경우 오히려 역효과이므로 하지 않습니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. 인덱스 누락과 긴 트랜잭션 중 하나만 고칠 수 있는 상황이라면 무엇을 먼저 하시겠습니까?</div>
+      <div class="intent">의도: 복합 원인을 인지하는 것을 넘어, 제한된 자원 아래에서 우선순위를 근거 있게 정할 수 있는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> 두 조치의 "적용 난이도"와 "효과 크기"를 함께 비교합니다. 인덱스 추가는 온라인으로 즉시 적용 가능하고 효과가 즉각적으로 나타나는 반면, 트랜잭션 재설계는 코드 변경과 테스트, 배포가 필요해 시간이 걸립니다. 따라서 장애 상황이라면 효과 대비 적용 비용이 낮은 인덱스 추가를 먼저 하고, 트랜잭션 재설계는 정상화 이후 근본 개선 과제로 이어갑니다. 다만 두 원인의 기여도를 실측(락 대기 시간, 쿼리 지연 비교)해 판단을 검증하는 절차는 반드시 거칩니다.
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="q">Q. 이 장애를 비개발자인 사업 담당자에게 어떻게 설명하시겠습니까?</div>
+      <div class="intent">의도: 기술적으로 정확하면서도 청중에 맞춰 눈높이를 조절해 설명할 수 있는지 확인합니다.</div>
+      <div class="a">
+        <strong>모범 사고 경로:</strong> "할인가 정렬 기능에 필요한 데이터 조회 방식이 최적화되어 있지 않아, 트래픽이 몰리자 주문 처리에 필요한 시스템 자원을 그 기능이 과도하게 점유했습니다. 이 기능을 일시적으로 껐다가, 조회 방식을 최적화한 뒤 다시 켜서 정상화했습니다. 앞으로는 대규모 이벤트 전에 이런 문제를 미리 걸러내는 점검 절차를 추가하겠습니다"처럼, 원인·조치·재발 방지를 구체적인 기술 용어(인덱스, 커넥션 풀) 없이도 이해할 수 있게 풀어서 전달합니다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑪ Rubric -->
+  <section id="rubric">
+    <h2 class="section-title"><span class="icon">✅</span> 자기 점검 Rubric</h2>
+    <div style="overflow-x: auto;">
+      <table class="rubric-table">
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>강한 답변</th>
+            <th>중간 답변</th>
+            <th>약한 답변</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>완화 우선순위</td>
+            <td><span class="level-badge level-strong">완화와 진단을 병렬로 즉시 시작</span></td>
+            <td><span class="level-badge level-mid">완화를 언급하지만 순서가 뒤로 밀림</span></td>
+            <td><span class="level-badge level-weak">원인 규명부터 하겠다고 답함</span></td>
+          </tr>
+          <tr>
+            <td>진단 체계성</td>
+            <td><span class="level-badge level-strong">증상 → DB 상태 → 쿼리 → 락/트랜잭션 순으로 좁혀감</span></td>
+            <td><span class="level-badge level-mid">일부 단계만 언급, 순서가 불명확</span></td>
+            <td><span class="level-badge level-weak">"로그를 본다" 수준의 막연한 답변</span></td>
+          </tr>
+          <tr>
+            <td>복합 원인 인지</td>
+            <td><span class="level-badge level-strong">여러 원인의 동시 기여 가능성을 열어두고 우선순위 근거 제시</span></td>
+            <td><span class="level-badge level-mid">복합 원인 가능성만 언급, 우선순위 근거 부족</span></td>
+            <td><span class="level-badge level-weak">단일 원인으로 단정</span></td>
+          </tr>
+          <tr>
+            <td>Trade-off 인지</td>
+            <td><span class="level-badge level-strong">각 조치의 부작용(풀 확대의 역효과 등)까지 인지</span></td>
+            <td><span class="level-badge level-mid">조치는 나열하지만 부작용은 언급 안 함</span></td>
+            <td><span class="level-badge level-weak">"이렇게 하면 해결된다"고만 답함</span></td>
+          </tr>
+          <tr>
+            <td>재발 방지 설계</td>
+            <td><span class="level-badge level-strong">모니터링·리뷰·부하 테스트를 프로세스로 구체화</span></td>
+            <td><span class="level-badge level-mid">"조심하겠다" 수준의 다짐만 제시</span></td>
+            <td><span class="level-badge level-weak">재발 방지 언급 없음</span></td>
+          </tr>
+          <tr>
+            <td>커뮤니케이션</td>
+            <td><span class="level-badge level-strong">청중(개발자/비개발자)에 맞춰 설명을 조절</span></td>
+            <td><span class="level-badge level-mid">기술 설명만 하고 청중 고려 없음</span></td>
+            <td><span class="level-badge level-weak">커뮤니케이션 언급 없음</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem;">
+      <h3>이 Day 레슨 이후 스스로 확인할 것</h3>
+      <ul>
+        <li>Day 10 면접 질문을 소리 내어 5분 내로 답변해보기. "증상 범위 → 즉시 완화 → DB 상태 확인 → 쿼리/락 분석 → 복합 원인 판단 → 완화/근본 개선 분리 → 재발 방지" 흐름이 자연스럽게 나오는지 확인하기</li>
+        <li>본인이 다뤄본(또는 알고 있는) 서비스에서 실제로 겪었거나 겪을 수 있는 장애 시나리오를 하나 골라, 이 프레임워크로 직접 진단 과정을 적어보기</li>
+        <li>Day 1~9에서 배운 개념(성능 진단, 정규화, 인덱스, 격리 수준, lock, 쿼리 튜닝, 복제, 샤딩, RDB/NoSQL) 중 이번 시나리오에서 다루지 않은 것을 골라, 같은 장애가 그 개념과 얽혀 있었다면 어떻게 달라졌을지 스스로 변형 시나리오를 만들어보기</li>
+        <li>위 Rubric 기준으로 본인 답변을 스스로 채점하고, 가장 약한 항목을 다음 복습 우선순위로 정하기</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="nav-footer">
+    <a href="./interview-day-009-rdb-vs-nosql.html">← Day 9 — RDB vs NoSQL</a>
+    <a href="./index.html">레슨 목록 →</a>
+  </div>
+
+</div>
+</body>
+</html>
