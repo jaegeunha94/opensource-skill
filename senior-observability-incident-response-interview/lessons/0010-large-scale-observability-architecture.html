@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 — 대규모 관측성 아키텍처</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #6c8aff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    .day-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #3b4fd8, #6c8aff);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #f1f5f9;
+      line-height: 1.3;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .section-icon { font-size: 1.25rem; }
+    h2 { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; }
+    h3 { font-size: 1rem; font-weight: 700; color: var(--accent); margin: 1.25rem 0 0.5rem; }
+    h4 { font-size: 0.9rem; font-weight: 700; color: var(--accent2); margin: 1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    p:last-child { margin-bottom: 0; }
+
+    .interview-q {
+      background: linear-gradient(135deg, #1a2040, #1e2a4a);
+      border: 1px solid #3b4fd8;
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .interview-q .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .interview-q .question {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    .callout { border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0; }
+    .callout.info { background: #0f2744; border-left: 3px solid #3b82f6; }
+    .callout.warning { background: #2d1f00; border-left: 3px solid var(--yellow); }
+    .callout.success { background: #052e1a; border-left: 3px solid var(--green); }
+    .callout.danger { background: #2d0f0f; border-left: 3px solid var(--red); }
+    .callout-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .callout.info .callout-title { color: #60a5fa; }
+    .callout.warning .callout-title { color: var(--yellow); }
+    .callout.success .callout-title { color: var(--green); }
+    .callout.danger .callout-title { color: var(--red); }
+
+    code {
+      background: var(--code-bg);
+      color: #a5f3fc;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.88em;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      border: 1px solid #1e2a3a;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid #1e2a3a;
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+    }
+    pre code { background: none; border: none; padding: 0; color: inherit; }
+
+    ul, ol { padding-left: 1.4rem; margin: 0.6rem 0; }
+    li { margin-bottom: 0.4rem; color: var(--text); }
+    li::marker { color: var(--accent); }
+
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .compare-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+    .compare-box.good { border-top: 3px solid var(--green); }
+    .compare-box.bad { border-top: 3px solid var(--red); }
+    .compare-box .compare-label {
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 0.75rem;
+    }
+    .compare-box.good .compare-label { color: var(--green); }
+    .compare-box.bad .compare-label { color: var(--red); }
+    .compare-box p { font-size: 0.9rem; color: var(--text-muted); }
+    .compare-box .quote {
+      font-style: italic; color: var(--text); background: var(--bg);
+      padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; margin-bottom: 0.5rem;
+    }
+
+    .steps { counter-reset: step-counter; list-style: none; padding: 0; }
+    .steps li {
+      counter-increment: step-counter;
+      display: flex; gap: 1rem; margin-bottom: 1rem; align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step-counter);
+      background: var(--accent); color: white; font-size: 0.8rem; font-weight: 700;
+      min-width: 1.6rem; height: 1.6rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 0.1rem;
+    }
+    .steps li div { flex: 1; }
+    .steps li strong { color: #f1f5f9; display: block; margin-bottom: 0.2rem; }
+
+    .pipeline-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin: 1rem 0; }
+    .pipeline-stage { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 0.75rem; text-align: center; }
+    .pipeline-stage .stage-icon { font-size: 1.5rem; margin-bottom: 0.4rem; }
+    .pipeline-stage .stage-name { font-size: 0.85rem; font-weight: 700; color: #f1f5f9; margin-bottom: 0.3rem; }
+    .pipeline-stage .stage-desc { font-size: 0.75rem; color: var(--text-muted); }
+
+    .tag {
+      display: inline-block; font-size: 0.72rem; font-weight: 600;
+      padding: 0.2rem 0.6rem; border-radius: 20px; margin: 0.15rem;
+    }
+    .tag.blue { background: #1e3a6e; color: #93c5fd; }
+    .tag.purple { background: #2d1f5e; color: #c4b5fd; }
+    .tag.green { background: #0f3326; color: #6ee7b7; }
+    .tag.orange { background: #3d2000; color: #fdba74; }
+
+    .rubric-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+    .rubric-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+    .rubric-title { font-weight: 600; font-size: 0.95rem; }
+    .rubric-badge { font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 20px; }
+    .badge-must { background: #7c3aed; color: #ede9fe; }
+    .badge-strong { background: #1d4ed8; color: #dbeafe; }
+    .badge-bonus { background: #065f46; color: #d1fae5; }
+    .rubric-item p { font-size: 0.88rem; color: var(--text-muted); margin: 0; }
+
+    .followup { background: #1a1030; border: 1px solid #4c1d95; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+    .followup .fq { font-weight: 600; color: #c4b5fd; margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .followup .fa { font-size: 0.9rem; color: var(--text-muted); }
+
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th {
+      background: var(--surface2); color: var(--text-muted); font-size: 0.8rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em; padding: 0.75rem 1rem;
+      border: 1px solid var(--border); text-align: left;
+    }
+    td { padding: 0.75rem 1rem; border: 1px solid var(--border); color: var(--text); vertical-align: top; }
+    tr:nth-child(even) td { background: #141720; }
+
+    .nav { display: flex; justify-content: space-between; margin-top: 2rem; gap: 1rem; }
+    .nav a {
+      display: inline-block; background: var(--surface); border: 1px solid var(--border);
+      color: var(--accent); text-decoration: none; padding: 0.6rem 1.2rem;
+      border-radius: 8px; font-size: 0.9rem; transition: border-color 0.2s;
+    }
+    .nav a:hover { border-color: var(--accent); }
+
+    .cardinality-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin: 1rem 0; }
+    .cardinality-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+    .cardinality-card.low { border-top: 3px solid var(--green); }
+    .cardinality-card.mid { border-top: 3px solid var(--yellow); }
+    .cardinality-card.high { border-top: 3px solid var(--red); }
+    .cardinality-card .c-title { font-weight: 700; font-size: 0.9rem; color: #f1f5f9; margin-bottom: 0.4rem; }
+    .cardinality-card .c-detail { font-size: 0.8rem; color: var(--text-muted); }
+
+    .tier-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9rem; margin: 1rem 0; }
+    .tier-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+    .tier-card .t-title { font-weight: 700; font-size: 0.9rem; color: #f1f5f9; margin-bottom: 0.4rem; }
+    .tier-card .t-detail { font-size: 0.8rem; color: var(--text-muted); }
+
+    @media (max-width: 640px) {
+      .compare-grid, .cardinality-grid, .tier-grid { grid-template-columns: 1fr; }
+      .pipeline-grid { grid-template-columns: repeat(2, 1fr); }
+      h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="day-badge">DAY 10 · Observability / 장애 대응 인터뷰</div>
+  <h1>대규모 관측성 아키텍처</h1>
+  <p class="subtitle">Day 1~9에서 배운 로그·메트릭·트레이스·알림·SLO·postmortem은 "한 서비스"를 전제로 한 이야기였다. 서비스가 수백 개, 서버가 수천 대가 되는 순간 관측성은 그 자체로 하나의 분산 시스템이 되고, "무엇을 수집할지"보다 "무엇을 버릴지"가 더 중요한 설계 질문이 된다</p>
+
+  <!-- ===================== INTERVIEW QUESTIONS ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🎯</span>
+      <h2>오늘의 핵심 면접 질문</h2>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">질문 1 — 거의 항상 출제 (아키텍처 이해)</div>
+      <div class="question">"수백 개의 마이크로서비스에서 나오는 로그, 메트릭, 트레이스를 어떻게 수집·저장·질의하는 파이프라인으로 설계하시겠습니까?"</div>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">질문 2 — 자주 출제 (실무 장애 경험)</div>
+      <div class="question">"메트릭 시스템(Prometheus/TSDB)에 카디널리티 폭발이 일어나 전체 관측성 시스템이 멈춘 경험이 있나요? 어떻게 진단하고 해결했나요?"</div>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">질문 3 — 시니어 추가 질문 (비용·조직 판단)</div>
+      <div class="question">"관측성 데이터 저장 비용이 인프라 비용의 상당 부분을 차지한다면, 어떤 기준으로 무엇을 줄이겠습니까?"</div>
+    </div>
+  </div>
+
+  <!-- ===================== WHY ASK ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🔍</span>
+      <h2>왜 인터뷰에서 묻는가</h2>
+    </div>
+
+    <p>Day 1~9는 "이미 잘 구축된 관측성 시스템을 어떻게 활용해서 장애를 다루는가"를 다뤘다. 이번 주제는 반대 방향이다. <strong>"그 관측성 시스템 자체를 누가, 어떤 판단으로 만들고 유지하는가"</strong>를 확인한다. 10년차 이상에게 이 질문을 하는 이유는 다음과 같다.</p>
+
+    <h3>1. 관측성 도구도 하나의 프로덕션 시스템이라는 것을 이해하는가</h3>
+    <p>주니어는 "Prometheus를 설치하면 메트릭이 자동으로 잘 쌓인다"고 생각하기 쉽다. 하지만 규모가 커지면 <strong>관측성 파이프라인 자체가 장애의 원인이 될 수 있는 분산 시스템</strong>이 된다. 카디널리티 폭발로 TSDB가 OOM 나서 "정작 진짜 장애가 났을 때 대시보드조차 안 열리는" 상황은 실무에서 드물지 않다. 이 재귀적 위험을 설계 단계에서 인지하고 있는지가 핵심 신호다.</p>
+
+    <h3>2. "다 수집하고 다 저장한다"가 답이 아니라는 것을 아는가</h3>
+    <p>이론적으로는 모든 로그, 모든 span, 모든 메트릭 시계열을 무한정 보관하면 어떤 장애도 완벽히 재구성할 수 있다. 하지만 실제로는 <strong>비용, 질의 성능, 카디널리티, 데이터 거버넌스(PII)</strong>가 전부 이를 막는다. 시니어는 "무엇을 얼마나 오래, 어떤 해상도로 남길지"를 비즈니스 가치와 비용의 균형으로 설계할 수 있어야 한다.</p>
+
+    <h3>3. 조직이 커질 때 관측성이 어떻게 진화하는지 아는가</h3>
+    <p>한 팀, 한 서비스에서 통했던 방식(예: 모든 팀이 같은 Grafana 인스턴스에 대시보드를 직접 만든다)은 팀이 50개가 되면 무너진다. 멀티테넌시, 셀프서비스 온보딩, 표준화된 계측(instrumentation) 라이브러리 같은 <strong>조직 스케일링 문제</strong>를 관측성 관점에서 풀어본 경험이 있는지를 본다.</p>
+
+    <div class="callout info">
+      <div class="callout-title">인터뷰어가 듣고 싶어하는 신호</div>
+      "저는 관측성 파이프라인을 Agent(수집) → Collector/Gateway(전처리·라우팅) → Buffer(Kafka 등) → Storage(핫/웜/콜드 계층) → Query 계층으로 나눠서 설계했습니다. 카디널리티가 높은 레이블은 애초에 계측 단계에서 걸러지도록 린팅(linting)을 넣었고, 로그는 심각도와 서비스 중요도에 따라 보존 기간을 차등화해서 저장 비용을 관리했습니다. 이 파이프라인 자체의 헬스도 별도로 모니터링해서, '관측성이 관측성을 감시'하도록 만들었습니다."
+    </div>
+  </div>
+
+  <!-- ===================== PREREQUISITE ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📚</span>
+      <h2>전제 개념 — 쉬운 언어로 먼저 이해하기</h2>
+    </div>
+
+    <h3>카디널리티(Cardinality)란 무엇인가 — "값의 조합 개수"</h3>
+    <p>카디널리티는 <strong>어떤 레이블(label/tag)이 가질 수 있는 서로 다른 값의 개수, 그리고 그 레이블들을 조합했을 때 생기는 고유한 시계열(time series)의 개수</strong>다. Day 3에서 다룬 메트릭에 <code>service</code>, <code>endpoint</code>, <code>status_code</code> 레이블을 붙이면 각각의 조합이 하나의 독립된 시계열이 된다.</p>
+    <p>문제는 여기에 <code>user_id</code>나 <code>request_id</code>처럼 <strong>사실상 무한한 값을 가지는 레이블</strong>을 실수로 붙이는 순간 발생한다. 사용자가 100만 명이면 시계열도 최대 100만 개가 만들어지고, TSDB(Time Series Database)는 메모리에 각 시계열의 인덱스를 올려야 하므로 순식간에 메모리를 소진하고 죽는다. 이것이 <strong>카디널리티 폭발(cardinality explosion)</strong>이다.</p>
+
+    <div class="cardinality-grid">
+      <div class="cardinality-card low">
+        <div class="c-title">🟢 낮은 카디널리티</div>
+        <div class="c-detail"><code>service</code>(수십 개), <code>env</code>(3~4개), <code>status_class</code>(2xx/4xx/5xx). 메트릭 레이블로 안전하다.</div>
+      </div>
+      <div class="cardinality-card mid">
+        <div class="c-title">🟡 주의가 필요한 카디널리티</div>
+        <div class="c-detail"><code>endpoint</code>(수백 개), <code>instance_id</code>(오토스케일링 시 수천 개까지 증가 가능). 조합 폭증을 감시해야 한다.</div>
+      </div>
+      <div class="cardinality-card high">
+        <div class="c-title">🔴 높은 카디널리티(금지)</div>
+        <div class="c-detail"><code>user_id</code>, <code>request_id</code>, 원시 <code>email</code>. 메트릭 레이블로 쓰면 안 되고, 로그/트레이스로 보내야 한다.</div>
+      </div>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-title">흔한 오해 — "레이블을 많이 붙일수록 나중에 분석하기 좋다"</div>
+      메트릭은 로그가 아니다. 메트릭은 "빠른 집계 질의"를 위해 미리 인덱싱된 시계열 구조이고, 이 구조는 레이블 조합 수에 비례해서 비용이 커진다. <strong>세밀한 개별 요청 단위 분석이 필요하면 메트릭이 아니라 Day 4의 트레이스/로그로 해결해야 한다</strong> — "모든 것을 메트릭 하나로 풀려는 것"이 흔한 설계 실수다.
+    </div>
+
+    <h3>관측성 파이프라인의 구성 요소 — 데이터가 흐르는 길</h3>
+    <p>대규모 환경에서 로그/메트릭/트레이스는 애플리케이션에서 바로 저장소로 가지 않는다. 중간에 여러 단계를 거친다.</p>
+
+    <div class="pipeline-grid">
+      <div class="pipeline-stage">
+        <div class="stage-icon">📡</div>
+        <div class="stage-name">Agent/SDK</div>
+        <div class="stage-desc">앱 옆(사이드카) 또는 라이브러리로 계측 데이터 생성</div>
+      </div>
+      <div class="pipeline-stage">
+        <div class="stage-icon">🔀</div>
+        <div class="stage-name">Collector</div>
+        <div class="stage-desc">전처리·필터링·라우팅 (예: OTel Collector)</div>
+      </div>
+      <div class="pipeline-stage">
+        <div class="stage-icon">🗂️</div>
+        <div class="stage-name">Buffer</div>
+        <div class="stage-desc">Kafka 등으로 스파이크 흡수, 저장소 보호</div>
+      </div>
+      <div class="pipeline-stage">
+        <div class="stage-icon">💾</div>
+        <div class="stage-name">Storage</div>
+        <div class="stage-desc">핫/웜/콜드 계층별 시계열·로그·트레이스 저장소</div>
+      </div>
+      <div class="pipeline-stage">
+        <div class="stage-icon">🔎</div>
+        <div class="stage-name">Query</div>
+        <div class="stage-desc">대시보드(Day 6)·알림(Day 3)이 질의하는 계층</div>
+      </div>
+    </div>
+
+    <p><strong>Collector(수집기)가 왜 필요한가?</strong> 앱이 직접 저장소로 데이터를 보내면, 저장소 벤더를 바꿀 때마다 모든 서비스의 코드를 고쳐야 하고, 저장소 장애가 앱까지 전파될 위험이 있다. Collector는 <strong>계측(어떻게 만드는가)과 백엔드(어디에 저장하는가)를 분리하는 계층</strong>이다. 여기서 PII 마스킹, 샘플링, 카디널리티 제한 같은 정책을 중앙에서 강제할 수 있다.</p>
+
+    <p><strong>Buffer(Kafka 등)가 왜 필요한가?</strong> 장애 상황에서는 평소보다 훨씬 많은 로그와 메트릭이 한꺼번에 쏟아진다("장애 폭풍"). 이때 저장소가 이 트래픽을 바로 받으면 저장소 자체가 과부하로 무너질 수 있다. Buffer는 <strong>수집 속도와 저장 속도 사이의 완충 지대</strong>로, 저장소가 자기 속도로 안전하게 처리하도록 보호한다.</p>
+
+    <h3>핫/웜/콜드 저장 계층 — 왜 하나의 저장소로 안 되는가</h3>
+    <p>최근 데이터는 빠르게 조회해야 하지만(대시보드, 알림), 오래된 데이터는 드물게, 감사/트렌드 분석 목적으로만 조회된다. 이 두 요구를 하나의 저장소로 만족시키려 하면 <strong>비용과 성능 중 하나를 반드시 희생</strong>하게 된다.</p>
+
+    <div class="tier-grid">
+      <div class="tier-card">
+        <div class="t-title">🔥 Hot (예: 최근 7일)</div>
+        <div class="t-detail">SSD/메모리 기반, 원본 해상도 유지, 실시간 알림·대시보드가 여기를 질의.</div>
+      </div>
+      <div class="tier-card">
+        <div class="t-title">🌤️ Warm (예: 8~90일)</div>
+        <div class="t-detail">저렴한 스토리지로 이동, 다운샘플링(down-sampling)해서 해상도를 낮춤(1분 → 1시간 평균).</div>
+      </div>
+      <div class="tier-card">
+        <div class="t-title">🧊 Cold (예: 90일~수년)</div>
+        <div class="t-detail">오브젝트 스토리지(S3 등)에 압축 보관, 규정 준수·연간 트렌드 분석용, 조회는 느리고 드묾.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== FRAMEWORK ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🧩</span>
+      <h2>실무 프레임워크 — 대규모 관측성 시스템을 설계하는 절차</h2>
+    </div>
+
+    <h3>1. 계측 표준을 먼저 정한다 (수집 이전 단계)</h3>
+    <p>파이프라인을 아무리 잘 만들어도, 각 팀이 제멋대로 레이블을 붙이면 카디널리티 통제가 불가능하다. OpenTelemetry 같은 벤더 중립 표준으로 <strong>공통 계측 라이브러리</strong>를 배포하고, 여기에 카디널리티 위험이 큰 레이블(원시 사용자 ID 등)을 애초에 금지하는 린팅/정책을 내장한다.</p>
+
+    <h3>2. Collector 계층에서 정책을 중앙 집행한다</h3>
+    <p>PII 마스킹, 샘플링 비율(Day 4의 tail-based sampling), 저비용 서비스의 로그 레벨 강등 같은 정책을 <strong>각 앱이 아니라 Collector에서 일괄 적용</strong>한다. 이렇게 하면 정책이 바뀔 때 수백 개 서비스를 재배포할 필요 없이 Collector 설정만 바꾸면 된다.</p>
+
+    <h3>3. 데이터 종류별로 보존 정책을 차등화한다</h3>
+    <p>모든 로그를 1년간 원본 그대로 보관하는 것은 대부분 낭비다. <strong>심각도(ERROR/WARN vs INFO/DEBUG)</strong>와 <strong>서비스 중요도(결제 vs 배치 작업)</strong>를 기준으로 보존 기간과 해상도를 다르게 정한다. 예: ERROR 로그는 1년, DEBUG 로그는 3일, 결제 서비스 메트릭은 원본 해상도로 1년 보관.</p>
+
+    <h3>4. 관측성 파이프라인 자체를 관측한다 ("메타 모니터링")</h3>
+    <p>수집기 큐 적체, Collector CPU/메모리, 저장소 write 실패율 같은 <strong>파이프라인 자체의 헬스 지표</strong>를 별도의(가능하면 물리적으로 분리된) 최소 관측 시스템으로 감시한다. 그렇지 않으면 "관측성 시스템이 죽어서, 관측성 시스템이 죽은 것도 모르는" 상황이 생긴다.</p>
+
+    <h3>5. 멀티테넌시와 셀프서비스로 조직 확장에 대응한다</h3>
+    <p>팀이 늘어나면 관측성 팀이 모든 대시보드/알림을 대신 만들어줄 수 없다. <strong>Dashboard as Code(Day 6), 표준 알림 템플릿, 팀별 네임스페이스 격리</strong>를 통해 각 팀이 스스로 온보딩하면서도 전체 시스템의 카디널리티/비용 예산을 넘지 않도록 셀프서비스 구조를 만든다.</p>
+
+    <div class="callout success">
+      <div class="callout-title">시니어 답변에서 나와야 하는 내용</div>
+      "저는 계측 표준을 OpenTelemetry로 통일하고, 카디널리티 위험이 큰 레이블은 CI 단계의 린트로 사전에 차단했습니다. Collector에서 PII 마스킹과 tail-based sampling을 중앙 집행했고, 로그는 심각도·서비스 중요도별로 보존 기간을 차등화해서 저장 비용을 통제했습니다. 파이프라인 자체의 헬스도 별도의 경량 모니터링으로 감시해서, 관측성 시스템 장애가 진짜 장애 대응을 막지 않도록 설계했습니다."
+    </div>
+  </div>
+
+  <!-- ===================== ANSWER REASONING ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🧠</span>
+      <h2>답변 사고 순서 — 면접장에서 어떻게 풀어나가는가</h2>
+    </div>
+
+    <h3>질문 2: "카디널리티 폭발로 관측성 시스템이 멈춘 경험을 어떻게 진단하고 해결했나요?"</h3>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>증상부터 명확히 진술 (10초)</strong>
+          "TSDB의 메모리 사용량이 급증하고 write 지연이 늘면서, 결국 새로운 메트릭 수집(scrape/ingest)이 실패하기 시작했습니다. 대시보드도 함께 응답이 느려졌습니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>원인 후보를 시계열 개수 증가 추이로 좁힘 (15초)</strong>
+          "TSDB가 자체적으로 노출하는 '활성 시계열 수' 메트릭을 먼저 확인해서, 특정 메트릭 이름에서 시계열 수가 급증한 시점과 배포 시점이 일치하는지 상관관계를 봤습니다. 이건 Day 5의 RCA 절차와 동일합니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>레이블 단위로 원인 특정 (15초)</strong>
+          "해당 메트릭의 레이블 조합을 살펴보니, 최근 배포에서 실수로 <code>request_id</code>를 레이블로 추가한 것을 발견했습니다. 이 레이블 하나가 시계열 수를 수백 배로 늘렸습니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>즉시 완화 후 근본 수정 (10초)</strong>
+          "우선 Collector 단계에서 해당 레이블을 drop하는 relabel 규칙을 긴급 적용해서 즉시 완화했고, 이후 해당 서비스의 계측 코드를 수정해서 원천적으로 재발을 막았습니다. 그리고 CI에 카디널리티 위험 레이블을 자동 탐지하는 린트를 추가했습니다."
+        </div>
+      </li>
+    </ol>
+
+    <h3>질문 3: "관측성 데이터 저장 비용을 줄여야 한다면 어떤 기준으로 판단하나요?"</h3>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>"전체를 균등하게 줄인다"는 접근을 배제 (10초)</strong>
+          "모든 서비스의 보존 기간을 일괄로 줄이면 결제처럼 감사·규정 준수가 중요한 서비스의 위험이 커집니다. 균등 삭감이 아니라 차등화가 먼저입니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>데이터 유형별 실제 사용 패턴 확인 (15초)</strong>
+          "먼저 어떤 데이터가 실제로 조회되는지 access 로그를 봅니다. 대부분의 조직에서 7일 이상 지난 DEBUG 로그는 거의 조회되지 않는다는 것을 데이터로 확인했습니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>다운샘플링과 계층 이동을 우선 적용 (15초)</strong>
+          "삭제보다 먼저 다운샘플링(원본 해상도 → 집계된 해상도)과 콜드 스토리지 이전을 적용합니다. 이는 완전 삭제보다 리스크가 적으면서 대부분의 비용 절감 효과를 얻습니다."
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>남은 절감분은 비즈니스 중요도 기준으로 결정 (10초)</strong>
+          "그래도 부족하면 서비스 소유팀과 함께 중요도를 재확인하고, 낮은 중요도 서비스의 원본 해상도 보존 기간을 줄이는 방식으로 진행하되, 결정 과정과 근거를 문서화해서 이후 감사 요청 시 설명할 수 있게 합니다."
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ===================== MODEL ANSWERS ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">💬</span>
+      <h2>핵심 답변 예시</h2>
+    </div>
+
+    <h3>질문 1 모범 답변: "대규모 관측성 파이프라인 설계"</h3>
+    <div class="callout success">
+      <div class="callout-title">강한 답변</div>
+      <p>"저는 파이프라인을 Agent → Collector → Buffer → Storage → Query 다섯 단계로 나눠서 설계합니다. Agent/SDK는 OpenTelemetry로 표준화해서 계측 방식이 팀마다 흩어지지 않게 하고, Collector에서 PII 마스킹, 샘플링, 카디널리티 위험 레이블 차단 같은 정책을 중앙에서 집행합니다.</p>
+      <p>Buffer로 Kafka 같은 메시지 큐를 둬서 장애로 로그·메트릭이 폭증해도 저장소가 직접 그 부하를 받지 않게 보호하고, Storage는 핫(최근·원본 해상도)/웜(다운샘플링)/콜드(장기 압축 보관) 계층으로 나눠서 비용과 조회 성능의 균형을 맞춥니다. 마지막으로 이 파이프라인 자체의 헬스(큐 적체, write 실패율)를 별도로 감시해서, 관측성 시스템 자체의 장애가 실제 인시던트 대응을 막지 않도록 설계했습니다."</p>
+    </div>
+  </div>
+
+  <!-- ===================== STRONG VS WEAK ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">⚖️</span>
+      <h2>좋은 답변 vs 약한 답변의 차이</h2>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-box good">
+        <div class="compare-label">강한 답변 — 카디널리티 폭발 대응</div>
+        <div class="quote">"활성 시계열 수 추이로 원인 메트릭을 좁히고, 문제 레이블을 특정한 뒤 Collector에서 긴급 drop, 이후 계측 코드 수정과 CI 린트로 재발을 막았습니다."</div>
+        <p>진단 → 즉시 완화 → 근본 수정 → 재발 방지까지 이어지는 완결된 절차가 있다.</p>
+      </div>
+      <div class="compare-box bad">
+        <div class="compare-label">약한 답변 — 카디널리티 폭발 대응</div>
+        <div class="quote">"TSDB 서버의 메모리를 늘려서 해결했습니다."</div>
+        <p>증상만 완화했을 뿐 근본 원인(잘못된 레이블 설계)을 찾지 않았고, 같은 문제가 다시 발생할 것이다.</p>
+      </div>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-box good">
+        <div class="compare-label">강한 답변 — 저장 비용 절감 판단</div>
+        <div class="quote">"실제 조회 패턴을 데이터로 확인하고, 삭제보다 다운샘플링/계층 이동을 우선 적용하며, 서비스 중요도별로 차등화했습니다."</div>
+        <p>데이터 기반 판단과 리스크가 낮은 방법부터 시도하는 순서가 있다.</p>
+      </div>
+      <div class="compare-box bad">
+        <div class="compare-label">약한 답변 — 저장 비용 절감 판단</div>
+        <div class="quote">"전체 로그 보존 기간을 30일에서 7일로 일괄 줄였습니다."</div>
+        <p>서비스 중요도나 실제 사용 패턴을 고려하지 않은 일괄 조치로, 규정 준수나 장애 분석에 필요한 데이터를 잃을 위험이 있다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== FOLLOW-UP ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🎓</span>
+      <h2>Senior-level Follow-up 질문과 답변 방향</h2>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "관측성 파이프라인 자체가 장애 났을 때 어떻게 관측하나요? '관측성을 관측하는 관측성'은 무한 재귀 아닌가요?"</div>
+      <div class="fa">
+        핵심 논리: 무한 재귀를 피하려면 메인 관측성 스택과 완전히 독립된, 훨씬 단순하고 가벼운 별도의 "메타 모니터링" 계층이 필요하다. 여기서는 상세한 대시보드가 아니라 "살아있는지"만 확인하는 최소한의 헬스체크와 알림이면 충분하다.
+        <br><br>
+        실무 답변 방향: "저는 메인 관측성 스택과 별도의 인프라(다른 리전이나 별도 클러스터)에 최소한의 heartbeat/synthetic 체크를 뒀습니다. 이 체크는 Collector와 Storage에 실제로 데이터를 보내고 조회까지 되는지 end-to-end로 확인하고, 실패하면 온콜 엔지니어에게 별도 채널(예: SMS)로 알립니다. 이 계층은 의도적으로 단순하게 유지해서, 그 자체가 또 다른 장애 지점이 되지 않도록 합니다."
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "여러 리전/클라우드에 걸친 시스템에서 관측성 데이터를 중앙 집중할지, 리전별로 분리할지 어떻게 결정하나요?"</div>
+      <div class="fa">
+        핵심 논리: 중앙 집중은 전역적인 상관관계 분석(리전 간 장애 전파)을 쉽게 하지만, 리전 간 네트워크 장애 시 관측성 자체가 끊길 위험과 데이터 주권(data residency) 규제 문제가 있다. 완전 분리는 안정성은 높지만 전역 장애 시야를 잃는다.
+        <br><br>
+        실무 답변 방향: "저는 리전별로 로컬 저장소와 알림 계층을 독립적으로 두어, 리전 간 네트워크 장애가 나도 각 리전이 스스로를 관측할 수 있게 했습니다. 그 위에 리전 경계를 넘는 사용자 여정(Day 7의 user journey SLO)만 별도의 페더레이션 계층으로 집계해서, 전역 시야와 리전별 복원력을 동시에 확보했습니다."
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="fq">Q. "PII가 로그나 트레이스에 실수로 들어가는 것을 구조적으로 어떻게 막나요?"</div>
+      <div class="fa">
+        핵심 논리: 각 개발자에게 "PII를 로깅하지 마세요"라고 안내하는 것은 사람의 실수를 막지 못한다. 구조적으로 막으려면 계측 라이브러리와 Collector 두 지점에서 자동 탐지·마스킹이 필요하다.
+        <br><br>
+        실무 답변 방향: "저는 공통 로깅 라이브러리에 알려진 PII 패턴(이메일, 카드번호 형식)을 자동 마스킹하는 필터를 기본 내장했고, Collector 단계에서도 동일한 패턴을 이중으로 검사해서 라이브러리를 안 쓴 레거시 서비스도 보호했습니다. 이렇게 계측 단계와 파이프라인 단계 이중 방어로 사람의 실수에 의존하지 않도록 만들었습니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== COMMON MISCONCEPTIONS ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">⚠️</span>
+      <h2>흔한 오해와 Trade-off</h2>
+    </div>
+
+    <h3>오해 1: "저장 공간만 늘리면 카디널리티 문제는 해결된다"</h3>
+    <p><strong>현실:</strong> 카디널리티 문제의 병목은 대부분 디스크 용량이 아니라 <strong>메모리(인덱스)와 질의 성능</strong>이다. 시계열이 늘어날수록 TSDB는 각 시계열의 메타데이터를 메모리에 유지해야 하므로, 디스크를 아무리 늘려도 메모리 부족으로 죽는다.</p>
+    <p><strong>올바른 접근:</strong> 카디널리티는 저장 공간이 아니라 <strong>레이블 설계</strong>로 해결해야 하는 문제다.</p>
+
+    <h3>오해 2: "모든 데이터를 최대한 오래 보관하는 것이 가장 안전하다"</h3>
+    <p><strong>현실:</strong> 무제한 보관은 비용뿐 아니라 <strong>규정 준수 리스크(불필요한 개인정보 장기 보관)</strong>와 <strong>질의 성능 저하</strong>라는 대가를 치른다. "장애 분석을 위해 다 남겨야 한다"는 생각은 실제 조회 패턴과 맞지 않는 경우가 많다.</p>
+    <p><strong>올바른 접근:</strong> 데이터 유형·중요도별로 보존 정책을 명시적으로 설계하고, 그 근거를 문서화한다.</p>
+
+    <h3>오해 3: "관측성 파이프라인은 부가 시스템이라 프로덕션만큼 신경 쓸 필요 없다"</h3>
+    <p><strong>현실:</strong> 진짜 장애가 났을 때 대시보드와 알림이 살아있어야 대응이 가능하다. 관측성 파이프라인이 죽으면 <strong>"장애를 장애로 인식하지도 못하는" 최악의 상황</strong>이 된다.</p>
+    <p><strong>올바른 접근:</strong> 관측성 파이프라인도 SLO(Day 7)를 갖는 하나의 프로덕션 서비스로 취급하고, 별도의 최소 메타 모니터링으로 감시한다.</p>
+
+    <h3>Trade-off: 데이터 해상도(정확도) vs 비용·성능</h3>
+    <p>원본 해상도를 오래 유지할수록 세밀한 장애 분석이 가능하지만, 저장·질의 비용이 커진다. 다운샘플링은 비용을 줄이지만 미세한 이상 신호(짧은 스파이크)를 뭉개버릴 수 있다. <strong>이 trade-off는 없앨 수 없고, 데이터의 나이와 중요도에 따라 계층화(핫/웜/콜드)로 관리하는 것이 최선</strong>이라는 점을 명확히 해야 한다.</p>
+  </div>
+
+  <!-- ===================== RUBRIC ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">✅</span>
+      <h2>자기 점검 Rubric</h2>
+    </div>
+    <p>이 답변들을 자신있게 말할 수 있으면 Day 10을 완료한 것이다.</p>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">카디널리티 개념과 폭발이 일어나는 구체적 원인을 설명할 수 있다</span>
+        <span class="rubric-badge badge-must">필수</span>
+      </div>
+      <p>레이블 조합이 시계열 수로 이어지는 메커니즘과, 왜 <code>user_id</code> 같은 레이블이 위험한지 설명해야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">Agent → Collector → Buffer → Storage → Query 파이프라인 구조와 각 단계의 역할을 설명할 수 있다</span>
+        <span class="rubric-badge badge-must">필수</span>
+      </div>
+      <p>각 단계가 왜 필요한지(단순 나열이 아니라 문제 해결 이유)까지 말해야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">핫/웜/콜드 저장 계층과 데이터 보존 정책을 비즈니스 중요도 기준으로 차등 설계할 수 있다</span>
+        <span class="rubric-badge badge-must">필수</span>
+      </div>
+      <p>"전부 오래 보관" 대신 근거 있는 차등화를 제시해야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">관측성 파이프라인 자체의 장애 가능성과 "메타 모니터링" 설계를 설명할 수 있다</span>
+        <span class="rubric-badge badge-strong">강함</span>
+      </div>
+      <p>무한 재귀를 피하는 독립적이고 단순한 감시 계층 개념까지 말해야 한다.</p>
+    </div>
+
+    <div class="rubric-item">
+      <div class="rubric-label">
+        <span class="rubric-title">멀티리전/멀티클라우드 환경에서 중앙 집중 vs 리전 분리의 trade-off를 설명할 수 있다</span>
+        <span class="rubric-badge badge-bonus">보너스</span>
+      </div>
+      <p>페더레이션 계층 개념까지 언급하면 시니어급 답변이 된다.</p>
+    </div>
+  </div>
+
+  <!-- ===================== REAL WORLD ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🏭</span>
+      <h2>실무 연결 — 이 개념이 실제 어디에 쓰이는가</h2>
+    </div>
+
+    <h3>스타트업 (소규모 팀)</h3>
+    <p>매니지드 SaaS(예: Datadog, Grafana Cloud)를 그대로 쓰며 파이프라인을 직접 운영하지 않는다. 이 단계의 핵심 과제는 계측 표준을 정하고, 요금이 청구량(로그 볼륨, 커스텀 메트릭 수) 기준이라는 것을 이해해 카디널리티를 초기부터 통제하는 것이다.</p>
+
+    <h3>성장기 회사 (수백만 사용자)</h3>
+    <p>SaaS 비용이 인프라 비용의 상당 부분을 차지하기 시작하며, 일부를 자체 호스팅(OSS 스택)으로 전환하거나 하이브리드로 구성한다. 이때 Collector 계층을 자체적으로 두어 카디널리티/PII 정책을 중앙에서 통제하기 시작한다.</p>
+
+    <h3>대형 플랫폼 (수천만 사용자)</h3>
+    <p>전용 관측성 플랫폼 팀이 존재하며, 수백 개 팀에 셀프서비스로 계측 SDK, 대시보드 템플릿, 알림 정책을 제공한다. 멀티리전 페더레이션, 계층화된 저장소, 자체 개발한 카디널리티 가드레일(계측 코드 배포 전 자동 검사)이 표준 인프라로 자리 잡는다. 관측성 파이프라인 자체가 자체 SLO와 온콜 로테이션을 가진 하나의 프로덕션 서비스로 운영된다.</p>
+  </div>
+
+  <!-- ===================== NEXT ===================== -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">➡️</span>
+      <h2>다음 학습 예고 — Day 11</h2>
+    </div>
+    <p><strong>카오스 엔지니어링과 장애 훈련 (Game Day)</strong></p>
+    <p>Day 1~10에서 다룬 탐지·분석·재발 방지·아키텍처를 실제 장애가 나기 전에 검증하는 방법을 다룬다. 의도적으로 장애를 주입해 시스템의 복원력을 검증하는 카오스 엔지니어링의 원칙, Game Day 설계와 운영, 그리고 "이 조직이 장애에 진짜로 준비되어 있는지"를 인터뷰에서 증명하는 방법을 익힌다.</p>
+    <div style="margin-top:0.75rem;">
+      <span class="tag blue">카오스 엔지니어링</span>
+      <span class="tag purple">Game Day 설계</span>
+      <span class="tag green">복원력 검증</span>
+      <span class="tag orange">사전 장애 대응 훈련</span>
+    </div>
+  </div>
+
+  <div class="nav">
+    <a href="./0009-incident-communication.html">← Day 9</a>
+    <a href="./index.html">목록으로 →</a>
+  </div>
+
+</div>
+</body>
+</html>
