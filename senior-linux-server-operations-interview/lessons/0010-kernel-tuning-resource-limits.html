@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 — 커널 파라미터 튜닝 &amp; 리소스 제한 | Linux 서버 운영 인터뷰</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+
+<header class="lesson-header">
+  <div class="header-inner">
+    <span class="subject-label">Linux 서버 운영 인터뷰 · Day 10</span>
+    <h1>커널 파라미터 튜닝 &amp; 리소스 제한</h1>
+    <p class="subtitle">
+      ulimit, sysctl, cgroups — 개별 프로세스의 자원 상한과 커널 전역 튜닝을
+      구분하고, "이 값을 왜 이 숫자로 정했는가"를 trade-off로 설명하는 능력
+    </p>
+    <p style="margin-top:1rem; font-size:0.82rem; color:#64748b;">
+      <span class="tag">ulimit</span>
+      <span class="tag">sysctl</span>
+      <span class="tag">cgroups</span>
+      <span class="tag">TCP backlog</span>
+      <span class="tag">noisy neighbor</span>
+    </p>
+  </div>
+</header>
+
+<nav class="lesson-nav">
+  <ul>
+    <li><a href="#questions">면접 질문</a></li>
+    <li><a href="#concepts">전제 개념</a></li>
+    <li><a href="#why">왜 묻는가</a></li>
+    <li><a href="#realworld">실무 연결</a></li>
+    <li><a href="#framework">답변 사고 순서</a></li>
+    <li><a href="#model-answer">핵심 답변 예시</a></li>
+    <li><a href="#followup">Senior Follow-up</a></li>
+    <li><a href="#comparison">좋은 vs 약한 답변</a></li>
+    <li><a href="#misconceptions">흔한 오해</a></li>
+    <li><a href="#rubric">자기 점검 Rubric</a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <!-- ══════════════════════════════════════
+       SECTION 1: 오늘의 면접 질문
+  ══════════════════════════════════════ -->
+  <section id="questions">
+    <h2><span class="icon">❓</span> 오늘의 면접 질문</h2>
+
+    <div class="question-card">
+      <span class="q-label main">질문 1 — ulimit을 늘렸는데도 재발하는 "Too many open files"</span>
+      <p class="q-text">
+        "Java 애플리케이션이 <code>Too many open files</code> 에러로 죽었습니다.
+        <code>/etc/security/limits.conf</code>에 <code>nofile 65536</code>을 설정하고
+        서버를 재부팅까지 했는데도 systemd로 기동되는 이 서비스는 여전히 기본값
+        1024에서 에러가 납니다. 무엇을 의심하고, 어떻게 확인하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="question-card">
+      <span class="q-label main">질문 2 — 트래픽 급증 시 "possible SYN flooding" 커널 로그</span>
+      <p class="q-text">
+        "이벤트 프로모션으로 순간 접속자가 몰리자 API 응답이 느려지고, <code>dmesg</code>에
+        <code>possible SYN flooding on port 443</code> 메시지가 반복해서 찍힙니다.
+        실제 공격이 아니라 정상 트래픽 급증인데도 이 메시지가 뜨는 이유는 무엇이고,
+        어떤 커널 파라미터를 확인·조정하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="question-card">
+      <span class="q-label main">질문 3 — 한 서비스가 호스트 전체를 잠식(noisy neighbor)</span>
+      <p class="q-text">
+        "같은 서버에서 함께 도는 배치 작업 하나가 메모리 릭으로 시스템 메모리를 거의
+        다 소비해서, 정작 중요한 API 서비스까지 OOM으로 함께 죽었습니다. 이런 상황이
+        재발하지 않으려면 시스템 차원에서 어떤 안전장치를 걸어두시겠습니까?"
+      </p>
+    </div>
+
+    <div class="callout info">
+      <span class="icon">💡</span>
+      <p>
+        Day 1~9는 "이미 벌어진 장애를 어떻게 진단하는가"에 집중했습니다. Day 10은
+        방향이 다릅니다 — <strong>같은 장애가 애초에 벌어지지 않도록 커널과 프로세스에
+        미리 상한선을 그어두는 것</strong>이 주제입니다. 면접관은 이 주제로 "사후 대응"뿐
+        아니라 "사전 설계" 역량까지 함께 평가합니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 2: 전제 개념
+  ══════════════════════════════════════ -->
+  <section id="concepts">
+    <h2><span class="icon">📚</span> 전제 개념 — 자원 상한이라는 세 개의 층위</h2>
+
+    <div class="concept-box">
+      <h3>1. ulimit이란 무엇인가 — 프로세스 한 개에 거는 안전벨트</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 자동차마다 안전벨트를 채워두는 것처럼, Linux는
+        프로세스 하나가 열 수 있는 파일 개수, 만들 수 있는 자식 프로세스 수, 쓸 수 있는
+        메모리량 같은 것에 개별 상한선을 둡니다. 이걸 <strong>ulimit</strong>이라고
+        부릅니다. 목적은 "프로세스 하나의 버그나 폭주가 시스템 전체를 끌고 내려가지
+        않게" 막는 것입니다.
+      </p>
+      <ul>
+        <li><strong>soft limit</strong>: 지금 당장 적용되는 상한. 권한이 있으면 프로세스
+          스스로 hard limit까지는 올릴 수 있습니다.</li>
+        <li><strong>hard limit</strong>: soft limit이 넘을 수 없는 절대 천장. root만
+          올릴 수 있습니다.</li>
+      </ul>
+      <pre><code><span class="comment"># 현재 셸의 ulimit 확인</span>
+<span class="cmd">$ ulimit -Sn        # soft nofile 제한</span>
+<span class="output">1024</span>
+<span class="cmd">$ ulimit -Hn        # hard nofile 제한</span>
+<span class="output">4096</span>
+
+<span class="comment"># 이미 떠 있는 특정 프로세스의 실제 제한 (Day 2에서 배운 /proc/PID 활용의 연장)</span>
+<span class="cmd">$ cat /proc/8823/limits | grep "open files"</span>
+<span class="output">Max open files            1024                 4096                 files</span></code></pre>
+      <div class="callout warn">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>이 질문의 핵심 함정:</strong> <code>/etc/security/limits.conf</code>는
+          <strong>PAM(로그인 인증 모듈)</strong>을 거치는 세션에만 적용됩니다. 즉 사용자가
+          SSH로 로그인해서 셸을 띄우는 경우에는 적용되지만, <strong>systemd가 부팅
+          시점에 직접 fork해서 띄우는 서비스는 이 파일을 전혀 거치지 않습니다.</strong>
+          그래서 limits.conf를 아무리 고쳐도 systemd 서비스의 제한은 바뀌지 않는
+          것입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>2. systemd 서비스는 별도의 제한 체계를 가진다</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 아파트 단지 전체 규칙(limits.conf)과, 그 규칙과
+        무관하게 각 세대(systemd unit)가 별도로 정하는 내부 규칙이 따로 있다고
+        생각하면 됩니다. systemd로 뜨는 서비스의 자원 상한은 <strong>unit 파일의
+        <code>[Service]</code> 섹션</strong>에서 직접 지정해야 합니다.
+      </p>
+      <pre><code><span class="comment"># /etc/systemd/system/myapp.service.d/override.conf</span>
+[Service]
+<span class="output">LimitNOFILE=65536
+LimitNPROC=4096</span>
+
+<span class="comment"># 적용 후 반드시 확인 — Day 6에서 배운 systemctl 흐름과 동일</span>
+<span class="cmd">$ sudo systemctl daemon-reload &amp;&amp; sudo systemctl restart myapp</span>
+<span class="cmd">$ systemctl show myapp | grep LimitNOFILE</span>
+<span class="output">LimitNOFILE=65536</span></code></pre>
+      <div class="callout tip">
+        <span class="icon">✅</span>
+        <p>
+          면접 팁: "limits.conf를 고쳤는데 안 됐다"는 증상만 듣고도 곧바로
+          "systemd로 뜨는 서비스인가요?"를 되물을 수 있으면, PAM 세션과 systemd
+          fork 경로가 별개라는 것을 정확히 이해하고 있다는 신호가 됩니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>3. sysctl — 커널 전역 파라미터를 실행 중에 조정하는 인터페이스</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> ulimit이 "프로세스 한 명"에게 거는 개별 상한이라면,
+        <code>sysctl</code>은 "커널 전체"의 설정값을 조정하는 다이얼입니다. 커널은
+        수많은 내부 설정값을 <code>/proc/sys/</code> 아래 파일 형태로 노출하고,
+        <code>sysctl</code> 명령은 이 파일을 읽고 쓰는 편리한 인터페이스일 뿐입니다.
+      </p>
+      <pre><code><span class="comment"># 현재 값 조회 (파일을 직접 cat 하는 것과 동일)</span>
+<span class="cmd">$ sysctl net.core.somaxconn</span>
+<span class="output">net.core.somaxconn = 128</span>
+<span class="cmd">$ cat /proc/sys/net/core/somaxconn</span>
+<span class="output">128</span>
+
+<span class="comment"># 즉시 적용 (재부팅하면 사라짐, 실험/응급 대응용)</span>
+<span class="cmd">$ sudo sysctl -w net.core.somaxconn=4096</span>
+
+<span class="comment"># 영속화 (재부팅 후에도 유지, 운영 표준)</span>
+<span class="cmd">$ echo "net.core.somaxconn=4096" | sudo tee /etc/sysctl.d/99-tuning.conf</span>
+<span class="cmd">$ sudo sysctl --system    # 모든 sysctl.d 파일을 다시 로드</span></code></pre>
+      <div class="callout info">
+        <span class="icon">💡</span>
+        <p>
+          <strong>실무 연결:</strong> Day 3에서 다룬 <code>swappiness</code>도 사실
+          sysctl 파라미터의 하나입니다(<code>vm.swappiness</code>). Day 10은 그
+          개별 사례를 "sysctl이라는 하나의 체계"로 통합해서 이해하는 단계입니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>4. TCP backlog 큐 — 연결이 몰릴 때 커널이 줄을 세우는 대기열</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> 인기 있는 식당 앞에 대기줄이 생기는 것과 같습니다.
+        손님(TCP 연결 요청)이 한꺼번에 몰리면 커널은 두 단계의 대기줄을 운영합니다.
+      </p>
+      <ul>
+        <li><strong>SYN 큐 (<code>net.ipv4.tcp_max_syn_backlog</code>)</strong>:
+          3-way handshake의 SYN만 받고 아직 완료되지 않은 "반쯤 걸려온 전화"들의 대기줄.</li>
+        <li><strong>accept 큐 (<code>net.core.somaxconn</code> + 애플리케이션의
+          <code>listen(backlog)</code> 인자 중 더 작은 값)</strong>: handshake가
+          끝났지만 애플리케이션이 아직 <code>accept()</code>로 받아가지 않은
+          "완성된 통화가 대기 중인" 줄.</li>
+      </ul>
+      <p>
+        이 큐들이 가득 차면 커널은 새 SYN을 버리거나(패킷 드롭 → 클라이언트가 재시도로
+        지연 체감), <strong>SYN flood 방어 로직</strong>이 발동해 <code>dmesg</code>에
+        <code>possible SYN flooding</code> 경고를 남깁니다. 진짜 공격이 아니라
+        정상적인 트래픽 급증이어도, 큐 크기가 트래픽 규모보다 작으면 같은 증상이 납니다.
+      </p>
+      <div class="callout warn">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>trade-off:</strong> <code>tcp_syncookies</code>(SYN 큐가 가득 찼을 때
+          상태를 저장하지 않고 쿠키로 위장 응답하는 방어 기법)를 켜두면 큐가 넘쳐도
+          연결을 완전히 거부하지 않지만, 매 연결마다 쿠키 계산 비용이 붙고 일부 TCP
+          옵션(윈도우 스케일링 등)이 제한됩니다. "무조건 켜두는 것이 정답"이 아니라
+          정상 트래픽 규모에 맞게 큐 크기 자체를 늘리는 것이 우선이고, syncookies는
+          예외적인 폭주에 대한 마지막 방어선으로 이해해야 합니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="concept-box">
+      <h3>5. cgroups — 프로세스 "그룹"에 상한을 거는 커널 기능</h3>
+      <p>
+        <strong>쉽게 말하면:</strong> ulimit이 프로세스 한 명에게 거는 상한이라면,
+        <code>cgroups</code>(control groups)는 여러 프로세스를 하나의 "그룹"으로
+        묶어서 그 그룹 전체가 쓸 수 있는 CPU·메모리·디스크 I/O에 상한을 거는 커널
+        기능입니다. 아파트 단지에서 개별 세대의 전기 사용량과 별개로, "이 동 전체"에
+        전력 용량 상한을 걸어두는 것과 비슷합니다. 컨테이너 격리(Docker, Kubernetes)의
+        기반 기술이 바로 이것이지만, <strong>컨테이너 없이도 systemd가 모든 서비스에
+        기본적으로 cgroup을 적용</strong>하고 있습니다.
+      </p>
+      <pre><code><span class="comment"># systemd unit 파일에서 직접 cgroup 리소스 상한 설정 — Day 6 unit 파일 지식의 연장</span>
+[Service]
+<span class="output">MemoryMax=2G          # 이 값을 넘으면 그룹 내 프로세스가 OOM kill 대상이 됨
+CPUQuota=150%         # 1.5개 코어 분량으로 CPU 사용량 상한</span>
+
+<span class="comment"># 현재 서비스가 속한 cgroup과 실제 사용량 확인</span>
+<span class="cmd">$ systemctl status myapp | grep CGroup</span>
+<span class="cmd">$ cat /sys/fs/cgroup/system.slice/myapp.service/memory.current</span>
+<span class="output">1876543210</span></code></pre>
+      <div class="callout tip">
+        <span class="icon">✅</span>
+        <p>
+          면접 팁: "cgroups를 아세요?"라는 질문에 Docker/Kubernetes 이야기만 하면
+          절반짜리 답변입니다. <strong>systemd 자체가 모든 서비스를 slice/scope
+          단위의 cgroup으로 관리한다는 것</strong>까지 연결하면, 컨테이너 유무와
+          무관하게 호스트 레벨에서 리소스 격리를 설계할 수 있는 사람이라는 신호를
+          줍니다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 3: 왜 면접에서 묻는가
+  ══════════════════════════════════════ -->
+  <section id="why">
+    <h2><span class="icon">🎯</span> 왜 면접에서 묻는가</h2>
+
+    <p>
+      10년차 이상에게 회사가 원하는 것은 "장애가 났을 때 잘 진단하는 사람"만이
+      아니라, <strong>"같은 장애가 애초에 안 나도록 시스템을 미리 설계하는 사람"</strong>입니다.
+      리소스 제한과 커널 튜닝은 이 "사전 설계" 역량을 가장 직접적으로 확인할 수 있는
+      주제입니다.
+    </p>
+
+    <h3>면접관이 실제로 평가하는 것</h3>
+    <ol>
+      <li>
+        <strong>레이어를 구분해서 사고하는가?</strong><br>
+        프로세스 개별 상한(ulimit) / 서비스 단위 상한(systemd unit, cgroup) / 커널
+        전역 상한(sysctl, fs.file-max) — 이 세 층위를 뒤섞지 않고 정확히 구분해서
+        말할 수 있는지를 봅니다.
+      </li>
+      <li>
+        <strong>설정을 "숫자 암기"가 아니라 "판단 근거"로 설명하는가?</strong><br>
+        "somaxconn을 4096으로 설정합니다"가 아니라, "예상 동시 접속 규모와 큐 처리
+        속도를 근거로 이 숫자를 정했다"까지 설명할 수 있는지를 봅니다.
+      </li>
+      <li>
+        <strong>trade-off를 인지하는가?</strong><br>
+        상한을 너무 낮게 걸면 정상 트래픽도 거부되고, 너무 높게(또는 무제한으로)
+        두면 한 프로세스가 시스템 전체를 잠식할 수 있다는 양쪽 위험을 모두 아는지
+        확인합니다.
+      </li>
+      <li>
+        <strong>"노후한 설정" 뒤에 숨은 원인을 추적할 수 있는가?</strong><br>
+        기본값 1024 nofile, 기본값 128 somaxconn처럼 커널/배포판의 오래된 기본값이
+        현대적인 고트래픽 서비스에는 맞지 않는다는 것을 알고, 왜 이 기본값이
+        존재했는지(과거 저사양 서버, 보수적인 기본 설계)까지 설명할 수 있는지 봅니다.
+      </li>
+    </ol>
+
+    <div class="callout info">
+      <span class="icon">💡</span>
+      <p>
+        본질은 "어떤 sysctl 파라미터를 아는가"가 아니라, <strong>"이 시스템에 몇 명이
+        올 것으로 예상하고, 그래서 어느 층위에 얼마만큼의 여유를 둘 것인가"를 스스로
+        계산해낼 수 있는가</strong>입니다. 이것이 용량 계획(capacity planning)과
+        직접 연결되는 지점입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 4: 실무 연결
+  ══════════════════════════════════════ -->
+  <section id="realworld">
+    <h2><span class="icon">🏭</span> 실무 연결 — 세 가지 상황의 전체 진단·조치 흐름</h2>
+
+    <h3>상황 A: "Too many open files"가 재발하는 systemd 서비스</h3>
+    <pre><code><span class="comment"># 1단계 — 실제 떠 있는 프로세스의 진짜 제한값 확인 (설정 파일이 아니라 결과를 봄)</span>
+<span class="cmd">$ systemctl show myapp -p LimitNOFILE</span>
+<span class="output">LimitNOFILE=1024        # limits.conf는 무시되고 systemd 기본값이 적용된 상태</span>
+
+<span class="comment"># 2단계 — 실제로 fd를 얼마나 쓰고 있었는지 사후 확인 (사고 당시 lsof 로그가 있었다면)</span>
+<span class="cmd">$ ls /proc/8823/fd | wc -l</span>
+<span class="output">1024        # 정확히 상한에서 막힌 것을 확인</span>
+
+<span class="comment"># 3단계 — unit override로 systemd 레벨에서 직접 상한 상향</span>
+<span class="cmd">$ sudo systemctl edit myapp</span>
+<span class="output"># [Service]
+# LimitNOFILE=65536</span>
+<span class="cmd">$ sudo systemctl daemon-reload &amp;&amp; sudo systemctl restart myapp</span>
+
+<span class="comment"># 4단계 — 시스템 전체 상한(fs.file-max)도 병목이 아닌지 함께 확인 (더 상위 레이어)</span>
+<span class="cmd">$ sysctl fs.file-max</span>
+<span class="output">fs.file-max = 100000    # 이것도 여러 서비스가 나눠 쓰기엔 부족할 수 있음</span></code></pre>
+    <p>
+      이 사례의 진짜 함정은 "limits.conf를 고쳤으니 됐다"고 확인 없이 넘어가는
+      것입니다. 실제 원인은 이 서비스가 systemd로 직접 기동되어 PAM 세션을 거치지
+      않는다는 것이었고, unit override로 <code>LimitNOFILE</code>을 직접 지정한
+      뒤 <code>systemctl show</code>로 <strong>적용된 값</strong>을 재확인하는
+      것으로 마무리했습니다.
+    </p>
+
+    <h3>상황 B: 트래픽 급증 시 SYN flood 경고</h3>
+    <pre><code><span class="comment"># 1단계 — 실제로 큐가 가득 찼는지 통계로 확인 (추측이 아니라 근거)</span>
+<span class="cmd">$ ss -s</span>
+<span class="output">TCP:   ... SYN-RECV: 892 ...   # SYN 큐에 걸려 완료 못한 연결이 대량 적체</span>
+
+<span class="cmd">$ netstat -s | grep -i "SYNs to LISTEN"</span>
+<span class="output">1245 SYNs to LISTEN sockets dropped   # 큐 초과로 드롭된 실제 카운트</span>
+
+<span class="comment"># 2단계 — 현재 큐 크기와 예상 트래픽 규모 비교</span>
+<span class="cmd">$ sysctl net.core.somaxconn net.ipv4.tcp_max_syn_backlog</span>
+<span class="output">net.core.somaxconn = 128
+net.ipv4.tcp_max_syn_backlog = 128     # 순간 접속자 수천 명 대비 지나치게 작음</span>
+
+<span class="comment"># 3단계 — 애플리케이션의 listen backlog 인자도 커널 값과 함께 맞춰야 함 (한쪽만 올리면 무의미)</span>
+<span class="cmd">$ grep -i backlog /etc/nginx/nginx.conf</span>
+<span class="output">listen 443 backlog=511;   # nginx 설정도 커널 값보다 작으면 병목이 그쪽으로 이동</span>
+
+<span class="comment"># 4단계 — 커널 값 상향 + 영속화</span>
+<span class="cmd">$ echo "net.core.somaxconn=4096
+net.ipv4.tcp_max_syn_backlog=4096" | sudo tee /etc/sysctl.d/99-net-tuning.conf</span>
+<span class="cmd">$ sudo sysctl --system</span></code></pre>
+    <p>
+      진짜 원인은 10년 가까이 손대지 않은 배포판 기본값(128)이 현재 트래픽 규모에
+      전혀 맞지 않았던 것이었습니다. 즉각 조치로 커널 값과 nginx의
+      <code>listen backlog</code>를 함께 올렸고(둘 중 더 작은 값이 실제 상한이
+      되므로), 재발 방지로 이벤트/프로모션 예정 트래픽 규모를 기준으로 큐 크기를
+      역산하는 용량 계획 절차를 팀 런북에 추가했습니다.
+    </p>
+
+    <h3>상황 C: 배치 작업 하나가 호스트 전체 메모리를 잠식(noisy neighbor)</h3>
+    <pre><code><span class="comment"># 1단계 — 사고 당시 어떤 프로세스가 메모리를 얼마나 먹었는지 확인 (Day 3 연결)</span>
+<span class="cmd">$ journalctl -k | grep -i "Out of memory"</span>
+<span class="output">Out of memory: Killed process 9021 (api-server)  # 진짜 잘못한 프로세스가 아니라 무고한 이웃이 죽음</span>
+
+<span class="comment"># 2단계 — 배치 작업 서비스에 cgroup 메모리 상한을 걸어 "이웃에 영향 주지 못하게" 격리</span>
+<span class="cmd">$ sudo systemctl edit batch-job.service</span>
+<span class="output"># [Service]
+# MemoryMax=4G
+# MemoryHigh=3.5G   # 소프트 한계 — 초과 시 회수를 먼저 시도, 하드 한계보다 완충 역할</span>
+
+<span class="comment"># 3단계 — 반대로 중요한 서비스는 최소 보장치를 걸어 우선순위를 명시</span>
+<span class="output"># [Service]
+# MemoryMin=1G       # 시스템 전체가 메모리 압박이어도 이만큼은 최소 보장</span>
+
+<span class="cmd">$ sudo systemctl daemon-reload &amp;&amp; sudo systemctl restart batch-job api-server</span></code></pre>
+    <p>
+      근본 원인은 배치 작업 자체의 메모리 릭이었지만(코드 수정이 필요), 그와
+      별개로 <strong>"릭이 있는 프로세스가 있어도 시스템 전체를 끌고 내려가지
+      못하게" cgroup 상한을 걸어두는 것</strong>이 시스템 차원의 재발 방지였습니다.
+      즉각 조치로는 배치 작업 프로세스만 개별 재시작해 API 서버 영향을 차단했고,
+      근본 원인(메모리 릭)은 별도 트랙으로 코드 수정을 진행했습니다.
+    </p>
+
+    <h3>세 상황에서 공통으로 배운 핵심 교훈</h3>
+    <ul>
+      <li>설정 파일을 고치는 것과 <strong>실제 적용된 값을 확인하는 것</strong>은
+        별개의 단계다 — <code>systemctl show</code>, <code>sysctl</code>,
+        <code>/proc/PID/limits</code>로 항상 결과를 재확인해야 한다.</li>
+      <li>커널 파라미터 하나만 올려서는 병목이 해결되지 않을 수 있다 — 애플리케이션
+        레벨 설정(nginx backlog)과 커널 레벨 설정은 <strong>더 작은 값이 실제
+        상한</strong>이 되므로 함께 맞춰야 한다.</li>
+      <li>리소스 상한은 "막는 용도"뿐 아니라 <strong>"보장하는 용도"</strong>로도
+        쓸 수 있다 (<code>MemoryMin</code>) — 중요한 서비스의 최소 자원을 지키는
+        것도 같은 도구의 다른 쪽 용법이다.</li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 5: 답변 사고 순서
+  ══════════════════════════════════════ -->
+  <section id="framework">
+    <h2><span class="icon">🧠</span> 답변 사고 순서</h2>
+
+    <ul class="steps">
+      <li>
+        <div class="step-content">
+          <h3>1. 어느 층위의 제한인지 먼저 구분한다</h3>
+          <p>
+            프로세스 개별(ulimit) / 서비스 그룹(systemd unit, cgroup) / 커널 전역
+            (sysctl) 중 어디서 막혔는지부터 판단합니다. 증상이 특정 프로세스 하나에만
+            나면 ulimit/cgroup, 시스템 전체에 영향을 주면 sysctl 레벨을 먼저
+            의심합니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>2. 설정값이 아니라 "실제 적용된 값"을 확인한다</h3>
+          <p>
+            <code>limits.conf</code>나 sysctl.conf 파일 내용을 읽는 것에서 멈추지
+            않고, <code>systemctl show</code>, <code>/proc/PID/limits</code>,
+            <code>sysctl</code> 명령으로 <strong>지금 실제로 커널에 적용된 값</strong>을
+            재확인합니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>3. 예상 트래픽/부하 규모를 근거로 목표값을 역산한다</h3>
+          <p>
+            "얼마로 올릴지"를 감으로 정하지 않고, 예상 동시 접속자 수, 프로세스당
+            필요 fd 수, 배치 작업의 정상 메모리 사용량 같은 <strong>구체적인 근거</strong>에서
+            숫자를 역산합니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>4. 관련된 다른 레이어의 값도 함께 맞춘다</h3>
+          <p>
+            커널 값만 올리고 애플리케이션 설정(nginx backlog 등)을 그대로 두면
+            병목이 이동할 뿐입니다. 연관된 모든 레이어의 값을 함께 점검합니다.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <div class="step-content">
+          <h3>5. 상한의 trade-off와 영속화 방식을 함께 설명한다</h3>
+          <p>
+            너무 낮으면 정상 요청이 거부되고, 너무 높으면(또는 무제한이면) 한
+            프로세스가 시스템을 잠식할 수 있다는 양쪽 위험을 언급하고,
+            <code>sysctl -w</code>(즉시, 휘발성)와 <code>/etc/sysctl.d</code>
+            (영속)의 차이를 구분해 운영 표준으로 남깁니다.
+          </p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 6: 핵심 답변 예시
+  ══════════════════════════════════════ -->
+  <section id="model-answer">
+    <h2><span class="icon">💬</span> 핵심 답변 예시</h2>
+
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:1.5rem; box-shadow:0 1px 3px rgba(0,0,0,.06); margin-bottom:1.2rem;">
+      <p style="font-size:0.88rem; color:#64748b; margin-bottom:1rem;">💬 면접관: "limits.conf를 고쳤는데도 systemd 서비스에서 nofile 에러가 재발합니다."</p>
+      <p>
+        "가장 먼저 이 서비스가 SSH 로그인처럼 PAM 세션을 거쳐 뜨는지, 아니면
+        systemd가 부팅 시점에 직접 fork하는지부터 구분합니다. 후자라면
+        <code>/etc/security/limits.conf</code>는 애초에 적용되지 않는 경로이기
+        때문입니다. <code>systemctl show &lt;service&gt; -p LimitNOFILE</code>로
+        실제 적용된 값을 확인해서 이 가설을 검증하고, 맞다면 unit 파일에
+        <code>LimitNOFILE=</code>을 직접 지정한 뒤 <code>daemon-reload</code>와
+        재시작 후 다시 같은 명령으로 값이 반영됐는지 재확인합니다. 목표 숫자는
+        해당 서비스가 정상 트래픽에서 실제로 열어야 하는 소켓/파일 수를 기준으로
+        여유를 두고 정합니다."
+      </p>
+    </div>
+
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:1.5rem; box-shadow:0 1px 3px rgba(0,0,0,.06); margin-bottom:1.2rem;">
+      <p style="font-size:0.88rem; color:#64748b; margin-bottom:1rem;">💬 면접관: "트래픽 급증 시 SYN flooding 경고가 뜹니다. 어떻게 접근하시겠습니까?"</p>
+      <p>
+        "<code>ss -s</code>와 <code>netstat -s</code>로 SYN 큐 적체와 실제 드롭
+        카운트를 먼저 확인해서 '진짜 공격'인지 '정상 트래픽 규모 대비 큐가 작은
+        것'인지 구분합니다. 대부분의 정상 프로모션 트래픽 상황에서는 후자입니다.
+        그러면 <code>net.core.somaxconn</code>과
+        <code>net.ipv4.tcp_max_syn_backlog</code>를 예상 순간 접속자 규모에 맞춰
+        올리되, 애플리케이션(nginx 등)의 <code>listen backlog</code> 값도 함께
+        확인합니다 — 둘 중 더 작은 값이 실제 상한이 되기 때문에 커널 값만 올려서는
+        해결되지 않을 수 있습니다. syncookies는 이런 정상적인 규모 문제를 근본적으로
+        해결해주지 않으므로, 예외적인 급증에 대한 마지막 방어선으로만 남겨둡니다."
+      </p>
+    </div>
+
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:1.5rem; box-shadow:0 1px 3px rgba(0,0,0,.06);">
+      <p style="font-size:0.88rem; color:#64748b; margin-bottom:1rem;">💬 면접관: "한 프로세스의 메모리 릭이 전체 시스템을 OOM으로 끌고 내려갔습니다. 재발 방지를 어떻게 설계하시겠습니까?"</p>
+      <p>
+        "근본 원인인 메모리 릭 자체는 코드 수정이 필요한 별도 트랙이지만, 그와
+        별개로 <strong>어떤 프로세스든 시스템 전체를 잠식하지 못하도록</strong>
+        systemd unit에 <code>MemoryMax</code>로 상한을 걸어둡니다. 이렇게 하면
+        해당 프로세스만 자신의 cgroup 안에서 OOM kill되고, 다른 중요한 서비스는
+        영향을 받지 않습니다. 반대로 정말 중요한 서비스에는 <code>MemoryMin</code>으로
+        최소 보장치를 걸어서, 시스템 전체가 메모리 압박 상황이어도 우선순위를
+        명시적으로 지켜줍니다. 즉 리소스 제한을 '막는 용도'와 '보장하는 용도'
+        양쪽으로 함께 설계하는 것이 핵심입니다."
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 7: Senior Follow-up
+  ══════════════════════════════════════ -->
+  <section id="followup">
+    <h2><span class="icon">🔍</span> Senior-level Follow-up 질문과 모범 답변</h2>
+
+    <div class="followup-block">
+      <p class="fq">Q. "리소스 상한값을 얼마로 정할지 어떻게 결정하나요? 근거 없이 넉넉하게 잡으면 안 되나요?"</p>
+      <div class="fa">
+        <p>
+          "무제한에 가깝게 넉넉히 잡는 것은 '상한을 걸지 않은 것'과 실질적으로
+          같아서, 애초에 상한을 두는 목적(다른 프로세스 보호)을 못 지킵니다.
+          저는 정상 운영 시 실측치(예: 평소 fd 사용량, 평소 메모리 사용량, 평소
+          동시 접속자 수)에 트래픽 급증을 대비한 여유(보통 2~3배)를 곱해서 시작
+          값을 정하고, 모니터링으로 실제 상한에 얼마나 가까이 붙는지 관찰하면서
+          점진적으로 조정합니다. 즉 첫 값은 실측 기반 추정이고, 이후는 데이터
+          기반 조정입니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 상한 설정을 감이 아니라 실측 데이터 기반의 반복 조정 과정으로 설명하는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "cgroup 메모리 상한(MemoryMax)에 걸리면 어떤 일이 일어나나요? 애플리케이션 OOM과 무엇이 다른가요?"</p>
+      <div class="fa">
+        <p>
+          "시스템 전체 메모리가 부족해서 발생하는 전역 OOM Killer(Day 3에서 다룬
+          oom_score 기반 선정)와 달리, cgroup 메모리 상한은 그 그룹 안의
+          프로세스만 대상으로 하는 <strong>그룹 범위의 OOM</strong>입니다.
+          시스템 전체 메모리는 아직 여유가 있어도 해당 그룹이 자신에게 할당된
+          상한을 넘으면 그 그룹 안에서만 kill이 발생합니다. 그래서 cgroup 상한을
+          걸어두면 '이 서비스의 문제가 이 서비스 안에서만 끝난다'는 격리 효과를
+          얻을 수 있습니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 전역 OOM과 cgroup 범위 OOM을 구분해서 설명하고 격리 효과를 이해하는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "sysctl 값을 운영 중인 서버에서 즉시(sysctl -w) 바꾸는 것의 위험은 무엇인가요?"</p>
+      <div class="fa">
+        <p>
+          "두 가지 위험이 있습니다. 첫째, <code>sysctl -w</code>는 재부팅하면
+          사라지는 휘발성 변경이라, 영속화(/etc/sysctl.d)를 잊으면 다음 재부팅
+          때 원인 모를 재발로 이어집니다. 둘째, 일부 네트워크 파라미터는 이미
+          맺혀 있는 연결에는 소급 적용되지 않고 새 연결부터 적용되는 경우가
+          있어서, 값을 바꿨는데도 '왜 여전히 문제가 남아있지'라고 착각할 수
+          있습니다. 그래서 저는 변경 직후 새로 생성된 연결을 기준으로 효과를
+          검증하고, 변경 사항은 반드시 파일로 영속화한 뒤 다음 재부팅 시에도
+          같은 값이 유지되는지까지 확인합니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 휘발성 변경의 위험과 즉시 적용/소급 적용 여부의 차이를 인지하는가</span>
+    </div>
+
+    <div class="followup-block">
+      <p class="fq">Q. "컨테이너 환경(Docker/Kubernetes)에서는 리소스 제한을 어떻게 다르게 생각해야 하나요?"</p>
+      <div class="fa">
+        <p>
+          "메커니즘 자체는 동일합니다 — Docker의 <code>--memory</code>나
+          Kubernetes의 <code>resources.limits</code>도 결국 호스트 커널의
+          cgroup을 그대로 사용합니다. 다만 컨테이너 환경에서는 한 호스트에 여러
+          컨테이너가 함께 뜨기 때문에, 개별 컨테이너의 상한뿐 아니라 <strong>호스트
+          전체 용량 대비 모든 컨테이너 요청(request)의 합이 초과되지 않는지</strong>를
+          스케줄러 레벨에서 함께 고려해야 합니다. 이건 오케스트레이션 레이어의
+          용량 계획 문제이고, 오늘 다룬 것은 그 아래 깔린 커널 메커니즘 자체에
+          대한 이해입니다."
+        </p>
+      </div>
+      <span class="signal">평가 포인트: 컨테이너 리소스 제한과 호스트 cgroup 메커니즘의 관계, 그리고 레이어 경계를 정확히 아는가</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 8: 좋은 vs 약한 답변
+  ══════════════════════════════════════ -->
+  <section id="comparison">
+    <h2><span class="icon">⚖️</span> 좋은 답변 vs 약한 답변 분석</h2>
+
+    <div class="answer-box weak">
+      <span class="box-label">약한 답변 (Junior 수준)</span>
+      <blockquote>
+        "ulimit -n 65536 하고, sysctl.conf에 somaxconn 늘려주면 됩니다."
+      </blockquote>
+      <div class="analysis">
+        <strong>왜 약한 답변인가:</strong>
+        <ul>
+          <li>systemd 서비스와 로그인 셸의 ulimit 적용 경로가 다르다는 것을
+            구분하지 못합니다.</li>
+          <li>숫자를 왜 그 값으로 정했는지 근거가 없어, 트래픽 급증 시 다시
+            부족해질 수 있습니다.</li>
+          <li>변경이 실제로 적용됐는지 재확인하는 절차가 빠져 있습니다.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="answer-box good">
+      <span class="box-label">좋은 답변 (Senior 수준)</span>
+      <blockquote>
+        "먼저 이 제한이 프로세스 개별/서비스 그룹/커널 전역 중 어느 층위인지
+        구분하고, 설정 파일이 아니라 실제 적용된 값을 systemctl show나 sysctl로
+        재확인합니다. 목표 값은 실측 트래픽 규모에 여유를 곱해 역산하고,
+        관련된 다른 레이어(애플리케이션 backlog 등)도 함께 맞춘 뒤, 영속화
+        여부까지 확인합니다."
+      </blockquote>
+      <div class="analysis">
+        <strong>왜 좋은 답변인가:</strong>
+        <ul>
+          <li>층위를 구분하고 각 층위의 적용 경로 차이(PAM vs systemd)를
+            정확히 이해하고 있습니다.</li>
+          <li>숫자를 감이 아니라 실측 데이터 기반으로 역산하는 절차를 설명합니다.</li>
+          <li>설정 → 실제 적용 확인 → 영속화까지 전체 사이클을 빠짐없이
+            언급합니다.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 9: 흔한 오해
+  ══════════════════════════════════════ -->
+  <section id="misconceptions">
+    <h2><span class="icon">🚫</span> 흔한 오해와 정확한 이해</h2>
+
+    <div class="misconception">
+      <p class="myth">오해 1: "/etc/security/limits.conf를 고치면 모든 프로세스에 적용된다"</p>
+      <p class="truth">
+        PAM 세션을 거치는 로그인 셸에만 적용됩니다. systemd가 직접 fork하는
+        서비스는 이 파일과 무관하며, unit 파일에서 별도로 Limit* 지시자를
+        지정해야 합니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 2: "somaxconn만 올리면 SYN flood 경고가 완전히 사라진다"</p>
+      <p class="truth">
+        SYN 큐(tcp_max_syn_backlog)와 accept 큐(somaxconn)는 별개의 큐이고,
+        애플리케이션의 listen backlog 값이 더 작으면 그쪽이 실제 병목이 됩니다.
+        관련된 모든 레이어의 값을 함께 맞춰야 합니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 3: "리소스 상한은 무조건 넉넉하게 잡을수록 안전하다"</p>
+      <p class="truth">
+        상한이 사실상 무제한이면 상한을 두는 목적(다른 프로세스/서비스 보호)을
+        달성하지 못합니다. 실측 데이터 기반으로 적정 여유를 둔 값을 설정하고
+        모니터링으로 조정하는 것이 안전한 접근입니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 4: "cgroups는 Docker/Kubernetes를 쓸 때만 관련 있는 개념이다"</p>
+      <p class="truth">
+        systemd는 컨테이너 유무와 무관하게 모든 서비스를 slice/scope 단위의
+        cgroup으로 관리합니다. 컨테이너를 쓰지 않는 호스트에서도
+        MemoryMax/CPUQuota 같은 unit 지시자로 동일한 격리를 적용할 수 있습니다.
+      </p>
+    </div>
+
+    <div class="misconception">
+      <p class="myth">오해 5: "sysctl -w로 값을 바꾸면 영구 적용된다"</p>
+      <p class="truth">
+        <code>sysctl -w</code>는 재부팅하면 사라지는 휘발성 변경입니다. 운영
+        환경에서는 반드시 <code>/etc/sysctl.d/</code>에 파일로 남기고
+        <code>sysctl --system</code>으로 재로드해야 재부팅 후에도 유지됩니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 10: 자기 점검 Rubric
+  ══════════════════════════════════════ -->
+  <section id="rubric">
+    <h2><span class="icon">📊</span> 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변을 점검해보세요. 각 항목에서 어느 수준인지 솔직하게 평가하세요.</p>
+
+    <div style="overflow-x:auto;">
+      <table class="rubric-table">
+        <thead>
+          <tr>
+            <th>평가 항목</th>
+            <th class="score-senior">Senior (3점)</th>
+            <th class="score-mid">Mid (2점)</th>
+            <th class="score-junior">Junior (1점)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>층위 구분</strong></td>
+            <td class="score-senior">ulimit / systemd unit·cgroup / sysctl 전역을 명확히 구분</td>
+            <td class="score-mid">구분은 하지만 적용 경로(PAM vs systemd) 설명이 약함</td>
+            <td class="score-junior">모든 제한을 뭉뚱그려 "ulimit 늘리면 된다"고 답변</td>
+          </tr>
+          <tr>
+            <td><strong>실제 적용값 재확인</strong></td>
+            <td class="score-senior">systemctl show/sysctl/proc로 설정과 실제 적용을 항상 재검증</td>
+            <td class="score-mid">필요성은 알지만 구체적 명령을 제시 못함</td>
+            <td class="score-junior">설정 파일을 고치면 끝이라고 가정</td>
+          </tr>
+          <tr>
+            <td><strong>숫자 산정 근거</strong></td>
+            <td class="score-senior">실측 트래픽/부하 규모에서 여유를 두고 역산</td>
+            <td class="score-mid">여유를 둬야 한다는 것은 알지만 산정 근거가 막연함</td>
+            <td class="score-junior">근거 없이 큰 숫자를 임의로 제시</td>
+          </tr>
+          <tr>
+            <td><strong>trade-off 인지</strong></td>
+            <td class="score-senior">상한 과소/과다 양쪽 위험과 syncookies 등 부작용까지 설명</td>
+            <td class="score-mid">한쪽 위험만 언급</td>
+            <td class="score-junior">"높일수록 안전하다"는 일방적 결론</td>
+          </tr>
+          <tr>
+            <td><strong>연관 레이어 통합 점검</strong></td>
+            <td class="score-senior">커널 값과 애플리케이션 설정(listen backlog 등)을 함께 점검</td>
+            <td class="score-mid">커널 값만 언급하고 애플리케이션 레이어는 놓침</td>
+            <td class="score-junior">단일 파라미터 변경만으로 해결됐다고 단정</td>
+          </tr>
+          <tr>
+            <td><strong>영속화/재현성</strong></td>
+            <td class="score-senior">즉시 적용과 영속화를 구분하고 재부팅 후 유지까지 확인</td>
+            <td class="score-mid">영속화 필요성은 알지만 확인 절차가 빠짐</td>
+            <td class="score-junior">sysctl -w로 끝냈다고 답변 (재부팅 시 소실 인지 못함)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top:1rem; font-size:0.9rem; color:#64748b;">
+      <strong>점수 해석:</strong> 6개 항목 × 3점 = 최대 18점.
+      15점 이상 → Senior 수준 답변 완성.
+      11~14점 → 구조는 있지만 일부 층위/근거 보완 필요.
+      10점 이하 → 이 레슨을 다시 읽고, 세 상황 각각을 소리 내어 설명해보세요.
+    </p>
+
+    <div class="key-points" style="margin-top:2rem;">
+      <h3>Day 10 핵심 포인트 요약</h3>
+      <ul>
+        <li>자원 상한은 <strong>프로세스 개별(ulimit) / 서비스 그룹(systemd unit,
+          cgroup) / 커널 전역(sysctl)</strong>의 세 층위로 나뉘며, 증상이 어느
+          범위에 나타나는지로 어느 층위인지 먼저 판단해야 한다.</li>
+        <li><code>/etc/security/limits.conf</code>는 PAM 세션에만 적용되고,
+          systemd 서비스는 <strong>unit 파일의 Limit* 지시자</strong>로 별도
+          설정해야 한다.</li>
+        <li>TCP backlog는 <strong>SYN 큐와 accept 큐가 별개</strong>이고,
+          애플리케이션의 listen backlog까지 함께 맞춰야 실제 병목이 해소된다.</li>
+        <li><code>cgroups</code>는 컨테이너 전용 기술이 아니라 systemd가 모든
+          서비스에 기본 적용하는 커널 기능이며, <strong>막는 용도(MemoryMax)와
+          보장하는 용도(MemoryMin)</strong> 양쪽으로 설계할 수 있다.</li>
+        <li>모든 튜닝은 <strong>설정 → 실제 적용값 재확인 → 영속화</strong>의
+          사이클을 빠짐없이 거쳐야 하며, 숫자는 감이 아니라 실측 데이터 기반으로
+          역산해야 한다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 다음 레슨 링크 -->
+  <div style="margin-top:2.5rem; padding:1.2rem 1.5rem; background:#fff; border:1px solid #e2e8f0; border-radius:10px; text-align:center;">
+    <p style="margin:0; color:#64748b; font-size:0.9rem;">
+      다음 학습은 <code>PROGRESS.md</code>에서 다음 심화 주제(예: 컨테이너 환경
+      진단, 대규모 장애 사후 분석/포스트모템 심화)를 확인하세요.
+    </p>
+    <p style="margin:0.4rem 0 0; font-size:0.82rem; color:#94a3b8;">레슨 목록으로 돌아가기: <a href="./index.html">index.html</a></p>
+  </div>
+
+</main>
+
+<footer>
+  <p>Linux 서버 운영 인터뷰 · Day 10 · 2026-07-09 |
+    <a href="../RESOURCES.md">참고 자료</a> ·
+    <a href="../PROGRESS.md">학습 진행 현황</a>
+  </p>
+  <p style="margin-top:0.3rem;">궁금한 점은 Claude에게 바로 물어보세요. 이 레슨의 개념, follow-up 질문, 모범 답변 피드백 모두 도와드립니다.</p>
+</footer>
+
+</body>
+</html>
