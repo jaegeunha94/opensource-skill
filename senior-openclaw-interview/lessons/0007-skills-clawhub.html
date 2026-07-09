@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 7 — Skills와 ClawHub</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #e2523a;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #3a1a1a; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .source-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 7 · OpenClaw Interview</div>
+    <h1>Skills와 ClawHub</h1>
+    <div class="subtitle">"SKILL.md를 만들고 clawhub install로 받는다" 수준에서 멈추지 않고, frontmatter 선언과 실제 동작의 불일치를 잡는 검증 구조, 6-tier 디스커버리 우선순위, 그리고 서드파티 스킬이 구조적으로 공급망 리스크라는 것과 다중 스캐너 파이프라인조차 그 리스크를 완전히 없애지 못하는 이유까지 설명하는 능력</div>
+  </header>
+
+  <div class="callout callout-info">
+    <strong>버전/시점 기준:</strong> 이 레슨은 2026-07 기준 OpenClaw 공식 문서(<code>docs/tools/skills.md</code>,
+    <code>docs/tools/creating-skills.md</code>, <code>docs/clawhub</code>), ClawHub 저장소
+    (<code>openclaw/clawhub</code>, <code>docs/skill-format.md</code>), ClawScan 저장소
+    (<code>openclaw/clawscan</code>), 그리고 NVIDIA SkillSpector 파트너십 발표와 이를 다룬 보안 매체 보도를
+    조사해 작성했다. SKILL.md frontmatter 스키마와 스킬 디스커버리 6-tier 우선순위는 문서 원문 기반의
+    <strong>높은 확정도</strong>다. 스캐너 간 합의율 수치(10.4%/81.9%)는 리서치 시점에 보도된 통계이며, ClawHub의
+    내부 알고리즘·가중치·정확한 문턱값은 비공개이거나 계속 조정 중일 수 있어 <strong>중간 확정도</strong>로 다룬다.
+    스킬 개수, 스캐너 구성, CLI 플래그는 릴리스마다 바뀔 수 있어 면접 전 최신 문서로 재확인이 필요하다.
+  </div>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "OpenClaw에서 Skill은 어떻게 구조화되고 로드되며, ClawHub에서 받은 서드파티 스킬을 프로덕션 에이전트에
+      들이기 전에 무엇을 검토해야 합니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "SKILL.md의 frontmatter가 실제로 어떤 일을 하며, 여기 선언된 내용과 스킬의 실제 동작이 다르면 어떻게 됩니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "ClawHub는 벡터 검색과 다단계 보안 스캐닝 파이프라인을 갖추고 있다고 알려져 있습니다. 그런데도 왜 마켓플레이스형
+      스킬 배포가 여전히 공급망 리스크로 남아 있다고 말합니까?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Skill이 무엇인지부터, ClawHub가 그걸 어떻게 유통하는지까지</h2>
+
+    <h3>1) Skill이란 무엇인가 — Markdown 기반 절차적 지식 패키지</h3>
+    <p>
+      <strong>Skill</strong>은 OpenClaw 에이전트에게 "이 작업은 이렇게 처리해라"는 절차적 지식을 주입하는 단위다.
+      최소 형태는 <code>SKILL.md</code> 파일 하나(Markdown 본문 + 선택적 YAML frontmatter)이고, 여기에 스크립트,
+      템플릿, 참고 문서 같은 부속 파일이 함께 묶일 수 있다. Day 6에서 다룬 부트스트랩 파일(SOUL.md/AGENTS.md 등)이
+      "에이전트가 누구인지, 어떻게 행동할지"를 정의하는 <strong>정체성 레이어</strong>라면, Skill은 "특정 작업을
+      어떻게 수행할지"를 정의하는 <strong>절차 레이어</strong>다 — 둘 다 시스템 프롬프트 컨텍스트로 흘러들어간다는
+      점은 같지만 역할이 다르다.
+    </p>
+
+    <h3>2) SKILL.md frontmatter — 선언이 실제 동작과 대조되는 지점</h3>
+    <p>
+      frontmatter의 <code>name</code>/<code>description</code>/<code>version</code> 같은 기본 메타데이터 아래,
+      <strong><code>metadata.openclaw</code></strong>(별칭: <code>metadata.clawdbot</code>,
+      <code>metadata.clawdis</code> — 프로젝트 리브랜딩 이력을 보여주는 흔적) 섹션이 이 스킬이 무엇을 필요로
+      하는지를 선언한다.
+    </p>
+    <table>
+      <tr><th>필드</th><th>역할</th></tr>
+      <tr><td><code>requires.env</code></td><td>스킬 실행 전 존재해야 하는 필수 환경 변수 목록</td></tr>
+      <tr><td><code>requires.bins</code></td><td>모두 설치돼 있어야 하는 CLI 바이너리 목록</td></tr>
+      <tr><td><code>requires.anyBins</code></td><td>이 중 하나만 있으면 되는 바이너리 목록</td></tr>
+      <tr><td><code>requires.config</code></td><td>스킬이 읽는 설정 파일 경로</td></tr>
+      <tr><td><code>envVars</code></td><td>변수별 상세 메타데이터(설명, <code>required: false</code>로 선택적 표시 등)</td></tr>
+      <tr><td><code>primaryEnv</code></td><td>대표 자격 증명 환경 변수</td></tr>
+      <tr><td><code>emoji</code> / <code>homepage</code></td><td>표시용 이모지, 문서 링크</td></tr>
+      <tr><td><code>os</code></td><td>OS 제한(예: <code>["macos"]</code>)</td></tr>
+      <tr><td><code>always</code></td><td><code>true</code>면 모든 세션에 자동 포함, 적격성 게이트 전부 스킵</td></tr>
+      <tr><td><code>skillKey</code></td><td>호출 키를 <code>name</code> 대신 이걸로 오버라이드</td></tr>
+      <tr><td><code>install</code></td><td>brew/node/go/uv 등 의존성 설치 스펙</td></tr>
+      <tr><td><code>nix</code> / <code>config</code></td><td>Nix 플러그인 설정, 스킬 전용 설정 스펙</td></tr>
+    </table>
+    <div class="callout callout-warn">
+      <strong>왜 이게 보안 메커니즘이기도 한가:</strong> ClawHub의 보안 분석은 "스킬이 선언한 것과 실제로 하는 것이
+      일치하는지"를 대조한다. 예를 들어 <code>requires.bins</code>에 없는 바이너리를 몰래 실행하거나,
+      <code>requires.env</code>에 선언되지 않은 환경 변수(예: 다른 서비스의 API 키)를 읽으려 시도하는 코드가
+      있다면, 이 <strong>선언-행동 불일치</strong> 자체가 리뷰 플래그가 된다. 즉 frontmatter는 단순한 문서화가
+      아니라 "이 스킬의 정직한 행동 범위"에 대한 <strong>검증 가능한 계약</strong>으로 설계돼 있다.
+    </div>
+
+    <h3>3) 스킬 디스커버리 — 6-tier 우선순위와 최대 6단계 탐색</h3>
+    <p>
+      OpenClaw는 여러 위치에 흩어진 <code>SKILL.md</code> 파일을 6단계 우선순위로 찾는다(높은 순).
+    </p>
+    <table>
+      <tr><th>우선순위</th><th>위치</th></tr>
+      <tr><td>1</td><td>워크스페이스 스킬 (<code>&lt;workspace&gt;/skills</code>)</td></tr>
+      <tr><td>2</td><td>프로젝트 에이전트 스킬</td></tr>
+      <tr><td>3</td><td>개인 에이전트 스킬</td></tr>
+      <tr><td>4</td><td>관리형(managed) 스킬 (<code>~/.openclaw/skills</code>, <code>--global</code> 설치 대상)</td></tr>
+      <tr><td>5</td><td>번들 스킬(OpenClaw 배포에 내장)</td></tr>
+      <tr><td>6</td><td>추가(extra) 디렉터리</td></tr>
+    </table>
+    <p>
+      각 루트 아래 최대 6단계 깊이까지 <code>SKILL.md</code>를 탐색하며, 스킬 이름은 frontmatter의
+      <code>name</code>이 없으면 디렉터리 이름으로 대체된다. Day 6에서 workspace와 agentDir를 구분해야 했던 것처럼,
+      여기서도 <strong>"어느 티어에 스킬을 놓았는지"가 실제로 어떤 버전이 로드되는지를 결정</strong>한다 — 같은
+      이름의 스킬을 워크스페이스와 관리형 디렉터리에 동시에 두면, 항상 더 높은 우선순위(워크스페이스)가 이긴다.
+    </p>
+
+    <h3>4) 설치·업데이트 라이프사이클 — ClawHub 설치만 자동 추적된다</h3>
+    <p>
+      스킬은 세 경로로 설치된다 — <code>openclaw skills install @owner/&lt;slug&gt;</code>(ClawHub 레지스트리),
+      Git 저장소, 로컬 디렉터리. <code>--global</code>을 붙이면 모든 에이전트가 공유하는 관리형 디렉터리에
+      설치된다.
+    </p>
+    <div class="callout callout-warn">
+      <strong>업데이트 추적은 비대칭이다:</strong> <code>openclaw skills update</code>는 <strong>ClawHub에서
+      설치한 스킬만</strong> 버전을 추적하고 자동 업데이트 대상이 된다. Git이나 로컬 디렉터리에서 설치한 스킬은
+      추적 대상이 아니라서 <strong>수동으로 재설치</strong>해야 최신 버전이 반영된다. 이걸 모르면 "업데이트했다고
+      생각했는데 실제로는 몇 달 전 버전을 계속 쓰고 있는" 상황이 조용히 생길 수 있다 — 특히 취약점이 패치된
+      버전이 나왔는데도 반영되지 않는 보안 리스크로 직결된다.
+    </div>
+    <p>
+      <code>openclaw skills verify</code>는 설치된 스킬을 신뢰 봉투(trust envelope, 배포 시점의 체크섬/서명 정보로
+      추정됨)와 대조해 로컬에 있는 스킬이 변조되지 않았는지 확인하는 명령이다.
+    </p>
+
+    <h3>5) 항상-활성(<code>always: true</code>) 스킬 — 편의와 상시 노출의 트레이드오프</h3>
+    <p>
+      <code>metadata.openclaw.always: true</code>로 선언된 스킬은 적격성 게이트(다른 스킬이 통과해야 하는 관련성
+      판단, 사용자 호출 여부 등)를 모두 건너뛰고 <strong>모든 세션에 무조건 포함</strong>된다. 자주 쓰는 핵심
+      스킬에는 유용하지만, 트레이드오프가 두 가지다 — ① Day 6의 컨텍스트 예산과 직결되는 문제로, 항상 포함되는
+      스킬이 늘어날수록 매 턴 스킬 메타데이터가 컨텍스트를 잠식한다. ② 이 스킬이 서드파티 스킬이라면, 매 세션마다
+      해당 코드의 공격 표면이 상시 열려 있다는 뜻이 된다 — "가끔 호출되는 스킬"과 "항상 로드된 스킬"은 리스크
+      계산이 다르다.
+    </p>
+
+    <h3>6) 호출 방식 — name, skillKey, user-invocable, command-dispatch</h3>
+    <p>
+      스킬은 기본적으로 frontmatter의 <code>name</code>으로 참조되지만, <code>skillKey</code>가 선언돼 있으면
+      <code>skills.entries</code> 설정에서 그 키를 대신 쓴다. <code>user-invocable: true</code>로 설정하면 스킬이
+      슬래시 커맨드로 노출돼 사용자가 직접 부를 수 있고, <code>command-dispatch: tool</code>을 쓰면 <strong>모델을
+      거치지 않고</strong> 슬래시 커맨드가 직접 tool을 디스패치한다 — 이건 Day 5에서 다룬 "모델의 판단을 거치지
+      않는 결정론적 실행 경로"와 같은 패턴으로, 지연시간과 신뢰성은 좋아지지만 모델의 문맥 판단(예: "지금 이
+      커맨드를 실행하는 게 안전한가")이 개입할 여지가 없어진다는 트레이드오프가 있다.
+    </p>
+
+    <h3>7) Skill Workshop — 에이전트가 스스로 스킬을 제안하는 구조</h3>
+    <p>
+      Skill Workshop은 에이전트가 반복 작업 중 "이건 재사용 가능한 절차구나"를 스스로 식별했을 때, 파일을 바로
+      고치는 대신 <strong>제안(proposal) 큐</strong>에 올리는 기능이다. 사용자는 그 제안을 검토하고,
+      <code>openclaw skills workshop apply</code> 같은 커맨드로 승인해야 실제로 스킬이 만들어지거나 수정된다. 이건
+      "에이전트가 자기 능력을 스스로 확장하되, 그 확장이 인간 승인 없이 조용히 배포되지는 않는다"는 human-in-the-loop
+      설계로, Skill이 그 자체로 코드 실행 능력을 갖는 만큼 자동 생성 스킬에도 같은 승인 절차가 적용된다는 점이
+      핵심이다.
+    </p>
+
+    <h3>8) 문서 자체가 명시하는 신뢰 경계</h3>
+    <div class="callout callout-danger">
+      <strong>공식 문서가 직접 경고하는 문구:</strong> "서드파티 스킬을 <strong>신뢰할 수 없는 코드(untrusted
+      code)</strong>로 취급하라. 활성화하기 전에 읽어라." 문서는 신뢰할 수 없는 입력을 다루는 스킬은 샌드박스에서
+      실행할 것을 권장하고, 스킬 디스커버리 경로에는 realpath 검증과 심링크 통제가 있으며,
+      <code>security.installPolicy</code> 설정으로 설치 자체를 게이트할 수 있다고 명시한다. 이건 Day 5에서 배운
+      "3개 통제축(sandbox/tool policy/elevated)"이 스킬이라는 배포 단위에도 그대로 적용된다는 뜻이다 — 스킬을
+      설치하는 것 자체가 그 스킬이 요구하는 tool 권한 전체를 에이전트에 부여하는 것과 같기 때문이다.
+    </div>
+
+    <h3>9) ClawHub — 레지스트리 CLI와 라이선스 제약</h3>
+    <p>
+      <strong>ClawHub</strong>는 <code>openclaw</code> CLI와는 별도의 <code>clawhub</code> CLI로 조작하는 공개
+      스킬/플러그인 레지스트리다.
+    </p>
+    <table>
+      <tr><th>범주</th><th>명령</th></tr>
+      <tr><td>인증</td><td><code>clawhub login</code>, <code>clawhub whoami</code>, 헤드리스 환경용 <code>clawhub login --device</code></td></tr>
+      <tr><td>탐색</td><td><code>clawhub search</code>, <code>clawhub explore</code>, 설치 없이 미리보는 <code>clawhub inspect</code></td></tr>
+      <tr><td>설치/관리</td><td><code>clawhub install @openclaw/demo</code>, <code>clawhub update --all</code>, 버전 고정용 <code>clawhub pin</code>/<code>clawhub unpin</code></td></tr>
+      <tr><td>퍼블리싱</td><td><code>clawhub skill publish &lt;path&gt;</code>, <code>clawhub package publish &lt;source&gt;</code>, 소유권 이전용 <code>clawhub skill rename</code>/<code>clawhub skill merge</code></td></tr>
+      <tr><td>삭제</td><td>소프트 삭제/복원 <code>clawhub delete</code>/<code>clawhub undelete</code>(소유자/관리자), 완전 삭제는 관리자 전용</td></tr>
+    </table>
+    <p>
+      <code>clawhub install</code>은 현재 작업 디렉터리 기준 <code>./skills</code>에 스킬을 설치하고, 설치된
+      버전을 <code>.clawhub/lock.json</code>에 기록한다 — 언어 패키지 매니저의 lock 파일과 같은 재현성 목적이다.
+      게시할 때는 <code>--dry-run</code>으로 실제 업로드 없이 게시 계획만 확인하거나, <code>--json</code>으로
+      CI 친화적 출력을 받을 수 있다. <strong>모든 ClawHub 스킬은 MIT-0 라이선스로 고정</strong>돼 있고, 유료
+      스킬이나 가격 메타데이터, 라이선스 오버라이드는 지원하지 않는다 — 마켓플레이스지만 상업적 판매 플랫폼은
+      아니라는 설계 결정이다.
+    </p>
+
+    <h3>10) 벡터 검색 — 왜 키워드 검색에서 임베딩 검색으로 옮겼는가</h3>
+    <p>
+      ClawHub는 TanStack Start(React 프론트엔드) + Convex 백엔드 구조이며, 검색은
+      <strong>OpenAI 임베딩(<code>text-embedding-3-small</code>) + Convex 벡터 검색</strong>으로 동작한다. 즉
+      "PDF 요약 스킬을 찾고 싶다"는 자연어 설명만으로도 정확한 스킬 이름을 몰라도 의미적으로 가까운 스킬을 찾을 수
+      있다 — 브리트(brittle)한 키워드 매칭의 한계(동의어·오타·표현 차이에 취약)를 완화하는 목적이다. 랭킹에는
+      별점(stars)과 다운로드 수 같은 사용 신호도 함께 반영된다.
+    </p>
+
+    <h3>11) 보안 스캐닝 파이프라인 — 단일 스캐너가 아니라 다중 스캐너 + 판사(judge) 구조</h3>
+    <p>
+      2026년 초 대규모 악성 스킬 사고(아래 11-2절, Day 13에서 본격적으로 다룸) 이후, ClawHub는 스킬이 게시될 때마다
+      여러 겹의 자동 스캐닝을 거치도록 파이프라인을 강화했다.
+    </p>
+    <ol>
+      <li><strong>해시 대조</strong> — 게시되는 스킬 번들의 SHA-256 해시를 계산해 VirusTotal 데이터베이스와 대조한다.</li>
+      <li><strong>VirusTotal Code Insight</strong> — 해시가 알려지지 않은 신규 스킬이면 번들 자체를 업로드해
+      코드 수준 악성 여부를 분석한다.</li>
+      <li><strong>NVIDIA SkillSpector</strong> — 정적 분석과 LLM 기반 의미 분석을 결합해, 전통적 멀웨어 스캐너가
+      놓치는 것 — 숨겨진 지시문, 위험한 코드 경로, 과도하게 넓은 권한 요구, "선언된 목적과 실제 동작의 불일치"
+      (2절에서 다룬 frontmatter 계약 위반과 정확히 같은 종류의 신호) — 를 탐지한다.</li>
+      <li><strong>clawscan-static</strong> — 결정론적 패턴 탐지를 수행하는 내장 정적 분석기.</li>
+      <li><strong>ClawScan 판사(judge) 하니스</strong> — 위 스캐너들의 결과와 provenance(출처), 메타데이터,
+      과거 모더레이션 이력을 종합해 격리된 워크스페이스에서 스킬을 직접 검사하는 LLM 에이전트(공식 "clawhub"
+      프로필은 Codex 에이전트 사용)가 최종 판정 — <strong>Clean / Suspicious / Malicious</strong> — 을 JSON으로
+      산출한다.</li>
+    </ol>
+    <div class="callout callout-warn">
+      <strong>이 파이프라인의 알려진 한계 — 스캐너 간 합의율이 낮다:</strong> 리서치에 따르면 세 스캐너(정적 분석,
+      VirusTotal, NVIDIA SkillSpector) 중 어느 두 개도 <strong>공통 탐지 비율이 10.4%를 넘지 않았고</strong>,
+      전체 탐지의 <strong>81.9%는 단 하나의 스캐너에서만</strong> 나왔다. 즉 "여러 스캐너가 다 통과했으니
+      안전하다"는 믿음은 통계적으로 근거가 약하다 — 각 스캐너가 서로 다른 유형의 위협을 잡아내기 때문에, 판사
+      하니스가 그 서로 겹치지 않는 신호들을 <strong>종합 판단</strong>으로 묶어주는 역할이 필수인 구조다. 이건
+      단일 스캐너 의존이 아니라 여러 스캐너 + 판사라는 조합 자체가 "완벽한 필터"가 아니라 "합의가 낮은 여러
+      신호를 그나마 통합하는 최선의 근사"라는 것을 보여준다.
+    </div>
+
+    <h3>12) 왜 이 스캐닝 파이프라인이 필요해졌는가 — 실제 공급망 사고 배경</h3>
+    <p>
+      2026년 상반기 여러 보안 리서치 기관이 ClawHub에서 독립적으로 악성 스킬을 발견했다. Bitdefender Labs는
+      초기 분석 대상 스킬의 상당수(리서치에 따르면 약 17%)가 악성 페이로드를 포함했다고 보고했고, Koi
+      Security의 "ClawHavoc" 리서치는 341개의 악성 스킬을 문서화했으며, Unit 42는 자동 스캐너를 우회한 정교한
+      악성 스킬(인포스틸러, 스캐너 우회, 에이전틱 사기) 사례를 공개했다. 이 사고들이 VirusTotal 통합과 NVIDIA
+      파트너십으로 이어진 배경이다. <strong>마켓플레이스 보안과 공급망 리스크의 세부 사고 사례, 조직 차원의
+      승인 정책은 Day 13에서 본격적으로 다룬다</strong> — 오늘은 "왜 이런 다단계 스캐닝 구조가 필요해졌는가"라는
+      배경으로만 짚는다.
+    </p>
+
+    <h3>13) 모더레이션 — 신고와 사람의 검토</h3>
+    <p>
+      자동 스캐닝 외에, 로그인한 사용자는 의심스러운 스킬/패키지를 신고할 수 있고, 모더레이터는 신고를 검토해
+      콘텐츠를 숨기거나 복원하고 악용 계정을 정지할 권한을 갖는다. 자동화된 스캐너 파이프라인과 사람이 개입하는
+      모더레이션 큐, 두 겹이 함께 동작하는 구조다.
+    </p>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+    <p>
+      이 질문은 "SKILL.md를 만들 줄 안다"는 저작 능력이 아니라, <strong>서드파티 코드를 에이전트에 설치한다는
+      행위 자체가 무엇을 의미하는지</strong>를 구조적으로 이해하는지를 본다. 특히 시니어에게 기대하는 신호는
+      세 가지다 — ① frontmatter의 <code>requires.*</code> 선언이 단순 문서화가 아니라 "선언-행동 일치 검증"의
+      대상이라는 것, ② 6-tier 디스커버리 우선순위처럼 "어디에 스킬을 두느냐"가 실제 로드되는 버전을 결정하고
+      ClawHub 설치만 업데이트가 자동 추적된다는 비대칭성, ③ 다중 스캐너 파이프라인이 있다고 해서 마켓플레이스형
+      배포의 공급망 리스크가 사라지는 게 아니라 — 스캐너 간 합의율 자체가 낮다는 걸 알고 "그래도 이건 위험을
+      줄이는 근사이지 제거가 아니다"라는 균형 잡힌 판단을 내릴 수 있는지다. CLI 명령어 나열이 아니라 <strong>"이
+      구조가 어떤 신뢰 가정 위에 서 있고, 그 가정이 어디서 깨지는지"</strong>를 설명할 수 있는지가 핵심이다.
+    </p>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+    <p>
+      팀이 반복되는 업무(예: 특정 사내 API 호출, 리포트 생성)를 스킬로 만들어 내부 전용으로 쓴다고 하자. 이 스킬을
+      워크스페이스가 아니라 관리형 디렉터리(<code>--global</code>)에 설치했다면, 팀의 모든 에이전트가 같은 스킬을
+      공유하게 된다 — 이건 편리하지만, 그 스킬에 문제(버그, 취약점)가 생기면 <strong>모든 에이전트가 동시에
+      영향받는다</strong>는 blast radius 확대를 의미한다. 반대로 특정 프로젝트 워크스페이스에만 스킬을 두면 격리는
+      되지만 업데이트를 각 워크스페이스마다 반복해야 한다 — Day 8에서 다룰 multi-agent 격리 설계와 정확히 같은
+      트레이드오프다.
+    </p>
+    <p>
+      또 다른 상황 — 팀이 ClawHub에서 편리해 보이는 서드파티 스킬(예: 특정 SaaS 연동 스킬)을 찾아 바로 설치했다고
+      하자. 이 스킬이 <code>requires.env</code>에 선언한 것보다 넓은 환경 변수 접근이나 예상 밖의 네트워크
+      호출을 한다면 — ClawHub의 스캐닝이 통과시켰더라도 <strong>스캐너 간 합의율이 낮다는 걸 아는 운영자</strong>는
+      "스캔을 통과했으니 안전하다"고 안심하지 않고, 최소한 한 번은 스킬 본문(Markdown + 부속 스크립트)을 직접
+      읽거나, <code>security.installPolicy</code>로 설치 자체를 게이트하거나, 처음에는 샌드박스 안에서만 실행해
+      본다. 이게 "공식 문서가 untrusted code로 취급하라고 명시한 이유"를 실제 운영 판단으로 옮기는 과정이다.
+    </p>
+    <p>
+      비용/신뢰성 관점에서는, Git이나 로컬 디렉터리에서 설치한 스킬은 <code>skills update</code>가 추적하지
+      않는다는 것을 모르고 방치하면, 나중에 그 스킬의 업스트림에서 심각한 버그나 취약점이 패치돼도 팀의 배포는
+      <strong>몇 달 전 버전에 멈춰 있는 채로</strong> 아무 경고 없이 운영될 수 있다 — Day 4에서 다룬 "자동화가
+      안전망을 의미하지 않는다"는 패턴이 여기서도 반복된다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Skill이 무엇을 하는 단위인지부터 정의한다</strong>
+        SKILL.md(+부속 파일)가 "특정 작업을 어떻게 수행할지"에 대한 절차적 지식이라는 것, 부트스트랩 파일(정체성
+        레이어)과 역할이 다르다는 것을 짚는다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>frontmatter가 단순 메타데이터가 아니라 검증 가능한 계약이라는 것을 설명한다</strong>
+        <code>requires.env</code>/<code>requires.bins</code> 같은 선언이 실제 동작과 대조되며, 불일치가 보안
+        리뷰 플래그가 된다는 것을 언급한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>디스커버리 우선순위와 설치 위치가 무엇을 결정하는지 짚는다</strong>
+        워크스페이스 > 프로젝트 > 개인 > 관리형 > 번들 > 추가 디렉터리의 6-tier, 그리고 ClawHub 설치만 자동
+        업데이트 추적 대상이라는 비대칭성을 설명한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>ClawHub 레지스트리의 발견 방식(벡터 검색)과 CLI 워크플로를 간단히 짚는다</strong>
+        임베딩 기반 시맨틱 검색이 키워드 매칭의 한계를 완화한다는 것, install/update/verify/lock 파일의 역할을
+        설명한다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>보안 스캐닝 파이프라인의 구조와 한계를 함께 설명한다</strong>
+        VirusTotal/NVIDIA SkillSpector/정적 분석 + 판사 하니스 구조, 그리고 스캐너 간 합의율이 낮다는 것 —
+        "스캔 통과 = 안전 보장"이 아니라는 것을 짚는다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>운영자로서 어떤 최종 방어선을 두는지로 마무리한다</strong>
+        공식 문서가 명시한 "untrusted code로 취급, 읽고 나서 활성화"를 실제 운영 절차(샌드박스 우선 실행,
+        installPolicy 게이트, 항상-활성 스킬의 컨텍스트/공격표면 트레이드오프 인지)로 옮겨 설명하면 시니어
+        신호가 된다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+    <p>
+      "OpenClaw에서 Skill은 SKILL.md 파일(과 부속 파일)로 정의되는 절차적 지식 단위입니다. Day 6에서 다룬
+      SOUL.md/AGENTS.md 같은 부트스트랩 파일이 에이전트의 정체성과 행동 규칙을 정의한다면, Skill은 '이 작업은
+      이렇게 처리해라'는 구체적 절차를 담습니다.
+      <br><br>
+      frontmatter의 <code>metadata.openclaw</code> 섹션에는 <code>requires.env</code>, <code>requires.bins</code>
+      같은 필드로 이 스킬이 필요로 하는 환경 변수와 바이너리를 선언합니다. 이게 중요한 이유는 <strong>단순
+      문서화가 아니라 검증 대상</strong>이기 때문입니다 — ClawHub의 보안 분석은 선언된 것과 실제 코드가 하는
+      것이 일치하는지 대조하고, 불일치가 있으면 리뷰 플래그가 붙습니다.
+      <br><br>
+      스킬은 6단계 우선순위로 디스커버리됩니다 — 워크스페이스, 프로젝트 에이전트, 개인 에이전트, 관리형
+      (<code>~/.openclaw/skills</code>), 번들, 추가 디렉터리 순서입니다. 여기서 실무적으로 중요한 건 <strong>ClawHub
+      레지스트리에서 설치한 스킬만 <code>skills update</code>가 버전을 추적</strong>한다는 겁니다 — Git이나 로컬
+      디렉터리에서 설치한 스킬은 수동으로 재설치해야 최신 버전이 반영되는데, 이걸 모르면 취약점이 패치된 새
+      버전이 나와도 계속 옛날 버전을 쓰는 상황이 조용히 생길 수 있습니다.
+      <br><br>
+      ClawHub 자체는 OpenAI 임베딩과 Convex 벡터 검색으로 자연어 설명만으로도 스킬을 찾을 수 있는 시맨틱 검색을
+      제공하고, 게시된 스킬은 SHA-256 해시 기반 VirusTotal 대조, NVIDIA SkillSpector의 LLM 기반 의미 분석,
+      정적 분석기, 그리고 이 결과들을 종합하는 판사(judge) 하니스를 거쳐 Clean/Suspicious/Malicious로 판정됩니다.
+      <br><br>
+      다만 저는 이 파이프라인이 있다고 해서 서드파티 스킬을 무조건 신뢰하지는 않습니다. 리서치에 따르면 이 세
+      스캐너 간 공통 탐지 비율은 10% 남짓밖에 안 되고, 탐지의 80% 이상이 단일 스캐너에서만 나옵니다 — 즉 여러
+      스캐너를 거쳤다는 게 '검증됐다'는 보장이 아니라 '서로 겹치지 않는 여러 관점을 종합한 최선의 근사'라는
+      뜻입니다. 그래서 실제로 공식 문서도 서드파티 스킬을 untrusted code로 취급하고 활성화 전에 읽어보라고 명시합니다.
+      저는 여기에 더해, 처음 설치한 스킬은 샌드박스 안에서 먼저 돌려보고, <code>security.installPolicy</code>로
+      설치 자체를 게이트하고, <code>always: true</code>로 항상 활성화하는 스킬은 컨텍스트 예산과 상시 공격표면
+      노출을 함께 고려해서 최소한으로만 지정합니다."
+    </p>
+  </div>
+
+  <!-- Senior-level Follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+    <p><strong>Q. 같은 이름의 스킬이 워크스페이스와 관리형 디렉터리에 동시에 있으면 어떤 게 로드됩니까?</strong></p>
+    <p>
+      워크스페이스 스킬이 항상 이깁니다. 6-tier 우선순위에서 워크스페이스가 최상위이기 때문에, 팀 공용 관리형
+      스킬을 특정 프로젝트에서만 다른 버전으로 오버라이드하고 싶다면 그 프로젝트 워크스페이스의
+      <code>skills/</code> 아래에 같은 이름으로 스킬을 두면 됩니다. 반대로 이걸 모르고 두 위치에 실수로 다른
+      버전을 남겨두면, "분명 업데이트했는데 옛날 동작이 나온다"는 디버깅하기 까다로운 상황이 생깁니다.
+    </p>
+    <p><strong>Q. <code>always: true</code> 스킬을 몇 개까지 두는 게 적절합니까?</strong></p>
+    <p>
+      정해진 숫자는 없지만, 판단 기준은 두 가지입니다. 하나는 Day 6에서 다룬 컨텍스트 예산 — 항상 포함되는
+      스킬 메타데이터가 늘어날수록 매 턴 예산을 잠식합니다. 다른 하나는 공격 표면입니다 — 그 스킬이 서드파티
+      코드라면 모든 세션에서 상시 실행 가능 상태가 된다는 뜻이므로, 정말 모든 세션에 필요한 핵심 스킬에만
+      제한적으로 사용해야 합니다.
+    </p>
+    <p><strong>Q. ClawHub의 스캔을 통과한 스킬이면 프로덕션에 바로 써도 됩니까?</strong></p>
+    <p>
+      아니요. 스캐너 간 합의율이 낮다는 통계(공통 탐지 10% 남짓, 단일 스캐너 전용 탐지 80% 이상)가 보여주듯,
+      스캔 통과가 안전을 보장하지 않습니다. 공식 문서도 서드파티 스킬을 untrusted code로 취급하라고 명시하는
+      만큼, 최소한 코드 리뷰 한 번, 처음에는 샌드박스 환경에서의 시험 실행, 그리고
+      <code>security.installPolicy</code> 같은 조직 차원의 설치 게이트를 함께 둬야 합니다.
+    </p>
+    <p><strong>Q. Skill Workshop이 제안한 스킬을 검토 없이 자동 승인하면 어떤 문제가 생깁니까?</strong></p>
+    <p>
+      Skill Workshop은 에이전트가 스스로 만든 절차를 스킬로 승격하자는 제안일 뿐, 그 제안 자체가 안전하다는
+      보장은 없습니다. 에이전트가 특정 세션에서 우연히 잘 동작한 절차를 일반화해 스킬로 만들면, 그 절차 안에
+      의도치 않은 부작용(과도한 권한 사용, 특정 상황에만 안전한 가정)이 섞여 들어갈 수 있습니다. 자동 승인은
+      이 human-in-the-loop 설계의 취지 자체를 무력화하는 셈입니다.
+    </p>
+    <p><strong>Q. Git이나 로컬 디렉터리 설치를 ClawHub 설치보다 선호해야 할 상황이 있습니까?</strong></p>
+    <p>
+      있습니다. 사내 전용 스킬이라 공개 레지스트리에 올릴 수 없거나, 특정 커밋/포크로 버전을 정확히 고정하고
+      싶거나, ClawHub의 자동 업데이트를 원치 않고 변경을 리뷰한 뒤에만 수동으로 반영하고 싶은 경우입니다. 다만
+      그 경우 자동 업데이트 추적이 안 된다는 걸 팀이 알고, 별도의 업데이트 확인 프로세스(예: 업스트림 릴리스
+      노트 구독)를 마련해둬야 합니다.
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>좋은 답변</h4>
+        <ul>
+          <li>frontmatter의 <code>requires.*</code> 선언이 검증 대상이라는 것, 선언-행동 불일치가 보안 플래그가
+          된다는 것을 안다</li>
+          <li>6-tier 디스커버리 우선순위와 ClawHub 설치만 자동 업데이트 추적된다는 비대칭성을 구체적으로
+          설명한다</li>
+          <li>스캐닝 파이프라인의 구성(VirusTotal/NVIDIA SkillSpector/정적 분석/판사 하니스)과 함께, 스캐너 간
+          합의율이 낮다는 한계까지 균형 있게 짚는다</li>
+          <li><code>always: true</code>의 컨텍스트 예산·공격표면 트레이드오프를 이해한다</li>
+          <li>공식 문서의 "untrusted code" 경고를 샌드박스 시험 실행, installPolicy 게이트 같은 구체적 운영
+          절차로 옮겨 설명한다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변</h4>
+        <ul>
+          <li>"SKILL.md 파일을 만들고 clawhub install로 받으면 된다"는 사용법 나열에서 멈춘다</li>
+          <li>frontmatter를 단순 설명 문서로만 이해하고 검증 대상이라는 것을 모른다</li>
+          <li>워크스페이스/관리형/번들 스킬의 우선순위를 구분하지 못한다</li>
+          <li>"ClawHub가 스캔하니까 안전하다"고 단정하고 스캐너 한계를 인지하지 못한다</li>
+          <li>서드파티 스킬 설치를 일반 라이브러리 설치처럼 취급하며 코드 실행 권한 위임이라는 걸 간과한다</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 흔한 오해 정정 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+    <p>
+      <strong>오해 1 — "SKILL.md의 frontmatter는 그냥 설명을 위한 메타데이터다."</strong> 실제로는 ClawHub의
+      보안 분석이 선언(<code>requires.env</code>/<code>requires.bins</code> 등)과 실제 코드 동작을 대조하는
+      검증 대상이다. 선언을 대충 채우거나 실제보다 좁게 적으면, 그 자체가 리뷰에서 불일치로 걸릴 수 있다.
+    </p>
+    <p>
+      <strong>오해 2 — "ClawHub에서 설치한 스킬이든 Git/로컬에서 설치한 스킬이든 업데이트는 똑같이 관리된다."</strong>
+      <code>skills update</code>는 ClawHub 설치만 추적한다. Git/로컬 설치는 수동 재설치가 필요하며, 이걸 모르면
+      패치된 보안 취약점이 반영되지 않은 채 방치될 수 있다.
+    </p>
+    <p>
+      <strong>오해 3 — "다중 스캐너를 통과했으면 그 스킬은 검증된 것이다."</strong> 리서치에 따르면 스캐너 간
+      공통 탐지 비율이 낮고(10% 남짓), 탐지의 대부분이 단일 스캐너에서만 나온다. 이는 파이프라인이 "여러 서로
+      다른 관점의 근사치를 종합"하는 구조이지 "만장일치로 안전을 증명"하는 구조가 아니라는 뜻이다.
+    </p>
+    <p>
+      <strong>오해 4 — "스킬은 텍스트(Markdown) 파일이니 코드 실행보다 안전하다."</strong> SKILL.md는 절차를
+      담은 텍스트지만, 부속 스크립트를 실행하거나 frontmatter에 선언된 바이너리/환경 변수에 접근하는 등 실질적인
+      코드 실행 능력을 갖는다. 공식 문서가 서드파티 스킬을 untrusted code로 명시하는 이유가 바로 이것이다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Skill/ClawHub 운영 시 확인할 것</h2>
+    <ul>
+      <li>신규 서드파티 스킬을 설치하기 전에 SKILL.md 본문과 부속 스크립트를 실제로 읽었는가</li>
+      <li>스킬의 <code>requires.env</code>/<code>requires.bins</code> 선언이 실제로 필요한 범위와 일치하는지
+      의심스러우면 코드까지 확인했는가</li>
+      <li>스킬을 워크스페이스/프로젝트/개인/관리형 중 어느 티어에 둘지, 그 선택이 blast radius(공유 범위)에
+      미치는 영향을 고려했는가</li>
+      <li>Git/로컬 설치 스킬에 대해 자동 업데이트가 되지 않는다는 것을 인지하고 별도 갱신 프로세스를 마련했는가</li>
+      <li><code>always: true</code>로 지정한 스킬이 정말 모든 세션에 필요한지, 컨텍스트 예산과 상시 공격표면
+      노출을 감수할 가치가 있는지 재검토했는가</li>
+      <li>신뢰도가 낮은 신규 스킬을 처음 도입할 때 샌드박스 환경에서 먼저 실행해봤는가</li>
+      <li><code>security.installPolicy</code> 같은 조직 차원의 설치 게이트가 설정돼 있는가</li>
+      <li>Skill Workshop이 제안한 스킬을 자동 승인 없이 실제로 사람이 검토하는 프로세스가 있는가</li>
+    </ul>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>SKILL.md 파일을 만들고 ClawHub에서 설치할 수 있다는 것 정도만 알고, frontmatter의 역할이나
+      디스커버리 우선순위를 설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>frontmatter 필드와 6-tier 우선순위는 나열할 수 있지만, 선언-행동 검증이나 ClawHub/Git 설치 간
+      업데이트 추적 비대칭성을 설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>frontmatter 검증 개념, 디스커버리 우선순위, 업데이트 추적 비대칭성, 벡터 검색과 스캐닝 파이프라인의
+      구성 요소까지 설명할 수 있음</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>위 내용에 더해 다중 스캐너 간 낮은 합의율(10.4%/81.9%) 통계를 근거로 "스캔 통과가 안전 보장이
+      아니다"를 설명하고, <code>always: true</code>의 컨텍스트/공격표면 트레이드오프와 Skill Workshop의
+      human-in-the-loop 설계 취지까지 연결해, 서드파티 스킬 도입 시 구체적인 운영 절차(샌드박스 시험 실행,
+      installPolicy 게이트, 워크스페이스 티어 선택)를 즉시 제시함</span>
+    </div>
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. SKILL.md frontmatter의 <code>requires.env</code>/<code>requires.bins</code> 선언이 왜 단순 문서화가
+      아니라 검증 대상인지 설명할 수 있는가?<br>
+      2. 스킬 디스커버리 6-tier 우선순위를 순서대로 말하고, ClawHub 설치와 Git/로컬 설치의 업데이트 추적 차이를
+      설명할 수 있는가?<br>
+      3. ClawHub의 벡터 검색이 키워드 검색과 다른 점, 그리고 다중 스캐너 파이프라인의 구성과 한계(낮은 합의율)를
+      설명할 수 있는가?<br>
+      4. <code>always: true</code> 스킬의 트레이드오프(컨텍스트 예산 vs 상시 공격표면)를 설명할 수 있는가?<br>
+      5. 공식 문서가 서드파티 스킬을 untrusted code로 명시하는 이유를 실제 운영 절차(샌드박스, installPolicy)로
+      옮겨 설명할 수 있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li><strong>SKILL.md frontmatter는 검증 가능한 계약이다</strong> — <code>requires.env</code>/
+      <code>requires.bins</code> 등의 선언이 실제 동작과 대조되고, 불일치가 보안 리뷰 플래그가 된다.</li>
+      <li><strong>스킬 디스커버리는 6-tier 우선순위다</strong> — 워크스페이스 > 프로젝트 > 개인 > 관리형 > 번들 >
+      추가 디렉터리 순이며, <strong>ClawHub 설치만 <code>skills update</code>가 추적</strong>하고 Git/로컬 설치는
+      수동 재설치가 필요하다.</li>
+      <li><strong><code>always: true</code>는 적격성 게이트를 모두 건너뛴다</strong> — 컨텍스트 예산 잠식과
+      상시 공격표면 노출이라는 트레이드오프를 동반한다.</li>
+      <li><strong>ClawHub는 임베딩 기반 벡터 검색(OpenAI + Convex)으로 시맨틱 검색을 제공</strong>하며, 모든
+      스킬은 MIT-0 라이선스로 고정돼 유료 판매는 지원하지 않는다.</li>
+      <li><strong>보안 스캐닝은 VirusTotal/NVIDIA SkillSpector/정적 분석 + 판사 하니스의 다단계 구조</strong>이지만,
+      리서치에 따르면 스캐너 간 공통 탐지 비율이 10% 남짓에 불과해 <strong>"스캔 통과 = 안전 보장"이 아니다</strong>.</li>
+      <li><strong>공식 문서는 서드파티 스킬을 untrusted code로 취급하라고 명시한다</strong> — 활성화 전에 읽고,
+      가능하면 샌드박스에서 먼저 시험하고, <code>security.installPolicy</code>로 조직 차원의 설치 게이트를
+      두는 것이 실무 대응이다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 7 완료 · 다음: Day 8 — Multi-Agent 라우팅과 격리</span>
+  </div>
+
+</div>
+</body>
+</html>

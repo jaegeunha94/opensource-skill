@@ -141,6 +141,18 @@
 - [GHSA-72fw-cqh5-f324 / CVE-2026-53844 — memory-wiki 공유 검색이 세션 가시성 검사를 누락 (2026.4.29 수정, 중간 확정도)](https://github.com/openclaw/openclaw/security/advisories/GHSA-72fw-cqh5-f324)
 - [GHSA-p2fh-f5fc-44hr / CVE-2026-53825 — memory-wiki ingest 경로 트래버설, `operator.write` 스코프 오남용 (2026.4.7 수정, 중간 확정도)](https://github.com/openclaw/openclaw/security/advisories/GHSA-p2fh-f5fc-44hr)
 
+## Skills / ClawHub (Day 7 핵심 출처)
+
+- [Skills — docs.openclaw.ai](https://docs.openclaw.ai/tools/skills) / [GitHub — docs/tools/skills.md](https://github.com/openclaw/openclaw/blob/main/docs/tools/skills.md) — 스킬 디스커버리 6-tier 우선순위, 설치/업데이트/verify, `always`/`skillKey`/`command-dispatch`, Skill Workshop, "서드파티 스킬은 untrusted code로 취급" 보안 경고
+- [Creating skills — docs.openclaw.ai](https://docs.openclaw.ai/tools/creating-skills)
+- [ClawHub — docs.openclaw.ai](https://docs.openclaw.ai/clawhub) / [GitHub — openclaw/clawhub](https://github.com/openclaw/clawhub) — CLI 명령(login/search/install/update/pin/publish/delete), TanStack Start + Convex 아키텍처, OpenAI 임베딩(text-embedding-3-small) + Convex 벡터 검색, MIT-0 라이선싱
+- [GitHub — clawhub/docs/skill-format.md](https://github.com/openclaw/clawhub/blob/main/docs/skill-format.md) — SKILL.md frontmatter 전체 스키마(`metadata.openclaw`/`clawdbot`/`clawdis` 별칭, `requires.env/bins/anyBins/config`, `envVars`, `primaryEnv`, `install`, `nix`), 선언-행동 불일치 보안 분석
+- [GitHub — openclaw/openclaw/skills/clawhub/SKILL.md](https://github.com/openclaw/openclaw/blob/main/skills/clawhub/SKILL.md) — 실제 SKILL.md 예시
+- [GitHub — openclaw/clawscan](https://github.com/openclaw/clawscan) — 다중 스캐너(NVIDIA SkillSpector, clawscan-static, Cisco AI Defense skill-scanner, agentverus-scanner, Socket CLI) 조합, 판사(judge) 하니스 구조, `clawhub` production 프로필, SkillTrustBench
+- [OpenClaw Blog — Collaborates with NVIDIA for Stronger Agent Skill Security](https://openclaw.ai/blog/openclaw-nvidia-skill-security) (자동화 접근 403, 검색 스니펫으로 교차 확인) / [The Hacker News — OpenClaw Integrates VirusTotal Scanning to Detect Malicious ClawHub Skills](https://thehackernews.com/2026/02/openclaw-integrates-virustotal-scanning.html) / [OpenClaw Blog — Partners with VirusTotal for Skill Security](https://openclaw.ai/blog/virustotal-partnership) / [eSecurity Planet — OpenClaw Adds VirusTotal Scanning to AI Agent Marketplace](https://www.esecurityplanet.com/threats/openclaw-adds-virustotal-scanning-to-ai-agent-marketplace/) — SHA-256 해시 대조 → VirusTotal Code Insight → NVIDIA SkillSpector + 정적 분석 + 판사 하니스 파이프라인, 스캐너 간 공통 탐지 비율 10.4% 이하/단일 스캐너 전용 탐지 81.9% 통계
+- [Fastio — OpenClaw ClawHub Setup Guide: Install, Search, and Manage Skills](https://fast.io/resources/openclaw-clawhub-setup/) / [Stack Junkie — How to Install OpenClaw Skills From ClawHub (+ Build Your Own)](https://www.stack-junkie.com/blog/openclaw-skills-clawhub-guide) / [OpenClaw Skills Library — ClawHub reference](https://openclawskills.dev/en/reference/tools/clawhub/) (2차 해설 자료 — 교차 검증용)
+- Unit 42 / Bitdefender / Koi Security의 2026년 상반기 악성 스킬 사고 리서치(Day 13 마켓플레이스 보안 레슨의 핵심 출처, 상단 "마켓플레이스 보안 / 공급망 사고" 절 참고) — Day 7에서는 스캐닝 파이프라인이 왜 필요해졌는지의 배경으로만 인용
+
 ## 사용 시 주의사항
 
 - `docs.openclaw.ai` 도메인은 자동화 접근(WebFetch)에 403을 반환하는 경우가 있었다. 이 트랙의 공식 문서 인용은
@@ -172,3 +184,10 @@
   최종 확인한다. THREAT-MODEL-ATLAS.md가 메모리/프롬프트 파일 포이즐링을 명시적으로 모델링하지 않는다는
   관찰은 문서 원문 직접 확인이지만, "공백"이라는 평가 자체는 리서치 시점의 해석이므로 최신 버전에서
   보강됐는지 재확인이 필요하다.
+- Day 7의 SKILL.md frontmatter 스키마와 스킬 디스커버리 6-tier 우선순위는 GitHub 원문(docs/tools/skills.md,
+  clawhub/docs/skill-format.md)과 WebFetch 요약으로 확인한 높은 확정도다. ClawScan의 다중 스캐너 조합과 판사
+  하니스 구조는 openclaw/clawscan 저장소 원문으로 확인했지만, 스캐너 간 합의율 통계(공통 탐지 10.4% 이하,
+  단일 스캐너 전용 81.9%)는 `docs.openclaw.ai`의 NVIDIA 파트너십 공지가 403으로 막혀 검색 스니펫으로만 확인한
+  중간 확정도이므로, 면접 전 원문 공지나 후속 보도로 재확인한다. ClawHub의 벡터 검색 구현(OpenAI
+  text-embedding-3-small + Convex)과 CLI 명령 목록도 검색 스니펫 기반이라 명령어 플래그의 정확한 철자는
+  실제 `clawhub --help`로 재확인해야 한다.

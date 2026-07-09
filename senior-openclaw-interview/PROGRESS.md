@@ -10,12 +10,12 @@
 | 4 | 2026-07-06 | Model Provider 설정과 Auth Profile Rotation/Failover | [0004-model-provider-auth-profile-rotation-failover.html](lessons/0004-model-provider-auth-profile-rotation-failover.html) |
 | 5 | 2026-07-07 | Tools와 Tool Dispatch 보안 | [0005-tools-tool-dispatch-security.html](lessons/0005-tools-tool-dispatch-security.html) |
 | 6 | 2026-07-08 | Sessions, Prompt/Memory 파일 | [0006-sessions-prompt-memory-files.html](lessons/0006-sessions-prompt-memory-files.html) |
+| 7 | 2026-07-09 | Skills와 ClawHub | [0007-skills-clawhub.html](lessons/0007-skills-clawhub.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | Skills와 ClawHub | SKILL.md 구조, skill install/update, clawhub CLI, 벡터 검색, moderation hook |
 | 8 | Multi-Agent 라우팅과 격리 | 다중 에이전트 workspace 분리, agentDir 충돌 방지, per-agent 세션 스토어 |
 | 9 | 샌드박싱 아키텍처 | host/Docker/none 실행 모드, 네트워크 없는 컨테이너 격리, 절대경로 파일 접근 위험 |
 | 10 | DM Pairing, Allowlist, Remote Exposure Runbook | 4가지 DM 정책, pairing 핸드셰이크, allowlist 검증 규칙, exposure runbook, 리버스 프록시/터널 패턴 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음: Day 7 — Skills와 ClawHub
+**Day 7 완료** — 다음: Day 8 — Multi-Agent 라우팅과 격리
 
 ## 습득한 핵심 개념
 
@@ -45,7 +45,7 @@
 - [x] 메모리 3계층(MEMORY.md/daily notes/DREAMS.md) 증류 구조, 무한 증가 방지(디스크 무제한 vs 주입 사본 예산 내 절단), compaction-memoryFlush 연결 (Day 6)
 - [x] compaction(보이는 것만 변경, 전체 이력 보존)과 session pruning(캐시 TTL+크기 임계값 동시 충족)의 구분, 압축 경계에서 세션 오버라이드 미리셋으로 인한 실제 비용 사고(#92864, $300/일) (Day 6)
 - [x] 부트스트랩/메모리 파일 로딩의 인젝션 탐지 공백(#66350), 압축 위장 프롬프트 인젝션 실제 페이로드(#30111), 공식 위협 모델의 커버리지 공백, 관련 CVE(CVE-2026-27004/53844/53825) (Day 6)
-- [ ] Skills, ClawHub (예정 Day 7)
+- [x] SKILL.md frontmatter(`metadata.openclaw`, `requires.env/bins/anyBins`, `always`, `skillKey` 등)가 단순 문서화가 아니라 선언-행동 일치를 검증하는 계약이라는 것, 스킬 디스커버리 6-tier 우선순위(workspace > project agent > personal agent > managed > bundled > extra), ClawHub 설치만 `skills update`가 자동 추적하는 비대칭성, ClawHub 벡터 검색(OpenAI 임베딩 + Convex), 다중 스캐너(VirusTotal/NVIDIA SkillSpector/정적 분석) + 판사 하니스 스캐닝 파이프라인과 스캐너 간 낮은 합의율(공통 탐지 10.4% 이하, 단일 스캐너 전용 81.9%)의 한계, "서드파티 스킬 = untrusted code" 공식 경고 (Day 7)
 - [ ] Multi-agent 라우팅과 격리 (예정 Day 8)
 - [ ] 샌드박싱 아키텍처 (예정 Day 9)
 - [ ] DM pairing/allowlist/remote exposure runbook (예정 Day 10)
