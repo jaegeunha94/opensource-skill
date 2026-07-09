@@ -11,12 +11,12 @@
 | 5 | 2026-07-06 | DaemonSet과 노드 레벨 운영 | [0005-daemonset-node-level-operations.html](lessons/0005-daemonset-node-level-operations.html) |
 | 6 | 2026-07-07 | Service, CoreDNS, 서비스 디스커버리 | [0006-service-coredns-service-discovery.html](lessons/0006-service-coredns-service-discovery.html) |
 | 7 | 2026-07-08 | Ingress vs Gateway API — 트래픽 라우팅 설계 | [0007-ingress-gateway-api-traffic-routing.html](lessons/0007-ingress-gateway-api-traffic-routing.html) |
+| 8 | 2026-07-09 | CNI 네트워킹과 클러스터 네트워크 트러블슈팅 | [0008-cni-networking-troubleshooting.html](lessons/0008-cni-networking-troubleshooting.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | CNI 네트워킹과 클러스터 네트워크 트러블슈팅 | Pod 네트워크 모델, CNI 플러그인 비교, NetworkPolicy, DNS/연결 장애 진단 순서 |
 | 9 | Storage/Volume 설계 (PV/PVC, StorageClass, CSI) | 동적 프로비저닝, 접근 모드, Reclaim Policy, StatefulSet과 볼륨, CSI 장애 패턴 |
 | 10 | ConfigMap/Secret과 설정/시크릿 관리 | 마운트 vs 환경변수, 갱신 전파 지연, Secret 암호화(etcd encryption at rest), 외부 시크릿 매니저 연동 |
 | 11 | HPA/VPA와 오토스케일링, DRA/GPU 스케줄링 | 메트릭 기반 스케일링, HPA·VPA 충돌, In-place Resize와 VPA 관계, DRA(GPU/가속기) 개요, 노드 오토스케일러(Karpenter vs Cluster Autoscaler) |
@@ -31,7 +31,7 @@
 
 ## 현재 학습 위치
 
-**Day 7 완료** — Day 8: CNI 네트워킹과 클러스터 네트워크 트러블슈팅으로 진행 예정.
+**Day 8 완료** — Day 9: Storage/Volume 설계 (PV/PVC, StorageClass, CSI)로 진행 예정.
 
 ## 습득한 핵심 개념
 
@@ -66,7 +66,12 @@
 - [x] Ingress는 API, Ingress Controller는 실행 주체라는 구분과 annotation 기반 벤더 종속의 구조적 한계 (Day 7)
 - [x] ingress-nginx 은퇴(2026-03 EOL, CVE-2025-1974 IngressNightmare)의 배경과 API vs 구현체를 분리한 리스크 대응 판단 (Day 7)
 - [x] Gateway API의 GatewayClass/Gateway/Route 역할 분리와 이것이 만드는 RBAC 권한 경계 효과, Route 타입이 프로토콜별로 나뉜 이유 (Day 7)
-- [ ] CNI 네트워킹/NetworkPolicy (예정 Day 8)
+- [x] CNI는 Kubernetes 전용이 아닌 별도 CNCF 스펙이라는 것, kubelet은 CNI 플러그인의 여러 소비자 중 하나일 뿐이라는 구조 (Day 8)
+- [x] flat network 모델(NAT 없는 Pod 간 통신)과 이를 만족시키는 두 방식 — 오버레이(캡슐화 오버헤드) vs 네이티브 라우팅(언더레이 라우팅 가능 여부 전제) (Day 8)
+- [x] iptables 기반 vs eBPF 기반(Cilium) 데이터플레인의 O(n) vs O(1) 차이와 디버깅 도구 체계가 통째로 바뀐다는 trade-off, 클라우드별 CNI 기본값 차이(GKE Dataplane V2/AKS Cilium GA 기본값 vs EKS VPC CNI 고정) (Day 8)
+- [x] 네이티브 NetworkPolicy가 L3/L4(IP·포트)까지만 지원하고 FQDN/L7은 CNI별 벤더 확장(CiliumNetworkPolicy 등) 영역이라는 경계, AdminNetworkPolicy/BaselineAdminNetworkPolicy가 ClusterNetworkPolicy(v1alpha2, 여전히 alpha)로 재편된 사실 (Day 8)
+- [x] default-deny NetworkPolicy가 CoreDNS egress까지 함께 차단해 조용한 전면 DNS 장애를 만드는 메커니즘과 예방 순서(DNS 허용 규칙 선배포) (Day 8)
+- [x] IP 고갈(AWS VPC CNI 서브넷 단편화), MTU 불일치(오버레이 캡슐화 오버헤드), CNI 데몬 crash로 인한 NetworkPluginNotReady 등 네트워크 장애의 전형적 서명과 계층별(노드/CNI → 라우팅 → Service → DNS → 정책) 진단 순서 (Day 8)
 - [ ] Storage/Volume/CSI (예정 Day 9)
 - [ ] ConfigMap/Secret 관리 (예정 Day 10)
 - [ ] HPA/VPA, DRA, 노드 오토스케일링 (예정 Day 11)
