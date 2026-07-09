@@ -13,16 +13,21 @@
 | 7 | 2026-07-06 | 재시도 전략 — Exponential Backoff와 재시도 횟수 결정 | [0007-exponential-backoff-retry-strategy.html](lessons/0007-exponential-backoff-retry-strategy.html) |
 | 8 | 2026-07-07 | Backpressure와 Consumer Rate Control | [0008-backpressure-and-consumer-rate-control.html](lessons/0008-backpressure-and-consumer-rate-control.html) |
 | 9 | 2026-07-08 | Celery와 Python 비동기 작업 설계 | [0009-celery-python-async-task-design.html](lessons/0009-celery-python-async-task-design.html) |
+| 10 | 2026-07-09 | 대규모 비동기 처리 아키텍처 종합 설계 | [0010-async-architecture-capstone-design.html](lessons/0010-async-architecture-capstone-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 10 | 대규모 비동기 처리 아키텍처 종합 설계 | 전체 시나리오 설계, 처리량 산정, 장애 전파 차단, 운영 체크리스트 |
+| 11 | Transactional Outbox 패턴과 CDC — 이벤트 발행 정합성 보장 | Dual-write 문제, Transactional Outbox, Change Data Capture(Debezium), Exactly-once에 가까운 이벤트 발행 |
+
+> Day 10에서 MISSION.md에 명시된 커리큘럼 범위(종합 설계)를 완료했다. 인터뷰에서 계속
+> 등장하는 실무 정합성 주제(DB 트랜잭션과 이벤트 발행 사이의 dual-write 문제)를 다음 Day로
+> 추가해 커리큘럼을 이어간다.
 
 ## 현재 학습 위치
 
-**Day 9 완료** — Day 10: 대규모 비동기 처리 아키텍처 종합 설계 예정.
+**Day 10 완료** — Day 11: Transactional Outbox 패턴과 CDC 예정.
 
 ## 습득한 핵심 개념
 
@@ -60,4 +65,9 @@
 - [x] Priority Queue를 큐/Worker 분리로 구현하는 이유 (브로커별 priority 신뢰도 차이) (Day 9)
 - [x] Canvas(chain/group/chord)로 워크플로우 의존성 모델링과 chord 부분 실패 함정 (Day 9)
 - [x] Worker 풀 선택(prefork vs gevent)과 CPU/I/O 바운드 판단, prefetch 조정 (Day 9)
-- [ ] 대규모 비동기 아키텍처 종합 (예정 Day 10)
+- [x] 후속 작업별 요구사항 분해(순서/멱등성/지연 허용치/외부 의존성)와 브로커 매핑 (Day 10)
+- [x] 처리량 산정 계산식과 파티션 사전 용량 계획의 필요성 (Day 10)
+- [x] Bulkhead(큐 물리적 분리), Circuit Breaker를 통한 장애 전파 차단 설계 (Day 10)
+- [x] 운영 체크리스트(모니터링/알림 임계치/런북) 구성 (Day 10)
+- [ ] Transactional Outbox 패턴과 Dual-write 문제 (예정 Day 11)
+- [ ] Change Data Capture(Debezium 등)와 CDC 기반 이벤트 발행 (예정 Day 11)

@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 — 대규모 비동기 처리 아키텍처 종합 설계</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    /* Header */
+    .lesson-header {
+      border-left: 4px solid #6366f1;
+      padding: 1rem 1.5rem;
+      background: #1e1f2e;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 2.5rem;
+    }
+    .lesson-header .day-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #818cf8;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .lesson-header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #f1f5f9;
+    }
+    .lesson-header .meta {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-top: 0.4rem;
+    }
+
+    /* Section */
+    .section {
+      background: #1a1b2e;
+      border: 1px solid #2d2e4a;
+      border-radius: 10px;
+      padding: 1.6rem 1.8rem;
+      margin-bottom: 1.8rem;
+    }
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6366f1;
+      margin-bottom: 0.6rem;
+    }
+    .section h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #c7d2fe;
+      margin-bottom: 1rem;
+    }
+    .section p { color: #cbd5e1; margin-bottom: 0.9rem; }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* Interview question box */
+    .interview-q {
+      background: #13141f;
+      border: 2px solid #4f46e5;
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.8rem;
+    }
+    .interview-q .q-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #a5b4fc;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q .q-text {
+      font-size: 1.08rem;
+      font-weight: 600;
+      color: #e0e7ff;
+      line-height: 1.6;
+    }
+
+    /* Callout */
+    .callout {
+      border-left: 3px solid #6366f1;
+      padding: 0.9rem 1.2rem;
+      background: #13141f;
+      border-radius: 0 6px 6px 0;
+      margin: 1rem 0;
+      color: #c7d2fe;
+    }
+    .callout.warn { border-left-color: #f59e0b; background: #1c1a10; color: #fde68a; }
+    .callout.good { border-left-color: #10b981; background: #0d1c16; color: #6ee7b7; }
+    .callout.bad  { border-left-color: #ef4444; background: #1c0d0d; color: #fca5a5; }
+
+    /* Steps */
+    .steps { list-style: none; counter-reset: step-counter; padding: 0; }
+    .steps li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.1rem;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step-counter);
+      min-width: 28px;
+      height: 28px;
+      background: #4f46e5;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .steps li .step-body { color: #cbd5e1; }
+    .steps li .step-body strong { color: #e2e8f0; }
+
+    /* Code block */
+    pre {
+      background: #0d0e1a;
+      border: 1px solid #2d2e4a;
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      color: #a5f3fc;
+      line-height: 1.6;
+      margin: 1rem 0;
+    }
+    code { font-family: 'Fira Code', 'Cascadia Code', monospace; }
+
+    /* Comparison table */
+    .compare { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    .compare th {
+      background: #1e1f35;
+      color: #a5b4fc;
+      font-weight: 700;
+      padding: 0.7rem 1rem;
+      text-align: left;
+      border-bottom: 2px solid #3730a3;
+    }
+    .compare td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid #2d2e4a;
+      color: #cbd5e1;
+      vertical-align: top;
+    }
+    .compare tr:last-child td { border-bottom: none; }
+    .compare tr:hover td { background: #1e1f2e; }
+
+    /* Answer blocks */
+    .answer-block {
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin: 1rem 0;
+    }
+    .answer-block.strong {
+      background: #0a1f15;
+      border: 1px solid #059669;
+    }
+    .answer-block.weak {
+      background: #1c0e0e;
+      border: 1px solid #dc2626;
+    }
+    .answer-block .ab-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+    .answer-block.strong .ab-label { color: #34d399; }
+    .answer-block.weak .ab-label { color: #f87171; }
+    .answer-block p { font-size: 0.9rem; color: #cbd5e1; margin-bottom: 0.5rem; }
+
+    /* Rubric */
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid #2d2e4a;
+      align-items: flex-start;
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #6366f1;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .rubric-item .rubric-text { color: #cbd5e1; font-size: 0.9rem; }
+    .rubric-item .rubric-text strong { color: #e2e8f0; }
+
+    /* Follow-up */
+    .followup-item {
+      background: #13141f;
+      border: 1px solid #2d2e4a;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-item .fu-q {
+      font-weight: 600;
+      color: #a5b4fc;
+      margin-bottom: 0.5rem;
+      font-size: 0.92rem;
+    }
+    .followup-item .fu-a {
+      color: #94a3b8;
+      font-size: 0.88rem;
+      line-height: 1.65;
+    }
+
+    /* Tag pills */
+    .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
+    .tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.25rem 0.7rem;
+      border-radius: 999px;
+      background: #1e1f35;
+      color: #818cf8;
+      border: 1px solid #3730a3;
+    }
+
+    /* Nav */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #2d2e4a;
+      font-size: 0.85rem;
+    }
+    .nav a { color: #6366f1; text-decoration: none; }
+    .nav a:hover { text-decoration: underline; }
+
+    ul.bullets { list-style: disc; padding-left: 1.4rem; }
+    ul.bullets li { color: #cbd5e1; margin-bottom: 0.4rem; font-size: 0.92rem; }
+    ul.bullets li strong { color: #e2e8f0; }
+
+    /* Checklist */
+    .checklist { list-style: none; padding: 0; margin: 1rem 0; }
+    .checklist li {
+      display: flex;
+      gap: 0.7rem;
+      align-items: flex-start;
+      padding: 0.55rem 0;
+      border-bottom: 1px dashed #2d2e4a;
+      color: #cbd5e1;
+      font-size: 0.9rem;
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist li::before {
+      content: "☐";
+      color: #6366f1;
+      flex-shrink: 0;
+      font-size: 1rem;
+    }
+    .checklist li strong { color: #e2e8f0; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="lesson-header">
+    <div class="day-badge">Day 10 · 메시지 큐 / 비동기 처리 인터뷰 · 종합 캡스톤</div>
+    <h1>대규모 비동기 처리 아키텍처 종합 설계</h1>
+    <div class="meta">2026-07-09 · 예상 학습 시간 100분</div>
+    <div class="tags">
+      <span class="tag">처리량 산정</span>
+      <span class="tag">장애 격리</span>
+      <span class="tag">브로커 선택</span>
+      <span class="tag">Circuit Breaker</span>
+      <span class="tag">운영 체크리스트</span>
+    </div>
+  </div>
+
+  <!-- Interview Question -->
+  <div class="interview-q">
+    <div class="q-label">오늘의 면접 질문</div>
+    <div class="q-text">
+      "이커머스 플랫폼에서 '주문 완료' 이벤트 하나가 발생하면 (1) 재고 차감, (2) 결제 확정,
+      (3) 배송 라벨 생성(외부 택배사 API 연동), (4) 포인트 적립, (5) 주문 완료 알림 발송까지
+      총 5개의 후속 처리가 비동기로 실행됩니다. 평상시 초당 200건이던 주문이 블랙프라이데이
+      세일 시작 3분 만에 초당 8,000건까지 치솟았고, 이 순간 세 가지 장애가 동시에
+      발생했습니다. 첫째, 배송 라벨을 생성하는 외부 택배사 API 응답 시간이 5초에서 40초로
+      늘어나며 타임아웃이 속출했습니다. 둘째, 재고 차감 로직에서 일부 주문이 중복 처리되어
+      실제 남은 재고보다 더 많이 차감된 것으로 집계됐습니다. 셋째, 알림 발송 큐에 메시지가
+      쌓이면서 컨슈머 랙이 30분치까지 늘었는데, 알림은 지연돼도 무방한 반면 정작 급하지 않은
+      이 큐 때문에 재고·배송 처리까지 함께 지연됐습니다. 10년차 이상 엔지니어로서 이 전체
+      비동기 아키텍처를 어떻게 재설계하시겠습니까? 어떤 브로커를 어디에 쓸지, 처리량을 어떻게
+      산정할지, 장애가 서로에게 전파되지 않도록 어떻게 격리할지, 그리고 이런 사고가
+      재발하지 않도록 어떤 운영 체크리스트를 갖추겠습니까?"
+    </div>
+  </div>
+
+  <!-- 1. 전제 개념 -->
+  <div class="section">
+    <div class="section-label">전제 개념</div>
+    <h2>"종합 설계"는 지식의 나열이 아니라 요구사항-도구 매핑이다</h2>
+
+    <p>
+      Day 1~9에서 다룬 Kafka, RabbitMQ, SQS/SNS, Celery, Idempotency, DLQ, Backoff,
+      Backpressure는 각각 독립된 지식이 아니다. 종합 설계 질문에서 요구되는 능력은
+      <strong>"이 다섯 개 후속 작업 각각이 어떤 성질(순서 필요 여부, 멱등성 필요 여부, 지연
+      허용치, 외부 의존성 유무)을 가지는지 먼저 분해하고, 그 성질에 맞는 도구와 격리 전략을
+      매핑하는 것</strong>이다. "전부 Kafka로 하겠습니다" 혹은 "전부 SQS로 하겠습니다"는
+      도구를 하나만 아는 사람의 답이지, 시스템을 설계하는 사람의 답이 아니다.
+    </p>
+
+    <table class="compare">
+      <thead>
+        <tr>
+          <th>후속 작업</th>
+          <th>순서 필요?</th>
+          <th>멱등성 필요?</th>
+          <th>지연 허용치</th>
+          <th>외부 의존성</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>재고 차감</td>
+          <td>같은 SKU 내에서는 필요 (Day 2)</td>
+          <td>필수 — 중복 차감 시 실물 재고 오차 (Day 5)</td>
+          <td>낮음(빠를수록 좋음)</td>
+          <td>없음(내부 DB)</td>
+        </tr>
+        <tr>
+          <td>결제 확정</td>
+          <td>주문 단위로 필요</td>
+          <td>필수 — 중복 확정 시 이중 청구 위험</td>
+          <td>낮음</td>
+          <td>PG사 API</td>
+        </tr>
+        <tr>
+          <td>배송 라벨 생성</td>
+          <td>불필요</td>
+          <td>권장 — 중복 생성 시 라벨 낭비/혼선</td>
+          <td>중간(수 분 지연 허용)</td>
+          <td><strong>있음 — 택배사 API(장애 지점)</strong></td>
+        </tr>
+        <tr>
+          <td>포인트 적립</td>
+          <td>불필요</td>
+          <td>필수 — 중복 적립 시 금전적 손실</td>
+          <td>높음(수 시간도 허용)</td>
+          <td>없음(내부 DB)</td>
+        </tr>
+        <tr>
+          <td>완료 알림</td>
+          <td>불필요</td>
+          <td>불필요(중복 알림은 불편하지만 치명적이지 않음)</td>
+          <td>매우 높음</td>
+          <td>알림 발송 서비스(느릴 수 있음)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <strong>핵심 직관:</strong> 이 표를 먼저 그릴 수 있는지가 시니어와 주니어를 가른다.
+      "지연 허용치가 가장 낮은 작업"과 "외부 의존성이 있는 작업"과 "치명적이지 않은 작업"을
+      <strong>같은 큐에 몰아넣었다는 것 자체가 이번 장애의 근본 원인</strong>이다 — 알림
+      지연이 재고 처리 지연으로 전파된 이유는 브로커 선택 문제가 아니라 <strong>격리
+      설계 부재</strong> 때문이다.
+    </div>
+  </div>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label">왜 면접에서 묻는가</div>
+    <h2>이 질문이 평가하는 것</h2>
+
+    <p>
+      종합 설계 질문은 Day 1~9의 개별 지식을 다시 확인하는 자리가 아니다. 면접관은
+      <strong>실제 장애가 났을 때 그 장애를 구조적으로 진단하고, 전체 시스템을 다시 그릴 수
+      있는지</strong>를 본다.
+    </p>
+
+    <ul class="bullets">
+      <li>
+        <strong>증상과 원인을 구분하는가:</strong>
+        "알림 큐가 밀렸다"는 증상이고, "서로 다른 SLA를 가진 작업들이 같은 큐를 공유했다"가
+        원인이다. 증상만 고치면("알림 컨슈머를 늘리겠습니다") 다음 사고에서는 다른 작업이
+        같은 방식으로 발목을 잡는다.
+      </li>
+      <li>
+        <strong>처리량을 숫자로 다루는가:</strong>
+        "파티션을 늘리겠습니다"가 아니라 "초당 8,000건, 메시지당 처리 시간 OO ms 기준으로
+        파티션 수를 역산하면 몇 개가 필요합니다"까지 말할 수 있는지 — 규모 감각은 암기가
+        아니라 계산 능력이다.
+      </li>
+      <li>
+        <strong>장애 격리를 설계 원칙으로 갖고 있는가:</strong>
+        외부 API(택배사)가 느려진 것은 우리가 통제할 수 없다. 통제할 수 있는 것은 그 느림이
+        <strong>우리 시스템의 다른 부분까지 느리게 만들지 않도록 막는 경계</strong>를 어디에
+        세우느냐다.
+      </li>
+      <li>
+        <strong>사고를 일회성으로 보지 않고 재발 방지 체계로 연결하는가:</strong>
+        원인을 고치는 것과, "다음에 이런 조합의 장애가 다시 일어나도 조기에 감지하고 자동으로
+        방어할 수 있는 운영 체계"를 갖추는 것은 다른 일이다. 후자를 말할 수 있어야 리더십
+        레벨의 신호를 준다.
+      </li>
+    </ul>
+  </div>
+
+  <!-- 3. 실무 연결: 처리량 산정 -->
+  <div class="section">
+    <div class="section-label">실무 연결</div>
+    <h2>처리량을 숫자로 산정하기 — "파티션을 늘리겠습니다"의 다음 단계</h2>
+
+    <p>
+      초당 8,000건의 주문이 발생하면, 재고 차감 이벤트도 초당 8,000건이 Kafka에 들어온다.
+      이때 "파티션이 부족한 것 같다"는 감이 아니라 실제 계산으로 필요한 파티션 수를 도출해야
+      한다.
+    </p>
+
+    <pre><code>필요 파티션 수 = 목표 처리량(msg/s) ÷ 파티션 1개당 컨슈머 처리량(msg/s)
+
+예시:
+- 목표 처리량: 8,000 msg/s (피크 기준, 여유율 1.5배 적용 시 12,000 msg/s)
+- 컨슈머 1개(=파티션 1개)가 재고 차감 로직을 처리하는 속도: DB 트랜잭션 포함 약 400 msg/s
+- 필요 파티션 수 = 12,000 ÷ 400 = 30개
+
+→ 평상시 3개 파티션으로 운영해 왔다면, 피크 대비 최소 30개 파티션이 필요했다는 뜻.
+  이 계산 없이 "파티션 3개"로 세일을 맞은 것 자체가 용량 계획 부재다.</code></pre>
+
+    <div class="callout warn">
+      <strong>흔한 오해 — "장애가 나면 그때 파티션을 늘리면 된다":</strong> Kafka 파티션은
+      <strong>늘릴 수는 있어도 줄일 수 없고</strong>, 늘리는 순간 기존 파티션 키의 해시
+      매핑이 바뀌어 <strong>같은 키(SKU)의 메시지가 다른 파티션으로 재배치되며 순서 보장이
+      깨진다(Day 2)</strong>. 즉 장애가 발생한 시점에 파티션을 늘리는 것은 "순서 보장을
+      포기하겠다"는 결정과 같다. 그래서 파티션 수는 <strong>장애 대응이 아니라 사전
+      용량 계획(피크 예상치 × 여유율)으로 결정</strong>해야 하며, 세일처럼 피크가 예측
+      가능한 이벤트는 최소 1~2주 전에 파티션 재설계를 마쳐야 한다.
+    </div>
+
+    <table class="compare">
+      <thead>
+        <tr>
+          <th>후속 작업</th>
+          <th>선택 브로커</th>
+          <th>선택 이유</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>재고 차감</td>
+          <td>Kafka (SKU를 파티션 키로)</td>
+          <td>같은 SKU 내 순서 보장 필요(Day 2), 초고처리량, 재처리(replay)로 감사 추적 가능</td>
+        </tr>
+        <tr>
+          <td>결제 확정</td>
+          <td>SQS FIFO 또는 RabbitMQ + 멱등키</td>
+          <td>주문 단위 순서만 필요, 금전 연산이라 신뢰성 전달과 명시적 멱등키(Day 5) 우선</td>
+        </tr>
+        <tr>
+          <td>배송 라벨 생성</td>
+          <td>RabbitMQ (전용 큐 + DLX)</td>
+          <td>외부 API 실패가 잦으므로 ACK/NACK 기반 재시도와 DLX 격리(Day 3, Day 6)가 유리</td>
+        </tr>
+        <tr>
+          <td>포인트 적립</td>
+          <td>Celery (별도 큐, 낮은 우선순위)</td>
+          <td>지연 허용치가 커서 배치 처리에 유리, Django/내부 서비스와 통합이 쉬움(Day 9)</td>
+        </tr>
+        <tr>
+          <td>완료 알림</td>
+          <td>SQS Standard (완전히 분리된 큐)</td>
+          <td>순서·멱등성 불필요, 저비용, 밀려도 다른 작업에 영향 없도록 물리적으로 분리</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 4. 핵심 개념: 장애 전파 차단 -->
+  <div class="section">
+    <div class="section-label">핵심 개념</div>
+    <h2>세 가지 사고를 장애 격리 원칙으로 재구성하기</h2>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <strong>사고 3 (알림 큐 적체가 재고/배송을 지연시킨 문제) — Bulkhead(격벽) 원칙</strong><br>
+          선박의 격벽처럼, 한 구역에 물이 차도 다른 구역으로 번지지 않게 물리적으로 큐를
+          나눠야 한다. 알림·재고·배송을 <strong>완전히 다른 큐(다른 브로커여도 무방)</strong>로
+          분리하면, 알림 큐가 30분치 밀려도 재고/배송 컨슈머는 전혀 영향을 받지 않는다. Day 9에서
+          다룬 "Priority를 큐 분리로 해결한다"는 원칙이 이번에는 서비스 전체 아키텍처 레벨로
+          확장된 것뿐이다.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>사고 1 (택배사 API 응답 지연 → 타임아웃 속출) — Circuit Breaker + 격리된 재시도</strong><br>
+          외부 API가 느려지는 것 자체는 막을 수 없지만, 그 느림이 우리 시스템에 어떻게
+          반영되는지는 설계할 수 있다. 택배사 API 호출에 <strong>타임아웃(예: 5초)을 짧게
+          걸고</strong>, 연속 실패율이 임계치를 넘으면 <strong>Circuit Breaker를 열어 일정
+          시간 호출 자체를 중단</strong>하고 즉시 재시도 큐(또는 DLQ)로 보낸다. 이렇게 하면
+          컨슈머 스레드가 40초짜리 타임아웃을 반복해서 기다리며 묶이는 일이 없어지고, 배송
+          라벨 큐의 Consumer Lag이 통제 불가능하게 쌓이는 것도 막는다.
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>사고 2 (재고 중복 차감) — check-then-act 제거와 원자적 연산(Day 5 재적용)</strong><br>
+          트래픽이 8,000 msg/s로 치솟으면서 재시도가 겹치거나, acks_late 방식의 재전달(Day 3, 9)이
+          동시에 여러 컨슈머에서 발생했을 가능성이 높다. "재고를 확인하고 → 차감한다"는
+          두 단계 로직이라면 이 조건에서 반드시 중복 차감이 난다. DB의
+          <code>UPDATE inventory SET qty = qty - 1 WHERE sku = ? AND qty >= 1</code>처럼
+          <strong>확인과 차감을 하나의 원자적 연산으로 묶고</strong>, 멱등키(주문 ID)를 유니크
+          제약을 가진 처리 이력 테이블에 먼저 삽입해 실패하면 이미 처리된 주문으로 간주하는
+          이중 방어가 필요하다.
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout bad">
+      <strong>이번 사고의 공통 원인:</strong> 세 가지 증상은 서로 다른 버그처럼 보이지만,
+      근본 원인은 하나다 — <strong>"모든 후속 작업이 같은 신뢰성 요구 수준을 가진다"는
+      암묵적 가정</strong>. 실제로는 재고/결제는 강한 신뢰성이, 배송은 외부 의존 격리가,
+      알림은 낮은 신뢰성으로도 충분한 완전히 다른 요구사항이었는데, 하나의 파이프라인으로
+      묶여 있었기 때문에 한쪽의 문제가 다른 쪽까지 전파됐다.
+    </div>
+  </div>
+
+  <!-- 5. 핵심 개념: 트래픽 급증 대응 -->
+  <div class="section">
+    <div class="section-label">핵심 개념</div>
+    <h2>예측 가능한 피크(세일)와 예측 불가능한 피크를 다르게 대응한다</h2>
+
+    <ul class="bullets">
+      <li>
+        <strong>예측 가능한 피크(블랙프라이데이) — 사전 용량 계획:</strong>
+        파티션/큐 수를 세일 전 미리 확장하고, Consumer Auto Scaling을 트래픽 곡선에 맞춰
+        스케줄 기반으로 사전 조정한다. Day 8에서 다룬 "Lag 기반 오토스케일링의 지연 반응성"
+        문제는 예측 가능한 피크에서는 <strong>스케줄 기반 선제 스케일링</strong>으로 우회할
+        수 있다.
+      </li>
+      <li>
+        <strong>예측 불가능한 급증 — Backpressure와 Load Shedding(Day 8):</strong>
+        알림처럼 중요도가 낮은 큐는 처리량이 임계치를 넘으면 일부 메시지를 의도적으로
+        버리거나(Load Shedding) 배치 크기를 줄여 뒤로 미루는 것이 허용된다. 반대로 재고/결제는
+        Load Shedding이 불가능하므로, 이 둘을 <strong>절대 같은 자원 풀에서 경쟁시키지
+        않는 것</strong>이 설계의 핵심이다.
+      </li>
+      <li>
+        <strong>Consumer 확장의 한계는 파티션 수다(Day 2, Day 8 재적용):</strong>
+        Kafka 컨슈머는 파티션 수 이상으로 늘려도 의미가 없다. 재고 차감 컨슈머를 아무리
+        늘려도 파티션이 3개면 동시에 일하는 컨슈머는 3개뿐이다. 그래서 "왜 컨슈머를
+        늘렸는데도 처리량이 안 늘어나는가"라는 질문의 답은 대부분 파티션 수 부족이다.
+      </li>
+    </ul>
+  </div>
+
+  <!-- 6. 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label">답변 사고 순서</div>
+    <h2>면접에서 이 질문을 받았을 때 생각하는 순서</h2>
+
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <strong>다섯 개 후속 작업을 성질별로 분해한다</strong><br>
+          "먼저 재고/결제/배송/포인트/알림 각각이 순서 보장, 멱등성, 지연 허용치, 외부
+          의존성 측면에서 서로 다르다는 것을 표로 정리하겠습니다. 이번 사고는 이 다섯을
+          동일한 신뢰성 수준으로 취급한 것이 근본 원인입니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>각 작업에 맞는 브로커와 격리 단위를 매핑한다</strong><br>
+          "재고는 SKU 순서 보장이 필요하니 Kafka, 결제는 신뢰성 전달이 중요하니 SQS
+          FIFO나 멱등키를 갖춘 RabbitMQ, 배송은 외부 API 실패가 잦으니 전용 RabbitMQ 큐 +
+          DLX, 알림은 완전히 분리된 저비용 큐로 물리적으로 격리하겠습니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>사고 원인을 각각 구조적으로 짚는다</strong><br>
+          "알림 적체가 재고를 지연시킨 것은 큐 격리 부재, 택배사 타임아웃 속출은 Circuit
+          Breaker 부재, 재고 중복 차감은 check-then-act 패턴과 멱등키 부재 때문입니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>처리량을 숫자로 계산해 용량 계획을 제시한다</strong><br>
+          "피크 8,000 msg/s에 여유율 1.5배를 적용하면 12,000 msg/s이고, 컨슈머 1개 처리량이
+          400 msg/s라면 최소 30개 파티션이 필요합니다. 이건 장애 시점이 아니라 세일 최소
+          1~2주 전에 사전 반영해야 합니다."
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <strong>운영 체계로 마무리한다</strong><br>
+          "마지막으로 이런 조합 장애가 재발하지 않도록, Consumer Lag/Circuit Breaker
+          상태/재고 정합성 체크를 대시보드화하고, 세일 시즌 전 부하 테스트와 런북을 표준
+          운영 절차로 만들겠습니다."
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- 7. 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label">핵심 답변 예시</div>
+    <h2>실제 면접 답변 예시</h2>
+
+    <div class="callout good">
+      <p>
+        "세 가지 사고는 서로 다른 버그처럼 보이지만, 근본 원인은 다섯 개 후속 작업을 동일한
+        신뢰성 요구 수준으로 취급했다는 하나의 설계 결함에서 나옵니다. 먼저 각 작업의 성질을
+        분해하면, 재고 차감은 SKU 단위 순서와 멱등성이 필수라 Kafka로, 결제 확정은 신뢰성
+        전달과 명시적 멱등키가 중요하니 SQS FIFO나 RabbitMQ로, 배송 라벨은 외부 택배사
+        API라는 통제 불가능한 의존성이 있으니 전용 RabbitMQ 큐와 DLX로, 포인트 적립은 지연
+        허용치가 커서 낮은 우선순위 Celery 큐로, 완료 알림은 순서·멱등성이 불필요하니 완전히
+        분리된 저비용 큐로 나누겠습니다.
+      </p>
+      <p>
+        알림 큐 적체가 재고·배송까지 지연시킨 것은 이 다섯을 물리적으로 격리하지 않았기
+        때문이므로, 별도 큐와 별도 컨슈머 그룹으로 완전히 분리해 자원 경쟁 자체를 없애겠습니다.
+        택배사 API 타임아웃 속출은 컨슈머가 40초짜리 응답을 그대로 기다리며 묶였기 때문이니,
+        호출 타임아웃을 짧게 걸고 연속 실패율 기준으로 Circuit Breaker를 열어 즉시 재시도
+        큐로 넘기겠습니다. 재고 중복 차감은 확인과 차감이 분리된 check-then-act 패턴 때문일
+        가능성이 높으므로, DB 조건부 UPDATE로 원자적 연산을 만들고 주문 ID를 유니크 키로
+        하는 처리 이력 테이블로 이중 방어하겠습니다.
+      </p>
+      <p>
+        처리량 측면에서는 피크 8,000 msg/s에 여유율을 적용해 필요 파티션 수를 역산하고,
+        이를 세일 시작 시점이 아니라 최소 1~2주 전에 사전 반영하겠습니다. 마지막으로 Consumer
+        Lag, Circuit Breaker 상태, 재고 정합성 지표를 대시보드로 상시 모니터링하고, 세일
+        시즌 전 부하 테스트와 장애 대응 런북을 표준 운영 절차로 정착시켜 같은 조합의 사고가
+        재발하지 않도록 하겠습니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- 8. Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label">Senior-Level Follow-up</div>
+    <h2>면접관이 이어서 물어볼 수 있는 질문들</h2>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "파티션을 미리 30개로 늘렸다고 했는데, 평상시 트래픽(초당 200건)에는 파티션이 30개나 필요 없습니다. 이건 자원 낭비 아닙니까?"</div>
+      <div class="fu-a">
+        파티션 수 자체를 늘리는 것은 스토리지·메타데이터 오버헤드는 있지만 컴퓨팅 자원을
+        상시 점유하지는 않습니다. 실제 자원 소모는 <strong>컨슈머 프로세스 수</strong>에서
+        나오므로, 평상시에는 컨슈머를 3~5개만 띄워 30개 파티션 중 일부만 담당하게 하고,
+        세일 직전에 Consumer Auto Scaling(스케줄 기반)으로 컨슈머 수만 늘려 나머지
+        파티션까지 소비하게 하면 됩니다. 파티션 수는 미리 넉넉히, 컨슈머 수는 트래픽에 맞춰
+        탄력적으로 — 라는 것이 핵심입니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "Circuit Breaker가 열려서 택배사 API 호출을 중단한 동안, 그 시간 동안 밀린 배송 라벨 생성 요청들은 어떻게 처리됩니까?"</div>
+      <div class="fu-a">
+        Circuit Breaker가 열린 동안 들어오는 요청은 즉시 실패 처리하지 않고, 재시도 큐(원래
+        큐에 지수 백오프로 재적재하거나 별도 지연 큐)에 쌓아둡니다. Circuit Breaker가
+        Half-Open 상태로 전환되며 택배사 API가 정상 응답하는 것을 소량의 시험 요청으로
+        확인하면, Closed 상태로 복귀하며 밀린 요청들을 다시 처리합니다. 이때 밀린 물량이
+        한 번에 몰려 택배사 API를 다시 과부하 상태로 만들지 않도록, 재개 시점에는 처리
+        속도를 점진적으로 늘리는 램프업(ramp-up) 방식을 함께 적용합니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "재고 차감을 Kafka로 옮기면, 트랜잭션 DB에서 재고를 관리하던 기존 방식과의 정합성은 어떻게 보장합니까?"</div>
+      <div class="fu-a">
+        Kafka 자체가 재고의 최종 저장소(source of truth)가 되는 것이 아니라, 재고 차감이라는
+        "이벤트"를 신뢰성 있게 전달하는 역할만 합니다. 실제 차감은 여전히 컨슈머가 RDB에
+        원자적 UPDATE로 반영하고, RDB가 최종 정합성의 기준(source of truth)으로 남습니다.
+        더 엄격한 정합성이 필요하다면 Transactional Outbox 패턴으로 "주문 완료"와 "재고
+        차감 이벤트 발행"을 하나의 DB 트랜잭션으로 묶어, 이벤트 발행 자체가 유실되는
+        경우까지 방지할 수 있습니다.
+      </div>
+    </div>
+
+    <div class="followup-item">
+      <div class="fu-q">Q. "운영 체크리스트를 만들겠다고 하셨는데, 구체적으로 무엇을 넣으시겠습니까?"</div>
+      <div class="fu-a">
+        크게 네 가지입니다. (1) 사전 용량 계획 — 예측 가능한 피크 이벤트 최소 1~2주 전
+        파티션/큐 재설계와 부하 테스트, (2) 실시간 모니터링 — Consumer Lag, Circuit Breaker
+        open/half-open/closed 상태, 재고 정합성(실물 재고 vs DB 재고 차이) 대시보드, (3)
+        알림 임계치 — Lag 급증률, 재시도율, DLQ 적재율이 일정 기준을 넘으면 온콜 알림, (4)
+        장애 대응 런북 — 이번처럼 다중 장애가 동시에 발생했을 때 어떤 순서로 어떤 큐부터
+        확인하고, Circuit Breaker를 수동으로 열거나 재고 차감을 일시 중단시키는 절차까지
+        문서화해 다음 담당자가 같은 시간에 대응할 수 있게 합니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label">답변 품질 비교</div>
+    <h2>좋은 답변과 약한 답변의 차이</h2>
+
+    <div class="answer-block strong">
+      <div class="ab-label">강한 답변 — 이렇게 말하면 시니어로 보인다</div>
+      <p>"세 가지 사고를 별개의 버그가 아니라 '모든 후속 작업을 동일한 신뢰성 수준으로
+      취급했다'는 하나의 설계 결함에서 나온 증상으로 재구성하고, 각 작업의 성질(순서·멱등성·
+      지연 허용치·외부 의존성)을 표로 분해해 브로커와 격리 단위를 매핑합니다. 처리량은
+      감이 아니라 계산식으로 제시하고, 재발 방지를 위한 모니터링·알림·런북까지 운영
+      체계로 마무리합니다."</p>
+      <p><em>→ 증상 → 공통 원인 진단 → 요구사항별 도구 매핑 → 숫자 기반 용량 계획 →
+      운영 체계까지 하나의 완결된 설계 흐름</em></p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변 — 이렇게 말하면 주니어로 보인다</div>
+      <p>"알림 큐 컨슈머를 늘리고, 택배사 API 재시도 횟수를 늘리고, 재고 차감 로직에
+      락(lock)을 걸겠습니다."</p>
+      <p><em>→ 세 가지 증상을 각각 독립적으로 땜질할 뿐, 왜 이 셋이 동시에 발생했는지에
+      대한 구조적 진단이 없다. 락을 거는 방식은 처리량이 8,000 msg/s인 상황에서 오히려
+      새로운 병목이 될 수 있다는 인식도 없다.</em></p>
+    </div>
+
+    <div class="answer-block weak">
+      <div class="ab-label">약한 답변 — 도구 이름만 나열</div>
+      <p>"Kafka, RabbitMQ, SQS를 각각 다 쓰고, Circuit Breaker와 DLQ도 적용하겠습니다."</p>
+      <p><em>→ 어떤 작업에 왜 그 브로커를 쓰는지 근거가 없고, 처리량 산정이나 파티션
+      확장의 부작용(순서 깨짐) 같은 운영상 함정에 대한 고려가 전혀 없음.</em></p>
+    </div>
+  </div>
+
+  <!-- 10. 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label">자기 점검 Rubric</div>
+    <h2>내 답변을 이 기준으로 점검해보자</h2>
+
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>요구사항 분해:</strong>
+        다섯 개 후속 작업을 순서/멱등성/지연 허용치/외부 의존성 기준으로 분해해서 설명했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>브로커 매핑 근거:</strong>
+        "이 브로커를 쓰겠다"가 아니라 "이 요구사항 때문에 이 브로커를 쓰겠다"는 근거를
+        각 작업마다 제시했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>장애 격리 원칙:</strong>
+        세 가지 사고를 개별 땜질이 아니라 Bulkhead(큐 분리), Circuit Breaker, 원자적 연산이라는
+        구조적 원칙으로 재구성했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>처리량 산정:</strong>
+        파티션/컨슈머 수를 계산식으로 도출하고, 장애 시점이 아니라 사전 계획으로 반영해야
+        하는 이유(파티션 재해싱과 순서 깨짐)까지 설명했는가?
+      </div>
+    </div>
+    <div class="rubric-item">
+      <div class="rubric-check"></div>
+      <div class="rubric-text">
+        <strong>운영 체계로 연결:</strong>
+        모니터링 지표, 알림 임계치, 런북 같은 재발 방지 체계까지 답변에 포함했는가?
+      </div>
+    </div>
+  </div>
+
+  <!-- 11. 운영 체크리스트 -->
+  <div class="section">
+    <div class="section-label">참고 — 실무 운영 체크리스트</div>
+    <h2>대규모 비동기 아키텍처 운영 체크리스트</h2>
+
+    <ul class="checklist">
+      <li><strong>사전 용량 계획:</strong> 예측 가능한 피크(세일, 프로모션) 최소 1~2주 전
+      파티션/큐 수를 계산식으로 재산정하고 부하 테스트로 검증했는가?</li>
+      <li><strong>격리 경계:</strong> 서로 다른 신뢰성/지연 요구사항을 가진 작업이 같은
+      큐·같은 컨슈머 자원을 공유하고 있지 않은가?</li>
+      <li><strong>외부 의존성 방어:</strong> 외부 API를 호출하는 모든 지점에 타임아웃과
+      Circuit Breaker가 걸려 있는가?</li>
+      <li><strong>멱등성 커버리지:</strong> 재시도가 발생할 수 있는 모든 태스크(특히 금전·재고
+      연산)에 멱등키 또는 원자적 연산이 적용돼 있는가?</li>
+      <li><strong>DLQ 및 알림:</strong> 각 큐의 DLQ 적재율에 임계치 알림이 걸려 있고,
+      재처리(redrive) 절차가 문서화돼 있는가?</li>
+      <li><strong>모니터링 지표:</strong> Consumer Lag, Circuit Breaker 상태, 재시도율,
+      DLQ 적재율을 하나의 대시보드에서 실시간으로 볼 수 있는가?</li>
+      <li><strong>런북:</strong> 다중 장애가 동시에 발생했을 때 어떤 순서로 어떤 큐/서비스부터
+      확인할지 문서화돼 있는가?</li>
+      <li><strong>회고 반영:</strong> 이전 장애의 근본 원인이 아키텍처 변경으로 실제 반영됐는지,
+      단순 파라미터 조정으로 끝나지 않았는지 확인했는가?</li>
+    </ul>
+  </div>
+
+  <!-- 12. 오늘 배운 것 -->
+  <div class="section">
+    <div class="section-label">오늘 배운 것 요약</div>
+    <h2>Day 10 핵심 정리 — 그리고 Day 1~10 전체 요약</h2>
+    <ul class="bullets">
+      <li>종합 설계 질문의 출발점은 <strong>요구사항 분해</strong>다 — 순서 필요 여부, 멱등성
+      필요 여부, 지연 허용치, 외부 의존성 유무로 각 작업을 나눈 뒤에야 브로커 선택이
+      의미를 가진다.</li>
+      <li>서로 다른 신뢰성 수준의 작업을 같은 큐에 두면, <strong>중요하지 않은 작업의 지연이
+      중요한 작업까지 전파</strong>된다 — Bulkhead(물리적 큐 분리)가 가장 기본적인 장애
+      격리 수단이다.</li>
+      <li>외부 의존성이 있는 지점은 <strong>Circuit Breaker + 짧은 타임아웃</strong>으로
+      느림이 우리 시스템 전체로 번지는 것을 막는다.</li>
+      <li>처리량은 <strong>계산식(목표 처리량 ÷ 컨슈머 1개 처리량)</strong>으로 산정하고,
+      Kafka 파티션 확장은 순서 보장을 깨뜨리므로 장애 대응이 아니라 사전 용량 계획으로
+      해결해야 한다.</li>
+      <li>Day 1(비동기 판단 프레임워크)부터 Day 9(Celery)까지의 모든 개념 — 파티셔닝과
+      순서(Day 2), Exchange 라우팅과 ACK(Day 3), SQS/SNS 패턴(Day 4), Idempotency(Day 5),
+      DLQ(Day 6), Exponential Backoff(Day 7), Backpressure(Day 8), Canvas와 Worker
+      격리(Day 9) — 는 결국 이 종합 설계 능력을 만들기 위한 부품들이며, 실제 면접에서는
+      이 부품들을 하나의 시나리오 안에서 동시에 꺼내 쓸 수 있어야 한다.</li>
+    </ul>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav">
+    <span><a href="./0009-celery-python-async-task-design.html">← Day 9: Celery와 Python 비동기 작업 설계</a></span>
+    <span><a href="./index.html">목록으로</a></span>
+  </div>
+
+</div>
+</body>
+</html>
