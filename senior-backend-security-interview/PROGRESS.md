@@ -13,16 +13,19 @@
 | 7 | 2026-07-06 | 비밀번호 저장과 크리덴셜 보호 | [0007-password-storage-credential-protection.html](lessons/0007-password-storage-credential-protection.html) |
 | 8 | 2026-07-07 | Secret 관리와 환경 변수 전략 | [0008-secret-management.html](lessons/0008-secret-management.html) |
 | 9 | 2026-07-08 | Secure Coding 원칙과 코드 리뷰 | [0009-secure-coding-principles-code-review.html](lessons/0009-secure-coding-principles-code-review.html) |
+| 10 | 2026-07-09 | 종합 보안 설계 케이스 스터디 | [0010-comprehensive-security-case-study.html](lessons/0010-comprehensive-security-case-study.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 10 | 종합 케이스 스터디 | 실제 침해 사례 분석, 설계 리뷰 |
+
+계획된 커리큘럼(Day 1~10)을 모두 완료했다. 추가 학습을 원하면 심화 주제(예: 인증 프로토콜 심화 OAuth2/OIDC,
+컨테이너/인프라 보안, 규제 준수(PCI-DSS/GDPR), 레드팀/펜테스트 관점)를 새 Day로 확장할 수 있다.
 
 ## 현재 학습 위치
 
-**Day 9 완료** — Day 10 (종합 보안 설계 케이스 스터디)이 다음 차례.
+**Day 10 완료 — 계획된 커리큘럼 종료.** 추가 심화 주제 요청 시 Day 11부터 확장 가능.
 
 ## 습득한 핵심 개념
 
@@ -73,4 +76,9 @@
 - [x] 최소 권한 원칙의 코드/인프라 레벨 적용 — DB 계정, 서비스 간 통신, IAM 세분화 (Day 9)
 - [x] 보안 기본값 — Fail-Open vs Fail-Closed, 기능 민감도에 따른 trade-off (Day 9)
 - [x] 코드 리뷰 프로세스의 구조적 방어 — SAST/SCA, 조건부 체크리스트, 표준 테스트 템플릿 (Day 9)
-- [ ] 종합 보안 설계 케이스 스터디 — 실제 침해 사례 분석, 재발 방지 설계 (예정 Day 10)
+- [x] 종합 분석 프레임워크 — 공격 체인 재구성 → 실패한 방어 계층 식별 → 기술적/조직적 근본 원인 분리 (Day 10)
+- [x] Capital One 사고 — SSRF → 클라우드 메타데이터 탈취 → IAM 과다 권한 악용의 공격 체인 (Day 10)
+- [x] Uber 사고 — 하드코딩된 Secret 노출과 사고 은폐가 만드는 이중 실패 (Day 10)
+- [x] BOLA 기반 대량 스크래핑 사고 — 객체 단위 인가 부재와 Rate Limiting의 보조적 역할 (Day 10)
+- [x] 오픈형 위협 모델링/설계 질문에 대한 4단계 사고 순서 — 위협 식별 → 공격 체인 추적 → 계층적 방어 → trade-off 판단 (Day 10)
+- [x] 사고 대응 우선순위 — 억제(Containment) → 증거 보존/범위 파악 → 근본 원인 분석 → 투명한 보고 (Day 10)
