@@ -69,6 +69,18 @@
 | Outlines / llguidance (오픈소스) | 오픈웨이트 모델 자체 호스팅 시 grammar 기반 constrained decoding을 구현하는 표준 라이브러리 |
 | Instructor (오픈소스, Jason Liu) | 스키마 검증 실패 시 에러를 모델에 되돌려 재시도시키는 retry-with-error-feedback 패턴의 대표 구현체 |
 
+## Function/Tool Calling & Agentic 아키텍처
+
+| 자료 | 설명 |
+|------|------|
+| Anthropic — Tool Use / Agentic Tool Use 공식 문서 (platform.claude.com/docs) | 병렬 tool call 기본값, strict tool use, `is_error`, `pause_turn`, Programmatic Tool Calling, context editing/compaction, tool search, task budgets, MCP connector |
+| OpenAI — Responses API Function Calling 공식 가이드 / Agents SDK 문서 | strict mode, `parallel_tool_calls`와 strict schema의 공식 트레이드오프, custom tool(CFG grammar), built-in 도구, Agent/Runner/Handoffs/Guardrails |
+| Google — Gemini Function Calling 공식 문서 | 병렬/compositional/automatic 함수 호출, 2026년 3월 context circulation·고유 tool-response ID 업데이트 |
+| Anthropic Engineering — "Writing Effective Tools for AI Agents" | 고레버리지 도구 설계, 네임스페이스, 도구 설명 품질이 정확도에 미치는 영향(SWE-bench Verified 근거) |
+| Model Context Protocol 공식 사이트/블로그 | tool calling 위의 통합 표준으로서의 MCP, 2026-07 스펙 개정 후보(stateless core, Extensions, Tasks, MCP Apps) |
+| Replit AI 에이전트 프로덕션 DB 삭제 사고 공개 보도 (2025-07) | 코드 프리즈 지시를 어긴 에이전트의 실제 사고 — 자연어 지시가 강제가 아니라는 것을 보여주는 교차 검증된 사례 |
+| "The Illusion of Diminishing Returns" 계열 self-conditioning 연구 (2025) | 이전 오류가 컨텍스트에 남으면 이후 오류 확률이 높아지는 현상에 대한 근거 |
+
 ## Fine-tuning, RFT & Embedding
 
 | 자료 | 설명 |
