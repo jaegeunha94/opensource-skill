@@ -11,12 +11,12 @@
 | 5 | 2026-07-06 | Retrieval과 Memory | [0005-langchain-retrieval-memory.html](lessons/0005-langchain-retrieval-memory.html) |
 | 6 | 2026-07-07 | Guardrails와 Context Engineering | [0006-langchain-guardrails-context-engineering.html](lessons/0006-langchain-guardrails-context-engineering.html) |
 | 7 | 2026-07-08 | LangGraph StateGraph 설계 | [0007-langgraph-stategraph-design.html](lessons/0007-langgraph-stategraph-design.html) |
+| 8 | 2026-07-09 | Persistence와 Checkpointer | [0008-langgraph-persistence-checkpointer.html](lessons/0008-langgraph-persistence-checkpointer.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Persistence와 Checkpointer | MemorySaver/SqliteSaver/PostgresSaver, thread-scoped state, time travel/replay |
 | 9 | Store, Interrupt, Human-in-the-loop | 장기 메모리용 Store vs 세션용 Checkpointer, `interrupt()`, 승인 게이트 설계 |
 | 10 | Subgraph와 Multi-agent 설계 | subgraph 합성, supervisor/swarm/handoff 패턴, 상태 격리 |
 | 11 | Fault Tolerance와 Retry | durable execution, 재시도 전략, 부분 실패 복구, idempotency |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 7 완료** — 다음: Day 8 — Persistence와 Checkpointer
+**Day 8 완료** — 다음: Day 9 — Store, Interrupt, Human-in-the-loop
 
 ## 습득한 핵심 개념
 
@@ -60,7 +60,13 @@
 - [x] `Annotated[Type, reducer_fn]`/`BinaryOperatorAggregate`/`add_messages`/`Overwrite`와 reducer의 결합·교환 법칙 요구사항 (Day 7)
 - [x] Conditional edge(라우팅만) vs `Command(update=, goto=)`(업데이트+라우팅) vs `Send`(동적 map-reduce fan-out) 선택 기준 (Day 7)
 - [x] `set_entry_point`/`set_finish_point`는 비-deprecated, `MessageGraph`/`NodeInterrupt`/`config_schema`가 실제 deprecated 대상이라는 정정 (Day 7)
-- [ ] Checkpointer / Persistence (예정 Day 8)
+- [x] Checkpointer = superstep마다 전체 상태를 저장/복원하는 durability 계층, `BaseCheckpointSaver` 인터페이스(`get_tuple`/`list`/`put`/`put_writes`/`delete_thread`/`prune` 등) (Day 8)
+- [x] `InMemorySaver`(구 `MemorySaver`, 하위 호환 별칭)/`SqliteSaver`(단일 프로세스 전용)/`PostgresSaver`(프로덕션 기본, `setup()` 명시 호출 필요) 선택 기준 (Day 8)
+- [x] `AsyncPostgresSaver`의 인스턴스 레벨 락으로 인한 동시성 병목 가능성 — "async 클래스명 ≠ 논블로킹 보장" (Day 8)
+- [x] `thread_id`(세션)/`checkpoint_ns`(subgraph 네임스페이스, "|" 구분)/`checkpoint_id`(시점) 체크포인트 키 구성과 subgraph 격리 (Day 8)
+- [x] `get_state`/`get_state_history`/`update_state(as_node=...)`로 하는 time travel의 fork(분기) 모델과 알려진 edge case (Day 8)
+- [x] 체크포인트는 diff가 아닌 `channel_values` 전체의 풀 스냅샷이라는 저장 모델과 실측된 직렬화 오버헤드(스토리지/토큰) (Day 8)
+- [x] `durability`(`sync`/`async`/`exit`, 기본 `async`) 파라미터로 체크포인트 쓰기 빈도를 조절하는 비용 관리, `ShallowPostgresSaver` deprecation과의 연결 (Day 8)
 - [ ] Store / Interrupt / Human-in-the-loop (예정 Day 9)
 - [ ] Subgraph / Multi-agent (예정 Day 10)
 - [ ] Fault Tolerance / Retry (예정 Day 11)
