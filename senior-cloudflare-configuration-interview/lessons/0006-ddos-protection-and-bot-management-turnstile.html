@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — DDoS Protection과 Bot Management/Turnstile</title>
+  <style>
+    :root {
+      --bg: #14100c;
+      --surface: #211a13;
+      --surface2: #2b221a;
+      --border: #4a3a26;
+      --accent: #f6821f;
+      --accent2: #4fd1c5;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #f2e9de;
+      --text2: #c9b8a3;
+      --text3: #8f8071;
+      --good: #4fd1c5;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    a.source { color: var(--accent2); }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card { border-left: 4px solid var(--accent); }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card {
+      border-left: 4px solid var(--accent2);
+      background: #142523;
+    }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card {
+      border-left: 4px solid var(--warn);
+      background: #201c10;
+    }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card {
+      border-left: 4px solid #c99bff;
+      background: #1e1828;
+    }
+    .answer-card .card-label { color: #c99bff; }
+    .incident-card {
+      border-left: 4px solid var(--weak);
+      background: #2a1512;
+    }
+    .incident-card .card-label { color: var(--weak); }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box {
+      background: #12241f;
+      border: 1px solid var(--good);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box {
+      background: #2a1512;
+      border: 1px solid var(--weak);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.91rem;
+      margin-top: 0.5rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:nth-child(odd) td { background: #1a140e; }
+    .rubric-table tr:nth-child(even) td { background: #211a13; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .layer-stack { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.2rem; }
+    .layer-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent2);
+      border-radius: 8px;
+      padding: 0.85rem 1.1rem;
+    }
+    .layer-name { font-weight: 700; color: var(--accent2); font-size: 0.95rem; }
+    .layer-desc { font-size: 0.85rem; color: var(--text2); margin-top: 0.2rem; }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.2rem;
+      margin-bottom: 0.7rem;
+    }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.1rem;
+      background: var(--accent);
+      color: #1a1408;
+      font-weight: 700;
+      font-size: 0.78rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .misconception {
+      background: #201530;
+      border: 1px solid #6e3880;
+      border-radius: 8px;
+      padding: 1rem 1.3rem;
+      margin-bottom: 0.9rem;
+    }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    nav.bottom {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 0.75rem;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      margin: 0.15rem 0.15rem 0.15rem 0;
+    }
+    .freshness-note {
+      background: #142523;
+      border: 1px dashed var(--accent2);
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      font-size: 0.87rem;
+      color: var(--text2);
+      margin-bottom: 2rem;
+    }
+    .freshness-note strong { color: var(--accent2); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 6 · Cloudflare 구성 인터뷰 대비</div>
+    <h1>DDoS Protection과 Bot Management/Turnstile</h1>
+    <p class="subtitle">
+      L3/4/7 상시 방어 구조와 Sensitivity/Override · Bot Fight Mode vs Super Bot Fight Mode vs Bot Management(Enterprise 전용 Bot Score) · Verified Bots와 스푸핑 방지 · AI Crawl Control(allow/charge/block) · Turnstile 도입 판단
+    </p>
+  </header>
+
+  <div class="freshness-note">
+    <strong>커리큘럼 최신성 안내 (2026-07-09 기준 확인)</strong> — 이 레슨은 Cloudflare DDoS Protection 개요/공격 범위(attack coverage)/Adaptive DDoS Protection/HTTP&amp;Network-layer override 문서, Bot Fight Mode/Super Bot Fight Mode/Bot Management 문서, Verified Bots 문서, AI Crawl Control 문서, Turnstile 개요/changelog, Cloudflare Challenges(Managed/JS Challenge) 문서, 2025 Q1·Q2·Q4 DDoS Threat Report를 재확인해 작성했다. Day 5까지의 커리큘럼과 충돌하는 내용은 없었고, 다음을 이 레슨의 핵심 최신 근거로 반영했다: ① 2025년 4분기 DDoS 위협 보고서 기준 <strong>31.4 Tbps(35초 지속)</strong> 공격이 신기록을 세웠고, 같은 분기 Aisuru-Kimwolf 봇넷이 <strong>초당 2억 요청(200M+ rps)</strong>을 넘는 하이퍼볼류메트릭 HTTP DDoS 공격을 반복했다 — 모두 고객의 별도 설정 없이 상시 자동 방어로 처리됐다. ② Bot Score(<code>cf.bot_management.score</code>, 1~99)는 <strong>Enterprise Bot Management 애드온에서만</strong> 채워지며, Pro/Business 플랜에서 이 필드를 참조하는 Custom Rule을 만들면 에러 없이 조용히 매칭되지 않는다(silent no-match). ③ DDoS Protection은 Enterprise Advanced DDoS Protection 애드온에서 <strong>override(민감도/액션, scope 지정)를 최대 10개</strong>까지 만들 수 있고 기본 민감도는 <strong>High</strong>다. ④ <strong>AI Crawl Control</strong>이 Bot Management 위에 새로운 축으로 자리잡아, AI 크롤러별로 allow/charge(pay-per-crawl, 결제 필요 시 HTTP 402)/block을 선택하고, robots.txt의 <strong>Content Signals</strong>(search/ai-input/ai-train)로 사용 목적별 허용 여부를 명시할 수 있다. ⑤ Turnstile은 2025년 하반기부터 브라우저 핑거프린팅 의존도를 낮추고 <strong>네트워크 레벨 시그널 비중을 높이는 방향</strong>으로 탐지 방식이 강화됐고, 2026-06에는 Logpush에 전용 Turnstile Events 데이터셋이 추가됐다.
+  </div>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "우리 서비스가 최근 트래픽 급증성 장애와 봇으로 추정되는 비정상 요청 폭증을 동시에 겪고 있습니다. Cloudflare에서 DDoS Protection과 Bot Management(또는 플랜에 따라 Bot Fight Mode/Super Bot Fight Mode)를 어떻게 계층적으로 설계하시겠습니까? 그리고 로그인 페이지에 Turnstile 도입을 검토하고 있는데, 어떤 기준으로 도입 여부와 위젯 모드를 결정하시겠습니까?"
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"Pro 플랜에서 <code>cf.bot_management.score</code>를 조건으로 쓰는 Custom Rule을 만들었는데 전혀 동작하지 않습니다. 왜 그런가요?"</li>
+        <li>"플래시 세일 시작 직후 정상 트래픽 급증을 DDoS Protection이 공격으로 오탐해 일부 고객이 차단됐습니다. 어떻게 대응/예방하나요?"</li>
+        <li>"AI 크롤러가 우리 콘텐츠를 매일 수백만 번 긁어가서 origin 부하가 늘고 있습니다. 무조건 차단하는 것 말고 다른 선택지가 있나요?"</li>
+        <li>"로그인 폼에 hard CAPTCHA를 넣었더니 가입 전환율이 떨어졌습니다. Turnstile로 바꾸면 정말 나아지나요? 근거는요?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">L3/4 vs L7 DDoS</span>
+      <span class="tag">Sensitivity/Override</span>
+      <span class="tag">Bot Score는 Enterprise 전용</span>
+      <span class="tag">Verified Bots</span>
+      <span class="tag">AI Crawl Control</span>
+      <span class="tag">Turnstile 위젯 모드</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>DDoS Protection은 WAF/Rate Limiting과 "다른 질문"에 답한다</h3>
+    <p>
+      Day 5에서 WAF는 요청의 "내용"을, Rate Limiting은 "빈도"를 본다고 배웠다. DDoS Protection은 더 근본적인 질문에 답한다 — <strong>"이 트래픽 총량 자체가 우리 시스템(네트워크 대역폭, 서버 자원, 애플리케이션 처리 능력)을 고갈시키려는 시도인가"</strong>다. 개별 요청 하나하나는 문제가 없을 수도 있다(WAF가 잡을 시그니처도 없고, 한 클라이언트가 유난히 많이 보낸 것도 아닐 수 있다). 문제는 <strong>전체 트래픽의 규모와 패턴</strong>이다. 그래서 DDoS Protection은 Day 5에서 배운 phase 평가 순서에서 <strong>가장 먼저(<code>ddos_l7</code>)</strong> 실행되고, WAF Custom Rules·Rate Limiting·Managed Rules는 그 다음이다 — DDoS 방어선을 통과하지 못한 트래픽은 애초에 뒤 단계까지 가지도 않는다.
+    </p>
+
+    <h3>L3/L4 vs L7 — "회선을 막는 공격"과 "요청인 척하는 공격"</h3>
+    <div class="layer-stack">
+      <div class="layer-box">
+        <div class="layer-name">L3/L4 (네트워크 계층) DDoS</div>
+        <div class="layer-desc">SYN flood, UDP flood, DNS flood, 반사/증폭 공격처럼 <strong>패킷 자체의 양</strong>으로 회선/네트워크 장비를 고갈시키는 공격이다. Cloudflare의 anycast 네트워크가 공격 트래픽을 가장 가까운 엣지에서 흡수·분산하는 구조라, 고객이 별도로 설정할 것이 거의 없는 <strong>완전 자동·상시 방어</strong> 영역이다.</div>
+      </div>
+      <div class="layer-box">
+        <div class="layer-name">L7 (애플리케이션 계층) DDoS</div>
+        <div class="layer-desc">HTTP/HTTPS 요청 형태를 띤 대량 트래픽으로 origin의 CPU/DB/애플리케이션 처리 능력을 고갈시키는 공격이다. 요청 하나는 정상적인 GET/POST와 구분이 안 갈 수 있어서, <strong>트래픽 패턴(속도, 분포, 출처)의 이상치를 통계적으로 탐지</strong>해야 한다. 이 부분이 고객이 <strong>Sensitivity(민감도)와 Override</strong>로 튜닝할 수 있는 영역이다.</div>
+      </div>
+    </div>
+    <div class="card why-card">
+      <div class="card-label">이 구분이 실무적으로 중요한 이유</div>
+      <p>
+        "DDoS를 막는다"를 하나의 뭉뚱그린 개념으로 답하면, 인터뷰어는 "그럼 정상 트래픽 급증(플래시 세일, 바이럴)과 실제 공격을 어떻게 구분하나요?"라고 되묻는다. L3/4는 고객이 손댈 게 거의 없다는 걸 알고, <strong>튜닝 가능한 지점은 L7 rule의 sensitivity/override뿐</strong>이라는 걸 명확히 알아야 이 follow-up에 답할 수 있다.
+      </p>
+    </div>
+
+    <h3>Sensitivity Level과 Override — "얼마나 의심스러워야 막을 것인가"</h3>
+    <p>
+      HTTP DDoS Attack Protection 관리형 규칙은 기본 민감도가 <strong>High</strong>다. 민감도가 높을수록 임계값(threshold)이 낮아져 더 적은 이상 징후로도 공격으로 판정한다 — 그만큼 탐지는 빠르지만 오탐 위험도 커진다. 반대로 민감도를 낮추면(Low, 또는 사실상 규칙을 끄는 수준까지) 임계값이 높아져 오탐은 줄지만 실제 소규모 공격을 놓칠 위험이 커진다. Enterprise의 <strong>Advanced DDoS Protection</strong> 애드온에서는 특정 hostname/경로/조건에만 적용되는 <strong>override를 최대 10개</strong>까지 만들어, 존 전체가 아니라 "이 API 경로만" 민감도나 액션을 조정할 수 있다.
+    </p>
+    <div class="card why-card">
+      <div class="card-label">왜 이게 "설정 하나"가 아니라 판단인가</div>
+      <p>
+        민감도를 낮추는 건 "오탐을 없애는 버튼"이 아니라 <strong>탐지 속도/정확도와 오탐률 사이의 trade-off를 이동시키는 것</strong>이다. 플래시 세일처럼 일시적으로 정상 트래픽이 급증하는 이벤트가 예정돼 있다면, 이벤트 시간대에만 해당 경로의 민감도를 임시로 낮추고 이벤트가 끝나면 원복하는 식의 <strong>시간 기반 운영 절차</strong>가 필요하다. "민감도를 영구히 낮게 유지한다"는 답은 실제 공격에 대한 방어력을 스스로 깎아먹는 선택으로 들린다.
+      </p>
+    </div>
+
+    <h3>Bot Fight Mode / Super Bot Fight Mode / Bot Management — 같은 기술, 다른 정밀도</h3>
+    <p>
+      세 상품은 같은 탐지 기술 기반이지만 <strong>플랜 티어에 따라 정밀도가 완전히 다르다.</strong> 이 차이를 정확히 모르면 "우리 플랜에서 뭘 할 수 있고 뭘 못 하는지"를 헷갈려 잘못된 설계를 하게 된다.
+    </p>
+    <div class="card concept-card">
+      <div class="card-label">Bot Fight Mode (Free)</div>
+      <p>
+        알려진 봇 패턴과 일치하는 트래픽에 계산 비용이 큰 챌린지를 부여한다. <strong>점수(score) 없음, Custom Rule 연동 없음, 엔드포인트별 세분화 없음</strong> — 도메인 전체에 일괄 적용되는 가장 단순한 형태다.
+      </p>
+    </div>
+    <div class="card concept-card">
+      <div class="card-label">Super Bot Fight Mode (Pro/Business)</div>
+      <p>
+        요청을 <strong>verified bot / likely automated / definitely automated / likely human</strong> 네 카테고리로 분류(bucket)하고, 카테고리별로 Allow/Block/Challenge 액션을 지정할 수 있다. WAF Custom Rule에서 이 분류 결과를 참조해 <strong>Skip</strong> 액션을 쓸 수 있지만, 그 이상의 세밀한 조건(특정 점수 임계값 등)은 지원하지 않는다. <strong>점수 필드 자체가 없다</strong>는 게 Bot Management와의 결정적 차이다.
+      </p>
+    </div>
+    <div class="card concept-card">
+      <div class="card-label">Bot Management (Enterprise)</div>
+      <p>
+        <code>cf.bot_management.score</code>(1~99, 낮을수록 봇에 가까움)를 Custom Rule 조건식에서 직접 참조할 수 있어 <strong>엔드포인트별로 임계값을 다르게</strong> 줄 수 있다(예: 로그인은 엄격하게, 정적 자산은 느슨하게). 여기에 JS Detections, JA3/JA4 TLS 핑거프린트, 요청별 detection ID, AI 봇 세부 제어까지 추가된다.
+      </p>
+    </div>
+    <div class="card why-card">
+      <div class="card-label">실무에서 가장 흔한 함정</div>
+      <p>
+        Pro/Business 플랜에서 <code>cf.bot_management.score</code>를 참조하는 Custom Rule을 만들면 <strong>에러가 나지 않고 그냥 매칭이 안 된다(silent no-match)</strong> — 그 필드가 애초에 채워지지 않기 때문이다. "규칙을 만들었는데 왜 하나도 안 걸리지?"라는 질문에 "그 필드는 Enterprise 전용이라서 우리 플랜에서는 항상 비어 있다"고 바로 답할 수 있어야 한다. 이건 플랜별 기능 경계를 정확히 아는지를 보는 지점이다.
+      </p>
+    </div>
+
+    <h3>Verified Bots — "허용목록"은 스푸핑 방지와 짝을 이뤄야 한다</h3>
+    <p>
+      Googlebot, Bingbot, 업타임 모니터링 서비스처럼 Cloudflare가 검증한 크롤러는 <strong>Verified Bots 목록</strong>에 등록돼 Super Bot Fight Mode/Bot Management의 규칙 평가에서 자동으로 허용된다. 그런데 "User-Agent에 Googlebot이라고 쓰여 있으면 다 진짜 Googlebot"이라고 믿으면 안 된다 — User-Agent는 누구나 위조할 수 있는 문자열이다. Cloudflare의 검증은 역방향 DNS 확인이나 발신 IP 대역 검증 같은 <strong>신원 확인 메커니즘</strong>을 동반하며, 이 요구사항을 지키지 못하는 서비스는 verified 목록에서 제외된다.
+    </p>
+
+    <h3>AI Crawl Control — 봇 관리에 새로 추가된 축</h3>
+    <p>
+      최근 확산된 화제는 <strong>AI 학습/검색용 크롤러를 어떻게 다룰 것인가</strong>다. Cloudflare는 AI 크롤러별로 <strong>allow(허용) / charge(pay-per-crawl, 결제 없으면 HTTP 402 반환) / block(차단)</strong> 세 가지 정책을 선택할 수 있게 했고, robots.txt에 <strong>Content Signals</strong>(<code>search</code>/<code>ai-input</code>/<code>ai-train</code>)라는 기계 판독 가능한 지시어를 추가해 "검색 인덱싱은 허용하지만 AI 학습 데이터로는 쓰지 말라" 같은 용도별 구분을 표준화된 방식으로 명시할 수 있다.
+    </p>
+    <div class="card why-card">
+      <div class="card-label">Bot Management와의 관계</div>
+      <p>
+        AI Crawl Control은 Bot Management의 탐지 인프라 위에서 동작하는 <strong>정책 레이어</strong>다. "봇이냐 아니냐"를 넘어 "이 봇의 목적이 우리 콘텐츠 전략과 맞는가"까지 판단 기준이 확장됐다는 걸 보여주는 사례이며, 시니어 인터뷰에서 최신 트렌드를 얼마나 따라가고 있는지를 드러내는 지점이다.
+      </p>
+    </div>
+
+    <h3>Turnstile — CAPTCHA의 대체제이자 WAF의 액션</h3>
+    <p>
+      Turnstile은 사용자에게 이미지 선택 같은 CAPTCHA 상호작용을 요구하지 않고도 자동화 트래픽을 구분하는 위젯이다. 세 가지 모드가 있다 — <strong>Managed</strong>(브라우저 신호를 보고 의심스러울 때만 상호작용 요구, 공식 권장 기본값), <strong>Non-Interactive</strong>(위젯은 보이지만 사용자 상호작용 없이 검증), <strong>Invisible</strong>(위젯 자체가 안 보이고 배경에서 검증). WAF Custom Rule의 challenge 액션으로도 통합할 수 있어, 특정 조건(의심스러운 국가/UA 조합 등)에서만 Turnstile을 트리거하는 식으로 <strong>정밀 타겟팅</strong>이 가능하다. 2025년 하반기부터는 브라우저 단위 핑거프린팅 의존도를 낮추고 <strong>네트워크 레벨 시그널</strong> 비중을 높이는 방향으로 탐지 정확도를 개선하고 있다.
+    </p>
+    <div class="card why-card">
+      <div class="card-label">Managed Challenge/Turnstile이 hard CAPTCHA보다 권장되는 이유</div>
+      <p>
+        전통적인 이미지형 CAPTCHA는 사람에게도 풀이 시간과 실패율이라는 비용을 강제한다. Managed Challenge/Turnstile은 "대부분의 정상 사용자는 아무 상호작용 없이 통과"하는 것을 기본 전제로 설계돼, <strong>보안 강도를 유지하면서 사용자 마찰을 최소화</strong>한다. 이게 "왜 CAPTCHA 대신 Turnstile을 쓰라고 하는가"라는 질문의 핵심 답이다 — 단순 교체가 아니라 마찰-보안 trade-off 곡선 자체를 개선하는 설계 변화다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>가용성 위협과 남용 위협을 구분하는가:</strong> DDoS(총량이 시스템을 고갈)와 봇 남용(개별 클라이언트의 악의적 패턴)을 같은 문제로 뭉뚱그리지 않는가</li>
+        <li><strong>플랜 티어의 실제 경계를 아는가:</strong> Bot Score가 Enterprise 전용이라는 걸 몰라서 동작하지 않는 규칙을 만드는 실수를 하지 않는가</li>
+        <li><strong>민감도 조정을 trade-off로 이해하는가:</strong> "오탐 줄이기 = 공격 놓칠 위험 증가"라는 대가를 명확히 설명할 수 있는가</li>
+        <li><strong>사용자 마찰과 보안의 균형을 설계하는가:</strong> Turnstile 도입을 "유행이라서"가 아니라 구체적인 위젯 모드/트리거 조건으로 설명하는가</li>
+        <li><strong>최신 위협/트렌드를 따라가는가:</strong> AI 크롤러처럼 최근 부상한 이슈에 대해 이분법(차단만)이 아닌 정책적 선택지를 아는가</li>
+      </ul>
+    </div>
+
+    <p>
+      이 질문은 "봇 차단 설정 켜봤어요"라는 경험 유무가 아니라, <strong>"어떤 플랜/도구를 쓸 수 있는지 정확히 알고, 그 안에서 가용성·보안·사용자 경험을 동시에 만족시키는 설계를 할 수 있는지"</strong>를 본다. 대규모 봇넷 공격이나 오탐으로 정상 트래픽을 막아본 실제 경험이 있어야 답변에 구체성이 생긴다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <div class="card incident-card">
+      <div class="card-label">시나리오 1 — 플래시 세일 트래픽 급증을 DDoS Protection이 오탐</div>
+      <p>
+        대규모 할인 이벤트 시작 직후 초당 요청 수가 평소의 수십 배로 급증하자, HTTP DDoS Attack Protection이 이를 공격으로 판정해 일부 정상 사용자의 결제 페이지 접근을 차단했다.
+        Enterprise Advanced DDoS Protection의 override 기능으로 <strong>결제 API 경로에 한해</strong>, 이벤트 시작 전 미리 민감도를 Low로 낮추고 이벤트 종료 후 즉시 원복하는 절차를 팀 runbook에 추가했다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: 민감도 조정은 "영구히 낮춘다"가 아니라 "예정된 이벤트에 한해 시간 기반으로 조정한다"는 운영 절차로 다뤄야 한다.</p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">시나리오 2 — Pro 플랜에서 Bot Score 참조 규칙이 아무 효과 없음</div>
+      <p>
+        신규 API 엔드포인트에 <code>cf.bot_management.score lt 30</code> 조건의 Custom Rule을 만들어 봇 트래픽을 차단하려 했지만, 몇 주가 지나도 매칭 건수가 0이었다.
+        원인은 팀이 Pro 플랜을 쓰고 있었고, 해당 필드는 Enterprise Bot Management 애드온에서만 채워진다는 걸 몰랐던 것이었다. Super Bot Fight Mode의 카테고리(verified bot/likely automated 등) 기반 액션으로 규칙을 다시 설계했다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: 존재하지 않는 필드를 참조해도 에러가 나지 않는다는 점이 디버깅을 어렵게 만든다 — 플랜별 기능 경계를 먼저 확인하는 습관이 필요하다.</p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">시나리오 3 — 로그인 hard CAPTCHA를 Turnstile Managed 위젯으로 전환</div>
+      <p>
+        로그인 폼에 이미지 선택형 CAPTCHA를 걸어둔 뒤 가입/로그인 완료율이 눈에 띄게 하락했다. 대부분의 로그인 시도는 정상 사용자였는데도 매번 CAPTCHA 상호작용을 강제했기 때문이다.
+        Turnstile Managed 위젯으로 교체하자 대다수 사용자는 상호작용 없이 즉시 통과했고, 의심스러운 신호가 있는 요청에만 선택적으로 챌린지가 표시돼 완료율이 회복됐다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: "CAPTCHA를 없앤다"가 아니라 "필요한 트래픽에만 마찰을 남긴다"는 설계가 실제 지표 개선으로 이어진다.</p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">시나리오 4 — 2025년 4분기 31.4 Tbps / 200M+ rps 하이퍼볼류메트릭 공격</div>
+      <p>
+        2025년 4분기 DDoS 위협 보고서에 따르면 35초간 지속된 31.4 Tbps 공격이 신기록을 세웠고, 같은 분기 Aisuru-Kimwolf 봇넷이 초당 2억 요청을 넘는 HTTP DDoS 공격을 반복적으로 시도했다. 두 사례 모두 고객이 별도로 설정을 바꾸지 않은 상태에서 상시 자동 방어 시스템이 처리했다.
+        이 사례가 주는 실무적 결론은 "L3/4·초대형 L7 공격은 우리가 설정할 수 있는 영역이 아니며, 우리가 실제로 통제할 수 있는 건 애플리케이션 레벨 트래픽(민감도 override, 캐싱으로 origin 부하 흡수, Bot 정책)뿐"이라는 인식이다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: "우리가 얼마나 잘 막았는가"가 아니라 "자동으로 막히는 것과 우리가 설계해야 하는 것을 구분할 수 있는가"가 시니어 레벨 판단이다.</p>
+    </div>
+
+    <div class="card incident-card">
+      <div class="card-label">시나리오 5 — AI 크롤러의 반복 수집으로 origin 부하 증가</div>
+      <p>
+        콘텐츠 사이트의 origin 요청 수가 특정 시점부터 꾸준히 증가했는데, 분석 결과 대부분이 AI 모델 학습/실시간 답변 생성을 위한 크롤러 트래픽이었다.
+        전면 차단 대신 AI Crawl Control에서 크롤러별로 검색 인덱싱용은 allow, AI 학습용은 block으로 구분하고, robots.txt에 Content Signals(<code>ai-train: no</code>)를 명시해 정책을 표준화된 방식으로도 공표했다.
+      </p>
+      <p style="font-size:0.85rem; color:var(--text3);">이 사례가 중요한 이유: "봇=무조건 차단"이 아니라 목적별로 허용/과금/차단을 구분하는 것이 콘텐츠 전략과 인프라 비용을 동시에 고려한 판단이다.</p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>"DDoS/Bot 방어를 어떻게 설계하시겠습니까"라는 질문에는 아래 순서로 답한다.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>위협을 가용성(DDoS) vs 남용(bot abuse) vs 사용자 인증 마찰로 먼저 분류</strong>
+        <p>트래픽 총량이 시스템을 고갈시키는 문제인지, 개별 클라이언트의 악의적 패턴인지, 로그인처럼 사람/자동화를 구분해야 하는 지점인지에 따라 DDoS Protection/Bot Management/Turnstile 중 무엇을 쓸지 결정한다.</p>
+      </li>
+      <li>
+        <strong>플랜 티어의 실제 기능 경계를 먼저 확인</strong>
+        <p>Bot Score(<code>cf.bot_management.score</code>)는 Enterprise 전용이므로, Pro/Business라면 Super Bot Fight Mode의 카테고리 기반 설계로 접근한다.</p>
+      </li>
+      <li>
+        <strong>DDoS 민감도/override는 예정된 이벤트 기준의 시간 한정 조정으로 설계</strong>
+        <p>영구히 민감도를 낮추지 않고, 플래시 세일 같은 예정된 트래픽 급증 구간에만 override를 적용했다가 원복하는 절차를 만든다.</p>
+      </li>
+      <li>
+        <strong>Bot 카테고리별 액션을 verified bot 허용부터 세분화</strong>
+        <p>Googlebot 같은 검증된 크롤러는 통과시키고, likely/definitely automated 트래픽에는 challenge/block을 단계적으로 적용한다.</p>
+      </li>
+      <li>
+        <strong>사용자 마찰이 중요한 지점은 Turnstile Managed 위젯으로 최소화</strong>
+        <p>로그인/가입/결제처럼 이탈률에 민감한 지점은 hard CAPTCHA 대신 Managed 모드를 기본으로 쓰고, 의심 조건에서만 선택적으로 강한 챌린지를 트리거한다.</p>
+      </li>
+      <li>
+        <strong>AI 크롤러 같은 새로운 트래픽 유형은 이분법 대신 정책으로 대응</strong>
+        <p>allow/charge/block과 Content Signals를 조합해 콘텐츠 전략에 맞는 세분화된 정책을 설계한다.</p>
+      </li>
+      <li>
+        <strong>대규모 공격 사례로 "자동 방어 영역"과 "우리가 설계할 영역"을 구분해 설명</strong>
+        <p>L3/4·초대형 L7 공격은 상시 자동 방어의 영역임을 인정하고, 실제로 통제 가능한 지점(override, 캐싱, bot 정책)에 판단을 집중한다.</p>
+      </li>
+    </ol>
+
+    <div class="card why-card">
+      <div class="card-label">핵심 팁</div>
+      <p>이 순서에서 <strong>"우리가 설정할 수 있는 것"과 "자동으로 처리되는 것"을 구분해서 설명하는 것</strong>이 시니어 답변의 핵심이다. 모든 것을 우리가 튜닝해야 한다고 말하면 오히려 DDoS Protection의 상시 자동 방어 구조를 이해하지 못한 것으로 보인다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — DDoS/Bot Management/Turnstile 계층 설계</div>
+      <p>
+        "먼저 문제를 셋으로 나눕니다. 트래픽 총량이 시스템 자원을 고갈시키는 문제라면 DDoS Protection, 개별 클라이언트의 악의적 패턴(크롤링, 스크래핑, 자동화)이라면 Bot Management 계열, 사람과 자동화를 구분해야 하는 특정 폼(로그인, 가입, 결제)이라면 Turnstile로 접근합니다.
+      </p>
+      <p>
+        DDoS는 L3/4와 L7을 구분해서 생각합니다. L3/4는 Cloudflare의 anycast 네트워크가 상시 자동으로 흡수하는 영역이라 저희가 튜닝할 부분이 거의 없고, L7은 트래픽 패턴 이상치를 탐지하는 영역이라 민감도(Sensitivity)를 조정할 수 있습니다. 다만 민감도를 낮추는 건 오탐을 줄이는 대신 실제 공격 탐지력을 낮추는 trade-off이기 때문에, 플래시 세일처럼 예정된 이벤트가 있을 때만 해당 경로에 한해 시간 한정으로 override를 적용하고 이벤트가 끝나면 즉시 원복합니다.
+      </p>
+      <p>
+        Bot 쪽은 플랜 티어를 먼저 확인합니다. Enterprise Bot Management라면 <code>cf.bot_management.score</code>를 엔드포인트별로 다른 임계값으로 참조할 수 있지만, Pro/Business라면 그 필드 자체가 채워지지 않아 규칙이 조용히 매칭되지 않으므로 Super Bot Fight Mode의 카테고리(verified bot/likely automated 등) 기반 액션으로 설계합니다. 어느 티어든 검증된 크롤러(Googlebot 등)는 허용목록으로 먼저 통과시키고, 자동화로 판정된 트래픽부터 단계적으로 challenge/block을 적용합니다.
+      </p>
+      <p>
+        로그인처럼 이탈률에 민감한 지점은 hard CAPTCHA 대신 Turnstile Managed 위젯을 기본으로 씁니다 — 대부분의 정상 사용자는 상호작용 없이 통과하고, 의심스러운 신호가 있는 요청에만 선택적으로 챌린지가 뜨기 때문에 보안과 전환율을 동시에 지킬 수 있습니다. 그리고 AI 크롤러처럼 새로 등장한 트래픽 유형은 무조건 차단하는 대신, AI Crawl Control로 검색 인덱싱용은 허용하고 AI 학습용은 차단하는 식으로 목적별 정책을 만듭니다.
+      </p>
+      <p>
+        마지막으로, 2025년 4분기에 31.4 Tbps나 초당 2억 요청을 넘는 공격도 고객 설정 변경 없이 상시 자동 방어로 처리됐다는 사실을 근거로 듭니다. 이건 저희가 모든 걸 튜닝해야 한다는 뜻이 아니라, 자동으로 처리되는 영역과 저희가 실제로 설계해야 하는 영역(민감도 override, bot 정책, Turnstile 트리거 조건)을 구분해서 후자에 판단력을 집중해야 한다는 뜻입니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① 위협을 가용성/남용/인증 마찰 셋으로 명확히 분류 ② L3/4와 L7을 구분해 자동 방어와 튜닝 가능 영역을 분리 ③ 플랜 티어별 기능 경계(Bot Score Enterprise 전용)를 정확히 짚음 ④ Turnstile 도입을 마찰-보안 trade-off로 구체적으로 설명 ⑤ AI 크롤러 같은 최신 이슈에 이분법이 아닌 정책적 대응 제시 ⑥ 실제 초대형 공격 사례로 "자동 vs 설계 영역" 구분을 근거화
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "DDoS Protection 민감도를 낮추는 게 왜 위험한가요? 그런데도 낮춰야 하는 경우가 있나요?"</div>
+      <div class="followup-a">
+        <p>민감도를 낮추면 임계값이 높아져 더 큰 이상 트래픽이라야 공격으로 판정된다 — 그만큼 작은 규모의 실제 공격을 놓칠 위험이 커진다. 그럼에도 낮춰야 하는 경우는 정상 트래픽 패턴 자체가 일시적으로 "공격처럼 보이는" 상황(플래시 세일, 바이럴, 대규모 배치 작업)이다. 이때는 영구적 조정이 아니라 <strong>해당 경로/시간대에 한정된 override</strong>로 좁혀서 적용하고, 이벤트가 끝나면 즉시 원래 민감도로 되돌려야 한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "Super Bot Fight Mode와 Bot Management의 차이를 한 문장으로 요약하면요?"</div>
+      <div class="followup-a">
+        <p>Super Bot Fight Mode는 요청을 네 카테고리(verified bot/likely automated/definitely automated/likely human)로 "분류"만 하고 카테고리 단위로 액션을 지정하는 반면, Bot Management는 1~99 점수를 요청 단위로 제공해 엔드포인트별로 서로 다른 임계값을 세밀하게 설계할 수 있다. 후자만 <code>cf.bot_management.score</code> 필드가 실제로 채워진다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "Turnstile이 기존 CAPTCHA보다 기술적으로 어떻게 다른가요?"</div>
+      <div class="followup-a">
+        <p>전통적 CAPTCHA는 사람에게 상호작용(이미지 선택 등)을 강제로 요구해 통과 여부를 판단한다. Turnstile의 Managed 모드는 브라우저/네트워크 신호를 먼저 분석해 대부분의 정상 사용자는 상호작용 없이 통과시키고, 의심스러운 신호가 있을 때만 선택적으로 챌린지를 띄운다. 2025년 하반기부터는 브라우저 핑거프린팅보다 <strong>네트워크 레벨 시그널</strong> 비중을 높여, 핑거프린팅을 우회하려는 자동화 트래픽에 대한 탐지력도 강화했다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "Verified Bots 허용목록만 있으면 스푸핑 걱정은 없나요?"</div>
+      <div class="followup-a">
+        <p>아니다. User-Agent 문자열은 누구나 위조할 수 있어서, "Googlebot이라고 자칭하는 트래픽"과 "실제 Googlebot"은 다르다. Cloudflare의 Verified Bots 목록은 역방향 DNS나 발신 IP 대역 검증 같은 신원 확인 메커니즘을 동반하고, 이 요구사항을 충족하지 못하면 목록에서 제외된다. 허용목록은 스푸핑 방지 메커니즘과 결합돼야 의미가 있다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "AI 크롤러를 그냥 다 차단하면 안 되나요?"</div>
+      <div class="followup-a">
+        <p>가능하지만 콘텐츠 전략과 무관하게 검색 노출까지 함께 잃을 위험이 있다. AI Crawl Control은 크롤러별로 allow(허용)/charge(pay-per-crawl, 미결제 시 402)/block(차단)을 구분할 수 있게 해, "검색 인덱싱용 크롤러는 허용하되 AI 학습용 크롤러만 차단"하는 세분화된 정책이 가능하다. robots.txt의 Content Signals(<code>search</code>/<code>ai-input</code>/<code>ai-train</code>)로 이 의도를 표준화된 방식으로도 명시할 수 있다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>가용성 위협(DDoS)과 남용 위협(Bot)과 인증 마찰(Turnstile)을 구분해서 접근 방식을 다르게 설계한다</li>
+          <li>L3/4는 자동 방어 영역, L7은 민감도로 튜닝 가능한 영역이라고 명확히 구분한다</li>
+          <li>플랜 티어별 기능 경계(Bot Score는 Enterprise 전용)를 정확히 알고 그에 맞는 설계를 제시한다</li>
+          <li>민감도 조정을 "예정된 이벤트에 한정된 시간 기반 override"로 운영 절차화한다</li>
+          <li>Turnstile 도입을 마찰-보안 trade-off로 구체적으로 설명한다</li>
+          <li>AI 크롤러처럼 최신 이슈에 이분법이 아닌 정책적 대안을 제시한다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>"DDoS Protection이랑 Bot Management 켜두면 된다"고만 답하고 구분하지 못한다</li>
+          <li>모든 DDoS 방어를 우리가 직접 튜닝해야 한다고 착각한다(L3/4까지 튜닝 대상으로 안다)</li>
+          <li>어느 플랜에서든 Bot Score를 쓸 수 있다고 답한다</li>
+          <li>민감도를 낮추는 걸 "오탐을 없애는 정답"으로만 설명하고 대가를 언급하지 않는다</li>
+          <li>"CAPTCHA를 Turnstile로 바꾸면 무조건 좋다"고만 답하고 이유를 설명하지 못한다</li>
+          <li>AI 크롤러는 무조건 차단하는 게 맞다고만 답한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        DDoS/Bot/Turnstile 설계는 <strong>"방어 기능을 켜는 것"이 아니라 "가용성·보안·사용자 경험 세 축을 동시에 만족시키는 것"</strong>이다. 이 관점이 없으면 자동으로 처리되는 영역까지 불필요하게 튜닝하려 하거나(리소스 낭비), 플랜의 실제 기능 경계를 몰라 동작하지 않는 규칙을 만들거나(디버깅 시간 낭비), 보안만 강조하다 사용자 이탈을 유발하는(전환율 손실) 결과로 이어진다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"DDoS Protection을 켜두면 봇 남용(스크래핑, 크레덴셜 스터핑)도 자동으로 막힌다."</p>
+      <div class="mc-right">실제</div>
+      <p>DDoS Protection은 트래픽 "총량"이 시스템 자원을 고갈시키는지를 본다. 개별 클라이언트의 악의적이지만 총량은 크지 않은 패턴(느린 스크래핑, 낮은 빈도의 크레덴셜 스터핑)은 DDoS 탐지 대상이 아니며, 이건 Bot Management/Rate Limiting의 영역이다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"Bot Score(<code>cf.bot_management.score</code>)는 Custom Rule에서 어느 플랜이든 쓸 수 있다."</p>
+      <div class="mc-right">실제</div>
+      <p>이 필드는 Enterprise Bot Management 애드온에서만 채워진다. Pro/Business 플랜에서 참조하면 에러 없이 조용히 매칭되지 않는다. Pro/Business라면 Super Bot Fight Mode의 카테고리 기반 액션으로 설계해야 한다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"DDoS 오탐이 나면 WAF Custom Rule에서 Allow 규칙을 만들면 해결된다."</p>
+      <div class="mc-right">실제</div>
+      <p>Day 5에서 배운 phase 순서상 DDoS(<code>ddos_l7</code>)는 Custom Rules(<code>http_request_firewall_custom</code>)보다 <strong>먼저</strong> 평가된다. Custom Rule의 Allow는 이미 지나간 DDoS phase의 판정을 되돌리지 못한다 — Enterprise의 DDoS override(민감도/액션 조정)로만 해결할 수 있다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"CAPTCHA를 Turnstile로 교체하기만 하면 사용자 경험과 보안이 자동으로 좋아진다."</p>
+      <div class="mc-right">실제</div>
+      <p>위젯을 바꾸는 것 자체보다 <strong>어떤 모드(Managed/Non-Interactive/Invisible)를 쓰고, 어떤 조건에서 트리거할지</strong>가 실제 효과를 좌우한다. 무조건 Invisible로만 쓰면 탐지 정확도가 떨어질 수 있고, 모든 요청에 Non-Interactive를 강제하면 불필요한 지연이 생길 수 있다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"AI 크롤러는 콘텐츠 도둑이니 무조건 차단하는 게 맞다."</p>
+      <div class="mc-right">실제</div>
+      <p>크롤러의 목적(검색 인덱싱 vs AI 학습 vs 실시간 답변 생성)에 따라 사이트의 검색 노출과 수익 모델에 미치는 영향이 다르다. AI Crawl Control과 Content Signals로 목적별 allow/charge/block 정책을 세분화하는 것이 무조건 차단보다 정교한 접근이다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>DDoS vs Bot vs Turnstile 구분</strong></td>
+          <td>가용성/남용/인증 마찰을 구분해 각 도구의 역할을 명확히 설명한다</td>
+          <td>"다 보안 강화 기능"이라는 수준으로만 안다</td>
+          <td>세 개념을 혼동한다</td>
+        </tr>
+        <tr>
+          <td><strong>L3/4 vs L7 이해</strong></td>
+          <td>L3/4는 자동 방어, L7은 민감도로 튜닝 가능한 영역이라고 정확히 구분한다</td>
+          <td>구분은 알지만 튜닝 가능 지점을 헷갈린다</td>
+          <td>DDoS를 하나의 뭉뚱그린 개념으로만 안다</td>
+        </tr>
+        <tr>
+          <td><strong>플랜 티어 기능 경계</strong></td>
+          <td>Bot Score가 Enterprise 전용이라는 걸 알고 Pro/Biz에서의 대안을 제시한다</td>
+          <td>티어 차이가 있다는 건 알지만 구체적 필드/기능을 모른다</td>
+          <td>모든 플랜에서 동일한 기능을 쓸 수 있다고 착각한다</td>
+        </tr>
+        <tr>
+          <td><strong>민감도/override 판단</strong></td>
+          <td>시간 한정 override로 trade-off를 관리하는 운영 절차를 제시한다</td>
+          <td>"민감도를 낮추면 된다" 정도로만 안다</td>
+          <td>민감도 개념 자체가 없다</td>
+        </tr>
+        <tr>
+          <td><strong>최신 트렌드(AI 크롤러) 대응</strong></td>
+          <td>allow/charge/block 정책과 Content Signals로 세분화된 대응을 제시한다</td>
+          <td>AI 크롤러 이슈는 알지만 대응은 차단만 안다</td>
+          <td>관련 개념 자체를 모른다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면 계속 복습하라. 다음 Day 7에서는 Load Balancing과 트래픽 스티어링(Health Check, Steering Policy, Failover, 멀티 리전/멀티 클라우드 라우팅)을 다룬다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./0005-waf-and-rate-limiting-design.html">← Day 5</a>
+    <a href="./index.html">목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>
