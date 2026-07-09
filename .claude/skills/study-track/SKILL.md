@@ -11,6 +11,21 @@ This skill coordinates learning state. When actual lesson authoring is needed, f
 
 ## Core rule
 
+Use `study-track-control.md` at the repository root as the first execution gate for scheduled routine runs.
+
+Before reading or writing a subject workspace, resolve the subject slug and read `study-track-control.md` if it exists:
+
+1. Find the special `__all__` row first.
+2. If `__all__` is `false`, stop immediately. Do not create lessons, update `PROGRESS.md`, edit any subject files, commit, or push. Respond briefly that all study tracks are disabled in `study-track-control.md` and this run was skipped.
+3. If `__all__` is missing, treat it as `true` to preserve existing behavior.
+4. If `__all__` exists but the boolean is not exactly `true` or `false`, stop and ask the user to fix the value.
+5. Find the row whose `subject-slug` matches the requested subject.
+6. Read the lowercase `enabled` boolean.
+7. If `enabled` is `false`, stop immediately. Do not create lessons, update `PROGRESS.md`, edit any subject files, commit, or push. Respond briefly that `{subject-slug}` is disabled in `study-track-control.md` and was skipped.
+8. If `enabled` is `true`, continue normally.
+9. If the subject row is missing, treat the subject as enabled to preserve existing behavior.
+10. If the row exists but the boolean is not exactly `true` or `false`, stop and ask the user to fix the value.
+
 Use `PROGRESS.md` as the single source of truth for completion.
 
 Before creating a new lesson, always read:

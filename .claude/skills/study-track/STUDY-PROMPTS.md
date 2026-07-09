@@ -2,6 +2,16 @@
 
 아래 프롬프트들은 `/app/MG/opensource-skill` 저장소에서 `.claude/skills/study-track` 스킬을 사용해 과목별 학습 워크스페이스를 생성하거나 재개할 때 사용한다.
 
+공통 실행 게이트:
+
+- 모든 Claude routine 프롬프트는 작업 시작 전에 저장소 루트의 `study-track-control.md`를 먼저 읽는다.
+- `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고, 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 않는다.
+- `__all__` 행이 없으면 `true`로 간주한다.
+- 해당 `폴더 slug` 행의 `enabled` 값이 `false`이면 오늘 실행을 건너뛰고, 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 않는다.
+- 해당 `폴더 slug` 행의 `enabled` 값이 `true`이면 기존 방식대로 다음 Day 레슨 하나를 생성한다.
+- 행이 없으면 기존 동작 보존을 위해 enabled로 간주한다.
+- 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청한다.
+
 ## 네트워크
 
 ```text
@@ -11,6 +21,7 @@
 폴더 slug: `computer-networking`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 CS 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 장애 분석, 성능 진단, 보안 판단, 아키텍처 의사결정 중심으로 진행해줘.
 - OSI/TCP-IP 계층, DNS, TCP/UDP, HTTP/HTTPS, TLS, 로드밸런싱, 프록시, NAT, 방화벽, VPC, CDN, 네트워크 성능 최적화, 장애 RCA를 다뤄줘.
@@ -31,6 +42,7 @@
 폴더 slug: `senior-http-web-protocol-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - HTTP를 메서드/상태코드 암기로만 좁게 다루지 말고, 10년차 이상 개발자 인터뷰에서 평가하는 API 트래픽 해석, 성능/캐시 판단, 프록시/CDN/TLS 경계, 장애 분석 중심으로 진행해줘.
 - HTTP/1.1, HTTP/2, HTTP/3, request/response, method semantics, status code, headers, content negotiation, cookies/session, CORS, Cache-Control, ETag, compression, keep-alive, connection pooling, timeout/retry/idempotency, reverse proxy, API gateway, CDN, TLS termination, observability를 다뤄줘.
@@ -51,6 +63,7 @@
 폴더 slug: `operating-systems`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 CS 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 성능 진단, 동시성 판단, 메모리/I/O 병목 분석 중심으로 진행해줘.
 - 프로세스, 스레드, context switch, 스케줄링, race condition, deadlock, lock contention, virtual memory, page fault, 파일 I/O, 비동기 I/O, 컨테이너 격리를 다뤄줘.
@@ -71,6 +84,7 @@
 폴더 slug: `database-systems`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 SQL 문법 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 스키마 설계, 트랜잭션, 쿼리 튜닝, 장애 대응, 운영 판단 중심으로 진행해줘.
 - 모델링, 정규화/역정규화, 인덱스, EXPLAIN, 트랜잭션 격리 수준, MVCC, lock/deadlock, 복제, 샤딩, 파티셔닝, RDB vs NoSQL을 다뤄줘.
@@ -91,6 +105,7 @@
 폴더 slug: `computer-architecture`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 회로/교과서 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 성능 병목 분석, 메모리 계층 이해, 하드웨어 기반 설계 판단 중심으로 진행해줘.
 - CPU 실행 모델, 레지스터, 메모리 계층, cache locality, cache line, branch prediction, pipeline, multicore, false sharing, SIMD, profiling을 다뤄줘.
@@ -111,6 +126,7 @@
 폴더 slug: `file-structures`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 CS 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 저장장치 비용 모델, 인덱스 구조 선택, 대용량 데이터 처리 판단 중심으로 진행해줘.
 - block I/O, sequential/random access, 파일 조직, dense/sparse index, B-Tree, B+Tree, hash file, clustered/secondary index, external sort, inode/FAT, append-only 구조를 다뤄줘.
@@ -131,6 +147,7 @@
 폴더 slug: `data-structures`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 구현 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 자료구조 선택 기준, 실무 성능, 메모리 사용량, 운영 trade-off 중심으로 진행해줘.
 - 배열, 연결 리스트, 스택, 큐, 해시 테이블, 트리, 균형 트리, 힙, 트라이, 그래프, 자료구조 조합 설계를 다뤄줘.
@@ -151,6 +168,7 @@
 폴더 slug: `ui-ux-terms`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 폴더가 없으면 `MISSION.md`, `RESOURCES.md`, `PROGRESS.md`, `lessons/`, `learning-records/`, `reference/`, `assets/` 구조로 새로 만들고 Day 1 레슨을 생성해줘.
 - 폴더가 있으면 `PROGRESS.md`를 읽고 완료한 내용은 중복하지 말고 다음 미완료 Day 레슨 하나를 생성해줘.
@@ -166,6 +184,7 @@
 폴더 slug: `senior-html-css-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 태그/속성 암기나 CSS 선택자 문법 퀴즈가 아니라, 10년차 이상 프론트엔드 개발자 인터뷰에서 평가하는 semantic structure, 접근성, 브라우저 렌더링, 반응형 레이아웃, 유지보수 가능한 스타일링, 성능 trade-off 중심으로 진행해줘.
 - Semantic HTML, 문서 구조, form, ARIA, accessibility tree, SEO 기본 판단, CSS cascade, specificity, inheritance, box model, Flexbox, Grid, stacking context, responsive design, design token, CSS architecture, reflow/repaint, cross-browser issue를 다뤄줘.
@@ -186,6 +205,7 @@
 폴더 slug: `senior-javascript-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 문법 퀴즈나 코딩 테스트 암기가 아니라, 10년차 이상 프론트엔드 개발자 인터뷰에서 평가하는 실행 모델, 비동기 동작, 브라우저 성능, 유지보수 가능한 애플리케이션 로직, production debugging 중심으로 진행해줘.
 - Execution context, scope, closure, prototype/object model, `this`, module, event loop, microtask/macrotask, Promise, `async`/`await`, cancellation, DOM event, event delegation, browser API, memory leak, error handling, performance profiling, TypeScript와의 경계 판단을 다뤄줘.
@@ -206,6 +226,7 @@
 폴더 slug: `senior-react-nextjs-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 Hook 사용법이나 파일 기반 라우팅 암기가 아니라, 10년차 이상 프론트엔드 개발자 인터뷰에서 평가하는 렌더링 모델, 데이터 흐름, hydration, 캐싱, 앱 아키텍처, 운영 장애 대응 중심으로 진행해줘.
 - React rendering model, reconciliation, component boundary, hooks, state management, data fetching, Suspense, error boundary, hydration, SSR, SSG, ISR, Server Component, Client Component, App Router, routing, caching, streaming, bundle optimization, authentication, frontend security, testing, observability를 다뤄줘.
@@ -226,6 +247,7 @@
 폴더 slug: `senior-frontend-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 UI 구현 팁이나 라이브러리 사용법이 아니라, 10년차 이상 프론트엔드 개발자 인터뷰에서 평가하는 브라우저 제약, 제품 품질, 성능 예산, 접근성, 애플리케이션 아키텍처, 기술 리딩, 장애 분석 중심으로 진행해줘.
 - HTML, CSS, JavaScript, browser rendering pipeline, accessibility, Web Vitals, performance budget, API integration, state/data architecture, React, Next.js, design system, frontend security, testing strategy, observability/RUM, deployment, SEO, i18n, cross-functional communication을 다뤄줘.
@@ -246,6 +268,7 @@
 폴더 slug: `python-backend-engineering`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - Python 기본 Syntax 학습부터 시작하지 말고, Python으로 백엔드를 구성하는 실무자 기준으로 진행해줘.
 - 설계 개념을 포함해서 API 설계, 서비스 경계, 데이터 저장소, 트랜잭션, 인증, 백그라운드 작업, 관측성, 배포까지 다뤄줘.
@@ -263,6 +286,7 @@
 폴더 slug: `python-experienced-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - Python 기본 Syntax 학습부터 시작하지 말고, 경력자 인터뷰에서 평가하는 Python 이해도와 실무 판단력 중심으로 진행해줘.
 - Python data model, object model, 실행 모델, 메모리 관리, GIL, 동시성, `asyncio`, iterator/generator, context manager, descriptor, decorator, typing, packaging, testing, debugging, profiling, 성능, 표준 라이브러리, 유지보수성을 다뤄줘.
@@ -282,6 +306,7 @@
 폴더 slug: `senior-backend-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 CS 암기나 주니어 문답이 아니라, 10년차 이상 백엔드 개발자 인터뷰에서 평가하는 실무 판단력 중심으로 진행해줘.
 - 시스템 설계, 아키텍처 trade-off, 확장성, 신뢰성, 데이터 모델링, 트랜잭션, 동시성, 분산 시스템, API 설계, 보안, 관측성, 장애 대응, 배포, 기술 리딩, 커뮤니케이션을 다뤄줘.
@@ -300,6 +325,7 @@
 폴더 slug: `senior-system-design-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 아키텍처 용어 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 요구사항 정리, 규모 산정, trade-off 판단, 장애 격리, 확장성 설계 중심으로 진행해줘.
 - 대용량 트래픽 처리, 서버 확장, 캐시, 큐, DB 샤딩, 장애 격리, 고가용성, 분산 시스템, capacity estimation, consistency trade-off를 다뤄줘.
@@ -320,6 +346,7 @@
 폴더 slug: `senior-linux-server-operations-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 명령어 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 서버 장애 대응, 원인 분석, 운영 판단 중심으로 진행해줘.
 - 리눅스 명령어, 프로세스 확인, 포트 확인, 로그 분석, CPU/메모리/디스크 사용량 확인, systemd, 권한 관리, 네트워크 진단을 다뤄줘.
@@ -340,6 +367,7 @@
 폴더 slug: `senior-backend-security-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 취약점 정의 암기나 주니어 문답이 아니라, 10년차 이상 백엔드 개발자 인터뷰에서 평가하는 위협 모델링, 방어 설계, 실무 보안 판단 중심으로 진행해줘.
 - 인증, 인가, 세션, JWT, SQL Injection, XSS, CSRF, 파일 업로드 보안, API 보안, 비밀번호 저장 방식, secret 관리, secure coding을 다뤄줘.
@@ -360,6 +388,7 @@
 폴더 slug: `senior-observability-incident-response-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 모니터링 도구 설명이나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 장애 탐지, 원인 분석, 재발 방지, 커뮤니케이션 중심으로 진행해줘.
 - 로그, 메트릭, 트레이싱, 알림, 대시보드, 장애 원인 분석, 장애 보고서, postmortem, 재발 방지 대책, SLO를 다뤄줘.
@@ -380,6 +409,7 @@
 폴더 slug: `senior-aws-cloud-architecture-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 AWS 서비스 나열이나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 클라우드 아키텍처 설계, 운영 안정성, 비용/보안 trade-off 중심으로 진행해줘.
 - EC2, S3, RDS, VPC, IAM, ELB, Auto Scaling, CloudWatch, Availability Zone, 네트워크 경계, 권한 설계, 비용 최적화를 다뤄줘.
@@ -400,6 +430,7 @@
 폴더 slug: `senior-cloudflare-configuration-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 대시보드 설정 나열이나 제품 기능 암기가 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 DNS/CDN/보안 경계 설계, origin 보호, 캐시 전략, 장애 대응, 비용/성능 trade-off 중심으로 진행해줘.
 - Cloudflare DNS, proxied/DNS-only 차이, CDN 캐시, Cache Rules와 기존 Page Rules 경계, SSL/TLS mode, Origin Certificate, WAF, DDoS protection, Rate Limiting, Bot Management/Turnstile, Load Balancing, Workers, Redirect/Transform Rules, Zero Trust Access/Tunnel, DNSSEC, 로그/Analytics, 배포/마이그레이션 runbook을 다뤄줘.
@@ -421,6 +452,7 @@
 폴더 slug: `senior-docker-kubernetes-virtualization-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 명령어 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 컨테이너 배포 구조, 장애 대응, 운영 trade-off 중심으로 진행해줘.
 - 컨테이너, 이미지, 볼륨, 네트워크, Dockerfile, Compose, Kubernetes Pod, Deployment, Service, Ingress, rollout, resource limit, 운영 troubleshooting을 다뤄줘.
@@ -441,6 +473,7 @@
 폴더 slug: `senior-kubernetes-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 kubectl 명령어 암기나 리소스 정의 나열이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 클러스터 운영 판단, 장애 대응, 배포 안정성, 보안/권한 경계, 비용/성능 trade-off 중심으로 진행해줘.
 - Kubernetes cluster architecture, control plane, node, Pod, Deployment, StatefulSet, DaemonSet, Service, Ingress, Gateway API, CoreDNS, CNI networking, storage/volume, ConfigMap, Secret, probe, request/limit, HPA/VPA, rollout/rollback, scheduling, RBAC, admission control, security hardening, observability, troubleshooting, upgrade strategy, multi-cluster trade-off를 다뤄줘.
@@ -462,6 +495,7 @@
 폴더 slug: `senior-cicd-deployment-strategy-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 파이프라인 도구 설명이나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 배포 안정성, 자동화 품질, 롤백 판단, release ownership 중심으로 진행해줘.
 - GitHub Actions, Jenkins, 빌드 자동화, 테스트 자동화, artifact 관리, Blue-Green 배포, Rolling 배포, Canary 배포, 롤백 전략을 다뤄줘.
@@ -482,6 +516,7 @@
 폴더 slug: `senior-performance-optimization-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 튜닝 팁 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 병목 분석, 측정 기반 판단, 성능/복잡도 trade-off 중심으로 진행해줘.
 - 느린 API 분석, DB 쿼리 튜닝, 인덱스 최적화, 캐시 적용, 비동기 처리, 부하 테스트, 병목 분석, profiling, 성능 지표 해석을 다뤄줘.
@@ -502,6 +537,7 @@
 폴더 slug: `senior-redis-cache-strategy-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 Redis 명령어 암기나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 캐시 설계, 데이터 구조 선택, 무효화 전략, 고가용성, 장애 시 동작, 메모리/성능 trade-off 중심으로 진행해줘.
 - Redis 자료구조, TTL, 캐시 무효화, 세션 저장소, 분산 락, 랭킹, Pub/Sub, Streams, 캐시 스탬피드, hot key, pipelining, Lua scripting, transaction, persistence, eviction policy, replication, Sentinel, Cluster, memory sizing, latency diagnosis, failover behavior를 다뤄줘.
@@ -522,6 +558,7 @@
 폴더 slug: `senior-message-queue-async-processing-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 큐 제품 비교나 주니어 문답이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 비동기 설계, 재시도, 장애 격리, 대량 처리 판단 중심으로 진행해줘.
 - Kafka, RabbitMQ, SQS, Celery, 비동기 작업 설계, 외부 연동, 재시도, idempotency, dead-letter queue, ordering, backpressure, 장애 격리를 다뤄줘.
@@ -542,6 +579,7 @@
 폴더 slug: `senior-rag-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 LLM 용어 암기나 데모 구현이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 검색 품질, 데이터 파이프라인, 운영 안정성, 비용/성능 trade-off, 제품 품질 판단 중심으로 진행해줘.
 - RAG 아키텍처, 문서 수집/정제, chunking 전략, embedding 모델 선택, vector database, hybrid search, metadata filtering, reranking, context 구성, prompt 설계, hallucination 완화, 답변 근거 표시, 평가 지표, offline/online evaluation, 권한/보안, 개인정보 처리, 캐시, 비용 최적화, 관측성, 장애 대응을 다뤄줘.
@@ -563,6 +601,7 @@
 폴더 slug: `senior-llm-wiki-file-format-rag-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 RAG 데모나 파일 업로드 기능 구현이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 heterogeneous document ingestion, knowledge/wiki curation, 검색 품질, 근거 추적, 권한/보안, 운영 안정성, 비용/성능 trade-off 중심으로 진행해줘.
 - llm-wiki 스타일의 지식 베이스와 skill 문서 관리, 파일 형식별 수집/정제 파이프라인, PDF/DOCX/PPTX/XLSX/HTML/Markdown/code/CSV/JSON/YAML parsing, OCR, table/image extraction, metadata/provenance, 문서 구조 기반 semantic chunking, incremental indexing, deduplication/versioning, embedding 모델 선택, vector database, hybrid search, metadata filtering, reranking, citation grounding, context 구성, prompt injection 방어, permission-aware retrieval, 평가 지표, offline/online evaluation, 관측성, 장애 대응을 다뤄줘.
@@ -584,6 +623,7 @@
 폴더 slug: `senior-langchain-langgraph-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 튜토리얼 따라하기나 API 호출 예제가 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 LLM 애플리케이션 아키텍처, agent 설계, 상태 관리, 운영 안정성, 평가/관측성, 비용/성능 trade-off 중심으로 진행해줘.
 - LangChain agent 구성, model/tool/message abstraction, middleware, retrieval, memory, structured output, streaming, guardrails, context engineering, tool calling, LangGraph StateGraph, node/edge 설계, state schema, persistence, checkpointer, store, interrupt, human-in-the-loop, subgraph, fault tolerance, retry, LangSmith tracing/evaluation, 배포, 운영 장애 대응을 다뤄줘.
@@ -605,6 +645,7 @@
 폴더 slug: `senior-ai-harness-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 SDK 사용법이나 prompt template 암기가 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 AI agent runtime 설계, model/tool/runtime 경계, orchestration, 운영 안정성, 평가/관측성, 비용/성능 trade-off 중심으로 진행해줘.
 - AI harness와 agent harness 개념, agent loop, prompt/tool/memory/control-flow scaffolding, provider abstraction, tool calling, handoff, guardrail, session/memory, sandboxed workspace execution, MCP, streaming, telemetry, tracing, evaluation harness, replay, human-in-the-loop, multi-agent coordination, 권한/보안, 비용 최적화, 장애 대응을 다뤄줘.
@@ -626,6 +667,7 @@
 폴더 slug: `senior-llm-engineering-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 LLM 용어 암기나 prompt tip 나열이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 모델 선택, 제품 품질, 운영 안정성, 안전성, 평가 체계, 비용/성능 trade-off 중심으로 진행해줘.
 - LLM 동작 특성, model selection, capability boundary, tokenization, context window, prompt engineering, reasoning model 사용 판단, structured output, function/tool calling, multimodal input/output, embedding, fine-tuning, reinforcement fine-tuning, evaluation, hallucination 완화, safety/guardrail, prompt injection 방어, latency/cost 최적화, prompt caching, observability, rate limit, fallback, vendor abstraction, production incident 대응을 다뤄줘.
@@ -647,6 +689,7 @@
 폴더 slug: `senior-chatbot-service-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 FAQ bot 데모나 LLM API 호출 예제가 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 대화형 서비스 요구사항 분석, 의도/개체 모델링, context 유지, 운영 품질, 안전성, 비용/성능 trade-off 중심으로 진행해줘.
 - 사용자 의도(intent), 개체(entity)와 slot 추출, 동의어(synonym) 사전, utterance 설계, NLU/LLM hybrid routing, dialogue state, session/context 유지, multi-turn flow, fallback/escalation, human handoff, RAG와 tool calling 연동, 채널 연동, 개인정보/동의/보안, prompt injection 방어, safety guardrail, 평가 지표, analytics, observability, latency/cost 최적화, 운영 장애 대응을 다뤄줘.
@@ -668,6 +711,7 @@
 폴더 slug: `senior-claude-code-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 CLI 사용법이나 프롬프트 팁이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 agentic coding runtime 이해, 코드베이스 컨텍스트 설계, 권한/보안, 자동화, 팀 운영, CI/CD 통합, 생산성/품질 trade-off 중심으로 진행해줘.
 - Claude Code 동작 모델, terminal/IDE/web/desktop surface, CLI automation, codebase context, `CLAUDE.md`, instructions/memory, permission mode, shell/file tool execution, MCP, skills, hooks, plugins, subagents/agent teams, background agent, Remote Control, code review, CI/CD workflow, session management, context compaction, prompt caching, model/provider configuration, sandboxing, security, enterprise/admin settings, observability, troubleshooting, production adoption pattern을 다뤄줘.
@@ -689,6 +733,7 @@
 폴더 slug: `senior-hermes-agent-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 설치 절차나 프롬프트 팁이 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 always-on agent runtime 설계, local-first 실행, task refinement, self-learning/skill capture, tool/permission 보안, OpenClaw와의 운영 trade-off 중심으로 진행해줘.
 - Hermes Agent architecture, always-on runtime, local-first execution, task refinement, self-learning, skill capture, model/tool/runtime boundary, memory/session design, planner/executor handoff, provider abstraction, tool calling, MCP/API integration, Gateway/channel integration, scheduling, replay/evaluation loop, sandboxing, permission model, provenance, prompt injection defense, OpenClaw interoperability, observability, troubleshooting, cost/latency/reliability trade-off, production operation pattern을 다뤄줘.
@@ -710,6 +755,7 @@
 폴더 slug: `senior-openclaw-interview`
 
 요구사항:
+- 먼저 저장소 루트의 `study-track-control.md`를 읽고, `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 마. `__all__`이 `true`이면 위 `폴더 slug` 행의 `enabled` 값을 확인해서 `false`이면 이 과목만 건너뛰고, `true`이면 계속 진행해줘. 행이 없으면 enabled로 간주하고, 값이 `true` 또는 `false`가 아니면 작업하지 말고 값 수정을 요청해줘.
 - 기존 `.claude/skills/teach` 스킬은 수정하지 마.
 - 단순 설치 절차나 데모 자동화가 아니라, 10년차 이상 개발자 인터뷰에서 평가하는 local-first agent platform 설계, Gateway 운영, multi-channel integration, tool/skill 보안, sandboxing, 모델/비용/신뢰성 trade-off 중심으로 진행해줘.
 - OpenClaw architecture, local-first Gateway, channel integration, onboarding/update flow, model provider configuration, auth profile rotation, failover, tools, sessions, prompt/memory files, skills, ClawHub, multi-agent routing, sandboxing, DM pairing, allowlist, remote exposure runbook, companion apps/nodes, deployment topology, logging, troubleshooting, marketplace security, production operation trade-off를 다뤄줘.
