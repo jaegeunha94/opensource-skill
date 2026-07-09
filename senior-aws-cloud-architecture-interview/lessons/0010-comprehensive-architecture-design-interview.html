@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 10 — 종합 아키텍처 설계 면접: 웹 서비스 고가용성 설계</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #222538;
+      --border: #2e3150;
+      --accent: #7c83ff;
+      --accent2: #50e3c2;
+      --accent3: #ff7c7c;
+      --accent4: #ffd97c;
+      --text: #e2e4f0;
+      --text2: #9da3c8;
+      --text3: #6b7099;
+      --good: #50e3c2;
+      --weak: #ff7c7c;
+      --warn: #ffd97c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-badge {
+      font-size: 0.78rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.3;
+    }
+    header .subtitle {
+      color: var(--text2);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc h2 { font-size: 0.85rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+    .toc ol { padding-left: 1.3rem; }
+    .toc li { margin-bottom: 0.3rem; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 0.93rem; }
+    .toc a:hover { text-decoration: underline; }
+    section { margin-bottom: 3rem; }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: 1.05rem; font-weight: 700; color: var(--accent2); margin: 1.4rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; font-weight: 700; color: var(--warn); margin: 1.1rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; color: var(--text); }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.88em;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.3rem 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .question-card {
+      border-left: 4px solid var(--accent);
+    }
+    .question-card .card-label { color: var(--accent); }
+    .concept-card {
+      border-left: 4px solid var(--accent2);
+      background: #1a2430;
+    }
+    .concept-card .card-label { color: var(--accent2); }
+    .why-card {
+      border-left: 4px solid var(--warn);
+      background: #1f1d10;
+    }
+    .why-card .card-label { color: var(--warn); }
+    .answer-card {
+      border-left: 4px solid #a07bff;
+      background: #1a1828;
+    }
+    .answer-card .card-label { color: #a07bff; }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }
+    @media (max-width: 600px) { .compare-grid { grid-template-columns: 1fr; } }
+    .good-box {
+      background: #0f2420;
+      border: 1px solid var(--good);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .good-box .box-label { color: var(--good); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .weak-box {
+      background: #28100f;
+      border: 1px solid var(--weak);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+    }
+    .weak-box .box-label { color: var(--weak); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.6rem; }
+    .followup-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      margin-bottom: 0.9rem;
+    }
+    .followup-q { color: var(--accent4); font-weight: 700; margin-bottom: 0.5rem; }
+    .followup-a { color: var(--text); }
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.91rem;
+      margin-top: 0.5rem;
+    }
+    .rubric-table th {
+      background: var(--surface2);
+      color: var(--text2);
+      font-weight: 700;
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .rubric-table td {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .rubric-table tr:nth-child(odd) td { background: #15182a; }
+    .rubric-table tr:nth-child(even) td { background: #1a1d2e; }
+    .score-5 { color: var(--good); font-weight: 700; }
+    .score-3 { color: var(--warn); font-weight: 700; }
+    .score-1 { color: var(--weak); font-weight: 700; }
+    .pillar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1.2rem;
+    }
+    .pillar-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+    }
+    .pillar-name { font-weight: 700; color: var(--accent); margin-bottom: 0.4rem; font-size: 0.95rem; }
+    .pillar-key { font-size: 0.83rem; color: var(--text2); }
+    .step-list { counter-reset: step; list-style: none; padding-left: 0; }
+    .step-list li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 2.2rem;
+      margin-bottom: 0.7rem;
+    }
+    .step-list li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0.1rem;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.78rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .misconception {
+      background: #1f1520;
+      border: 1px solid #6e3880;
+      border-radius: 8px;
+      padding: 1rem 1.3rem;
+      margin-bottom: 0.9rem;
+    }
+    .misconception .mc-wrong { color: var(--weak); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; }
+    .misconception .mc-right { color: var(--good); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; margin: 0.6rem 0 0.3rem; }
+    .diagram {
+      background: #10131f;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.3rem;
+      font-family: 'Fira Mono', 'Consolas', monospace;
+      font-size: 0.82rem;
+      color: var(--text2);
+      overflow-x: auto;
+      white-space: pre;
+      margin-bottom: 1.2rem;
+      line-height: 1.5;
+    }
+    nav.bottom {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+    nav.bottom a { color: var(--accent); text-decoration: none; }
+    nav.bottom a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 0.75rem;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      margin: 0.15rem 0.15rem 0.15rem 0;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-badge">Day 10 · AWS / Cloud Architecture 인터뷰 대비 · 종합 정리</div>
+    <h1>종합 아키텍처 설계 면접 — 웹 서비스 고가용성 설계</h1>
+    <p class="subtitle">
+      Multi-AZ + Auto Scaling + ALB + RDS + S3/CloudFront 통합 설계 · VPC 경계와 IAM 권한을 포함한 화이트보드 인터뷰 · Day 1~9 통합 사고 훈련
+    </p>
+  </header>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-question">면접 질문</a></li>
+      <li><a href="#premise">전제 개념 — 통합 아키텍처를 그리는 순서</a></li>
+      <li><a href="#why-asked">왜 면접에서 묻는가</a></li>
+      <li><a href="#real-world">실무 연결</a></li>
+      <li><a href="#answer-order">답변 사고 순서</a></li>
+      <li><a href="#core-answer">핵심 답변 예시</a></li>
+      <li><a href="#followup">Senior-level Follow-up Q&amp;A</a></li>
+      <li><a href="#compare">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-question">
+    <h2>1. 면접 질문</h2>
+
+    <div class="card question-card">
+      <div class="card-label">핵심 질문 (화이트보드 설계형)</div>
+      <p style="font-size:1.08rem; font-weight:600; color:#fff;">
+        "일 평균 사용자 5만 명, 트래픽이 특정 시간대에 3~4배 급증하는 이커머스 웹 서비스를 AWS에 새로 구축한다고 가정합니다. 단일 장애점(SPOF) 없이 고가용성을 확보하면서, 네트워크 경계와 권한을 안전하게 설계하고, 비용도 합리적으로 통제하는 전체 아키텍처를 화이트보드에 그려가며 설명해 주세요."
+      </p>
+    </div>
+
+    <div class="card question-card">
+      <div class="card-label">변형 질문</div>
+      <ul>
+        <li>"이 아키텍처에서 하나의 AZ 전체가 장애가 나면 어떤 일이 일어나나요? 사용자는 무엇을 경험하나요?"</li>
+        <li>"데이터베이스 장애 상황을 가정해 봅시다. 감지부터 복구까지 전체 흐름을 설명해 주세요."</li>
+        <li>"이 설계에서 보안 사고가 발생할 수 있는 지점을 스스로 지적해 보세요."</li>
+        <li>"트래픽이 지금의 10배로 늘어난다면 이 아키텍처의 어느 부분이 먼저 한계에 부딪히나요?"</li>
+        <li>"이 모든 걸 다 갖췄을 때 월 비용은 대략 무엇에 의해 좌우되고, 어디를 가장 먼저 줄이겠습니까?"</li>
+      </ul>
+    </div>
+
+    <p>
+      <span class="tag">VPC</span>
+      <span class="tag">Multi-AZ</span>
+      <span class="tag">ALB</span>
+      <span class="tag">Auto Scaling Group</span>
+      <span class="tag">RDS Multi-AZ + Read Replica</span>
+      <span class="tag">S3 + CloudFront</span>
+      <span class="tag">IAM Role</span>
+      <span class="tag">보안 그룹 계층</span>
+      <span class="tag">CloudWatch</span>
+      <span class="tag">비용 trade-off</span>
+      <span class="tag">SPOF 제거</span>
+    </p>
+  </section>
+
+  <!-- 2. 전제 개념 -->
+  <section id="premise">
+    <h2>2. 전제 개념 — 통합 아키텍처를 그리는 순서</h2>
+
+    <h3>Day 10은 새 지식이 아니라 "통합하는 능력"을 테스트한다</h3>
+    <p>
+      지금까지 Day 1~9에서 VPC, IAM, EC2/Auto Scaling, RDS, S3, ELB, CloudWatch, 비용 최적화를 각각 따로 배웠다. 그런데 실제 시니어 인터뷰의 마지막 단계는 거의 항상 <strong>"이 모든 요소를 하나의 화이트보드 위에 동시에 그려보라"</strong>는 형태로 나온다. 이 질문이 어려운 이유는 새로운 개념이 있어서가 아니라, <strong>한 계층의 결정이 다른 계층의 제약이 되는 상호작용</strong>을 순서 있게 설명해야 하기 때문이다. 예를 들어 RDS를 Multi-AZ로 만들기로 한 결정은 서브넷 설계(최소 2개 AZ에 프라이빗 DB 서브넷 필요, Day 2)에 영향을 주고, Auto Scaling으로 인스턴스 수가 변하는 결정은 IAM Role을 인스턴스 프로파일로 붙이는 방식(Day 3)에 영향을 준다. 시니어 면접관은 "각 조각을 아는가"가 아니라 <strong>"조각들이 서로를 어떻게 제약하는지 아는가"</strong>를 본다.
+    </p>
+
+    <h3>설계를 그리는 표준 순서 — 바깥에서 안으로, 아래에서 위로</h3>
+    <p>
+      화이트보드에서 아키텍처를 처음부터 즉흥적으로 그리면 순서가 뒤섞여 설명이 산만해진다. 실무에서 검증된 순서는 <strong>"네트워크 경계 → 트래픽 진입점 → 컴퓨트 계층 → 데이터 계층 → 정적 자산/캐싱 → 횡단 관심사(권한, 관측, 비용)"</strong>다. 이 순서를 따르면 이후 어떤 follow-up 질문이 와도 "그 부분은 몇 번째 계층에서 이렇게 결정했다"고 즉시 되짚어 답할 수 있다.
+    </p>
+
+    <div class="diagram">인터넷
+  │
+  ▼
+[Route 53] ── DNS
+  │
+  ▼
+[CloudFront] ── 정적 자산 캐싱, TLS 종료(엣지), DDoS 1차 방어(Day 6, Day 7)
+  │                              │
+  │ (동적 요청)                  ▼
+  ▼                         [S3] 정적 자산 (OAC로 비공개, Day 6)
+[ALB] (Public Subnet, AZ-a / AZ-b)
+  │  헬스체크, TLS 종료, Deregistration Delay(Day 7)
+  ▼
+┌───────────────── VPC ─────────────────┐
+│  Private Subnet (App, AZ-a)  Private Subnet (App, AZ-b)
+│  [Auto Scaling Group]         [Auto Scaling Group]     (Day 4)
+│  EC2 (IAM Instance Profile, 최소권한 Role, Day 3)
+│         │ 보안 그룹: ALB에서만 인바운드 허용 (Day 2)
+│         ▼
+│  Private Subnet (DB, AZ-a)   Private Subnet (DB, AZ-b)
+│  [RDS Primary]  ⇄ 동기 복제 ⇄  [RDS Standby]           (Day 5)
+│         │
+│         ▼ 비동기 복제
+│  [Read Replica] (읽기 트래픽 분산, 필요 시 다른 AZ)      (Day 5)
+│
+│  NAT Gateway (AZ-a, AZ-b 각각) ── 아웃바운드 전용        (Day 2)
+└────────────────────────────────────────┘
+
+횡단 관심사: CloudWatch(메트릭/로그/알람, Day 8) · IAM(권한 경계, Day 3)
+             · Cost Explorer/Trusted Advisor(비용 가시성, Day 9)</div>
+
+    <h3>계층별 결정과 그 근거 — 왜 이 조합인가</h3>
+
+    <div class="pillar-grid">
+      <div class="pillar-box">
+        <div class="pillar-name">네트워크 경계 (Day 2)</div>
+        <div class="pillar-key">최소 2개 AZ에 걸친 Public(ALB, NAT)/Private App/Private DB 서브넷 3계층. DB 서브넷은 인터넷 라우트가 없어 구조적으로 직접 노출이 불가능하다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">트래픽 진입점 (Day 7)</div>
+        <div class="pillar-key">ALB가 두 AZ의 EC2로 트래픽을 분산. TLS는 ALB에서 종료해 뒷단 인스턴스의 인증서 관리 부담을 없앤다.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">컴퓨트 계층 (Day 4)</div>
+        <div class="pillar-key">Auto Scaling Group이 두 AZ에 최소 인스턴스를 분산 배치하고, 트래픽 급증에 따라 스케일 아웃/인. Launch Template에 IAM Instance Profile 포함.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">데이터 계층 (Day 5)</div>
+        <div class="pillar-key">RDS Multi-AZ로 동기 복제 기반 자동 페일오버 확보, 읽기 트래픽이 많다면 Read Replica로 쓰기/읽기 부하 분리.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">정적 자산 (Day 6)</div>
+        <div class="pillar-key">S3는 Block Public Access를 켠 채 CloudFront + OAC로만 접근 허용. CloudFront가 엣지 캐싱으로 오리진 부하와 전송 비용도 낮춘다(Day 9).</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">권한 (Day 3)</div>
+        <div class="pillar-key">EC2는 Access Key가 아니라 IAM Role(Instance Profile)로 S3/CloudWatch 등에 접근. 최소 권한으로 필요한 API만 허용.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">관측 (Day 8)</div>
+        <div class="pillar-key">ASG/ALB/RDS 표준 메트릭과 커스텀 애플리케이션 메트릭을 CloudWatch로 수집, Composite Alarm으로 노이즈를 줄이고 Auto Scaling과 연동.</div>
+      </div>
+      <div class="pillar-box">
+        <div class="pillar-name">비용 (Day 9)</div>
+        <div class="pillar-key">베이스라인 용량은 Savings Plans, 여유 용량은 Spot 혼합. CloudFront 캐싱과 S3 수명 주기 정책으로 스토리지/전송 비용 통제.</div>
+      </div>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">SPOF(Single Point of Failure)를 찾는 습관</div>
+      <p>
+        전체 그림을 그린 뒤 반드시 스스로 물어야 할 질문은 <strong>"이 다이어그램에서 하나만 죽어도 서비스 전체가 멈추는 지점이 있는가"</strong>다. ALB는 AWS가 관리하는 다중 AZ 서비스라 SPOF가 아니다. EC2는 ASG로 여러 AZ에 분산되어 있어 하나가 죽어도 다른 AZ가 대신한다. RDS는 Multi-AZ가 없으면 SPOF가 된다 — 이것이 Day 5의 핵심이었다. NAT Gateway는 AZ마다 하나씩 두지 않으면(비용 절감을 위해 하나만 두면) 그 AZ의 NAT가 있는 곳이 아닌 다른 AZ 인스턴스의 아웃바운드 트래픽이 AZ 경계를 넘게 되어 그 자체로 부분 SPOF가 된다. <strong>"어디가 SPOF인지 스스로 찾아내는 습관"</strong>이 시니어와 미드레벨을 가르는 가장 뚜렷한 차이다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 3. 왜 묻는가 -->
+  <section id="why-asked">
+    <h2>3. 왜 면접에서 묻는가</h2>
+
+    <div class="card why-card">
+      <div class="card-label">인터뷰어가 평가하는 것</div>
+      <ul>
+        <li><strong>통합적 사고:</strong> 개별 서비스 지식이 아니라, 여러 계층의 결정이 서로 어떻게 제약하고 영향을 주는지 설명할 수 있는가.</li>
+        <li><strong>구조화된 커뮤니케이션:</strong> 화이트보드 위에서 즉흥적으로 나열하지 않고, 일관된 순서(경계→진입점→컴퓨트→데이터→횡단 관심사)로 설명하는가.</li>
+        <li><strong>자기 검증 능력:</strong> 자신이 그린 설계의 약점(SPOF, 보안 허점, 확장 한계)을 스스로 찾아내는가, 아니면 지적받아야만 아는가.</li>
+        <li><strong>실무 경험의 신호:</strong> 교과서적으로 정답만 말하는 게 아니라, "이런 트레이드오프 때문에 이렇게 결정했다"는 실제 판단 근거를 제시하는가.</li>
+        <li><strong>확장성 있는 사고:</strong> 트래픽이 10배가 되는 등 조건이 바뀌었을 때 어느 계층이 먼저 무너지는지 예측할 수 있는가.</li>
+      </ul>
+    </div>
+
+    <p>
+      이 질문은 보통 시니어 인터뷰의 <strong>마지막 라운드</strong>에 등장한다. 그 전 라운드에서 각 서비스에 대한 지식을 개별적으로 확인했다면, 마지막 라운드는 "이 사람이 실제로 프로덕션 아키텍처를 처음부터 설계하고 책임질 수 있는가"를 검증하는 자리다. 단편 지식이 아무리 많아도 이를 하나의 일관된 그림으로 조립하지 못하면, 실제 업무에서 아키텍처 리뷰를 주도하거나 신규 서비스 설계를 맡기기 어렵다고 판단된다.
+    </p>
+  </section>
+
+  <!-- 4. 실무 연결 -->
+  <section id="real-world">
+    <h2>4. 실무 연결</h2>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 1 — 화이트보드 설계 리뷰에서 SPOF를 발견</div>
+      <p>
+        신규 서비스 설계 리뷰에서 아키텍트가 그린 다이어그램에 NAT Gateway가 하나만 있었다. 리뷰어가 "이 AZ의 NAT가 죽으면 어떻게 되나요?"라고 묻자, 다른 AZ에 있는 프라이빗 서브넷 인스턴스들이 인터넷으로 나가는 아웃바운드 경로(패키지 업데이트, 외부 API 호출)를 잃는다는 것이 드러났다. AZ마다 NAT Gateway를 하나씩 두는 것으로 설계를 수정했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 2 — 트래픽 급증 이벤트를 앞두고 전체 아키텍처 점검</div>
+      <p>
+        대규모 프로모션을 앞두고 팀이 전체 아키텍처를 다시 검토했다. ASG의 최대 용량 한도가 예상 트래픽에 비해 낮게 설정되어 있었고, RDS는 Read Replica가 없어 읽기 트래픽이 몰리면 Primary에 부하가 집중되는 구조였다. 프로모션 전에 ASG 최대치를 올리고 Read Replica를 추가해 읽기 경로를 분리했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 3 — 신규 입사자의 아키텍처 설계 온보딩 과제</div>
+      <p>
+        시니어 엔지니어가 신규 입사자에게 "간단한 웹 서비스 하나를 처음부터 설계해보라"는 과제를 줬다. 신규 입사자가 각 서비스를 잘 알고 있었지만, 서브넷 경계 없이 모든 것을 하나의 서브넷에 넣고 보안 그룹만으로 방어하려 한 설계를 제출했다. 리뷰를 통해 "계층형 방어(서브넷 경계 + 보안 그룹 + IAM)"가 왜 필요한지, 왜 하나의 방어선만으로는 부족한지를 다시 설명해야 했다.
+      </p>
+    </div>
+
+    <div class="card concept-card">
+      <div class="card-label">시나리오 4 — 장애 대응 시뮬레이션(Game Day)</div>
+      <p>
+        분기별 Game Day에서 팀이 의도적으로 한 AZ의 EC2를 모두 종료해보는 훈련을 진행했다. ASG가 다른 AZ에 대체 인스턴스를 자동으로 기동했지만, Health Check Grace Period(Day 4)가 너무 짧게 설정되어 있어 부팅 중인 인스턴스가 트래픽을 받기 전에 비정상으로 판정되어 반복 재시작되는 문제가 드러났다. 이 훈련을 통해 설정값을 조정했다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 5. 답변 사고 순서 -->
+  <section id="answer-order">
+    <h2>5. 답변 사고 순서</h2>
+
+    <p>화이트보드 종합 설계 질문을 받으면, 아래 순서로 생각하고 그리며 답변하라.</p>
+
+    <ol class="step-list">
+      <li>
+        <strong>요구사항 확인 — 숫자와 제약을 먼저 묻는다</strong>
+        <p>트래픽 규모, 급증 배율, 데이터 정합성 요구 수준, 예산 제약, 팀의 운영 역량을 먼저 확인한다. 요구사항 없이 바로 그리기 시작하면 과도하거나 부족한 설계가 된다.</p>
+      </li>
+      <li>
+        <strong>네트워크 경계부터 그린다</strong>
+        <p>최소 2개 AZ, Public/Private App/Private DB 3계층 서브넷을 먼저 그려 전체 그림의 뼈대를 만든다.</p>
+      </li>
+      <li>
+        <strong>트래픽 진입점과 컴퓨트 계층을 연결한다</strong>
+        <p>CloudFront/ALB로 진입점을 그리고, Auto Scaling Group으로 두 AZ에 분산된 컴퓨트를 연결한다.</p>
+      </li>
+      <li>
+        <strong>데이터 계층을 고가용성 기준으로 설계한다</strong>
+        <p>RDS Multi-AZ로 SPOF를 제거하고, 필요하면 Read Replica로 읽기 부하를 분리한다.</p>
+      </li>
+      <li>
+        <strong>정적 자산과 캐싱을 배치한다</strong>
+        <p>S3 + CloudFront + OAC로 정적 자산을 분리해 오리진 부하와 전송 비용을 낮춘다.</p>
+      </li>
+      <li>
+        <strong>횡단 관심사를 채운다 — 권한, 관측, 비용</strong>
+        <p>IAM Role로 자격증명을 제거하고, CloudWatch로 관측성을 확보하고, 구매 모델과 캐싱으로 비용을 통제한다.</p>
+      </li>
+      <li>
+        <strong>스스로 SPOF와 장애 시나리오를 검증한다</strong>
+        <p>"AZ 하나가 죽으면?", "DB가 죽으면?", "트래픽이 10배가 되면?"을 스스로 묻고 답해 설계의 완결성을 보여준다.</p>
+      </li>
+    </ol>
+
+    <div class="card why-card">
+      <div class="card-label">핵심 팁</div>
+      <p>모든 서비스를 한 번에 나열하지 말고 <strong>"바깥에서 안으로, 요구사항에서 세부 구현으로"</strong> 순서 있게 그려라. 그리고 그리는 도중에 "이 결정 때문에 다음 계층에서 이런 제약이 생긴다"는 연결 고리를 말로 설명하라. 이것이 개별 지식의 나열과 통합적 설계 사고를 가르는 지점이다.</p>
+    </div>
+  </section>
+
+  <!-- 6. 핵심 답변 예시 -->
+  <section id="core-answer">
+    <h2>6. 핵심 답변 예시</h2>
+
+    <div class="card answer-card">
+      <div class="card-label">면접 답변 예시 — 이커머스 웹 서비스 고가용성 설계</div>
+      <p>
+        "먼저 몇 가지 전제를 확인하겠습니다. 트래픽 급증이 예측 가능한 이벤트(세일)인지 예측 불가능한 급증인지, 데이터 정합성이 강한 일관성을 요구하는지(결제 등), 팀의 운영 인력 규모는 어느 정도인지에 따라 설계가 달라지기 때문입니다. 이번에는 예측 가능한 트래픽 급증과 강한 일관성이 필요한 결제 데이터가 있다고 가정하고 설계하겠습니다.
+      </p>
+      <p>
+        가장 바깥쪽부터 그리면, VPC 안에 최소 두 개의 가용 영역에 걸쳐 퍼블릭 서브넷과 두 종류의 프라이빗 서브넷(애플리케이션용, 데이터베이스용)을 구성합니다. 데이터베이스 서브넷은 인터넷 게이트웨이로 향하는 라우트가 없어 구조적으로 외부에서 직접 접근할 수 없습니다.
+      </p>
+      <p>
+        트래픽은 CloudFront를 거쳐 들어오게 해서 정적 자산은 엣지에서 캐싱하고, 동적 요청만 퍼블릭 서브넷의 Application Load Balancer로 전달합니다. ALB는 두 AZ에 걸쳐 헬스체크를 통과한 인스턴스에만 트래픽을 분산합니다.
+      </p>
+      <p>
+        컴퓨트는 Auto Scaling Group으로 두 AZ에 최소 인스턴스를 분산 배치하고, 세일 같은 예측 가능한 트래픽 급증에는 예약된 스케일링(Scheduled Scaling)으로 미리 용량을 늘려 콜드 스타트로 인한 초기 지연을 줄입니다. 인스턴스에는 Access Key 대신 IAM Role을 Instance Profile로 붙여 필요한 리소스(S3, CloudWatch)에만 최소 권한으로 접근하게 합니다.
+      </p>
+      <p>
+        데이터베이스는 RDS Multi-AZ로 구성해 동기 복제 기반의 자동 페일오버를 확보하고, 결제 트랜잭션은 Primary에서만 처리해 강한 일관성을 지킵니다. 상품 조회 같은 읽기 위주 트래픽은 Read Replica로 분리해 Primary 부하를 낮춥니다.
+      </p>
+      <p>
+        정적 자산(상품 이미지 등)은 S3에 저장하되 Block Public Access를 켜고 CloudFront Origin Access Control을 통해서만 접근을 허용해, 버킷이 실수로 공개되는 위험을 원천적으로 차단합니다.
+      </p>
+      <p>
+        관측성은 CloudWatch로 ALB의 5xx 비율, ASG의 CPU/네트워크, RDS의 커넥션 수와 복제 지연을 모니터링하고, 여러 신호를 조합한 Composite Alarm으로 오탐을 줄입니다. 비용은 안정적인 베이스라인 용량을 Savings Plans로 커밋하고, 세일 기간의 추가 용량은 On-Demand로, 배치성 데이터 처리는 Spot으로 처리해 비용과 안정성의 균형을 맞춥니다.
+      </p>
+      <p>
+        마지막으로 이 설계를 제가 직접 검증한다면, NAT Gateway를 AZ마다 하나씩 둬 아웃바운드 경로의 SPOF를 없애고, RDS Multi-AZ가 페일오버 시 DNS 갱신에 걸리는 시간(수십 초) 동안 애플리케이션이 재시도 로직으로 버틸 수 있는지 확인하겠습니다. 트래픽이 지금의 10배가 된다면 ASG 최대 용량과 RDS 인스턴스 클래스, 그리고 Read Replica 개수가 가장 먼저 한계에 부딪힐 지점이라고 예상합니다."
+      </p>
+    </div>
+
+    <p style="color:var(--text2); font-size:0.9rem;">
+      이 답변이 좋은 이유: ① 그리기 전에 요구사항(트래픽 패턴, 일관성 수준, 운영 역량)을 먼저 확인함 ② 바깥에서 안으로 일관된 순서로 설계함 ③ 각 계층의 결정이 다른 계층에 미치는 제약을 명시적으로 연결함(서브넷 경계 → DB 격리, IAM Role → Access Key 제거) ④ 스스로 SPOF(NAT Gateway)와 확장 한계(10배 트래픽)를 자발적으로 짚어냄 ⑤ 비용을 설계의 부가 요소가 아니라 처음부터 통합된 결정으로 다룸
+    </p>
+  </section>
+
+  <!-- 7. Senior-level Follow-up -->
+  <section id="followup">
+    <h2>7. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup-card">
+      <div class="followup-q">Q1. "AZ 하나 전체가 완전히 사라진다면(리전 내 AZ 장애), 사용자는 무엇을 경험하나요?"</div>
+      <div class="followup-a">
+        <p>ALB는 살아있는 AZ의 정상 인스턴스에만 트래픽을 계속 분산하므로 완전한 서비스 중단은 아니다. ASG는 죽은 AZ의 부족분을 감지해 살아있는 AZ에 대체 인스턴스를 새로 기동한다(단, 그 AZ의 서브넷 용량과 인스턴스 한도 내에서). RDS Multi-AZ는 Standby가 있는 AZ로 자동 페일오버되며 DNS 엔드포인트가 갱신되는 수십 초 동안 짧은 쓰기 중단이 발생한다. 사용자는 이 짧은 페일오버 구간 동안 일부 요청 실패나 지연을 경험할 수 있지만, 전체 서비스 다운은 아니다 — 이것이 "고가용성은 무중단을 뜻하지 않고, 장애 영향 범위와 복구 시간을 최소화하는 것"이라는 Day 1의 원칙이 실제로 드러나는 지점이다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q2. "이 설계에서 보안 사고가 발생할 수 있는 지점을 스스로 지적해 보세요."</div>
+      <div class="followup-a">
+        <p>몇 가지를 들 수 있다. (1) 보안 그룹 규칙이 시간이 지나며 느슨해질 위험 — ALB에서만 인바운드를 받아야 할 EC2 보안 그룹에 실수로 0.0.0.0/0이 추가될 수 있다. (2) IAM Role의 권한이 최소 권한에서 점점 넓어지는 권한 크립(permission creep) — 정기적인 Access Analyzer 점검이 필요하다. (3) S3 Block Public Access는 계정 레벨에서 강제해야지, 버킷 단위로만 설정하면 신규 버킷 생성 시 실수로 빠질 수 있다. (4) RDS 자격증명이 코드나 환경 변수에 하드코딩되지 않고 Secrets Manager로 관리되는지 확인이 필요하다. 이런 지점들은 설계 시점에 한 번 맞다고 끝나는 것이 아니라 지속적으로 감사(audit)해야 한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q3. "트래픽이 지금의 10배가 된다면 이 아키텍처의 어디가 먼저 무너지나요?"</div>
+      <div class="followup-a">
+        <p>가장 먼저 확인할 지점은 RDS다. Read Replica로 읽기는 어느 정도 수평 확장이 가능하지만, 쓰기는 결국 Primary 하나로 수렴하기 때문에 RDS 인스턴스 클래스의 수직 확장에 한계가 온다 — 이 지점에서 샤딩이나 다른 데이터 저장소로의 구조적 전환을 검토해야 한다. 두 번째는 ASG의 최대 용량과 서브넷의 IP 대역 크기(Day 2에서 서브넷을 너무 작게 잡으면 인스턴스 수가 늘어날 때 IP가 고갈된다)다. 세 번째는 NAT Gateway의 처리량 한도로, 아웃바운드 트래픽이 급증하면 여러 NAT Gateway로 분산하거나 VPC 엔드포인트로 AWS 서비스 호출을 우회시켜야 한다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q4. "왜 처음부터 멀티 리전으로 설계하지 않나요?"</div>
+      <div class="followup-a">
+        <p>멀티 리전은 리전 전체 장애(매우 드문 사건)까지 견디게 해주지만, 그 대가로 리전 간 데이터 복제 지연, 데이터 정합성 모델의 복잡도, 트래픽 라우팅(Route 53 지리 기반/장애 조치 라우팅), 그리고 두 배 가까운 운영 복잡도와 비용이 따라온다. 대부분의 서비스는 Multi-AZ만으로도 요구되는 가용성 목표(예: 99.95%)를 충분히 만족하며, 멀티 리전은 그 이상의 가용성이 비즈니스적으로 반드시 필요할 때(글로벌 서비스, 규제상 재해복구 요구) 추가하는 것이 맞다. "더 안전해 보인다"는 이유만으로 멀티 리전을 기본값으로 삼으면 불필요한 복잡도 비용을 치르게 된다.</p>
+      </div>
+    </div>
+
+    <div class="followup-card">
+      <div class="followup-q">Q5. "이 설계를 팀 내 주니어 엔지니어에게 어떻게 문서화하고 인수인계하겠습니까?"</div>
+      <div class="followup-a">
+        <p>아키텍처 다이어그램만으로는 부족하다. 각 계층의 결정 이유(Decision Record) — 왜 Multi-AZ인지, 왜 이 서브넷 구조인지 — 를 함께 남겨야 이후 담당자가 "왜 이렇게 되어 있는지" 모른 채 실수로 안전장치를 제거하는 것을 막을 수 있다. 또한 장애 대응 런북(RDS 페일오버 시 확인할 것, AZ 장애 시 확인할 것)과, Day 8에서 다룬 CloudWatch 대시보드/알람 목록을 함께 인수인계해 신규 담당자가 "무엇을 보고 있어야 하는지" 알 수 있게 한다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. 좋은 답변 vs 약한 답변 -->
+  <section id="compare">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="compare-grid">
+      <div class="good-box">
+        <div class="box-label">좋은 답변</div>
+        <ul>
+          <li>그리기 전에 트래픽 규모, 일관성 요구, 예산 같은 전제를 먼저 확인한다</li>
+          <li>바깥(네트워크 경계)에서 안(데이터 계층)으로 일관된 순서로 설계한다</li>
+          <li>각 계층의 결정이 다른 계층에 미치는 제약을 스스로 연결해 설명한다</li>
+          <li>SPOF와 확장 한계를 지적받기 전에 스스로 찾아 언급한다</li>
+          <li>보안·비용·관측을 사후에 덧붙이지 않고 설계 과정에 통합한다</li>
+          <li>"고가용성 ≠ 무중단"이라는 현실적 기대치를 설명한다</li>
+        </ul>
+      </div>
+      <div class="weak-box">
+        <div class="box-label">약한 답변</div>
+        <ul>
+          <li>요구사항 확인 없이 바로 "일단 EC2, RDS, S3를 쓰겠다"고 서비스 이름부터 나열한다</li>
+          <li>각 서비스를 개별적으로 설명할 뿐 계층 간 연결을 설명하지 못한다</li>
+          <li>지적받을 때까지 SPOF(단일 NAT, 단일 AZ RDS)를 발견하지 못한다</li>
+          <li>보안·비용을 "시간이 되면 나중에 다룰 것"으로 취급한다</li>
+          <li>고가용성 설계만 하면 장애가 절대 발생하지 않는다고 가정한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card why-card">
+      <div class="card-label">왜 약한 답변이 약한가</div>
+      <p>
+        서비스 이름을 나열하는 것은 "AWS 서비스 카탈로그를 외우고 있다"는 신호일 뿐, <strong>이 서비스들을 왜 이 순서와 조합으로 배치했는지에 대한 판단</strong>이 빠져 있다. 시니어 면접관은 지원자가 실제로 화이트보드 앞에서 팀과 함께 아키텍처를 설계하고, 그 설계의 약점을 스스로 검증하며, 다른 엔지니어에게 결정 근거를 설명할 수 있는 사람인지를 이 질문 하나로 확인하려 한다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>9. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 1</div>
+      <p>"Multi-AZ, Auto Scaling, Read Replica를 다 갖추면 이 아키텍처는 절대 장애가 나지 않는다."</p>
+      <div class="mc-right">실제</div>
+      <p>고가용성 설계는 장애의 <strong>발생 가능성과 영향 범위를 줄이는 것</strong>이지, 장애를 제로로 만드는 것이 아니다. AZ 장애 시 페일오버 구간의 짧은 지연, 배포 실수, 애플리케이션 버그 등은 아키텍처 설계만으로 막을 수 없다. "무엇을 얼마나 견딜 수 있는가"를 명확히 말하는 것이 "절대 안 죽는다"고 말하는 것보다 훨씬 시니어다운 답변이다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 2</div>
+      <p>"화이트보드 설계 질문은 정답 다이어그램이 정해져 있고, 그것을 재현하면 된다."</p>
+      <div class="mc-right">실제</div>
+      <p>동일한 요구사항이라도 팀의 운영 역량, 예산, 트래픽 패턴에 따라 타당한 설계는 달라진다. 인터뷰어가 보는 것은 특정 다이어그램의 재현이 아니라, <strong>전제를 확인하고 그 전제에 맞는 트레이드오프를 근거 있게 선택하는 과정</strong>이다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 3</div>
+      <p>"보안, 비용, 관측성은 핵심 아키텍처를 다 그린 다음에 시간이 남으면 언급하는 부가 항목이다."</p>
+      <div class="mc-right">실제</div>
+      <p>시니어 면접에서는 이 세 가지를 얼마나 설계 과정에 통합해 설명하는지가 핵심 평가 축 중 하나다. 마지막에 급하게 덧붙이면 "몰라서 빠뜨렸다가 생각났다"는 인상을 주고, 처음부터 각 계층 설명에 자연스럽게 엮으면 "이것이 항상 고려하는 기본값"이라는 인상을 준다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 4</div>
+      <p>"모든 신규 서비스는 처음부터 최대 가용성(멀티 리전, 다중 Read Replica 등)으로 설계해야 시니어답다."</p>
+      <div class="mc-right">실제</div>
+      <p>과설계(over-engineering)도 미달 설계만큼 문제다. 요구사항보다 과한 가용성·확장성을 처음부터 구축하면 불필요한 운영 복잡도와 비용을 낭비한다. 시니어의 판단력은 "최대한 견고하게"가 아니라 "요구사항에 맞는 적정 수준"을 찾는 데 있다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="mc-wrong">오해 5</div>
+      <p>"이 종합 설계 질문은 서비스 지식을 많이 아는 사람이 유리하다."</p>
+      <div class="mc-right">실제</div>
+      <p>서비스 지식은 전제 조건일 뿐이다. 실제 변별력은 지식의 양이 아니라, 그 지식을 <strong>일관된 순서와 근거로 조립하고, 스스로 약점을 검증하는 사고 과정</strong>에서 나온다. 서비스를 많이 알아도 설명이 산발적이면 낮은 평가를, 상대적으로 적게 알아도 구조적으로 설명하면 높은 평가를 받을 수 있다.</p>
+    </div>
+  </section>
+
+  <!-- 10. Rubric -->
+  <section id="rubric">
+    <h2>10. 자기 점검 Rubric</h2>
+
+    <p>아래 기준으로 자신의 답변 수준을 점검해라.</p>
+
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>기준</th>
+          <th class="score-5">5 — 시니어</th>
+          <th class="score-3">3 — 미드레벨</th>
+          <th class="score-1">1 — 개선 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>요구사항 확인</strong></td>
+          <td>그리기 전에 트래픽·일관성·예산 전제를 먼저 질문한다</td>
+          <td>일부 전제는 확인하지만 체계적이지 않다</td>
+          <td>전제 확인 없이 바로 서비스 나열을 시작한다</td>
+        </tr>
+        <tr>
+          <td><strong>설계 순서와 구조</strong></td>
+          <td>경계 → 진입점 → 컴퓨트 → 데이터 → 정적 자산 → 횡단 관심사 순서로 일관되게 설명한다</td>
+          <td>대부분의 요소를 언급하지만 순서가 뒤섞인다</td>
+          <td>서비스 이름을 무작위로 나열한다</td>
+        </tr>
+        <tr>
+          <td><strong>계층 간 연결</strong></td>
+          <td>한 계층의 결정이 다른 계층에 미치는 제약을 스스로 연결해 설명한다</td>
+          <td>각 계층을 정확히 설명하지만 서로 연결하지 못한다</td>
+          <td>각 서비스를 독립적인 항목으로만 설명한다</td>
+        </tr>
+        <tr>
+          <td><strong>자기 검증(SPOF/한계)</strong></td>
+          <td>질문받기 전에 SPOF와 확장 한계를 스스로 찾아 언급한다</td>
+          <td>질문을 받으면 SPOF를 찾아낸다</td>
+          <td>질문을 받아도 SPOF를 찾지 못한다</td>
+        </tr>
+        <tr>
+          <td><strong>보안·비용·관측 통합</strong></td>
+          <td>설계 과정 전체에 자연스럽게 통합해 설명한다</td>
+          <td>마지막에 별도 항목으로 덧붙여 언급한다</td>
+          <td>언급하지 않거나 질문받아야 답한다</td>
+        </tr>
+        <tr>
+          <td><strong>현실적 기대치</strong></td>
+          <td>"고가용성은 장애 영향을 줄이는 것이지 무중단이 아니다"를 명확히 설명한다</td>
+          <td>고가용성의 한계를 알지만 명확히 언어화하지 못한다</td>
+          <td>이 설계로 장애가 절대 발생하지 않는다고 가정한다</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card why-card" style="margin-top:1.5rem;">
+      <div class="card-label">다음 단계</div>
+      <p>이 rubric에서 3점 이하인 항목이 있다면, 해당 항목이 다뤄진 개별 Day(예: SPOF 판단이 약하다면 Day 5 RDS 고가용성, 계층 간 연결이 약하다면 Day 2 VPC와 Day 4 Auto Scaling)로 돌아가 복습한 뒤 이 통합 설계를 다시 화이트보드에 그려보라. Day 1~10을 한 바퀴 돈 뒤에는, 실제 최근 겪었던 장애나 설계 결정을 이 프레임워크로 다시 설명해보는 것이 다음 단계로 좋은 심화 학습이 된다.</p>
+    </div>
+  </section>
+
+  <nav class="bottom">
+    <a href="./0009-cost-optimization-strategy.html">← Day 9</a>
+    <a href="./index.html">목록으로</a>
+  </nav>
+
+</div>
+</body>
+</html>
