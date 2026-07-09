@@ -14,16 +14,17 @@
 | 8 | 2026-07-06 | 관측성 — 구조화 로깅, Prometheus 메트릭, OpenTelemetry 트레이싱 | [0008-observability.html](lessons/0008-observability.html) |
 | 9 | 2026-07-07 | 배포와 운영 — Docker 최적화, Compose, 헬스체크, 환경 변수, CI/CD | [0009-deployment-and-operations.html](lessons/0009-deployment-and-operations.html) |
 | 10 | 2026-07-08 | 캐싱과 성능 최적화 — Redis 캐싱 전략과 무효화, 캐시 스탬피드 방지, 응답 압축, 커넥션 풀 튜닝, 쿼리 성능 프로파일링 | [0010-caching-and-performance.html](lessons/0010-caching-and-performance.html) |
+| 11 | 2026-07-09 | 테스트 전략 — 단위/통합 테스트 경계, 계약 테스트, 부하 테스트 | [0011-testing-strategy.html](lessons/0011-testing-strategy.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 11 | 테스트 전략 — 단위/통합 테스트 경계, 계약 테스트, 부하 테스트 | 테스트 피라미드, pytest 통합 테스트, API 계약 테스트, Locust 부하 테스트 |
+| 12 | 서비스 신뢰성 패턴 — Rate Limiting, Circuit Breaker, Retry/Timeout 전략 | 토큰 버킷/슬라이딩 윈도우 레이트 리미팅, Circuit Breaker 상태 전이, 재시도-타임아웃-백오프 조합, 장애 전파 차단 |
 
 ## 현재 학습 위치
 
-**Day 10 완료** — 다음: Day 11 — 테스트 전략 (단위/통합 테스트 경계, 계약 테스트, 부하 테스트).
+**Day 11 완료** — 다음: Day 12 — 서비스 신뢰성 패턴 (Rate Limiting, Circuit Breaker, Retry/Timeout 전략).
 
 ## 습득한 핵심 개념
 
@@ -78,4 +79,9 @@
 - [x] 응답 압축의 CPU-대역폭 trade-off와 최소 크기 임계값 설정 (Day 10)
 - [x] DB/Redis 커넥션 풀 크기 산정 기준과 풀 고갈 위험 (Day 10)
 - [x] EXPLAIN ANALYZE와 슬로우 쿼리 로깅 기반 성능 진단 절차 (Day 10)
-- [ ] 테스트 피라미드와 단위/통합/계약/부하 테스트 경계 (예정 Day 11)
+- [x] 테스트 피라미드와 단위/통합/계약/부하 테스트 경계 (Day 11)
+- [x] 도메인 서비스를 Fake Repository로 격리하는 단위 테스트 설계 (Day 11)
+- [x] 트랜잭션 롤백 기반 통합 테스트 격리 (Day 11)
+- [x] schemathesis 기반 OpenAPI 계약 테스트 (Day 11)
+- [x] Locust 부하 테스트와 커넥션 풀/캐시 설정 검증 (Day 11)
+- [ ] Rate Limiting, Circuit Breaker, Retry/Timeout 전략 (예정 Day 12)

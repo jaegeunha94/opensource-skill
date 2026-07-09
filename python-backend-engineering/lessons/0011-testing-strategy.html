@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 11 — 테스트 전략: 단위/통합 테스트 경계 · 계약 테스트 · 부하 테스트</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="lesson-wrap">
+
+  <!-- ── Header ────────────────────────────────────── -->
+  <header class="lesson-header">
+    <div class="lesson-meta">
+      <span class="tag tag-day">Day 11</span>
+      <span class="tag tag-level">실무자 기준</span>
+      <span class="tag tag-time">약 70분</span>
+    </div>
+    <h1 class="lesson-title">테스트 전략<br>단위/통합 테스트 경계 · API 계약 테스트 · 부하 테스트</h1>
+    <p class="lesson-subtitle">
+      Day 1~10에서 아키텍처, API, 트랜잭션, 인증, 백그라운드 작업, 관측성, 배포, 캐싱까지 다뤘다.
+      그런데 이 모든 계층의 코드를 <strong>바꿀 때마다 사람이 손으로 확인</strong>한다면 배포
+      속도는 곧 한계에 부딪힌다. 이 레슨은 "무엇을 어느 계층에서 테스트해야 하는가"라는 실무
+      판단 — 테스트 피라미드, Day 4의 레이어드 아키텍처를 활용한 단위 테스트 격리, 실제 DB를 쓰는
+      통합 테스트, API 스펙이 깨지지 않았음을 보장하는 계약 테스트, 그리고 Day 10의 캐시/커넥션
+      풀 설정이 실제 트래픽에서 버티는지 확인하는 부하 테스트를 다룬다.
+    </p>
+  </header>
+
+  <!-- ── 1. 테스트 피라미드 ───────────────────────────── -->
+  <h2>1. 테스트 피라미드 — 계층마다 "무엇을 확인하는가"가 다르다</h2>
+
+  <p>
+    실무에서 흔한 실패 패턴은 두 가지다. 단위 테스트만 잔뜩 쌓아두고 실제 DB/네트워크 경계에서
+    깨지는 버그를 못 잡거나, 반대로 모든 테스트를 실제 DB와 실제 API 호출로 작성해 CI가
+    20분 넘게 걸리는 것. 테스트 피라미드는 "실행 속도"와 "신뢰도(무엇을 검증하는가)"의
+    trade-off를 계층으로 나눠 해결한다.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>계층</th><th>확인하는 것</th><th>속도</th><th>실무 비중</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>단위 테스트</strong></td>
+        <td>순수 로직 하나(도메인 서비스, 검증 규칙)가 입력에 대해 올바른 출력을 내는가 — DB/네트워크 없음</td>
+        <td>수 ms, 수백~수천 개도 수 초</td>
+        <td>가장 많이 (70% 내외)</td>
+      </tr>
+      <tr>
+        <td><strong>통합 테스트</strong></td>
+        <td>레이어 간 조립이 실제로 맞물리는가 — 실제(또는 실제와 동일한) DB, 실제 ORM 쿼리 포함</td>
+        <td>수십~수백 ms, 전체 수 분</td>
+        <td>중간 (20% 내외)</td>
+      </tr>
+      <tr>
+        <td><strong>계약 테스트</strong></td>
+        <td>API 응답이 문서화된 스펙(OpenAPI)과 실제로 일치하는가 — 소비자가 기대하는 형태를 깨지 않는가</td>
+        <td>통합 테스트와 유사</td>
+        <td>API 경계마다 소수</td>
+      </tr>
+      <tr>
+        <td><strong>부하 테스트</strong></td>
+        <td>동시 트래픽 아래에서 응답 시간·에러율·리소스(커넥션 풀 등)가 목표치를 만족하는가</td>
+        <td>분 단위, CI 상시 실행 아님</td>
+        <td>배포 전/주기적으로 소수 시나리오</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="diagram">
+        ▲  느림 · 적은 개수 · "실제로 버티는가"
+        │
+   부하 테스트         (Locust — 동시 사용자 시뮬레이션)
+   계약 테스트         (schemathesis — OpenAPI 스펙 검증)
+   통합 테스트         (pytest + 실제 DB — 레이어 조립 검증)
+   단위 테스트         (pytest — 순수 로직, 수백~수천 개)
+        │
+        ▼  빠름 · 많은 개수 · "로직이 맞는가"
+  </div>
+
+  <blockquote class="callout warn">
+    <div class="callout-title">흔한 오해 — "커버리지 90%면 안전하다"</div>
+    커버리지는 <em>실행된 줄 수</em>를 셀 뿐, <em>검증한 시나리오의 질</em>을 재지 않는다.
+    분기(if/else)의 한쪽만 실행하고 <code>assert</code>가 없는 테스트도 커버리지에는 잡힌다.
+    실무에서는 커버리지 숫자보다 "이 테스트가 실패하면 실제로 무엇이 깨진 것인가"를 먼저 물어야 한다.
+  </blockquote>
+
+  <!-- ── 2. 단위 테스트 경계 ──────────────────────────── -->
+  <h2>2. 단위 테스트 경계 — Day 4의 레이어드 아키텍처가 여기서 값을 한다</h2>
+
+  <p>
+    Day 4에서 Repository 패턴으로 영속성을 추상화하고 도메인 서비스를 분리한 이유가 바로
+    여기서 드러난다. 도메인 서비스가 Repository <strong>인터페이스</strong>에만 의존하면,
+    테스트에서는 실제 DB 대신 인메모리 가짜(fake) 또는 mock을 주입해 로직만 빠르게 검증할 수 있다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# domain/services/order_service.py — Day 4에서 만든 도메인 서비스 (실제 DB를 모른다)
+class OrderService:
+    def __init__(self, order_repo: OrderRepository, inventory_repo: InventoryRepository):
+        self._order_repo = order_repo
+        self._inventory_repo = inventory_repo
+
+    async def place_order(self, customer_id: int, product_id: int, quantity: int) -> Order:
+        stock = await self._inventory_repo.get_stock(product_id)
+        if stock < quantity:
+            raise InsufficientStockError(product_id)          # 도메인 규칙 — DB와 무관한 순수 로직
+        await self._inventory_repo.decrement_stock(product_id, quantity)
+        return await self._order_repo.create(customer_id, product_id, quantity)
+</pre>
+  </div>
+
+  <div class="code-block">
+<pre>
+# tests/unit/test_order_service.py — 실제 DB 없이 인메모리 fake로 도메인 로직만 검증
+class FakeInventoryRepository(InventoryRepository):
+    def __init__(self, stock: int):
+        self._stock = stock
+
+    async def get_stock(self, product_id: int) -> int:
+        return self._stock
+
+    async def decrement_stock(self, product_id: int, quantity: int) -> None:
+        self._stock -= quantity
+
+
+class FakeOrderRepository(OrderRepository):
+    def __init__(self):
+        self.created: list[dict] = []
+
+    async def create(self, customer_id: int, product_id: int, quantity: int) -> Order:
+        order = Order(id=len(self.created) + 1, customer_id=customer_id,
+                       product_id=product_id, quantity=quantity)
+        self.created.append(order)
+        return order
+
+
+async def test_place_order_raises_when_stock_insufficient():
+    service = OrderService(
+        order_repo=FakeOrderRepository(),
+        inventory_repo=FakeInventoryRepository(stock=2),
+    )
+
+    with pytest.raises(InsufficientStockError):
+        await service.place_order(customer_id=1, product_id=10, quantity=5)  # 재고(2) < 요청(5)
+</pre>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>단위 테스트에서 격리해야 할 것</th><th>이유</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>실제 DB 연결</td>
+        <td>테스트 하나에 수십 ms가 붙으면 수백 개 실행 시 CI가 느려지고, 도메인 로직 버그와 DB 설정 문제가 뒤섞여 원인 파악이 어려워짐</td>
+      </tr>
+      <tr>
+        <td>외부 API 호출(결제, 이메일 발송 등)</td>
+        <td>네트워크 실패/속도가 테스트 결과에 영향을 주면 테스트가 flaky(간헐적 실패)해짐</td>
+      </tr>
+      <tr>
+        <td>시스템 시간(<code>datetime.now()</code>)</td>
+        <td>고정된 시각을 주입해야 "만료 로직" 같은 시간 의존 규칙을 결정적으로 재현 가능</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <blockquote class="callout info">
+    <div class="callout-title">Mock vs Fake — 언제 무엇을 쓰는가</div>
+    <code>unittest.mock.AsyncMock</code>으로 "이 메서드가 호출됐는가"만 확인하는 것으로 충분하면
+    mock을 쓴다. 하지만 여러 메서드 호출이 상태를 공유해야 검증되는 경우(위 예시처럼 재고가
+    실제로 줄어드는지)는 위 <code>FakeInventoryRepository</code>처럼 <strong>동작하는 가짜
+    구현체</strong>를 만드는 편이 테스트 의도를 더 명확히 드러낸다.
+  </blockquote>
+
+  <!-- ── 3. 통합 테스트 ──────────────────────────────── -->
+  <h2>3. 통합 테스트 — 레이어 조립과 실제 쿼리를 검증한다</h2>
+
+  <p>
+    단위 테스트는 <code>OrderService</code>의 로직이 옳다는 것만 보장한다. Day 3에서 다룬
+    SQLAlchemy 관계 매핑, cascade 정책, N+1 문제는 <strong>실제 DB 엔진과 실제 쿼리</strong>가
+    있어야만 드러난다. 통합 테스트는 매 테스트마다 트랜잭션을 열고 끝나면 롤백해, 테스트 간
+    데이터가 서로 오염되지 않게 한다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# tests/conftest.py — 테스트마다 격리된 트랜잭션을 만들고 끝나면 롤백
+@pytest_asyncio.fixture
+async def db_session() -> AsyncGenerator[AsyncSession, None]:
+    async with test_engine.connect() as conn:
+        await conn.begin()                                   # 최상위 트랜잭션 시작
+        session = AsyncSession(bind=conn, join_transaction_mode="create_savepoint")
+
+        yield session                                        # 테스트 본문이 이 세션으로 커밋해도
+
+        await session.close()
+        await conn.rollback()                                # 실제로는 모두 롤백 — 다음 테스트에 영향 없음
+
+
+@pytest_asyncio.fixture
+async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    app.dependency_overrides[get_db_session] = lambda: db_session   # Day 4의 DI 조립 지점을 테스트용으로 교체
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
+    app.dependency_overrides.clear()
+</pre>
+  </div>
+
+  <div class="code-block">
+<pre>
+# tests/integration/test_order_api.py — 실제 라우터 → 서비스 → Repository → DB까지 전 계층 조립 검증
+async def test_create_order_decrements_stock(client: AsyncClient, db_session: AsyncSession):
+    await seed_product(db_session, product_id=10, stock=5)     # given: 실제 DB에 상품 시딩
+
+    response = await client.post("/orders", json={
+        "product_id": 10, "quantity": 3, "customer_id": 1,
+    })
+
+    assert response.status_code == 201
+    remaining = await db_session.scalar(
+        select(Product.stock).where(Product.id == 10)
+    )
+    assert remaining == 2                                      # 실제 UPDATE 쿼리가 반영됐는지 확인
+</pre>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>선택지</th><th>장점</th><th>단점</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>실제 PostgreSQL (로컬/CI 컨테이너)</td>
+        <td>프로덕션과 동일한 동작 — JSONB, 제약 조건, 인덱스까지 진짜로 검증</td>
+        <td>CI에서 컨테이너 기동 시간 필요 (testcontainers 등으로 관리)</td>
+      </tr>
+      <tr>
+        <td>SQLite in-memory</td>
+        <td>설정 없이 매우 빠름</td>
+        <td>PostgreSQL 전용 기능(JSONB, 특정 제약)이 다르게 동작해 거짓 통과/거짓 실패 위험</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <blockquote class="callout danger">
+    <div class="callout-title">SQLite로 통합 테스트를 대체하면 안 되는 이유</div>
+    Day 3에서 다룬 <code>ON DELETE CASCADE</code>, JSONB 연산자, 대소문자 구분 등은 PostgreSQL과
+    SQLite에서 동작이 다르다. "SQLite에서는 통과했는데 프로덕션(PostgreSQL)에서는 실패"하는
+    사례가 반복되면, 통합 테스트의 신뢰도 자체가 무의미해진다. 실무에서는 <code>testcontainers</code>
+    같은 도구로 CI에서도 실제 PostgreSQL 컨테이너를 띄워 검증한다.
+  </blockquote>
+
+  <!-- ── 4. 계약 테스트 ──────────────────────────────── -->
+  <h2>4. API 계약 테스트 — "문서와 실제 동작이 일치하는가"</h2>
+
+  <p>
+    Day 2에서 FastAPI가 Pydantic 스키마로부터 OpenAPI 문서를 자동 생성한다고 배웠다. 계약
+    테스트는 그 문서 자체를 <strong>테스트 스펙으로 재활용</strong>해, 코드가 바뀌면서 문서와
+    실제 응답이 어긋나는 것을 자동으로 잡는다. 프론트엔드나 다른 서비스가 이 API를 호출하는
+    "소비자(consumer)"라면, 계약이 깨지는 순간 그쪽 시스템이 장애를 겪는다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# tests/contract/test_openapi_contract.py — schemathesis로 OpenAPI 스펙 기반 자동 검증
+import schemathesis
+
+schema = schemathesis.openapi.from_asgi("/openapi.json", app)
+
+@schema.parametrize()
+async def test_api_conforms_to_openapi_schema(case):
+    response = await case.call_asgi()
+    case.validate_response(response)   # 상태 코드, 응답 스키마, 헤더가 문서와 일치하는지 자동 검증
+</pre>
+  </div>
+
+  <p>
+    schemathesis는 OpenAPI 스펙에 정의된 파라미터 타입과 제약(문자열 길이, enum, 필수 필드)을
+    바탕으로 <strong>무작위/경계값 입력을 자동 생성</strong>해 호출한다. 사람이 일일이 테스트
+    케이스를 적지 않아도, "이 필드는 정수여야 한다는데 문자열을 보내면 422가 나오는가"
+    같은 계약 위반을 찾아낸다.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>구분</th><th>스펙 기반 계약 테스트 (schemathesis)</th><th>소비자 주도 계약 테스트 (Pact)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>기준</td>
+        <td>제공자(provider)가 발행한 OpenAPI 문서</td>
+        <td>소비자(consumer)가 "나는 이런 응답을 기대한다"고 기록한 계약 파일</td>
+      </tr>
+      <tr>
+        <td>적합한 상황</td>
+        <td>단일 팀이 API를 소유하고, 문서와 실제 구현의 일치를 자동 검증하고 싶을 때</td>
+        <td>여러 팀/서비스가 서로 다른 저장소에서 같은 API를 소비할 때 — 배포 전 계약 위반을 사전 차단</td>
+      </tr>
+      <tr>
+        <td>실무 도입 순서</td>
+        <td>먼저 도입 — 설정이 단순하고 기존 OpenAPI 문서를 그대로 활용</td>
+        <td>마이크로서비스 경계가 여러 팀으로 나뉘고 나서 필요에 따라 추가</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <blockquote class="callout tip">
+    <div class="callout-title">계약 테스트가 실제로 막아주는 장애</div>
+    응답 필드 이름을 <code>user_id</code>에서 <code>customer_id</code>로 리팩터링했는데,
+    이 API를 호출하는 모바일 앱이 아직 <code>user_id</code>를 기대한다면 배포 순간 클라이언트가
+    깨진다. 계약 테스트는 이런 변경을 CI 단계에서 잡아, "문서만 업데이트하고 실제 클라이언트
+    영향은 배포 후에 발견"하는 사고를 방지한다.
+  </blockquote>
+
+  <!-- ── 5. 부하 테스트 ──────────────────────────────── -->
+  <h2>5. 부하 테스트 — Day 10의 캐싱/커넥션 풀 설정이 실제로 버티는가</h2>
+
+  <p>
+    기능이 올바르게 동작해도, 동시 사용자 수백~수천 명 아래에서 응답 시간이 급격히 나빠지거나
+    에러율이 치솟으면 프로덕션 장애로 이어진다. 부하 테스트는 Day 10에서 설정한 커넥션 풀
+    크기와 캐시 전략이 <strong>실제 동시 트래픽에서 설계한 대로 동작하는지</strong> 검증하는
+    유일한 방법이다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# tests/load/locustfile.py — Locust로 실제 사용자 행동 패턴을 시뮬레이션
+from locust import HttpUser, task, between
+
+class BackendUser(HttpUser):
+    wait_time = between(0.5, 2.0)          # 사용자마다 요청 사이 대기 시간 — 실제 사용자 리듬에 가깝게
+
+    def on_start(self):
+        response = self.client.post("/auth/login", json={
+            "email": "loadtest@example.com", "password": "test1234",
+        })
+        token = response.json()["access_token"]                    # Day 6 인증 플로우 재사용
+        self.client.headers.update({"Authorization": f"Bearer {token}"})
+
+    @task(5)                                # 가중치 5 — 조회가 쓰기보다 훨씬 빈번한 실제 트래픽 비율 반영
+    def get_product(self):
+        self.client.get("/products/10", name="/products/[id]")
+
+    @task(1)
+    def create_order(self):
+        self.client.post("/orders", json={"product_id": 10, "quantity": 1}, name="/orders")
+</pre>
+  </div>
+
+  <div class="code-block">
+<pre>
+# 헤드리스 실행 — CI/배포 파이프라인에서 임계값 자동 판정에 사용
+locust -f tests/load/locustfile.py --host https://staging.example.com \
+       --users 200 --spawn-rate 20 --run-time 3m --headless \
+       --csv=results/load_test
+</pre>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>확인할 지표</th><th>Day 10과의 연결</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>p95/p99 응답 시간</td>
+        <td>커넥션 풀이 고갈되면 대기 시간이 늘어 p99가 급격히 나빠진다 — 풀 크기 산정이 맞았는지 확인</td>
+      </tr>
+      <tr>
+        <td>에러율(5xx, 타임아웃)</td>
+        <td>캐시 스탬피드 방지(분산 락)가 없다면, 인기 상품 TTL 만료 시점에 에러율이 순간적으로 튐</td>
+      </tr>
+      <tr>
+        <td>DB 커넥션 사용률</td>
+        <td>Day 10에서 계산한 <code>pool_size + max_overflow</code> 상한에 실제로 도달하는지 관측(Day 8 메트릭)으로 함께 확인</td>
+      </tr>
+      <tr>
+        <td>캐시 히트율</td>
+        <td>부하 테스트 시나리오가 실제 트래픽처럼 소수 인기 키에 집중되는지, 균등 분산이면 캐시 효과가 과대평가될 수 있음</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <blockquote class="callout warn">
+    <div class="callout-title">부하 테스트를 프로덕션 DB에 직접 실행하면 안 되는 이유</div>
+    부하 테스트는 의도적으로 시스템 한계를 밀어붙이는 테스트다. 프로덕션에 직접 실행하면 실제
+    사용자에게 영향을 주는 장애를 스스로 일으키는 셈이다. 반드시 프로덕션과 동일한 규모의
+    스테이징 환경, 또는 별도로 격리된 DB/캐시 인스턴스에서 실행한다.
+  </blockquote>
+
+  <!-- ── 6. CI 파이프라인 게이팅 ──────────────────────── -->
+  <h2>6. CI 파이프라인에서 테스트 계층 배치 — Day 9와의 연결</h2>
+
+  <p>
+    Day 9에서 CI/CD가 테스트·린트를 통과해야 배포 이미지를 만든다고 배웠다. 이제 그 "테스트"
+    단계를 계층별로 나눠, 빠른 계층이 먼저 실패해 피드백 시간을 최소화한다.
+  </p>
+
+  <div class="code-block">
+<pre>
+# .github/workflows/ci.yml (발췌) — 빠른 계층부터 순서대로, 실패 시 즉시 중단
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - run: pytest tests/unit -x --timeout=10        # 초 단위 — 매 PR마다 항상 실행
+
+  integration-tests:
+    needs: unit-tests                                  # 단위 테스트 통과 후에만 실행 — 느린 단계 낭비 방지
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: test }
+    steps:
+      - run: pytest tests/integration --timeout=60
+
+  contract-tests:
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    steps:
+      - run: pytest tests/contract --timeout=120
+
+  # load-tests는 매 PR이 아니라 main 배포 전 또는 야간 스케줄로 별도 실행 (수 분~수십 분 소요)
+</pre>
+  </div>
+
+  <blockquote class="callout info">
+    <div class="callout-title">부하 테스트를 매 PR마다 돌리지 않는 이유</div>
+    부하 테스트는 실행 시간이 길고 스테이징 환경 자원을 점유한다. 매 PR마다 실행하면 개발
+    피드백 루프가 느려지므로, 보통 main 브랜치 배포 직전이나 야간 스케줄로 분리해 "빠른 신호"와
+    "깊은 신호"를 분리한다.
+  </blockquote>
+
+  <!-- ── 7. 체크리스트 ────────────────────────────────── -->
+  <h2>7. 테스트 전략 셀프 리뷰 체크리스트</h2>
+
+  <blockquote class="callout info">
+    <div class="callout-title">테스트를 추가하거나 리뷰하기 전에 확인할 것</div>
+    <ul style="margin:0;padding-left:1.4rem;">
+      <li>이 테스트가 실패하면 실제로 무엇이 깨진 것인지 한 문장으로 설명할 수 있다</li>
+      <li>도메인 로직 검증은 실제 DB 없이 단위 테스트로 격리했다</li>
+      <li>레이어 조립(라우터→서비스→Repository→DB)은 통합 테스트로 실제 쿼리까지 확인했다</li>
+      <li>통합 테스트는 프로덕션과 동일한 DB 엔진(PostgreSQL)을 쓰고, 테스트마다 트랜잭션을 롤백해 격리했다</li>
+      <li>공개 API의 응답 스키마 변경은 계약 테스트로 감지되게 했다</li>
+      <li>부하 테스트는 프로덕션이 아닌 격리된 환경에서, 실제 트래픽 비율(가중치)을 반영해 실행한다</li>
+      <li>단위 → 통합 → 계약 → 부하 순서로 CI에 배치해 빠른 실패가 먼저 나오게 했다</li>
+    </ul>
+  </blockquote>
+
+  <!-- ── 8. 퀴즈 ─────────────────────────────────────── -->
+  <section class="quiz-section">
+    <h2>🧠 이해도 점검</h2>
+
+    <div class="quiz-question"
+         data-answer="c"
+         data-explanation="테스트 피라미드는 실행 속도와 검증 대상의 신뢰도(무엇을 확인하는가) 사이의 trade-off를 계층으로 나눈 것이다. 단위 테스트는 빠르지만 순수 로직만 확인하고, 통합/계약/부하 테스트로 갈수록 느려지지만 레이어 조립, API 계약, 실제 트래픽 하의 동작처럼 더 넓은 범위를 검증한다. 커버리지 숫자를 균등하게 배분하는 것이 목적이 아니다.">
+      <p>Q1. 테스트 피라미드가 계층을 나누는 근본 기준은?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>각 계층의 코드 커버리지를 정확히 25%씩 균등하게 배분하기 위해</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>테스트 파일 개수를 계층마다 동일하게 유지하기 위해</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>실행 속도와, 각 계층이 실제로 검증하는 범위(로직 정확성 vs 레이어 조립 vs 실제 트래픽 동작) 사이의 trade-off를 분리하기 위해</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>테스트 프레임워크(pytest, Locust 등)의 라이선스 제약을 준수하기 위해</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="b"
+         data-explanation="SQLite는 PostgreSQL과 JSONB 연산자, 제약 조건, 대소문자 처리 등의 동작이 달라 SQLite에서는 통과하지만 실제 프로덕션(PostgreSQL)에서는 실패하는 거짓 신뢰를 만들 수 있다. 통합 테스트는 프로덕션과 동일한 DB 엔진을 testcontainers 등으로 CI에 띄워 검증해야 신뢰도가 있다.">
+      <p>Q2. 통합 테스트를 SQLite in-memory로 대체하면 안 되는 주된 이유는?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>SQLite는 pytest와 호환되지 않기 때문</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>PostgreSQL 전용 기능(JSONB, 특정 제약 조건 등)의 동작이 달라 SQLite에서는 통과해도 프로덕션에서 실패하는 거짓 신뢰를 만들 수 있기 때문</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>SQLite는 트랜잭션 롤백을 지원하지 않기 때문</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>SQLAlchemy가 SQLite 드라이버를 공식 지원하지 않기 때문</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="d"
+         data-explanation="계약 테스트(schemathesis)는 OpenAPI 문서에 정의된 파라미터 타입, 필수 필드, enum 등의 제약을 바탕으로 다양한 입력을 자동 생성해 실제 응답이 문서와 일치하는지 검증한다. 이를 통해 응답 필드 이름 변경처럼 소비자(클라이언트)에게 영향을 주는 계약 위반을 배포 전에 잡아낼 수 있다.">
+      <p>Q3. schemathesis 같은 스펙 기반 계약 테스트가 실무에서 막아주는 문제는?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>DB 트랜잭션 격리 수준 설정 오류</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>Celery 태스크의 재시도 횟수 초과</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>Docker 이미지 레이어 캐싱 무효화</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>API 응답 스키마가 문서와 실제로 어긋나 이를 소비하는 클라이언트가 배포 후에야 깨지는 문제</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-question"
+         data-answer="a"
+         data-explanation="부하 테스트는 시스템 한계를 의도적으로 밀어붙여 커넥션 풀 고갈, 캐시 스탬피드 등 실제 장애 조건을 재현한다. 이를 프로덕션에 직접 실행하면 실제 사용자에게 영향을 주는 장애를 스스로 일으키는 셈이므로, 반드시 격리된 스테이징 환경에서 실행해야 한다.">
+      <p>Q4. 부하 테스트를 프로덕션 환경에 직접 실행하면 안 되는 이유는?</p>
+      <div class="quiz-options">
+        <div class="quiz-option" data-value="a"><span class="quiz-option-letter">A</span>부하 테스트는 시스템 한계를 의도적으로 밀어붙이므로, 프로덕션에서 실행하면 실제 사용자에게 영향을 주는 장애를 스스로 일으킬 수 있기 때문</div>
+        <div class="quiz-option" data-value="b"><span class="quiz-option-letter">B</span>Locust는 프로덕션 환경의 TLS 인증서와 호환되지 않기 때문</div>
+        <div class="quiz-option" data-value="c"><span class="quiz-option-letter">C</span>부하 테스트 결과는 스테이징 환경에서만 CSV로 저장할 수 있기 때문</div>
+        <div class="quiz-option" data-value="d"><span class="quiz-option-letter">D</span>프로덕션 DB는 부하 테스트 중 자동으로 읽기 전용 모드로 전환되기 때문</div>
+      </div>
+      <div class="quiz-feedback"></div>
+    </div>
+
+    <div class="quiz-score"></div>
+  </section>
+
+  <!-- ── 9. 1차 자료 ─────────────────────────────────── -->
+  <h2>권장 1차 자료</h2>
+  <ul>
+    <li>
+      <a href="https://docs.pytest.org/en/stable/" target="_blank" rel="noopener">pytest 공식 문서</a> —
+      fixture, 파라미터화, 비동기 테스트(pytest-asyncio)의 표준 레퍼런스.
+    </li>
+    <li>
+      <a href="https://www.cosmicpython.com/book/chapter_01_domain_model.html" target="_blank" rel="noopener">Architecture Patterns with Python — 테스트 전략 챕터</a> —
+      도메인 로직을 인프라와 분리해 테스트하는 설계의 원전.
+    </li>
+    <li>
+      <a href="https://schemathesis.readthedocs.io/en/stable/" target="_blank" rel="noopener">schemathesis 공식 문서</a> —
+      OpenAPI 스펙 기반 속성 기반(property-based) API 테스트.
+    </li>
+    <li>
+      <a href="https://docs.pact.io/" target="_blank" rel="noopener">Pact 공식 문서</a> —
+      소비자 주도 계약 테스트(Consumer-Driven Contract Testing)의 표준 구현.
+    </li>
+    <li>
+      <a href="https://docs.locust.io/en/stable/" target="_blank" rel="noopener">Locust 공식 문서</a> —
+      Python 기반 부하 테스트 도구, 분산 실행과 커스텀 시나리오 작성법.
+    </li>
+    <li>
+      <a href="https://testcontainers.com/" target="_blank" rel="noopener">Testcontainers</a> —
+      CI에서 실제 PostgreSQL/Redis 컨테이너를 격리해 띄우는 표준 도구.
+    </li>
+  </ul>
+
+  <!-- ── Ask teacher ────────────────────────────────── -->
+  <div class="ask-teacher">
+    <strong>질문이 있으신가요?</strong><br>
+    Celery 태스크(Day 7)나 Prometheus 메트릭(Day 8)처럼 비동기·부수 효과가 많은 코드를
+    어떻게 단위 테스트로 격리하는지, 또는 여러 마이크로서비스 사이에 Pact 계약 테스트를
+    실제로 도입하는 절차가 궁금하면 질문하세요.
+    예시: "Celery 태스크 재시도 로직을 단위 테스트로 어떻게 검증하나요?"
+  </div>
+
+  <!-- ── Footer ─────────────────────────────────────── -->
+  <footer class="lesson-footer">
+    <a href="./0010-caching-and-performance.html">← Day 10: 캐싱과 성능 최적화</a>
+    <span style="color:var(--text-dim);font-size:0.85rem;">Day 11 — 테스트 전략</span>
+    <a href="./index.html">레슨 목록 →</a>
+  </footer>
+
+</main>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
