@@ -11,18 +11,19 @@
 | 5 | 2026-07-06 | SEO 기본 판단 — 크롤러의 렌더링 예산, semantic 마크업, CSR/SSR/SSG/하이드레이션의 SEO trade-off | [0005-seo-fundamentals-semantic-markup-rendering.html](lessons/0005-seo-fundamentals-semantic-markup-rendering.html) |
 | 6 | 2026-07-07 | CSS Cascade 심화 — Origin/Importance → Cascade Layer → Specificity → Source Order, `!important`의 실무 함정 | [0006-css-cascade-deep-dive-layers-important.html](lessons/0006-css-cascade-deep-dive-layers-important.html) |
 | 7 | 2026-07-08 | Specificity 심화 — A-B-C 3열 비교 계산법, `:is()`/`:where()`/`:not()`의 specificity 규칙, BEM 기반 유지보수 가능한 selector 전략 | [0007-specificity-deep-dive-maintainable-selectors.html](lessons/0007-specificity-deep-dive-maintainable-selectors.html) |
+| 8 | 2026-07-09 | Inheritance와 CSS 커스텀 프로퍼티 — 상속 속성/비상속 속성의 설계 원칙, `inherit`/`initial`/`unset`/`revert`, 런타임 상속을 활용한 design token/다크모드 설계 | [0008-inheritance-css-custom-properties.html](lessons/0008-inheritance-css-custom-properties.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Inheritance와 CSS 커스텀 프로퍼티 | 상속 속성/비상속 속성, CSS 변수 활용 |
 | 9 | Box Model 심화 | `box-sizing`, margin collapsing, 실무 버그 사례 |
 | 10 | Flexbox 심화 | 실무 레이아웃 패턴, 흔한 버그 |
+| 11 | Grid 심화 | 2차원 레이아웃과 Flexbox 대신 Grid를 쓰는 기준 |
 
 ## 현재 학습 위치
 
-**Day 7 완료** — 다음: Day 8 — Inheritance와 CSS 커스텀 프로퍼티
+**Day 8 완료** — 다음: Day 9 — Box Model 심화
 
 ## 습득한 핵심 개념
 
@@ -67,4 +68,11 @@
 - [x] 결합자(`>`, `+`, `~`, 공백)와 `*`가 specificity에 기여하지 않는다는 것 (Day 7)
 - [x] BEM으로 계층을 클래스 명명으로 표현해 specificity를 평평하게 만드는 원리 (Day 7)
 - [x] `:where()`를 CSS 리셋/유틸리티/공용 컴포넌트의 override 가능성 보장 도구로 쓰는 이유 (Day 7)
-- [ ] Inheritance(상속 속성/비상속 속성)와 CSS 커스텀 프로퍼티 활용 (예정 Day 8)
+- [x] Inheritance가 Cascade 이후 값이 비어있을 때 작동하는 별도 단계라는 것 (Day 8)
+- [x] 상속 속성/비상속 속성이 나뉘는 설계 원칙 — 텍스트 일관성 vs 박스 독립성 (Day 8)
+- [x] `inherit`/`initial`/`unset`/`revert` 4가지 전역 키워드의 차이와 사용처 (Day 8)
+- [x] CSS 커스텀 프로퍼티가 기본적으로 상속 속성이라는 것과 SASS 변수(빌드타임)와의 런타임 메커니즘 차이 (Day 8)
+- [x] Guaranteed-invalid value와 `var(--token, fallback)`의 필요성 (Day 8)
+- [x] `@property`로 타입/애니메이션 가능 여부/상속 여부(`inherits: false`)를 통제하는 이유 (Day 8)
+- [x] 커스텀 프로퍼티 상속을 design token, 다크모드 전환, 컴포넌트 스코프 오버라이드에 응용하는 방법 (Day 8)
+- [ ] Box Model 심화 — `box-sizing`, margin collapsing, 실무 버그 사례 (예정 Day 9)
