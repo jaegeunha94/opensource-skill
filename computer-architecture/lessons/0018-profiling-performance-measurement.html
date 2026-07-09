@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 8 — 프로파일링과 성능 측정 | 컴퓨터 구조 시니어 인터뷰</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3250;
+      --accent: #6c8eff;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --orange: #fb923c;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --code-bg: #0d1117;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    h1 { font-size: 1.9rem; color: var(--accent); margin-bottom: 0.3rem; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2.5rem; }
+    h2 { font-size: 1.25rem; color: var(--accent2); margin: 2.5rem 0 0.8rem; border-left: 3px solid var(--accent2); padding-left: 0.75rem; }
+    h3 { font-size: 1.05rem; color: var(--yellow); margin: 1.5rem 0 0.6rem; }
+    h4 { font-size: 0.95rem; color: var(--orange); margin: 1.2rem 0 0.4rem; }
+    p { margin-bottom: 0.9rem; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 0.9rem; }
+    li { margin-bottom: 0.35rem; }
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.88em;
+      color: #7dd3fc;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code { border: none; padding: 0; background: none; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .interview-q {
+      background: linear-gradient(135deg, #1e2d5a 0%, #1a1d2e 100%);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.4rem;
+    }
+    .interview-q .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .interview-q p { font-size: 1.05rem; color: #c7d7ff; margin-bottom: 0; }
+    .good-answer {
+      background: #0d2318;
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .bad-answer {
+      background: #2d1212;
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 0.8rem;
+    }
+    .good-answer .tag { color: var(--green); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .bad-answer .tag { color: var(--red); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.4rem; }
+    .followup {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .followup .q { color: var(--yellow); font-weight: 600; margin-bottom: 0.4rem; }
+    .followup .a { color: var(--text-muted); font-size: 0.93rem; }
+    .rubric-item {
+      display: flex;
+      gap: 0.8rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-check { color: var(--green); font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .step-block {
+      counter-reset: none;
+      padding-left: 0;
+      list-style: none;
+    }
+    .step-block li {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+    .method-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+    .method-table th {
+      background: var(--surface2);
+      color: var(--accent2);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table td {
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .method-table tr:last-child td { border-bottom: none; }
+    .tag-pill {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.15em 0.7em;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 0.15rem;
+    }
+    .why-box {
+      background: #1a2040;
+      border-left: 4px solid var(--accent);
+      padding: 0.9rem 1.2rem;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 1rem;
+    }
+    .misconception {
+      background: #2d1a00;
+      border: 1px solid var(--orange);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.8rem;
+    }
+    .misconception .label { color: var(--orange); font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; }
+    nav.breadcrumb { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+    nav.breadcrumb a { color: var(--accent); text-decoration: none; }
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.4rem; margin-bottom: 2rem; }
+    .toc h2 { font-size: 0.9rem; color: var(--text-muted); margin: 0 0 0.6rem; border: none; padding: 0; }
+    .toc ol { margin: 0; padding-left: 1.2rem; }
+    .toc li { margin-bottom: 0.2rem; font-size: 0.88rem; }
+    .toc a { color: var(--accent2); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav class="breadcrumb">
+    <a href="../">컴퓨터 구조 시니어 인터뷰</a> › <a href="./">레슨 목록</a> › Day 8
+  </nav>
+
+  <h1>Day 8 — 프로파일링과 성능 측정</h1>
+  <p class="subtitle">"측정 없이 단정하지 않는다" — CPU-bound와 memory-bound를 구분하는 하드웨어 카운터 기반 진단 · 2026-07-09</p>
+
+  <div class="toc">
+    <h2>목차</h2>
+    <ol>
+      <li><a href="#interview-q">핵심 면접 질문</a></li>
+      <li><a href="#why">왜 면접에서 묻는가</a></li>
+      <li><a href="#prereq">전제 개념 — 쉬운 한국어로</a></li>
+      <li><a href="#deep">perf, 하드웨어 카운터, flamegraph를 깊이 이해하기</a></li>
+      <li><a href="#example">구체 예시 — perf stat 출력을 읽고 병목을 진단하는 과정</a></li>
+      <li><a href="#reasoning">답변 사고 순서</a></li>
+      <li><a href="#sample-answer">핵심 답변 예시</a></li>
+      <li><a href="#good-vs-bad">좋은 답변 vs 약한 답변</a></li>
+      <li><a href="#followups">Senior-level Follow-up</a></li>
+      <li><a href="#misconceptions">흔한 오해</a></li>
+      <li><a href="#rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. 면접 질문 -->
+  <section id="interview-q">
+    <h2>1. 핵심 면접 질문</h2>
+
+    <div class="interview-q">
+      <div class="label">Primary Question</div>
+      <p>"어떤 코드가 느리다는 것은 알겠는데, CPU-bound인지 memory-bound인지 어떻게 구분하시겠습니까?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 1</div>
+      <p>"프로덕션에서 특정 API가 느리다는 리포트를 받았습니다. 코드를 뜯어보기 전에 어떤 순서로 원인을 좁혀가시겠습니까?"</p>
+    </div>
+
+    <div class="interview-q">
+      <div class="label">Variant 2</div>
+      <p>"perf stat을 돌렸더니 IPC(Instructions Per Cycle)가 0.3이 나왔습니다. 이 숫자가 무엇을 의미하고, 다음에 무엇을 확인하시겠습니까?"</p>
+    </div>
+  </section>
+
+  <!-- 2. 왜 면접에서 묻는가 -->
+  <section id="why">
+    <h2>2. 왜 면접에서 묻는가</h2>
+
+    <div class="why-box">
+      <p>이 질문은 Day 1부터 Day 7까지 배운 <strong>CPU 실행 모델, 메모리 계층, 캐시, 파이프라인, 멀티코어, SIMD 지식을 "측정"이라는 행동으로 연결할 수 있는지</strong>를 확인합니다. 면접관은 원리를 아는 것과, 그 원리를 실제 프로덕션 코드에서 <strong>숫자로 검증</strong>할 수 있는 것이 다른 역량이라는 것을 알고 있습니다. "감으로 최적화하지 않고 측정으로 병목을 확인한 뒤 개선한다"는 태도 자체가 10년차 이상에게 기대하는 핵심 신호입니다.</p>
+    </div>
+
+    <p>면접관이 이 질문으로 평가하는 것:</p>
+
+    <ul>
+      <li><strong>측정 없이 최적화를 시작하지 않는 태도</strong> — "캐시 문제일 것 같다", "아마 락 경합이다" 같은 추측으로 바로 코드를 고치지 않고, 먼저 데이터를 확인하는 습관이 있는가.</li>
+      <li><strong>병목의 계층을 좁혀가는 방법론</strong> — 애플리케이션 레벨(어떤 함수가 시간을 많이 쓰는가) → 하드웨어 레벨(그 함수가 CPU 연산 때문에 느린가, 메모리 대기 때문에 느린가)로 단계적으로 좁혀가는 사고를 하는가.</li>
+      <li><strong>하드웨어 성능 카운터를 해석하는 능력</strong> — IPC, cache-miss rate, branch-miss rate 같은 지표가 각각 무엇을 의미하고, 이 숫자들의 조합으로 무엇을 추론할 수 있는지 아는가. (Day 1~7의 지식이 여기서 실제로 "읽는 능력"으로 발현됩니다.)</li>
+      <li><strong>도구를 상황에 맞게 고르는가</strong> — sampling profiler(perf, flamegraph)와 instrumentation profiler(코드에 타이머 삽입)의 차이, 그리고 각각을 언제 쓰는지 아는가.</li>
+    </ul>
+
+    <p>주니어 답변의 전형적인 패턴: "print문이나 시간 측정 코드를 넣어서 어디가 느린지 봅니다" 정도에서 멈춥니다. 10년차 이상은 <strong>"함수 단위로 시간을 좁힌 뒤, 그 함수가 왜 느린지를 하드웨어 카운터(IPC, cache-miss, branch-miss)로 한 단계 더 파고들어 CPU-bound인지 memory-bound인지 구분하고, 그 결과에 따라 다른 최적화 전략(연산 줄이기 vs 데이터 배치 개선)을 선택한다"까지 이어갑니다.</p>
+  </section>
+
+  <!-- 3. 전제 개념 -->
+  <section id="prereq">
+    <h2>3. 전제 개념 — 쉬운 한국어로</h2>
+
+    <h3>프로파일링이란 무엇인가</h3>
+    <p>프로파일링(profiling)은 프로그램이 실행되는 동안 <strong>어디에 시간을 쓰고 있는지를 측정</strong>하는 작업입니다. "느리다"는 느낌만으로 코드를 고치면, 실제로는 전체 실행 시간의 1%도 안 되는 부분을 최적화하느라 시간을 낭비할 수 있습니다. 프로파일링은 이런 낭비를 막기 위해, 실제로 시간을 많이 쓰는 지점(핫스팟, hot spot)을 데이터로 찾아내는 과정입니다.</p>
+
+    <h3>Sampling과 Instrumentation — 두 가지 측정 방식</h3>
+    <p>프로파일링에는 크게 두 가지 접근 방식이 있습니다. <strong>Instrumentation(계측)</strong>은 코드에 직접 "지금 몇 시야?"를 묻는 타이머를 넣어서, 특정 함수가 시작하고 끝날 때까지 걸린 시간을 정확히 재는 방식입니다. 정확하지만 코드를 수정해야 하고, 타이머 자체의 오버헤드가 측정 결과를 왜곡할 수 있습니다. <strong>Sampling(샘플링)</strong>은 프로그램을 수정하지 않고, 아주 짧은 시간 간격(예: 1ms)마다 "지금 이 순간 CPU가 어떤 코드를 실행하고 있는가"를 스냅샷처럼 찍어서 통계적으로 어디에 시간이 많이 쓰였는지 추정하는 방식입니다. 오버헤드가 적어 프로덕션 환경에서도 안전하게 켜둘 수 있다는 장점이 있습니다. <code>perf</code>는 대표적인 샘플링 기반 프로파일러입니다.</p>
+
+    <h3>하드웨어 성능 카운터(Hardware Performance Counter)란 무엇인가</h3>
+    <p>현대 CPU 칩 안에는 특정 이벤트가 몇 번 발생했는지를 세는 <strong>전용 하드웨어 카운터</strong>가 내장되어 있습니다. 예를 들어 "명령어가 몇 개 실행됐는가(instructions)", "클럭 사이클이 몇 번 돌았는가(cycles)", "캐시를 찾다가 못 찾은 횟수(cache-misses)", "분기 예측이 틀린 횟수(branch-misses)" 같은 이벤트를 CPU가 스스로 카운트합니다. 이 값들은 소프트웨어로 코드를 수정하지 않고도 운영체제를 통해 읽을 수 있으며, Linux의 <code>perf</code> 같은 도구가 이 카운터에 접근하는 표준 인터페이스입니다. Day 1에서 배운 "Big-O가 같아도 실제 실행 시간이 다를 수 있다"는 명제를, 이제는 이 카운터 숫자로 직접 검증할 수 있습니다.</p>
+
+    <h3>IPC(Instructions Per Cycle)란 무엇인가</h3>
+    <p>IPC는 CPU가 클럭 사이클 하나당 평균적으로 몇 개의 명령어를 실행 완료했는지를 나타내는 지표입니다(<code>IPC = instructions / cycles</code>). Day 5에서 배운 파이프라인/슈퍼스칼라 구조 덕분에 이상적인 경우 IPC가 1보다 훨씬 클 수 있습니다(현대 CPU는 이론상 클럭당 4~6개 명령어까지 처리 가능). IPC가 낮다는 것은 "CPU가 명령어를 실행할 준비가 됐는데도 뭔가를 기다리느라 놀고 있다"는 신호이고, 이 "무엇을 기다리는가"를 밝히는 것이 프로파일링의 핵심 질문입니다.</p>
+
+    <h3>Flamegraph란 무엇인가</h3>
+    <p>Flamegraph는 샘플링으로 수집한 콜스택(call stack) 데이터를 시각화한 그래프입니다. 가로축은 샘플이 얼마나 많이 찍혔는지(시간 비중)를, 세로축은 함수 호출 깊이(누가 누구를 호출했는지)를 나타냅니다. 가로로 넓은 막대(box)일수록 그 함수가 전체 실행 시간에서 차지하는 비중이 크다는 뜻이고, 이걸 보면 "어떤 함수가 진짜 병목인지"를 한눈에 찾을 수 있습니다.</p>
+  </section>
+
+  <!-- 4. 심화 -->
+  <section id="deep">
+    <h2>4. perf, 하드웨어 카운터, flamegraph를 깊이 이해하기</h2>
+
+    <h3>CPU-bound vs Memory-bound를 구분하는 실전 방법</h3>
+    <p>Day 3에서 배운 roofline 사고방식(연산량이 병목인가, 메모리 대역폭이 병목인가)을 이제 실제 카운터 값으로 판단합니다.</p>
+    <table class="method-table">
+      <thead><tr><th>지표</th><th>CPU-bound 신호</th><th>Memory-bound 신호</th></tr></thead>
+      <tbody>
+        <tr><td>IPC</td><td>이론적 상한에 가까움 (예: 2~4 근처)</td><td>매우 낮음 (예: 0.2~0.5) — CPU가 데이터를 기다리며 정체</td></tr>
+        <tr><td>cache-misses / cache-references (miss rate)</td><td>낮음 — 대부분 캐시에서 히트</td><td>높음 — 자주 메모리까지 내려가서 가져옴</td></tr>
+        <tr><td>stalled-cycles-backend</td><td>낮음</td><td>높음 — 실행 유닛이 데이터를 기다리며 멈춰 있는 사이클 비중이 큼</td></tr>
+        <tr><td>메모리 대역폭 사용률</td><td>여유 있음</td><td>이론적 한계에 근접 — 코어를 더 써도 처리량이 늘지 않음</td></tr>
+        <tr><td>branch-misses</td><td>낮음</td><td>(별개 축 — 높으면 control hazard/분기 예측 문제, Day 5)</td></tr>
+      </tbody>
+    </table>
+    <p>실무에서는 이 지표들을 <strong>조합</strong>해서 판단합니다. IPC가 낮으면서 cache-miss rate가 높다면 memory-bound일 가능성이 큽니다. IPC가 낮은데 cache-miss는 낮고 branch-miss가 높다면 파이프라인 flush(Day 5)로 인한 손실을 의심합니다. IPC가 이미 높다면 애초에 하드웨어 병목이 아니라 <strong>연산량 자체(알고리즘)</strong>를 줄이는 게 정답일 수 있습니다 — 이 경우 프로파일링이 "하드웨어 문제가 아니다"라는 것을 알려준 것도 유의미한 결과입니다.</p>
+
+    <h3>perf의 두 가지 핵심 서브커맨드</h3>
+    <p><code>perf stat</code>은 프로그램 실행 전체에 대한 카운터 합계를 요약해서 보여줍니다. "이 프로그램이 전체적으로 CPU-bound인가 memory-bound인가"를 빠르게 훑어볼 때 씁니다. <code>perf record</code> + <code>perf report</code>(또는 flamegraph 생성 스크립트)는 샘플링된 콜스택을 수집해서, "어떤 함수가 얼마나 많은 샘플을 차지하는가"를 함수 단위로 보여줍니다. 실무 진단 순서는 보통 <strong>"perf stat으로 큰 그림(CPU-bound/memory-bound) 파악 → perf record/flamegraph로 어떤 함수가 병목인지 좁히기 → 그 함수의 코드/데이터 구조 개선 → 다시 측정해서 검증"</strong>의 반복입니다.</p>
+
+    <h3>On-CPU와 Off-CPU 프로파일링의 차이</h3>
+    <p>일반적인 CPU 프로파일링(perf record)은 "CPU가 실제로 명령어를 실행하고 있는 시간"만 샘플링합니다. 하지만 코드가 느린 이유가 락 대기, I/O 대기, 스레드 스케줄링 지연처럼 <strong>CPU를 쓰지 않고 잠들어 있는 시간</strong> 때문일 수도 있습니다. 이런 경우는 off-CPU 분석(예: 스레드가 blocked 상태로 보낸 시간을 추적하는 도구)이 필요합니다. "프로파일러를 돌렸는데 아무 함수도 유의미하게 안 나온다"는 상황은 종종 병목이 on-CPU가 아니라 off-CPU(락 경합, I/O 대기)에 있다는 신호입니다.</p>
+
+    <h3>측정 오버헤드와 관찰자 효과(Observer Effect)</h3>
+    <p>모든 측정 도구는 어느 정도 오버헤드를 만듭니다. Instrumentation은 타이머 호출 자체가 코드 실행 경로를 바꿀 수 있고(특히 아주 짧은 함수를 반복 호출할 때), 과도한 sampling 빈도도 시스템에 부하를 줄 수 있습니다. 시니어 레벨에서는 "이 프로파일링 결과가 실제 프로덕션 부하 상황을 왜곡 없이 반영하는가"를 항상 의심하고, 가능하면 오버헤드가 낮은 sampling 기반 도구를 우선 사용하며, 결과를 해석할 때 측정 자체의 한계를 함께 고려합니다.</p>
+  </section>
+
+  <!-- 5. 구체 예시 -->
+  <section id="example">
+    <h2>5. 구체 예시 — perf stat 출력을 읽고 병목을 진단하는 과정</h2>
+
+    <pre><code>$ perf stat -e instructions,cycles,cache-references,cache-misses,branch-misses ./process_data
+
+ Performance counter stats for './process_data':
+
+     8,412,933,201      instructions              #    0.31  insn per cycle
+    27,138,442,880      cycles
+       412,880,331      cache-references
+       201,553,904      cache-misses              #   48.81% of all cache refs
+        18,442,110      branch-misses
+
+       9.842301442 seconds time elapsed</code></pre>
+
+    <p>이 출력을 읽는 과정을 단계별로 짚어보겠습니다. 먼저 <strong>IPC = instructions / cycles ≈ 0.31</strong>입니다. 현대 슈퍼스칼라 CPU가 이상적으로는 클럭당 여러 개의 명령어를 처리할 수 있는데(Day 5), 0.31이라는 값은 CPU가 대부분의 사이클 동안 <strong>일을 못 하고 뭔가를 기다리고 있다</strong>는 뜻입니다. 다음으로 <strong>cache-miss rate ≈ 48.81%</strong>를 봅니다. 캐시 참조의 절반 가까이가 미스라는 것은 매우 높은 수치이며(Day 4에서 배운 것처럼 캐시 미스는 메인 메모리까지 내려가는 수백 사이클의 지연을 유발합니다), 이 낮은 IPC의 가장 유력한 원인이 <strong>메모리 대기</strong>라는 것을 강하게 시사합니다. branch-miss는 명령어 수 대비 상대적으로 작은 비중이므로, 분기 예측이 주된 원인은 아니라고 잠정 결론 내릴 수 있습니다.</p>
+
+    <p>이 시점에서의 진단은 <strong>"CPU 연산량이 아니라 메모리 접근 패턴이 병목이다(memory-bound)"</strong>입니다. 다음 단계는 <code>perf record</code>로 어떤 함수에서 cache-miss가 집중되는지 좁히고, Day 4에서 배운 <strong>데이터 배치 문제(pointer chasing, 불연속 메모리 접근, 큰 struct의 일부 필드만 쓰는 패턴)</strong>를 의심하며 코드를 확인합니다. 만약 반대로 IPC가 2 이상으로 높고 cache-miss rate가 5% 미만이었다면, 병목은 메모리가 아니라 <strong>연산 자체(알고리즘 복잡도나 불필요한 반복)</strong>일 가능성이 크므로 접근 방향이 완전히 달라집니다. 이것이 "측정 없이 추측만으로 최적화하면 안 되는" 이유를 숫자로 보여주는 예시입니다.</p>
+  </section>
+
+  <!-- 6. 답변 사고 순서 -->
+  <section id="reasoning">
+    <h2>6. 답변 사고 순서</h2>
+
+    <ol>
+      <li><strong>애플리케이션 레벨에서 병목 함수를 먼저 좁힙니다.</strong> "sampling profiler(perf record, flamegraph)로 전체 실행 시간 중 어떤 함수가 큰 비중을 차지하는지 확인합니다."</li>
+      <li><strong>그 함수가 왜 느린지 하드웨어 카운터로 한 단계 더 파고듭니다.</strong> "IPC, cache-miss rate, branch-miss rate를 perf stat으로 확인해 CPU-bound인지 memory-bound인지 구분합니다."</li>
+      <li><strong>지표를 조합해서 원인을 좁힙니다.</strong> "IPC가 낮고 cache-miss가 높으면 메모리 접근 패턴, IPC가 낮고 branch-miss가 높으면 분기 예측, IPC가 이미 높으면 알고리즘/연산량 자체를 의심합니다."</li>
+      <li><strong>원인에 맞는 개선안을 적용합니다.</strong> "memory-bound라면 데이터 배치(Day 4)나 접근 패턴 개선을, CPU-bound라면 연산량 감소나 SIMD(Day 7)를 검토합니다."</li>
+      <li><strong>다시 측정해서 개선을 검증합니다.</strong> "개선 전후의 카운터 값과 실제 실행 시간을 비교해 가설이 맞았는지, 부작용은 없는지 확인합니다."</li>
+    </ol>
+  </section>
+
+  <!-- 7. 핵심 답변 예시 -->
+  <section id="sample-answer">
+    <h2>7. 핵심 답변 예시</h2>
+
+    <div class="card">
+      <p><strong>면접관:</strong> "어떤 코드가 느리다는 것은 알겠는데, CPU-bound인지 memory-bound인지 어떻게 구분하시겠습니까?"</p>
+    </div>
+
+    <h3>짧은 버전 (엘리베이터 피치)</h3>
+    <div class="good-answer">
+      <div class="tag">SHORT ANSWER</div>
+      <p>먼저 perf 같은 샘플링 프로파일러로 어떤 함수가 시간을 많이 쓰는지 좁힙니다. 그다음 그 함수 구간에서 IPC와 cache-miss rate를 확인합니다. IPC가 낮으면서 cache-miss rate가 높으면 CPU가 메모리를 기다리며 정체된 memory-bound 상황이고, IPC가 이미 이론적 상한에 가깝다면 연산량 자체가 병목인 CPU-bound 상황입니다. 이 판단에 따라 데이터 배치를 바꿀지, 알고리즘을 바꿀지 방향을 정합니다.</p>
+    </div>
+
+    <h3>깊이 있는 버전</h3>
+    <div class="good-answer">
+      <div class="tag">DEEP ANSWER</div>
+      <p>저는 두 단계로 좁혀갑니다. 첫 단계는 애플리케이션 레벨 프로파일링입니다. perf record나 언어별 sampling profiler로 flamegraph를 뽑아, 전체 실행 시간에서 가로로 넓게 차지하는 함수를 찾습니다. 여기서 "느낌"이 아니라 실제 시간 비중으로 우선순위를 정하는 게 핵심입니다. 종종 예상과 다른 함수가 진짜 병목으로 나옵니다.</p>
+      <br>
+      <p>두 번째 단계는 하드웨어 레벨입니다. 병목 함수가 특정됐으면 perf stat으로 instructions, cycles, cache-references, cache-misses, branch-misses를 확인합니다. IPC(instructions/cycles)가 낮다는 것은 CPU가 명령어를 처리할 준비가 됐는데도 뭔가를 기다리며 정체됐다는 신호입니다. 이때 cache-miss rate가 높으면 Day 4에서 다룬 캐시 라인 단위 접근과 데이터 지역성 문제일 가능성이 크고, branch-miss rate가 높으면 Day 5에서 다룬 분기 예측 실패로 인한 파이프라인 flush를 의심합니다. 반대로 IPC가 이미 이론적 상한에 가깝다면, 하드웨어가 아니라 알고리즘의 연산량 자체가 병목이므로 자료구조나 로직을 바꾸는 방향으로 갑니다.</p>
+      <br>
+      <p>실제로 저는 대량의 이벤트 로그를 집계하는 배치 작업이 예상보다 느리다는 이슈에서, 처음에는 "정렬 알고리즘이 문제"라고 추측했지만 perf stat을 돌려보니 IPC가 0.3대, cache-miss rate가 40% 이상으로 나와 memory-bound라는 것을 먼저 확인했습니다. flamegraph로 좁힌 함수는 큰 구조체 배열을 순회하며 필드 하나만 읽는 코드였고, struct-of-arrays로 데이터 레이아웃을 바꿔 캐시 라인 활용도를 높인 뒤 다시 측정하니 cache-miss rate가 크게 줄고 실행 시간이 개선됐습니다. 처음 추측(정렬 알고리즘)이 틀렸다는 것을 측정이 알려준 사례였습니다.</p>
+    </div>
+
+    <p><strong>이 답변이 좋은 이유:</strong></p>
+    <ul>
+      <li>애플리케이션 레벨(어디)과 하드웨어 레벨(왜)을 명확히 두 단계로 구분함</li>
+      <li>IPC, cache-miss rate, branch-miss rate라는 구체적인 지표와 그 해석 기준을 제시함</li>
+      <li>Day 4(캐시), Day 5(분기 예측) 지식을 진단 도구로 자연스럽게 연결함</li>
+      <li>추측이 틀렸음을 측정이 바로잡은 실제 경험으로 "측정 없이 단정하지 않는다"는 태도를 증명함</li>
+    </ul>
+  </section>
+
+  <!-- 8. 좋은 vs 약한 답변 -->
+  <section id="good-vs-bad">
+    <h2>8. 좋은 답변 vs 약한 답변</h2>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 이런 답변을 피하세요</div>
+      <p>"코드를 읽어보면서 어디가 느릴 것 같은지 감으로 찾아봅니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>질문의 핵심인 "구분 방법"에 답하지 못하고, 측정 없이 추측에 의존하는 태도를 그대로 드러냅니다.</li>
+        <li>큰 코드베이스에서는 감으로 찾은 위치가 실제 병목이 아닐 확률이 높고, 이는 시간 낭비로 이어집니다.</li>
+        <li>CPU-bound와 memory-bound라는 질문의 구체적인 축에 전혀 답하지 못합니다.</li>
+      </ul>
+    </div>
+
+    <div class="bad-answer">
+      <div class="tag">WEAK ANSWER — 또 다른 패턴</div>
+      <p>"실행 시간을 System.currentTimeMillis()로 앞뒤에 찍어서 느린 구간을 찾습니다."</p>
+    </div>
+
+    <div class="card">
+      <h4>이 답변이 약한 이유</h4>
+      <ul>
+        <li>애플리케이션 레벨에서 "어디"가 느린지까지는 찾을 수 있지만, 질문이 묻는 "왜(CPU-bound vs memory-bound)"에는 전혀 답하지 못합니다.</li>
+        <li>수동으로 타이머를 넣는 방식은 코드 전체를 훑기 어렵고, 촘촘하게 찍을수록 instrumentation 오버헤드가 측정을 왜곡할 수 있다는 한계를 언급하지 못합니다.</li>
+      </ul>
+    </div>
+
+    <div class="good-answer">
+      <div class="tag">STRONG ANSWER 요소 체크리스트</div>
+      <ul>
+        <li>애플리케이션 레벨(함수 단위 병목 특정)과 하드웨어 레벨(원인 특정)을 두 단계로 구분한다</li>
+        <li>IPC, cache-miss rate, branch-miss rate 같은 구체적인 하드웨어 카운터 지표를 언급한다</li>
+        <li>지표 조합으로 CPU-bound와 memory-bound를 구분하는 기준을 제시한다</li>
+        <li>진단 결과에 따라 서로 다른 개선 전략(데이터 배치 vs 알고리즘)으로 이어짐을 보여준다</li>
+        <li>측정 오버헤드나 도구 선택(sampling vs instrumentation)의 trade-off를 인지하고 있다</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9. Follow-up -->
+  <section id="followups">
+    <h2>9. Senior-level Follow-up Q&amp;A</h2>
+
+    <div class="followup">
+      <div class="q">Q: 프로파일러를 돌렸는데 특정 함수에 시간이 집중되지 않고, CPU 사용률 자체가 낮게 나옵니다. 어떻게 접근하시겠습니까?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 일반적인 CPU 프로파일링(on-CPU)은 CPU가 실제로 명령어를 실행 중인 시간만 샘플링합니다. CPU 사용률 자체가 낮다면 병목이 연산이 아니라 <strong>대기</strong>에 있을 가능성이 큽니다 — 락 경합, I/O 대기, 스레드 스케줄링 지연, 네트워크 왕복 시간 같은 것들입니다. 이 경우 off-CPU 분석 도구(블록된 시간을 추적하는 프로파일러)나 락 경합을 보여주는 도구로 전환해야 하며, 순수 CPU 카운터만으로는 원인을 찾을 수 없다는 것을 짚는 게 중요합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 로컬 개발 환경에서 측정한 프로파일링 결과를 프로덕션 성능 문제의 근거로 그대로 써도 될까요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 신중해야 합니다. 데이터 규모, 동시 요청 수, CPU 코어 수, 캐시 크기, NUMA 구성이 로컬과 프로덕션에서 다르면 병목의 성격 자체가 바뀔 수 있습니다. 예를 들어 로컬에서는 데이터가 작아 전부 캐시에 들어가 CPU-bound로 보이지만, 프로덕션 규모에서는 working set이 캐시를 넘어서 memory-bound로 바뀌는 경우가 흔합니다(Day 3의 working set 개념). 가능하면 프로덕션과 유사한 규모의 스테이징 환경이나, 낮은 오버헤드의 프로덕션 sampling profiler로 실측하는 것이 안전합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 멀티스레드 프로그램에서 perf stat 결과를 어떻게 다르게 해석해야 하나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 코어 수가 늘어난다고 카운터 합계가 단순히 비례해서 해석되지 않습니다. 여러 스레드가 동시에 실행되면 메모리 대역폭(Day 3)을 공유하므로, 개별 스레드의 IPC가 낮게 나오는 이유가 그 스레드 자체의 코드 문제가 아니라 <strong>다른 코어와의 메모리 대역폭 경합</strong>일 수 있습니다. 또한 Day 6에서 다룬 false sharing이 있으면 cache-miss나 캐시 라인 무효화 관련 카운터가 비정상적으로 높게 나타나므로, 멀티스레드 환경에서는 코어별/전체 대역폭 사용률과 캐시 코히런시 관련 이벤트까지 함께 봐야 정확한 진단이 가능합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 마이크로벤치마크(작은 함수를 반복 실행해 측정)를 만들 때 주의할 점은 무엇인가요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 실제 사용 패턴과 다른 조건에서 측정하면 오해를 낳을 수 있습니다. 예를 들어 작은 데이터로 반복 실행하면 첫 실행 이후 데이터가 계속 캐시에 남아있어(warm cache) 실제 프로덕션의 cold-cache 상황보다 훨씬 빠른 결과가 나올 수 있습니다. 또한 컴파일러가 벤치마크 루프를 최적화(dead code elimination)해서 실제로 아무 일도 하지 않는 코드를 측정할 위험도 있습니다. 신뢰할 수 있는 마이크로벤치마크 도구를 쓰고, 워밍업 구간을 분리하고, 결과 값을 실제로 사용해 컴파일러 최적화를 방지하고, 가능하면 실제 데이터 규모/분포와 유사한 조건에서 측정해야 합니다.</p>
+      </div>
+    </div>
+
+    <div class="followup">
+      <div class="q">Q: 인터프리터 언어(Python, Node.js, JVM 계열)에서도 이런 하드웨어 카운터 기반 프로파일링이 의미가 있나요?</div>
+      <div class="a">
+        <p><strong>모범 답변:</strong> 예, 다만 한 단계가 더 있습니다. 애플리케이션 레벨 프로파일러(Python의 py-spy, JVM의 async-profiler 등)로 먼저 어떤 함수(혹은 네이티브 확장 호출)가 병목인지 찾고, 그 구간이 순수 인터프리터 오버헤드인지, 아니면 내부적으로 C로 구현된 라이브러리 호출(예: NumPy 연산)인지 구분하는 게 중요합니다. 후자의 경우 perf 같은 네이티브 레벨 도구로 그 C 코드 구간의 IPC와 cache-miss를 그대로 분석할 수 있고, 이 지식이 "왜 NumPy 벡터 연산이 순수 Python 루프보다 훨씬 빠른가"(Day 7의 SIMD 논의와 연결)를 설명하는 근거가 됩니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. 흔한 오해 -->
+  <section id="misconceptions">
+    <h2>10. 흔한 오해</h2>
+
+    <div class="misconception">
+      <div class="label">오해 1</div>
+      <p><strong>"CPU 사용률이 100%면 무조건 CPU-bound다"</strong></p>
+      <p>CPU 사용률(utilization)은 코어가 "일을 하고 있는 것처럼 보이는 시간" 비율일 뿐, 실제로 유용한 연산을 하고 있는지는 알려주지 않습니다. 캐시 미스를 기다리는 동안에도 코어는 "busy"로 보일 수 있습니다(정확히는 stall 상태). CPU-bound인지 memory-bound인지는 사용률이 아니라 IPC와 cache-miss rate 같은 카운터로 판단해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 2</div>
+      <p><strong>"프로파일러가 가리키는 함수가 항상 진짜 원인이다"</strong></p>
+      <p>프로파일러는 "어디서 시간이 소요됐는가"를 보여줄 뿐, "왜"는 별도로 분석해야 합니다. 예를 들어 특정 함수에 시간이 몰려 있어도, 그 원인이 그 함수의 알고리즘이 아니라 호출하는 쪽에서 불필요하게 여러 번 호출하고 있기 때문일 수 있습니다. 콜스택(누가 호출했는가)까지 함께 봐야 정확한 원인 진단이 가능합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 3</div>
+      <p><strong>"측정 오버헤드는 무시할 수 있을 만큼 작다"</strong></p>
+      <p>특히 instrumentation 방식으로 아주 짧고 자주 호출되는 함수를 측정하면, 타이머 호출 자체의 오버헤드가 실제 함수 실행 시간보다 커질 수 있습니다. 이 경우 측정값이 실제 병목의 크기를 왜곡합니다. sampling 기반 프로파일러가 상대적으로 오버헤드가 낮은 이유이며, 극도로 정밀한 측정이 필요할 때는 오버헤드가 작은 하드웨어 카운터 기반 방식을 우선 고려해야 합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 4</div>
+      <p><strong>"IPC가 낮으면 무조건 캐시 문제다"</strong></p>
+      <p>IPC가 낮아지는 원인은 캐시 미스뿐만 아니라 분기 예측 실패(Day 5), 명령어 자체의 긴 지연시간(예: 나눗셈 연산), 자원 경합(레지스터 부족) 등 여러 가지가 있습니다. cache-miss rate, branch-miss rate 같은 다른 카운터와 함께 봐야 정확한 원인을 좁힐 수 있으며, 하나의 지표만으로 단정하는 것은 위험합니다.</p>
+    </div>
+
+    <div class="misconception">
+      <div class="label">오해 5</div>
+      <p><strong>"프로파일링은 문제가 생겼을 때만 하는 것이다"</strong></p>
+      <p>측정을 문제 발생 후에만 하면 "느려지기 전" 기준선(baseline)이 없어 얼마나 나빠졌는지 판단하기 어렵습니다. 시니어 레벨에서는 정기적인 프로파일링이나 성능 회귀 테스트를 통해 기준선을 미리 확보해두고, 변화가 생겼을 때 빠르게 비교할 수 있는 체계를 만드는 것을 더 나은 실천으로 봅니다.</p>
+    </div>
+  </section>
+
+  <!-- 11. 자기 점검 Rubric -->
+  <section id="rubric">
+    <h2>11. 자기 점검 Rubric</h2>
+
+    <p>다음 항목을 말로 설명할 수 있으면 Day 8을 이해한 것입니다.</p>
+
+    <div class="card">
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>sampling profiling과 instrumentation profiling의 차이와 각각의 장단점을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>IPC가 무엇을 의미하고, 낮은 IPC가 왜 "CPU가 뭔가를 기다리고 있다"는 신호인지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>IPC, cache-miss rate, branch-miss rate를 조합해 CPU-bound와 memory-bound를 구분하는 방법을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>애플리케이션 레벨(어디)과 하드웨어 레벨(왜) 프로파일링을 두 단계로 나눠 진단하는 순서를 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>on-CPU 프로파일링으로 잡히지 않는 병목(락 대기, I/O 대기)이 있다는 것과 그 대응 방법을 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>"CPU 사용률 100% = CPU-bound"가 왜 틀린 명제인지 설명할 수 있다.</div>
+      </div>
+      <div class="rubric-item">
+        <span class="rubric-check">☐</span>
+        <div>측정 오버헤드(관찰자 효과)가 결과를 왜곡할 수 있다는 것과 이를 줄이는 방법을 설명할 수 있다.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 1.5rem; border-color: var(--accent2);">
+      <h3 style="color: var(--accent2); margin-top: 0;">다음 학습 예고 — Day 9</h3>
+      <p><strong>컴퓨터 구조와 시스템 설계</strong></p>
+      <p>Day 8까지는 단일 프로세스/코드 레벨의 성능 진단을 다뤘습니다. Day 9에서는 이 하드웨어 지식이 DB 인덱스, 큐, 캐시 시스템 같은 더 큰 설계 결정에 어떻게 반영되는지, "하드웨어 특성이 시스템 설계에 어떤 영향을 주는가"를 다룹니다.</p>
+      <p>면접 질문 예고: "하드웨어 특성이 DB, queue, cache 설계에 어떤 영향을 줍니까?"</p>
+    </div>
+  </section>
+
+  <hr style="border-color: var(--border); margin: 2.5rem 0;">
+  <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+    컴퓨터 구조 시니어 인터뷰 · Day 8 of 10 · 2026-07-09
+  </p>
+
+</div>
+</body>
+</html>
