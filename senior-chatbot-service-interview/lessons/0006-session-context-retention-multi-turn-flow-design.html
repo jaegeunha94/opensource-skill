@@ -1,0 +1,947 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 6 — Session/Context 유지와 Multi-turn Flow 설계</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #2dd4bf;
+      --accent2: #f0a05a;
+      --green: #4caf82;
+      --red: #e25050;
+      --blue: #4a9eff;
+      --purple: #a78bfa;
+      --text: #e8eaf0;
+      --text-muted: #8892a4;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    header .day-label {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header .subtitle { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag-interview { background: #123230; color: var(--accent); border: 1px solid var(--accent); }
+    .tag-concept { background: #1a2a3a; color: var(--blue); border: 1px solid var(--blue); }
+    .tag-why { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+    .tag-practice { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-answer { background: #2a2a1a; color: var(--accent2); border: 1px solid var(--accent2); }
+    .tag-followup { background: #2a1a2a; color: #d08ae0; border: 1px solid #d08ae0; }
+    .tag-good { background: #0d2a1a; color: var(--green); border: 1px solid var(--green); }
+    .tag-weak { background: #2a0d0d; color: var(--red); border: 1px solid var(--red); }
+    .tag-rubric { background: #1a1a2a; color: #7ab4ff; border: 1px solid #7ab4ff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 0.75rem; }
+    h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin: 1.2rem 0 0.5rem; }
+    p { margin-bottom: 0.75rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.35rem; }
+    strong { color: var(--text); }
+
+    .interview-q {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      background: var(--surface2);
+      border-left: 3px solid var(--accent2);
+      padding: 1rem 1.25rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    .interview-q .q-prefix {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #a8d8ea;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    pre code { background: none; border: none; padding: 0; color: #c8dae8; }
+    .comment { color: #556677; }
+    .keyword { color: #c792ea; }
+    .string { color: #c3e88d; }
+    .number { color: #f78c6c; }
+    .func { color: #82aaff; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 0.9rem 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.92rem;
+    }
+    .callout-info { background: #0d1f35; border-left: 3px solid var(--blue); }
+    .callout-warn { background: #2a1f0d; border-left: 3px solid var(--accent2); }
+    .callout-danger { background: #2a0d0d; border-left: 3px solid var(--red); }
+    .callout-tip { background: #0d2a1a; border-left: 3px solid var(--green); }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+    }
+    @media (max-width: 600px) { .comparison { grid-template-columns: 1fr; } }
+    .cmp-box {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .cmp-box h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .cmp-good h4 { color: var(--green); }
+    .cmp-weak h4 { color: var(--red); }
+    .cmp-box ul { font-size: 0.9rem; }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #0f1117;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; margin-bottom: 0.2rem; color: var(--text); }
+
+    .rubric-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      background: var(--surface2);
+      font-size: 0.9rem;
+    }
+    .rubric-level {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 0.05rem;
+    }
+    .level-senior { background: #0d2a1a; color: var(--green); }
+    .level-mid { background: #1a2a3a; color: var(--blue); }
+    .level-junior { background: #2a1a0d; color: var(--accent2); }
+    .level-weak { background: #2a0d0d; color: var(--red); }
+
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .nav-bottom a { color: var(--blue); text-decoration: none; }
+    .nav-bottom a:hover { text-decoration: underline; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 0.75rem 0;
+    }
+    th {
+      background: var(--surface2);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    td {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #0d2a1a; color: var(--green); }
+    .badge-red { background: #2a0d0d; color: var(--red); }
+    .badge-yellow { background: #2a1f0d; color: var(--accent2); }
+
+    .src-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+    .src-note a { color: var(--blue); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="day-label">Day 6 · 챗봇 서비스 Interview</div>
+    <h1>Session/Context 유지와 Multi-turn Flow 설계</h1>
+    <div class="subtitle">대화가 길어지거나 여러 세션에 걸쳐 이어질 때 "무엇을 기억하고,
+    무엇을 잊고, 언제 세션을 끝낼 것인가"를 비용·품질·사용자 경험의 trade-off로
+    설계하는 능력</div>
+  </header>
+
+  <!-- 면접 질문 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-interview">면접 질문</span></div>
+    <div class="interview-q">
+      <span class="q-prefix">Q1 — 주력 질문</span>
+      "멀티턴 챗봇에서 대화가 길어질 때 context window를 어떻게 관리하시겠습니까?
+      단순히 최근 N개 메시지만 남기고 자르는 방식의 한계는 무엇인가요?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q2 — 변형</span>
+      "Short-term memory와 long-term memory를 어떻게 구분해서 설계하시겠습니까?
+      사용자가 일주일 뒤 새 세션으로 돌아왔을 때 이전 대화에서 알게 된 정보를 어떻게
+      유지하시겠습니까?"
+    </div>
+    <div class="interview-q">
+      <span class="q-prefix">Q3 — 변형</span>
+      "세션 만료(session expiry)는 어떤 기준으로 설계하시겠습니까? 세션이 만료된
+      뒤 사용자가 다시 말을 걸면 시스템은 어떻게 반응해야 할까요?"
+    </div>
+  </div>
+
+  <!-- 전제 개념 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">전제 개념</span></div>
+    <h2>Context Window 관리는 "용량 문제"가 아니라 "관련성 문제"다</h2>
+
+    <p>
+      많은 사람이 context window 문제를 "토큰 수가 한도를 넘으면 자르면 된다"는
+      단순한 용량(capacity) 문제로 이해한다. 이 직관이 바로 Session/Context 설계에서
+      가장 먼저 깨져야 하는 오해다. 실제로는 <strong>윈도우 한도에 도달하기 훨씬
+      전부터 응답 품질이 저하</strong>되며, 이 현상을 "context rot"이라 부른다.
+    </p>
+
+    <div class="callout callout-danger">
+      <strong>Context Rot(컨텍스트 부식):</strong> GPT-4.1, Claude 4 계열, Gemini
+      2.5, Qwen3 등 프론티어 모델 18종을 대상으로 한 연구(Chroma, 2025)에서, 입력
+      길이가 늘어날수록 정확도가 <strong>문서화된 컨텍스트 한도보다 훨씬 이전
+      시점부터, 최대 30~50%까지</strong> 비균일하게 떨어지는 현상이 모든 모델에서
+      예외 없이 관찰됐다. 즉 200K 토큰 윈도우를 가진 모델도 50K 지점에서 이미
+      유의미한 품질 저하를 보일 수 있다.
+    </div>
+
+    <p>
+      또한 컨텍스트가 50% 미만으로 채워졌을 때는 맨 앞과 맨 뒤 토큰에 주의가
+      집중되고 중간 토큰이 소실되는 <strong>U자형 패턴("lost in the middle")</strong>이
+      나타나며, 50%를 넘어가면 <strong>최근 토큰에 유리하게 편향</strong>되는
+      패턴으로 바뀐다. 따라서 "컨텍스트 윈도우가 크니까 대화 이력을 다 넣으면
+      된다"는 것은 2026년 기준으로 명백한 오해이며, <strong>얼마나 들어가느냐(fits)가
+      아니라 무엇이 들어가느냐(relevance)가 응답 품질을 결정</strong>한다.
+    </p>
+    <div class="src-note">
+      근거: Chroma "Context Rot: How Increasing Input Tokens Impacts LLM
+      Performance"(2025) 및 후속 인용 자료(Redis Engineering Blog "Context rot
+      explained", Understanding AI "Context rot: the emerging challenge that
+      could hold back LLM progress") — 상세 URL은 <code>RESOURCES.md</code> 참고.
+    </div>
+
+    <h3>① 관리 전략 스펙트럼 — Trimming / Summarization / Compaction / Retrieval</h3>
+    <p>
+      Context rot을 고려하면, 컨텍스트 관리는 "무엇을 자를까"가 아니라 "무엇을
+      남길 가치가 있는가"를 결정하는 문제가 된다. 2026년 현재 프로덕션에서 조합해
+      쓰는 네 가지 전략이 있다.
+    </p>
+
+    <table>
+      <tr>
+        <th>전략</th>
+        <th>동작 방식</th>
+        <th>trade-off</th>
+      </tr>
+      <tr>
+        <td><strong>Trimming(자르기)</strong></td>
+        <td>토큰 캡을 기준으로 오래된 메시지를 잘라낸 <strong>사본</strong>을
+        만든다. 원본 상태(state)는 그대로 유지되고, 표시/전송용 목록만 축소된다
+        (LangChain <code>trim_messages</code>).</td>
+        <td>빠르고 추가 LLM 호출 비용이 없다. 그러나 잘려나간 정보는
+        <strong>완전히 소실</strong>된다.</td>
+      </tr>
+      <tr>
+        <td><strong>Summarization(요약)</strong></td>
+        <td>누적 토큰이 임계값(<code>max_tokens_before_summary</code>)을 넘으면
+        해당 구간 메시지(시스템 메시지 제외)를 요약 모델로 압축해 <strong>단일
+        요약 메시지로 치환</strong>한다(LangGraph summarization 노드).</td>
+        <td>정보 손실은 있지만 핵심 흐름은 보존된다. 다만 요약 자체가 추가
+        LLM 호출이라 <strong>비용·지연이 추가</strong>되고, 요약 품질에 따라
+        왜곡 위험이 있다.</td>
+      </tr>
+      <tr>
+        <td><strong>Compaction(서버 측 압축)</strong></td>
+        <td>렌더링된 토큰 수가 <code>compact_threshold</code>를 넘으면 서버가
+        이전 상태·추론 과정을 <strong>암호화된 압축 아이템</strong>으로 대체해
+        토큰 사용량을 줄이면서 상태 연속성을 유지한다(OpenAI Responses API
+        <code>context_management</code>).</td>
+        <td>애플리케이션 코드 변경 없이 서버가 처리하지만, 압축 내부 로직을
+        직접 통제하기 어렵다. <code>truncation="auto"</code>는 자동으로 대화
+        중간을 잘라 맞추고, <code>"disabled"</code>(기본값)는 한도 초과 시
+        400 에러로 실패한다.</td>
+      </tr>
+      <tr>
+        <td><strong>Retrieval(검색 기반)</strong></td>
+        <td>전체 이력은 별도 저장소에 보관하고, 현재 턴과 관련된 부분만 임베딩
+        검색으로 가져와 컨텍스트에 주입한다.</td>
+        <td>이력이 아무리 길어져도 컨텍스트 크기는 일정하게 유지된다. 검색
+        누락(recall) 위험이 있으며, Day 8에서 다룰 RAG 아키텍처와 직접
+        연결된다.</td>
+      </tr>
+    </table>
+
+    <div class="callout callout-tip">
+      <strong>2026년 실무 결론:</strong> "컨텍스트 윈도우가 커졌으니 검색 없이
+      다 넣는다"가 아니라, <strong>"50K~200K 정도의 관련 토큰만 검색해서 그
+      위에서 long-context 추론을 한다"</strong>는 하이브리드가 기본값이다.
+      윈도우가 커질수록 오히려 무엇을 넣을지 선별하는 능력이 더 중요해진다는
+      것이 context rot 연구의 실무적 함의다.
+    </div>
+    <div class="src-note">
+      근거: <a href="https://docs.langchain.com/oss/python/langchain/short-term-memory">
+      LangChain — Short-term memory</a>(<code>trim_messages</code>, summarization
+      노드, <code>max_tokens_before_summary</code>); <a href="https://developers.openai.com/api/docs/guides/compaction">
+      OpenAI — Compaction 공식 문서</a>(<code>context_management</code>,
+      <code>compact_threshold</code>); <a href="https://developers.openai.com/api/docs/guides/conversation-state">
+      OpenAI — Conversation state</a>(<code>truncation</code> 파라미터) — 일부
+      문서는 직접 fetch가 차단되어 검색 스니펫 기반으로 정리했으므로 도입 전
+      원문 재확인 필요.
+    </div>
+
+    <h3>② Short-term Memory vs Long-term Memory — 기준은 "스레드 경계"</h3>
+    <p>
+      "메모리"라는 말도 뭉뚱그려 쓰면 설계가 흐트러진다. LangGraph가 공식적으로
+      제시하는 구분은 명확하다.
+    </p>
+
+    <div class="comparison">
+      <div class="cmp-box">
+        <h4>Short-term Memory</h4>
+        <ul>
+          <li><strong>체크포인터(checkpointer)</strong>가 <strong>하나의
+          thread(세션)</strong> 안의 메시지 로그를 저장한다</li>
+          <li>Day 5에서 다룬 dialogue state 영속화와 같은 계층 — 세션이
+          끝나면(또는 만료되면) 접근 범위도 함께 끝난다</li>
+          <li>트리밍/요약/압축 전략이 적용되는 대상이 바로 이 계층이다</li>
+        </ul>
+      </div>
+      <div class="cmp-box">
+        <h4>Long-term Memory</h4>
+        <ul>
+          <li><strong>Store</strong>가 <strong>thread 경계를 넘어</strong>
+          정보를 유지한다</li>
+          <li>사용자가 다음 주 <strong>새 thread_id로 돌아와도</strong> 선호도,
+          제약, 이미 확인된 사실이 여전히 사용 가능해야 한다는 문제를 해결한다</li>
+          <li>Anthropic Memory Tool(<code>memory_20250818</code>, GA)처럼
+          클라이언트 실행형 파일 기반으로 구현되기도 한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <strong>핵심 원칙:</strong> 모든 정보를 "언젠가 필요할 수도 있으니"
+      장기 메모리에 넣지 않는다. <strong>무엇이 세션 내 휘발성 정보이고 무엇이
+      세션을 넘어 유지될 가치가 있는 사실인지 구분하는 것 자체가 설계
+      결정</strong>이다. 이 구분은 Anthropic의 context engineering 원칙인
+      "compaction + context editing"(<code>clear_tool_uses_20250919</code>,
+      <code>clear_thinking_20251015</code>)과도 같은 철학을 공유한다 — 컨텍스트
+      윈도우 밖에 정보를 두고 필요할 때만 명시적으로 불러온다.
+    </div>
+    <div class="src-note">
+      근거: <a href="https://docs.langchain.com/oss/python/langgraph/persistence">
+      LangGraph Persistence — Checkpointer/Store</a>; <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool">
+      Anthropic Memory Tool</a>; <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">
+      Anthropic — Effective Context Engineering for AI Agents</a>.
+    </div>
+
+    <h3>③ 세션 만료(Session Expiry) — TTL은 값이 아니라 정책</h3>
+    <p>
+      "세션은 얼마나 유지되어야 하는가"에 정답은 없지만, <strong>"세션은
+      무한히 유지된다"가 기본값이어서는 안 된다</strong>는 것은 분명하다.
+      Dialogflow CX의 기본 세션 유지 시간은 <strong>30분</strong>이며,
+      <code>QueryParameters.session_ttl</code>로 최대 <strong>24시간</strong>까지
+      연장할 수 있다 — 즉 세션 수명은 플랫폼이 명시적으로 설계 대상으로 다루는
+      정책값이다.
+    </p>
+
+    <ul>
+      <li><strong>순수 inactivity timeout:</strong> 일정 시간(예: 30분) 무응답
+      시 세션을 만료시킨다</li>
+      <li><strong>만료 전 사용자 알림(reminder):</strong> 만료 직전 "계속
+      진행하시겠습니까?" 같은 알림을 보내고, 응답이 없으면 그때 종료한다</li>
+      <li><strong>만료 시점 자동 요약·저장:</strong> 세션이 끝날 때 대화를
+      자동 요약해 로그/DB에 저장한 뒤 세션을 깨끗이 닫는 durable workflow
+      패턴(Temporal류 아키텍처에서 흔히 쓰임)</li>
+      <li><strong>계층 분리 저장:</strong> Redis 같은 인메모리 스토어에는
+      짧은 TTL(예: 10분)로 활성 세션만 두고, 장기 로그·감사 기록은 별도의
+      내구성 있는 저장소로 분리한다</li>
+    </ul>
+
+    <div class="callout callout-warn">
+      <strong>설계 함정:</strong> 세션이 만료된 뒤 사용자가 다시 말을 걸면
+      "완전히 새 대화로 취급"할지, "이전 세션 요약을 long-term memory에서
+      불러와 이어갈지"를 결정해야 한다. 이 결정에서 바로 위 ②의 short-term/
+      long-term 구분이 실제로 쓰인다 — short-term 컨텍스트는 세션과 함께
+      사라지더라도, long-term에 저장해 둔 핵심 사실(예: 선호 배송지)은 새
+      세션에서도 재사용할 수 있다.
+    </div>
+    <div class="src-note">
+      근거: <a href="https://docs.cloud.google.com/dialogflow/cx/docs/concept/session">
+      Dialogflow CX — Sessions 공식 문서</a>(기본 30분, <code>session_ttl</code>
+      최대 24시간); Temporal 기반 durable AI 챗봇 아키텍처 사례(inactivity
+      timeout 후 자동 요약·종료 패턴).
+    </div>
+
+    <h3>④ Multi-turn Flow와 Day 5 Dialogue State의 관계</h3>
+    <p>
+      Day 5의 dialogue state가 <strong>"지금 무엇을 하고 있는가"라는 제어(control)
+      계층</strong>이라면, session/context는 <strong>"무엇을 기억하고 있는가"라는
+      메모리(memory) 계층</strong>이다. 두 계층은 개념적으로 독립적이지만, 실무에서는
+      <strong>같은 체크포인터로 함께 영속화</strong>되어야 한다 — 그렇지 않으면
+      "제어 상태는 남아있는데 메모리는 트리밍으로 사라져서" 시스템이 지금 무슨
+      작업 중인지는 알지만 그 작업에 필요한 정보는 잊어버리는 불일치가 생긴다.
+    </p>
+
+    <div class="callout callout-danger">
+      <strong>Multi-turn flow 실패의 대표 증상:</strong> 사용자가 이미 말한
+      정보를 다시 묻는다(메모리 계층 실패), 또는 사용자가 다른 주제로 샜다가
+      돌아왔을 때 원래 하던 작업 자체를 잊은 것처럼 반응한다(제어 계층과
+      메모리 계층의 동기화 실패). 두 증상은 원인이 다르므로 디버깅 시 어느
+      계층의 문제인지 먼저 구분해야 한다.
+    </div>
+  </div>
+
+  <!-- 왜 면접에서 묻는가 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-why">왜 면접에서 묻는가</span></div>
+    <h2>면접관이 이 질문으로 평가하는 것</h2>
+
+    <ul>
+      <li>
+        <strong>Context window를 용량이 아니라 관련성 문제로 이해하는가:</strong>
+        "토큰 한도를 넘으면 자른다"는 단순한 답이 아니라, context rot처럼 한도
+        이전부터 품질이 저하되는 현상을 알고 설계에 반영하는가
+      </li>
+      <li>
+        <strong>전략을 비용-품질-지연 trade-off로 구분해 설명하는가:</strong>
+        trimming/summarization/compaction/retrieval을 뭉뚱그리지 않고 각각의
+        비용과 손실 특성을 근거로 언제 무엇을 쓸지 판단하는가
+      </li>
+      <li>
+        <strong>Short-term과 long-term memory의 경계를 명확히 아는가:</strong>
+        "메모리"를 하나의 개념으로 뭉뚱그리지 않고, 스레드 경계를 기준으로
+        무엇을 세션 안에만 두고 무엇을 세션 밖으로 승격할지 판단하는가
+      </li>
+      <li>
+        <strong>세션 만료를 정책으로 설계하는가:</strong> TTL을 "적당히 정하는
+        설정값"이 아니라 사용자 경험·비용·비즈니스 리스크가 얽힌 의사결정으로
+        다루는가
+      </li>
+      <li>
+        <strong>제어 계층과 메모리 계층을 구분하면서도 함께 영속화하는가:</strong>
+        Day 5의 dialogue state와 이번 Day의 session/context를 별도 계층으로
+        이해하되, 실무에서는 함께 관리해야 한다는 것을 아는가
+      </li>
+    </ul>
+
+    <div class="callout callout-warn">
+      Senior 엔지니어는 "메시지를 몇 개까지 보관할까"를 설정값 문제로 다루지
+      않고, <strong>"무엇을 기억해야 다음 응답의 품질이 유지되는가"</strong>라는
+      정보 설계 문제로 설명해야 한다.
+    </div>
+  </div>
+
+  <!-- 실무 연결 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 연결</span></div>
+    <h2>실제 상황과 연결하기</h2>
+
+    <h3>상황 1: 컨텍스트가 꽉 차지 않았는데도 응답 품질이 점점 나빠지는 경우</h3>
+    <p>
+      긴 상담 대화에서 아직 컨텍스트 윈도우의 절반도 채우지 않았는데 답변이
+      점점 엉뚱해지거나 이전에 확인한 사실을 무시하는 현상이 나타났다. →
+      <strong>"컨텍스트 윈도우가 크니까 다 넣으면 된다"는 가정이 틀렸다는
+      것</strong>이 원인이며, context rot을 인지하고 오래된 구간을 요약으로
+      압축해 관련성 높은 정보만 남기는 전략을 도입했다.
+    </p>
+
+    <h3>상황 2: 사용자가 이미 준 정보(배송지, 주문번호)를 다시 묻는 경우</h3>
+    <p>
+      단순 trimming으로 오래된 메시지를 통째로 잘라냈는데, 그 안에 아직 유효한
+      slot 정보(예: 확정된 배송지)가 포함돼 있어서 함께 사라졌다. → <strong>메시지
+      로그 트리밍과 dialogue state(Day 5의 slot 값)를 별도로 관리하지 않은
+      것</strong>이 원인이며, 이후 확정된 slot 값은 메시지 로그와 독립적으로
+      구조화된 state에 보존해 트리밍의 영향을 받지 않게 했다.
+    </p>
+
+    <h3>상황 3: 재방문 고객이 매번 처음부터 온보딩 질문을 다시 받는 경우</h3>
+    <p>
+      단골 고객이 새 세션으로 돌아올 때마다 이전에 확인했던 선호 사항(선호
+      결제 수단, 자주 묻는 제품군)을 처음부터 다시 물어봐서 불만이 제기됐다. →
+      <strong>Long-term memory(Store) 없이 short-term(세션 스코프) 메모리만
+      설계한 것</strong>이 원인이며, 반복적으로 유용한 정보를 선별해 세션 경계를
+      넘어 유지되는 장기 메모리로 승격하는 절차를 추가했다.
+    </p>
+
+    <h3>상황 4: 세션 정책이 없어서 비용이 폭증하거나 항의가 들어온 경우</h3>
+    <p>
+      한쪽 팀은 세션을 만료 없이 무한정 유지해 스토리지·컨텍스트 재전송 비용이
+      계속 불어났고, 다른 팀은 반대로 TTL을 너무 짧게(예: 2분) 잡아 사용자가
+      잠시 다른 일을 하고 돌아오면 컨텍스트가 통째로 날아가 항의를 받았다. →
+      <strong>세션 만료를 트래픽 패턴과 비즈니스 리스크를 근거로 설계하지
+      않은 것</strong>이 원인이며, inactivity timeout + 만료 전 알림 + 자동
+      요약 저장을 조합한 정책으로 재설계했다.
+    </p>
+  </div>
+
+  <!-- 답변 사고 순서 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">답변 사고 순서</span></div>
+    <h2>면접에서 이렇게 답변 구조를 잡아라</h2>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Context window 문제를 관련성 문제로 재정의한다</strong>
+        "저는 컨텍스트 관리를 '토큰 한도를 넘기지 않는 문제'가 아니라 '무엇이
+        지금 응답에 관련 있는가를 선별하는 문제'로 봅니다. Context rot 연구에서
+        보듯, 윈도우 한도에 도달하기 전부터 관련 없는 정보가 많으면 품질이
+        떨어지기 때문입니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>전략을 비용-품질 trade-off로 설명한다</strong>
+        "트리밍은 빠르지만 정보가 완전히 소실되고, 요약은 핵심을 보존하지만
+        추가 LLM 호출 비용이 들고, 서버 측 compaction은 코드 변경 없이 처리되지만
+        내부 로직을 직접 통제하기 어렵습니다. 검색 기반 접근은 이력이 아무리
+        길어져도 컨텍스트 크기를 일정하게 유지합니다. 이 네 가지를 조합해서
+        씁니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Short-term/long-term memory를 스레드 경계로 구분한다 (Senior
+        포인트)</strong>
+        "세션 안에서만 유효한 정보는 short-term memory(체크포인터)로, 세션
+        경계를 넘어 유지할 가치가 있는 사실은 long-term memory(Store)로
+        승격합니다. 모든 것을 장기 메모리에 넣지 않고, 무엇이 재사용 가치가
+        있는지 선별하는 기준을 둡니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>세션 만료를 정책으로 설계한다</strong>
+        "TTL을 하나의 숫자로 정하지 않고, inactivity timeout, 만료 전 사용자
+        알림, 만료 시점 자동 요약 저장을 조합합니다. 만료 이후 재방문 시에는
+        long-term memory에 저장된 핵심 사실만 이어받고, 세션 내 세부 맥락은
+        새로 시작합니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>제어 계층과 메모리 계층을 함께 영속화한다</strong>
+        "Day 5에서 다룬 dialogue state(제어 계층)와 session/context(메모리
+        계층)를 개념적으로 구분하되, 실무에서는 같은 체크포인터로 함께
+        영속화해서 '지금 무슨 작업 중인지'와 '그 작업에 필요한 정보'가
+        어긋나지 않게 합니다."
+      </div>
+    </div>
+  </div>
+
+  <!-- 핵심 답변 예시 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-answer">핵심 답변 예시</span></div>
+    <h2>면접 현장 답변 예시 (전체)</h2>
+
+    <div class="callout callout-tip">
+      <p>
+        "저는 멀티턴 대화의 context 관리를 '토큰 한도를 넘기지 않는 문제'가
+        아니라 '지금 응답에 무엇이 관련 있는가를 선별하는 문제'로 봅니다.
+        컨텍스트 윈도우가 아무리 커도, 한도에 도달하기 훨씬 전부터 관련 없는
+        정보가 섞이면 응답 품질이 저하되는 context rot 현상이 프론티어 모델
+        전반에서 관찰되기 때문입니다.
+      </p>
+      <p>
+        그래서 저는 네 가지 전략을 조합해서 씁니다. 오래된 메시지를 단순히
+        자르는 트리밍은 빠르지만 정보가 완전히 사라지고, 요약은 핵심 흐름을
+        보존하지만 추가 LLM 호출 비용이 발생합니다. 서버 측에서 자동으로
+        압축해주는 compaction 기능을 쓰면 코드 변경 없이 처리되지만, 내부
+        로직을 세밀하게 통제하기 어렵습니다. 이력이 아주 길어지는 경우에는
+        전체를 저장해두고 현재 턴과 관련된 부분만 검색해서 가져오는 retrieval
+        방식을 씁니다. 어느 하나만 쓰지 않고 상황에 맞게 조합합니다.
+      </p>
+      <p>
+        메모리는 스레드 경계를 기준으로 short-term과 long-term을 구분합니다.
+        세션 안에서만 유효한 정보는 체크포인터가 관리하는 short-term memory에
+        두고, 세션을 넘어 유지할 가치가 있는 사실—예를 들어 사용자의 선호
+        결제 수단 같은 정보—는 별도의 long-term memory store로 승격합니다.
+        모든 정보를 '언젠가 필요할지 모르니' 장기 메모리에 넣지 않고, 재사용
+        가치가 있는 정보만 선별하는 기준을 둡니다.
+      </p>
+      <p>
+        세션 만료는 하나의 TTL 숫자로 끝내지 않습니다. 일정 시간 무응답이면
+        만료되는 inactivity timeout을 기본으로 하되, 만료 직전에는 사용자에게
+        계속할지 확인하는 알림을 보내고, 실제 만료 시점에는 대화를 자동
+        요약해서 저장한 뒤 세션을 깨끗이 닫습니다. 세션이 만료된 뒤 사용자가
+        다시 말을 걸면, short-term 컨텍스트는 새로 시작하되 long-term memory에
+        저장된 핵심 사실은 이어받습니다.
+      </p>
+      <p>
+        마지막으로, Day 5에서 다룬 dialogue state가 '지금 무엇을 하고 있는가'를
+        담당하는 제어 계층이라면 이번 세션/컨텍스트는 '무엇을 기억하고 있는가'를
+        담당하는 메모리 계층입니다. 두 계층은 개념적으로 다르지만, 같은
+        체크포인터로 함께 영속화해서 트리밍이나 요약이 dialogue state에 있는
+        확정된 slot 값까지 지워버리는 일이 없도록 합니다."
+      </p>
+    </div>
+  </div>
+
+  <!-- Senior-level follow-up -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-followup">Senior-level Follow-up</span></div>
+    <h2>면접관이 이어서 묻는 질문들</h2>
+
+    <h3>F1. "요약(summarization) 자체가 중요한 디테일을 누락하거나 왜곡하면
+    어떻게 하시겠어요?"</h3>
+    <p><strong>약한 답변:</strong> "요약 모델을 더 좋은 걸로 바꾸면 해결됩니다."</p>
+    <p>
+      <strong>강한 답변:</strong>
+      "고위험 정보—확정된 주문번호, 결제 금액, 동의 여부 같은—는 요약 대상에서
+      제외하고 Day 3에서 다룬 구조화된 slot/state로 별도 보존합니다. 요약은
+      '대화 흐름을 이해하기 위한 것'이지 '사실을 보존하기 위한 것'이 아니라는
+      책임 분리를 둡니다. 요약 품질 자체도 별도 평가셋으로 주기적으로 점검해서
+      드리프트를 감지합니다."
+    </p>
+
+    <h3>F2. "장기 메모리에 저장한 사용자 정보가 시간이 지나 더 이상 사실이
+    아니게 되면 어떻게 하시겠어요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "장기 메모리 항목마다 획득 시점과 신뢰도(또는 만료 기준)를 함께 저장하고,
+      최신 대화에서 상충하는 정보가 나오면 최신 값으로 갱신하거나 사용자에게
+      확인합니다. '한 번 저장한 정보는 영구히 참'이라고 가정하지 않고, 메모리
+      staleness를 관리 대상으로 다룹니다."
+    </p>
+
+    <h3>F3. "Compaction이나 요약 때문에 사용자가 예전에 한 말을 시스템이
+    부인하는 것처럼 보이면 어떻게 방지하시겠어요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "요약 메시지에 원본 턴에 대한 참조(타임스탬프나 턴 ID)를 남겨서, 필요하면
+      원문으로 되짚어갈 수 있는 감사 경로를 유지합니다. Day 3의 span grounding과
+      비슷한 원칙으로, 요약이 실제로 원본 대화에 근거하는지 주기적으로 샘플
+      검증합니다."
+    </p>
+
+    <h3>F4. "멀티 인스턴스/오토스케일링 환경에서 short-term과 long-term 메모리를
+    각각 어디에 두시겠어요?"</h3>
+    <p>
+      <strong>강한 답변:</strong>
+      "Short-term은 Redis 같은 빠른 외부 스토어나 체크포인터에 두어 턴마다
+      낮은 지연으로 읽고 씁니다. Long-term은 별도의 벡터/문서 스토어에 두고,
+      세션 시작 시 한 번만 조회해 채워 넣습니다. 두 계층의 접근 빈도와 지연
+      요구가 다르므로, 같은 저장소에 뭉뚱그리지 않고 조회 경로 자체를 분리합니다."
+    </p>
+  </div>
+
+  <!-- 좋은 답변 vs 약한 답변 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-good">좋은 답변 vs</span> <span class="tag tag-weak">약한 답변</span></div>
+    <h2>차이를 명확히 보기</h2>
+
+    <div class="comparison">
+      <div class="cmp-box cmp-good">
+        <h4>강한 답변의 특징</h4>
+        <ul>
+          <li>Context 관리를 <strong>용량이 아니라 관련성 문제</strong>로
+          정의한다</li>
+          <li>Trimming/summarization/compaction/retrieval을
+          <strong>비용-품질 trade-off</strong>로 구분해 설명한다</li>
+          <li>Short-term/long-term memory를 <strong>스레드 경계</strong> 기준으로
+          명확히 나눈다</li>
+          <li>세션 만료를 <strong>다중 신호 정책(inactivity+알림+자동
+          요약)</strong>으로 설계한다</li>
+          <li>제어 계층(dialogue state)과 메모리 계층(session/context)을
+          <strong>구분하되 함께 영속화</strong>해야 한다는 것을 안다</li>
+        </ul>
+      </div>
+      <div class="cmp-box cmp-weak">
+        <h4>약한 답변의 특징</h4>
+        <ul>
+          <li>"최근 N개 메시지만 보관하면 된다"는 <strong>단순 트리밍</strong>에
+          그친다</li>
+          <li>메모리를 <strong>구분 없이 하나의 개념</strong>으로 뭉뚱그린다</li>
+          <li>세션 만료를 <strong>임의로 정한 설정값</strong>으로만 언급한다</li>
+          <li>요약/압축의 <strong>정보 손실 위험</strong>을 전혀 고려하지
+          않는다</li>
+          <li>Dialogue state와 세션/컨텍스트를 <strong>같은 것으로 혼동</strong>한다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <strong>핵심 차이:</strong> 강한 답변은 세션/컨텍스트 설계를
+      <strong>"응답 품질과 비용을 함께 최적화하는 정보 설계 문제"</strong>로
+      다루고, 약한 답변은 "메시지를 몇 개까지 저장할지 정하는 설정 문제"로만
+      다룬다.
+    </div>
+  </div>
+
+  <!-- 흔한 오해 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">흔한 오해 정정</span></div>
+    <h2>실무에서 자주 나오는 잘못된 믿음</h2>
+
+    <h3>오해 1: "컨텍스트 윈도우가 크면 대화 이력을 다 넣어도 된다"</h3>
+    <p>
+      <strong>사실:</strong> Context rot 연구에 따르면 윈도우 한도에 도달하기
+      훨씬 전부터 관련 없는 정보가 섞이면 품질이 저하된다. 윈도우가 클수록
+      오히려 무엇을 넣을지 선별하는 능력이 더 중요해진다.
+    </p>
+
+    <h3>오해 2: "요약하면 정보 손실이 없다"</h3>
+    <p>
+      <strong>사실:</strong> 요약은 항상 정보 손실을 동반한다. 중요한 것은
+      손실을 없애는 것이 아니라, 무엇을 잃어도 되는지와 무엇은 별도로 보존해야
+      하는지를 설계로 구분하는 것이다.
+    </p>
+
+    <h3>오해 3: "세션은 길게 유지할수록 사용자 경험에 좋다"</h3>
+    <p>
+      <strong>사실:</strong> 세션을 무한정 유지하면 비용과 컨텍스트 재전송
+      부담이 계속 늘어나고, 오래된 컨텍스트가 오히려 현재 요청과 무관한
+      노이즈가 되어 품질을 떨어뜨릴 수 있다. 명시적인 만료 정책이 필요하다.
+    </p>
+
+    <h3>오해 4: "Long-term memory를 도입하면 모든 대화를 다 기억해야 한다"</h3>
+    <p>
+      <strong>사실:</strong> Long-term memory는 선택적으로 재사용 가치가 있는
+      정보만 승격하는 것이 원칙이다. 모든 것을 기억하려 하면 저장 비용뿐
+      아니라 오래되어 더 이상 사실이 아닌 정보(staleness)를 관리하는 부담이
+      함께 커진다.
+    </p>
+  </div>
+
+  <!-- 실무 체크리스트 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-practice">실무 체크리스트</span></div>
+    <h2>Session/Context 설계 체크리스트</h2>
+
+    <table>
+      <tr>
+        <th>확인 항목</th>
+        <th>점검 질문</th>
+      </tr>
+      <tr>
+        <td>Context rot 인지</td>
+        <td>컨텍스트 관리를 <span class="badge badge-green">관련성 선별
+        문제</span>로 다루고 있는가, 아니면 <span class="badge badge-red">단순
+        용량 문제</span>로만 다루고 있는가?</td>
+      </tr>
+      <tr>
+        <td>전략 조합</td>
+        <td>Trimming/summarization/compaction/retrieval을
+        <span class="badge badge-green">상황별로 조합</span>하고 있는가?</td>
+      </tr>
+      <tr>
+        <td>Memory 구분</td>
+        <td>Short-term/long-term memory가 <span class="badge badge-green">스레드
+        경계</span>를 기준으로 명확히 분리돼 있는가?</td>
+      </tr>
+      <tr>
+        <td>고위험 정보 보존</td>
+        <td>확정된 slot 값 같은 고위험 정보가 <span class="badge badge-green">요약
+        대상에서 제외</span>되고 별도로 보존되는가?</td>
+      </tr>
+      <tr>
+        <td>세션 만료 정책</td>
+        <td>TTL이 <span class="badge badge-green">inactivity·알림·자동 요약</span>을
+        조합한 정책으로 설계돼 있는가, 단일 설정값에 불과한가?</td>
+      </tr>
+      <tr>
+        <td>재방문 처리</td>
+        <td>세션 만료 후 재방문 시 <span class="badge badge-green">long-term
+        memory에서 무엇을 이어받을지</span> 명확히 정의돼 있는가?</td>
+      </tr>
+      <tr>
+        <td>제어-메모리 동기화</td>
+        <td>Dialogue state(제어)와 session/context(메모리)가
+        <span class="badge badge-green">같은 체크포인터로 함께 영속화</span>되는가?</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 자기 점검 Rubric -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-rubric">자기 점검 Rubric</span></div>
+    <h2>내 답변 수준 확인하기</h2>
+
+    <div class="rubric-item">
+      <span class="rubric-level level-weak">미흡</span>
+      <span>"최근 N개 메시지만 저장한다"는 단순 트리밍만 설명하고, 정보 손실이나
+      메모리 구분, 세션 만료를 전혀 언급하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-junior">주니어</span>
+      <span>요약이나 트리밍이 필요하다는 것은 알지만, context rot이나
+      short-term/long-term memory의 구분 기준(스레드 경계)은 설명하지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-mid">중급</span>
+      <span>Context 관리 전략들과 memory 구분을 설명할 수 있음. 다만 세션 만료를
+      다중 신호 정책으로 설계하거나 제어-메모리 계층 동기화까지는 다루지 못함</span>
+    </div>
+    <div class="rubric-item">
+      <span class="rubric-level level-senior">시니어</span>
+      <span>Context rot 기반의 관련성 문제 정의, 전략별 비용-품질 trade-off,
+      스레드 경계 기준 memory 구분, 다중 신호 세션 만료 정책, dialogue state와의
+      계층 동기화까지 일관되게 설명하고 구체적 실패 시나리오로 근거를 댐</span>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top: 1.2rem;">
+      <strong>자가 점검 질문:</strong><br>
+      1. Context window 문제가 왜 "용량 문제"가 아니라 "관련성 문제"인지
+      context rot을 근거로 설명할 수 있는가?<br>
+      2. Trimming/summarization/compaction/retrieval의 비용-품질 trade-off를
+      각각 구분해 설명할 수 있는가?<br>
+      3. Short-term memory와 long-term memory를 나누는 기준이 무엇인지, 그리고
+      무엇을 장기 메모리로 승격할지 판단 기준을 말할 수 있는가?<br>
+      4. 세션 만료 정책을 단일 TTL이 아니라 어떤 조합으로 설계할지 설명할 수
+      있는가?
+    </div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="section">
+    <div class="section-label"><span class="tag tag-concept">핵심 요약</span></div>
+    <h2>오늘 반드시 기억할 것</h2>
+    <ul>
+      <li>Context window 관리는 <strong>용량 문제가 아니라 관련성 문제</strong>다
+      — context rot으로 인해 한도에 도달하기 전부터 품질이 저하된다.</li>
+      <li><strong>Trimming(자르기)·Summarization(요약)·Compaction(서버 압축)·
+      Retrieval(검색)</strong>은 비용-품질 trade-off가 다른 별개 전략이며,
+      상황에 맞게 조합해야 한다.</li>
+      <li><strong>Short-term memory(체크포인터, 스레드 내부)</strong>와
+      <strong>long-term memory(Store, 스레드 경계를 넘는 정보)</strong>는
+      스레드 경계를 기준으로 명확히 구분해야 한다.</li>
+      <li>세션 만료는 <strong>단일 TTL 값이 아니라 inactivity timeout·만료
+      전 알림·자동 요약 저장을 조합한 정책</strong>으로 설계한다.</li>
+      <li>Day 5의 <strong>dialogue state(제어 계층)</strong>와 이번 Day의
+      <strong>session/context(메모리 계층)</strong>는 개념적으로 다르지만
+      <strong>같은 체크포인터로 함께 영속화</strong>해야 어긋나지 않는다.</li>
+    </ul>
+  </div>
+
+  <div class="nav-bottom">
+    <span><a href="./index.html">← 목록으로</a></span>
+    <span>Day 6 완료 · 다음: Day 7 — Fallback 전략과 Escalation/Human Handoff 설계</span>
+  </div>
+
+</div>
+</body>
+</html>

@@ -67,6 +67,17 @@
 - [Anthropic — Effective Context Engineering for AI Agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) — Compaction, context editing(`clear_tool_uses_20250919`, `clear_thinking_20251015`).
 - **정리**: 순수 FSM 기반 dialogue tree를 유일한 상태 관리 수단으로 쓰는 것은 outdated. 2026년 표준은 그래프 기반 상태(LangGraph류) + 요약/캐싱/선택적 RAG를 조합하는 것이다.
 
+## Session/Context 유지와 Multi-turn Flow (Day 6 보강, 2026-07-09 확인)
+
+- [Chroma — "Context Rot: How Increasing Input Tokens Impacts LLM Performance"](https://www.trychroma.com/research/context-rot) (Hong/Troynikov/Huber, 2025-07) — GPT-4.1, Claude 4 계열, Gemini 2.5, Qwen3 등 18개 모델에서 입력 길이 증가에 따라 문서화된 한도 이전부터 정확도가 최대 30~50%까지 비균일 저하됨을 실증. 컨텍스트 50% 미만에서는 U자형(맨 앞/뒤 선호) 패턴, 50% 이상에서는 최근 토큰 편향 패턴으로 전환.
+- [Redis — "Context rot explained (& how to prevent it)"](https://redis.io/blog/context-rot/); [Understanding AI — "Context rot: the emerging challenge that could hold back LLM progress"](https://www.understandingai.org/p/context-rot-the-emerging-challenge) — Chroma 연구의 실무적 해설과, "50K~200K 관련 토큰만 검색 후 그 위에서 long-context 추론"하는 하이브리드가 2026년 기본값이라는 논지.
+- [LangChain — Short-term memory](https://docs.langchain.com/oss/python/langchain/short-term-memory) — `trim_messages`(원본 state는 유지한 채 사본만 축소)와 summarization 노드(`max_tokens_before_summary` 초과 시 시스템 메시지를 제외한 구간을 요약 메시지로 치환)의 구분. 직접 fetch가 차단되어 검색 스니펫 기반으로 정리했으므로 원문 재확인 필요.
+- [OpenAI — Compaction](https://developers.openai.com/api/docs/guides/compaction) — Responses API `context_management`/`compact_threshold`로 렌더링 토큰이 임계값을 넘으면 서버가 이전 상태·추론을 암호화된 압축 아이템으로 대체. 직접 fetch가 차단되어 검색 스니펫 기반으로 정리했으므로 원문 재확인 필요.
+- [OpenAI — Conversation state](https://developers.openai.com/api/docs/guides/conversation-state) — `truncation` 파라미터(`"auto"`=대화 중간 자동 절단, `"disabled"`(기본값)=한도 초과 시 400 에러); Conversations API로 메시지/도구 호출/출력을 담는 장기 대화 객체 관리.
+- [Google Cloud — Dialogflow CX Sessions](https://docs.cloud.google.com/dialogflow/cx/docs/concept/session) — 기본 세션 유지 시간 30분, `QueryParameters.session_ttl`로 최대 24시간까지 연장 가능. "세션은 무한 유지"가 기본값이 아니라 명시적 정책 대상임을 보여주는 근거.
+- Temporal 기반 durable AI 챗봇 아키텍처 사례 — inactivity timeout 발생 시 대화를 자동 요약해 DB에 저장한 뒤 워크플로를 깨끗이 종료하는 패턴.
+- **정리**: "컨텍스트 윈도우 한도만 넘지 않으면 된다"는 프레임은 outdated이며, context rot 근거로 한도 이전부터 관련성 낮은 정보를 걸러내는 것이 2026년 표준이다. Trimming/Summarization/Compaction/Retrieval은 배타적 선택이 아니라 비용-품질 trade-off가 다른 조합 가능한 전략이며, short-term(스레드 내부, 체크포인터)과 long-term(스레드 경계를 넘는, Store) memory를 구분하는 것과 세션 만료를 단일 TTL이 아닌 다중 신호 정책으로 설계하는 것이 실무 결론이다.
+
 ## Tool Calling / Function Calling / MCP
 
 - [Anthropic Tool Use 문서](https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview) — parallel tool calls, `tool_choice`, fine-grained streaming.

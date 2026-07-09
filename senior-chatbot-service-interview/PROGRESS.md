@@ -9,12 +9,12 @@
 | 3 | 2026-07-06 | Entity·Slot 추출 설계와 검증 | [0003-entity-slot-extraction-design-and-validation.html](lessons/0003-entity-slot-extraction-design-and-validation.html) |
 | 4 | 2026-07-07 | NLU-LLM Hybrid Routing 아키텍처 | [0004-nlu-llm-hybrid-routing-architecture.html](lessons/0004-nlu-llm-hybrid-routing-architecture.html) |
 | 5 | 2026-07-08 | Dialogue State 설계: FSM vs Graph 기반 상태 모델 | [0005-dialogue-state-design-fsm-vs-graph.html](lessons/0005-dialogue-state-design-fsm-vs-graph.html) |
+| 6 | 2026-07-09 | Session/Context 유지와 Multi-turn Flow 설계 | [0006-session-context-retention-multi-turn-flow-design.html](lessons/0006-session-context-retention-multi-turn-flow-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 6 | Session/Context 유지와 Multi-turn Flow 설계 | Context window 관리, 요약, 메모리, 세션 만료 |
 | 7 | Fallback 전략과 Escalation/Human Handoff 설계 | Multi-signal escalation, context 전달, 큐 설계 |
 | 8 | RAG와 Tool Calling 연동 아키텍처 | Function/tool calling, MCP, grounding |
 | 9 | 채널 통합(Multi-channel) 아키텍처 설계 | 채널 어댑터, 메시지 포맷 정규화, 채널별 제약 |
@@ -27,7 +27,7 @@
 
 ## 현재 학습 위치
 
-**Day 5 완료** — 다음: Day 6 — Session/Context 유지와 Multi-turn Flow 설계
+**Day 6 완료** — 다음: Day 7 — Fallback 전략과 Escalation/Human Handoff 설계
 
 ## 습득한 핵심 개념
 
@@ -52,7 +52,11 @@
 - [x] 스택(LIFO) 기반 상태 모델(Rasa dialogue frame stack, Dialogflow CX flow stack)로 인터럽션을 정규 연산화하는 설계 (Day 5)
 - [x] 그래프 기반 상태(LangGraph StateGraph)의 타입 스키마·리듀서·체크포인터와 스택 모델의 관계 (Day 5)
 - [x] 상태 스키마 마이그레이션, 멱등적 전이, 외부 영속화 같은 운영 함정 (Day 5)
-- [ ] Session/Context 유지와 Multi-turn Flow (예정 Day 6)
+- [x] Context window 관리를 용량이 아닌 관련성 문제로 재정의하는 Context Rot 개념 (Day 6)
+- [x] Trimming/Summarization/Compaction/Retrieval의 비용-품질 trade-off 구분 (Day 6)
+- [x] Short-term memory(체크포인터)와 long-term memory(Store)를 스레드 경계로 구분하는 원칙 (Day 6)
+- [x] 세션 만료를 단일 TTL이 아닌 다중 신호(inactivity·알림·자동 요약) 정책으로 설계 (Day 6)
+- [x] Dialogue state(제어 계층)와 session/context(메모리 계층)의 관계와 동기화 필요성 (Day 6)
 - [ ] Fallback/Escalation/Human Handoff (예정 Day 7)
 - [ ] RAG와 Tool Calling 연동 (예정 Day 8)
 - [ ] 채널 통합 아키텍처 (예정 Day 9)
@@ -103,3 +107,15 @@
   다루는 패턴과, LangGraph StateGraph의 타입 스키마·리듀서·체크포인터를
   그 상위 일반화로 배치하는 방향으로 레슨을 구성함. 기존 커리큘럼 방향과
   상충하는 내용은 없었음. 근거는 `RESOURCES.md` 참고.
+- 2026-07-09: Day 6 작성 전 최신 조사(Chroma "Context Rot" 연구, LangChain
+  Short-term memory 공식 문서의 `trim_messages`/summarization 노드/
+  `max_tokens_before_summary`, OpenAI Responses API Compaction·Conversation
+  state 공식 문서의 `context_management`/`compact_threshold`/`truncation`,
+  LangGraph Persistence의 Store 기반 long-term memory, Anthropic Memory Tool
+  및 Effective Context Engineering, Dialogflow CX Sessions 공식 문서의 기본
+  30분 세션·`session_ttl` 최대 24시간)를 확인함. "컨텍스트 윈도우 한도만
+  넘지 않으면 된다"는 구식 프레임 대신, 한도 도달 이전부터 품질이 저하되는
+  context rot을 근거로 "무엇을 남길 가치가 있는가"를 판단하는 관련성 문제로
+  재정의하고, short-term/long-term memory를 스레드 경계 기준으로 명확히
+  구분하며, 세션 만료를 다중 신호 정책으로 설계하는 방향으로 레슨을 구성함.
+  기존 커리큘럼 방향과 상충하는 내용은 없었음. 근거는 `RESOURCES.md` 참고.
