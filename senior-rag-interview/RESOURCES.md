@@ -159,6 +159,26 @@
 > Cohere/Voyage 공식 changelog와 pricing 문서로 모델 버전과 과금 방식을 교차 확인했다. 모델 순위와 가격은
 > 벤더가 자주 갱신하므로 실제 도입 전 공식 문서와 자체 도메인 평가셋으로 재검증해야 한다.
 
+## Context 구성과 Prompt 설계 최신 근거 (Day 9, 2026년 7월 조사 반영)
+
+- [Lost in the Middle: How Language Models Use Long Contexts (Liu et al., arXiv 2307.03172)](https://arxiv.org/abs/2307.03172) — 정답 위치에 따른 U자형 정확도 곡선을 최초로 정량화한 원 논문
+- [Chroma Research — Context Rot](https://www.trychroma.com/research/context-rot) — GPT-4.1/Claude 4/Gemini 2.5/Qwen3 등 18개 2025년 최신 모델에서 위치 편향과 별개의 길이 기반 비균일 저하("context rot") 확인
+- [Long Context RAG Performance of LLMs (Databricks, arXiv 2411.03538)](https://arxiv.org/pdf/2411.03538) — 20개 모델 × 3개 데이터셋 대규모 실험, 모델별 성능 저하 임계점과 Claude 3.5의 문맥 길이별 거부율 급증(3.7%→49.5%) 사례
+- [The Distracting Effect: Understanding Irrelevant Passages in RAG (ACL 2025, arXiv 2505.06914)](https://aclanthology.org/2025.acl-long.892/) — 무관한 검색 결과(distractor)가 답변 정확도를 적극적으로 깎는다는 것을 정량화(hard distractor 학습 시 최대 7.5%p 개선)
+- [Anthropic — Claude 프롬프트 작성 모범 사례(장문맥 프롬프팅)](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices) — 긴 문서를 질의보다 위에 배치(최대 30% 품질 향상), XML 태그 구조화, quote 기반 grounding 공식 권고
+- [Anthropic — Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval) — 청크에 컨텍스트를 prepend해 검색 실패율 감소(Contextual Embeddings -35%, +BM25 -49%, +Reranking -67%, 5.7%→1.9%) (Day 3에서 최초 인용, Day 9에서 프롬프트 구성과의 보완 관계로 재인용)
+- [Anthropic — Citations API 공식 문서](https://platform.claude.com/docs/en/build-with-claude/citations) — 문서를 별도 content block으로 전달해 응답을 정확한 소스 텍스트 스팬에 매핑하는 네이티브 인용 기능(2025년 1월 출시)
+- [Anthropic — Prompt Caching 공식 문서](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) — cache_control 마커, TTL별 가격(읽기 0.1배/쓰기 1.25~2.0배), 모델별 최소 캐시 가능 토큰 수, breakpoint 구조
+- [Anthropic — Prompt Caching 발표](https://www.anthropic.com/news/prompt-caching) — 100K 토큰 프롬프트 캐싱 적용 시 응답시간 11.5초→2.4초, 비용 최대 90%·지연 최대 85% 절감 사례(2024년 8월)
+- [Anthropic — 가드레일 강화: 프롬프트 인젝션/jailbreak 완화](https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks) — 직접/간접 프롬프트 인젝션 구분, 신뢰 불가 콘텐츠를 tool_result에만 격리하는 공식 권고, JSON 인코딩·사전 스크리닝·최소 권한 원칙
+- [OpenAI — The Instruction Hierarchy](https://openai.com/index/the-instruction-hierarchy/) — 시스템>사용자>외부 소스(RAG 검색 결과 포함) 3단계 신뢰 우선순위를 적대적 훈련으로 학습시키는 접근(2024년 4월)
+- [Defending Against Indirect Prompt Injection Attacks With Spotlighting (arXiv 2403.14720)](https://arxiv.org/abs/2403.14720) — delimiting/datamarking/encoding 기반 경량 인젝션 방어 기법(Microsoft, 2024년 3월)
+
+> 참고: "context rot"·"lost in the middle" 관련 최신 벤치마크 수치 일부(Chroma 리포트 등)는 봇 차단으로
+> 원문 직접 접근이 제한되어 검색 스니펫과 2차 소스로 교차 확인했다. OpenAI의 프롬프트 캐싱 정확한 할인율,
+> 개별 프로덕션 사례의 캐시 히트율 개선 수치는 벤더·사례별 편차가 커 이 레슨에서는 의도적으로 배제했다.
+> 도입 전 반드시 각 벤더의 최신 공식 문서와 자체 벤치마크로 재검증해야 한다.
+
 ## 인터뷰 준비
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 검색 시스템 설계 문제와 유사한 사고 프레임

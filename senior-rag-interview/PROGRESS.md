@@ -12,12 +12,12 @@
 | 6 | 2026-07-06 | Hybrid Search — BM25와 Vector 결합 | [0006-hybrid-search-bm25-and-vector-fusion.html](lessons/0006-hybrid-search-bm25-and-vector-fusion.html) |
 | 7 | 2026-07-07 | Metadata Filtering과 검색 정밀도 | [0007-metadata-filtering-and-retrieval-precision.html](lessons/0007-metadata-filtering-and-retrieval-precision.html) |
 | 8 | 2026-07-08 | Reranking 전략 | [0008-reranking-strategy.html](lessons/0008-reranking-strategy.html) |
+| 9 | 2026-07-09 | Context 구성과 Prompt 설계 | [0009-context-construction-and-prompt-design.html](lessons/0009-context-construction-and-prompt-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | Context 구성과 Prompt 설계 | Context window 관리, ordering, prompt injection 방어 |
 | 10 | Hallucination 완화와 답변 근거 표시 | Grounding, citation, 답변 거부(abstain) 전략 |
 | 11 | 평가 지표와 Offline/Online Evaluation | Recall@k, Faithfulness, RAGAS, A/B 테스트 |
 | 12 | 권한/보안과 개인정보 처리 | Document-level ACL, PII 마스킹, 데이터 거버넌스 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 8 완료** — 다음: Day 9 — Context 구성과 Prompt 설계
+**Day 9 완료** — 다음: Day 10 — Hallucination 완화와 답변 근거 표시
 
 ## 습득한 핵심 개념
 
@@ -50,7 +50,11 @@
 - [x] ACL 쿼리 레벨 강제와 소스 시스템 ACL 동기화 지연(staleness) 위험 (Day 7)
 - [x] Bi-encoder/cross-encoder/late-interaction(ColBERT)/LLM listwise reranking의 구조적 차이와 지연·비용 트레이드오프 (Day 8)
 - [x] Reranker 모델·경로 계층화, 도메인 재검증, 장애 시 graceful degradation 설계 (Day 8)
-- [ ] Context 구성과 Prompt 설계 (예정 Day 9)
+- [x] Lost in the middle과 context rot — 최신 장문맥 모델에서도 잔존하는 위치·길이 편향 (Day 9)
+- [x] Distracting effect 기반 chunk 개수 결정과 reranking cutoff 설계 (Day 9)
+- [x] 문서 배치·XML 구조화·citation grounding을 통한 활용 품질 개선 (Day 9)
+- [x] Prompt caching 구조 설계(정적/동적 분리)와 RAG 워크로드별 캐싱 효과 판단 (Day 9)
+- [x] 간접 프롬프트 인젝션 위협 모델과 다층 방어(콘텐츠 격리·정책 선언·사전 스크리닝) (Day 9)
 - [ ] Hallucination 완화와 답변 근거 표시 (예정 Day 10)
 - [ ] 평가 지표와 Offline/Online Evaluation (예정 Day 11)
 - [ ] 권한/보안과 개인정보 처리 (예정 Day 12)
