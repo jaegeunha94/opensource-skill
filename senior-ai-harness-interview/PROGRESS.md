@@ -10,12 +10,12 @@
 | 4 | 2026-07-06 | Control-Flow Scaffolding과 루프 안정성 | [0004-control-flow-scaffolding-loop-stability.html](lessons/0004-control-flow-scaffolding-loop-stability.html) |
 | 5 | 2026-07-07 | Guardrail과 Prompt Injection 방어 | [0005-guardrail-prompt-injection-defense.html](lessons/0005-guardrail-prompt-injection-defense.html) |
 | 6 | 2026-07-08 | Sandboxed Workspace Execution과 권한 스코핑 | [0006-sandboxed-workspace-execution-permission-scoping.html](lessons/0006-sandboxed-workspace-execution-permission-scoping.html) |
+| 7 | 2026-07-09 | Model Context Protocol(MCP) | [0007-model-context-protocol.html](lessons/0007-model-context-protocol.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | Model Context Protocol(MCP) | tools/resources/prompts/sampling, stdio/streamable HTTP, stateless 전환, 거버넌스(AAIF) |
 | 8 | Handoff와 Multi-Agent Coordination | orchestrator-worker, manager(agents-as-tools) vs handoff 패턴, 토큰 비용 구조(15x), multi-agent를 쓰지 말아야 할 때 |
 | 9 | Streaming과 Structured Output | SSE 스트리밍, fine-grained tool streaming, 지연시간 vs UX trade-off, structured output 설계 |
 | 10 | Telemetry, Tracing, Observability | OTel GenAI semantic conventions, span 계층, 분산 트레이싱, 벤더별 관측성 통합 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음: Day 7 — Model Context Protocol(MCP)
+**Day 7 완료** — 다음: Day 8 — Handoff와 Multi-Agent Coordination
 
 ## 습득한 핵심 개념
 
@@ -60,7 +60,12 @@
 - [x] OpenAI Agents SDK harness-compute 분리(2026-04-15), 상태 외부화/재수화 (Day 6)
 - [x] Least-privilege: standing credential vs just-in-time 권한, 거버넌스는 추론 루프 밖 (Day 6)
 - [x] Replit 프로덕션 DB 삭제(2025-07), Railway/PocketOS 권한 사고(2026-04) 근본 원인 분석 (Day 6)
-- [ ] MCP (예정 Day 7)
+- [x] MCP N×M 문제와 tool calling과의 층위 구분 (Day 7)
+- [x] Primitive: Tools/Resources/Prompts(서버→클라이언트), Sampling/Roots(클라이언트→서버, 신뢰 역전) (Day 7)
+- [x] Transport: stdio vs Streamable HTTP, 2026-07-28 RC의 stateless 전환(핸드셰이크/세션 제거) (Day 7)
+- [x] 거버넌스: AAIF/Linux Foundation 이관(2025-12-09 완료), Extensions Framework, MCP Apps·Tasks 지위(코어 승격 아님) (Day 7)
+- [x] MCP 보안 위협 4패턴: tool poisoning, rug pull, confused deputy, toxic agent flow (Day 7)
+- [x] OWASP MCP Top 10 (MCP01~MCP10) (Day 7)
 - [ ] Handoff, multi-agent coordination (예정 Day 8)
 - [ ] Streaming, structured output (예정 Day 9)
 - [ ] Telemetry/Tracing/Observability (예정 Day 10)
