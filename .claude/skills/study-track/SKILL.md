@@ -13,18 +13,36 @@ This skill coordinates learning state. When actual lesson authoring is needed, f
 
 Use `study-track-control.md` at the repository root as the first execution gate for scheduled routine runs.
 
-Before reading or writing a subject workspace, resolve the subject slug and read `study-track-control.md` if it exists:
+This is a hard preflight gate. Before it passes, do not read `MISSION.md`,
+`PROGRESS.md`, `RESOURCES.md`, `learning-records/`, `lessons/`, `reference/`,
+or `assets/`; do not search the web; do not start research; do not spawn
+background agents or subagents; do not create, edit, commit, or push files.
+The only allowed preflight actions are:
+
+1. Resolve the repository root and requested subject slug.
+2. Read `study-track-control.md` if it exists.
+3. Parse the `__all__` row and the requested subject row.
+4. Stop or continue based on the rules below.
+
+The `__all__` row is the global override. If `__all__` is `false`, every study
+track is disabled even when the requested subject row says `true`.
+
+Before reading or writing a subject workspace, resolve the subject slug and read
+`study-track-control.md` if it exists:
 
 1. Find the special `__all__` row first.
-2. If `__all__` is `false`, stop immediately. Do not create lessons, update `PROGRESS.md`, edit any subject files, commit, or push. Respond briefly that all study tracks are disabled in `study-track-control.md` and this run was skipped.
+2. If `__all__` is `false`, stop immediately. Do not inspect the subject workspace, search current facts, create lessons, update `PROGRESS.md`, edit any subject files, start subagents, commit, or push. Respond briefly that all study tracks are disabled in `study-track-control.md` and this run was skipped. Include the observed row, for example: `| __all__ | false |`.
 3. If `__all__` is missing, treat it as `true` to preserve existing behavior.
 4. If `__all__` exists but the boolean is not exactly `true` or `false`, stop and ask the user to fix the value.
 5. Find the row whose `subject-slug` matches the requested subject.
 6. Read the lowercase `enabled` boolean.
-7. If `enabled` is `false`, stop immediately. Do not create lessons, update `PROGRESS.md`, edit any subject files, commit, or push. Respond briefly that `{subject-slug}` is disabled in `study-track-control.md` and was skipped.
-8. If `enabled` is `true`, continue normally.
+7. If `enabled` is `false`, stop immediately. Do not inspect the subject workspace, search current facts, create lessons, update `PROGRESS.md`, edit any subject files, start subagents, commit, or push. Respond briefly that `{subject-slug}` is disabled in `study-track-control.md` and was skipped. Include the observed subject row.
+8. If `__all__` is `true` and `enabled` is `true`, continue normally.
 9. If the subject row is missing, treat the subject as enabled to preserve existing behavior.
 10. If the row exists but the boolean is not exactly `true` or `false`, stop and ask the user to fix the value.
+
+When continuing, state the gate result before lesson work begins, for example:
+`Gate passed: __all__=true, senior-ai-harness-interview=true`.
 
 Use `PROGRESS.md` as the single source of truth for completion.
 
