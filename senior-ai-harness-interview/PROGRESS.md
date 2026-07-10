@@ -11,12 +11,12 @@
 | 5 | 2026-07-07 | Guardrail과 Prompt Injection 방어 | [0005-guardrail-prompt-injection-defense.html](lessons/0005-guardrail-prompt-injection-defense.html) |
 | 6 | 2026-07-08 | Sandboxed Workspace Execution과 권한 스코핑 | [0006-sandboxed-workspace-execution-permission-scoping.html](lessons/0006-sandboxed-workspace-execution-permission-scoping.html) |
 | 7 | 2026-07-09 | Model Context Protocol(MCP) | [0007-model-context-protocol.html](lessons/0007-model-context-protocol.html) |
+| 8 | 2026-07-10 | Handoff와 Multi-Agent Coordination | [0008-handoff-multi-agent-coordination.html](lessons/0008-handoff-multi-agent-coordination.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Handoff와 Multi-Agent Coordination | orchestrator-worker, manager(agents-as-tools) vs handoff 패턴, 토큰 비용 구조(15x), multi-agent를 쓰지 말아야 할 때 |
 | 9 | Streaming과 Structured Output | SSE 스트리밍, fine-grained tool streaming, 지연시간 vs UX trade-off, structured output 설계 |
 | 10 | Telemetry, Tracing, Observability | OTel GenAI semantic conventions, span 계층, 분산 트레이싱, 벤더별 관측성 통합 |
 | 11 | Evaluation Harness와 Replay | task/trial/transcript/grader, trajectory 평가, LLM-as-judge 캘리브레이션, replay/regression 테스트 |
@@ -26,7 +26,7 @@
 
 ## 현재 학습 위치
 
-**Day 7 완료** — 다음: Day 8 — Handoff와 Multi-Agent Coordination
+**Day 8 완료** — 다음: Day 9 — Streaming과 Structured Output
 
 ## 습득한 핵심 개념
 
@@ -66,7 +66,11 @@
 - [x] 거버넌스: AAIF/Linux Foundation 이관(2025-12-09 완료), Extensions Framework, MCP Apps·Tasks 지위(코어 승격 아님) (Day 7)
 - [x] MCP 보안 위협 4패턴: tool poisoning, rug pull, confused deputy, toxic agent flow (Day 7)
 - [x] OWASP MCP Top 10 (MCP01~MCP10) (Day 7)
-- [ ] Handoff, multi-agent coordination (예정 Day 8)
+- [x] Orchestrator-worker 패턴(lead+3-5 subagent 2단계 병렬화, artifact 패턴), 90.2% 성능 향상/15x 토큰 비용/토큰이 성능 변동 80% 설명 (Day 8)
+- [x] Multi-agent 적합/부적합 조건(병렬화 가능성 vs 공유 context·상호 의존성, 코딩 반례) (Day 8)
+- [x] Handoff(제어권 완전 이전, transfer_to_&lt;agent&gt;, input_filter/on_handoff) vs agents-as-tools(manager, 제어권 유지) 구분 (Day 8)
+- [x] Claude Agent SDK subagent 격리 context, subagent sprawl, 서브에이전트 중첩 스폰 금지 (Day 8)
+- [x] Cognition "Don't Build Multi-Agents"(context sharing 부족, conflicting decision) → 후속 "Multi-Agents: What's Actually Working"(map-reduce-and-manage, 단일 쓰기 지점 원칙, swarm/GroupChat은 여전히 비권장) (Day 8)
 - [ ] Streaming, structured output (예정 Day 9)
 - [ ] Telemetry/Tracing/Observability (예정 Day 10)
 - [ ] Evaluation harness, replay (예정 Day 11)
