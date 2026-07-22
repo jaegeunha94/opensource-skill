@@ -20,23 +20,24 @@
 | 8 | 2026-07-07 | 네트워크 보안(방화벽/NAT/VPN/Zero Trust) | `lessons/interview-day-08-firewall-nat-vpn-zerotrust.html` |
 | 9 | 2026-07-08 | 네트워크 성능 최적화(RTT/keep-alive/CDN/HTTP/2·3) | `lessons/interview-day-09-network-performance-optimization.html` |
 | 10 | 2026-07-09 | 종합 모의 면접: 네트워크 장애 RCA | `lessons/interview-day-10-comprehensive-mock-rca.html` |
+| 11 | 2026-07-22 | 글로벌 트래픽 분산과 장애 격리 아키텍처 설계 | [interview-day-11-global-traffic-and-blast-radius-design.html](lessons/interview-day-11-global-traffic-and-blast-radius-design.html) |
 
 ## 다음 예정 학습
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 11 | 글로벌 트래픽 분산과 장애 격리 아키텍처 설계 | "여러 리전에 서비스를 배포한다면 트래픽 라우팅, 장애 격리(blast radius 축소), 데이터 일관성을 네트워크 관점에서 어떻게 설계하시겠습니까?" | 아키텍처 의사결정, 일관성/가용성 trade-off, 리전 장애 대응 설계 |
+| 12 | 컨테이너/쿠버네티스 네트워킹 — CNI, Service, Ingress 트래픽 경로 | "쿠버네티스 클러스터 내부에서 Pod 간 통신이 간헐적으로 실패합니다. 네트워크 관점에서 CNI, kube-proxy, Service, Ingress 중 어디부터 의심하시겠습니까?" | 컨테이너 네트워킹 내부 동작 이해, 계층별 장애 격리, 관측성 연결 |
 
 ## 현재 학습 위치
 
-**Day 10 완료** — 신규 인터뷰 커리큘럼(Day 1~10) 전체 완료. 다음은 Day 11, 글로벌 트래픽 분산/장애 격리 아키텍처 설계로 심화 예정.
+**Day 11 완료** — 신규 인터뷰 커리큘럼(Day 1~11) 완료. 다음은 Day 12, 컨테이너/쿠버네티스 네트워킹(CNI/Service/Ingress)으로 심화 예정.
 
 ## Interview 답변 체크리스트
 
-- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1~10 적용)
-- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1~10 적용)
-- [x] 실제 운영 상황과 연결한다. (Day 1~10 적용)
-- [x] 답변 순서를 단계적으로 제시한다. (Day 1~10 적용)
-- [x] trade-off를 최소 2개 이상 비교한다. (Day 1~10 적용)
-- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1~10 적용)
-- [x] follow-up 질문까지 대비한다. (Day 1~10 적용)
+- [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1~11 적용)
+- [x] 왜 면접에서 이 질문을 묻는지 설명한다. (Day 1~11 적용)
+- [x] 실제 운영 상황과 연결한다. (Day 1~11 적용)
+- [x] 답변 순서를 단계적으로 제시한다. (Day 1~11 적용)
+- [x] trade-off를 최소 2개 이상 비교한다. (Day 1~11 적용)
+- [x] 흔한 오해와 약한 답변을 구분한다. (Day 1~11 적용)
+- [x] follow-up 질문까지 대비한다. (Day 1~11 적용)
