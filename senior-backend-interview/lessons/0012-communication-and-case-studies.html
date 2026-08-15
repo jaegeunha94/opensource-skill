@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day 12 — 커뮤니케이션 &amp; 케이스 스터디</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #232635;
+      --border: #2e3248;
+      --text: #e2e4f0;
+      --muted: #8b8fa8;
+      --accent: #7c83f5;
+      --accent2: #56cfb2;
+      --warn: #f5a623;
+      --danger: #f56060;
+      --success: #56cf8a;
+      --code-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    .header {
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .day-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      margin-bottom: 0.75rem;
+    }
+    h1 { font-size: 1.9rem; font-weight: 700; line-height: 1.3; }
+    .subtitle { color: var(--muted); margin-top: 0.4rem; font-size: 0.95rem; }
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      color: var(--accent2);
+      font-size: 0.72rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      margin: 0.2rem 0.1rem;
+      border: 1px solid var(--border);
+    }
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+      padding-left: 0.75rem;
+      margin-bottom: 1.2rem;
+    }
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 0.6rem;
+      margin-top: 1.2rem;
+    }
+    h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--warn);
+      margin-bottom: 0.4rem;
+      margin-top: 1rem;
+    }
+    p { margin-bottom: 0.8rem; }
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.8rem; }
+    li { margin-bottom: 0.3rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .card.question { border-left: 4px solid var(--warn); }
+    .card.followup  { border-left: 4px solid var(--accent); }
+    .card.good      { border-left: 4px solid var(--success); }
+    .card.weak      { border-left: 4px solid var(--danger); }
+    .card.rubric    { border-left: 4px solid var(--accent2); }
+    .card.info      { border-left: 4px solid var(--muted); }
+
+    .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .label.q { color: var(--warn); }
+    .label.f { color: var(--accent); }
+    .label.g { color: var(--success); }
+    .label.w { color: var(--danger); }
+    .label.r { color: var(--accent2); }
+    .label.i { color: var(--muted); }
+
+    .quote {
+      font-style: italic;
+      color: var(--text);
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.88rem;
+      color: var(--accent2);
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .step-body { flex: 1; }
+
+    .rubric-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rubric-item:last-child { border-bottom: none; }
+    .rubric-score { display: flex; gap: 0.3rem; }
+    .dot {
+      width: 1.1rem;
+      height: 1.1rem;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+    }
+    .dot.filled { background: var(--accent2); border-color: var(--accent2); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--accent2);
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    td {
+      padding: 0.55rem 0.8rem;
+      border: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--surface); }
+
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 2rem;
+    }
+    .toc ol { margin-bottom: 0; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    .highlight-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .nav-bottom {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .nav-bottom a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .nav-bottom a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ───────────── HEADER ───────────── -->
+  <div class="header">
+    <div class="day-badge">DAY 12</div>
+    <h1>커뮤니케이션 &amp; 케이스 스터디</h1>
+    <p class="subtitle">10년차 이상 백엔드 엔지니어 Interview 대비 — 실무 판단력 중심</p>
+    <div style="margin-top:0.8rem;">
+      <span class="tag">기술-비즈니스 번역</span>
+      <span class="tag">갈등 해결</span>
+      <span class="tag">위기 커뮤니케이션</span>
+      <span class="tag">통합 케이스 스터디</span>
+    </div>
+  </div>
+
+  <!-- ───────────── TOC ───────────── -->
+  <div class="toc">
+    <p style="color:var(--muted);font-size:0.8rem;margin-bottom:0.6rem;">목차</p>
+    <ol>
+      <li><a href="#section-overview">오늘 레슨 개요</a></li>
+      <li><a href="#section-translate">기술-비즈니스 번역 — 왜 "정확한 설명"이 설득력을 갖지 못하는가</a></li>
+      <li><a href="#section-conflict">갈등 해결 — 기술적 이견을 조직 역량으로 바꾸는 중재</a></li>
+      <li><a href="#section-crisis">위기 커뮤니케이션 — 장애 중 신뢰를 지키는 정보 전달</a></li>
+      <li><a href="#section-case">통합 케이스 스터디 — Day 1~12를 하나의 시나리오로</a></li>
+      <li><a href="#section-rubric">자기 점검 Rubric</a></li>
+    </ol>
+  </div>
+
+  <!-- ───────────── 1. OVERVIEW ───────────── -->
+  <section id="section-overview">
+    <h2>1. 오늘 레슨 개요</h2>
+    <p>
+      지금까지의 레슨은 <strong>"무엇을 설계할 것인가"(Day 1~9)</strong>와 <strong>"어떻게 운영하고 이끌 것인가"(Day 10~11)</strong>를 다뤘습니다.
+      마지막 축인 커뮤니케이션은 <strong>그 판단을 코드를 모르는 사람에게도 신뢰를 잃지 않고 전달할 수 있는가</strong>를 묻습니다.
+      10년차 이상 면접에서 커뮤니케이션을 별도로 평가하는 이유는, 시니어 엔지니어의 결정은 대부분 <strong>혼자 내리는 것이 아니라 PM, 경영진, 다른 팀, 고객 지원팀과의 합의 위에서 실행</strong>되기 때문입니다.
+      아무리 기술적으로 옳은 판단이라도 <strong>상대가 이해하지 못하거나 신뢰하지 못하면 실행되지 않거나, 실행 도중 저항에 부딪힙니다.</strong>
+    </p>
+    <div class="highlight-box">
+      <strong>면접관이 실제로 보는 신호</strong>
+      <ul style="margin-top:0.5rem;">
+        <li>"기술적으로는 맞는데 설득이 안 됐습니다"라는 결과 보고 ↔ <strong>상대의 우선순위 언어(매출, 리스크, 일정)로 번역해 실제로 설득에 성공</strong>한 구체적 사례</li>
+        <li>"제가 옳다는 걸 증명했습니다"라는 승패 프레임 ↔ <strong>이견의 근본 원인을 찾아 양쪽 모두가 받아들일 수 있는 다음 행동</strong>으로 전환한 과정</li>
+        <li>장애 중 "복구 후에 보고했습니다" ↔ <strong>불확실한 상황에서도 정기적으로, 정직하게 정보를 갱신</strong>해 신뢰를 유지한 사례</li>
+        <li>단편적인 기술 지식 나열 ↔ <strong>여러 영역(설계·신뢰성·리딩·커뮤니케이션)의 판단을 하나의 실제 상황 안에서 연결</strong>해 설명하는 능력</li>
+      </ul>
+    </div>
+    <p>이 레슨은 <strong>기술-비즈니스 번역 → 갈등 해결 → 위기 커뮤니케이션 → 통합 케이스 스터디</strong> 순서로 진행합니다. 마지막 통합 케이스 스터디는 이 트랙 전체(Day 1~11)에서 배운 개념을 하나의 연결된 시나리오로 다시 불러옵니다.</p>
+  </section>
+
+  <!-- ───────────── 2. TRANSLATION ───────────── -->
+  <section id="section-translate">
+    <h2>2. 기술-비즈니스 번역 — 왜 "정확한 설명"이 설득력을 갖지 못하는가</h2>
+
+    <h3>배경 개념: 정확함과 설득력은 다른 축이다</h3>
+    <p>
+      엔지니어가 "레플리카 지연(replication lag)이 있어서 강한 일관성을 포기하고 최종 일관성(eventual consistency)을 택했습니다"라고 설명하면 기술적으로는 정확합니다.
+      하지만 PM이나 경영진에게 이 문장은 <strong>무엇이 왜 중요한지 전달하지 못합니다.</strong> 정확함은 <strong>"내가 이해하고 있다"</strong>를 증명하지만, 설득력은 <strong>"상대가 자신의 관점에서 왜 이게 맞는 선택인지 납득</strong>"할 때 생깁니다.
+      번역의 핵심은 용어를 쉬운 말로 바꾸는 것이 아니라, <strong>기술적 사실을 상대가 실제로 신경 쓰는 지표(매출, 이탈률, 규제 리스크, 팀 생산성)로 다시 표현</strong>하는 것입니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"제품 매니저가 '결제 API 응답이 왜 이렇게 느려요? 그냥 서버 스펙 올리면 안 되나요?'라고 묻습니다. 실제 원인은 N+1 쿼리와 동기 방식으로 호출되는 외부 사기 탐지(fraud detection) API 때문에 서버 스펙과 무관합니다. 어떻게 설명하시겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"서버 스펙을 올려도 소용없다"고 정정하는 데서 멈추는지, 아니면 <strong>PM이 실제로 원하는 것(왜 느린지, 언제 고쳐지는지, 지금 무엇을 할 수 있는지)에 맞춰 설명을 재구성</strong>하는지를 봅니다.</p>
+
+    <h4>번역 프레임워크 — 기술 사실을 상대의 언어로 매핑</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>기술적 사실</th>
+          <th>상대가 신경 쓰는 언어로 번역</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>N+1 쿼리, 인덱스 누락(Day 2)</td>
+          <td>"코드 변경만으로 해결 가능 — 인프라 비용 증가 없이 응답 속도를 개선할 수 있습니다"</td>
+        </tr>
+        <tr>
+          <td>동기 방식 외부 API 호출로 인한 지연(Day 6)</td>
+          <td>"외부 업체 응답 지연이 우리 서비스 지연으로 그대로 전이되는 구조 — 우리가 통제할 수 없는 리스크를 우리 SLA에 노출시키고 있습니다"</td>
+        </tr>
+        <tr>
+          <td>레플리케이션 지연, 최종 일관성 선택(Day 3, 4)</td>
+          <td>"결제 직후 새로고침하면 잔액이 잠깐 예전 값으로 보일 수 있음 — 대신 결제 자체는 훨씬 빠르고 안정적으로 처리됨. 사용자 이탈로 이어지는 지연을 줄이는 대가로, 수 초간의 표시 지연을 감수하는 선택"</td>
+        </tr>
+        <tr>
+          <td>기술 부채, 레거시 모듈(Day 11)</td>
+          <td>"이 모듈을 건드릴 때마다 버그 위험이 N배 높아짐 — 신규 기능 출시 일정이 늦어질 리스크로 직결"</td>
+        </tr>
+        <tr>
+          <td>보안 취약점(Day 8)</td>
+          <td>"규제 위반 시 과징금 리스크 + 데이터 유출 시 브랜드 신뢰 손상 — 단순 버그가 아니라 사업 연속성 리스크"</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>상대의 질문 뒤에 숨은 진짜 걱정을 먼저 확인합니다.</strong> "서버 스펙 올리면 안 되나요?"라는 질문은 사실 <strong>"이거 언제 고쳐지나요, 지금 뭘 할 수 있나요"</strong>가 진짜 궁금한 것일 가능성이 높습니다. 기술적으로 스펙 증설이 왜 틀린 해법인지부터 설명하면 상대는 방어당한다고 느낍니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>원인을 상대가 이미 아는 개념에 빗대어 설명합니다.</strong> "결제 요청 하나가 들어올 때마다 데이터베이스에 필요 이상으로 많은 질문(쿼리)을 반복해서 던지고 있어서, 서버를 더 사도 이 반복 자체는 줄지 않습니다"처럼 <strong>비유로 기술 개념의 본질만 전달</strong>합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>영향과 대안을 구체적 숫자와 일정으로 제시합니다.</strong> "이번 주 안에 쿼리 최적화만으로 응답 시간을 절반으로 줄일 수 있고, 외부 사기 탐지 호출을 비동기로 바꾸는 작업은 다음 스프린트에 들어가면 나머지도 개선됩니다"처럼 <strong>막연한 약속이 아니라 검증 가능한 계획</strong>을 제시합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>서버 스펙 증설이 틀린 이유가 아니라, 이번 문제에 맞지 않는 이유를 짧게 덧붙입니다.</strong> "스펙을 올리면 비용은 늘지만 반복되는 쿼리 자체는 그대로라 체감 개선이 크지 않을 가능성이 높습니다"처럼, <strong>상대의 제안을 무시하지 않고 왜 다른 접근이 더 효율적인지</strong>를 존중하는 톤으로 설명합니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"먼저 '언제쯤 나아질지, 지금 할 수 있는 게 있는지'가 궁금하신 거죠?라고 확인합니다. 그다음 '결제 요청 하나마다 필요 이상으로 데이터베이스에 반복 질문을 던지고 있어서, 서버를 더 사도 이 반복 자체는 줄지 않는 구조입니다'라고 원인을 비유로 설명합니다. 이어서 '이번 주 안에 반복되는 질문을 줄이는 작업만으로 응답 시간을 절반 가까이 줄일 수 있고, 외부 사기 탐지 업체 호출을 비동기로 바꾸는 작업까지 다음 스프린트에 들어가면 나머지도 개선됩니다'처럼 구체적 숫자와 일정을 제시합니다. 마지막으로 '서버 스펙을 올리는 것도 방법이 될 수 있지만, 지금 병목은 반복 질문 쪽이라 비용 대비 효과가 크지 않을 가능성이 높아서 이 방향을 먼저 시도해보고 싶습니다'라고 상대의 제안을 존중하면서 방향을 제시합니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"서버 스펙을 올려도 소용없습니다. N+1 쿼리 문제와 동기 방식 외부 API 호출 때문에 느린 거라 인프라 문제가 아니라 코드 문제입니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 기술적으로는 정확하지만 <strong>PM이 실제로 궁금해하는 "언제, 무엇을"에 답하지 않고</strong>, "당신의 제안은 틀렸다"는 톤으로 시작해 방어적 반응을 유발하기 쉽습니다. 또한 용어(N+1, 동기 호출)를 그대로 사용해 상대가 판단에 참여할 수 없게 만듭니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"위 설명대로 잘 전달했는데도, PM이 '그래도 일단 서버 스펙부터 올려서 임시로 막고 나머지는 나중에 하죠'라고 계속 고집합니다. 어떻게 대응하시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 상대가 기술적 설명을 이해하고도 다른 결론을 낸다면, <strong>남은 이견은 기술이 아니라 리스크에 대한 판단 차이일 가능성</strong>이 높습니다.
+        1) 먼저 <strong>왜 그렇게 판단하는지 물어봅니다</strong> — "지금 바로 눈에 보이는 조치를 취하고 싶으신 건가요?"처럼 PM의 진짜 동기(경영진에게 즉시 보고할 대응책이 필요함 등)를 확인합니다.
+        2) 서버 스펙 증설이 <strong>"완전히 무의미"한 것은 아니라면(예: 일부 병목은 실제로 CPU 자원 부족과 관련) 그 부분만 인정</strong>하고, 어느 정도까지 도움이 되고 어디서부터는 효과가 없는지 경계를 명확히 합니다.
+        3) <strong>두 조치가 상호 배타적이지 않다면 병행</strong>을 제안합니다 — "스펙을 조금 올려서 당장의 체감을 완화하는 동시에, 이번 주 안에 근본 원인도 고치겠습니다"처럼 <strong>PM의 심리적 필요(즉각적 조치)와 기술적으로 옳은 방향을 모두 만족</strong>시키는 절충안을 찾습니다.
+        4) 만약 스펙 증설이 비용 대비 효과가 거의 없는데도 계속 고집한다면, <strong>비용을 명시적으로 언급</strong>합니다 — "월 비용이 N% 늘어나는데 체감 개선은 크지 않을 것으로 예상됩니다. 그래도 진행할까요?"처럼 <strong>결정의 트레이드오프를 상대가 최종 책임지고 선택</strong>하게 만들되, 그 선택의 대가를 명확히 보여줍니다.
+        핵심은 <strong>"내 설명이 맞았는데 상대가 안 들었다"는 프레임에서 벗어나, 남은 이견의 실제 원인(심리적 필요, 리스크 감수 성향)을 파악하고 절충 가능한 지점을 찾는 것</strong>입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 3. CONFLICT ───────────── -->
+  <section id="section-conflict">
+    <h2>3. 갈등 해결 — 기술적 이견을 조직 역량으로 바꾸는 중재</h2>
+
+    <h3>배경 개념: 모든 갈등이 같은 원인에서 오지 않는다</h3>
+    <p>
+      시니어 엔지니어 두 명이 언쟁을 벌일 때, 표면적으로는 "REST냐 gRPC냐" 같은 기술 논쟁처럼 보여도 실제 원인은 <strong>세 가지 서로 다른 층에서 올 수 있습니다</strong> —
+      순수한 <strong>기술적 trade-off에 대한 이견</strong>(정보와 판단 기준의 차이), <strong>우선순위 경쟁</strong>(각자 담당한 영역의 이해관계 충돌), 또는 <strong>과거의 개인적 마찰</strong>이 기술 논쟁의 옷을 입고 재발하는 경우입니다.
+      원인을 구분하지 않고 "기술적으로 어느 쪽이 맞나"만 판정하면, <strong>진짜 원인(우선순위 충돌이나 신뢰 문제)은 해결되지 않은 채 다음 논쟁에서 똑같이 반복</strong>됩니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"두 명의 시니어 엔지니어가 결제 시스템의 동기화 방식을 두고 팀 회의에서 언성을 높이며 언쟁했습니다. 한 명은 강한 일관성을, 다른 한 명은 성능을 위한 최종 일관성을 주장합니다. 회의 분위기가 냉랭해졌습니다. 팀 리드로서 어떻게 개입하시겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>"제가 기술적으로 어느 쪽이 맞는지 판단해서 결정해줍니다"라는 심판형 답변에서 멈추는지, 아니면 <strong>갈등의 층위를 구분하고, 감정이 격해진 그 순간과 근본 원인 해결을 분리</strong>해서 다루는지를 봅니다.</p>
+
+    <h4>갈등의 세 가지 층위</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>층위</th>
+          <th>신호</th>
+          <th>개입 방향</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>순수 기술적 이견</strong></td>
+          <td>서로 다른 데이터나 경험에 근거해 다른 결론에 도달함, 논쟁이 사실과 수치로 진행됨</td>
+          <td>RFC로 전환해 요구사항을 구체화하고 데이터로 좁힘(Day 11 연결)</td>
+        </tr>
+        <tr>
+          <td><strong>우선순위/이해관계 경쟁</strong></td>
+          <td>"내 쪽 서비스가 더 중요하다"는 식의 소유권 언어가 섞임, 상대 의견에 대한 반박이 아니라 자기 영역 방어가 목적</td>
+          <td>공통 목표(사용자/비즈니스 임팩트)로 프레임을 재설정하고, 결정 권한자와 기준을 명확히 함</td>
+        </tr>
+        <tr>
+          <td><strong>개인적 마찰의 재발</strong></td>
+          <td>과거에도 비슷한 패턴으로 부딪힌 적이 있음, 논쟁의 강도가 기술적 쟁점의 크기에 비해 과함</td>
+          <td>공개 회의에서 해결하려 하지 말고, 1:1로 원인을 따로 다룸</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>회의 중이라면 먼저 논쟁을 진정시키는 것이 우선입니다.</strong> "둘 다 일리 있는 지점이 있는 것 같습니다. 지금 여기서 결론 내리기보다, 각자의 근거를 정리해서 다시 논의하면 어떨까요?"처럼 <strong>그 자리에서 승패를 가리지 않고 논의를 일단 분리</strong>합니다. 공개적인 자리에서 감정이 격해진 상태로 판정을 내리면 진 쪽이 승복하지 못하고 이후로도 앙금이 남습니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>각자와 별도로 짧게 대화하며 갈등의 층위를 진단합니다.</strong> 순수한 데이터 이견인지, 각자 담당한 영역(결제 정확성 vs 응답 속도 SLA)에 대한 책임감에서 오는 것인지, 혹은 예전부터 있던 마찰의 연장인지 확인합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>순수 기술 이견이라면 RFC 형식으로 전환해 감정을 데이터로 대체합니다.</strong> "결제 정확성이 1초라도 늦게 반영되면 실제로 어떤 문제가 생기는지"와 "현재 트래픽에서 강한 일관성을 유지하면 응답 시간이 몇 배 늘어나는지"를 각자 조사해오게 하면, 논쟁이 <strong>"누가 맞다"에서 "무엇이 사실인가"</strong>로 옮겨갑니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>우선순위 경쟁이 원인이라면, 결정 권한과 기준을 명확히 합니다.</strong> "이 결정은 결제 정확성 SLA를 우선하는 방향으로 가되, 성능 저하가 일정 임계치를 넘으면 재검토한다"처럼 <strong>누가 최종 결정하고 어떤 조건에서 재논의하는지</strong>를 명시해 소유권 다툼 자체를 없앱니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>개인적 마찰이 반복되는 패턴이라면, 기술 논쟁 자리가 아니라 1:1에서 따로 다룹니다.</strong> 공개 회의에서 "두 분이 예전부터 자주 부딪히시는 것 같은데요"라고 지적하면 둘 다 방어적이 됩니다. 대신 각자와 개별적으로 신뢰 회복을 위한 대화를 진행합니다.
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"회의 중이라면 먼저 '둘 다 일리 있는 지점이 있는 것 같으니, 지금 결론 내리기보다 각자 근거를 정리해서 다시 논의하죠'라고 논쟁을 일단 진정시킵니다. 이후 각자와 짧게 따로 대화하며 이게 순수한 데이터 이견인지, 각자 담당 영역에 대한 책임감에서 오는 우선순위 경쟁인지 파악합니다. 만약 데이터 이견이라면 '결제 정확성이 1초 늦게 반영되면 실제로 어떤 문제가 생기는지'와 '강한 일관성 유지 시 응답 시간이 얼마나 늘어나는지'를 각자 조사해 RFC로 정리하게 해서, 논쟁을 누가 맞냐가 아니라 데이터로 옮깁니다. 만약 각자 담당 영역에 대한 소유권 다툼이 근본 원인이라면, 이번 결정은 결제 정확성 SLA를 우선하되 성능 저하가 특정 임계치를 넘으면 재검토한다는 기준을 명확히 해서 소유권 다툼 자체를 없앱니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"제가 기술적으로 어느 쪽이 더 맞는지 판단해서 그 자리에서 결정을 내려주고 회의를 마무리합니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: 갈등의 실제 원인이 데이터가 아니라 우선순위 경쟁이나 개인적 마찰일 경우, <strong>기술적 판정만으로는 근본 원인이 해결되지 않고</strong> 진 쪽은 승복하지 못한 채 다음 논쟁에서 똑같은 패턴이 반복됩니다. 또한 공개 회의에서 즉석으로 승패를 가르면 앙금이 남기 쉽습니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"RFC로 전환해 데이터를 근거로 결정을 내렸는데, 결정에서 진 쪽 엔지니어가 겉으로는 동의했지만 이후 관련 작업에서 은근히 협조하지 않고 진행이 계속 늦어집니다. 어떻게 대응하시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> 겉으로 동의했지만 행동으로 저항하는 것은 <strong>"disagree and commit"이 형식적으로만 이뤄지고 진짜 승복은 없었다는 신호</strong>입니다.
+        1) 먼저 <strong>지연이 의도적 비협조인지, 실제로 그 결정에 대한 확신이 부족해 우선순위를 뒤로 미루고 있는 것인지</strong> 구분해야 합니다 — 1:1에서 "이 작업이 계속 밀리는 이유가 있나요?"라고 직접 묻습니다.
+        2) 만약 <strong>결정 자체에 대한 확신 부족이 원인</strong>이라면, RFC에서 다뤄지지 않았던 우려가 남아있을 수 있습니다 — "그때 논의에서 충분히 다뤄지지 않은 부분이 있나요?"라고 물어 <strong>새로운 정보가 있다면 다시 열어줄 여지</strong>를 보여주되, 이미 다뤄진 내용의 반복이라면 결정이 바뀌지 않음을 명확히 합니다.
+        3) 명백히 <strong>의도적 비협조라면, 이는 기술 문제가 아니라 신뢰와 태도의 문제</strong>로 전환해 다뤄야 합니다 — "결정에 동의하지 않을 수 있지만, 동의하지 않는 것과 작업을 지연시키는 것은 다른 문제입니다"처럼 <strong>기대하는 행동을 명확하고 직접적으로 전달</strong>합니다.
+        4) 이런 패턴이 반복된다면, <strong>"disagree and commit" 원칙 자체를 팀 차원에서 다시 합의</strong>해야 할 수도 있습니다 — 결정에 반대한 사람이 실행 단계에서 무엇을 해야 하는지가 문화적으로 명확하지 않다면, 이런 일이 계속 반복됩니다.
+        핵심은 <strong>형식적 동의와 실질적 승복을 구분</strong>하고, 저항의 원인이 남은 기술적 확신 부족인지 신뢰·태도 문제인지에 따라 완전히 다른 방식으로 대응해야 한다는 것입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 4. CRISIS COMMUNICATION ───────────── -->
+  <section id="section-crisis">
+    <h2>4. 위기 커뮤니케이션 — 장애 중 신뢰를 지키는 정보 전달</h2>
+
+    <h3>배경 개념: 침묵보다 위험한 것은 부정확한 확신</h3>
+    <p>
+      장애 대응 중(Day 7, Day 9와 직접 연결) 엔지니어는 두 가지 일을 동시에 요구받습니다 — <strong>실제 복구 작업</strong>과 <strong>계속 밀려오는 "언제 끝나요?" 질문에 대한 응대</strong>입니다.
+      두 역할을 한 사람이 동시에 하면 둘 다 부실해집니다. 더 중요한 것은, <strong>정보가 없다고 침묵하는 것보다, 확실하지 않은 것을 확실한 것처럼 말하는 것이 신뢰를 더 크게 깎는다</strong>는 점입니다.
+      "10분 내로 복구됩니다"라고 말했다가 넘기면, 다음부터는 어떤 ETA를 말해도 신뢰받지 못합니다.
+    </p>
+
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">"심각한 프로덕션 장애가 발생했습니다. 원인이 아직 명확하지 않은 상태에서 경영진과 고객 지원팀이 공용 채널에 계속 '언제 복구되나요?'라고 묻습니다. 복구 작업과 소통을 동시에 하기 어려운 상황입니다. 어떻게 하시겠습니까?"</p>
+    </div>
+
+    <h4>면접관이 보는 신호</h4>
+    <p>복구에만 집중하며 소통을 미루는지, 아니면 <strong>역할을 분리하고, 불확실한 상황에서도 정직하고 규칙적인 업데이트 구조</strong>를 만드는지를 봅니다.</p>
+
+    <h4>위기 커뮤니케이션의 4원칙</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>원칙</th>
+          <th>구체적 실천</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>역할 분리</strong></td>
+          <td>복구 담당(Incident Commander/엔지니어)과 소통 담당(Communications Lead)을 별도로 지정 — 한 사람이 둘 다 하면 둘 다 늦어짐</td>
+        </tr>
+        <tr>
+          <td><strong>정기적 케이던스</strong></td>
+          <td>"업데이트가 있을 때"가 아니라 "15분마다" 같은 고정 주기로 업데이트 — 진전이 없어도 "아직 원인 조사 중"이라는 업데이트 자체가 신뢰를 유지</td>
+        </tr>
+        <tr>
+          <td><strong>불확실성의 정직한 표현</strong></td>
+          <td>확정 ETA 대신 "현재 두 가지 가설을 검증 중이며, 30분 내 원인 특정 여부를 다시 알리겠습니다"처럼 <strong>확신의 정도를 있는 그대로</strong> 전달</td>
+        </tr>
+        <tr>
+          <td><strong>청중별 메시지 분리</strong></td>
+          <td>경영진에게는 비즈니스 영향(매출 손실 규모, 예상 지속 시간)을, 고객 지원팀에게는 고객에게 어떻게 안내할지(상태 페이지 문구)를 각각 다르게 전달</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>결정 순서</h4>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>즉시 복구 담당과 소통 담당을 분리합니다.</strong> 본인이나 다른 엔지니어가 원인 조사에 집중하는 동안, 별도의 사람(또는 본인이 명시적으로 시간을 나눠)이 공용 채널의 업데이트를 전담합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>첫 업데이트에서 케이던스를 먼저 약속합니다.</strong> "현재 원인을 조사 중이며, 진전이 있든 없든 15분마다 이 채널에 업데이트하겠습니다"처럼 <strong>다음 정보가 언제 오는지</strong>를 먼저 알려, 그 사이 반복되는 질문 자체를 줄입니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>모르는 것은 모른다고 명확히 말하되, 무엇을 하고 있는지는 구체적으로 전달합니다.</strong> "아직 근본 원인을 모릅니다. 다만 두 가지 가설(최근 배포, 외부 결제 게이트웨이 장애)을 동시에 검증 중이며, 다음 업데이트 때 어느 쪽인지 좁혀서 알려드리겠습니다."
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>청중에 따라 같은 정보를 다르게 포장합니다.</strong> 경영진에게는 "현재 결제 실패율 12%, 시간당 예상 매출 손실 약 X"처럼 <strong>비즈니스 임팩트</strong>를, 고객 지원팀에게는 "고객에게는 '일시적 오류로 재시도 권장' 정도로만 안내해달라"처럼 <strong>실행 가능한 지침</strong>을 전달합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>복구 후에도 소통을 마무리합니다.</strong> "복구 완료. 영향 범위는 X, 근본 원인은 Y로 추정되며 상세 포스트모템은 48시간 내 공유하겠습니다"처럼 <strong>복구 시점에 정보 흐름을 끊지 않고 다음 단계(포스트모템)를 예고</strong>합니다(Day 7의 블레임리스 포스트모템과 연결).
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card good">
+        <div class="label g">강한 답변</div>
+        <p>"먼저 저는 원인 조사에 집중하고, 다른 팀원 한 명에게 공용 채널 업데이트를 전담시켜 역할을 분리합니다. 첫 업데이트에서 '현재 원인을 조사 중이며 진전이 있든 없든 15분마다 업데이트하겠습니다'라고 케이던스를 먼저 약속해, 그 사이 반복되는 질문을 줄입니다. 원인을 모르는 시점에는 모른다고 명확히 말하되 '최근 배포와 외부 결제 게이트웨이 장애 두 가지 가설을 동시에 검증 중'이라고 구체적으로 무엇을 하고 있는지는 전달합니다. 경영진에게는 결제 실패율과 예상 매출 손실 같은 비즈니스 수치를, 고객 지원팀에는 고객에게 안내할 문구를 각각 따로 전달합니다. 복구 후에도 영향 범위와 추정 원인을 바로 공유하고, 상세 포스트모템은 48시간 내 공유하겠다고 예고해 정보 흐름을 끊지 않습니다."</p>
+      </div>
+      <div class="card weak">
+        <div class="label w">약한 답변</div>
+        <p>"지금은 복구가 우선이니 일단 원인 파악에 집중하고, 복구가 끝나면 무슨 일이 있었는지 정리해서 공유합니다."</p>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-top:-0.5rem;">
+      약한 답변이 약한 이유: "복구가 우선"이라는 판단 자체는 맞지만, <strong>그 사이 침묵이 길어지면 경영진과 고객 지원팀은 정보 부족으로 각자 추측성 대응</strong>(예: 고객에게 잘못된 안내)을 하게 됩니다. 역할 분리와 정기적 케이던스 없이는 복구 담당자가 계속 질문에 끌려다니며 정작 복구 자체가 늦어질 위험도 있습니다.
+    </p>
+
+    <div class="card followup">
+      <div class="label f">Senior Follow-up</div>
+      <p class="quote">"'30분 내로 복구 예상'이라고 업데이트했는데, 30분이 지나도 복구되지 않고 있습니다. 다음 업데이트를 어떻게 하시겠습니까?"</p>
+      <p style="margin-top:0.8rem;font-size:0.9rem;">
+        <strong>모범 추론:</strong> ETA를 넘긴 상황은 <strong>신뢰가 가장 빠르게 깎이는 순간</strong>이므로, 다음 업데이트의 톤과 내용이 중요합니다.
+        1) <strong>지연 사실을 먼저, 명확하게 인정</strong>합니다 — "안내드린 30분을 넘겼습니다. 죄송합니다"처럼 <strong>변명보다 인정을 먼저</strong> 합니다. 지연 사실을 숨기거나 뭉개면 다음 ETA도 신뢰받지 못합니다.
+        2) <strong>왜 예상이 빗나갔는지 간단히 설명</strong>합니다 — "처음 가설이었던 배포 롤백으로는 해결되지 않아, 지금은 두 번째 가설인 커넥션 풀 고갈을 조사 중입니다"처럼 <strong>예측 실패의 이유를 투명하게</strong> 밝힙니다.
+        3) 이번에는 <strong>더 보수적인 ETA를 제시하거나, 아예 확정 ETA 대신 다음 체크포인트만 약속</strong>합니다 — "정확한 ETA를 다시 드리기보다, 15분 뒤에 진행 상황을 다시 업데이트하겠습니다"처럼 <strong>같은 실수(빗나가는 확정 시간 제시)를 반복하지 않도록 소통 방식 자체를 조정</strong>합니다.
+        4) 지연이 길어질수록 <strong>에스컬레이션(추가 인력 투입, 벤더 지원 요청)도 함께 언급</strong>해, 단순히 기다리는 것이 아니라 <strong>상황을 타개하기 위한 추가 조치가 진행 중</strong>임을 보여줍니다.
+        핵심은 <strong>빗나간 예측 자체보다, 그것을 다루는 태도(인정의 신속함, 투명한 이유 설명, 다음 예측 방식의 조정)가 신뢰를 좌우</strong>한다는 것입니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- ───────────── 5. CASE STUDY ───────────── -->
+  <section id="section-case">
+    <h2>5. 통합 케이스 스터디 — Day 1~12를 하나의 시나리오로</h2>
+    <div class="card question">
+      <div class="label q">면접 질문</div>
+      <p class="quote">
+        "당신은 결제 플랫폼 팀의 시니어 백엔드 엔지니어입니다. 블랙프라이데이 3주 전, 관측성 대시보드(Day 9)에서 결제 API의 p99 지연 시간이 지난 2주간 서서히 증가하고 결제 실패율도 미세하게 오르고 있다는 것을 발견했습니다.
+        원인은 아직 명확하지 않습니다. 최근 배포 이력을 보니 두 팀이 각각 다른 기능을 배포했고, 두 팀 모두 자기 배포와는 무관하다고 주장합니다. PM은 예정된 대규모 프로모션 기능 출시를 이 문제 때문에 미루고 싶어하지 않습니다.
+        시니어 엔지니어로서 이 상황을 어떻게 이끌어가시겠습니까?"
+      </p>
+    </div>
+    <p>이 시나리오는 트랙 전체에서 배운 <strong>관측성 진단(Day 9) → 신뢰성 판단(Day 3, 7) → 팀 간 갈등 조정(Day 12) → 비즈니스 언어 번역(Day 12) → 기술 리딩(Day 11)</strong>을 하나의 흐름으로 요구합니다.</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>먼저 데이터로 원인 후보를 좁힙니다(Day 9 연결).</strong> p99 지연 증가가 배포 시점과 정확히 일치하는지 타임라인을 대조하고, 분산 트레이싱으로 어느 구간(DB 쿼리, 외부 API 호출, 애플리케이션 코드)에서 지연이 늘었는지 특정합니다. "무엇이 원인인지 모른다"를 "지연이 결제 검증 단계의 특정 외부 호출에서 발생하고 있다"처럼 <strong>추측이 아니라 관측 데이터로 좁힌 사실</strong>로 바꿉니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>두 팀이 서로 책임을 미루는 상황은 갈등의 층위를 진단합니다(Day 12 연결).</strong> 각 팀과 개별적으로 대화해, 이것이 데이터 부족으로 인한 순수한 불확실성인지, 아니면 "우리 배포 때문이라고 인정하면 우리 팀 지표가 나빠진다"는 방어적 태도(우선순위/평판 경쟁)인지 구분합니다. 트레이싱 데이터가 특정 구간을 가리킨다면, <strong>"누구 잘못인가"가 아니라 "이 구간을 어떻게 함께 고칠 것인가"</strong>로 프레임을 전환해 방어적 태도를 줄입니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>블랙프라이데이까지 남은 3주를 고려해 신뢰성 리스크를 정량화합니다(Day 3, 7 연결).</strong> "현재 추세로 지연이 계속 증가하면 블랙프라이데이 피크 트래픽(평소 대비 10배)에서 결제 실패율이 몇 %까지 오를 것으로 추정되는지"를 계산합니다. 이는 막연한 불안이 아니라 <strong>용량 추정에 기반한 구체적 리스크</strong>입니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <strong>PM에게는 이 리스크를 비즈니스 언어로 번역해 전달합니다(Day 12 연결).</strong> "지금 원인을 고치지 않으면, 블랙프라이데이 피크 시점에 결제 실패율이 현재의 몇 배로 치솟아 프로모션 매출의 상당 부분을 놓칠 위험이 있습니다. 반면 이 문제를 고치는 작업은 프로모션 기능 자체를 늦추는 것이 아니라, 별도로 병행할 수 있는 작업입니다"처럼 <strong>"기능이냐 안정성이냐"라는 잘못된 이분법을 깨고 병행 가능함을 보여줍니다.</strong>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <strong>기술 리딩 관점에서 두 팀의 작업을 조율합니다(Day 11 연결).</strong> 원인이 명확해진 구간을 담당하는 팀에게 정답을 지시하기보다, "이 구간에서 지연이 트래픽에 비례해 늘어나는 이유가 뭘까요?"처럼 질문으로 스스로 근본 원인(예: 커넥션 풀 크기가 고정값이라 트래픽 증가에 비례해 대기 시간이 늘어남)을 찾도록 유도해, 이번 대응이 <strong>다음에도 반복될 근본적인 확장성 개선</strong>으로 이어지게 합니다.
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <strong>블랙프라이데이 당일에 대비해 위기 커뮤니케이션 체계를 미리 준비합니다(Day 12 연결).</strong> 원인을 고치더라도 예상치 못한 다른 문제가 생길 가능성에 대비해, 당일 인시던트 대응 역할(복구/소통 분리), 업데이트 채널과 케이던스, 에스컬레이션 경로를 사전에 팀 전체와 합의해둡니다.
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <strong>이 케이스에서 인터뷰어가 확인하려는 것</strong>: 애매한 신호를 <strong>관측 데이터로 구체화</strong>하는 능력, 팀 간 책임 공방을 <strong>"누구 잘못인가"가 아니라 "무엇을 함께 고칠 것인가"</strong>로 전환하는 중재력, 리스크를 <strong>추정 가능한 숫자로 정량화</strong>해 비즈니스 우선순위 경쟁에서 밀리지 않게 만드는 번역력, 문제 해결을 <strong>팀의 역량 성장으로 연결</strong>하는 리더십, 그리고 <strong>다음 위기에 대비하는 사전 준비</strong>까지 — 이 여섯 단계 중 하나라도 빠지면 "일단 원인 찾아서 고쳤습니다"라는 단편적 답변으로 들립니다.
+    </div>
+  </section>
+
+  <!-- ───────────── 6. RUBRIC ───────────── -->
+  <section id="section-rubric">
+    <h2>6. 자기 점검 Rubric</h2>
+    <p>각 항목을 솔직하게 채점하세요. ●●●=잘 설명할 수 있음, ●●○=부분적으로 앎, ●○○=어렴풋이 앎, ○○○=모름</p>
+
+    <div class="card rubric">
+      <div class="rubric-item">
+        <span>기술적 사실을 상대가 신경 쓰는 지표(매출, 리스크, 일정, 규제)로 번역하는 프레임워크를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>상대가 기술 설명을 이해한 뒤에도 다른 결론을 고집할 때, 남은 이견의 실제 원인을 진단하는 방법을 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>갈등의 세 가지 층위(기술 이견/우선순위 경쟁/개인적 마찰)를 구분하고 각각 다른 방식으로 개입하는 이유를 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>형식적 동의와 실질적 승복의 차이, 겉으로 동의했지만 행동으로 저항하는 상황에 대응하는 방법을 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>위기 커뮤니케이션의 4원칙(역할 분리, 정기적 케이던스, 불확실성의 정직한 표현, 청중별 메시지 분리)을 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>제시했던 복구 ETA를 넘겼을 때, 신뢰를 최대한 지키며 다음 업데이트를 전달하는 방법을 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+      <div class="rubric-item">
+        <span>통합 케이스 스터디의 6단계(관측 데이터로 구체화 → 갈등 진단 → 리스크 정량화 → 비즈니스 번역 → 리딩 → 사전 준비)를 스스로 재구성해 설명할 수 있다</span>
+        <div class="rubric-score"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>
+    </div>
+
+    <h3>점수 해석</h3>
+    <ul>
+      <li><strong>6~7개 ●●●</strong>: 커뮤니케이션 영역 시니어 수준. 트랙 전체(Day 1~12)를 통합 모의 인터뷰로 복습해보세요.</li>
+      <li><strong>3~5개 ●●●</strong>: 핵심은 알지만 ●●○ 항목을 다시 읽고, 자신이 겪은 실제 이해관계자 설득/갈등 상황을 오늘 배운 프레임워크로 다시 정리해보세요.</li>
+      <li><strong>2개 이하 ●●●</strong>: 번역 프레임워크 표, 갈등의 세 가지 층위, 위기 커뮤니케이션 4원칙, 통합 케이스 스터디 6단계를 소리 내어 다시 설명해보세요.</li>
+    </ul>
+
+    <h3>추천 복습 방법</h3>
+    <p>오늘 배운 내용 중 가장 자신 없는 질문 하나를 골라, 면접관 앞에서 말하듯 2~3분간 소리 내어 설명해보세요. 이어서 통합 케이스 스터디(5장)를 처음부터 끝까지 혼자 다시 말해보며, Day 1~11에서 배운 어떤 개념을 연결했는지 스스로 짚어보세요. 막히는 부분이 실제로 모르는 부분입니다.</p>
+  </section>
+
+  <!-- ───────────── NAVIGATION ───────────── -->
+  <div class="nav-bottom">
+    <a href="./0011-technical-leadership.html">← Day 11: 기술 리딩</a>
+    <a href="./index.html">목록으로</a>
+    <span style="color:var(--muted);font-size:0.9rem;">다음 주제는 다음 세션에서 결정됩니다</span>
+  </div>
+
+</div>
+</body>
+</html>
