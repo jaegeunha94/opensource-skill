@@ -8,6 +8,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | 코드 성능과 하드웨어 사고 프레임워크 | [0011-code-performance-hardware-framework.html](lessons/0011-code-performance-hardware-framework.html) |
@@ -18,18 +19,19 @@
 | 6 | 2026-07-07 | 멀티코어와 캐시 일관성 | [0016-multicore-cache-coherence-false-sharing.html](lessons/0016-multicore-cache-coherence-false-sharing.html) |
 | 7 | 2026-07-08 | SIMD와 배치 처리 | [0017-simd-vectorization.html](lessons/0017-simd-vectorization.html) |
 | 8 | 2026-07-09 | 프로파일링과 성능 측정 | [0018-profiling-performance-measurement.html](lessons/0018-profiling-performance-measurement.html) |
-
+| 9 | 2026-10-05 | 컴퓨터 구조와 시스템 설계 | [0019-computer-architecture-system-design.html](lessons/0019-computer-architecture-system-design.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 9 | 컴퓨터 구조와 시스템 설계 | "하드웨어 특성이 DB, queue, cache 설계에 어떤 영향을 줍니까?" | storage hierarchy, index, serialization |
 | 10 | 종합 모의 면접 | "성능이 느린 코드를 받고 하드웨어 관점에서 개선안을 제시해보세요." | 측정 기반 추론, 개선안 비교, 한계 설명 |
-
 ## 현재 학습 위치
 
-**Day 8 완료** — 다음은 Day 9 컴퓨터 구조와 시스템 설계부터 진행한다.
 
+
+
+**Day 9 완료** — 다음은 Day 10 종합 모의 면접부터 진행한다.
 ## Interview 답변 체크리스트
 
 - [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6, Day 7, Day 8)
@@ -60,5 +62,5 @@
 - [x] SIMD 이득과 cache locality의 연결, alignment, memory-bound 상황에서의 SIMD 한계 (Day 7)
 - [x] sampling vs instrumentation profiling, 하드웨어 성능 카운터, IPC (Day 8)
 - [x] IPC·cache-miss rate·branch-miss rate 조합으로 CPU-bound/memory-bound 구분, on-CPU vs off-CPU 분석 (Day 8)
-- [ ] 컴퓨터 구조와 시스템 설계 연결 (예정 Day 9)
+- [x] 컴퓨터 구조와 시스템 설계 연결  (Day 9)
 - [ ] 종합 모의 면접 (예정 Day 10)

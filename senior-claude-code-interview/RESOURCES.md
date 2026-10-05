@@ -160,3 +160,7 @@
 - 블로그 글이나 오래된 캡처는 내용 검증 없이 참고하지 않는다. `code.claude.com/docs`와 changelog를 1차 근거로 삼는다.
 - 슬래시 커맨드 이름, 버전 번호, UI 세부 동작은 몇 주 단위로 바뀐다. 몇 주 이상 지난 뒤 이어서 학습한다면 changelog와 `llms.txt` 인덱스를 다시 확인한다.
 - 인터뷰에서는 "어떤 기능이 있는가"보다 "왜 이렇게 설계됐는가, 어떤 trade-off인가, 팀에 어떻게 도입/운영하는가"를 중심으로 답하는 데 집중한다.
+
+## 2026-10-05 Day lesson sources confirmed
+
+- [Anthropic Claude Code — MCP](https://docs.anthropic.com/en/docs/claude-code/mcp) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.

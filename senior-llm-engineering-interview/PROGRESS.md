@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | LLM 제품 품질과 모델 선택/운영 프레임워크 | [0001-llm-product-quality-and-model-selection-framework.html](lessons/0001-llm-product-quality-and-model-selection-framework.html) |
@@ -11,12 +12,12 @@
 | 5 | 2026-07-07 | Reasoning Model 사용 판단 | [0005-reasoning-model-usage-judgment.html](lessons/0005-reasoning-model-usage-judgment.html) |
 | 6 | 2026-07-08 | Structured Output 설계 | [0006-structured-output-design.html](lessons/0006-structured-output-design.html) |
 | 7 | 2026-07-09 | Function/Tool Calling & Agentic 아키텍처 | [0007-function-tool-calling-and-agentic-architecture.html](lessons/0007-function-tool-calling-and-agentic-architecture.html) |
-
+| 8 | 2026-10-05 | Multimodal 입출력 | [0008-multimodal.html](lessons/0008-multimodal.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Multimodal 입출력 | vision/audio/generation 품질·비용·안전 trade-off |
 | 9 | Embedding과 검색 판단 | 임베딩 모델 선택 기준, 언제 RAG/검색이 필요한지 |
 | 10 | Fine-tuning 판단 | SFT를 언제 쓰는지, prompting/RAG와의 트레이드오프 |
 | 11 | Reinforcement Fine-Tuning & 정렬 심화 | RFT, RLHF/RLAIF, 정렬 기법과 리스크 |
@@ -26,11 +27,12 @@
 | 15 | Latency/Cost 최적화와 Prompt Caching | 토큰 비용 모델, 캐싱, 배치·스트리밍 전략 |
 | 16 | Observability, Rate Limit, Fallback, Vendor Abstraction | 로깅/트레이싱, rate limit 대응, 벤더 추상화 설계 |
 | 17 | Production Incident 대응과 시니어 커뮤니케이션 | 장애 대응, postmortem, 재발 방지, 비개발 조직 커뮤니케이션 |
-
 ## 현재 학습 위치
 
-**Day 7 완료** — Day 8 (Multimodal 입출력)이 다음 차례.
 
+
+
+**Day 8 완료** — 다음은 Day 9 Embedding과 검색 판단부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 모델 선택을 리더보드가 아니라 task-fit eval로 판단하는 프레임워크 (Day 1)
@@ -48,7 +50,7 @@
 - [x] reasoning model 사용 판단 기준: effort 파라미터, overthinking/역-U자 곡선, 슬로다운 공격 표면 (Day 5)
 - [x] 구조화 출력(constrained decoding)과 프롬프트 기반 JSON 유도의 메커니즘 차이, 스키마 준수와 내용 정확성의 구분, 이중 검증 계층 설계 (Day 6)
 - [x] tool calling의 구조(실행 의도 반환 vs 실제 실행 분리), 오류 누적의 수학(스텝당 성공률의 곱셈적 저하), 병렬/순차 호출 트레이드오프, 멱등성·체크포인트·서킷 브레이커·인간 개입 게이트 기반 에이전틱 신뢰성 설계 (Day 7)
-- [ ] 멀티모달 입출력 trade-off (예정 Day 8)
+- [x] 멀티모달 입출력 trade-off  (Day 8)
 - [ ] 임베딩과 검색 필요성 판단 (예정 Day 9)
 - [ ] fine-tuning 판단 기준 (예정 Day 10)
 - [ ] reinforcement fine-tuning과 정렬 심화 (예정 Day 11)
@@ -58,6 +60,7 @@
 - [ ] latency/cost 최적화와 prompt caching (예정 Day 15)
 - [ ] observability, rate limit, fallback, vendor abstraction (예정 Day 16)
 - [ ] production incident 대응과 시니어 커뮤니케이션 (예정 Day 17)
+- [x] Multimodal 입출력 — Day 8
 
 ## 커리큘럼 최신성 메모
 

@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 백엔드 보안 사고 프레임워크와 인증/인가 | [0001-security-framework-authn-authz.html](lessons/0001-security-framework-authn-authz.html) |
@@ -14,19 +15,17 @@
 | 8 | 2026-07-07 | Secret 관리와 환경 변수 전략 | [0008-secret-management.html](lessons/0008-secret-management.html) |
 | 9 | 2026-07-08 | Secure Coding 원칙과 코드 리뷰 | [0009-secure-coding-principles-code-review.html](lessons/0009-secure-coding-principles-code-review.html) |
 | 10 | 2026-07-09 | 종합 보안 설계 케이스 스터디 | [0010-comprehensive-security-case-study.html](lessons/0010-comprehensive-security-case-study.html) |
-
+| 11 | 2026-10-05 | 멀티테넌트 인가와 객체 수준 접근 제어 | [0011-multitenant-object-authorization.html](lessons/0011-multitenant-object-authorization.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-
-계획된 커리큘럼(Day 1~10)을 모두 완료했다. 추가 학습을 원하면 심화 주제(예: 인증 프로토콜 심화 OAuth2/OIDC,
-컨테이너/인프라 보안, 규제 준수(PCI-DSS/GDPR), 레드팀/펜테스트 관점)를 새 Day로 확장할 수 있다.
+| 12 | 보안 회귀 테스트와 정책 기반 인가 검증 | 후속 심화 주제와 실무 판단 기준 |
 
 ## 현재 학습 위치
 
-**Day 10 완료 — 계획된 커리큘럼 종료.** 추가 심화 주제 요청 시 Day 11부터 확장 가능.
-
+**Day 11 완료** — 다음은 Day 12 보안 회귀 테스트와 정책 기반 인가 검증부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 위협 모델링 프레임워크 — STRIDE 방법론 (Day 1)
@@ -82,3 +81,4 @@
 - [x] BOLA 기반 대량 스크래핑 사고 — 객체 단위 인가 부재와 Rate Limiting의 보조적 역할 (Day 10)
 - [x] 오픈형 위협 모델링/설계 질문에 대한 4단계 사고 순서 — 위협 식별 → 공격 체인 추적 → 계층적 방어 → trade-off 판단 (Day 10)
 - [x] 사고 대응 우선순위 — 억제(Containment) → 증거 보존/범위 파악 → 근본 원인 분석 → 투명한 보고 (Day 10)
+- [x] 멀티테넌트 인가와 객체 수준 접근 제어 — Day 11

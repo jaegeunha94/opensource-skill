@@ -123,3 +123,7 @@
 
 - LangChain/LangGraph 문서 사이트(`docs.langchain.com`, `deepwiki.com` 등) 일부는 자동화 접근을 차단(403)할 수 있다. 이 경우 GitHub Reference(`reference.langchain.com`), 공식 블로그, 또는 검색 결과에 요약된 내용을 근거로 삼고, 레슨에는 실제로 확인 가능했던 소스만 인용한다.
 - 각 레슨은 작성 시점의 최신 버전을 기준으로 하되, 버전 번호(예: LangChain 1.3.x, LangGraph 1.2.x)는 빠르게 바뀔 수 있으므로 학습자는 실제 면접 전 공식 changelog로 최종 확인해야 한다.
+
+## 2026-10-05 Day lesson sources confirmed
+
+- [LangGraph persistence](https://docs.langchain.com/oss/python/langgraph/persistence) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.

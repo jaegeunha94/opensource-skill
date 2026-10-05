@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-04 | Cloudflare DNS/CDN/보안 경계 구성 프레임워크 | [0001-cloudflare-dns-cdn-security-boundary-framework.html](lessons/0001-cloudflare-dns-cdn-security-boundary-framework.html) |
@@ -10,20 +11,21 @@
 | 4 | 2026-07-07 | SSL/TLS 모드와 Origin 보호 | [0004-ssl-tls-modes-and-origin-protection.html](lessons/0004-ssl-tls-modes-and-origin-protection.html) |
 | 5 | 2026-07-08 | WAF와 Rate Limiting 설계 | [0005-waf-and-rate-limiting-design.html](lessons/0005-waf-and-rate-limiting-design.html) |
 | 6 | 2026-07-09 | DDoS Protection과 Bot Management/Turnstile | [0006-ddos-protection-and-bot-management-turnstile.html](lessons/0006-ddos-protection-and-bot-management-turnstile.html) |
-
+| 7 | 2026-10-05 | Load Balancing과 트래픽 스티어링 | [0007-load-balancing.html](lessons/0007-load-balancing.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | Load Balancing과 트래픽 스티어링 | Health Check, Steering Policy, Failover, 멀티 리전/멀티 클라우드 라우팅 |
 | 8 | Workers와 Redirect/Transform Rules | 엣지 로직 설계, 레거시 Page Rules 리다이렉트 마이그레이션, Rules 실행 순서와 우선순위 |
 | 9 | Zero Trust — Access와 Tunnel | origin IP 은닉, Cloudflare Tunnel 아키텍처, Access 정책 설계, VPN 대체 판단 |
 | 10 | 로그/Analytics, 장애 대응, 마이그레이션 runbook | Logpush, Analytics Engine, 실제 outage 사례 분석, 네임서버 전환 runbook, 롤백 시나리오 |
-
 ## 현재 학습 위치
 
-**Day 6 완료** — Day 7: Load Balancing과 트래픽 스티어링으로 진행 예정.
 
+
+
+**Day 7 완료** — 다음은 Day 8 Workers와 Redirect/Transform Rules부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Proxied(orange cloud) vs DNS-only(grey cloud) 동작 원리와 선택 기준 (Day 1)
@@ -53,10 +55,11 @@
 - [x] Bot Fight Mode vs Super Bot Fight Mode vs Bot Management(Enterprise 전용 Bot Score) 정밀도 차이 (Day 6)
 - [x] Verified Bots 허용목록과 스푸핑 방지, AI Crawl Control(allow/charge/block)·Content Signals (Day 6)
 - [x] Turnstile 위젯 모드(Managed/Non-Interactive/Invisible)와 CAPTCHA 대비 마찰-보안 trade-off (Day 6)
-- [ ] Load Balancing 스티어링 정책 (예정 Day 7)
+- [x] Load Balancing 스티어링 정책  (Day 7)
 - [ ] Workers 기반 엣지 로직과 Rules 우선순위 (예정 Day 8)
 - [ ] Zero Trust Access/Tunnel 아키텍처 (예정 Day 9)
 - [ ] 로그/Analytics 설계와 마이그레이션 runbook (예정 Day 10)
+- [x] Load Balancing과 트래픽 스티어링 — Day 7
 
 ## 커리큘럼 기준 노트
 

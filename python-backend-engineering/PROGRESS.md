@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-29 | Python 백엔드 아키텍처 전체 구조 개요 | [0001-python-backend-architecture-overview.html](lessons/0001-python-backend-architecture-overview.html) |
@@ -15,17 +16,19 @@
 | 9 | 2026-07-07 | 배포와 운영 — Docker 최적화, Compose, 헬스체크, 환경 변수, CI/CD | [0009-deployment-and-operations.html](lessons/0009-deployment-and-operations.html) |
 | 10 | 2026-07-08 | 캐싱과 성능 최적화 — Redis 캐싱 전략과 무효화, 캐시 스탬피드 방지, 응답 압축, 커넥션 풀 튜닝, 쿼리 성능 프로파일링 | [0010-caching-and-performance.html](lessons/0010-caching-and-performance.html) |
 | 11 | 2026-07-09 | 테스트 전략 — 단위/통합 테스트 경계, 계약 테스트, 부하 테스트 | [0011-testing-strategy.html](lessons/0011-testing-strategy.html) |
-
+| 12 | 2026-10-05 | 서비스 신뢰성 패턴 — Rate Limiting, Circuit Breaker, Retry/Timeout 전략 | [0012-rate-limiting-circuit-breaker-retry-timeout.html](lessons/0012-rate-limiting-circuit-breaker-retry-timeout.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 12 | 서비스 신뢰성 패턴 — Rate Limiting, Circuit Breaker, Retry/Timeout 전략 | 토큰 버킷/슬라이딩 윈도우 레이트 리미팅, Circuit Breaker 상태 전이, 재시도-타임아웃-백오프 조합, 장애 전파 차단 |
-
+| 13 | Transactional Outbox와 멱등 이벤트 처리 | 복구·정합성·운영 지표 |
 ## 현재 학습 위치
 
-**Day 11 완료** — 다음: Day 12 — 서비스 신뢰성 패턴 (Rate Limiting, Circuit Breaker, Retry/Timeout 전략).
 
+
+
+**Day 12 완료** — 다음은 Day 13 Transactional Outbox와 멱등 이벤트 처리부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Python 백엔드 아키텍처의 전체 구조와 계층 (Day 1)
@@ -84,4 +87,5 @@
 - [x] 트랜잭션 롤백 기반 통합 테스트 격리 (Day 11)
 - [x] schemathesis 기반 OpenAPI 계약 테스트 (Day 11)
 - [x] Locust 부하 테스트와 커넥션 풀/캐시 설정 검증 (Day 11)
-- [ ] Rate Limiting, Circuit Breaker, Retry/Timeout 전략 (예정 Day 12)
+- [x] Rate Limiting, Circuit Breaker, Retry/Timeout 전략  (Day 12)
+- [x] 서비스 신뢰성 패턴 — Rate Limiting, Circuit Breaker, Retry/Timeout 전략 — Day 12

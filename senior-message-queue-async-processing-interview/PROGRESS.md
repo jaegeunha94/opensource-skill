@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 비동기 처리와 메시지 큐 설계 프레임워크 | [0001-async-design-and-message-queue-framework.html](lessons/0001-async-design-and-message-queue-framework.html) |
@@ -14,21 +15,19 @@
 | 8 | 2026-07-07 | Backpressure와 Consumer Rate Control | [0008-backpressure-and-consumer-rate-control.html](lessons/0008-backpressure-and-consumer-rate-control.html) |
 | 9 | 2026-07-08 | Celery와 Python 비동기 작업 설계 | [0009-celery-python-async-task-design.html](lessons/0009-celery-python-async-task-design.html) |
 | 10 | 2026-07-09 | 대규모 비동기 처리 아키텍처 종합 설계 | [0010-async-architecture-capstone-design.html](lessons/0010-async-architecture-capstone-design.html) |
-
+| 11 | 2026-10-05 | Transactional Outbox 패턴과 CDC — 이벤트 발행 정합성 보장 | [0011-transactional-outbox-cdc.html](lessons/0011-transactional-outbox-cdc.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 11 | Transactional Outbox 패턴과 CDC — 이벤트 발행 정합성 보장 | Dual-write 문제, Transactional Outbox, Change Data Capture(Debezium), Exactly-once에 가까운 이벤트 발행 |
-
-> Day 10에서 MISSION.md에 명시된 커리큘럼 범위(종합 설계)를 완료했다. 인터뷰에서 계속
-> 등장하는 실무 정합성 주제(DB 트랜잭션과 이벤트 발행 사이의 dual-write 문제)를 다음 Day로
-> 추가해 커리큘럼을 이어간다.
-
+| 12 | Saga와 비동기 workflow 보상 처리 | 복구·정합성·운영 지표 |
 ## 현재 학습 위치
 
-**Day 10 완료** — Day 11: Transactional Outbox 패턴과 CDC 예정.
 
+
+
+**Day 11 완료** — 다음은 Day 12 Saga와 비동기 workflow 보상 처리부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 동기 vs 비동기 처리 판단 기준 (Day 1)
@@ -69,5 +68,6 @@
 - [x] 처리량 산정 계산식과 파티션 사전 용량 계획의 필요성 (Day 10)
 - [x] Bulkhead(큐 물리적 분리), Circuit Breaker를 통한 장애 전파 차단 설계 (Day 10)
 - [x] 운영 체크리스트(모니터링/알림 임계치/런북) 구성 (Day 10)
-- [ ] Transactional Outbox 패턴과 Dual-write 문제 (예정 Day 11)
-- [ ] Change Data Capture(Debezium 등)와 CDC 기반 이벤트 발행 (예정 Day 11)
+- [x] Transactional Outbox 패턴과 Dual-write 문제  (Day 11)
+- [x] Change Data Capture(Debezium 등)와 CDC 기반 이벤트 발행  (Day 11)
+- [x] Transactional Outbox 패턴과 CDC — 이벤트 발행 정합성 보장 — Day 11

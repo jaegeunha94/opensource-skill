@@ -125,3 +125,7 @@
 | Anthropic/OpenAI/Google Engineering Blog | 실제 프로덕션 아키텍처, 장애, 성능 최적화 사례 |
 | a16z / Latent Space | LLM 프로덕트 엔지니어링 트렌드와 실무자 인터뷰 |
 | Hacker News, r/LocalLLaMA | 최신 모델 출시·deprecation에 대한 실무자 반응 (교차 검증용, 1차 출처 아님) |
+
+## 2026-10-05 Day lesson sources confirmed
+
+- [OpenAI images and vision guide](https://platform.openai.com/docs/guides/images-vision) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.

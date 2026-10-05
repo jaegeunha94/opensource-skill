@@ -219,3 +219,7 @@ Cloudflare는 기능과 권장 설정이 빠르게 바뀌므로, 새 레슨을 �
 - developers.cloudflare.com / blog.cloudflare.com 문서는 매우 자주 갱신된다. 레슨을 만들기 전 위 링크를 다시 확인하고, 이 파일과 `PROGRESS.md`의 "커리큘럼 기준 노트"를 함께 갱신한다.
 - 블로그나 커뮤니티 글이 "Firewall Rules", "Page Rules", "구 Rate Limiting", "Pages(신규 권장)"를 현재 표준처럼 설명한다면 레거시 정보일 가능성이 높다 — 반드시 공식 문서의 deprecated 표기를 재확인한다.
 - 서비스 이름/설정 위치 암기보다 "왜 이 경계를 이렇게 설계하는가"와 "이 설정이 무너지면 무엇이 뚫리는가"를 익히는 데 집중한다.
+
+## 2026-10-05 Day lesson sources confirmed
+
+- [Cloudflare Load Balancing](https://developers.cloudflare.com/load-balancing/) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.

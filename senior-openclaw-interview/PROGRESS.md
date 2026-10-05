@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-03 | OpenClaw Gateway와 local-first agent 운영 프레임워크 | [0001-openclaw-gateway-local-first-operating-framework.html](lessons/0001-openclaw-gateway-local-first-operating-framework.html) |
@@ -11,23 +12,24 @@
 | 5 | 2026-07-07 | Tools와 Tool Dispatch 보안 | [0005-tools-tool-dispatch-security.html](lessons/0005-tools-tool-dispatch-security.html) |
 | 6 | 2026-07-08 | Sessions, Prompt/Memory 파일 | [0006-sessions-prompt-memory-files.html](lessons/0006-sessions-prompt-memory-files.html) |
 | 7 | 2026-07-09 | Skills와 ClawHub | [0007-skills-clawhub.html](lessons/0007-skills-clawhub.html) |
-
+| 8 | 2026-10-05 | Multi-Agent 라우팅과 격리 | [0008-multi-agent.html](lessons/0008-multi-agent.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Multi-Agent 라우팅과 격리 | 다중 에이전트 workspace 분리, agentDir 충돌 방지, per-agent 세션 스토어 |
 | 9 | 샌드박싱 아키텍처 | host/Docker/none 실행 모드, 네트워크 없는 컨테이너 격리, 절대경로 파일 접근 위험 |
 | 10 | DM Pairing, Allowlist, Remote Exposure Runbook | 4가지 DM 정책, pairing 핸드셰이크, allowlist 검증 규칙, exposure runbook, 리버스 프록시/터널 패턴 |
 | 11 | Companion App/Node와 배포 토폴로지 | Gateway(brain) vs Node(limbs), `node.invoke`, 플랫폼별 role 차이, "cloud brain, local hands" |
 | 12 | 로깅과 트러블슈팅 | 5단계 로그 레벨, `OPENCLAW_LOG_LEVEL`, diagnostics flags, `openclaw doctor`/`logs --follow` |
 | 13 | 마켓플레이스 보안과 공급망 리스크 | ClawHub 악성 스킬 사고, 스캐너 우회 기법, 조직 차원의 스킬 승인 정책 |
 | 14 | Production Operation Trade-off 종합 | local-first vs 클라우드 SaaS, 가용성/백업/멀티디바이스, 신뢰 경계 확장 전략, 면접 종합 시뮬레이션 |
-
 ## 현재 학습 위치
 
-**Day 7 완료** — 다음: Day 8 — Multi-Agent 라우팅과 격리
 
+
+
+**Day 8 완료** — 다음은 Day 9 샌드박싱 아키텍처부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Gateway = 단일 Node.js 프로세스, WS+HTTP 멀티플렉싱 control plane (Day 1)
@@ -46,10 +48,11 @@
 - [x] compaction(보이는 것만 변경, 전체 이력 보존)과 session pruning(캐시 TTL+크기 임계값 동시 충족)의 구분, 압축 경계에서 세션 오버라이드 미리셋으로 인한 실제 비용 사고(#92864, $300/일) (Day 6)
 - [x] 부트스트랩/메모리 파일 로딩의 인젝션 탐지 공백(#66350), 압축 위장 프롬프트 인젝션 실제 페이로드(#30111), 공식 위협 모델의 커버리지 공백, 관련 CVE(CVE-2026-27004/53844/53825) (Day 6)
 - [x] SKILL.md frontmatter(`metadata.openclaw`, `requires.env/bins/anyBins`, `always`, `skillKey` 등)가 단순 문서화가 아니라 선언-행동 일치를 검증하는 계약이라는 것, 스킬 디스커버리 6-tier 우선순위(workspace > project agent > personal agent > managed > bundled > extra), ClawHub 설치만 `skills update`가 자동 추적하는 비대칭성, ClawHub 벡터 검색(OpenAI 임베딩 + Convex), 다중 스캐너(VirusTotal/NVIDIA SkillSpector/정적 분석) + 판사 하니스 스캐닝 파이프라인과 스캐너 간 낮은 합의율(공통 탐지 10.4% 이하, 단일 스캐너 전용 81.9%)의 한계, "서드파티 스킬 = untrusted code" 공식 경고 (Day 7)
-- [ ] Multi-agent 라우팅과 격리 (예정 Day 8)
+- [x] Multi-agent 라우팅과 격리  (Day 8)
 - [ ] 샌드박싱 아키텍처 (예정 Day 9)
 - [ ] DM pairing/allowlist/remote exposure runbook (예정 Day 10)
 - [ ] Companion app/Node, 배포 토폴로지 (예정 Day 11)
 - [ ] 로깅/트러블슈팅 (예정 Day 12)
 - [ ] 마켓플레이스 보안/공급망 리스크 (예정 Day 13)
 - [ ] Production operation trade-off 종합 (예정 Day 14)
+- [x] Multi-Agent 라우팅과 격리 — Day 8

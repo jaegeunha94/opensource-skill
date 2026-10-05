@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 장애 대응과 관측성 설계 프레임워크 | [0001-observability-incident-response-framework.html](lessons/0001-observability-incident-response-framework.html) |
@@ -14,17 +15,19 @@
 | 8 | 2026-07-07 | Postmortem 작성과 재발 방지 | [0008-postmortem-and-recurrence-prevention.html](lessons/0008-postmortem-and-recurrence-prevention.html) |
 | 9 | 2026-07-08 | 장애 커뮤니케이션 | [0009-incident-communication.html](lessons/0009-incident-communication.html) |
 | 10 | 2026-07-09 | 대규모 관측성 아키텍처 | [0010-large-scale-observability-architecture.html](lessons/0010-large-scale-observability-architecture.html) |
-
+| 11 | 2026-10-05 | 카오스 엔지니어링과 장애 훈련 (Game Day) | [0011-game-day.html](lessons/0011-game-day.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 11 | 카오스 엔지니어링과 장애 훈련 (Game Day) | 장애 주입, 복원력 검증, Game Day 설계 |
-
+| 12 | 장애 사후 분석과 재발 방지 action 검증 | 복구·정합성·운영 지표 |
 ## 현재 학습 위치
 
-**Day 10 완료** — Day 11 (카오스 엔지니어링과 장애 훈련) 예정.
 
+
+
+**Day 11 완료** — 다음은 Day 12 장애 사후 분석과 재발 방지 action 검증부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Observability vs Monitoring 차이 (Day 1)
@@ -64,4 +67,5 @@
 - [x] 관측성 파이프라인 구조(Agent/Collector/Buffer/Storage/Query) (Day 10)
 - [x] 핫/웜/콜드 저장 계층과 보존 정책 차등화 (Day 10)
 - [x] 관측성 파이프라인 자체의 메타 모니터링 필요성 (Day 10)
-- [ ] 카오스 엔지니어링과 Game Day 설계 (예정 Day 11)
+- [x] 카오스 엔지니어링과 Game Day 설계  (Day 11)
+- [x] 카오스 엔지니어링과 장애 훈련 (Game Day) — Day 11

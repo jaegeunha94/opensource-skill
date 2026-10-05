@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 리눅스 서버 장애 대응 프레임워크 | [0001-linux-incident-response-framework.html](lessons/0001-linux-incident-response-framework.html) |
@@ -14,18 +15,17 @@
 | 8 | 2026-07-07 | 권한 & 보안 관리 | [0008-permissions-security-management.html](lessons/0008-permissions-security-management.html) |
 | 9 | 2026-07-08 | 종합 장애 시나리오 실습 | [0009-comprehensive-incident-scenarios.html](lessons/0009-comprehensive-incident-scenarios.html) |
 | 10 | 2026-07-09 | 커널 파라미터 튜닝 & 리소스 제한 | [0010-kernel-tuning-resource-limits.html](lessons/0010-kernel-tuning-resource-limits.html) |
-
+| 11 | 2026-10-05 | PSI와 cgroup v2로 보는 자원 압박 | [0011-psi-cgroup-v2.html](lessons/0011-psi-cgroup-v2.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-
-Day 1~10 완주. 다음 심화 주제는 별도 논의 후 확정 예정(예: 컨테이너 환경 진단, 대규모 장애 사후 분석/포스트모템 심화).
+| 12 | eBPF/perf를 이용한 커널·애플리케이션 병목 연결 | 후속 심화 주제와 실무 판단 기준 |
 
 ## 현재 학습 위치
 
-**Day 10 완료** — 커널 파라미터 튜닝 & 리소스 제한(ulimit/sysctl/cgroups) 완주. 다음 심화 Day 주제 확정 필요.
-
+**Day 11 완료** — 다음은 Day 12 eBPF/perf를 이용한 커널·애플리케이션 병목 연결부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 서버 장애 대응 5단계 프레임워크 (영향 범위 → 스냅샷 → 병목 범주 → 원인 특정 → 조치+재발 방지) (Day 1)
@@ -82,3 +82,4 @@ Day 1~10 완주. 다음 심화 주제는 별도 논의 후 확정 예정(예: �
 - [x] cgroups가 컨테이너 전용이 아니라 systemd가 모든 서비스에 적용하는 기본 격리 메커니즘이라는 개념 (Day 10)
 - [x] MemoryMax(제한)와 MemoryMin(보장)로 리소스 상한을 양방향으로 설계하는 사고 (Day 10)
 - [x] 리소스 상한값을 감이 아니라 실측 트래픽/부하 기반으로 역산하는 절차 (Day 10)
+- [x] PSI와 cgroup v2로 보는 자원 압박 — Day 11

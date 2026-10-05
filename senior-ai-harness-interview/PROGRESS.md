@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-03 | AI Harness와 Agent Runtime 설계/운영 프레임워크 | [0001-ai-agent-harness-runtime-design-framework.html](lessons/0001-ai-agent-harness-runtime-design-framework.html) |
@@ -11,23 +12,24 @@
 | 5 | 2026-07-07 | Guardrail과 Prompt Injection 방어 | [0005-guardrail-prompt-injection-defense.html](lessons/0005-guardrail-prompt-injection-defense.html) |
 | 6 | 2026-07-08 | Sandboxed Workspace Execution과 권한 스코핑 | [0006-sandboxed-workspace-execution-permission-scoping.html](lessons/0006-sandboxed-workspace-execution-permission-scoping.html) |
 | 7 | 2026-07-09 | Model Context Protocol(MCP) | [0007-model-context-protocol.html](lessons/0007-model-context-protocol.html) |
-
+| 8 | 2026-10-05 | Handoff와 Multi-Agent Coordination | [0008-handoff-multi-agent-coordination.html](lessons/0008-handoff-multi-agent-coordination.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Handoff와 Multi-Agent Coordination | orchestrator-worker, manager(agents-as-tools) vs handoff 패턴, 토큰 비용 구조(15x), multi-agent를 쓰지 말아야 할 때 |
 | 9 | Streaming과 Structured Output | SSE 스트리밍, fine-grained tool streaming, 지연시간 vs UX trade-off, structured output 설계 |
 | 10 | Telemetry, Tracing, Observability | OTel GenAI semantic conventions, span 계층, 분산 트레이싱, 벤더별 관측성 통합 |
 | 11 | Evaluation Harness와 Replay | task/trial/transcript/grader, trajectory 평가, LLM-as-judge 캘리브레이션, replay/regression 테스트 |
 | 12 | Human-in-the-Loop과 Session/권한 설계 | 승인 게이트, approval binding, session 영속성, 권한 모드, 위험도 기반 개입 설계 |
 | 13 | 비용/성능 최적화 | prompt caching, context compaction, model routing/tiering, batch 처리, cost-per-task 모니터링 |
 | 14 | 운영 장애 대응과 종합 트레이드오프 | 런어웨이 루프/비용 폭주 사례, context poisoning 실전 대응, harness engineering 원칙 종합, 면접 종합 시뮬레이션 |
-
 ## 현재 학습 위치
 
-**Day 7 완료** — 다음: Day 8 — Handoff와 Multi-Agent Coordination
 
+
+
+**Day 8 완료** — 다음은 Day 9 Streaming과 Structured Output부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Agent = Model + Harness 프레임 (Day 1)
@@ -66,10 +68,11 @@
 - [x] 거버넌스: AAIF/Linux Foundation 이관(2025-12-09 완료), Extensions Framework, MCP Apps·Tasks 지위(코어 승격 아님) (Day 7)
 - [x] MCP 보안 위협 4패턴: tool poisoning, rug pull, confused deputy, toxic agent flow (Day 7)
 - [x] OWASP MCP Top 10 (MCP01~MCP10) (Day 7)
-- [ ] Handoff, multi-agent coordination (예정 Day 8)
+- [x] Handoff, multi-agent coordination  (Day 8)
 - [ ] Streaming, structured output (예정 Day 9)
 - [ ] Telemetry/Tracing/Observability (예정 Day 10)
 - [ ] Evaluation harness, replay (예정 Day 11)
 - [ ] Human-in-the-loop, session/권한 설계 (예정 Day 12)
 - [ ] 비용/성능 최적화 (예정 Day 13)
 - [ ] 운영 장애 대응 종합 (예정 Day 14)
+- [x] Handoff와 Multi-Agent Coordination — Day 8

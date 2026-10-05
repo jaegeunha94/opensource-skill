@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | React 렌더링 모델과 Next.js 실행 경계 답변 프레임워크 — 코드가 어디서 실행되는지 그리는 사고법 | [0001-react-rendering-model-execution-boundary-framework.html](lessons/0001-react-rendering-model-execution-boundary-framework.html) |
@@ -11,19 +12,20 @@
 | 5 | 2026-07-06 | State Management 아키텍처 — 로컬 상태 vs 서버 상태 vs 전역 상태 vs URL 상태 구분과 도구 선택 | [0005-state-management-architecture-local-server-global.html](lessons/0005-state-management-architecture-local-server-global.html) |
 | 6 | 2026-07-07 | Data Fetching 패턴 — 서버 fetch vs 클라이언트 fetch, 워터폴 방지, request memoization | [0006-data-fetching-patterns-waterfall-request-memoization.html](lessons/0006-data-fetching-patterns-waterfall-request-memoization.html) |
 | 7 | 2026-07-08 | Suspense와 동시성 렌더링 — concurrent rendering, transition, 우선순위 스케줄링 | [0007-suspense-concurrent-rendering-transitions.html](lessons/0007-suspense-concurrent-rendering-transitions.html) |
-
+| 8 | 2026-10-05 | Error Boundary와 장애 격리 | [0008-error-boundary.html](lessons/0008-error-boundary.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Error Boundary와 장애 격리 | 컴포넌트 트리 단위 장애 격리 설계 |
 | 9 | Hydration 심화 | hydration mismatch의 원인, 디버깅, 예방 |
 | 10 | SSR | 서버 렌더링 파이프라인, TTFB/TTI trade-off |
-
 ## 현재 학습 위치
 
-**Day 7 완료** — 다음: Day 8 — Error Boundary와 장애 격리
 
+
+
+**Day 8 완료** — 다음은 Day 9 Hydration 심화부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Render 단계와 Commit 단계의 분리, 각각의 역할 (Day 1)
@@ -61,4 +63,5 @@
 - [x] `useTransition`(내가 트리거하는 업데이트)과 `useDeferredValue`(외부에서 온 값) 구분 기준 (Day 7)
 - [x] Suspense의 두 가지 용도(코드 분할 vs 데이터 페칭)와 그 공통 메커니즘 (Day 7)
 - [x] Suspense boundary 배치 — 하나로 뭉치기 vs 세분화하기의 trade-off (Day 7)
-- [ ] Error Boundary가 잡을 수 있는 에러의 범위와 컴포넌트 트리 단위 장애 격리 설계 (예정 Day 8)
+- [x] Error Boundary가 잡을 수 있는 에러의 범위와 컴포넌트 트리 단위 장애 격리 설계  (Day 8)
+- [x] Error Boundary와 장애 격리 — Day 8

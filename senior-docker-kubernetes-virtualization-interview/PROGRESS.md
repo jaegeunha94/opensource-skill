@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 컨테이너와 Kubernetes 운영 프레임워크 | [0001-container-kubernetes-operations-framework.html](lessons/0001-container-kubernetes-operations-framework.html) |
@@ -14,20 +15,21 @@
 | 8 | 2026-07-07 | Pod 생명주기 — health check, 재시작 정책 | [0008-pod-lifecycle-health-check-restart-policy.html](lessons/0008-pod-lifecycle-health-check-restart-policy.html) |
 | 9 | 2026-07-08 | Deployment와 롤아웃 전략 — RollingUpdate, 롤백, 카나리 | [0009-deployment-rollout-rollback-canary.html](lessons/0009-deployment-rollout-rollback-canary.html) |
 | 10 | 2026-07-09 | Service와 Ingress — 트래픽 흐름, 로드밸런싱, TLS 종료 | [0010-service-ingress-traffic-tls.html](lessons/0010-service-ingress-traffic-tls.html) |
-
+| 11 | 2026-10-05 | Resource limit과 QoS — requests/limits, OOMKilled 대응 | [0011-resource-limit-qos-requests-limits-oomkilled.html](lessons/0011-resource-limit-qos-requests-limits-oomkilled.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 11 | Resource limit과 QoS — requests/limits, OOMKilled 대응 | requests, limits, BestEffort, Burstable, Guaranteed |
 | 12 | 운영 Troubleshooting — CrashLoopBackOff, Pending, 진단 | kubectl describe, logs, events, node 상태 |
 | 13 | VM vs 컨테이너 vs 서버리스 — 가상화 스택과 trade-off | hypervisor, hardware virt, cold start, isolation |
 | 14 | 시니어 종합 — 실무 설계 케이스, follow-up 대응 | 종합 설계, 인터뷰 시뮬레이션 |
-
 ## 현재 학습 위치
 
-**Day 10 완료** — Day 11 (Resource limit과 QoS) 예정.
 
+
+
+**Day 11 완료** — 다음은 Day 12 운영 Troubleshooting — CrashLoopBackOff, Pending, 진단부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 컨테이너 vs VM 차이와 면접 답변 프레임워크 (Day 1)
@@ -42,6 +44,7 @@
 - [x] livenessProbe/readinessProbe 역할 분리와 오설계 시 연쇄 재시작 위험, restartPolicy와 CrashLoopBackOff 지수 백오프, startupProbe와 종료 시퀀스(SIGTERM/preStop/terminationGracePeriodSeconds)의 무중단 배포 연관성 (Day 8)
 - [x] maxSurge/maxUnavailable과 readinessProbe 연계, rollout undo의 ReplicaSet 복원 원리와 되돌릴 수 없는 부수 효과(DB 마이그레이션), Deployment 기반 근사 카나리와 진짜 트래픽 분할의 차이 (Day 9)
 - [x] ClusterIP/NodePort/LoadBalancer의 포함 관계와 Service의 L4 한계, Ingress 리소스와 Ingress Controller의 선언/실행 분리, Ingress 장애를 DNS→LB→Controller→Endpoints 순서로 진단하는 절차, TLS 종료 지점(Ingress 종료 vs Passthrough vs mTLS)의 trade-off (Day 10)
-- [ ] Resource QoS 클래스 (예정 Day 11)
+- [x] Resource QoS 클래스  (Day 11)
 - [ ] CrashLoopBackOff 진단 프레임워크 (예정 Day 12)
 - [ ] VM vs 컨테이너 trade-off (예정 Day 13)
+- [x] Resource limit과 QoS — requests/limits, OOMKilled 대응 — Day 11

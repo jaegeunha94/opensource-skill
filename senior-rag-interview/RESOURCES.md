@@ -183,3 +183,7 @@
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 검색 시스템 설계 문제와 유사한 사고 프레임
 - [Chip Huyen — Machine Learning Interviews Book](https://huyenchip.com/ml-interviews-book/) — ML/AI 시스템 인터뷰 준비
+
+## 2026-10-05 Day lesson sources confirmed
+
+- [OpenAI retrieval guide](https://platform.openai.com/docs/guides/retrieval) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.

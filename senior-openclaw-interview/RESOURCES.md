@@ -191,3 +191,7 @@
   중간 확정도이므로, 면접 전 원문 공지나 후속 보도로 재확인한다. ClawHub의 벡터 검색 구현(OpenAI
   text-embedding-3-small + Convex)과 CLI 명령 목록도 검색 스니펫 기반이라 명령어 플래그의 정확한 철자는
   실제 `clawhub --help`로 재확인해야 한다.
+
+## 2026-10-05 Day lesson sources confirmed
+
+- [OpenClaw — Multi-agent routing](https://docs.openclaw.ai/multi-agent) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.

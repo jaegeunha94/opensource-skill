@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | JavaScript 실행 모델과 이벤트 루프 답변 프레임워크 — 코드 실행 순서를 예측하는 사고법 | [0001-js-execution-model-event-loop-framework.html](lessons/0001-js-execution-model-event-loop-framework.html) |
@@ -12,12 +13,12 @@
 | 6 | 2026-07-07 | `this` 바인딩 규칙 — 4가지 바인딩 규칙과 우선순위, `call`/`apply`/`bind`, 화살표 함수의 `this` 예외 | [0006-this-binding-rules.html](lessons/0006-this-binding-rules.html) |
 | 7 | 2026-07-08 | Module 시스템 — CommonJS vs ESM, 순환 참조 처리 차이, 트리쉐이킹이 ESM에서만 가능한 이유, 번들러 경계(interop/dual package hazard) | [0007-module-system-cjs-esm.html](lessons/0007-module-system-cjs-esm.html) |
 | 8 | 2026-07-09 | Event Loop 심화 — Microtask vs Macrotask, 큐 우선순위, `requestAnimationFrame`과 렌더링 파이프라인 타이밍 | [0008-event-loop-microtask-macrotask-deep-dive.html](lessons/0008-event-loop-microtask-macrotask-deep-dive.html) |
-
+| 9 | 2026-10-05 | Promise 내부 동작 | [0009-promise.html](lessons/0009-promise.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | Promise 내부 동작 | 상태 머신(pending/fulfilled/rejected), 체이닝, 에러 전파 규칙 |
 | 10 | `async`/`await` 심화 | 내부적으로 Promise로 변환되는 방식, 순차 vs 병렬 실행 함정 |
 | 11 | Cancellation과 AbortController | Promise가 취소 불가능한 이유, 취소 가능한 비동기 설계 패턴 |
 | 12 | DOM Event 모델 | Capturing/Bubbling, `target` vs `currentTarget`, 커스텀 이벤트 |
@@ -29,11 +30,12 @@
 | 18 | Garbage Collection 심화 | Mark-and-sweep, 세대별 GC, GC가 성능에 미치는 영향 |
 | 19 | TypeScript와의 경계 판단 | 컴파일타임 vs 런타임 안전성, 타입 시스템 도입 트레이드오프 |
 | 20 | 종합 — 프로덕션 JS 장애 디버깅 시나리오 | Event Loop·메모리·비동기를 통합한 실전 디버깅 절차 |
-
 ## 현재 학습 위치
 
-**Day 8 완료** — 다음: Day 9 — Promise 내부 동작
 
+
+
+**Day 9 완료** — 다음은 Day 10 `async`/`await` 심화부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Call Stack / Web API / Task Queue / Microtask Queue의 역할 구분 (Day 1)
@@ -64,6 +66,7 @@
 - [x] Microtask starvation이 렌더링을 막는 원리와 `setTimeout` 재귀와의 차이 (Day 8)
 - [x] 레이아웃 스래싱(강제 동기 레이아웃)의 원인과 회피 방법 (Day 8)
 - [x] `process.nextTick`/Microtask/rAF/Macrotask/`requestIdleCallback` 우선순위 순서 (Day 8)
-- [ ] Promise 상태 머신과 에러 전파 규칙 (예정 Day 9)
+- [x] Promise 상태 머신과 에러 전파 규칙  (Day 9)
 - [ ] Promise가 취소 불가능한 근본 이유 (예정 Day 11)
 - [ ] 메모리 누수 진단 절차 (예정 Day 15)
+- [x] Promise 내부 동작 — Day 9

@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | RAG 시스템 설계와 검색 품질 진단 프레임워크 | [0001-rag-architecture-retrieval-quality-diagnosis-framework.html](lessons/0001-rag-architecture-retrieval-quality-diagnosis-framework.html) |
@@ -13,21 +14,22 @@
 | 7 | 2026-07-07 | Metadata Filtering과 검색 정밀도 | [0007-metadata-filtering-and-retrieval-precision.html](lessons/0007-metadata-filtering-and-retrieval-precision.html) |
 | 8 | 2026-07-08 | Reranking 전략 | [0008-reranking-strategy.html](lessons/0008-reranking-strategy.html) |
 | 9 | 2026-07-09 | Context 구성과 Prompt 설계 | [0009-context-construction-and-prompt-design.html](lessons/0009-context-construction-and-prompt-design.html) |
-
+| 10 | 2026-10-05 | Hallucination 완화와 답변 근거 표시 | [0010-hallucination.html](lessons/0010-hallucination.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 10 | Hallucination 완화와 답변 근거 표시 | Grounding, citation, 답변 거부(abstain) 전략 |
 | 11 | 평가 지표와 Offline/Online Evaluation | Recall@k, Faithfulness, RAGAS, A/B 테스트 |
 | 12 | 권한/보안과 개인정보 처리 | Document-level ACL, PII 마스킹, 데이터 거버넌스 |
 | 13 | 캐싱과 비용 최적화 | Semantic cache, 임베딩 재사용, 비용 구조 분석 |
 | 14 | 관측성과 장애 대응 | 검색/생성 지표 관측, 장애 격리, 인시던트 대응 |
-
 ## 현재 학습 위치
 
-**Day 9 완료** — 다음: Day 10 — Hallucination 완화와 답변 근거 표시
 
+
+
+**Day 10 완료** — 다음은 Day 11 평가 지표와 Offline/Online Evaluation부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] RAG 파이프라인 구조 (Ingestion / Query pipeline) (Day 1)
@@ -55,7 +57,7 @@
 - [x] 문서 배치·XML 구조화·citation grounding을 통한 활용 품질 개선 (Day 9)
 - [x] Prompt caching 구조 설계(정적/동적 분리)와 RAG 워크로드별 캐싱 효과 판단 (Day 9)
 - [x] 간접 프롬프트 인젝션 위협 모델과 다층 방어(콘텐츠 격리·정책 선언·사전 스크리닝) (Day 9)
-- [ ] Hallucination 완화와 답변 근거 표시 (예정 Day 10)
+- [x] Hallucination 완화와 답변 근거 표시  (Day 10)
 - [ ] 평가 지표와 Offline/Online Evaluation (예정 Day 11)
 - [ ] 권한/보안과 개인정보 처리 (예정 Day 12)
 - [ ] 캐싱과 비용 최적화 (예정 Day 13)

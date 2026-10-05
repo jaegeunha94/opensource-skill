@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 캐시 전략과 Redis 사용 판단 프레임워크 | [0001-cache-strategy-redis-decision-framework.html](lessons/0001-cache-strategy-redis-decision-framework.html) |
@@ -14,22 +15,20 @@
 | 8 | 2026-07-07 | Redis Streams와 메시지 처리 | [0008-redis-streams-message-processing.html](lessons/0008-redis-streams-message-processing.html) |
 | 9 | 2026-07-08 | Redis Persistence — RDB vs AOF | [0009-persistence-rdb-vs-aof.html](lessons/0009-persistence-rdb-vs-aof.html) |
 | 10 | 2026-07-09 | Eviction Policy와 메모리 사이징 | [0010-eviction-policy-memory-sizing.html](lessons/0010-eviction-policy-memory-sizing.html) |
-
+| 11 | 2026-10-05 | Pipelining · Lua Scripting · Transaction | [0011-pipelining-lua-scripting-transaction.html](lessons/0011-pipelining-lua-scripting-transaction.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 11 | Pipelining · Lua Scripting · Transaction | Pipelining, EVAL, MULTI/EXEC, 원자성 설계 |
 | 12 | Replication과 Latency 진단 | Master-Replica 복제, 복제 지연, latency 진단 방법론 |
 | 13 | Redis 장애 대응과 운영 패턴 | Sentinel, Cluster, Failover, 장애 격리 |
-
-> Day 8, 11, 12는 Streams / Pipelining·Lua·Transaction / Replication·Latency 진단을 별도 Day로 다루기 위해
-> 커리큘럼에 새로 추가되었다 (기존 계획에는 없던 인터뷰 필수 주제).
-
 ## 현재 학습 위치
 
-**Day 10 완료** — 다음: Day 11 — Pipelining · Lua Scripting · Transaction
 
+
+
+**Day 11 완료** — 다음은 Day 12 Replication과 Latency 진단부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 캐시 도입 판단 기준 (Day 1)
@@ -50,6 +49,6 @@
 - [x] Redis Streams / Consumer Group / PEL / XAUTOCLAIM (Day 8)
 - [x] RDB vs AOF 판단, fork/COW 운영 리스크 (Day 9)
 - [x] Eviction Policy(noeviction/LRU/LFU/random/ttl)와 메모리 사이징 (Day 10)
-- [ ] Pipelining · Lua Scripting · Transaction (예정 Day 11)
+- [x] Pipelining · Lua Scripting · Transaction  (Day 11)
 - [ ] Replication과 Latency 진단 (예정 Day 12)
 - [ ] Redis 장애 대응 (Sentinel/Cluster/Failover) (예정 Day 13)

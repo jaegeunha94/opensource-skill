@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-04 | 챗봇 서비스 요구사항과 intent/entity/context 설계 프레임워크 | [0001-chatbot-service-requirements-and-intent-entity-context-framework.html](lessons/0001-chatbot-service-requirements-and-intent-entity-context-framework.html) |
@@ -10,12 +11,12 @@
 | 4 | 2026-07-07 | NLU-LLM Hybrid Routing 아키텍처 | [0004-nlu-llm-hybrid-routing-architecture.html](lessons/0004-nlu-llm-hybrid-routing-architecture.html) |
 | 5 | 2026-07-08 | Dialogue State 설계: FSM vs Graph 기반 상태 모델 | [0005-dialogue-state-design-fsm-vs-graph.html](lessons/0005-dialogue-state-design-fsm-vs-graph.html) |
 | 6 | 2026-07-09 | Session/Context 유지와 Multi-turn Flow 설계 | [0006-session-context-retention-multi-turn-flow-design.html](lessons/0006-session-context-retention-multi-turn-flow-design.html) |
-
+| 7 | 2026-10-05 | Fallback 전략과 Escalation/Human Handoff 설계 | [0007-fallback-escalation-human-handoff.html](lessons/0007-fallback-escalation-human-handoff.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | Fallback 전략과 Escalation/Human Handoff 설계 | Multi-signal escalation, context 전달, 큐 설계 |
 | 8 | RAG와 Tool Calling 연동 아키텍처 | Function/tool calling, MCP, grounding |
 | 9 | 채널 통합(Multi-channel) 아키텍처 설계 | 채널 어댑터, 메시지 포맷 정규화, 채널별 제약 |
 | 10 | 개인정보·동의·보안 설계 | PII 마스킹, 동의 관리, 데이터 거버넌스 |
@@ -24,11 +25,12 @@
 | 13 | Analytics와 Observability | 멀티턴 트레이싱, 대시보드, 알림 |
 | 14 | Latency/Cost 최적화 | 모델 티어링, 캐싱, 스트리밍 |
 | 15 | 운영 장애 대응(Incident Response) | 장애 탐지, kill switch, 롤백, postmortem |
-
 ## 현재 학습 위치
 
-**Day 6 완료** — 다음: Day 7 — Fallback 전략과 Escalation/Human Handoff 설계
 
+
+
+**Day 7 완료** — 다음은 Day 8 RAG와 Tool Calling 연동 아키텍처부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 챗봇 서비스 요구사항 분석 프레임워크(트래픽 유형, 실패 비용, latency/compliance 제약) (Day 1)
@@ -57,7 +59,7 @@
 - [x] Short-term memory(체크포인터)와 long-term memory(Store)를 스레드 경계로 구분하는 원칙 (Day 6)
 - [x] 세션 만료를 단일 TTL이 아닌 다중 신호(inactivity·알림·자동 요약) 정책으로 설계 (Day 6)
 - [x] Dialogue state(제어 계층)와 session/context(메모리 계층)의 관계와 동기화 필요성 (Day 6)
-- [ ] Fallback/Escalation/Human Handoff (예정 Day 7)
+- [x] Fallback/Escalation/Human Handoff  (Day 7)
 - [ ] RAG와 Tool Calling 연동 (예정 Day 8)
 - [ ] 채널 통합 아키텍처 (예정 Day 9)
 - [ ] 개인정보/동의/보안 설계 (예정 Day 10)
@@ -66,6 +68,7 @@
 - [ ] Analytics와 Observability (예정 Day 13)
 - [ ] Latency/Cost 최적화 (예정 Day 14)
 - [ ] 운영 장애 대응 (예정 Day 15)
+- [x] Fallback 전략과 Escalation/Human Handoff 설계 — Day 7
 
 ## 커리큘럼 조정 기록
 

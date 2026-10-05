@@ -231,3 +231,7 @@
 - `anthropic.com`, GitHub 등 다수의 공식/블로그 도메인이 자동화 접근(WebFetch)에 403을 반환하는 경우가 있다. 이 경우 검색 스니펫과 다수의 독립적인 2차 출처로 교차 검증한 뒤 사용하고, 정확한 인용이 필요하면 실제 브라우저로 원문을 재확인한다.
 - 이 트랙에 등장하는 버전 번호(v0.18.0 등), star 수, CVE 대응 상태는 레슨 작성 시점(2026-07) 기준이며 빠르게 바뀔 수 있다.
 - "Hermes"라는 이름은 Nous Research의 이전 LLM 파인튜닝 체크포인트 시리즈, 명품 브랜드 Hermès, Hermes JS 엔진과 검색 결과가 섞이기 쉽다. 자료를 찾을 때 항상 "Nous Research hermes-agent" 또는 저장소 URL로 교차 확인한다.
+
+## 2026-10-05 Day lesson sources confirmed
+
+- [Hermes Agent documentation](https://hermes-agent.nousresearch.com/docs/) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.

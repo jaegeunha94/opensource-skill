@@ -8,6 +8,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 자료구조 선택 프레임워크 | [interview-day01-data-structure-selection-framework.html](lessons/interview-day01-data-structure-selection-framework.html) |
@@ -20,18 +21,17 @@
 | 8 | 2026-07-07 | 그래프 표현과 탐색 | [interview-day08-graph-representation-and-traversal.html](lessons/interview-day08-graph-representation-and-traversal.html) |
 | 9 | 2026-07-08 | 실무 자료구조 설계 (캐시·Rate Limiter·랭킹) | [interview-day09-cache-rate-limiter-ranking-design.html](lessons/interview-day09-cache-rate-limiter-ranking-design.html) |
 | 10 | 2026-07-09 | 종합 모의 면접 (요구사항 변화에 따른 자료구조 재검토) | [interview-day10-mock-interview-requirement-change.html](lessons/interview-day10-mock-interview-requirement-change.html) |
-
+| 11 | 2026-10-05 | 동시성 안전 자료구조와 일관성 선택 | [interview-day11-concurrent-data-structures.html](lessons/interview-day11-concurrent-data-structures.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-
-계획된 10일 커리큘럼을 모두 완료했다. 추가 심화 주제(예: 동시성 안전 자료구조, 영속(persistent) 자료구조, 분산 자료구조 심화)가 필요하면 다음 세션에서 Day 11로 확장한다.
+| 12 | Lock-free 자료구조의 안전성 검증과 재시도 비용 | 후속 심화 주제와 실무 판단 기준 | 다음 학습에서 다룰 개념 |
 
 ## 현재 학습 위치
 
-**Day 10 완료** — 자료구조 10년차 이상 개발자 Interview 커리큘럼(Day 1~10) 완료. 다음 세션에서 심화 주제로 확장 가능.
-
+**Day 11 완료** — 다음은 Day 12 Lock-free 자료구조의 안전성 검증과 재시도 비용부터 진행한다.
 ## Interview 답변 체크리스트
 
 - [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다.
@@ -57,3 +57,4 @@
 - [x] 인접 행렬 vs 인접 리스트, sparse/dense graph, BFS/DFS 복잡도 차이, 재귀 DFS 콜스택 오버플로우 위험 — Day 8
 - [x] LRU 캐시(해시 맵 + 이중 연결 리스트), sliding window/token bucket rate limiter, 스킵 리스트+해시 맵 기반 랭킹 조합 설계 — Day 9
 - [x] 요구사항 변화에 따른 자료구조 재검토(유지 vs 교체 구분), 규모 변화가 자료구조 유효성을 무효화하는 원리, 라운드별 trade-off 재계산, 종합 follow-up 대응 — Day 10
+- [x] 동시성 안전 자료구조와 일관성 선택 — Day 11

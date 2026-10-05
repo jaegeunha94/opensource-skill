@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | HTTP 트래픽 분석과 시니어 답변 프레임워크 — 요청 경로 전체를 그리는 사고법 | [0001-http-traffic-analysis-framework.html](lessons/0001-http-traffic-analysis-framework.html) |
@@ -12,19 +13,20 @@
 | 6 | 2026-07-07 | Cookies & Session 관리 — SameSite, Secure, HttpOnly, 세션 vs 토큰 trade-off | [0006-cookies-session-management.html](lessons/0006-cookies-session-management.html) |
 | 7 | 2026-07-08 | CORS 심화 — Preflight, credentials, Vary: Origin과 실전 트러블슈팅 | [0007-cors-preflight-credentials.html](lessons/0007-cors-preflight-credentials.html) |
 | 8 | 2026-07-09 | Cache-Control 심화 — freshness, private/public, no-cache vs no-store, 캐시 계층별 해석 | [0008-cache-control-freshness-private-public.html](lessons/0008-cache-control-freshness-private-public.html) |
-
+| 9 | 2026-10-05 | ETag와 조건부 요청 | [0009-etag.html](lessons/0009-etag.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | ETag와 조건부 요청 | If-None-Match, If-Modified-Since, 검증 캐시와 대역폭 절감 |
 | 10 | Compression | gzip/br, Content-Encoding, CPU-대역폭 trade-off |
 | 11 | Keep-Alive와 Connection 관리 | HTTP/1.1 지속 연결, Head-of-Line Blocking |
-
 ## 현재 학습 위치
 
-**Day 8 완료** — 다음: Day 9 — ETag와 조건부 요청
 
+
+
+**Day 9 완료** — 다음은 Day 10 Compression부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 요청 경로 전체 매핑: 클라이언트 → CDN → 리버스 프록시/LB → API 게이트웨이 → 앱 서버 → 다운스트림 (Day 1)
@@ -61,4 +63,5 @@
 - [x] private/public 지시어와 개인화 응답의 shared 캐시 오염 방지 (Day 8)
 - [x] must-revalidate, stale-while-revalidate, stale-if-error의 trade-off (Day 8)
 - [x] "CDN이 오래된 응답을 계속 서빙" 장애의 계층별 원인 격리 절차 (Day 8)
-- [ ] ETag/Last-Modified 기반 조건부 요청과 304 Not Modified (예정 Day 9)
+- [x] ETag/Last-Modified 기반 조건부 요청과 304 Not Modified  (Day 9)
+- [x] ETag와 조건부 요청 — Day 9

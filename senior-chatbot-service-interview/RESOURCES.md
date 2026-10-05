@@ -129,3 +129,7 @@
 
 - [System Design Interview (Alex Xu)](https://www.amazon.com/System-Design-Interview-insiders-Second/dp/B08CMF2CQF) — 규모 산정, 장애 격리 사고 프레임.
 - [Chip Huyen — Machine Learning Interviews Book](https://huyenchip.com/ml-interviews-book/)
+
+## 2026-10-05 Day lesson sources confirmed
+
+- [Dialogflow CX handlers](https://cloud.google.com/dialogflow/cx/docs/concept/handler) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.

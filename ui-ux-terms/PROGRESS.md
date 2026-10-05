@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-22 | UI vs UX — 기초 개념과 설계 산출물 3단계 | [0001-ui-ux-fundamentals.html](lessons/0001-ui-ux-fundamentals.html) |
@@ -22,16 +23,17 @@
 | 16 | 2026-07-07 | 로딩 상태 & 스켈레톤 UI 용어 — Skeleton Screen·Spinner·Progress Indicator·Optimistic UI | [0016-loading-states-skeleton-ui.html](lessons/0016-loading-states-skeleton-ui.html) |
 | 17 | 2026-07-08 | 온보딩 & 첫 사용자 경험(FTUE) 용어 — Coach Mark·Product Tour·Aha Moment·Time-to-Value | [0017-onboarding-ftue.html](lessons/0017-onboarding-ftue.html) |
 | 18 | 2026-07-09 | 네비게이션 UI 패턴 — Tab Bar·Bottom Navigation·Hamburger Menu·Drawer·Breadcrumb·Stepper·Pagination·Infinite Scroll | [0018-navigation-ui-patterns.html](lessons/0018-navigation-ui-patterns.html) |
-
+| 19 | 2026-10-05 | UX 지표와 가드레일 — 성공률·오류율·완료 시간 | [0019-ux-metrics-guardrails.html](lessons/0019-ux-metrics-guardrails.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
+| 20 | 접근성·사용성 가드레일을 포함한 UX 실험 설계 | 후속 심화 주제와 실무 판단 기준 |
 
 ## 현재 학습 위치
 
-**Day 18 완료** — 다음 주제 미정. 다음 세션에서 MISSION.md와 완료 내용을 바탕으로 새 주제를 선정 예정.
-
+**Day 19 완료** — 다음은 Day 20 접근성·사용성 가드레일을 포함한 UX 실험 설계부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] UI (User Interface) — Day 1
@@ -165,3 +167,4 @@
 - [x] Stepper (스테퍼) — Day 18
 - [x] Pagination (페이지네이션) — Day 18
 - [x] Infinite Scroll (무한 스크롤) — Day 18
+- [x] UX 지표와 가드레일 — 성공률·오류율·완료 시간 — Day 19

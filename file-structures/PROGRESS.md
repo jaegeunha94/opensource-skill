@@ -8,6 +8,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | 저장장치와 접근 패턴 프레임워크 | [interview-day01-storage-access-patterns.html](lessons/interview-day01-storage-access-patterns.html) |
@@ -19,18 +20,19 @@
 | 7 | 2026-07-06 | 외부 정렬 (Run Generation, K-way Merge, I/O Pass 비용) | [interview-day07-external-sort.html](lessons/interview-day07-external-sort.html) |
 | 8 | 2026-07-07 | 파일 시스템 구조 (inode vs FAT Trade-off) | [interview-day08-file-systems.html](lessons/interview-day08-file-systems.html) |
 | 9 | 2026-07-08 | 대용량 로그/이벤트 저장 (Append-only 구조, WAL, LSM-Tree) | [interview-day09-append-only-structures.html](lessons/interview-day09-append-only-structures.html) |
-
+| 10 | 2026-10-05 | 종합 모의 면접 | [interview-day10-comprehensive-mock-interview.html](lessons/interview-day10-comprehensive-mock-interview.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 10 | 종합 모의 면접 | "검색 요구사항을 받고 저장 구조와 인덱스를 설계해보세요." | 접근 패턴 분석, 구조 선택, 운영 비용 |
-
+| 11 | WAL과 체크포인트를 이용한 크래시 복구 설계 | 복구·정합성·운영 지표 | 설계 판단과 실패 대응 |
 ## 현재 학습 위치
 
-**Day 9 완료** — 대용량 로그/이벤트 저장 (append-only의 순차 쓰기 원리, tombstone, compaction, WAL, LSM-Tree, Read/Write/Space amplification trade-off).
-**다음: Day 10** — 종합 모의 면접 (Day 1~9 통합 설계 답변).
 
+
+
+**Day 10 완료** — 다음은 Day 11 WAL과 체크포인트를 이용한 크래시 복구 설계부터 진행한다.
 ## Interview 답변 체크리스트
 
 - [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. *(Day 1~9 완료)*
@@ -60,4 +62,5 @@
 - [x] External Sort — run generation, replacement selection, k-way merge, I/O pass 비용 공식 (Day 7)
 - [x] inode vs FAT — 연결 리스트 vs 포인터 배열, 랜덤 접근 복잡도, 저널링/손상 복구, extent 기반 단편화 완화 (Day 8)
 - [x] Append-only 구조 — tombstone, compaction, WAL, LSM-Tree(memtable/SSTable), Bloom filter, Read/Write/Space amplification (Day 9)
-- [ ] 종합 설계 모의 면접 (예정 Day 10)
+- [x] 종합 설계 모의 면접  (Day 10)
+- [x] 종합 모의 면접 — Day 10

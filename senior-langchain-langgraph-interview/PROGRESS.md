@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-02 | LangChain·LangGraph 기반 Agent 설계/운영 프레임워크 | [0001-langchain-langgraph-agent-architecture-framework.html](lessons/0001-langchain-langgraph-agent-architecture-framework.html) |
@@ -12,22 +13,23 @@
 | 6 | 2026-07-07 | Guardrails와 Context Engineering | [0006-langchain-guardrails-context-engineering.html](lessons/0006-langchain-guardrails-context-engineering.html) |
 | 7 | 2026-07-08 | LangGraph StateGraph 설계 | [0007-langgraph-stategraph-design.html](lessons/0007-langgraph-stategraph-design.html) |
 | 8 | 2026-07-09 | Persistence와 Checkpointer | [0008-langgraph-persistence-checkpointer.html](lessons/0008-langgraph-persistence-checkpointer.html) |
-
+| 9 | 2026-10-05 | Store, Interrupt, Human-in-the-loop | [0009-store-interrupt-human-in-the-loop.html](lessons/0009-store-interrupt-human-in-the-loop.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | Store, Interrupt, Human-in-the-loop | 장기 메모리용 Store vs 세션용 Checkpointer, `interrupt()`, 승인 게이트 설계 |
 | 10 | Subgraph와 Multi-agent 설계 | subgraph 합성, supervisor/swarm/handoff 패턴, 상태 격리 |
 | 11 | Fault Tolerance와 Retry | durable execution, 재시도 전략, 부분 실패 복구, idempotency |
 | 12 | LangSmith Tracing과 Evaluation | offline/online eval, LLM-as-judge, dataset 설계, production drift 탐지 |
 | 13 | 배포(Deployment) | LangGraph Platform/Server, 배포 옵션, 스케일링, 버전 관리 |
 | 14 | 운영 장애 대응과 비용/성능 트레이드오프 | 프로덕션 장애 사례, 비용 최적화, 모델/아키텍처 트레이드오프 종합 |
-
 ## 현재 학습 위치
 
-**Day 8 완료** — 다음: Day 9 — Store, Interrupt, Human-in-the-loop
 
+
+
+**Day 9 완료** — 다음은 Day 10 Subgraph와 Multi-agent 설계부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Agent = model + harness 개념 (Day 1)
@@ -67,9 +69,10 @@
 - [x] `get_state`/`get_state_history`/`update_state(as_node=...)`로 하는 time travel의 fork(분기) 모델과 알려진 edge case (Day 8)
 - [x] 체크포인트는 diff가 아닌 `channel_values` 전체의 풀 스냅샷이라는 저장 모델과 실측된 직렬화 오버헤드(스토리지/토큰) (Day 8)
 - [x] `durability`(`sync`/`async`/`exit`, 기본 `async`) 파라미터로 체크포인트 쓰기 빈도를 조절하는 비용 관리, `ShallowPostgresSaver` deprecation과의 연결 (Day 8)
-- [ ] Store / Interrupt / Human-in-the-loop (예정 Day 9)
+- [x] Store / Interrupt / Human-in-the-loop  (Day 9)
 - [ ] Subgraph / Multi-agent (예정 Day 10)
 - [ ] Fault Tolerance / Retry (예정 Day 11)
 - [ ] LangSmith Tracing / Evaluation (예정 Day 12)
 - [ ] 배포 전략 (예정 Day 13)
 - [ ] 운영 장애 대응 / 비용·성능 trade-off (예정 Day 14)
+- [x] Store, Interrupt, Human-in-the-loop — Day 9

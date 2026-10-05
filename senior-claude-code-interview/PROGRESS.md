@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-07-03 | Claude Code 기반 agentic coding 운영 프레임워크 | [0001-agentic-coding-operating-framework.html](lessons/0001-agentic-coding-operating-framework.html) |
@@ -10,12 +11,12 @@
 | 4 | 2026-07-06 | 권한 모델 심화 — permission mode와 규칙 문법 | [0004-permission-model-modes-and-rule-syntax.html](lessons/0004-permission-model-modes-and-rule-syntax.html) |
 | 5 | 2026-07-07 | 샌드박싱과 shell/file 도구 실행 경계 | [0005-sandboxing-shell-file-tool-execution-boundary.html](lessons/0005-sandboxing-shell-file-tool-execution-boundary.html) |
 | 6 | 2026-07-08 | 보안 — 위협 모델과 prompt injection 방어 | [0006-security-threat-model-prompt-injection-defense.html](lessons/0006-security-threat-model-prompt-injection-defense.html) |
-
+| 7 | 2026-10-05 | MCP — Model Context Protocol 통합과 운영 | [0007-mcp-model-context-protocol.html](lessons/0007-mcp-model-context-protocol.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 7 | MCP — Model Context Protocol 통합과 운영 | MCP 서버 연결, tool search(온디맨드 로드), 권한 규칙, 조직 단위 managed MCP |
 | 8 | Skills — 재사용 워크플로우 설계와 컨텍스트 비용 | on-demand 로드, disable-model-invocation, 팀 표준화 |
 | 9 | Hooks — 실행 시점 자동화와 안전장치 | PreToolUse/PostToolUse/SessionStart/Stop, 결정론적 통제 vs CLAUDE.md의 비강제성 |
 | 10 | Plugins와 마켓플레이스 — 팀 배포/표준화 | 플러그인 구성요소, 마켓플레이스 신뢰 경계, managed 배포 |
@@ -31,11 +32,12 @@
 | 20 | 모델/프로바이더 설정 — Bedrock/Vertex/Foundry, 모델 선택 trade-off | 인증 우선순위, 모델별 특성, 조직 라우팅 |
 | 21 | Enterprise/Admin 설정과 Observability | managed settings, server-managed settings, OpenTelemetry, 감사 로그 |
 | 22 | 트러블슈팅과 Production 도입 패턴 — 종합 설계 면접 | 흔한 실패 패턴 진단, 팀 롤아웃 전략, 생산성/품질 trade-off 종합 |
-
 ## 현재 학습 위치
 
-**Day 6 완료** — Day 7: MCP — Model Context Protocol 통합과 운영으로 진행 예정.
 
+
+
+**Day 7 완료** — 다음은 Day 8 Skills — 재사용 워크플로우 설계와 컨텍스트 비용부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 에이전틱 루프(gather context → take action → verify results)의 공식 정의와 "agentic harness"로서의 Claude Code 개념 (Day 1)
@@ -70,7 +72,7 @@
 - [x] Secure deployment 3원칙(Security boundary/Least privilege/Defense in depth)과 credential proxy 패턴(`ANTHROPIC_BASE_URL` vs `HTTP_PROXY`/`HTTPS_PROXY`의 TLS 내용 검사 불가 vs TLS-terminating proxy) (Day 6)
 - [x] security-guidance 플러그인의 3단계 리뷰(per-edit 패턴 매칭/end-of-turn diff 리뷰/commit-push 리뷰)와 "같은 인스턴스 자기 채점이 아닌 독립 컨텍스트" 설계, 그리고 그 한계(쓰기/커밋을 막지 않음) (Day 6)
 - [x] 계층형 보안 스택(세션 내 플러그인 → 온디맨드 `/security-review` → PR 단계 Code Review → CI 정적 분석)이 서로 다른 것을 잡아내는 구조 (Day 6)
-- [ ] MCP (예정 Day 7)
+- [x] MCP  (Day 7)
 - [ ] Skills (예정 Day 8)
 - [ ] Hooks (예정 Day 9)
 - [ ] Plugins (예정 Day 10)
@@ -86,3 +88,4 @@
 - [ ] 모델/프로바이더 설정 (예정 Day 20)
 - [ ] Enterprise/Admin/Observability (예정 Day 21)
 - [ ] 트러블슈팅/Production 도입 패턴 (예정 Day 22)
+- [x] MCP — Model Context Protocol 통합과 운영 — Day 7

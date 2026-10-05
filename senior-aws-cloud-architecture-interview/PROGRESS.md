@@ -2,6 +2,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | AWS 아키텍처 설계 프레임워크 | [0001-aws-architecture-design-framework.html](lessons/0001-aws-architecture-design-framework.html) |
@@ -14,17 +15,19 @@
 | 8 | 2026-07-07 | CloudWatch와 운영 가시성 | [0008-cloudwatch-operational-visibility.html](lessons/0008-cloudwatch-operational-visibility.html) |
 | 9 | 2026-07-08 | 비용 최적화 전략 | [0009-cost-optimization-strategy.html](lessons/0009-cost-optimization-strategy.html) |
 | 10 | 2026-07-09 | 종합 아키텍처 설계 면접 — 웹 서비스 고가용성 설계 | [0010-comprehensive-architecture-design-interview.html](lessons/0010-comprehensive-architecture-design-interview.html) |
-
+| 11 | 2026-10-05 | 재해 복구(DR) 전략 — Backup & Restore, Pilot Light, Warm Standby, Multi-Site | [0011-dr-backup-restore-pilot-light-warm-standby-multi-site.html](lessons/0011-dr-backup-restore-pilot-light-warm-standby-multi-site.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 11 | 재해 복구(DR) 전략 — Backup & Restore, Pilot Light, Warm Standby, Multi-Site | RTO/RPO 기준 DR 전략 선택, 멀티 리전 트레이드오프, Route 53 장애 조치 라우팅 |
-
+| 12 | DR 리허설과 복구 검증 자동화 | 복구·정합성·운영 지표 |
 ## 현재 학습 위치
 
-**Day 10 완료** — Day 11: 재해 복구(DR) 전략으로 진행 예정.
 
+
+
+**Day 11 완료** — 다음은 Day 12 DR 리허설과 복구 검증 자동화부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] AWS Well-Architected Framework 5개 기둥 (Day 1)
@@ -70,4 +73,5 @@
 - [x] 통합 아키텍처 설계 순서(경계→진입점→컴퓨트→데이터→정적자산→횡단 관심사) (Day 10)
 - [x] SPOF(단일 장애점) 자가 진단 습관 (Day 10)
 - [x] 고가용성과 무중단의 차이, 과설계 vs 미달 설계 판단 (Day 10)
-- [ ] RTO/RPO 기준 DR 전략(Backup & Restore/Pilot Light/Warm Standby/Multi-Site) 선택 (예정 Day 11)
+- [x] RTO/RPO 기준 DR 전략(Backup & Restore/Pilot Light/Warm Standby/Multi-Site) 선택  (Day 11)
+- [x] 재해 복구(DR) 전략 — Backup & Restore, Pilot Light, Warm Standby, Multi-Site — Day 11

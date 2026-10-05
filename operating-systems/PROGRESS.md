@@ -8,6 +8,7 @@
 
 ## 완료한 내용
 
+
 | Day | 날짜 | 주제 | 레슨 파일 |
 |-----|------|------|-----------|
 | 1 | 2026-06-30 | OS 관점 성능 진단 프레임워크 | [0011-day1-os-performance-diagnosis-framework.html](lessons/0011-day1-os-performance-diagnosis-framework.html) |
@@ -20,18 +21,17 @@
 | 8 | 2026-07-07 | 비동기 I/O와 이벤트 루프 | [0018-day8-async-io-and-event-loop.html](lessons/0018-day8-async-io-and-event-loop.html) |
 | 9 | 2026-07-08 | 컨테이너와 OS 격리 | [0019-day9-container-os-isolation.html](lessons/0019-day9-container-os-isolation.html) |
 | 10 | 2026-07-09 | 종합 모의 면접 (운영체제 지표 기반 RCA) | [0020-day10-comprehensive-mock-interview.html](lessons/0020-day10-comprehensive-mock-interview.html) |
-
+| 11 | 2026-10-05 | NUMA 메모리 지역성과 지연 시간 진단 | [0021-numa.html](lessons/0021-numa.html) |
 ## 다음 예정 학습
+
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| (없음) | 시니어 인터뷰 커리큘럼 1주기 완주 | - | 다음 요청 시 심화 주제(예: NUMA, RCU, io_uring 심화, 실시간 스케줄링)로 확장 예정 |
+| 12 | 컨테이너 cgroup 자원 압박과 CPU throttling 진단 | 후속 심화 주제와 실무 판단 기준 | 다음 학습에서 다룰 개념 |
 
 ## 현재 학습 위치
 
-**Day 10 완료** (2026-07-09) — 종합 모의 면접, 시니어 인터뷰 커리큘럼 1주기 완주
-**다음**: 사용자 요청 시 심화 주제 추가 (Day 11부터)
-
+**Day 11 완료** — 다음은 Day 12 컨테이너 cgroup 자원 압박과 CPU throttling 진단부터 진행한다.
 ## Interview 답변 체크리스트
 
 - [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다.
@@ -59,3 +59,4 @@
 - [x] blocking I/O, non-blocking I/O, select/poll/epoll, 이벤트 루프 블로킹, io_uring, cgroup CPU throttling과 이벤트 루프 — Day 8
 - [x] VM vs 컨테이너 구조, namespace(시야 격리)와 cgroup(자원 제한) 구분, noisy neighbor, OOM kill, CPU throttling, User namespace, gVisor/Kata — Day 9
 - [x] 복합 원인 장애의 계층별 순차 진단 (CPU/스케줄링 → 동시성 → 컨테이너 경계 → I/O/이벤트 루프), 상관관계 vs 인과관계 구분, 재발 방지 커뮤니케이션 — Day 10
+- [x] NUMA 메모리 지역성과 지연 시간 진단 — Day 11
