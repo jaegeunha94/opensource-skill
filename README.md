@@ -27,7 +27,11 @@
 - 기존 `teach` 스킬의 레슨 작성 규칙을 따르고, 어려운 개념은 전제 개념부터 쉬운 한국어로 설명해줘. 인터뷰 과목은 면접 질문, 실무 상황, 답변 사고 순서, 답변 예시, trade-off, 흔한 오해, follow-up과 자기 점검을 포함해줘.
 - 레슨은 `lessons/` 아래 독립 실행 가능한 `.html`로 만들고, `lessons/index.html`과 `PROGRESS.md`도 함께 갱신해줘.
 - 학습 파일 변경을 검토하고 이번 요청에서 만든 파일만 commit한 뒤 현재 작업 브랜치에 push해줘. 기존의 무관한 변경사항은 포함하지 마.
-- 결과에 commit hash, push 대상 브랜치, 추가한 Day와 다음 예정 학습을 과목별로 알려줘. 새 레슨 URL 목록은 한국 시간 기준 실행 날짜를 `**YYYY-MM-DD**` 형식으로 먼저 쓰고, 과목마다 `subject-slug: [전체 URL](전체 URL)` 한 줄로 출력해줘. Pages 배포가 확인되지 않았으면 해당 URL 뒤에 ` (배포 대기 중)`을 표시해줘.
+- 결과에 commit hash, push 대상 브랜치, 추가한 Day와 다음 예정 학습을 과목별로 알려줘. 새 레슨 URL 목록은 한국 시간 기준 실행 날짜를 `**YYYY-MM-DD**` 형식으로 먼저 쓰고, 과목마다 아래 형식으로 한 줄씩 출력해줘. 마크다운 링크는 중첩하거나 다시 감싸지 말고, 링크 글자와 링크 대상에 같은 URL을 넣어 화면에는 URL이 한 번만 보이게 해줘.
+
+  `ui-ux-terms: [https://jaegeunha94.github.io/opensource-skill/ui-ux-terms/lessons/0018-navigation-ui-patterns.html](https://jaegeunha94.github.io/opensource-skill/ui-ux-terms/lessons/0018-navigation-ui-patterns.html)`
+
+  URL 목록의 각 줄에는 상태 문구를 붙이지 말고, Pages 배포 여부가 불확실하면 URL 목록과 별도로 알려줘.
 ```
 
 ## 수동 프롬프트로 전체 과목 실행
@@ -49,7 +53,7 @@
 - 각 레슨은 해당 과목의 `lessons/` 아래 독립 실행 가능한 `.html`로 만들고, `lessons/index.html`과 `PROGRESS.md`도 함께 갱신해줘.
 - 표에 등록된 과목 폴더가 없거나 진행 기록과 파일의 불일치를 해결할 수 없으면 해당 과목은 이유를 기록하고 건너뛴 뒤 나머지를 계속해줘.
 - 모든 과목의 결과와 새 파일을 검토하고 이번 요청에서 만든 파일만 하나의 commit으로 저장한 뒤 현재 작업 브랜치에 push해줘. 기존의 무관한 변경사항은 포함하지 마.
-- 결과를 과목별로 정리해서 완료/건너뜀 여부, 추가한 Day와 주제, 다음 예정 학습, 변경 파일을 알려줘. commit hash와 push 대상 브랜치도 표시해줘. 새 레슨 URL 목록은 한국 시간 기준 실행 날짜를 `**YYYY-MM-DD**` 형식으로 먼저 쓰고, 과목마다 `subject-slug: [전체 URL](전체 URL)` 한 줄로 출력해줘. Pages 배포가 확인되지 않았으면 해당 URL 뒤에 ` (배포 대기 중)`을 표시해줘.
+- 결과를 과목별로 정리해서 완료/건너뜀 여부, 추가한 Day와 주제, 다음 예정 학습, 변경 파일을 알려줘. commit hash와 push 대상 브랜치도 표시해줘. 새 레슨 URL 목록은 한국 시간 기준 실행 날짜를 `**YYYY-MM-DD**` 형식으로 먼저 쓰고, 과목마다 위 예시처럼 한 줄씩 출력해줘. 마크다운 링크는 중첩하거나 다시 감싸지 말고, 링크 글자와 링크 대상에 같은 URL을 넣어 화면에는 URL이 한 번만 보이게 해줘. URL 줄에는 상태 문구를 붙이지 말고, Pages 배포 여부가 불확실하면 URL 목록과 별도로 알려줘.
 ```
 
 ## 생성한 레슨 저장 요청
@@ -57,7 +61,7 @@
 수동 프롬프트에서 commit/push를 생략했거나 나중에 별도로 저장할 때 사용한다. `{subject-slug}`는 실제 과목 폴더 이름으로 바꾼다.
 
 ```text
-방금 추가한 `{subject-slug}` 학습 변경사항을 검토하고 이번 과목 파일만 commit한 뒤 현재 작업 브랜치에 push해줘. 다른 작업의 변경사항은 포함하지 말고, commit hash와 push 대상 브랜치를 알려줘. 새 레슨 URL은 한국 시간 기준 실행 날짜를 `**YYYY-MM-DD**` 형식으로 먼저 쓰고 `subject-slug: [전체 URL](전체 URL)` 형식으로 출력해줘. Pages 배포가 확인되지 않았으면 URL 뒤에 ` (배포 대기 중)`을 표시해줘.
+방금 추가한 `{subject-slug}` 학습 변경사항을 검토하고 이번 과목 파일만 commit한 뒤 현재 작업 브랜치에 push해줘. 다른 작업의 변경사항은 포함하지 말고, commit hash와 push 대상 브랜치를 알려줘. 새 레슨 URL은 한국 시간 기준 실행 날짜를 `**YYYY-MM-DD**` 형식으로 먼저 쓰고 `subject-slug: [https://.../lessons/example.html](https://.../lessons/example.html)`처럼 한 줄로 출력해줘. 마크다운 링크는 중첩하거나 다시 감싸지 말고, 링크 글자와 링크 대상에 같은 URL을 넣어 화면에는 URL이 한 번만 보이게 해줘. URL 줄에는 상태 문구를 붙이지 말고, Pages 배포 여부가 불확실하면 URL 목록과 별도로 알려줘.
 ```
 
 ## 학습 브랜치 통합 요청
