@@ -2,7 +2,9 @@
 
 아래 프롬프트들은 `/app/MG/opensource-skill` 저장소에서 `.claude/skills/study-track` 스킬을 사용해 과목별 학습 워크스페이스를 생성하거나 재개할 때 사용한다.
 
-공통 실행 게이트:
+아래 과목별 프롬프트는 `enabled` 게이트를 따르는 Claude routine용이다. 설정을 바꾸지 않고 수동으로 한 번만 레슨을 추가하려면 저장소 README의 [과목별 수동 프롬프트](../../../README.md#수동-프롬프트로-학습-레슨-추가) 또는 [전체 과목 수동 프롬프트](../../../README.md#수동-프롬프트로-전체-과목-실행)를 사용한다. 수동 예외는 명시적으로 요청한 과목 또는 전체 과목과 해당 실행에만 적용한다.
+
+공통 실행 게이트 (routine 및 수동 예외를 명시하지 않은 요청):
 
 - 모든 Claude routine 프롬프트는 작업 시작 전에 저장소 루트의 `study-track-control.md`를 먼저 읽는다.
 - `__all__` 행의 `enabled` 값이 `false`이면 모든 과목 실행을 건너뛰고, 레슨 생성, `PROGRESS.md` 수정, commit, push를 하지 않는다.

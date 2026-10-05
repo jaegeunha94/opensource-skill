@@ -5,7 +5,18 @@ Claude routine runs for study tracks must check this file before creating a less
 Set `enabled` to `false` to skip today's run. Set it back to `true` when the
 subject should resume.
 
-Rules:
+These values control scheduled routines and requests that do not explicitly
+override the gate. An explicit manual one-time request may create the next lesson
+for the named subject(s), or all subjects when explicitly requested with
+`대상: 전체 과목`, even when `__all__` or the subject is `false`. For all subjects,
+include this table's slugs except `__all__` plus existing repository-root subject
+folders containing both `MISSION.md` and `PROGRESS.md`, deduplicated by slug.
+This applies only to that request: do not change this table or resume scheduled routines.
+The usual duplicate prevention and progress updates still apply. See
+[README.md](README.md#수동-프롬프트로-학습-레슨-추가) for a single-subject prompt and
+[the all-subjects prompt](README.md#수동-프롬프트로-전체-과목-실행) for a full run.
+
+Rules for gated runs:
 
 - Use lowercase `true` or `false`.
 - The special `__all__` row is checked first.

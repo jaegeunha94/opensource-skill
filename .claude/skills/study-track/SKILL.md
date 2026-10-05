@@ -5,11 +5,46 @@ disable-model-invocation: true
 argument-hint: "Which IT subject should be created or continued?"
 ---
 
-The user wants a durable learning workspace for one IT subject. Your job is to create or resume the subject folder, determine what has already been completed, and advance the course without duplicating finished material.
+The user wants durable learning workspaces for the requested IT subject(s). Your job is to create or resume each subject folder, determine what has already been completed, and advance each course without duplicating finished material.
 
 This skill coordinates learning state. When actual lesson authoring is needed, follow the existing `teach` workspace conventions for lesson, reference, resource, and learning-record files, but do not edit the `teach` skill itself.
 
 ## Core rule
+
+### Execution mode
+
+The `enabled` gate below remains the default, including for all scheduled routine runs.
+An explicit user request for a **manual one-time run** (for example,
+`실행 방식: 수동 1회` with an instruction to ignore `enabled` for this request)
+may bypass the gate for the named subject(s), or for all subjects when the user
+explicitly requests `대상: 전체 과목`. A scheduled routine must not
+select this exception on its own. Merely invoking the skill manually does not
+bypass the gate unless the user requests the override.
+
+For an explicit manual one-time run, resolve the repository root and requested
+subject slug(s), then proceed to the completion checks below regardless of
+`__all__` or subject `enabled` values. Do not edit `study-track-control.md` or
+resume scheduled routines. State the mode before lesson work begins, for example:
+`Manual one-time run: computer-networking; enabled gate bypassed for this request only`.
+All duplicate prevention, lesson authoring, progress/index updates, and Git
+authorization rules still apply. Create one next unfinished lesson per requested
+subject unless the user asks for more. See the repository [README](../../../README.md)
+for a copyable manual prompt.
+
+For `대상: 전체 과목`, build the subject list from the control table's slugs
+(excluding `__all__`) plus existing repository-root subject folders containing
+both `MISSION.md` and `PROGRESS.md`. Include subjects whose `enabled` is `false`
+and existing subjects missing from the table; deduplicate by slug. Do not treat
+`__all__` as a subject or count nested copies such as `study/{subject-slug}` again.
+Show the resolved list, then process each subject sequentially using its own
+mission and progress. Add exactly one next unfinished lesson per subject; extend
+an exhausted plan without resetting completed Days. If a listed folder is missing
+or its learning state cannot be reconciled, report that subject as skipped with
+the reason and continue the remaining subjects. Summarize completed and skipped
+subjects with their Day/topic and lesson paths. Do not infer Git commit/push
+authorization from the all-subjects selection.
+
+### Default enabled gate
 
 Use `study-track-control.md` at the repository root as the first execution gate for scheduled routine runs.
 
@@ -24,8 +59,8 @@ The only allowed preflight actions are:
 3. Parse the `__all__` row and the requested subject row.
 4. Stop or continue based on the rules below.
 
-The `__all__` row is the global override. If `__all__` is `false`, every study
-track is disabled even when the requested subject row says `true`.
+The `__all__` row is the global override for gated runs. If `__all__` is `false`,
+every study track is disabled even when the requested subject row says `true`.
 
 Before reading or writing a subject workspace, resolve the subject slug and read
 `study-track-control.md` if it exists:
@@ -43,6 +78,8 @@ Before reading or writing a subject workspace, resolve the subject slug and read
 
 When continuing, state the gate result before lesson work begins, for example:
 `Gate passed: __all__=true, senior-ai-harness-interview=true`.
+
+### Completion checks for both modes
 
 Use `PROGRESS.md` as the single source of truth for completion.
 
