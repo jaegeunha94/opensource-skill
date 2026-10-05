@@ -13,7 +13,7 @@
 | 6 | 2026-07-07 | Web Vitals & 성능 예산 (LCP/INP/CLS 세부 진단, RUM vs Lab, p75 분포 사고, 성능 예산 설계와 CI 통합) | [0006-web-vitals-performance-budget.html](lessons/0006-web-vitals-performance-budget.html) |
 | 7 | 2026-07-08 | API 통합 & 네트워크 계층 (REST vs GraphQL 트레이드오프, HTTP/클라이언트 캐싱 계층, 멱등성과 재시도 전략, 오프라인 큐잉) | [0007-api-integration-network-layer.html](lessons/0007-api-integration-network-layer.html) |
 | 8 | 2026-07-09 | 상태/데이터 아키텍처 (클라이언트 상태 vs 서버 상태 분리 기준, 파생 상태와 상태 배치, 캐시 무효화 전략, 정규화된 캐시와 낙관적 동시성 제어) | [0008-state-data-architecture.html](lessons/0008-state-data-architecture.html) |
-| 9 | 2026-10-05 | React 렌더링 모델 & 아키텍처 | [0009-react.html](lessons/0009-react.html) |
+| 9 | 2026-10-05 | React 렌더링 모델 — 상태 소유권과 비용 경계 | [0009-react.html](lessons/0009-react.html) |
 ## 다음 예정 학습
 
 

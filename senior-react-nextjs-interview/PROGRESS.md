@@ -12,7 +12,7 @@
 | 5 | 2026-07-06 | State Management 아키텍처 — 로컬 상태 vs 서버 상태 vs 전역 상태 vs URL 상태 구분과 도구 선택 | [0005-state-management-architecture-local-server-global.html](lessons/0005-state-management-architecture-local-server-global.html) |
 | 6 | 2026-07-07 | Data Fetching 패턴 — 서버 fetch vs 클라이언트 fetch, 워터폴 방지, request memoization | [0006-data-fetching-patterns-waterfall-request-memoization.html](lessons/0006-data-fetching-patterns-waterfall-request-memoization.html) |
 | 7 | 2026-07-08 | Suspense와 동시성 렌더링 — concurrent rendering, transition, 우선순위 스케줄링 | [0007-suspense-concurrent-rendering-transitions.html](lessons/0007-suspense-concurrent-rendering-transitions.html) |
-| 8 | 2026-10-05 | Error Boundary와 장애 격리 | [0008-error-boundary.html](lessons/0008-error-boundary.html) |
+| 8 | 2026-10-05 | Error Boundary — UI 실패를 격리하고 복구 행동 제공하기 | [0008-error-boundary.html](lessons/0008-error-boundary.html) |
 ## 다음 예정 학습
 
 

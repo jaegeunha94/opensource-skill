@@ -23,7 +23,7 @@
 | 16 | 2026-07-07 | 로딩 상태 & 스켈레톤 UI 용어 — Skeleton Screen·Spinner·Progress Indicator·Optimistic UI | [0016-loading-states-skeleton-ui.html](lessons/0016-loading-states-skeleton-ui.html) |
 | 17 | 2026-07-08 | 온보딩 & 첫 사용자 경험(FTUE) 용어 — Coach Mark·Product Tour·Aha Moment·Time-to-Value | [0017-onboarding-ftue.html](lessons/0017-onboarding-ftue.html) |
 | 18 | 2026-07-09 | 네비게이션 UI 패턴 — Tab Bar·Bottom Navigation·Hamburger Menu·Drawer·Breadcrumb·Stepper·Pagination·Infinite Scroll | [0018-navigation-ui-patterns.html](lessons/0018-navigation-ui-patterns.html) |
-| 19 | 2026-10-05 | UX 지표와 가드레일 — 성공률·오류율·완료 시간 | [0019-ux-metrics-guardrails.html](lessons/0019-ux-metrics-guardrails.html) |
+| 19 | 2026-10-05 | UX 지표와 Guardrail — 성공률·오류·완료 시간 | [0019-ux-metrics-guardrails.html](lessons/0019-ux-metrics-guardrails.html) |
 ## 다음 예정 학습
 
 

@@ -15,7 +15,7 @@
 | 8 | 2026-07-07 | Postmortem 작성과 재발 방지 | [0008-postmortem-and-recurrence-prevention.html](lessons/0008-postmortem-and-recurrence-prevention.html) |
 | 9 | 2026-07-08 | 장애 커뮤니케이션 | [0009-incident-communication.html](lessons/0009-incident-communication.html) |
 | 10 | 2026-07-09 | 대규모 관측성 아키텍처 | [0010-large-scale-observability-architecture.html](lessons/0010-large-scale-observability-architecture.html) |
-| 11 | 2026-10-05 | 카오스 엔지니어링과 장애 훈련 (Game Day) | [0011-game-day.html](lessons/0011-game-day.html) |
+| 11 | 2026-10-05 | Game Day — 가설·중단 조건·학습을 갖춘 장애 훈련 | [0011-game-day.html](lessons/0011-game-day.html) |
 ## 다음 예정 학습
 
 

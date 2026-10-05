@@ -11,7 +11,7 @@
 | 4 | 2026-07-07 | PDF/DOCX/PPTX/XLSX 파싱 전략 | [0004-pdf-docx-pptx-xlsx-parsing-strategy.html](lessons/0004-pdf-docx-pptx-xlsx-parsing-strategy.html) |
 | 5 | 2026-07-08 | HTML/Markdown/코드/CSV/JSON/YAML 파싱과 구조화 데이터 처리 | [0005-html-markdown-code-csv-json-yaml-parsing-structured-data.html](lessons/0005-html-markdown-code-csv-json-yaml-parsing-structured-data.html) |
 | 6 | 2026-07-09 | OCR과 Table/Image Extraction | [0006-ocr-table-image-extraction.html](lessons/0006-ocr-table-image-extraction.html) |
-| 7 | 2026-10-05 | Metadata와 Provenance 설계 | [0007-metadata-provenance.html](lessons/0007-metadata-provenance.html) |
+| 7 | 2026-10-05 | Metadata와 Provenance — 답변 근거를 원본까지 추적하기 | [0007-metadata-provenance.html](lessons/0007-metadata-provenance.html) |
 ## 다음 예정 학습
 
 

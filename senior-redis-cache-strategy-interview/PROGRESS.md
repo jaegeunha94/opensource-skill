@@ -15,7 +15,7 @@
 | 8 | 2026-07-07 | Redis Streams와 메시지 처리 | [0008-redis-streams-message-processing.html](lessons/0008-redis-streams-message-processing.html) |
 | 9 | 2026-07-08 | Redis Persistence — RDB vs AOF | [0009-persistence-rdb-vs-aof.html](lessons/0009-persistence-rdb-vs-aof.html) |
 | 10 | 2026-07-09 | Eviction Policy와 메모리 사이징 | [0010-eviction-policy-memory-sizing.html](lessons/0010-eviction-policy-memory-sizing.html) |
-| 11 | 2026-10-05 | Pipelining · Lua Scripting · Transaction | [0011-pipelining-lua-scripting-transaction.html](lessons/0011-pipelining-lua-scripting-transaction.html) |
+| 11 | 2026-10-05 | Redis Pipelining·Lua·Transaction — round trip과 원자성 | [0011-pipelining-lua-scripting-transaction.html](lessons/0011-pipelining-lua-scripting-transaction.html) |
 ## 다음 예정 학습
 
 

@@ -15,7 +15,7 @@
 | 8 | 2026-07-07 | Canary 배포와 트래픽 분산 제어 | [0008-canary-deployment-traffic-control.html](lessons/0008-canary-deployment-traffic-control.html) |
 | 9 | 2026-07-08 | 롤백 판단과 인시던트 대응 | [0009-rollback-decision-incident-response.html](lessons/0009-rollback-decision-incident-response.html) |
 | 10 | 2026-07-09 | Release Ownership과 배포 리더십 | [0010-release-ownership-deployment-leadership.html](lessons/0010-release-ownership-deployment-leadership.html) |
-| 11 | 2026-10-05 | 무중단 DB 마이그레이션과 애플리케이션 호환성 | [0011-db.html](lessons/0011-db.html) |
+| 11 | 2026-10-05 | 배포 중 데이터베이스 호환성과 롤백 경계 | [0011-db.html](lessons/0011-db.html) |
 ## 다음 예정 학습
 
 

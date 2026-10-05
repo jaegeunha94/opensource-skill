@@ -21,7 +21,7 @@
 | 8 | 2026-07-07 | 네트워크 보안(방화벽/NAT/VPN/Zero Trust) | [interview-day-08-firewall-nat-vpn-zerotrust.html](lessons/interview-day-08-firewall-nat-vpn-zerotrust.html) |
 | 9 | 2026-07-08 | 네트워크 성능 최적화(RTT/keep-alive/CDN/HTTP/2·3) | [interview-day-09-network-performance-optimization.html](lessons/interview-day-09-network-performance-optimization.html) |
 | 10 | 2026-07-09 | 종합 모의 면접: 네트워크 장애 RCA | [interview-day-10-comprehensive-mock-rca.html](lessons/interview-day-10-comprehensive-mock-rca.html) |
-| 11 | 2026-10-05 | 글로벌 트래픽 분산과 장애 격리 아키텍처 설계 | [interview-day-11-global-traffic-failover.html](lessons/interview-day-11-global-traffic-failover.html) |
+| 11 | 2026-10-05 | 글로벌 트래픽 분산과 장애 격리 | [interview-day-11-global-traffic-failover.html](lessons/interview-day-11-global-traffic-failover.html) |
 ## 다음 예정 학습
 
 

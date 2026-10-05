@@ -13,7 +13,7 @@
 | 6 | 2026-07-07 | Service, CoreDNS, 서비스 디스커버리 | [0006-service-coredns-service-discovery.html](lessons/0006-service-coredns-service-discovery.html) |
 | 7 | 2026-07-08 | Ingress vs Gateway API — 트래픽 라우팅 설계 | [0007-ingress-gateway-api-traffic-routing.html](lessons/0007-ingress-gateway-api-traffic-routing.html) |
 | 8 | 2026-07-09 | CNI 네트워킹과 클러스터 네트워크 트러블슈팅 | [0008-cni-networking-troubleshooting.html](lessons/0008-cni-networking-troubleshooting.html) |
-| 9 | 2026-10-05 | Storage/Volume 설계 (PV/PVC, StorageClass, CSI) | [0009-storage-volume-pv-pvc-storageclass-csi.html](lessons/0009-storage-volume-pv-pvc-storageclass-csi.html) |
+| 9 | 2026-10-05 | Kubernetes 스토리지 — PVC 바인딩부터 장애 복구까지 | [0009-storage-volume-pv-pvc-storageclass-csi.html](lessons/0009-storage-volume-pv-pvc-storageclass-csi.html) |
 ## 다음 예정 학습
 
 

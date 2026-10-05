@@ -15,7 +15,7 @@
 | 8 | 2026-07-07 | Profiling 실전 — CPU/메모리/I/O 프로파일링 해석 | [0008-profiling-cpu-memory-io-interpretation.html](lessons/0008-profiling-cpu-memory-io-interpretation.html) |
 | 9 | 2026-07-08 | 성능 지표 해석 — p50/p95/p99, throughput, error rate | [0009-performance-metrics-percentile-throughput-error-rate.html](lessons/0009-performance-metrics-percentile-throughput-error-rate.html) |
 | 10 | 2026-07-09 | DB Connection Pool 튜닝 — pool 고갈과 deadlock | [0010-db-connection-pool-tuning-exhaustion-deadlock.html](lessons/0010-db-connection-pool-tuning-exhaustion-deadlock.html) |
-| 11 | 2026-10-05 | 페이지네이션과 대용량 조회 최적화 | [0011-pagination-large-queries.html](lessons/0011-pagination-large-queries.html) |
+| 11 | 2026-10-05 | 대용량 페이지네이션 — OFFSET에서 keyset으로 | [0011-pagination-large-queries.html](lessons/0011-pagination-large-queries.html) |
 ## 다음 예정 학습
 
 

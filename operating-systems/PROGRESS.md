@@ -21,7 +21,7 @@
 | 8 | 2026-07-07 | 비동기 I/O와 이벤트 루프 | [0018-day8-async-io-and-event-loop.html](lessons/0018-day8-async-io-and-event-loop.html) |
 | 9 | 2026-07-08 | 컨테이너와 OS 격리 | [0019-day9-container-os-isolation.html](lessons/0019-day9-container-os-isolation.html) |
 | 10 | 2026-07-09 | 종합 모의 면접 (운영체제 지표 기반 RCA) | [0020-day10-comprehensive-mock-interview.html](lessons/0020-day10-comprehensive-mock-interview.html) |
-| 11 | 2026-10-05 | NUMA 메모리 지역성과 지연 시간 진단 | [0021-numa.html](lessons/0021-numa.html) |
+| 11 | 2026-10-05 | NUMA 메모리 지역성과 tail latency | [0021-numa.html](lessons/0021-numa.html) |
 ## 다음 예정 학습
 
 

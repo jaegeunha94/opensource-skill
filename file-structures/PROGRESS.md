@@ -20,7 +20,7 @@
 | 7 | 2026-07-06 | 외부 정렬 (Run Generation, K-way Merge, I/O Pass 비용) | [interview-day07-external-sort.html](lessons/interview-day07-external-sort.html) |
 | 8 | 2026-07-07 | 파일 시스템 구조 (inode vs FAT Trade-off) | [interview-day08-file-systems.html](lessons/interview-day08-file-systems.html) |
 | 9 | 2026-07-08 | 대용량 로그/이벤트 저장 (Append-only 구조, WAL, LSM-Tree) | [interview-day09-append-only-structures.html](lessons/interview-day09-append-only-structures.html) |
-| 10 | 2026-10-05 | 종합 모의 면접 | [interview-day10-comprehensive-mock-interview.html](lessons/interview-day10-comprehensive-mock-interview.html) |
+| 10 | 2026-10-05 | 종합 설계 면접 — 주문 저장소의 인덱스와 로그 구조 | [interview-day10-comprehensive-mock-interview.html](lessons/interview-day10-comprehensive-mock-interview.html) |
 ## 다음 예정 학습
 
 

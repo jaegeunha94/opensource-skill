@@ -12,7 +12,7 @@
 | 5 | 2026-07-07 | Guardrail과 Prompt Injection 방어 | [0005-guardrail-prompt-injection-defense.html](lessons/0005-guardrail-prompt-injection-defense.html) |
 | 6 | 2026-07-08 | Sandboxed Workspace Execution과 권한 스코핑 | [0006-sandboxed-workspace-execution-permission-scoping.html](lessons/0006-sandboxed-workspace-execution-permission-scoping.html) |
 | 7 | 2026-07-09 | Model Context Protocol(MCP) | [0007-model-context-protocol.html](lessons/0007-model-context-protocol.html) |
-| 8 | 2026-10-05 | Handoff와 Multi-Agent Coordination | [0008-handoff-multi-agent-coordination.html](lessons/0008-handoff-multi-agent-coordination.html) |
+| 8 | 2026-10-05 | 에이전트 간 handoff — 상태·권한·복구 계약 | [0008-handoff-multi-agent-coordination.html](lessons/0008-handoff-multi-agent-coordination.html) |
 ## 다음 예정 학습
 
 

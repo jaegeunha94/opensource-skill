@@ -21,7 +21,7 @@
 | 8 | 2026-07-07 | 파티셔닝과 샤딩 | [interview-day-008-sharding-partitioning.html](lessons/interview-day-008-sharding-partitioning.html) |
 | 9 | 2026-07-08 | RDB vs NoSQL | [interview-day-009-rdb-vs-nosql.html](lessons/interview-day-009-rdb-vs-nosql.html) |
 | 10 | 2026-07-09 | 종합 모의 면접 — 주문 시스템 DB 장애 대응 | [interview-day-010-mock-interview.html](lessons/interview-day-010-mock-interview.html) |
-| 11 | 2026-10-05 | 무중단 스키마 변경과 Expand-Contract 배포 | [interview-day-11-expand-contract.html](lessons/interview-day-11-expand-contract.html) |
+| 11 | 2026-10-05 | 무중단 스키마 변경 — Expand·Migrate·Contract | [interview-day-11-expand-contract.html](lessons/interview-day-11-expand-contract.html) |
 ## 다음 예정 학습
 
 

@@ -19,7 +19,7 @@
 | 6 | 2026-07-07 | 멀티코어와 캐시 일관성 | [0016-multicore-cache-coherence-false-sharing.html](lessons/0016-multicore-cache-coherence-false-sharing.html) |
 | 7 | 2026-07-08 | SIMD와 배치 처리 | [0017-simd-vectorization.html](lessons/0017-simd-vectorization.html) |
 | 8 | 2026-07-09 | 프로파일링과 성능 측정 | [0018-profiling-performance-measurement.html](lessons/0018-profiling-performance-measurement.html) |
-| 9 | 2026-10-05 | 컴퓨터 구조와 시스템 설계 | [0019-computer-architecture-system-design.html](lessons/0019-computer-architecture-system-design.html) |
+| 9 | 2026-10-05 | 컴퓨터 구조와 시스템 설계 — 저장 계층이 만드는 비용 | [0019-computer-architecture-system-design.html](lessons/0019-computer-architecture-system-design.html) |
 ## 다음 예정 학습
 
 

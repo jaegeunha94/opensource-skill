@@ -14,7 +14,7 @@
 | 7 | 2026-07-06 | 장애 격리와 고가용성 — Circuit Breaker, Bulkhead, Retry with Backoff, 다중 AZ | [0007-fault-isolation-high-availability.html](lessons/0007-fault-isolation-high-availability.html) |
 | 8 | 2026-07-07 | 분산 시스템과 일관성 — CAP Theorem, BASE vs ACID, Eventual Consistency, 분산 트랜잭션 | [0008-distributed-systems-consistency-cap.html](lessons/0008-distributed-systems-consistency-cap.html) |
 | 9 | 2026-07-08 | 실전 설계 — URL 단축 서비스: Hash 전략, Collision 처리, 분산 ID 생성 | [0009-url-shortener-system-design.html](lessons/0009-url-shortener-system-design.html) |
-| 10 | 2026-10-05 | 실전 설계 — 뉴스 피드 / 타임라인 | [0010-news-feed-timeline-design.html](lessons/0010-news-feed-timeline-design.html) |
+| 10 | 2026-10-05 | 뉴스 피드 / 타임라인 — fanout 비용과 최신성 설계 | [0010-news-feed-timeline-design.html](lessons/0010-news-feed-timeline-design.html) |
 ## 다음 예정 학습
 
 

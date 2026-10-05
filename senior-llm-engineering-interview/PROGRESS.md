@@ -12,7 +12,7 @@
 | 5 | 2026-07-07 | Reasoning Model 사용 판단 | [0005-reasoning-model-usage-judgment.html](lessons/0005-reasoning-model-usage-judgment.html) |
 | 6 | 2026-07-08 | Structured Output 설계 | [0006-structured-output-design.html](lessons/0006-structured-output-design.html) |
 | 7 | 2026-07-09 | Function/Tool Calling & Agentic 아키텍처 | [0007-function-tool-calling-and-agentic-architecture.html](lessons/0007-function-tool-calling-and-agentic-architecture.html) |
-| 8 | 2026-10-05 | Multimodal 입출력 | [0008-multimodal.html](lessons/0008-multimodal.html) |
+| 8 | 2026-10-05 | Multimodal 입출력 — 품질·지연·비용을 modality별로 나누기 | [0008-multimodal.html](lessons/0008-multimodal.html) |
 ## 다음 예정 학습
 
 

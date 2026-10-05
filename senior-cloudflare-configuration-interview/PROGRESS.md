@@ -11,7 +11,7 @@
 | 4 | 2026-07-07 | SSL/TLS 모드와 Origin 보호 | [0004-ssl-tls-modes-and-origin-protection.html](lessons/0004-ssl-tls-modes-and-origin-protection.html) |
 | 5 | 2026-07-08 | WAF와 Rate Limiting 설계 | [0005-waf-and-rate-limiting-design.html](lessons/0005-waf-and-rate-limiting-design.html) |
 | 6 | 2026-07-09 | DDoS Protection과 Bot Management/Turnstile | [0006-ddos-protection-and-bot-management-turnstile.html](lessons/0006-ddos-protection-and-bot-management-turnstile.html) |
-| 7 | 2026-10-05 | Load Balancing과 트래픽 스티어링 | [0007-load-balancing.html](lessons/0007-load-balancing.html) |
+| 7 | 2026-10-05 | Cloudflare Load Balancing — health monitor와 steering | [0007-load-balancing.html](lessons/0007-load-balancing.html) |
 ## 다음 예정 학습
 
 

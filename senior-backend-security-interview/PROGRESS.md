@@ -15,7 +15,7 @@
 | 8 | 2026-07-07 | Secret 관리와 환경 변수 전략 | [0008-secret-management.html](lessons/0008-secret-management.html) |
 | 9 | 2026-07-08 | Secure Coding 원칙과 코드 리뷰 | [0009-secure-coding-principles-code-review.html](lessons/0009-secure-coding-principles-code-review.html) |
 | 10 | 2026-07-09 | 종합 보안 설계 케이스 스터디 | [0010-comprehensive-security-case-study.html](lessons/0010-comprehensive-security-case-study.html) |
-| 11 | 2026-10-05 | 멀티테넌트 인가와 객체 수준 접근 제어 | [0011-multitenant-object-authorization.html](lessons/0011-multitenant-object-authorization.html) |
+| 11 | 2026-10-05 | 멀티테넌트 인가 — 객체 경계에서 IDOR 막기 | [0011-multitenant-object-authorization.html](lessons/0011-multitenant-object-authorization.html) |
 ## 다음 예정 학습
 
 

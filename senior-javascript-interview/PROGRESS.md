@@ -13,7 +13,7 @@
 | 6 | 2026-07-07 | `this` 바인딩 규칙 — 4가지 바인딩 규칙과 우선순위, `call`/`apply`/`bind`, 화살표 함수의 `this` 예외 | [0006-this-binding-rules.html](lessons/0006-this-binding-rules.html) |
 | 7 | 2026-07-08 | Module 시스템 — CommonJS vs ESM, 순환 참조 처리 차이, 트리쉐이킹이 ESM에서만 가능한 이유, 번들러 경계(interop/dual package hazard) | [0007-module-system-cjs-esm.html](lessons/0007-module-system-cjs-esm.html) |
 | 8 | 2026-07-09 | Event Loop 심화 — Microtask vs Macrotask, 큐 우선순위, `requestAnimationFrame`과 렌더링 파이프라인 타이밍 | [0008-event-loop-microtask-macrotask-deep-dive.html](lessons/0008-event-loop-microtask-macrotask-deep-dive.html) |
-| 9 | 2026-10-05 | Promise 내부 동작 | [0009-promise.html](lessons/0009-promise.html) |
+| 9 | 2026-10-05 | Promise의 상태 전이와 실패 전파 | [0009-promise.html](lessons/0009-promise.html) |
 ## 다음 예정 학습
 
 

@@ -15,7 +15,7 @@
 | 8 | 2026-07-07 | Pod 생명주기 — health check, 재시작 정책 | [0008-pod-lifecycle-health-check-restart-policy.html](lessons/0008-pod-lifecycle-health-check-restart-policy.html) |
 | 9 | 2026-07-08 | Deployment와 롤아웃 전략 — RollingUpdate, 롤백, 카나리 | [0009-deployment-rollout-rollback-canary.html](lessons/0009-deployment-rollout-rollback-canary.html) |
 | 10 | 2026-07-09 | Service와 Ingress — 트래픽 흐름, 로드밸런싱, TLS 종료 | [0010-service-ingress-traffic-tls.html](lessons/0010-service-ingress-traffic-tls.html) |
-| 11 | 2026-10-05 | Resource limit과 QoS — requests/limits, OOMKilled 대응 | [0011-resource-limit-qos-requests-limits-oomkilled.html](lessons/0011-resource-limit-qos-requests-limits-oomkilled.html) |
+| 11 | 2026-10-05 | Kubernetes 자원 경계 — requests·limits·OOMKilled 진단 | [0011-resource-limit-qos-requests-limits-oomkilled.html](lessons/0011-resource-limit-qos-requests-limits-oomkilled.html) |
 ## 다음 예정 학습
 
 

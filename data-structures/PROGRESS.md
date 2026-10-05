@@ -21,7 +21,7 @@
 | 8 | 2026-07-07 | 그래프 표현과 탐색 | [interview-day08-graph-representation-and-traversal.html](lessons/interview-day08-graph-representation-and-traversal.html) |
 | 9 | 2026-07-08 | 실무 자료구조 설계 (캐시·Rate Limiter·랭킹) | [interview-day09-cache-rate-limiter-ranking-design.html](lessons/interview-day09-cache-rate-limiter-ranking-design.html) |
 | 10 | 2026-07-09 | 종합 모의 면접 (요구사항 변화에 따른 자료구조 재검토) | [interview-day10-mock-interview-requirement-change.html](lessons/interview-day10-mock-interview-requirement-change.html) |
-| 11 | 2026-10-05 | 동시성 안전 자료구조와 일관성 선택 | [interview-day11-concurrent-data-structures.html](lessons/interview-day11-concurrent-data-structures.html) |
+| 11 | 2026-10-05 | 동시성 자료구조와 일관성 계약 | [interview-day11-concurrent-data-structures.html](lessons/interview-day11-concurrent-data-structures.html) |
 ## 다음 예정 학습
 
 

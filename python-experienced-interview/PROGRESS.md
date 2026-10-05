@@ -16,7 +16,7 @@
 | 9 | 2026-07-07 | Python 실행 모델 — 바이트코드, CPython 인터프리터, 네임스페이스, LEGB | [0009-execution-model.html](lessons/0009-execution-model.html) |
 | 10 | 2026-07-08 | Typing 심화 — Protocol, Generic, TypeVar, Literal, overload | [0010-typing-deep-dive.html](lessons/0010-typing-deep-dive.html) |
 | 11 | 2026-07-09 | Testing 전략 — pytest fixture, mock, property-based testing, 테스트 격리 | [0011-testing-strategy.html](lessons/0011-testing-strategy.html) |
-| 12 | 2026-10-05 | Debugging과 Profiling | [0012-debugging-profiling.html](lessons/0012-debugging-profiling.html) |
+| 12 | 2026-10-05 | Python 디버깅과 프로파일링 — 가설을 측정으로 좁히기 | [0012-debugging-profiling.html](lessons/0012-debugging-profiling.html) |
 ## 다음 예정 학습
 
 

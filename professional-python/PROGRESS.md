@@ -7,7 +7,7 @@
 |-----|------|------|-----------|
 | 1 | 2026-06-29 | Pythonic 이디엄 — 컴프리헨션·제너레이터·언패킹·컨텍스트 매니저 | [0001-pythonic-idioms.html](lessons/0001-pythonic-idioms.html) |
 | 2 | 2026-06-29 | 타입 힌트 실전 — typing, TypeVar, Protocol, TypedDict, mypy | [0002-type-hints.html](lessons/0002-type-hints.html) |
-| 3 | 2026-10-05 | 예외 처리 설계 | [0003-exception-design.html](lessons/0003-exception-design.html) |
+| 3 | 2026-10-05 | 예외 처리 설계 — 원인 보존과 오류 경계 | [0003-exception-design.html](lessons/0003-exception-design.html) |
 ## 다음 예정 학습
 
 

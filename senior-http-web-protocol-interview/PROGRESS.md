@@ -13,7 +13,7 @@
 | 6 | 2026-07-07 | Cookies & Session 관리 — SameSite, Secure, HttpOnly, 세션 vs 토큰 trade-off | [0006-cookies-session-management.html](lessons/0006-cookies-session-management.html) |
 | 7 | 2026-07-08 | CORS 심화 — Preflight, credentials, Vary: Origin과 실전 트러블슈팅 | [0007-cors-preflight-credentials.html](lessons/0007-cors-preflight-credentials.html) |
 | 8 | 2026-07-09 | Cache-Control 심화 — freshness, private/public, no-cache vs no-store, 캐시 계층별 해석 | [0008-cache-control-freshness-private-public.html](lessons/0008-cache-control-freshness-private-public.html) |
-| 9 | 2026-10-05 | ETag와 조건부 요청 | [0009-etag.html](lessons/0009-etag.html) |
+| 9 | 2026-10-05 | ETag와 조건부 요청 — 캐시와 동시 수정의 경계 | [0009-etag.html](lessons/0009-etag.html) |
 ## 다음 예정 학습
 
 

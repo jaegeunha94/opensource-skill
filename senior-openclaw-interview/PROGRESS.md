@@ -12,7 +12,7 @@
 | 5 | 2026-07-07 | Tools와 Tool Dispatch 보안 | [0005-tools-tool-dispatch-security.html](lessons/0005-tools-tool-dispatch-security.html) |
 | 6 | 2026-07-08 | Sessions, Prompt/Memory 파일 | [0006-sessions-prompt-memory-files.html](lessons/0006-sessions-prompt-memory-files.html) |
 | 7 | 2026-07-09 | Skills와 ClawHub | [0007-skills-clawhub.html](lessons/0007-skills-clawhub.html) |
-| 8 | 2026-10-05 | Multi-Agent 라우팅과 격리 | [0008-multi-agent.html](lessons/0008-multi-agent.html) |
+| 8 | 2026-10-05 | OpenClaw Multi-Agent — channel routing과 session 격리 | [0008-multi-agent.html](lessons/0008-multi-agent.html) |
 ## 다음 예정 학습
 
 

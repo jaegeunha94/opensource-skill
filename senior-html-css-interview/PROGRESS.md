@@ -13,7 +13,7 @@
 | 6 | 2026-07-07 | CSS Cascade 심화 — Origin/Importance → Cascade Layer → Specificity → Source Order, `!important`의 실무 함정 | [0006-css-cascade-deep-dive-layers-important.html](lessons/0006-css-cascade-deep-dive-layers-important.html) |
 | 7 | 2026-07-08 | Specificity 심화 — A-B-C 3열 비교 계산법, `:is()`/`:where()`/`:not()`의 specificity 규칙, BEM 기반 유지보수 가능한 selector 전략 | [0007-specificity-deep-dive-maintainable-selectors.html](lessons/0007-specificity-deep-dive-maintainable-selectors.html) |
 | 8 | 2026-07-09 | Inheritance와 CSS 커스텀 프로퍼티 — 상속 속성/비상속 속성의 설계 원칙, `inherit`/`initial`/`unset`/`revert`, 런타임 상속을 활용한 design token/다크모드 설계 | [0008-inheritance-css-custom-properties.html](lessons/0008-inheritance-css-custom-properties.html) |
-| 9 | 2026-10-05 | Box Model 심화 | [0009-box-model.html](lessons/0009-box-model.html) |
+| 9 | 2026-10-05 | CSS Box Model — sizing·margin collapse·overflow 진단 | [0009-box-model.html](lessons/0009-box-model.html) |
 ## 다음 예정 학습
 
 

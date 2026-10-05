@@ -16,7 +16,7 @@
 | 9 | 2026-07-07 | 배포와 운영 — Docker 최적화, Compose, 헬스체크, 환경 변수, CI/CD | [0009-deployment-and-operations.html](lessons/0009-deployment-and-operations.html) |
 | 10 | 2026-07-08 | 캐싱과 성능 최적화 — Redis 캐싱 전략과 무효화, 캐시 스탬피드 방지, 응답 압축, 커넥션 풀 튜닝, 쿼리 성능 프로파일링 | [0010-caching-and-performance.html](lessons/0010-caching-and-performance.html) |
 | 11 | 2026-07-09 | 테스트 전략 — 단위/통합 테스트 경계, 계약 테스트, 부하 테스트 | [0011-testing-strategy.html](lessons/0011-testing-strategy.html) |
-| 12 | 2026-10-05 | 서비스 신뢰성 패턴 — Rate Limiting, Circuit Breaker, Retry/Timeout 전략 | [0012-rate-limiting-circuit-breaker-retry-timeout.html](lessons/0012-rate-limiting-circuit-breaker-retry-timeout.html) |
+| 12 | 2026-10-05 | 백엔드 신뢰성 — deadline, 재시도, 차단과 부하 제어 | [0012-rate-limiting-circuit-breaker-retry-timeout.html](lessons/0012-rate-limiting-circuit-breaker-retry-timeout.html) |
 ## 다음 예정 학습
 
 

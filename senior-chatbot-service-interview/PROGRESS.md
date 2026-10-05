@@ -11,7 +11,7 @@
 | 4 | 2026-07-07 | NLU-LLM Hybrid Routing 아키텍처 | [0004-nlu-llm-hybrid-routing-architecture.html](lessons/0004-nlu-llm-hybrid-routing-architecture.html) |
 | 5 | 2026-07-08 | Dialogue State 설계: FSM vs Graph 기반 상태 모델 | [0005-dialogue-state-design-fsm-vs-graph.html](lessons/0005-dialogue-state-design-fsm-vs-graph.html) |
 | 6 | 2026-07-09 | Session/Context 유지와 Multi-turn Flow 설계 | [0006-session-context-retention-multi-turn-flow-design.html](lessons/0006-session-context-retention-multi-turn-flow-design.html) |
-| 7 | 2026-10-05 | Fallback 전략과 Escalation/Human Handoff 설계 | [0007-fallback-escalation-human-handoff.html](lessons/0007-fallback-escalation-human-handoff.html) |
+| 7 | 2026-10-05 | 챗봇 fallback과 사람 상담 handoff | [0007-fallback-escalation-human-handoff.html](lessons/0007-fallback-escalation-human-handoff.html) |
 ## 다음 예정 학습
 
 

@@ -15,7 +15,7 @@
 | 8 | 2026-07-07 | Backpressure와 Consumer Rate Control | [0008-backpressure-and-consumer-rate-control.html](lessons/0008-backpressure-and-consumer-rate-control.html) |
 | 9 | 2026-07-08 | Celery와 Python 비동기 작업 설계 | [0009-celery-python-async-task-design.html](lessons/0009-celery-python-async-task-design.html) |
 | 10 | 2026-07-09 | 대규모 비동기 처리 아키텍처 종합 설계 | [0010-async-architecture-capstone-design.html](lessons/0010-async-architecture-capstone-design.html) |
-| 11 | 2026-10-05 | Transactional Outbox 패턴과 CDC — 이벤트 발행 정합성 보장 | [0011-transactional-outbox-cdc.html](lessons/0011-transactional-outbox-cdc.html) |
+| 11 | 2026-10-05 | Transactional Outbox와 CDC — DB commit에서 이벤트까지 | [0011-transactional-outbox-cdc.html](lessons/0011-transactional-outbox-cdc.html) |
 ## 다음 예정 학습
 
 

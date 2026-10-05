@@ -15,7 +15,7 @@
 | 8 | 2026-07-07 | 권한 & 보안 관리 | [0008-permissions-security-management.html](lessons/0008-permissions-security-management.html) |
 | 9 | 2026-07-08 | 종합 장애 시나리오 실습 | [0009-comprehensive-incident-scenarios.html](lessons/0009-comprehensive-incident-scenarios.html) |
 | 10 | 2026-07-09 | 커널 파라미터 튜닝 & 리소스 제한 | [0010-kernel-tuning-resource-limits.html](lessons/0010-kernel-tuning-resource-limits.html) |
-| 11 | 2026-10-05 | PSI와 cgroup v2로 보는 자원 압박 | [0011-psi-cgroup-v2.html](lessons/0011-psi-cgroup-v2.html) |
+| 11 | 2026-10-05 | PSI와 cgroup v2 — 자원 압박을 사용자 지연에 연결하기 | [0011-psi-cgroup-v2.html](lessons/0011-psi-cgroup-v2.html) |
 ## 다음 예정 학습
 
 

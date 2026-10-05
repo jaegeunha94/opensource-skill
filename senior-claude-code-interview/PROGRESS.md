@@ -11,7 +11,7 @@
 | 4 | 2026-07-06 | 권한 모델 심화 — permission mode와 규칙 문법 | [0004-permission-model-modes-and-rule-syntax.html](lessons/0004-permission-model-modes-and-rule-syntax.html) |
 | 5 | 2026-07-07 | 샌드박싱과 shell/file 도구 실행 경계 | [0005-sandboxing-shell-file-tool-execution-boundary.html](lessons/0005-sandboxing-shell-file-tool-execution-boundary.html) |
 | 6 | 2026-07-08 | 보안 — 위협 모델과 prompt injection 방어 | [0006-security-threat-model-prompt-injection-defense.html](lessons/0006-security-threat-model-prompt-injection-defense.html) |
-| 7 | 2026-10-05 | MCP — Model Context Protocol 통합과 운영 | [0007-mcp-model-context-protocol.html](lessons/0007-mcp-model-context-protocol.html) |
+| 7 | 2026-10-05 | MCP 서버 통합 — 권한·신뢰·실패 경계 | [0007-mcp-model-context-protocol.html](lessons/0007-mcp-model-context-protocol.html) |
 ## 다음 예정 학습
 
 

@@ -15,7 +15,7 @@
 | 8 | 2026-07-07 | CloudWatch와 운영 가시성 | [0008-cloudwatch-operational-visibility.html](lessons/0008-cloudwatch-operational-visibility.html) |
 | 9 | 2026-07-08 | 비용 최적화 전략 | [0009-cost-optimization-strategy.html](lessons/0009-cost-optimization-strategy.html) |
 | 10 | 2026-07-09 | 종합 아키텍처 설계 면접 — 웹 서비스 고가용성 설계 | [0010-comprehensive-architecture-design-interview.html](lessons/0010-comprehensive-architecture-design-interview.html) |
-| 11 | 2026-10-05 | 재해 복구(DR) 전략 — Backup & Restore, Pilot Light, Warm Standby, Multi-Site | [0011-dr-backup-restore-pilot-light-warm-standby-multi-site.html](lessons/0011-dr-backup-restore-pilot-light-warm-standby-multi-site.html) |
+| 11 | 2026-10-05 | 재해 복구 전략 — RTO·RPO에서 복구 리허설까지 | [0011-dr-backup-restore-pilot-light-warm-standby-multi-site.html](lessons/0011-dr-backup-restore-pilot-light-warm-standby-multi-site.html) |
 ## 다음 예정 학습
 
 

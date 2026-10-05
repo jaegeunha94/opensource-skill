@@ -14,7 +14,7 @@
 | 7 | 2026-07-07 | Metadata Filtering과 검색 정밀도 | [0007-metadata-filtering-and-retrieval-precision.html](lessons/0007-metadata-filtering-and-retrieval-precision.html) |
 | 8 | 2026-07-08 | Reranking 전략 | [0008-reranking-strategy.html](lessons/0008-reranking-strategy.html) |
 | 9 | 2026-07-09 | Context 구성과 Prompt 설계 | [0009-context-construction-and-prompt-design.html](lessons/0009-context-construction-and-prompt-design.html) |
-| 10 | 2026-10-05 | Hallucination 완화와 답변 근거 표시 | [0010-hallucination.html](lessons/0010-hallucination.html) |
+| 10 | 2026-10-05 | RAG hallucination — 근거 부족을 감지하고 답을 제한하기 | [0010-hallucination.html](lessons/0010-hallucination.html) |
 ## 다음 예정 학습
 
 

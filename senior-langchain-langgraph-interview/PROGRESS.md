@@ -13,7 +13,7 @@
 | 6 | 2026-07-07 | Guardrails와 Context Engineering | [0006-langchain-guardrails-context-engineering.html](lessons/0006-langchain-guardrails-context-engineering.html) |
 | 7 | 2026-07-08 | LangGraph StateGraph 설계 | [0007-langgraph-stategraph-design.html](lessons/0007-langgraph-stategraph-design.html) |
 | 8 | 2026-07-09 | Persistence와 Checkpointer | [0008-langgraph-persistence-checkpointer.html](lessons/0008-langgraph-persistence-checkpointer.html) |
-| 9 | 2026-10-05 | Store, Interrupt, Human-in-the-loop | [0009-store-interrupt-human-in-the-loop.html](lessons/0009-store-interrupt-human-in-the-loop.html) |
+| 9 | 2026-10-05 | Store·Interrupt·Human-in-the-loop의 상태 경계 | [0009-store-interrupt-human-in-the-loop.html](lessons/0009-store-interrupt-human-in-the-loop.html) |
 ## 다음 예정 학습
 
 

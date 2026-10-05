@@ -12,7 +12,7 @@
 | 5 | 2026-07-07 | MCP와 API 통합, ACP 기반 IDE 연동 | [0005-mcp-api-integration-acp-ide-integration.html](lessons/0005-mcp-api-integration-acp-ide-integration.html) |
 | 6 | 2026-07-08 | Gateway와 채널 통합 | [0006-gateway-channel-integration.html](lessons/0006-gateway-channel-integration.html) |
 | 7 | 2026-07-09 | 메모리와 세션 설계 | [0007-memory-session-design.html](lessons/0007-memory-session-design.html) |
-| 8 | 2026-10-05 | 스케줄링과 반복 작업 | [0008-scheduling-recurring-tasks.html](lessons/0008-scheduling-recurring-tasks.html) |
+| 8 | 2026-10-05 | 에이전트 예약 작업 — timezone·중복 실행·복구 | [0008-scheduling-recurring-tasks.html](lessons/0008-scheduling-recurring-tasks.html) |
 ## 다음 예정 학습
 
 

@@ -16,7 +16,7 @@
 | 9 | 2026-07-07 | 관측성 | [0009-observability.html](lessons/0009-observability.html) |
 | 10 | 2026-07-08 | 배포 & DevOps | [0010-deployment-and-devops.html](lessons/0010-deployment-and-devops.html) |
 | 11 | 2026-07-09 | 기술 리딩 | [0011-technical-leadership.html](lessons/0011-technical-leadership.html) |
-| 12 | 2026-10-05 | 커뮤니케이션 & 케이스 스터디 | [0012-communication-case-study.html](lessons/0012-communication-case-study.html) |
+| 12 | 2026-10-05 | 설계 갈등을 결정으로 바꾸기 — 백엔드 사례 면접 | [0012-communication-case-study.html](lessons/0012-communication-case-study.html) |
 ## 다음 예정 학습
 
 
