@@ -50,3 +50,8 @@
 | OWASP Top 10 | 웹 보안 취약점 표준 목록 |
 | OAuth 2.0 / OIDC RFC | 인증·인가 프로토콜 |
 | OpenTelemetry Specification | 관측성 표준 |
+
+## Day 13 공식 참고 자료 (2026-10-07 확인)
+
+- [Nygard, Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) — 결정 기록의 맥락·상태·결과와 이력 보존.
+- [AWS ADR process](https://docs.aws.amazon.com/prescriptive-guidance/latest/architectural-decision-records/adr-process.html) — 검토와 수명주기를 갖춘 의사결정 절차.

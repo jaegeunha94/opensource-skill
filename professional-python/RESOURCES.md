@@ -49,3 +49,9 @@
 ## Gaps
 
 - 대규모 모노레포에서의 Python 프로젝트 관리 (Bazel, pants) — 아직 고품질 단일 소스 없음.
+
+## Day 4 공식 참고 자료 (2026-10-07 확인)
+
+- [PyPA Packaging Python Projects](https://packaging.python.org/en/latest/tutorials/packaging-projects/) — build-system과 wheel 빌드
+- [PyPA pyproject.toml guide](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/) — 배포 메타데이터 선언
+- [PyPA src layout vs flat layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/) — 설치 경로와 소스 트리의 구분

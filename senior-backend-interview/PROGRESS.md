@@ -17,18 +17,21 @@
 | 10 | 2026-07-08 | 배포 & DevOps | [0010-deployment-and-devops.html](lessons/0010-deployment-and-devops.html) |
 | 11 | 2026-07-09 | 기술 리딩 | [0011-technical-leadership.html](lessons/0011-technical-leadership.html) |
 | 12 | 2026-10-05 | 설계 갈등을 결정으로 바꾸기 — 백엔드 사례 면접 | [0012-communication-case-study.html](lessons/0012-communication-case-study.html) |
+| 13 | 2026-10-07 | 아키텍처 의사결정 기록과 조직 내 합의 — 재검토 가능한 결정 | [0013-adr-decision-review-trigger.html](lessons/0013-adr-decision-review-trigger.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 13 | 아키텍처 의사결정 기록과 조직 내 합의 | 복구·정합성·운영 지표 |
+| 14 | 아키텍처 fitness function과 결정의 지속 검증 | ADR의 전제와 경계가 계속 유효한지 어떻게 검증하는가? — fitness function, 경계 테스트, 재검토 trigger |
+
 ## 현재 학습 위치
 
+**Day 13 레슨 작성 완료** — 다음은 Day 14 아키텍처 fitness function과 결정의 지속 검증.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 12 완료** — 다음은 Day 13 아키텍처 의사결정 기록과 조직 내 합의부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 시스템 설계 면접 프레임워크 (요구사항 → 추정 → 설계 → 심화) (Day 1)
@@ -76,3 +79,5 @@
 - [x] RFC 프로세스와 "disagree and commit" 원칙 (Day 11)
 - [x] 멘토링 개입 수준(질문 유도/페어/직접 해결)을 긴급도·학습 가치로 판단 (Day 11)
 - [x] 커뮤니케이션 & 케이스 스터디  (Day 12)
+
+- [x] 아키텍처 의사결정 기록과 조직 내 합의 — 재검토 가능한 결정 — Day 13 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

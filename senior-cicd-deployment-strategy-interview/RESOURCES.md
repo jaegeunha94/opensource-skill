@@ -38,3 +38,7 @@
 | ArgoCD | GitOps 기반 CD | argo-cd.readthedocs.io |
 | Spinnaker | 멀티 클라우드 CD | spinnaker.io/docs |
 | Flux | GitOps Kubernetes CD | fluxcd.io/docs |
+
+## Day 12 공식 참고 자료 (2026-10-07 확인)
+
+- [Unleash — Feature Flags](https://docs.getunleash.io/concepts/feature-flags) — flag 유형·stale 상태·코드 정리와 archive 수명주기

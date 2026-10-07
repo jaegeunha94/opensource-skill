@@ -17,20 +17,21 @@
 | 10 | 2026-07-08 | Typing 심화 — Protocol, Generic, TypeVar, Literal, overload | [0010-typing-deep-dive.html](lessons/0010-typing-deep-dive.html) |
 | 11 | 2026-07-09 | Testing 전략 — pytest fixture, mock, property-based testing, 테스트 격리 | [0011-testing-strategy.html](lessons/0011-testing-strategy.html) |
 | 12 | 2026-10-05 | Python 디버깅과 프로파일링 — 가설을 측정으로 좁히기 | [0012-debugging-profiling.html](lessons/0012-debugging-profiling.html) |
+| 13 | 2026-10-07 | 패키징과 의존성 관리 — 선언·잠금·설치 검증 | [0013-packaging-repeatable-install.html](lessons/0013-packaging-repeatable-install.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 13 | 패키징과 의존성 관리 | `pyproject.toml`, `poetry`, `pip`, virtual env, lock file |
 | 14 | 표준 라이브러리 심화 | `collections`, `itertools`, `functools`, `pathlib`, `dataclasses` |
 | 15 | 유지보수성과 코드 품질 | 설계 원칙, 리팩토링, 코드 리뷰 사고 |
 ## 현재 학습 위치
 
+**Day 13 레슨 작성 완료** — 다음은 Day 14 표준 라이브러리 심화.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 12 완료** — 다음은 Day 13 패키징과 의존성 관리부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Python data model 정의와 역할 (Day 1)
@@ -92,3 +93,5 @@
 - [x] 테스트 커버리지의 한계와 레거시 코드의 특성화 테스트 전략 (Day 11)
 
 - [x] Debugging과 Profiling — pdb, cProfile, memory_profiler, flamegraph  (Day 12)
+
+- [x] 패키징과 의존성 관리 — 선언·잠금·설치 검증 — Day 13 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

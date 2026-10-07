@@ -46,3 +46,9 @@
 |------|------|
 | r/networking (Reddit) | 실무 질문과 개념 토론 |
 | Stack Exchange — Network Engineering | 전문적인 네트워크 Q&A |
+
+## Day 12 공식 참고 자료 (2026-10-07 확인)
+
+- [RFC 2308 §5](https://www.rfc-editor.org/rfc/rfc2308) — NXDOMAIN/NODATA의 부정 응답 TTL 기준.
+- [RFC 9520](https://www.rfc-editor.org/rfc/rfc9520.html) — DNS 해결 실패 캐시와 반복 조회 제한.
+- [AWS Builders Library](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/) — timeout·재시도 증폭·backoff와 jitter의 운영 설계.

@@ -20,18 +20,21 @@
 | 7 | 2026-07-08 | SIMD와 배치 처리 | [0017-simd-vectorization.html](lessons/0017-simd-vectorization.html) |
 | 8 | 2026-07-09 | 프로파일링과 성능 측정 | [0018-profiling-performance-measurement.html](lessons/0018-profiling-performance-measurement.html) |
 | 9 | 2026-10-05 | 컴퓨터 구조와 시스템 설계 — 저장 계층이 만드는 비용 | [0019-computer-architecture-system-design.html](lessons/0019-computer-architecture-system-design.html) |
+| 10 | 2026-10-07 | 종합 모의 면접 — 메모리 접근 증거로 개선안 고르기 | [0020-hardware-mock-memory-access.html](lessons/0020-hardware-mock-memory-access.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 10 | 종합 모의 면접 | "성능이 느린 코드를 받고 하드웨어 관점에서 개선안을 제시해보세요." | 측정 기반 추론, 개선안 비교, 한계 설명 |
+| 11 | NUMA 배치와 메모리 대역폭의 교차 검증 | NUMA 위치 변경의 효과를 대역폭·지연 증거로 어떻게 검증하는가? | local/remote access, 메모리 배치, 교차 측정 |
+
 ## 현재 학습 위치
 
+**Day 10 레슨 작성 완료** — 다음은 Day 11 NUMA 배치와 메모리 대역폭의 교차 검증.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 9 완료** — 다음은 Day 10 종합 모의 면접부터 진행한다.
 ## Interview 답변 체크리스트
 
 - [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1, Day 2, Day 3, Day 4, Day 5, Day 6, Day 7, Day 8)
@@ -63,4 +66,5 @@
 - [x] sampling vs instrumentation profiling, 하드웨어 성능 카운터, IPC (Day 8)
 - [x] IPC·cache-miss rate·branch-miss rate 조합으로 CPU-bound/memory-bound 구분, on-CPU vs off-CPU 분석 (Day 8)
 - [x] 컴퓨터 구조와 시스템 설계 연결  (Day 9)
-- [ ] 종합 모의 면접 (예정 Day 10)
+- [x] 종합 모의 면접 (Day 10 레슨 작성)
+- [x] 종합 모의 면접 — 메모리 접근 증거로 개선안 고르기 — Day 10 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

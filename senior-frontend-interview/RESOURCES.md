@@ -79,3 +79,10 @@
 | Netflix/Airbnb/Shopify Tech Blog | 대규모 프론트엔드 아키텍처 실전 사례 |
 | Frontend Masters | 심화 강의 (렌더링, 성능, 아키텍처) |
 | Patterns.dev | 프론트엔드 렌더링 패턴(SSR/SSG/ISR 등) 정리 |
+
+## Day 10 공식 참고 자료 (2026-10-07 확인)
+
+- [Next.js Server/Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components) — HTML·RSC·hydration의 실행 경계.
+- [Next.js 현재 캐싱 안내](https://nextjs.org/docs/app/getting-started/caching) — 명시적 캐시·재검증·동적 경계 판단.
+- [Next.js 이전 캐시 모델](https://nextjs.org/docs/app/guides/caching-without-cache-components) — Cache Components 비사용 프로젝트와 구분.
+- [Next.js 업그레이드 안내](https://nextjs.org/docs/app/guides/upgrading) — 프로젝트 버전과 변경 문서 확인.

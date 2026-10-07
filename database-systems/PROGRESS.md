@@ -22,16 +22,22 @@
 | 9 | 2026-07-08 | RDB vs NoSQL | [interview-day-009-rdb-vs-nosql.html](lessons/interview-day-009-rdb-vs-nosql.html) |
 | 10 | 2026-07-09 | 종합 모의 면접 — 주문 시스템 DB 장애 대응 | [interview-day-010-mock-interview.html](lessons/interview-day-010-mock-interview.html) |
 | 11 | 2026-10-05 | 무중단 스키마 변경 — Expand·Migrate·Contract | [interview-day-11-expand-contract.html](lessons/interview-day-11-expand-contract.html) |
+| 12 | 2026-10-07 | 복제 지연과 read-your-writes 보장 설계 | [0012-replica-read-your-writes.html](lessons/0012-replica-read-your-writes.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 12 | 복제 지연과 read-your-writes 보장 설계 | 후속 심화 주제와 실무 판단 기준 | 다음 학습에서 다룰 개념 |
+
+| 13 | PITR 복구 후 데이터 정합성 검증과 복구 목표 | PITR 이후 복구된 주문과 외부 결제 결과를 어떻게 대조할 것인가? | RPO/RTO, WAL 복구 지점, 업무 정합성 |
 
 ## 현재 학습 위치
 
-**Day 11 완료** — 다음은 Day 12 복제 지연과 read-your-writes 보장 설계부터 진행한다.
+**Day 12 레슨 작성 완료** — 다음은 Day 13 PITR 복구 후 데이터 정합성 검증과 복구 목표.
+
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
+
 ## Interview 답변 체크리스트
 
 - [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1 ✓ / Day 2 ✓ / Day 3 ✓ / Day 4 ✓ / Day 5 ✓ / Day 6 ✓ / Day 7 ✓ / Day 8 ✓ / Day 9 ✓ / Day 10 ✓)
@@ -74,3 +80,5 @@
 - [x] 복합 원인(compound failure) 장애에서 기여도 기반 우선순위 판단 (Day 10)
 - [x] Blameless postmortem과 재발 방지 프로세스 설계 (Day 10)
 - [x] 무중단 스키마 변경과 Expand-Contract 배포 — Day 11
+
+- [x] 복제 지연과 read-your-writes 보장 설계 — Day 12 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

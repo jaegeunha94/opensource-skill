@@ -13,12 +13,13 @@
 | 6 | 2026-07-08 | Sandboxed Workspace Execution과 권한 스코핑 | [0006-sandboxed-workspace-execution-permission-scoping.html](lessons/0006-sandboxed-workspace-execution-permission-scoping.html) |
 | 7 | 2026-07-09 | Model Context Protocol(MCP) | [0007-model-context-protocol.html](lessons/0007-model-context-protocol.html) |
 | 8 | 2026-10-05 | 에이전트 간 handoff — 상태·권한·복구 계약 | [0008-handoff-multi-agent-coordination.html](lessons/0008-handoff-multi-agent-coordination.html) |
+| 9 | 2026-10-07 | Streaming과 Structured Output — 미완료 조각과 실행 경계 | [0009-streaming-validation-commit-boundary.html](lessons/0009-streaming-validation-commit-boundary.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | Streaming과 Structured Output | SSE 스트리밍, fine-grained tool streaming, 지연시간 vs UX trade-off, structured output 설계 |
 | 10 | Telemetry, Tracing, Observability | OTel GenAI semantic conventions, span 계층, 분산 트레이싱, 벤더별 관측성 통합 |
 | 11 | Evaluation Harness와 Replay | task/trial/transcript/grader, trajectory 평가, LLM-as-judge 캘리브레이션, replay/regression 테스트 |
 | 12 | Human-in-the-Loop과 Session/권한 설계 | 승인 게이트, approval binding, session 영속성, 권한 모드, 위험도 기반 개입 설계 |
@@ -26,10 +27,10 @@
 | 14 | 운영 장애 대응과 종합 트레이드오프 | 런어웨이 루프/비용 폭주 사례, context poisoning 실전 대응, harness engineering 원칙 종합, 면접 종합 시뮬레이션 |
 ## 현재 학습 위치
 
+**Day 9 레슨 작성 완료** — 다음은 Day 10 Telemetry, Tracing, Observability.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 8 완료** — 다음은 Day 9 Streaming과 Structured Output부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Agent = Model + Harness 프레임 (Day 1)
@@ -69,10 +70,16 @@
 - [x] MCP 보안 위협 4패턴: tool poisoning, rug pull, confused deputy, toxic agent flow (Day 7)
 - [x] OWASP MCP Top 10 (MCP01~MCP10) (Day 7)
 - [x] Handoff, multi-agent coordination  (Day 8)
-- [ ] Streaming, structured output (예정 Day 9)
+- [x] Streaming, structured output (Day 9 레슨 작성)
 - [ ] Telemetry/Tracing/Observability (예정 Day 10)
 - [ ] Evaluation harness, replay (예정 Day 11)
 - [ ] Human-in-the-loop, session/권한 설계 (예정 Day 12)
 - [ ] 비용/성능 최적화 (예정 Day 13)
 - [ ] 운영 장애 대응 종합 (예정 Day 14)
 - [x] Handoff와 Multi-Agent Coordination — Day 8
+
+- [x] Streaming과 Structured Output — 미완료 조각과 실행 경계 — Day 9 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행
+
+## 이번 레슨 자료 확인
+
+2026-10-07 공식 streaming·structured output·fine-grained 문서와 release note를 확인했다. 기존 beta header 중심 예시 대신 현재 per-tool eager_input_streaming 안내를 반영했으며 신규 모델명·가격을 고정하지 않았다. provider 공통 원칙은 미완료 조각과 검증된 외부 실행의 분리다.

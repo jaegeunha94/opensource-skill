@@ -16,18 +16,21 @@
 | 9 | 2026-07-08 | Celery와 Python 비동기 작업 설계 | [0009-celery-python-async-task-design.html](lessons/0009-celery-python-async-task-design.html) |
 | 10 | 2026-07-09 | 대규모 비동기 처리 아키텍처 종합 설계 | [0010-async-architecture-capstone-design.html](lessons/0010-async-architecture-capstone-design.html) |
 | 11 | 2026-10-05 | Transactional Outbox와 CDC — DB commit에서 이벤트까지 | [0011-transactional-outbox-cdc.html](lessons/0011-transactional-outbox-cdc.html) |
+| 12 | 2026-10-07 | Saga와 비동기 workflow — 알 수 없는 결과와 보상 | [0012-saga-unknown-outcome-compensation.html](lessons/0012-saga-unknown-outcome-compensation.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 12 | Saga와 비동기 workflow 보상 처리 | 복구·정합성·운영 지표 |
+| 13 | 이벤트 스키마 진화와 replay의 소비자 호환성 검증 | 새 schema와 오래된 메시지 replay를 어떤 순서로 검증하는가? — 호환성, schema version, consumer 계약 |
+
 ## 현재 학습 위치
 
+**Day 12 레슨 작성 완료** — 다음은 Day 13 이벤트 스키마 진화와 replay의 소비자 호환성 검증.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 11 완료** — 다음은 Day 12 Saga와 비동기 workflow 보상 처리부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 동기 vs 비동기 처리 판단 기준 (Day 1)
@@ -71,3 +74,5 @@
 - [x] Transactional Outbox 패턴과 Dual-write 문제  (Day 11)
 - [x] Change Data Capture(Debezium 등)와 CDC 기반 이벤트 발행  (Day 11)
 - [x] Transactional Outbox 패턴과 CDC — 이벤트 발행 정합성 보장 — Day 11
+
+- [x] Saga와 비동기 workflow — 알 수 없는 결과와 보상 — Day 12 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

@@ -22,18 +22,21 @@
 | 9 | 2026-07-08 | 네트워크 성능 최적화(RTT/keep-alive/CDN/HTTP/2·3) | [interview-day-09-network-performance-optimization.html](lessons/interview-day-09-network-performance-optimization.html) |
 | 10 | 2026-07-09 | 종합 모의 면접: 네트워크 장애 RCA | [interview-day-10-comprehensive-mock-rca.html](lessons/interview-day-10-comprehensive-mock-rca.html) |
 | 11 | 2026-10-05 | 글로벌 트래픽 분산과 장애 격리 | [interview-day-11-global-traffic-failover.html](lessons/interview-day-11-global-traffic-failover.html) |
+| 12 | 2026-10-07 | DNS 장애 전파와 클라이언트 재시도 설계 | [0012-dns-failure-retry-budget.html](lessons/0012-dns-failure-retry-budget.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 12 | DNS 장애 전파와 클라이언트 재시도 설계 | 복구·정합성·운영 지표 | 설계 판단과 실패 대응 |
+| 13 | TCP 연결 풀의 수명·DNS 갱신과 graceful drain | DNS 갱신 뒤 기존 TCP 연결을 언제 종료하며 요청 손실은 어떻게 막는가? | 연결 수명, drain deadline, 재연결 예산 |
+
 ## 현재 학습 위치
 
+**Day 12 레슨 작성 완료** — 다음은 Day 13 TCP 연결 풀의 수명·DNS 갱신과 graceful drain.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 11 완료** — 다음은 Day 12 DNS 장애 전파와 클라이언트 재시도 설계부터 진행한다.
 ## Interview 답변 체크리스트
 
 - [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. (Day 1~10 적용)
@@ -44,3 +47,5 @@
 - [x] 흔한 오해와 약한 답변을 구분한다. (Day 1~10 적용)
 - [x] follow-up 질문까지 대비한다. (Day 1~10 적용)
 - [x] Day 11: 글로벌 트래픽 분산과 장애 격리 아키텍처 설계의 전제, trade-off, 운영 판단과 후속 질문
+
+- [x] DNS 장애 전파와 클라이언트 재시도 설계 — Day 12 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

@@ -42,3 +42,8 @@
 - [perf: Linux profiling](https://perf.wiki.kernel.org/) — CPU 성능 병목 심화 분석
 - [bpftrace one-liners](https://github.com/iovisor/bpftrace) — eBPF 기반 실시간 진단 (최신 접근법)
 - [SRE Book by Google](https://sre.google/sre-book/table-of-contents/) — 실무 장애 대응 문화와 판단 기준
+
+## Day 12 공식 참고 자료 (2026-10-07 확인)
+
+- [Brendan Gregg — Off-CPU Analysis](https://www.brendangregg.com/offcpuanalysis.html) — 실행 프로파일이 놓치는 블로킹과 대기 분석
+- [Linux — perf 보안과 권한](https://docs.kernel.org/admin-guide/perf-security.html) — 수집 범위·권한·메모리 자원 제한

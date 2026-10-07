@@ -67,3 +67,8 @@
 | HOL Blocking (Head-of-Line Blocking) | High Performance Browser Networking, HTTP/2·HTTP/3 챕터 |
 | Idempotency Key 패턴 | Stripe API 문서 — https://stripe.com/docs/api/idempotent_requests |
 | Vary 헤더와 캐시 오염 | MDN Vary 문서 + Fastly 블로그 사례 |
+
+## Day 10 공식 참고 자료 (2026-10-07 확인)
+
+- [RFC 9110 §8.4·12.5.3·12.5.5](https://www.rfc-editor.org/rfc/rfc9110.html) — Content-Encoding, Accept-Encoding, Vary 의미.
+- [Nginx gzip 모듈](https://nginx.org/en/docs/http/ngx_http_gzip_module.html) — 압축 설정과 HTTPS 압축의 BREACH 경고.

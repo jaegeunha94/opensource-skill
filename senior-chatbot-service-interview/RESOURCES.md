@@ -133,3 +133,7 @@
 ## 2026-10-05 Day lesson sources confirmed
 
 - [Dialogflow CX handlers](https://cloud.google.com/dialogflow/cx/docs/concept/handler) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.
+
+## Day 8 공식 참고 자료 (2026-10-07 확인)
+
+- [Anthropic — Release Notes](https://platform.claude.com/docs/en/release-notes/overview) — 작성 시점 tool 생태계 변경 확인

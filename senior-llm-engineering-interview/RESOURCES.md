@@ -129,3 +129,8 @@
 ## 2026-10-05 Day lesson sources confirmed
 
 - [OpenAI images and vision guide](https://platform.openai.com/docs/guides/images-vision) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.
+
+## Day 9 공식 참고 자료 (2026-10-07 확인)
+
+- [Sentence Transformers — Semantic Search](https://sbert.net/examples/sentence_transformer/applications/semantic-search/README.html) — 대칭/비대칭 검색과 입력 역할
+- [Sentence Transformers — Releases](https://github.com/huggingface/sentence-transformers/releases) — 모델 입력·backend 변화의 회귀 검증

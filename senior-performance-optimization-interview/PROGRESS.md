@@ -16,18 +16,21 @@
 | 9 | 2026-07-08 | 성능 지표 해석 — p50/p95/p99, throughput, error rate | [0009-performance-metrics-percentile-throughput-error-rate.html](lessons/0009-performance-metrics-percentile-throughput-error-rate.html) |
 | 10 | 2026-07-09 | DB Connection Pool 튜닝 — pool 고갈과 deadlock | [0010-db-connection-pool-tuning-exhaustion-deadlock.html](lessons/0010-db-connection-pool-tuning-exhaustion-deadlock.html) |
 | 11 | 2026-10-05 | 대용량 페이지네이션 — OFFSET에서 keyset으로 | [0011-pagination-large-queries.html](lessons/0011-pagination-large-queries.html) |
+| 12 | 2026-10-07 | 캐시와 페이지네이션 — 신선도·누락·중복 검증 | [0012-cached-page-snapshot-contract.html](lessons/0012-cached-page-snapshot-contract.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 12 | 캐시와 페이지네이션의 일관성·신선도 검증 | 복구·정합성·운영 지표 |
+| 13 | 개방형 부하 모델과 coordinated omission을 피한 성능 검증 | 느린 시스템이 부하 생성도 늦춰 지연을 숨기는 문제를 어떻게 피하는가? — arrival rate, open load model, coordinated omission |
+
 ## 현재 학습 위치
 
+**Day 12 레슨 작성 완료** — 다음은 Day 13 개방형 부하 모델과 coordinated omission을 피한 성능 검증.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 11 완료** — 다음은 Day 12 캐시와 페이지네이션의 일관성·신선도 검증부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 성능 병목 분석 5단계 프레임워크 (Day 1)
@@ -85,3 +88,5 @@
 - [x] Connection Acquisition / Query / Idle Timeout 세 층위 구분 (Day 10)
 - [x] 스케일 아웃 시 인스턴스 수 × pool 크기와 max_connections 충돌, 중앙 Pooler(PgBouncer) (Day 10)
 - [x] OFFSET vs Cursor(Keyset) 페이지네이션과 대용량 조회 최적화  (Day 11)
+
+- [x] 캐시와 페이지네이션 — 신선도·누락·중복 검증 — Day 12 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

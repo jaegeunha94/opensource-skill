@@ -43,3 +43,7 @@
 ## 면접 참고
 
 - [OWASP Secure Coding Practices Quick Reference](https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/) — 면접 전 빠른 체크용
+
+## Day 12 공식 참고 자료 (2026-10-07 확인)
+
+- [OWASP — Authorization Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html) — 기본 거부·요청별 권한 확인·인가 테스트 원칙

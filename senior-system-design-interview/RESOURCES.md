@@ -44,3 +44,8 @@
 | Grokking the System Design Interview (Educative.io) | 강의 | 문제별 단계별 풀이, 면접 직전 훑기 좋음 |
 | Pramp, Interviewing.io | 모의 면접 | 실시간 peer 모의 면접 |
 | "Crack the System Design Interview" (Tianpan.co) | 아티클 | 무료, 핵심 패턴 정리 |
+
+## Day 11 공식 참고 자료 (2026-10-07 확인)
+
+- [RFC 6455 WebSocket](https://www.rfc-editor.org/rfc/rfc6455) — 양방향 연결·메시지 framing의 통신 계약.
+- [Apache Kafka Design](https://kafka.apache.org/41/design/design/) — partition 순서와 전달 보장의 범위.

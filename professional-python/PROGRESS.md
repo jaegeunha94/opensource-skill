@@ -8,12 +8,13 @@
 | 1 | 2026-06-29 | Pythonic 이디엄 — 컴프리헨션·제너레이터·언패킹·컨텍스트 매니저 | [0001-pythonic-idioms.html](lessons/0001-pythonic-idioms.html) |
 | 2 | 2026-06-29 | 타입 힌트 실전 — typing, TypeVar, Protocol, TypedDict, mypy | [0002-type-hints.html](lessons/0002-type-hints.html) |
 | 3 | 2026-10-05 | 예외 처리 설계 — 원인 보존과 오류 경계 | [0003-exception-design.html](lessons/0003-exception-design.html) |
+| 4 | 2026-10-07 | 프로젝트 구조와 패키징 — 소스 트리에서 설치 계약으로 | [0004-src-layout-wheel-install-contract.html](lessons/0004-src-layout-wheel-install-contract.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 4 | 프로젝트 구조와 패키징 | `src` 레이아웃, `pyproject.toml`, build backend, wheel 빌드 |
 | 5 | 의존성 관리 | `venv`, `pip-tools`, poetry, lock 파일, 결정론적 빌드 |
 | 6 | pytest 실전 | fixture, `conftest.py`, parametrize, mock, coverage |
 | 7 | 디버깅 & 로깅 | `pdb` / `breakpoint()`, logging 계층, 포매터, 핸들러 |
@@ -23,10 +24,10 @@
 | 11 | 유지보수성 | `ruff` / `black`, docstring 컨벤션, pre-commit, CI 린팅 |
 ## 현재 학습 위치
 
+**Day 4 레슨 작성 완료** — 다음은 Day 5 의존성 관리.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 3 완료** — 다음은 Day 4 프로젝트 구조와 패키징부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 리스트·딕셔너리·셋 컴프리헨션 (Day 1)
@@ -40,7 +41,9 @@
 - [x] `TypedDict`, `Literal`, `Final` 활용 (Day 2)
 - [x] mypy 프로젝트 설정 및 타입 좁히기 (Day 2)
 - [x] 커스텀 예외 계층 설계  (Day 3)
-- [ ] `pyproject.toml` 기반 패키징 (예정 Day 4)
+- [x] `pyproject.toml` 기반 패키징 (Day 4 레슨 작성)
 - [ ] pytest 픽스처와 `conftest.py` (예정 Day 6)
 - [ ] `asyncio` 이벤트 루프 모델 (예정 Day 10)
 - [x] 예외 처리 설계 — Day 3
+
+- [x] 프로젝트 구조와 패키징 — 소스 트리에서 설치 계약으로 — Day 4 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

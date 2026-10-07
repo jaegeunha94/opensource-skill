@@ -46,3 +46,7 @@
 - **DataDog / New Relic**: 상용 올인원 관측성 플랫폼
 
 > 도구 사용법보다 "왜 이 도구 조합을 선택했는가", "어떤 상황에서 어떤 신호를 보았는가"를 설명할 수 있는 것이 인터뷰에서 중요하다.
+
+## Day 12 공식 참고 자료 (2026-10-07 확인)
+
+- [Google SRE — Postmortem Culture](https://sre.google/sre-book/postmortem-culture/) — 사후 분석 문화와 책임 있는 후속 개선

@@ -38,3 +38,8 @@
 
 - 한국어 기반 PostgreSQL 실무 튜토리얼이 부족함 — 영문 공식 문서와 SQLZoo로 보완
 - NoSQL(MongoDB, Redis) 공식 문서는 해당 Day에 별도 추가 예정
+
+## Day 12 공식 참고 자료 (2026-10-07 확인)
+
+- [PostgreSQL 복제 문서](https://www.postgresql.org/docs/current/warm-standby.html) — 비동기 복제와 동기 복제 대기 수준.
+- [PostgreSQL 관리 함수](https://www.postgresql.org/docs/current/functions-admin.html) — WAL 위치와 standby 재생 위치 확인.

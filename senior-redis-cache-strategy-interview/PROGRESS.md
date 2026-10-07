@@ -16,19 +16,20 @@
 | 9 | 2026-07-08 | Redis Persistence — RDB vs AOF | [0009-persistence-rdb-vs-aof.html](lessons/0009-persistence-rdb-vs-aof.html) |
 | 10 | 2026-07-09 | Eviction Policy와 메모리 사이징 | [0010-eviction-policy-memory-sizing.html](lessons/0010-eviction-policy-memory-sizing.html) |
 | 11 | 2026-10-05 | Redis Pipelining·Lua·Transaction — round trip과 원자성 | [0011-pipelining-lua-scripting-transaction.html](lessons/0011-pipelining-lua-scripting-transaction.html) |
+| 12 | 2026-10-07 | Redis Replication과 Latency — 지연의 분모와 복제 보장 | [0012-replication-lag-latency-evidence.html](lessons/0012-replication-lag-latency-evidence.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 12 | Replication과 Latency 진단 | Master-Replica 복제, 복제 지연, latency 진단 방법론 |
 | 13 | Redis 장애 대응과 운영 패턴 | Sentinel, Cluster, Failover, 장애 격리 |
 ## 현재 학습 위치
 
+**Day 12 레슨 작성 완료** — 다음은 Day 13 Redis 장애 대응과 운영 패턴.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 11 완료** — 다음은 Day 12 Replication과 Latency 진단부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 캐시 도입 판단 기준 (Day 1)
@@ -50,5 +51,7 @@
 - [x] RDB vs AOF 판단, fork/COW 운영 리스크 (Day 9)
 - [x] Eviction Policy(noeviction/LRU/LFU/random/ttl)와 메모리 사이징 (Day 10)
 - [x] Pipelining · Lua Scripting · Transaction  (Day 11)
-- [ ] Replication과 Latency 진단 (예정 Day 12)
+- [x] Replication과 Latency 진단 (Day 12 레슨 작성)
 - [ ] Redis 장애 대응 (Sentinel/Cluster/Failover) (예정 Day 13)
+
+- [x] Redis Replication과 Latency — 지연의 분모와 복제 보장 — Day 12 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

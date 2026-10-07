@@ -45,3 +45,8 @@
 
 - Python Backend Engineer 로드맵: https://roadmap.sh/python
 - Backend 전반 로드맵: https://roadmap.sh/backend
+
+## Day 13 공식 참고 자료 (2026-10-07 확인)
+
+- [Chris Richardson, Transactional Outbox](https://microservices.io/patterns/data/transactional-outbox.html) — DB·발행 경계와 relay 중복의 원 패턴 설명.
+- [SQLAlchemy 2.0 session transaction](https://docs.sqlalchemy.org/en/20/orm/session_transaction.html) — 기존 과목의 2.0 예제에서 commit·rollback 범위 확인.

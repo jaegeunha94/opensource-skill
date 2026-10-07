@@ -29,3 +29,8 @@
 - **OSDev.org**: 운영체제 개발 커뮤니티, 세부 구현 질문에 유용
 - **r/osdev**: Reddit 운영체제 개발 서브레딧
 - **Stack Overflow [operating-system]**: 개념 질문 및 시스템 프로그래밍
+
+## Day 12 공식 참고 자료 (2026-10-07 확인)
+
+- [Linux cgroup v2](https://docs.kernel.org/admin-guide/cgroup-v2.html) — cpu.max, cpu.stat, 부모 제한의 의미.
+- [Linux PSI](https://docs.kernel.org/accounting/psi.html) — CPU·메모리·I/O 압박 신호의 해석.

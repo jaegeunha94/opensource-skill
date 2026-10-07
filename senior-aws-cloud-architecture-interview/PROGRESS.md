@@ -16,18 +16,21 @@
 | 9 | 2026-07-08 | 비용 최적화 전략 | [0009-cost-optimization-strategy.html](lessons/0009-cost-optimization-strategy.html) |
 | 10 | 2026-07-09 | 종합 아키텍처 설계 면접 — 웹 서비스 고가용성 설계 | [0010-comprehensive-architecture-design-interview.html](lessons/0010-comprehensive-architecture-design-interview.html) |
 | 11 | 2026-10-05 | 재해 복구 전략 — RTO·RPO에서 복구 리허설까지 | [0011-dr-backup-restore-pilot-light-warm-standby-multi-site.html](lessons/0011-dr-backup-restore-pilot-light-warm-standby-multi-site.html) |
+| 12 | 2026-10-07 | DR 리허설 — 복구 검증 자동화와 사용자 전환 조건 | [0012-restore-validation-acceptance.html](lessons/0012-restore-validation-acceptance.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 12 | DR 리허설과 복구 검증 자동화 | 복구·정합성·운영 지표 |
+| 13 | DR failback과 이중 쓰기 방지의 운영 검증 | 복구 리전에서 원래 리전으로 돌아갈 때 두 쓰기 경로를 어떻게 막는가? — fencing, 데이터 대조, 전환 승인 조건 |
+
 ## 현재 학습 위치
 
+**Day 12 레슨 작성 완료** — 다음은 Day 13 DR failback과 이중 쓰기 방지의 운영 검증.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 11 완료** — 다음은 Day 12 DR 리허설과 복구 검증 자동화부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] AWS Well-Architected Framework 5개 기둥 (Day 1)
@@ -75,3 +78,9 @@
 - [x] 고가용성과 무중단의 차이, 과설계 vs 미달 설계 판단 (Day 10)
 - [x] RTO/RPO 기준 DR 전략(Backup & Restore/Pilot Light/Warm Standby/Multi-Site) 선택  (Day 11)
 - [x] 재해 복구(DR) 전략 — Backup & Restore, Pilot Light, Warm Standby, Multi-Site — Day 11
+
+- [x] DR 리허설 — 복구 검증 자동화와 사용자 전환 조건 — Day 12 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행
+
+## 이번 레슨 자료 확인
+
+현재 AWS 공식 프레임워크는 6개 기둥이다. MISSION.md의 기존 5개 표현은 변경하지 않고 이번 레슨에 지속가능성을 포함한 현재 기준을 설명했다. 복원 job 성공·검증·실제 전환 성공을 분리했다.

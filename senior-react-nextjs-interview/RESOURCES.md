@@ -59,3 +59,9 @@
 | RSC 페이로드 직렬화 | Next.js 공식 문서 — "Server and Client Composition Patterns" |
 | stale-while-revalidate | RFC 5861, Next.js ISR 문서 |
 | Core Web Vitals (LCP/INP/CLS) | web.dev/vitals |
+
+## Day 9 공식 참고 자료 (2026-10-07 확인)
+
+- [React hydrateRoot](https://react.dev/reference/react-dom/client/hydrateRoot) — 초기 일치 계약과 warning 억제의 제한.
+- [Next.js hydration 오류](https://nextjs.org/docs/messages/react-hydration-error) — 잘못된 중첩·브라우저 입력 등 원인과 완화.
+- [React useEffect](https://react.dev/reference/react/useEffect) — 서버·클라이언트의 effect 실행 차이.

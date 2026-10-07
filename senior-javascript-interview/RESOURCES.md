@@ -47,3 +47,8 @@
 
 - 대기업/스타트업 프론트엔드 면접 후기 (블라인드, GeeksforGeeks JS 섹션 등) — 이벤트 루프, 클로저, `this` 관련 실제 출제 패턴 참고
 - LeetCode/JavaScript30류 문제는 문법 숙련도 확인용으로만 참고하고, 이 트랙의 핵심 학습 방식은 아님 (이 트랙은 실행 모델·아키텍처 판단력에 집중)
+
+## Day 10 공식 참고 자료 (2026-10-07 확인)
+
+- [ECMAScript Await](https://tc39.es/ecma262/#await) — await의 비동기 계속 실행과 실패 전달.
+- [ECMAScript async 함수](https://tc39.es/ecma262/#sec-async-function-definitions) — async 함수 호출·반환의 공식 정의.

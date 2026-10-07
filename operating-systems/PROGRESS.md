@@ -22,16 +22,22 @@
 | 9 | 2026-07-08 | 컨테이너와 OS 격리 | [0019-day9-container-os-isolation.html](lessons/0019-day9-container-os-isolation.html) |
 | 10 | 2026-07-09 | 종합 모의 면접 (운영체제 지표 기반 RCA) | [0020-day10-comprehensive-mock-interview.html](lessons/0020-day10-comprehensive-mock-interview.html) |
 | 11 | 2026-10-05 | NUMA 메모리 지역성과 tail latency | [0021-numa.html](lessons/0021-numa.html) |
+| 12 | 2026-10-07 | 컨테이너 cgroup 자원 압박과 CPU throttling 진단 | [0022-cgroup-throttling-pressure.html](lessons/0022-cgroup-throttling-pressure.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 12 | 컨테이너 cgroup 자원 압박과 CPU throttling 진단 | 후속 심화 주제와 실무 판단 기준 | 다음 학습에서 다룰 개념 |
+
+| 13 | 메모리 reclaim·OOM과 서비스 admission control | reclaim과 OOM 징후를 보고 언제 요청 수용량을 낮출 것인가? | memory pressure, working set, admission control |
 
 ## 현재 학습 위치
 
-**Day 11 완료** — 다음은 Day 12 컨테이너 cgroup 자원 압박과 CPU throttling 진단부터 진행한다.
+**Day 12 레슨 작성 완료** — 다음은 Day 13 메모리 reclaim·OOM과 서비스 admission control.
+
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
+
 ## Interview 답변 체크리스트
 
 - [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다.
@@ -60,3 +66,5 @@
 - [x] VM vs 컨테이너 구조, namespace(시야 격리)와 cgroup(자원 제한) 구분, noisy neighbor, OOM kill, CPU throttling, User namespace, gVisor/Kata — Day 9
 - [x] 복합 원인 장애의 계층별 순차 진단 (CPU/스케줄링 → 동시성 → 컨테이너 경계 → I/O/이벤트 루프), 상관관계 vs 인과관계 구분, 재발 방지 커뮤니케이션 — Day 10
 - [x] NUMA 메모리 지역성과 지연 시간 진단 — Day 11
+
+- [x] 컨테이너 cgroup 자원 압박과 CPU throttling 진단 — Day 12 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

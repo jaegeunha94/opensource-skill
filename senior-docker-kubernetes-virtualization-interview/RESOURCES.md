@@ -45,3 +45,7 @@
 | [kind (Kubernetes in Docker)](https://kind.sigs.k8s.io/) | Docker 컨테이너 안에서 K8s 클러스터 실행 |
 | [k3s](https://k3s.io/) | 경량 K8s, 실제 노드에 설치하기 좋음 |
 | [Play with Kubernetes](https://labs.play-with-k8s.com/) | 브라우저에서 무료 K8s 실습 |
+
+## Day 12 공식 참고 자료 (2026-10-07 확인)
+
+- [Kubernetes — Debug Pods](https://kubernetes.io/docs/tasks/debug/debug-application/debug-pods/) — Pod 상태와 이벤트로 실패 단계를 좁히는 공식 절차

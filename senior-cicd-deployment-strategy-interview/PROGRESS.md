@@ -16,16 +16,22 @@
 | 9 | 2026-07-08 | 롤백 판단과 인시던트 대응 | [0009-rollback-decision-incident-response.html](lessons/0009-rollback-decision-incident-response.html) |
 | 10 | 2026-07-09 | Release Ownership과 배포 리더십 | [0010-release-ownership-deployment-leadership.html](lessons/0010-release-ownership-deployment-leadership.html) |
 | 11 | 2026-10-05 | 배포 중 데이터베이스 호환성과 롤백 경계 | [0011-db.html](lessons/0011-db.html) |
+| 12 | 2026-10-07 | Feature Flag — 점진 노출과 제거 수명주기 | [0012-feature-flag-lifecycle-release.html](lessons/0012-feature-flag-lifecycle-release.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 12 | Feature Flag 기반 점진 노출과 제거 수명주기 | 후속 심화 주제와 실무 판단 기준 |
+
+| 13 | 배포 provenance와 서명 검증으로 artifact 신뢰 경계 세우기 | 배포할 artifact가 승인된 빌드에서 나왔다는 것을 어떻게 검증하는가? — provenance, 서명, digest, 신뢰 주체 |
 
 ## 현재 학습 위치
 
-**Day 11 완료** — 다음은 Day 12 Feature Flag 기반 점진 노출과 제거 수명주기부터 진행한다.
+**Day 12 레슨 작성 완료** — 다음은 Day 13 배포 provenance와 서명 검증으로 artifact 신뢰 경계 세우기.
+
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
+
 ## 습득한 핵심 개념
 
 - [x] 배포 전략 선택 프레임워크 (Day 1)
@@ -42,3 +48,5 @@
 - [x] 롤백 트리거 기준, 롤백 vs 핫픽스 판단, 데이터 일관성 한계, 자동 롤백 flapping 방지 (Day 9)
 - [x] Release Ownership (You Build It You Run It, 리스크 기반 배포 권한 구조, Error Budget, 블레임리스 포스트모텀, 조직 규모별 ownership 패턴) (Day 10)
 - [x] 무중단 DB 마이그레이션과 애플리케이션 호환성 — Day 11
+
+- [x] Feature Flag — 점진 노출과 제거 수명주기 — Day 12 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

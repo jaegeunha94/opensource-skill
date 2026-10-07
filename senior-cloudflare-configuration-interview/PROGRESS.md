@@ -12,20 +12,21 @@
 | 5 | 2026-07-08 | WAF와 Rate Limiting 설계 | [0005-waf-and-rate-limiting-design.html](lessons/0005-waf-and-rate-limiting-design.html) |
 | 6 | 2026-07-09 | DDoS Protection과 Bot Management/Turnstile | [0006-ddos-protection-and-bot-management-turnstile.html](lessons/0006-ddos-protection-and-bot-management-turnstile.html) |
 | 7 | 2026-10-05 | Cloudflare Load Balancing — health monitor와 steering | [0007-load-balancing.html](lessons/0007-load-balancing.html) |
+| 8 | 2026-10-07 | Workers와 Redirect/Transform Rules — 요청 경로와 마이그레이션 | [0008-edge-rules-order-migration.html](lessons/0008-edge-rules-order-migration.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Workers와 Redirect/Transform Rules | 엣지 로직 설계, 레거시 Page Rules 리다이렉트 마이그레이션, Rules 실행 순서와 우선순위 |
 | 9 | Zero Trust — Access와 Tunnel | origin IP 은닉, Cloudflare Tunnel 아키텍처, Access 정책 설계, VPN 대체 판단 |
 | 10 | 로그/Analytics, 장애 대응, 마이그레이션 runbook | Logpush, Analytics Engine, 실제 outage 사례 분석, 네임서버 전환 runbook, 롤백 시나리오 |
 ## 현재 학습 위치
 
+**Day 8 레슨 작성 완료** — 다음은 Day 9 Zero Trust — Access와 Tunnel.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 7 완료** — 다음은 Day 8 Workers와 Redirect/Transform Rules부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Proxied(orange cloud) vs DNS-only(grey cloud) 동작 원리와 선택 기준 (Day 1)
@@ -56,7 +57,7 @@
 - [x] Verified Bots 허용목록과 스푸핑 방지, AI Crawl Control(allow/charge/block)·Content Signals (Day 6)
 - [x] Turnstile 위젯 모드(Managed/Non-Interactive/Invisible)와 CAPTCHA 대비 마찰-보안 trade-off (Day 6)
 - [x] Load Balancing 스티어링 정책  (Day 7)
-- [ ] Workers 기반 엣지 로직과 Rules 우선순위 (예정 Day 8)
+- [x] Workers 기반 엣지 로직과 Rules 우선순위 (Day 8 레슨 작성)
 - [ ] Zero Trust Access/Tunnel 아키텍처 (예정 Day 9)
 - [ ] 로그/Analytics 설계와 마이그레이션 runbook (예정 Day 10)
 - [x] Load Balancing과 트래픽 스티어링 — Day 7
@@ -75,3 +76,9 @@
 - **Day 5 작성 시(2026-07-08) 재확인 내용**: WAF 개요, Custom Rules, Rate Limiting Rules(parameters/best-practices), Managed Rules/troubleshooting, DDoS override 문서와 2026년 WAF changelog(03-23, 04-27, 05-04/11/20, 06-23)를 재확인했다. 다섯 가지를 반영했다: ① 보안 phase 평가 순서는 DDoS L7(`ddos_l7`) → Custom Rules(`http_request_firewall_custom`) → Rate Limiting(`http_ratelimit`) → Managed Rules(`http_request_firewall_managed`) 순으로, Managed Rules가 가장 나중에 평가된다(Custom Rules의 Skip이 뒤 phase를 건너뛸 수 있는 이유). ② Managed Rules 신규/변경 규칙은 7일 릴리스 사이클(1주차 Log 전용 → 2주차 기본 액션)로 배포되며, 긴급 CVE만 예외다. ③ 오탐 대응은 Overrides(액션/민감도 조정)와 Exceptions(평가 자체 제외, Overrides보다 우선순위 높음)로 구분된다. ④ Rate Limiting characteristic은 IP 외에 IP with NAT support(`_cfuvid` 쿠키 기반)와 JA3/JA4 TLS 핑거프린트를 지원하며, 공유 IP 환경(VPN/CGNAT)에서 IP 단독 사용의 위험이 공식 문서에 명시돼 있다. ⑤ OWASP Core Ruleset은 폐기되지 않았지만 공식 문서가 "Cloudflare Managed Ruleset 위에 추가 시 오탐이 잦고 이득은 제한적"이라 명시해, Cloudflare Managed Ruleset을 1차 방어선으로 삼는 걸 Day 5의 기준으로 반영했다.
 - **Day 6 작성 시(2026-07-09) 재확인 내용**: DDoS Protection 개요/attack coverage/Adaptive DDoS Protection/HTTP·Network-layer override 문서, Bot Fight Mode/Super Bot Fight Mode/Bot Management 문서, Verified Bots 문서, AI Crawl Control 문서, Turnstile 개요/changelog, Cloudflare Challenges(Managed/JS Challenge) 문서, 2025 Q1·Q2·Q4 DDoS Threat Report를 재확인했다(공식 문서 원문 페이지는 이 세션의 아웃바운드 정책상 직접 fetch가 차단돼, WebSearch로 확보한 공식 developers.cloudflare.com/blog.cloudflare.com 발췌를 근거로 사용했다). 다섯 가지를 이 레슨의 핵심 최신 근거로 반영했다: ① 2025 Q4 DDoS 위협 보고서 기준 31.4 Tbps(35초 지속) 공격이 신기록을 세웠고, 같은 분기 Aisuru-Kimwolf 봇넷이 초당 2억 요청(200M+ rps)을 넘는 하이퍼볼류메트릭 HTTP DDoS 공격을 반복했다 — 모두 상시 자동 방어로 처리됐다. ② Bot Score(`cf.bot_management.score`, 1~99)는 Enterprise Bot Management 애드온에서만 채워지며, Pro/Business에서 이 필드를 참조하는 Custom Rule은 에러 없이 조용히 매칭되지 않는다(silent no-match). ③ HTTP DDoS Attack Protection 기본 민감도는 High이며, Enterprise Advanced DDoS Protection 애드온에서 scope 지정 override를 최대 10개까지 만들 수 있다. ④ AI Crawl Control이 Bot Management 위의 새 정책 축으로 자리잡아 AI 크롤러별 allow/charge(pay-per-crawl, 미결제 시 402)/block을 선택할 수 있고, robots.txt Content Signals(search/ai-input/ai-train)로 사용 목적별 허용 여부를 표준화된 방식으로 명시할 수 있다. ⑤ Turnstile은 2025년 하반기부터 브라우저 핑거프린팅 의존도를 낮추고 네트워크 레벨 시그널 비중을 높이는 방향으로 탐지 방식이 강화됐고, 2026-06에는 Logpush에 전용 Turnstile Events 데이터셋이 추가됐다.
 - 이후 Day를 생성할 때도 항상 최신 공식 문서/changelog를 먼저 확인하고, 이 표와 충돌하면 최신 근거를 우선해 PROGRESS.md와 RESOURCES.md를 갱신한다.
+
+- [x] Workers와 Redirect/Transform Rules — 요청 경로와 마이그레이션 — Day 8 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행
+
+## 이번 레슨 자료 확인
+
+2026-10-07 공식 Rules 실행 순서·Page Rules migration guide·Workers routes·changelog를 확인했다. 기존 계획의 Workers/Redirect/Transform 범위는 유지하되 Page Rules의 우선순위를 신규 Rules 전체에 일반화하지 않도록 보강했다.

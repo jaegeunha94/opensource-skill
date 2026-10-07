@@ -22,16 +22,22 @@
 | 9 | 2026-07-08 | 실무 자료구조 설계 (캐시·Rate Limiter·랭킹) | [interview-day09-cache-rate-limiter-ranking-design.html](lessons/interview-day09-cache-rate-limiter-ranking-design.html) |
 | 10 | 2026-07-09 | 종합 모의 면접 (요구사항 변화에 따른 자료구조 재검토) | [interview-day10-mock-interview-requirement-change.html](lessons/interview-day10-mock-interview-requirement-change.html) |
 | 11 | 2026-10-05 | 동시성 자료구조와 일관성 계약 | [interview-day11-concurrent-data-structures.html](lessons/interview-day11-concurrent-data-structures.html) |
+| 12 | 2026-10-07 | Lock-free 자료구조의 안전성 검증과 재시도 비용 | [0012-lock-free-aba-reclamation.html](lessons/0012-lock-free-aba-reclamation.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 12 | Lock-free 자료구조의 안전성 검증과 재시도 비용 | 후속 심화 주제와 실무 판단 기준 | 다음 학습에서 다룰 개념 |
+
+| 13 | 동시성 이력 검증과 자료구조 선형화 테스트 | 동시 실행 이력에서 허용할 순서와 위반을 어떻게 판정하는가? | linearizability, 이력 기록, 재현 가능한 검증 |
 
 ## 현재 학습 위치
 
-**Day 11 완료** — 다음은 Day 12 Lock-free 자료구조의 안전성 검증과 재시도 비용부터 진행한다.
+**Day 12 레슨 작성 완료** — 다음은 Day 13 동시성 이력 검증과 자료구조 선형화 테스트.
+
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
+
 ## Interview 답변 체크리스트
 
 - [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다.
@@ -58,3 +64,5 @@
 - [x] LRU 캐시(해시 맵 + 이중 연결 리스트), sliding window/token bucket rate limiter, 스킵 리스트+해시 맵 기반 랭킹 조합 설계 — Day 9
 - [x] 요구사항 변화에 따른 자료구조 재검토(유지 vs 교체 구분), 규모 변화가 자료구조 유효성을 무효화하는 원리, 라운드별 trade-off 재계산, 종합 follow-up 대응 — Day 10
 - [x] 동시성 안전 자료구조와 일관성 선택 — Day 11
+
+- [x] Lock-free 자료구조의 안전성 검증과 재시도 비용 — Day 12 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

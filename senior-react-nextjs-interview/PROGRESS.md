@@ -13,19 +13,20 @@
 | 6 | 2026-07-07 | Data Fetching 패턴 — 서버 fetch vs 클라이언트 fetch, 워터폴 방지, request memoization | [0006-data-fetching-patterns-waterfall-request-memoization.html](lessons/0006-data-fetching-patterns-waterfall-request-memoization.html) |
 | 7 | 2026-07-08 | Suspense와 동시성 렌더링 — concurrent rendering, transition, 우선순위 스케줄링 | [0007-suspense-concurrent-rendering-transitions.html](lessons/0007-suspense-concurrent-rendering-transitions.html) |
 | 8 | 2026-10-05 | Error Boundary — UI 실패를 격리하고 복구 행동 제공하기 | [0008-error-boundary.html](lessons/0008-error-boundary.html) |
+| 9 | 2026-10-07 | Hydration 심화 — 서버와 첫 클라이언트 렌더를 맞추기 | [0009-hydration-deterministic-first-render.html](lessons/0009-hydration-deterministic-first-render.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | Hydration 심화 | hydration mismatch의 원인, 디버깅, 예방 |
 | 10 | SSR | 서버 렌더링 파이프라인, TTFB/TTI trade-off |
 ## 현재 학습 위치
 
+**Day 9 레슨 작성 완료** — 다음은 Day 10 SSR.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 8 완료** — 다음은 Day 9 Hydration 심화부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Render 단계와 Commit 단계의 분리, 각각의 역할 (Day 1)
@@ -65,3 +66,5 @@
 - [x] Suspense boundary 배치 — 하나로 뭉치기 vs 세분화하기의 trade-off (Day 7)
 - [x] Error Boundary가 잡을 수 있는 에러의 범위와 컴포넌트 트리 단위 장애 격리 설계  (Day 8)
 - [x] Error Boundary와 장애 격리 — Day 8
+
+- [x] Hydration 심화 — 서버와 첫 클라이언트 렌더를 맞추기 — Day 9 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

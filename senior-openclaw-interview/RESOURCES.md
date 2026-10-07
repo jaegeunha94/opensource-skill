@@ -195,3 +195,9 @@
 ## 2026-10-05 Day lesson sources confirmed
 
 - [OpenClaw — Multi-agent routing](https://docs.openclaw.ai/multi-agent) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.
+
+## Day 9 공식 참고 자료 (2026-10-07 확인)
+
+- [OpenClaw sandboxing](https://docs.openclaw.ai/gateway/sandboxing) — Gateway와 도구 실행 격리의 경계
+- [Modes, scope and backend](https://docs.openclaw.ai/gateway/sandboxing/modes-scope-and-backend) — 현재 설정 축과 구현 선택
+- [Workspace access](https://docs.openclaw.ai/gateway/sandboxing/workspace-access) — none·ro·rw와 노출 범위

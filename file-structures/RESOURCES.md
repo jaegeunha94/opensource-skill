@@ -31,3 +31,8 @@
 ## Gaps
 
 - 한국어로 된 무료 B+-트리 심화 강의 자료 부족 — 추후 발굴 필요
+
+## Day 11 공식 참고 자료 (2026-10-07 확인)
+
+- [PostgreSQL WAL](https://www.postgresql.org/docs/current/wal-intro.html) — 선행 로그 영속화와 redo·group commit의 원리.
+- [PostgreSQL 체크포인트](https://www.postgresql.org/docs/current/wal-configuration.html) — 복구 시간·I/O·WAL 보존의 trade-off.

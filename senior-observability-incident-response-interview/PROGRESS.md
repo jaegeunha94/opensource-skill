@@ -16,18 +16,21 @@
 | 9 | 2026-07-08 | 장애 커뮤니케이션 | [0009-incident-communication.html](lessons/0009-incident-communication.html) |
 | 10 | 2026-07-09 | 대규모 관측성 아키텍처 | [0010-large-scale-observability-architecture.html](lessons/0010-large-scale-observability-architecture.html) |
 | 11 | 2026-10-05 | Game Day — 가설·중단 조건·학습을 갖춘 장애 훈련 | [0011-game-day.html](lessons/0011-game-day.html) |
+| 12 | 2026-10-07 | 장애 사후 분석 — 재발 방지 action의 효과 검증 | [0012-postmortem-action-verification.html](lessons/0012-postmortem-action-verification.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 12 | 장애 사후 분석과 재발 방지 action 검증 | 복구·정합성·운영 지표 |
+| 13 | 장애 증거의 시간 정합성과 관측 사각지대 검증 | 시계 오차와 누락된 span이 장애 원인 추론에 어떤 영향을 주는가? — event time, clock skew, 증거 신뢰도 |
+
 ## 현재 학습 위치
 
+**Day 12 레슨 작성 완료** — 다음은 Day 13 장애 증거의 시간 정합성과 관측 사각지대 검증.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 11 완료** — 다음은 Day 12 장애 사후 분석과 재발 방지 action 검증부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Observability vs Monitoring 차이 (Day 1)
@@ -69,3 +72,5 @@
 - [x] 관측성 파이프라인 자체의 메타 모니터링 필요성 (Day 10)
 - [x] 카오스 엔지니어링과 Game Day 설계  (Day 11)
 - [x] 카오스 엔지니어링과 장애 훈련 (Game Day) — Day 11
+
+- [x] 장애 사후 분석 — 재발 방지 action의 효과 검증 — Day 12 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

@@ -34,3 +34,7 @@
 ## Gaps
 
 - 한국어 자료: 국내 대학 컴퓨터 구조 강의 자료 (KOCW 등) 추가 필요
+
+## Day 10 공식 참고 자료 (2026-10-07 확인)
+
+- [Intel VTune Microarchitecture Exploration](https://www.intel.com/content/www/us/en/docs/vtune-profiler/user-guide/2026-0/general-exploration-analysis.html) — 메모리 병목 등을 하위 지표로 나누는 공식 측정 가이드.

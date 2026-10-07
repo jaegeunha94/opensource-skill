@@ -14,12 +14,13 @@
 | 7 | 2026-07-08 | Ingress vs Gateway API — 트래픽 라우팅 설계 | [0007-ingress-gateway-api-traffic-routing.html](lessons/0007-ingress-gateway-api-traffic-routing.html) |
 | 8 | 2026-07-09 | CNI 네트워킹과 클러스터 네트워크 트러블슈팅 | [0008-cni-networking-troubleshooting.html](lessons/0008-cni-networking-troubleshooting.html) |
 | 9 | 2026-10-05 | Kubernetes 스토리지 — PVC 바인딩부터 장애 복구까지 | [0009-storage-volume-pv-pvc-storageclass-csi.html](lessons/0009-storage-volume-pv-pvc-storageclass-csi.html) |
+| 10 | 2026-10-07 | ConfigMap/Secret — 갱신 전파와 시크릿 회전 계약 | [0010-config-secret-rotation-contract.html](lessons/0010-config-secret-rotation-contract.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 10 | ConfigMap/Secret과 설정/시크릿 관리 | 마운트 vs 환경변수, 갱신 전파 지연, Secret 암호화(etcd encryption at rest), 외부 시크릿 매니저 연동 |
 | 11 | HPA/VPA와 오토스케일링, DRA/GPU 스케줄링 | 메트릭 기반 스케일링, HPA·VPA 충돌, In-place Resize와 VPA 관계, DRA(GPU/가속기) 개요, 노드 오토스케일러(Karpenter vs Cluster Autoscaler) |
 | 12 | 스케줄링 심화 | Affinity/Anti-affinity, Taint/Toleration, Topology Spread Constraint, 스케줄링 실패 진단 |
 | 13 | RBAC와 권한 경계 설계 | Role vs ClusterRole, 최소 권한, ServiceAccount 토큰, 흔한 과잉 권한 실수 |
@@ -31,10 +32,10 @@
 | 19 | 종합 설계 면접 — 대규모 서비스 Kubernetes 아키텍처 설계 | 전 주제 통합, 요구사항부터 배포/보안/관측성까지 end-to-end 설계 |
 ## 현재 학습 위치
 
+**Day 10 레슨 작성 완료** — 다음은 Day 11 HPA/VPA와 오토스케일링, DRA/GPU 스케줄링.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 9 완료** — 다음은 Day 10 ConfigMap/Secret과 설정/시크릿 관리부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 컨트롤 플레인 컴포넌트(kube-apiserver, etcd, kube-scheduler, kube-controller-manager, cloud-controller-manager) 역할과 장애 시 blast radius (Day 1)
@@ -75,7 +76,7 @@
 - [x] default-deny NetworkPolicy가 CoreDNS egress까지 함께 차단해 조용한 전면 DNS 장애를 만드는 메커니즘과 예방 순서(DNS 허용 규칙 선배포) (Day 8)
 - [x] IP 고갈(AWS VPC CNI 서브넷 단편화), MTU 불일치(오버레이 캡슐화 오버헤드), CNI 데몬 crash로 인한 NetworkPluginNotReady 등 네트워크 장애의 전형적 서명과 계층별(노드/CNI → 라우팅 → Service → DNS → 정책) 진단 순서 (Day 8)
 - [x] Storage/Volume/CSI  (Day 9)
-- [ ] ConfigMap/Secret 관리 (예정 Day 10)
+- [x] ConfigMap/Secret 관리 (Day 10 레슨 작성)
 - [ ] HPA/VPA, DRA, 노드 오토스케일링 (예정 Day 11)
 - [ ] 스케줄링 심화 (예정 Day 12)
 - [ ] RBAC (예정 Day 13)
@@ -86,3 +87,9 @@
 - [ ] Multi-cluster trade-off (예정 Day 18)
 - [ ] 종합 아키텍처 설계 (예정 Day 19)
 - [x] Storage/Volume 설계 (PV/PVC, StorageClass, CSI) — Day 9
+
+- [x] ConfigMap/Secret — 갱신 전파와 시크릿 회전 계약 — Day 10 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행
+
+## 이번 레슨 자료 확인
+
+2026-10-07 공식 release 및 deprecation guide, ConfigMap/Secret 문서를 확인했다. 기존 계획은 유지하며 전파 지연과 앱 반영·credential 폐기를 분리했다. 클러스터별 버전과 kubelet 설정은 면접 사례에서 확인해야 하는 조건으로 남겼다.

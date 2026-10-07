@@ -89,3 +89,8 @@
 - 블로그 글은 내용 검증 없이 참고하지 않는다. Kubernetes 공식 문서와 release note를 기준으로 삼는다.
 - 리소스 이름/필드 암기보다 "왜 이 구조를 선택하는가"와 "장애가 나면 어디부터 확인하는가"를 익히는 데 집중한다.
 - 버전과 폐기 정책은 빠르게 바뀐다. 몇 달 이상 지난 뒤 이어서 학습한다면 release notes와 deprecation guide를 다시 확인한다.
+
+## Day 10 공식 참고 자료 (2026-10-07 확인)
+
+- [Kubernetes — ConfigMaps](https://kubernetes.io/docs/concepts/configuration/configmap/) — env·volume·subPath의 변경 전파 차이
+- [Kubernetes — Secrets](https://kubernetes.io/docs/concepts/configuration/secret/) — 보안 경계와 갱신·소비 방식

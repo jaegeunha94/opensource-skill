@@ -210,3 +210,7 @@
 ## 2026-10-05 Day lesson sources confirmed
 
 - [OpenAI Agents SDK — Agent orchestration and handoffs](https://openai.github.io/openai-agents-python/multi_agent/) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.
+
+## Day 9 공식 참고 자료 (2026-10-07 확인)
+
+- [Anthropic — Release Notes](https://platform.claude.com/docs/en/release-notes/overview) — 작성 시점 API 변경 확인

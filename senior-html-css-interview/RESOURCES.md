@@ -65,3 +65,7 @@
 | Container Query | MDN — "CSS container queries" |
 | Design Token 개념 | Design Tokens Community Group — https://design-tokens.github.io/community-group/format/ |
 | JavaScript SEO / 크롤러 렌더링 | Google Search Central — "JavaScript SEO basics" |
+
+## Day 10 공식 참고 자료 (2026-10-07 확인)
+
+- [W3C CSS Flexbox 명세](https://www.w3.org/TR/css-flexbox-1/) — 자동 최소 크기·축소 알고리즘·재정렬과 접근성.

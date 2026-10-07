@@ -15,21 +15,22 @@
 | 8 | 2026-07-08 | Reranking 전략 | [0008-reranking-strategy.html](lessons/0008-reranking-strategy.html) |
 | 9 | 2026-07-09 | Context 구성과 Prompt 설계 | [0009-context-construction-and-prompt-design.html](lessons/0009-context-construction-and-prompt-design.html) |
 | 10 | 2026-10-05 | RAG hallucination — 근거 부족을 감지하고 답을 제한하기 | [0010-hallucination.html](lessons/0010-hallucination.html) |
+| 11 | 2026-10-07 | RAG 평가 — 데이터셋·지표·배포 판단의 연결 | [0011-evaluation-dataset-release-gate.html](lessons/0011-evaluation-dataset-release-gate.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 11 | 평가 지표와 Offline/Online Evaluation | Recall@k, Faithfulness, RAGAS, A/B 테스트 |
 | 12 | 권한/보안과 개인정보 처리 | Document-level ACL, PII 마스킹, 데이터 거버넌스 |
 | 13 | 캐싱과 비용 최적화 | Semantic cache, 임베딩 재사용, 비용 구조 분석 |
 | 14 | 관측성과 장애 대응 | 검색/생성 지표 관측, 장애 격리, 인시던트 대응 |
 ## 현재 학습 위치
 
+**Day 11 레슨 작성 완료** — 다음은 Day 12 권한/보안과 개인정보 처리.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 10 완료** — 다음은 Day 11 평가 지표와 Offline/Online Evaluation부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] RAG 파이프라인 구조 (Ingestion / Query pipeline) (Day 1)
@@ -58,7 +59,13 @@
 - [x] Prompt caching 구조 설계(정적/동적 분리)와 RAG 워크로드별 캐싱 효과 판단 (Day 9)
 - [x] 간접 프롬프트 인젝션 위협 모델과 다층 방어(콘텐츠 격리·정책 선언·사전 스크리닝) (Day 9)
 - [x] Hallucination 완화와 답변 근거 표시  (Day 10)
-- [ ] 평가 지표와 Offline/Online Evaluation (예정 Day 11)
+- [x] 평가 지표와 Offline/Online Evaluation (Day 11 레슨 작성)
 - [ ] 권한/보안과 개인정보 처리 (예정 Day 12)
 - [ ] 캐싱과 비용 최적화 (예정 Day 13)
 - [ ] 관측성과 장애 대응 (예정 Day 14)
+
+- [x] RAG 평가 — 데이터셋·지표·배포 판단의 연결 — Day 11 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행
+
+## 이번 레슨 자료 확인
+
+2026-10-07 Ragas 공식 평가 정의·현재 collections API와 legacy 안내를 확인했다. Day 10의 오류 분류를 반복 요약하지 않고 고정 데이터셋·holdout·배포 gate와 online 검증으로 확장했다.

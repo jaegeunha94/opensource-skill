@@ -14,12 +14,13 @@
 | 7 | 2026-07-08 | Module 시스템 — CommonJS vs ESM, 순환 참조 처리 차이, 트리쉐이킹이 ESM에서만 가능한 이유, 번들러 경계(interop/dual package hazard) | [0007-module-system-cjs-esm.html](lessons/0007-module-system-cjs-esm.html) |
 | 8 | 2026-07-09 | Event Loop 심화 — Microtask vs Macrotask, 큐 우선순위, `requestAnimationFrame`과 렌더링 파이프라인 타이밍 | [0008-event-loop-microtask-macrotask-deep-dive.html](lessons/0008-event-loop-microtask-macrotask-deep-dive.html) |
 | 9 | 2026-10-05 | Promise의 상태 전이와 실패 전파 | [0009-promise.html](lessons/0009-promise.html) |
+| 10 | 2026-10-07 | async/await 심화 — 의존성 그래프와 동시 실행 | [0010-async-await-dependency-concurrency.html](lessons/0010-async-await-dependency-concurrency.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 10 | `async`/`await` 심화 | 내부적으로 Promise로 변환되는 방식, 순차 vs 병렬 실행 함정 |
 | 11 | Cancellation과 AbortController | Promise가 취소 불가능한 이유, 취소 가능한 비동기 설계 패턴 |
 | 12 | DOM Event 모델 | Capturing/Bubbling, `target` vs `currentTarget`, 커스텀 이벤트 |
 | 13 | Event Delegation | 대량 리스트 이벤트 처리 최적화, 위임이 실패하는 경우 |
@@ -32,10 +33,10 @@
 | 20 | 종합 — 프로덕션 JS 장애 디버깅 시나리오 | Event Loop·메모리·비동기를 통합한 실전 디버깅 절차 |
 ## 현재 학습 위치
 
+**Day 10 레슨 작성 완료** — 다음은 Day 11 Cancellation과 AbortController.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 9 완료** — 다음은 Day 10 `async`/`await` 심화부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Call Stack / Web API / Task Queue / Microtask Queue의 역할 구분 (Day 1)
@@ -70,3 +71,5 @@
 - [ ] Promise가 취소 불가능한 근본 이유 (예정 Day 11)
 - [ ] 메모리 누수 진단 절차 (예정 Day 15)
 - [x] Promise 내부 동작 — Day 9
+
+- [x] async/await 심화 — 의존성 그래프와 동시 실행 — Day 10 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

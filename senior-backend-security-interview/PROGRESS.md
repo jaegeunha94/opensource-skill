@@ -16,16 +16,22 @@
 | 9 | 2026-07-08 | Secure Coding 원칙과 코드 리뷰 | [0009-secure-coding-principles-code-review.html](lessons/0009-secure-coding-principles-code-review.html) |
 | 10 | 2026-07-09 | 종합 보안 설계 케이스 스터디 | [0010-comprehensive-security-case-study.html](lessons/0010-comprehensive-security-case-study.html) |
 | 11 | 2026-10-05 | 멀티테넌트 인가 — 객체 경계에서 IDOR 막기 | [0011-multitenant-object-authorization.html](lessons/0011-multitenant-object-authorization.html) |
+| 12 | 2026-10-07 | 보안 회귀 테스트 — 인가 정책과 모든 실행 경로 검증 | [0012-authorization-policy-regression.html](lessons/0012-authorization-policy-regression.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 12 | 보안 회귀 테스트와 정책 기반 인가 검증 | 후속 심화 주제와 실무 판단 기준 |
+
+| 13 | 서비스 간 권한 위임과 토큰 audience 검증 | 서비스가 다른 서비스의 권한을 대신 사용할 때 무엇을 제한하는가? — audience, actor/subject, 최소 권한 위임 |
 
 ## 현재 학습 위치
 
-**Day 11 완료** — 다음은 Day 12 보안 회귀 테스트와 정책 기반 인가 검증부터 진행한다.
+**Day 12 레슨 작성 완료** — 다음은 Day 13 서비스 간 권한 위임과 토큰 audience 검증.
+
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
+
 ## 습득한 핵심 개념
 
 - [x] 위협 모델링 프레임워크 — STRIDE 방법론 (Day 1)
@@ -82,3 +88,5 @@
 - [x] 오픈형 위협 모델링/설계 질문에 대한 4단계 사고 순서 — 위협 식별 → 공격 체인 추적 → 계층적 방어 → trade-off 판단 (Day 10)
 - [x] 사고 대응 우선순위 — 억제(Containment) → 증거 보존/범위 파악 → 근본 원인 분석 → 투명한 보고 (Day 10)
 - [x] 멀티테넌트 인가와 객체 수준 접근 제어 — Day 11
+
+- [x] 보안 회귀 테스트 — 인가 정책과 모든 실행 경로 검증 — Day 12 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

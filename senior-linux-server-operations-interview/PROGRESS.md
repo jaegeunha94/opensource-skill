@@ -16,16 +16,22 @@
 | 9 | 2026-07-08 | 종합 장애 시나리오 실습 | [0009-comprehensive-incident-scenarios.html](lessons/0009-comprehensive-incident-scenarios.html) |
 | 10 | 2026-07-09 | 커널 파라미터 튜닝 & 리소스 제한 | [0010-kernel-tuning-resource-limits.html](lessons/0010-kernel-tuning-resource-limits.html) |
 | 11 | 2026-10-05 | PSI와 cgroup v2 — 자원 압박을 사용자 지연에 연결하기 | [0011-psi-cgroup-v2.html](lessons/0011-psi-cgroup-v2.html) |
+| 12 | 2026-10-07 | eBPF/perf — 실행 시간과 대기 시간을 분리한 병목 진단 | [0012-on-off-cpu-evidence.html](lessons/0012-on-off-cpu-evidence.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 12 | eBPF/perf를 이용한 커널·애플리케이션 병목 연결 | 후속 심화 주제와 실무 판단 기준 |
+
+| 13 | 스케줄러 지연과 NUMA 배치의 운영 검증 | CPU 사용률만으로 보이지 않는 스케줄러 대기와 원격 메모리를 어떻게 구별하는가? — run queue, scheduler latency, NUMA locality |
 
 ## 현재 학습 위치
 
-**Day 11 완료** — 다음은 Day 12 eBPF/perf를 이용한 커널·애플리케이션 병목 연결부터 진행한다.
+**Day 12 레슨 작성 완료** — 다음은 Day 13 스케줄러 지연과 NUMA 배치의 운영 검증.
+
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
+
 ## 습득한 핵심 개념
 
 - [x] 서버 장애 대응 5단계 프레임워크 (영향 범위 → 스냅샷 → 병목 범주 → 원인 특정 → 조치+재발 방지) (Day 1)
@@ -83,3 +89,5 @@
 - [x] MemoryMax(제한)와 MemoryMin(보장)로 리소스 상한을 양방향으로 설계하는 사고 (Day 10)
 - [x] 리소스 상한값을 감이 아니라 실측 트래픽/부하 기반으로 역산하는 절차 (Day 10)
 - [x] PSI와 cgroup v2로 보는 자원 압박 — Day 11
+
+- [x] eBPF/perf — 실행 시간과 대기 시간을 분리한 병목 진단 — Day 12 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

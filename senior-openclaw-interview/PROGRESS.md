@@ -13,12 +13,13 @@
 | 6 | 2026-07-08 | Sessions, Prompt/Memory 파일 | [0006-sessions-prompt-memory-files.html](lessons/0006-sessions-prompt-memory-files.html) |
 | 7 | 2026-07-09 | Skills와 ClawHub | [0007-skills-clawhub.html](lessons/0007-skills-clawhub.html) |
 | 8 | 2026-10-05 | OpenClaw Multi-Agent — channel routing과 session 격리 | [0008-multi-agent.html](lessons/0008-multi-agent.html) |
+| 9 | 2026-10-07 | 샌드박싱 아키텍처 — 실행 위치·마운트·탈출 경계 | [0009-sandbox-effective-policy-boundary.html](lessons/0009-sandbox-effective-policy-boundary.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | 샌드박싱 아키텍처 | host/Docker/none 실행 모드, 네트워크 없는 컨테이너 격리, 절대경로 파일 접근 위험 |
 | 10 | DM Pairing, Allowlist, Remote Exposure Runbook | 4가지 DM 정책, pairing 핸드셰이크, allowlist 검증 규칙, exposure runbook, 리버스 프록시/터널 패턴 |
 | 11 | Companion App/Node와 배포 토폴로지 | Gateway(brain) vs Node(limbs), `node.invoke`, 플랫폼별 role 차이, "cloud brain, local hands" |
 | 12 | 로깅과 트러블슈팅 | 5단계 로그 레벨, `OPENCLAW_LOG_LEVEL`, diagnostics flags, `openclaw doctor`/`logs --follow` |
@@ -26,10 +27,10 @@
 | 14 | Production Operation Trade-off 종합 | local-first vs 클라우드 SaaS, 가용성/백업/멀티디바이스, 신뢰 경계 확장 전략, 면접 종합 시뮬레이션 |
 ## 현재 학습 위치
 
+**Day 9 레슨 작성 완료** — 다음은 Day 10 DM Pairing, Allowlist, Remote Exposure Runbook.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 8 완료** — 다음은 Day 9 샌드박싱 아키텍처부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Gateway = 단일 Node.js 프로세스, WS+HTTP 멀티플렉싱 control plane (Day 1)
@@ -49,10 +50,16 @@
 - [x] 부트스트랩/메모리 파일 로딩의 인젝션 탐지 공백(#66350), 압축 위장 프롬프트 인젝션 실제 페이로드(#30111), 공식 위협 모델의 커버리지 공백, 관련 CVE(CVE-2026-27004/53844/53825) (Day 6)
 - [x] SKILL.md frontmatter(`metadata.openclaw`, `requires.env/bins/anyBins`, `always`, `skillKey` 등)가 단순 문서화가 아니라 선언-행동 일치를 검증하는 계약이라는 것, 스킬 디스커버리 6-tier 우선순위(workspace > project agent > personal agent > managed > bundled > extra), ClawHub 설치만 `skills update`가 자동 추적하는 비대칭성, ClawHub 벡터 검색(OpenAI 임베딩 + Convex), 다중 스캐너(VirusTotal/NVIDIA SkillSpector/정적 분석) + 판사 하니스 스캐닝 파이프라인과 스캐너 간 낮은 합의율(공통 탐지 10.4% 이하, 단일 스캐너 전용 81.9%)의 한계, "서드파티 스킬 = untrusted code" 공식 경고 (Day 7)
 - [x] Multi-agent 라우팅과 격리  (Day 8)
-- [ ] 샌드박싱 아키텍처 (예정 Day 9)
+- [x] 샌드박싱 아키텍처 (Day 9 레슨 작성)
 - [ ] DM pairing/allowlist/remote exposure runbook (예정 Day 10)
 - [ ] Companion app/Node, 배포 토폴로지 (예정 Day 11)
 - [ ] 로깅/트러블슈팅 (예정 Day 12)
 - [ ] 마켓플레이스 보안/공급망 리스크 (예정 Day 13)
 - [ ] Production operation trade-off 종합 (예정 Day 14)
 - [x] Multi-Agent 라우팅과 격리 — Day 8
+
+- [x] 샌드박싱 아키텍처 — 실행 위치·마운트·탈출 경계 — Day 9 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행
+
+## 이번 레슨 자료 확인
+
+예정 표의 host/Docker/none 표현은 현재 공식 문서의 mode(off/non-main/all), backend, scope, workspaceAccess 축으로 구분해 설명했다. 기존 계획과 기록은 보존하며, required sandbox 및 elevated의 적용은 대상 effective policy로 확인한다.

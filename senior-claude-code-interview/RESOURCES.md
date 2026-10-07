@@ -164,3 +164,8 @@
 ## 2026-10-05 Day lesson sources confirmed
 
 - [Anthropic Claude Code — MCP](https://docs.anthropic.com/en/docs/claude-code/mcp) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.
+
+## Day 8 공식 참고 자료 (2026-10-07 확인)
+
+- [Agent Skills specification](https://agentskills.io/specification) — 표준 디렉터리와 메타데이터 형식
+- [Claude Code changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) — 설치 버전에 따른 동작 변화 확인

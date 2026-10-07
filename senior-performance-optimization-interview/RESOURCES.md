@@ -80,3 +80,8 @@
 | Amdahl's Law | Wikipedia 로도 충분, 병렬화 한계 이해용 |
 | Little's Law | 큐잉 이론 기초, 동시성 계산에 직접 적용 |
 | p99 latency 왜곡 | Gil Tene — "How NOT to Measure Latency" (YouTube) |
+
+## Day 12 공식 참고 자료 (2026-10-07 확인)
+
+- [PostgreSQL — LIMIT/OFFSET](https://www.postgresql.org/docs/current/queries-limit.html) — 예측 가능한 정렬과 페이지 비용의 기본
+- [PostgreSQL — Transaction Isolation](https://www.postgresql.org/docs/current/transaction-iso.html) — statement/transaction snapshot의 차이

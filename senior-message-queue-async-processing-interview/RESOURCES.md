@@ -43,3 +43,7 @@
 4. AWS SQS 개발자 가이드 → 클라우드 환경 설계
 5. Celery 문서 → Python 비동기 작업 실전
 6. Enterprise Integration Patterns → 패턴 언어로 설계 소통
+
+## Day 12 공식 참고 자료 (2026-10-07 확인)
+
+- [AWS — Saga Orchestration](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/saga-orchestration.html) — 로컬 트랜잭션·보상·조정 방식의 설계 경계

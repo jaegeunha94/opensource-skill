@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Day 13 — Transactional Outbox와 멱등 이벤트 처리</title><link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../../assets/study-reading.css"></head>
+<body><main><header><p class="meta">python-backend-engineering · Day 13 · 2026-10-07 · 약 15분</p><h1>Transactional Outbox와 멱등 이벤트 처리</h1><p>Day 5 트랜잭션·Day 7 재시도·Day 12 신뢰성에 기반해 주문 저장과 이벤트 발행 사이의 유실 구간을 없앤다.</p><nav aria-label="학습 탐색"><a href="./index.html">레슨 목록</a> · <a href="./0012-rate-limiting-circuit-breaker-retry-timeout.html">이전 Day 12</a> · <a href="../reference/day-13-transactional-outbox-idempotent-consumer-reference.html">빠른 참고</a></nav></header>
+<section><h2>문제: 주문은 있는데 알림 작업이 없다</h2><p>가상 주문 API가 DB commit 후 Celery 작업을 발행하려다 꺼졌습니다. 반대로 작업을 먼저 발행하면 DB rollback된 주문의 알림이 나갈 수 있습니다. 같은 DB의 주문과 ‘발행할 이벤트’를 한 트랜잭션으로 저장한 뒤 relay가 전송하면 이 두 저장의 성공·실패를 함께 묶을 수 있습니다. 이것이 <a href="https://microservices.io/patterns/data/transactional-outbox.html">Transactional Outbox</a> 패턴입니다.</p><p>outbox는 broker 전송까지 하나의 DB 트랜잭션으로 만드는 기술이 아닙니다. relay가 전송 성공 직후 ‘보냄’ 표시 전에 꺼지면 다시 전송합니다. 따라서 이벤트 ID를 유지하고 소비자는 중복 적용을 막아야 합니다.</p></section>
+<section><h2>표준 라이브러리로 실행하는 작은 예제</h2><p>아래를 Python 3 파일로 저장해 실행하세요. SQLite in-memory DB와 가상 broker를 쓰므로 외부 서비스·자격 증명이 필요 없습니다. 영속 저장·다중 worker 구현은 제외하고 원자성 경계만 재현합니다.</p><pre><code data-lang="python">import sqlite3
+
+db = sqlite3.connect(':memory:')
+db.executescript("""
+CREATE TABLE orders(id TEXT PRIMARY KEY);
+CREATE TABLE outbox(event_id TEXT PRIMARY KEY,
+                    order_id TEXT, sent INTEGER DEFAULT 0);
+CREATE TABLE inbox(event_id TEXT PRIMARY KEY);
+CREATE TABLE deliveries(order_id TEXT PRIMARY KEY);
+""")
+with db:
+    db.execute('INSERT INTO orders VALUES (?)', ('O-1',))
+    db.execute('INSERT INTO outbox(event_id, order_id) VALUES (?, ?)',
+               ('E-1', 'O-1'))
+
+# relay는 전송 뒤 sent 표시 전에 꺼졌다고 가정한다.
+broker = [('E-1', 'O-1'), ('E-1', 'O-1')]
+for event_id, order_id in broker:
+    with db:
+        accepted = db.execute(
+            'INSERT INTO inbox VALUES (?) ON CONFLICT DO NOTHING',
+            (event_id,)).rowcount
+        if accepted:
+            db.execute('INSERT INTO deliveries VALUES (?)',
+                       (order_id,))
+print(db.execute('SELECT COUNT(*) FROM deliveries').fetchone()[0])
+# 기대 출력: 1
+</code></pre><p>inbox의 unique 제약과 업무 변경을 같은 소비자 트랜잭션 안에 둡니다. 두 worker가 먼저 SELECT로 존재 여부만 확인하면 둘 다 ‘없음’을 보고 적용할 수 있습니다. 이 예제의 배송 처리 상태 저장과 외부 배송 API 호출은 다릅니다. 외부 호출이라면 공급자의 멱등 키·결과 조회 계약까지 필요합니다.</p></section>
+<section><h2>실무 설계 순서와 장애 구간</h2><ol><li>주문 ID와 이벤트 ID를 고정합니다. 새 재시도마다 이벤트 ID를 바꾸지 않습니다.</li><li>주문과 outbox insert를 하나의 DB commit에 묶습니다. ORM에서도 같은 session transaction을 사용합니다.</li><li>relay는 미발행 행을 bounded batch로 읽고 broker 확인 후 sent를 표시합니다. 다중 relay는 claim·lease 또는 DB lock 설계가 필요합니다.</li><li>전송 뒤 표시 전 crash는 중복, commit 뒤 전송 전 crash는 미발행 backlog로 처리합니다. sent를 먼저 표시하면 유실을 만들 수 있습니다.</li><li>소비자는 inbox ID와 DB 업무 변경을 원자적으로 commit한 뒤 메시지를 ack합니다. 순서가 필요하면 주문별 sequence·partition을 추가합니다.</li></ol><p><a href="https://docs.sqlalchemy.org/en/20/orm/session_transaction.html">SQLAlchemy 2.0 session transaction</a>의 commit/rollback 경계를 읽고 실제 설치 버전의 문서와 비교하세요.</p></section>
+<section><h2>Trade-off와 흔한 오해</h2><p>polling relay는 단순하지만 polling 지연·DB scan 비용이 있습니다. CDC relay는 변경 로그를 활용하지만 connector 운영·schema 변경·재시작 위치를 관리해야 합니다. outbox 보존은 재처리에 도움이 되지만 테이블·인덱스 크기와 개인정보 보존 기간을 통제해야 합니다.</p><p><strong>오해:</strong> ‘outbox니까 exactly-once 배송이다.’ 전송 중복을 허용하는 설계에 소비자 멱등성을 더한 것입니다. 외부 부작용과 로컬 DB의 경계까지 자동으로 묶이지 않습니다.</p></section>
+<section><h2>연습과 피드백</h2><p>예제에서 inbox insert와 deliveries insert를 서로 다른 commit으로 나누고 그 사이 crash가 나면 무엇이 생길까요? 실행 코드를 바꾸기 전에 결과를 예측해 보세요.</p><details><summary>예상 결과와 이유</summary><p>inbox만 commit되면 재전송은 이미 처리한 이벤트로 판단해 배송 상태를 만들지 않습니다. 업무 적용이 유실됩니다. 반대로 deliveries만 먼저 commit하면 재전송 때 중복 부작용이 생길 수 있습니다. 두 DB 변경의 단일 commit이 필요한 이유를 말해야 합니다. 그 밖의 예외를 중복이라고 모두 삼키는 처리도 실제 DB 실패를 숨깁니다.</p></details></section>
+<section><h2>검증 기준</h2><label><input type="checkbox">commit 전·후와 전송 후 crash 결과를 각각 예측한다.</label><label><input type="checkbox">동일 이벤트 재전달의 적용 수는 1임을 확인한다.</label><label><input type="checkbox">oldest unsent age·발행 실패·중복 차단 수를 모니터링한다.</label><p>다음에는 event schema 변경과 소비자 호환성을 다룹니다. 오늘은 외부 배송 완료가 아니라 로컬 업무 적용의 원자성이 검증 범위입니다.</p></section>
+<section><h2>근거 자료와 복습</h2><ul><li><a href="https://microservices.io/patterns/data/transactional-outbox.html">Chris Richardson, Transactional Outbox</a> — DB·발행 경계와 relay 중복의 원 패턴 설명.</li><li><a href="https://docs.sqlalchemy.org/en/20/orm/session_transaction.html">SQLAlchemy 2.0 session transaction</a> — 기존 과목의 2.0 예제에서 commit·rollback 범위 확인.</li></ul><p class="small">공식 자료 확인: 2026-10-07. 계산 예시와 운영 조건은 이 레슨을 위한 가상 사례입니다.</p><nav aria-label="학습 탐색"><a href="./index.html">레슨 목록</a> · <a href="./0012-rate-limiting-circuit-breaker-retry-timeout.html">이전 Day 12</a> · <a href="../reference/day-13-transactional-outbox-idempotent-consumer-reference.html">빠른 참고</a></nav><p>내일 자료를 덮고 핵심 판단 기준을 설명해 보세요. 이해가 막힌 문장이나 연습 답안을 보내면 이어서 설명하고 피드백하겠습니다.</p></section></main></body></html>

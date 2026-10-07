@@ -17,18 +17,21 @@
 | 10 | 2026-07-08 | 캐싱과 성능 최적화 — Redis 캐싱 전략과 무효화, 캐시 스탬피드 방지, 응답 압축, 커넥션 풀 튜닝, 쿼리 성능 프로파일링 | [0010-caching-and-performance.html](lessons/0010-caching-and-performance.html) |
 | 11 | 2026-07-09 | 테스트 전략 — 단위/통합 테스트 경계, 계약 테스트, 부하 테스트 | [0011-testing-strategy.html](lessons/0011-testing-strategy.html) |
 | 12 | 2026-10-05 | 백엔드 신뢰성 — deadline, 재시도, 차단과 부하 제어 | [0012-rate-limiting-circuit-breaker-retry-timeout.html](lessons/0012-rate-limiting-circuit-breaker-retry-timeout.html) |
+| 13 | 2026-10-07 | Transactional Outbox와 멱등 이벤트 처리 | [0013-transactional-outbox-idempotent-consumer.html](lessons/0013-transactional-outbox-idempotent-consumer.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 13 | Transactional Outbox와 멱등 이벤트 처리 | 복구·정합성·운영 지표 |
+| 14 | 이벤트 스키마 진화와 소비자 계약 테스트 | 오래된 이벤트를 재처리할 때 새 소비자의 호환성을 어떻게 확인하는가? — schema version, 계약 테스트, replay fixture |
+
 ## 현재 학습 위치
 
+**Day 13 레슨 작성 완료** — 다음은 Day 14 이벤트 스키마 진화와 소비자 계약 테스트.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 12 완료** — 다음은 Day 13 Transactional Outbox와 멱등 이벤트 처리부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Python 백엔드 아키텍처의 전체 구조와 계층 (Day 1)
@@ -89,3 +92,5 @@
 - [x] Locust 부하 테스트와 커넥션 풀/캐시 설정 검증 (Day 11)
 - [x] Rate Limiting, Circuit Breaker, Retry/Timeout 전략  (Day 12)
 - [x] 서비스 신뢰성 패턴 — Rate Limiting, Circuit Breaker, Retry/Timeout 전략 — Day 12
+
+- [x] Transactional Outbox와 멱등 이벤트 처리 — Day 13 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

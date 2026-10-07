@@ -28,3 +28,8 @@
 ## Gaps
 
 - 한국어 UI/UX 용어의 공식 표준 문서 없음 — 국내 표준을 다룰 때는 네이버·카카오 디자인 가이드 아티클을 보조로 활용할 것
+
+## Day 20 공식 참고 자료 (2026-10-07 확인)
+
+- [W3C WCAG 2.2](https://www.w3.org/TR/WCAG22/) — 키보드 trap과 포커스 등 접근성 수용 기준.
+- [Microsoft Research 실험 지표 분류](https://www.microsoft.com/en-us/research/articles/patterns-of-trustworthy-experimentation-during-experiment-stage/) — 주지표·가드레일·계측 품질 역할의 구별.

@@ -12,12 +12,13 @@
 | 5 | 2026-07-07 | 샌드박싱과 shell/file 도구 실행 경계 | [0005-sandboxing-shell-file-tool-execution-boundary.html](lessons/0005-sandboxing-shell-file-tool-execution-boundary.html) |
 | 6 | 2026-07-08 | 보안 — 위협 모델과 prompt injection 방어 | [0006-security-threat-model-prompt-injection-defense.html](lessons/0006-security-threat-model-prompt-injection-defense.html) |
 | 7 | 2026-10-05 | MCP 서버 통합 — 권한·신뢰·실패 경계 | [0007-mcp-model-context-protocol.html](lessons/0007-mcp-model-context-protocol.html) |
+| 8 | 2026-10-07 | Skills — 재사용 절차와 컨텍스트 비용의 설계 | [0008-skill-invocation-context-budget.html](lessons/0008-skill-invocation-context-budget.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | Skills — 재사용 워크플로우 설계와 컨텍스트 비용 | on-demand 로드, disable-model-invocation, 팀 표준화 |
 | 9 | Hooks — 실행 시점 자동화와 안전장치 | PreToolUse/PostToolUse/SessionStart/Stop, 결정론적 통제 vs CLAUDE.md의 비강제성 |
 | 10 | Plugins와 마켓플레이스 — 팀 배포/표준화 | 플러그인 구성요소, 마켓플레이스 신뢰 경계, managed 배포 |
 | 11 | Subagents — 위임 설계와 컨텍스트 격리 | 독립 컨텍스트, 중첩 스폰, 언제 서브에이전트를 쓰는가 |
@@ -34,10 +35,10 @@
 | 22 | 트러블슈팅과 Production 도입 패턴 — 종합 설계 면접 | 흔한 실패 패턴 진단, 팀 롤아웃 전략, 생산성/품질 trade-off 종합 |
 ## 현재 학습 위치
 
+**Day 8 레슨 작성 완료** — 다음은 Day 9 Hooks — 실행 시점 자동화와 안전장치.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 7 완료** — 다음은 Day 8 Skills — 재사용 워크플로우 설계와 컨텍스트 비용부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 에이전틱 루프(gather context → take action → verify results)의 공식 정의와 "agentic harness"로서의 Claude Code 개념 (Day 1)
@@ -73,7 +74,7 @@
 - [x] security-guidance 플러그인의 3단계 리뷰(per-edit 패턴 매칭/end-of-turn diff 리뷰/commit-push 리뷰)와 "같은 인스턴스 자기 채점이 아닌 독립 컨텍스트" 설계, 그리고 그 한계(쓰기/커밋을 막지 않음) (Day 6)
 - [x] 계층형 보안 스택(세션 내 플러그인 → 온디맨드 `/security-review` → PR 단계 Code Review → CI 정적 분석)이 서로 다른 것을 잡아내는 구조 (Day 6)
 - [x] MCP  (Day 7)
-- [ ] Skills (예정 Day 8)
+- [x] Skills (Day 8 레슨 작성)
 - [ ] Hooks (예정 Day 9)
 - [ ] Plugins (예정 Day 10)
 - [ ] Subagents (예정 Day 11)
@@ -89,3 +90,9 @@
 - [ ] Enterprise/Admin/Observability (예정 Day 21)
 - [ ] 트러블슈팅/Production 도입 패턴 (예정 Day 22)
 - [x] MCP — Model Context Protocol 통합과 운영 — Day 7
+
+- [x] Skills — 재사용 절차와 컨텍스트 비용의 설계 — Day 8 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행
+
+## 이번 레슨 자료 확인
+
+현재 Skills 문서로 invocation 제어와 allowed-tools 권한 부여를 구분했다. Agent Skills 표준과 Claude Code 확장을 혼동하지 않으며, 버전별 변경은 공식 changelog에서 확인한다.

@@ -42,3 +42,9 @@
 |--------|------|
 | [CPython GitHub](https://github.com/python/cpython) | 레퍼런스 카운팅, GIL, 바이트코드 실제 구현 확인 |
 | [Python Insider Blog](https://blog.python.org/) | Python 릴리스 노트, 변경 이유 |
+
+## Day 13 공식 참고 자료 (2026-10-07 확인)
+
+- [PyPA pyproject.toml](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/) — 빌드 시스템과 프로젝트 metadata·의존성.
+- [pip Repeatable Installs](https://pip.pypa.io/en/stable/topics/repeatable-installs/) — 버전 고정·hash·wheel 보관의 보장 범위.
+- [PyPA src와 flat layout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/) — 로컬 소스 import와 설치 패키지 검증의 차이.

@@ -12,12 +12,13 @@
 | 5 | 2026-07-08 | HTML/Markdown/코드/CSV/JSON/YAML 파싱과 구조화 데이터 처리 | [0005-html-markdown-code-csv-json-yaml-parsing-structured-data.html](lessons/0005-html-markdown-code-csv-json-yaml-parsing-structured-data.html) |
 | 6 | 2026-07-09 | OCR과 Table/Image Extraction | [0006-ocr-table-image-extraction.html](lessons/0006-ocr-table-image-extraction.html) |
 | 7 | 2026-10-05 | Metadata와 Provenance — 답변 근거를 원본까지 추적하기 | [0007-metadata-provenance.html](lessons/0007-metadata-provenance.html) |
+| 8 | 2026-10-07 | 문서 구조 기반 Semantic Chunking — 표의 의미와 근거 경계 | [0008-structure-table-context-chunks.html](lessons/0008-structure-table-context-chunks.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | 문서 구조 기반 Semantic Chunking | Structure-aware/table-aware chunking, 계층적 chunk, contextual retrieval |
 | 9 | Incremental Indexing, Deduplication, Versioning | 변경 감지, 정확/근접 중복 제거, 재인덱싱 비용 관리 |
 | 10 | Embedding 모델 선택과 Vector Database 운영 | 도메인 적합성, 멀티모달 임베딩, ANN 인덱스 운영 |
 | 11 | Hybrid Search, Metadata Filtering, Reranking | Sparse+Dense 결합, pre/post filtering, cross-encoder reranking |
@@ -27,10 +28,10 @@
 | 15 | 관측성, 장애 대응, 비용/성능 Trade-off | 파이프라인별 지표 분리, 인시던트 대응, 파싱/OCR/임베딩 비용 구조 |
 ## 현재 학습 위치
 
+**Day 8 레슨 작성 완료** — 다음은 Day 9 Incremental Indexing, Deduplication, Versioning.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 7 완료** — 다음은 Day 8 문서 구조 기반 Semantic Chunking부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Query-time RAG vs LLM Wiki(사전 큐레이션) 패러다임 차이와 선택 기준 (Day 1)
@@ -61,7 +62,7 @@
 - [x] ColPali/ColQwen2 같은 OCR-free 시각 문서 검색과 근거 추적성(citation grounding) 사이의 트레이드오프 (Day 6)
 - [x] Confidence score 기반 human-in-the-loop 품질 게이트 설계와 도메인별 캘리브레이션 (Day 6)
 - [x] Metadata와 Provenance 설계  (Day 7)
-- [ ] 문서 구조 기반 Semantic Chunking (예정 Day 8)
+- [x] 문서 구조 기반 Semantic Chunking (Day 8 레슨 작성)
 - [ ] Incremental Indexing, Deduplication, Versioning (예정 Day 9)
 - [ ] Embedding 모델 선택과 Vector Database 운영 (예정 Day 10)
 - [ ] Hybrid Search, Metadata Filtering, Reranking (예정 Day 11)
@@ -69,3 +70,9 @@
 - [ ] Permission-aware Retrieval과 보안 (예정 Day 13)
 - [ ] 평가 지표와 Offline/Online Evaluation (예정 Day 14)
 - [ ] 관측성, 장애 대응, 비용/성능 Trade-off (예정 Day 15)
+
+- [x] 문서 구조 기반 Semantic Chunking — 표의 의미와 근거 경계 — Day 8 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행
+
+## 이번 레슨 자료 확인
+
+2026-10-07 공식 chunking 문서·Unstructured release·Contextual Retrieval 원문을 확인했다. 예정 주제의 Semantic 표현을 구조 기반과 유사도 기반으로 구분했다. 최근 표 처리 수정은 포맷별 회귀 검증 필요성으로 반영하고 외부 벤치마크 수치를 일반 성능 보장으로 쓰지 않았다.

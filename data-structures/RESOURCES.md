@@ -37,3 +37,7 @@
 ## Gaps
 
 - 한국어로 된 고품질 자료구조 강의 (MOOC 수준) 부재 — 찾는 중.
+
+## Day 12 공식 참고 자료 (2026-10-07 확인)
+
+- [Michael, Hazard Pointers (2004)](https://research.ibm.com/publications/hazard-pointers-safe-memory-reclamation-for-lock-free-objects) — 동적 노드 회수와 ABA 방어의 원 논문.

@@ -24,16 +24,22 @@
 | 17 | 2026-07-08 | 온보딩 & 첫 사용자 경험(FTUE) 용어 — Coach Mark·Product Tour·Aha Moment·Time-to-Value | [0017-onboarding-ftue.html](lessons/0017-onboarding-ftue.html) |
 | 18 | 2026-07-09 | 네비게이션 UI 패턴 — Tab Bar·Bottom Navigation·Hamburger Menu·Drawer·Breadcrumb·Stepper·Pagination·Infinite Scroll | [0018-navigation-ui-patterns.html](lessons/0018-navigation-ui-patterns.html) |
 | 19 | 2026-10-05 | UX 지표와 Guardrail — 성공률·오류·완료 시간 | [0019-ux-metrics-guardrails.html](lessons/0019-ux-metrics-guardrails.html) |
+| 20 | 2026-10-07 | 접근성·사용성 가드레일을 포함한 UX 실험 설계 | [0020-ux-experiment-guardrail-vocabulary.html](lessons/0020-ux-experiment-guardrail-vocabulary.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 20 | 접근성·사용성 가드레일을 포함한 UX 실험 설계 | 후속 심화 주제와 실무 판단 기준 |
+
+| 21 | 디자인 QA와 회귀 검증의 협업 용어 | 시각·동작 회귀를 팀 공통 수용 기준으로 표현하는 용어 — 디자인 QA, acceptance criteria, regression |
 
 ## 현재 학습 위치
 
-**Day 19 완료** — 다음은 Day 20 접근성·사용성 가드레일을 포함한 UX 실험 설계부터 진행한다.
+**Day 20 레슨 작성 완료** — 다음은 Day 21 디자인 QA와 회귀 검증의 협업 용어.
+
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
+
 ## 습득한 핵심 개념
 
 - [x] UI (User Interface) — Day 1
@@ -168,3 +174,9 @@
 - [x] Pagination (페이지네이션) — Day 18
 - [x] Infinite Scroll (무한 스크롤) — Day 18
 - [x] UX 지표와 가드레일 — 성공률·오류율·완료 시간 — Day 19
+
+- [x] 접근성·사용성 가드레일을 포함한 UX 실험 설계 — Day 20 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행
+
+## 이번 레슨 자료 확인
+
+MISSION.md의 방법론 제외 범위를 유지하기 위해 Day 20은 통계 실험 설계 대신 가드레일·수용 기준·중단 조건의 협업 용어와 리뷰 문장에 집중했다.

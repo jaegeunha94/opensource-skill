@@ -15,22 +15,23 @@
 | 8 | 2026-07-07 | 분산 시스템과 일관성 — CAP Theorem, BASE vs ACID, Eventual Consistency, 분산 트랜잭션 | [0008-distributed-systems-consistency-cap.html](lessons/0008-distributed-systems-consistency-cap.html) |
 | 9 | 2026-07-08 | 실전 설계 — URL 단축 서비스: Hash 전략, Collision 처리, 분산 ID 생성 | [0009-url-shortener-system-design.html](lessons/0009-url-shortener-system-design.html) |
 | 10 | 2026-10-05 | 뉴스 피드 / 타임라인 — fanout 비용과 최신성 설계 | [0010-news-feed-timeline-design.html](lessons/0010-news-feed-timeline-design.html) |
+| 11 | 2026-10-07 | 채팅 서비스 설계 — 대화방 순서와 재접속 복구 | [0011-chat-ordering-reconnect.html](lessons/0011-chat-ordering-reconnect.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 11 | 실전 설계 — 채팅 서비스 | WebSocket, 메시지 순서, 오프라인 처리, 대화방 확장 |
 | 12 | 실전 설계 — 동영상 스트리밍 | 인코딩 파이프라인, CDN, Adaptive Bitrate |
 | 13 | 실전 설계 — 검색 자동완성 | Trie, Prefix 압축, 분산 Trie, 랭킹 알고리즘 |
 | 14 | 실전 설계 — 알림 시스템 | Push/Pull, 배달 보장, 알림 우선순위, 디바이스 토큰 관리 |
 | 15 | 실전 설계 — 결제 시스템 | 멱등성, 2단계 커밋, 분산 트랜잭션, 정산 일관성 |
 ## 현재 학습 위치
 
+**Day 11 레슨 작성 완료** — 다음은 Day 12 실전 설계 — 동영상 스트리밍.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 10 완료** — 다음은 Day 11 실전 설계 — 채팅 서비스부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 시스템 설계 면접 답변 5단계 프레임워크 (Day 1)
@@ -48,3 +49,5 @@
 - [x] 짧은 키 생성 전략 비교(해시/Base62/분산 ID), 해시 충돌과 생일 역설, Snowflake/Ticket Server, 열거 공격 방지, 읽기:쓰기 비율 기반 캐시 설계 (Day 9)
 - [x] Fanout on Write vs Read, 소셜 그래프 DB 선택  (Day 10)
 - [x] 실전 설계 — 뉴스 피드 / 타임라인 — Day 10
+
+- [x] 채팅 서비스 설계 — 대화방 순서와 재접속 복구 — Day 11 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

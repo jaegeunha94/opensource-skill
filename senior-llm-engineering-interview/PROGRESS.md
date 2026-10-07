@@ -13,12 +13,13 @@
 | 6 | 2026-07-08 | Structured Output 설계 | [0006-structured-output-design.html](lessons/0006-structured-output-design.html) |
 | 7 | 2026-07-09 | Function/Tool Calling & Agentic 아키텍처 | [0007-function-tool-calling-and-agentic-architecture.html](lessons/0007-function-tool-calling-and-agentic-architecture.html) |
 | 8 | 2026-10-05 | Multimodal 입출력 — 품질·지연·비용을 modality별로 나누기 | [0008-multimodal.html](lessons/0008-multimodal.html) |
+| 9 | 2026-10-07 | Embedding과 검색 판단 — 도메인 평가와 교체 비용 | [0009-embedding-task-fit-migration.html](lessons/0009-embedding-task-fit-migration.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | Embedding과 검색 판단 | 임베딩 모델 선택 기준, 언제 RAG/검색이 필요한지 |
 | 10 | Fine-tuning 판단 | SFT를 언제 쓰는지, prompting/RAG와의 트레이드오프 |
 | 11 | Reinforcement Fine-Tuning & 정렬 심화 | RFT, RLHF/RLAIF, 정렬 기법과 리스크 |
 | 12 | Evaluation 체계 설계 | 오프라인/온라인 eval, LLM-as-judge, trajectory-level grading |
@@ -29,10 +30,10 @@
 | 17 | Production Incident 대응과 시니어 커뮤니케이션 | 장애 대응, postmortem, 재발 방지, 비개발 조직 커뮤니케이션 |
 ## 현재 학습 위치
 
+**Day 9 레슨 작성 완료** — 다음은 Day 10 Fine-tuning 판단.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 8 완료** — 다음은 Day 9 Embedding과 검색 판단부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 모델 선택을 리더보드가 아니라 task-fit eval로 판단하는 프레임워크 (Day 1)
@@ -51,7 +52,7 @@
 - [x] 구조화 출력(constrained decoding)과 프롬프트 기반 JSON 유도의 메커니즘 차이, 스키마 준수와 내용 정확성의 구분, 이중 검증 계층 설계 (Day 6)
 - [x] tool calling의 구조(실행 의도 반환 vs 실제 실행 분리), 오류 누적의 수학(스텝당 성공률의 곱셈적 저하), 병렬/순차 호출 트레이드오프, 멱등성·체크포인트·서킷 브레이커·인간 개입 게이트 기반 에이전틱 신뢰성 설계 (Day 7)
 - [x] 멀티모달 입출력 trade-off  (Day 8)
-- [ ] 임베딩과 검색 필요성 판단 (예정 Day 9)
+- [x] 임베딩과 검색 필요성 판단 (Day 9 레슨 작성)
 - [ ] fine-tuning 판단 기준 (예정 Day 10)
 - [ ] reinforcement fine-tuning과 정렬 심화 (예정 Day 11)
 - [ ] evaluation 체계 설계 (예정 Day 12)
@@ -72,3 +73,9 @@
 - 2026-07-08 Day 6 작성 시점, Anthropic Claude Platform Docs의 Structured Outputs 공식 문서(`output_config.format`로 이동, strict tool use, 재귀 스키마·정규식·필드 수 등 지원 한계, refusal/길이초과 시에도 스키마 위반 가능), OpenAI Structured Outputs 공식 가이드(strict mode의 디코더 레벨 스키마 강제, JSON mode의 레거시 격하, refusal 필드), Google Gemini의 `response_schema`/JSON Schema 지원 확대(`propertyOrdering`)를 확인함. OpenAI가 기능 발표 시 공개한 "네이티브 구조화 출력 없이 복잡한 스키마 준수 정확도 40% 미만 → 적용 후 100%"라는 수치를 프롬프트 유도와 constrained decoding의 격차를 보여주는 핵심 근거로 채택함. 오픈웨이트 자체 호스팅 환경의 표준 대안으로 Outlines/llguidance류 grammar 기반 라이브러리를, 네이티브 기능이 커버하지 못하는 실패(refusal/내용오류)를 보완하는 패턴으로 Instructor류 retry-with-error-feedback 라이브러리를 확인해 반영함. "스키마 준수"와 "내용 정확성"은 별개 문제라는 것을 핵심 프레임워크로 삼고, 검증 계층 없이 도구 호출 결과를 그대로 실행해 발생한 실무 사고 사례(환불 오작동 패턴)를 이 구분의 실제 위험성을 보여주는 사례로 채택함.
 - 2026-07-09 Day 7 작성 시점, Anthropic Claude Platform Docs의 tool use/agentic 공식 문서(병렬 tool call 기본 활성화와 `disable_parallel_tool_use`, `tool_result`의 `is_error`, 서버 사이드 도구 루프 10회 한도 시 `pause_turn`으로 재개, Programmatic Tool Calling, `clear_tool_uses`/`clear_thinking` context editing과 `compact` compaction의 구분, tool search, task budgets, MCP connector), OpenAI Responses API 함수 호출 공식 가이드와 Agents SDK 문서(Agent/Runner/Handoffs/Guardrails, `parallel_tool_calls`와 strict schema가 완전히 동시 보장되지 않는다는 공식 권고), Google Gemini 함수 호출 공식 문서(병렬/compositional/automatic 3단 구조, 2026년 3월 context circulation과 고유 tool-response ID 업데이트)를 확인함. 멀티스텝 에이전트의 오류 누적을 스텝당 성공률의 곱셈적 저하(0.95^10≈59%, 0.90^10≈35%, 0.85^10≈20%)로 프레임워크화했고, 2025년 self-conditioning 연구(이전 오류가 컨텍스트에 남으면 이후 오류 확률이 높아지는 현상)를 근거로 채택함. Replit AI 에이전트의 2025-07 프로덕션 DB 삭제 사고(Fortune·Cybernews 등 복수 매체로 교차 검증됨)를 "자연어 지시는 강제가 아니다"를 보여주는 핵심 사례로 채택했고, 이보다 교차 검증이 약한 2026년 인프라 자격 증명 이탈·폭주 루프 비용 사례들은 방향성 참고 자료로만 인용하도록 레슨 본문에 명시적으로 caveat를 남김. Anthropic 엔지니어링 블로그 "Writing Effective Tools for AI Agents"의 도구 설계 지침(고레버리지 도구, 네임스페이스, "언제 호출해야 하는가"를 명시한 설명)과 MCP가 tool calling을 대체하는 게 아니라 그 위의 통합 레이어라는 구분(2026-07 스펙 개정 후보의 stateless core/Extensions/Tasks 포함)을 반영함.
 - 특정 모델명·버전·수치는 인터뷰 시점에 따라 바뀔 수 있으므로, 새 레슨을 만들 때마다 공식 문서와 changelog를 다시 확인하고 이 메모를 갱신한다.
+
+- [x] Embedding과 검색 판단 — 도메인 평가와 교체 비용 — Day 9 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행
+
+## 이번 레슨 자료 확인
+
+2026-10-07 공식 semantic search 문서와 release를 확인했다. 특정 리더보드 순위·가격은 재사용하지 않고 task-fit 평가와 vector 공간 migration으로 예정 학습을 진행했다. RAG 트랙의 상세 ANN/청킹 내용을 반복하지 않았다.

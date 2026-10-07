@@ -63,3 +63,7 @@
 
 - 블로그 글은 내용 검증 없이 참고하지 않는다. AWS 공식 문서나 공인된 책을 기준으로 삼는다.
 - 서비스 이름 암기보다 "왜 이 서비스를 선택하는가"와 "어떤 상황에서 선택하지 않는가"를 익히는 데 집중한다.
+
+## Day 12 공식 참고 자료 (2026-10-07 확인)
+
+- [AWS Backup — Restore testing validation](https://docs.aws.amazon.com/aws-backup/latest/devguide/restore-testing-validation.html) — 완료 이벤트 이후 사용자 정의 검증과 결과 처리

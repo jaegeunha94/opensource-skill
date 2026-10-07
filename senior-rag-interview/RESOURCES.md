@@ -187,3 +187,8 @@
 ## 2026-10-05 Day lesson sources confirmed
 
 - [OpenAI retrieval guide](https://platform.openai.com/docs/guides/retrieval) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.
+
+## Day 11 공식 참고 자료 (2026-10-07 확인)
+
+- [Ragas — Context Recall](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/context_recall/) — claim·context ID별 recall 정의와 현재 API 구분
+- [Ragas — Faithfulness](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/faithfulness/) — 답변 주장과 context의 지지 관계

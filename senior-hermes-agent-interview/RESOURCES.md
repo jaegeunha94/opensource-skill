@@ -235,3 +235,8 @@
 ## 2026-10-05 Day lesson sources confirmed
 
 - [Hermes Agent documentation](https://hermes-agent.nousresearch.com/docs/) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.
+
+## Day 9 공식 참고 자료 (2026-10-07 확인)
+
+- [Hermes batch processing](https://hermes-agent.nousresearch.com/docs/user-guide/features/batch-processing/) — 다중 작업 실행과 결과 수집
+- [Hermes trajectory format](https://hermes-agent.nousresearch.com/docs/developer-guide/trajectory-format/) — 정규화된 대화·도구 기록과 메타데이터

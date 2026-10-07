@@ -12,12 +12,13 @@
 | 5 | 2026-07-08 | Dialogue State 설계: FSM vs Graph 기반 상태 모델 | [0005-dialogue-state-design-fsm-vs-graph.html](lessons/0005-dialogue-state-design-fsm-vs-graph.html) |
 | 6 | 2026-07-09 | Session/Context 유지와 Multi-turn Flow 설계 | [0006-session-context-retention-multi-turn-flow-design.html](lessons/0006-session-context-retention-multi-turn-flow-design.html) |
 | 7 | 2026-10-05 | 챗봇 fallback과 사람 상담 handoff | [0007-fallback-escalation-human-handoff.html](lessons/0007-fallback-escalation-human-handoff.html) |
+| 8 | 2026-10-07 | RAG와 Tool Calling 연동 — 설명 근거와 업무 사실의 경계 | [0008-rag-tool-business-truth-boundary.html](lessons/0008-rag-tool-business-truth-boundary.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 8 | RAG와 Tool Calling 연동 아키텍처 | Function/tool calling, MCP, grounding |
 | 9 | 채널 통합(Multi-channel) 아키텍처 설계 | 채널 어댑터, 메시지 포맷 정규화, 채널별 제약 |
 | 10 | 개인정보·동의·보안 설계 | PII 마스킹, 동의 관리, 데이터 거버넌스 |
 | 11 | Prompt Injection 방어와 Safety Guardrail | OWASP LLM/Agentic Top 10, defense-in-depth |
@@ -27,10 +28,10 @@
 | 15 | 운영 장애 대응(Incident Response) | 장애 탐지, kill switch, 롤백, postmortem |
 ## 현재 학습 위치
 
+**Day 8 레슨 작성 완료** — 다음은 Day 9 채널 통합(Multi-channel) 아키텍처 설계.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 7 완료** — 다음은 Day 8 RAG와 Tool Calling 연동 아키텍처부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] 챗봇 서비스 요구사항 분석 프레임워크(트래픽 유형, 실패 비용, latency/compliance 제약) (Day 1)
@@ -60,7 +61,7 @@
 - [x] 세션 만료를 단일 TTL이 아닌 다중 신호(inactivity·알림·자동 요약) 정책으로 설계 (Day 6)
 - [x] Dialogue state(제어 계층)와 session/context(메모리 계층)의 관계와 동기화 필요성 (Day 6)
 - [x] Fallback/Escalation/Human Handoff  (Day 7)
-- [ ] RAG와 Tool Calling 연동 (예정 Day 8)
+- [x] RAG와 Tool Calling 연동 (Day 8 레슨 작성)
 - [ ] 채널 통합 아키텍처 (예정 Day 9)
 - [ ] 개인정보/동의/보안 설계 (예정 Day 10)
 - [ ] Prompt Injection 방어와 Safety Guardrail (예정 Day 11)
@@ -122,3 +123,9 @@
   재정의하고, short-term/long-term memory를 스레드 경계 기준으로 명확히
   구분하며, 세션 만료를 다중 신호 정책으로 설계하는 방향으로 레슨을 구성함.
   기존 커리큘럼 방향과 상충하는 내용은 없었음. 근거는 `RESOURCES.md` 참고.
+
+- [x] RAG와 Tool Calling 연동 — 설명 근거와 업무 사실의 경계 — Day 8 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행
+
+## 이번 레슨 자료 확인
+
+2026-10-07 공식 tool use 및 release note를 확인했다. 예정 RAG/tool/MCP 연동을 제품 수준의 근거·사실·실행 계약으로 설명하고 MCP 연결을 인가나 멱등성 보장으로 취급하지 않았다. Day 7의 handoff는 오류 경로로 연결했다.

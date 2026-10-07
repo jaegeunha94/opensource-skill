@@ -13,12 +13,13 @@
 | 6 | 2026-07-08 | Gateway와 채널 통합 | [0006-gateway-channel-integration.html](lessons/0006-gateway-channel-integration.html) |
 | 7 | 2026-07-09 | 메모리와 세션 설계 | [0007-memory-session-design.html](lessons/0007-memory-session-design.html) |
 | 8 | 2026-10-05 | 에이전트 예약 작업 — timezone·중복 실행·복구 | [0008-scheduling-recurring-tasks.html](lessons/0008-scheduling-recurring-tasks.html) |
+| 9 | 2026-10-07 | Replay와 평가 루프 — 실행 성공과 업무 정답의 분리 | [0009-trajectory-replay-evaluation-contract.html](lessons/0009-trajectory-replay-evaluation-contract.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 9 | Replay와 평가 루프 | batch 모드, ShareGPT 포맷 trajectory, trajectory compression, eval harness/파인튜닝 데이터 재활용 |
 | 10 | 샌드박싱과 권한 모델 | 7-layer defense, 위험 명령 승인, 컨테이너 격리(Docker/Singularity/Modal/Daytona), MCP 자격증명 필터링 |
 | 11 | Provenance와 Prompt Injection 방어 | context 파일(AGENTS.md 등) 스캐닝, skill-injection 벡터, CVE-2026-7396/48710, 감사 사례로 배우는 위협 모델링 |
 | 12 | OpenClaw 상호운용성과 운영 Trade-off | "에이전트를 감싼 게이트웨이" vs "게이트웨이를 감싼 에이전트", MCP 브릿지 상호운용의 현실, 생태계 성숙도/커뮤니티 규모 비교 |
@@ -26,10 +27,10 @@
 | 14 | 비용/지연/신뢰성 Trade-off와 종합 운영 패턴 | 배포 백엔드별 비용 구조, provider 라우팅 비용, 신뢰성 vs 지연시간, 면접 종합 시뮬레이션 |
 ## 현재 학습 위치
 
+**Day 9 레슨 작성 완료** — 다음은 Day 10 샌드박싱과 권한 모델.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 8 완료** — 다음은 Day 9 Replay와 평가 루프부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Always-on 에이전트 vs 요청-응답 챗봇의 패러다임 차이 (Day 1)
@@ -65,10 +66,16 @@
 - [x] Honcho dialectic reasoning(사후 LLM 분석 기반 사용자 모델링) — base context/dialectic supplement 2계층, contextCadence/dialecticCadence/dialecticDepth 노브 (Day 7)
 - [x] Issue #4889 사례로 배우는 "정제된 사용자 입력 vs 다운스트림 페이로드" 경계 원칙 (Day 7)
 - [x] 스케줄링(cron)  (Day 8)
-- [ ] Replay/평가 루프 (예정 Day 9)
+- [x] Replay/평가 루프 (Day 9 레슨 작성)
 - [ ] 샌드박싱/권한 모델(7-layer defense) (예정 Day 10)
 - [ ] Provenance/prompt injection 방어 (예정 Day 11)
 - [ ] OpenClaw 상호운용성/운영 trade-off (예정 Day 12)
 - [ ] 관측성/트러블슈팅 (예정 Day 13)
 - [ ] 비용/지연/신뢰성 trade-off 종합 (예정 Day 14)
 - [x] 스케줄링과 반복 작업 — Day 8
+
+- [x] Replay와 평가 루프 — 실행 성공과 업무 정답의 분리 — Day 9 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행
+
+## 이번 레슨 자료 확인
+
+공식 batch/trajectory 문서와 releases를 확인했다. 과거 RESOURCES의 버전 표기는 당시 자료로 보존하며, batch 실행을 완전한 환경 재현이나 정답 보장으로 해석하지 않는다. 압축은 원본 보존을 전제로 한 파생 데이터 설계로 다룬다.

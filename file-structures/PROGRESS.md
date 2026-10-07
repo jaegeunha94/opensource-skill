@@ -21,18 +21,21 @@
 | 8 | 2026-07-07 | 파일 시스템 구조 (inode vs FAT Trade-off) | [interview-day08-file-systems.html](lessons/interview-day08-file-systems.html) |
 | 9 | 2026-07-08 | 대용량 로그/이벤트 저장 (Append-only 구조, WAL, LSM-Tree) | [interview-day09-append-only-structures.html](lessons/interview-day09-append-only-structures.html) |
 | 10 | 2026-10-05 | 종합 설계 면접 — 주문 저장소의 인덱스와 로그 구조 | [interview-day10-comprehensive-mock-interview.html](lessons/interview-day10-comprehensive-mock-interview.html) |
+| 11 | 2026-10-07 | WAL과 체크포인트를 이용한 크래시 복구 설계 | [0011-wal-checkpoint-crash-recovery.html](lessons/0011-wal-checkpoint-crash-recovery.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 면접 질문 | 답변에서 보여줄 역량 |
 |-----|-----------|----------------|----------------------|
-| 11 | WAL과 체크포인트를 이용한 크래시 복구 설계 | 복구·정합성·운영 지표 | 설계 판단과 실패 대응 |
+| 12 | LSM compaction 스케줄링과 디스크 공간 부족 대응 | compaction 중 디스크 여유 공간이 부족해지면 무엇을 조정하는가? | 쓰기 증폭, compaction backlog, 공간 예산 |
+
 ## 현재 학습 위치
 
+**Day 11 레슨 작성 완료** — 다음은 Day 12 LSM compaction 스케줄링과 디스크 공간 부족 대응.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 10 완료** — 다음은 Day 11 WAL과 체크포인트를 이용한 크래시 복구 설계부터 진행한다.
 ## Interview 답변 체크리스트
 
 - [x] 어려운 개념을 전제 개념부터 쉬운 한국어로 설명한다. *(Day 1~9 완료)*
@@ -64,3 +67,5 @@
 - [x] Append-only 구조 — tombstone, compaction, WAL, LSM-Tree(memtable/SSTable), Bloom filter, Read/Write/Space amplification (Day 9)
 - [x] 종합 설계 모의 면접  (Day 10)
 - [x] 종합 모의 면접 — Day 10
+
+- [x] WAL과 체크포인트를 이용한 크래시 복구 설계 — Day 11 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

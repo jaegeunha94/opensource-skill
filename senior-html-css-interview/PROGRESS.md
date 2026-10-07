@@ -14,19 +14,20 @@
 | 7 | 2026-07-08 | Specificity 심화 — A-B-C 3열 비교 계산법, `:is()`/`:where()`/`:not()`의 specificity 규칙, BEM 기반 유지보수 가능한 selector 전략 | [0007-specificity-deep-dive-maintainable-selectors.html](lessons/0007-specificity-deep-dive-maintainable-selectors.html) |
 | 8 | 2026-07-09 | Inheritance와 CSS 커스텀 프로퍼티 — 상속 속성/비상속 속성의 설계 원칙, `inherit`/`initial`/`unset`/`revert`, 런타임 상속을 활용한 design token/다크모드 설계 | [0008-inheritance-css-custom-properties.html](lessons/0008-inheritance-css-custom-properties.html) |
 | 9 | 2026-10-05 | CSS Box Model — sizing·margin collapse·overflow 진단 | [0009-box-model.html](lessons/0009-box-model.html) |
+| 10 | 2026-10-07 | Flexbox 심화 — 축소 예산과 자동 최소 크기 | [0010-flex-shrink-minimum-layout.html](lessons/0010-flex-shrink-minimum-layout.html) |
+
 ## 다음 예정 학습
 
 
 | Day | 예정 주제 | 핵심 개념 |
 |-----|-----------|-----------|
-| 10 | Flexbox 심화 | 실무 레이아웃 패턴, 흔한 버그 |
 | 11 | Grid 심화 | 2차원 레이아웃과 Flexbox 대신 Grid를 쓰는 기준 |
 ## 현재 학습 위치
 
+**Day 10 레슨 작성 완료** — 다음은 Day 11 Grid 심화.
 
+레슨 작성 상태를 기록했으며, 학습자의 이해·연습 완료는 별도 확인이 필요하다.
 
-
-**Day 9 완료** — 다음은 Day 10 Flexbox 심화부터 진행한다.
 ## 습득한 핵심 개념
 
 - [x] Semantic HTML의 정의와 class 이름으로 대체 불가능한 이유 (Day 1)
@@ -78,3 +79,5 @@
 - [x] `@property`로 타입/애니메이션 가능 여부/상속 여부(`inherits: false`)를 통제하는 이유 (Day 8)
 - [x] 커스텀 프로퍼티 상속을 design token, 다크모드 전환, 컴포넌트 스코프 오버라이드에 응용하는 방법 (Day 8)
 - [x] Box Model 심화 — `box-sizing`, margin collapsing, 실무 버그 사례  (Day 9)
+
+- [x] Flexbox 심화 — 축소 예산과 자동 최소 크기 — Day 10 레슨 작성; 이해 확인은 레슨 자기 점검으로 진행

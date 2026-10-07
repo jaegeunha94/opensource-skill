@@ -127,3 +127,9 @@
 ## 2026-10-05 Day lesson sources confirmed
 
 - [LangGraph persistence](https://docs.langchain.com/oss/python/langgraph/persistence) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.
+
+## Day 10 공식 참고 자료 (2026-10-07 확인)
+
+- [LangGraph — Subgraphs](https://docs.langchain.com/oss/python/langgraph/use-subgraphs) — 공유 schema·wrapper 매핑·persistence 계약
+- [LangChain — Multi-agent](https://docs.langchain.com/oss/python/langchain/multi-agent) — subagent와 handoff의 패턴 선택
+- [LangGraph — v1 안내](https://docs.langchain.com/oss/python/releases/langgraph-v1) — 신규/레거시 API 판단 근거

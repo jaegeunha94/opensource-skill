@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Day 4 — 프로젝트 구조와 패키징 — 소스 트리에서 설치 계약으로</title><link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../../assets/study-reading.css"></head>
+<body><main><header><p class="meta">professional-python · Day 4 · 2026-10-07 · 약 15분</p><h1>프로젝트 구조와 패키징 — 소스 트리에서 설치 계약으로</h1><p>Day 3의 예외 설계를 작은 패키지로 옮기고, 저장소 밖의 깨끗한 환경에서 wheel 설치를 확인한다.</p><nav aria-label="학습 탐색"><a href="./index.html">레슨 목록</a> · <a href="./0003-exception-design.html">이전 Day 3</a> · <a href="../reference/day-04-src-layout-wheel-install-contract-reference.html">빠른 참고</a></nav></header>
+<section><h2>오늘 만들 결과</h2><p>타입과 예외를 잘 설계해도 다른 서비스가 import할 수 없다면 재사용 계약은 완성되지 않는다. 오늘은 금액 파서를 최소 패키지로 묶는다. 배포 서비스에 업로드하지 않고 wheel을 만들고 설치하는 한 단위를 끝낸다. 의존성 잠금 전략은 다음 Day에서 다룬다.</p><p>배포 이름은 <code>invoice-kit</code>, Python import 이름은 <code>invoice_kit</code>로 정한다. 전자는 설치 도구가 다루는 distribution 이름이고 후자는 모듈 이름이다. 둘이 반드시 동일한 문자열인 것은 아니다.</p></section>
+<section><h2>전제 개념: src와 build backend</h2><p>src layout은 import할 코드를 프로젝트 루트 아래가 아닌 src 아래에 둔다. 루트에서 실행한 Python이 아직 설치하지 않은 패키지를 우연히 찾아 버리는 일을 줄여 준다. 설치된 wheel로 테스트해야 누락된 파일이나 잘못된 패키지 탐색을 발견한다.</p><p><code>pyproject.toml</code>의 build-system은 wheel을 만드는 도구를 선언하고, project는 배포 이름·버전·지원 Python 같은 메타데이터를 선언한다. build backend 의존성과 프로그램의 실행 의존성을 구분한다. 이 예제는 실행 시 표준 라이브러리만 필요하다.</p></section>
+<section><h2>네 파일로 만드는 설치 가능한 코드</h2><pre><code>invoice-project/
+  pyproject.toml
+  src/invoice_kit/
+    __init__.py
+    money.py</code></pre><p><code>pyproject.toml</code>:</p><pre><code data-lang="toml">[build-system]
+requires = ["setuptools&gt;=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "invoice-kit"
+version = "0.1.0"
+description = "Invoice amount validation example"
+requires-python = "&gt;=3.11"
+
+[tool.setuptools.packages.find]
+where = ["src"]</code></pre><p><code>src/invoice_kit/money.py</code>:</p><pre><code data-lang="python" data-file="money.py">from decimal import Decimal, InvalidOperation
+
+class InvoiceValidationError(ValueError):
+    """Invoice amount violates the domain contract."""
+
+def parse_amount(raw: str) -&gt; Decimal:
+    try:
+        amount = Decimal(raw)
+    except InvalidOperation as exc:
+        raise InvoiceValidationError("amount is not numeric") from exc
+    if not amount.is_finite() or amount &lt;= 0:
+        raise InvoiceValidationError("amount must be finite and positive")
+    return amount</code></pre><p><code>src/invoice_kit/__init__.py</code>:</p><pre><code data-lang="python" data-file="__init__.py">from .money import InvoiceValidationError, parse_amount
+
+__all__ = ["InvoiceValidationError", "parse_amount"]</code></pre><p>Day 3에서 배운 원인 예외 연결을 유지했다. Decimal은 NaN과 Infinity도 표현하므로 양수 비교 전에 유한성을 검사한다. 공개 import 지점은 __init__.py로 정하고 내부 파일 배치를 호출자에게 강요하지 않는다. 통화별 소수 자리 규칙은 이 함수의 범위 밖이며 업무 요구가 생기면 별도 계약으로 추가한다.</p></section>
+<section><h2>빌드와 설치 검증의 순서</h2><p>개발 환경에 build를 설치한 뒤 프로젝트 루트에서 <code>python -m build --wheel</code>을 실행한다. 새 가상 환경을 만들고 생성된 wheel 경로를 pip install에 전달한다. 그 후 <strong>프로젝트 밖의 빈 디렉터리</strong>에서 다음 코드를 실행한다. editable 설치는 개발에 편하지만 이 검증을 대신하지 않는다.</p><pre><code data-lang="python" data-file="verify.py">from decimal import Decimal
+from invoice_kit import InvoiceValidationError, parse_amount
+
+assert parse_amount("12.50") == Decimal("12.50")
+for invalid in ("abc", "NaN", "Infinity", "0", "-1"):
+    try:
+        parse_amount(invalid)
+    except InvoiceValidationError:
+        pass
+    else:
+        raise AssertionError(f"accepted invalid amount: {invalid}")
+print("installed package contract verified")</code></pre><p>이 검증은 import 가능 여부뿐 아니라 정상 값과 오류 계약이 설치 결과에 유지되는지 확인한다. 루트에서만 성공하면 경로의 우연일 수 있다. 문제가 생기면 wheel 안의 파일과 설치 경로를 확인하고, 패키지가 빠졌는지 같은 이름의 로컬 파일을 읽었는지 구분한다.</p></section>
+<section><h2>Trade-off와 흔한 오해</h2><p>src layout은 초기 설치 단계가 하나 더 필요하지만 배포 누락을 일찍 발견하게 한다. 단일 스크립트에는 과한 구조가 될 수 있고 여러 서비스가 재사용하는 코드에는 명시적 설치 계약이 도움이 된다. wheel은 설치 artifact이며 sdist는 빌드할 소스 배포다. 서로 다른 환경의 재현성과 의존성 잠금까지 wheel 하나가 모두 보장하는 것은 아니다.</p><p>버전 메타데이터를 바꿨다는 사실만으로 호환성을 판단하지 않는다. 반환 타입·예외·지원 Python 변경이 호출자에 미치는 영향을 함께 기록한다. 오늘은 예제 버전 0.1.0을 쓰며 공개 패키지 등록은 하지 않는다.</p></section>
+<section><h2>연습과 피드백</h2><p>동료가 프로젝트 루트에서 <code>import invoice_kit</code>에 성공했다고 배포 검증을 마쳤다. 그런데 wheel에서 money.py가 빠져 있다. 무엇을 다시 확인할까? 또 <code>parse_amount("NaN")</code>을 거부해야 하는 이유를 설명해 보자.</p><details><summary>확인할 답변</summary><p>설치하지 않은 소스를 읽거나 editable 환경이 남아 있을 수 있다. 깨끗한 환경에 wheel만 설치하고 프로젝트 밖에서 공개 API를 import한다. artifact 파일 목록과 실제 모듈 경로를 확인한다. NaN은 숫자 객체 생성에 성공해도 유효한 청구 금액이 아니므로 finite 검사를 별도로 수행한다. 단순히 Decimal 변환 예외만 잡는 코드는 이 계약을 놓친다.</p></details></section>
+<section><h2>자기 점검</h2><label><input type="checkbox"> build-system과 project의 역할을 나눠 설명할 수 있다.</label><label><input type="checkbox"> distribution 이름과 import 이름을 구별한다.</label><label><input type="checkbox"> 소스 루트 밖에서 설치 artifact의 공개 API와 예외를 검증할 수 있다.</label><p>다음 Day에서는 직접·간접 의존성과 잠금, 개발·운영 설치 조건을 연결한다. 오늘의 wheel 검증과 함께 실행 환경을 재현하는 방법을 비교한다.</p></section>
+<section><h2>근거 자료와 복습</h2><ul><li><a href="https://packaging.python.org/en/latest/tutorials/packaging-projects/">PyPA Packaging Python Projects</a> — build-system과 wheel 빌드</li><li><a href="https://packaging.python.org/en/latest/guides/writing-pyproject-toml/">PyPA pyproject.toml guide</a> — 배포 메타데이터 선언</li><li><a href="https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/">PyPA src layout vs flat layout</a> — 설치 경로와 소스 트리의 구분</li></ul><p class="small">공식 자료 확인: 2026-10-07. 계산 예시와 운영 조건은 이 레슨을 위한 가상 사례입니다.</p><nav aria-label="학습 탐색"><a href="./index.html">레슨 목록</a> · <a href="./0003-exception-design.html">이전 Day 3</a> · <a href="../reference/day-04-src-layout-wheel-install-contract-reference.html">빠른 참고</a></nav><p>내일 자료를 덮고 핵심 판단 기준을 설명해 보세요. 이해가 막힌 문장이나 연습 답안을 보내면 이어서 설명하고 피드백하겠습니다.</p></section></main></body></html>

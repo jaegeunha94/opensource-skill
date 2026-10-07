@@ -223,3 +223,7 @@ Cloudflare는 기능과 권장 설정이 빠르게 바뀌므로, 새 레슨을 �
 ## 2026-10-05 Day lesson sources confirmed
 
 - [Cloudflare Load Balancing](https://developers.cloudflare.com/load-balancing/) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.
+
+## Day 8 공식 참고 자료 (2026-10-07 확인)
+
+- [Cloudflare — Workers Routes](https://developers.cloudflare.com/workers/configuration/routing/routes/) — Worker 호출 범위와 origin 연결

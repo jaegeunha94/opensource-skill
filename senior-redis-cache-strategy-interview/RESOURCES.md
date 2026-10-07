@@ -30,3 +30,10 @@
 - [우아한형제들 기술 블로그 — Redis 관련 글](https://techblog.woowahan.com/) — 실무 Redis 적용 사례
 - [Line Engineering Blog — Redis 운영](https://engineering.linecorp.com/ko/) — 대규모 Redis 운영 경험
 - [카카오 기술 블로그 — 캐시 전략](https://tech.kakao.com/) — 실무 캐시 설계 사례
+
+## Day 12 공식 참고 자료 (2026-10-07 확인)
+
+- [Redis — Replication](https://redis.io/docs/latest/operate/oss_and_stack/management/replication/) — 비동기 복제·이력·부분/전체 동기화
+- [Redis — Latency Diagnosis](https://redis.io/docs/latest/operate/oss_and_stack/management/optimization/latency/) — 네트워크·서버·host 지연 분리
+- [Redis — SLOWLOG](https://redis.io/docs/latest/commands/slowlog/) — 명령 실행 시간의 측정 범위
+- [Redis — WAIT](https://redis.io/docs/latest/commands/wait/) — 복제 확인 수와 보장 한계

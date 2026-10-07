@@ -154,3 +154,9 @@
 ## 2026-10-05 Day lesson sources confirmed
 
 - [OpenAI retrieval guide](https://platform.openai.com/docs/guides/retrieval) — 다음 레슨의 현재 용어와 공식 동작을 확인한 1차 자료.
+
+## Day 8 공식 참고 자료 (2026-10-07 확인)
+
+- [Unstructured — Chunking](https://docs.unstructured.io/open-source/core-functionality/chunking) — element·제목·표 경계와 원본 metadata 복구
+- [Anthropic — Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval) — 검색 전 맥락 보충 접근의 원 자료
+- [Unstructured — Releases](https://github.com/Unstructured-IO/unstructured/releases) — 표 분할·레이아웃 처리 변경 확인
